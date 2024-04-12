@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "186049947777",
+    "project_id": "afrolooki",
+    "storage_bucket": "afrolooki.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:186049947777:android:e3723d966eb10f6c940580",
+        "android_client_info": {
+          "package_name": "com.afrotok.afrotok"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1vsKOoO9bPH9CKIVROA7KIyd_pq3uGiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
