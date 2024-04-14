@@ -449,6 +449,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.6.4"
+  encrypt_decrypt_plus:
+    dependency: "direct main"
+    description:
+      name: encrypt_decrypt_plus
+      sha256: "35bd7ce43e2de1aef67d3af8cdb01efacc112f2116453fc817087d12fb7381ad"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   equatable:
     dependency: "direct main"
     description:

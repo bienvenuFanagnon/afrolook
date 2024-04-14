@@ -36,6 +36,7 @@ import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:stories_for_flutter/stories_for_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
 import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
@@ -63,6 +64,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,TickerProviderStateMixin {
   String token='';
   bool dejaVuPub=true;
+  bool contact_whatsapp=false;
+  bool contact_afrolook=false;
 
   GlobalKey btnKey = GlobalKey();
   GlobalKey btnKey2 = GlobalKey();
@@ -82,6 +85,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   TextEditingController commentController =TextEditingController();
+  Future<void> launchWhatsApp(String phone) async {
+    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
+    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+    String url = "whatsapp://send?phone="+phone+"";
+    if (!await launchUrl(Uri.parse(url))) {
+      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
+
+      // Afficher le SnackBar en bas de la page
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      throw Exception('Impossible d\'ouvrir WhatsApp');
+    }
+  }
+
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   late AnimationController _starController;
@@ -1262,7 +1278,7 @@ bool abonneTap =false;
                                         postProvider.updatePost(post, listUsers.first!!,context);
                                        await authProvider.getAppData();
                                         authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+2;
-                                        authProvider.updateAppData(authProvider.appDefaultData);
+                                      await  authProvider.updateAppData(authProvider.appDefaultData);
 
                                       }else{
                                         SnackBar snackBar = SnackBar(
@@ -1273,7 +1289,7 @@ bool abonneTap =false;
                                         postProvider.updatePost( post,post.user!,context);
                                         await authProvider.getAppData();
                                         authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+2;
-                                        authProvider.updateAppData(authProvider.appDefaultData);
+                                      await  authProvider.updateAppData(authProvider.appDefaultData);
 
 
                                       }
@@ -1468,28 +1484,70 @@ bool abonneTap =false;
                     SizedBox(
                       height: 10,
                     ),
-                    ElevatedButton(onPressed: () {
-                      getChatsEntrepriseData(post.user!,post,post.entrepriseData!).then((chat) async {
-                        userProvider.chat.messages=chat.messages;
-
-
-                        Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: post, isEntreprise: false,)));
-
-
-
-
-
-                      },);
-
-                    },
-                        child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Icon(AntDesign.message1,color: Colors.black,),
-                        SizedBox(width: 5,),
-                        Text("Contacter",style: TextStyle(color: Colors.green),),
+                        ElevatedButton(onPressed:contact_afrolook?() {
+
+                        }: () async {
+                          setState(() {
+                            contact_afrolook=true;
+                          });
+                    await  getChatsEntrepriseData(post.user!,post,post.entrepriseData!).then((chat) async {
+                            userProvider.chat.messages=chat.messages;
+
+
+                            Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: post, isEntreprise: false,)));
+
+
+                            setState(() {
+                              contact_afrolook=false;
+                            });
+
+
+                          },);
+
+                        },
+                            child:contact_afrolook? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            ):  Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(AntDesign.message1,color: Colors.black,),
+                                SizedBox(width: 5,),
+                                Text("Afrolook",style: TextStyle(color: Colors.black,fontWeight: FontWeight.w600),),
+                              ],
+                            )),
+                        ElevatedButton(onPressed:contact_whatsapp?() {
+
+                        }: () {
+                          launchWhatsApp("${post.contact_whatsapp}");
+                          setState(() {
+                            contact_whatsapp=false;
+                          });
+
+
+                        },
+                            child:contact_whatsapp? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            ): Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Fontisto.whatsapp,color: Colors.green,),
+                            SizedBox(width: 5,),
+                            Text("WhatsApp",style: TextStyle(color: Colors.green,fontWeight: FontWeight.w600),),
+                          ],
+                        )),
                       ],
-                    )),
+                    ),
 
                     SizedBox(
                       height: 10,
@@ -2877,6 +2935,12 @@ bool abonneTap =false;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     //userProvider.getUsers(authProvider.loginUserData!.id!);
+    if (!is_actualised) {
+      setState(() {
+
+      });
+
+    }
 
 
 /*
@@ -2905,7 +2969,7 @@ setState(() {
     return RefreshIndicator(
       onRefresh: ()async {
         setState(() {
-      //    is_actualised = true;
+         // is_actualised = true;
         });
    //     await userProvider.getAllAnnonces();
         /*
@@ -2981,7 +3045,7 @@ setState(() {
                 curve: Curves.ease,
               );
               setState(() {
-            //    is_actualised = true;
+              // is_actualised = true;
               });
               /*
               await userProvider.getAllAnnonces();
@@ -3222,7 +3286,7 @@ setState(() {
                   Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: FutureBuilder<List<ArticleData>>(
-                        future: categorieProduitProvider.getAllArticles(),
+                        future: categorieProduitProvider.getAnnoncesArticles(),
                         builder: (BuildContext context, AsyncSnapshot snapshot) {
                           if (snapshot.hasData) {
                             List<ArticleData> articles=snapshot.data;
@@ -3272,7 +3336,11 @@ setState(() {
                           } else if (snapshot.hasError) {
                             return Icon(Icons.error_outline);
                           } else {
-                            return CircularProgressIndicator();
+                            return Container(
+                              width: 30,
+                                height: 40,
+
+                                child: CircularProgressIndicator());
                           }
                         }),
                   ),
@@ -3326,6 +3394,10 @@ setState(() {
                           builder: (BuildContext context,
                               AsyncSnapshot snapshot) {
                             if (snapshot.hasData) {
+
+
+                                is_actualised = false;
+
                               List<Post> listConstposts=snapshot.data;
                               return  Column(
                                 mainAxisSize: MainAxisSize.max,
@@ -3528,7 +3600,7 @@ setState(() {
                                   Padding(
                                     padding: const EdgeInsets.all(4.0),
                                     child: FutureBuilder<List<ArticleData>>(
-                                        future: categorieProduitProvider.getAllArticles(),
+                                        future: categorieProduitProvider.getAnnoncesArticles(),
                                         builder: (BuildContext context, AsyncSnapshot snapshot) {
                                           if (snapshot.hasData) {
                                             List<ArticleData> articles=snapshot.data;

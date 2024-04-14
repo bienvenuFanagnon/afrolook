@@ -22,6 +22,7 @@ import '../../../../constant/custom_theme.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
+import '../../../../providers/authProvider.dart';
 
 class ProduitDetail extends StatefulWidget {
   final ArticleData article;
@@ -33,7 +34,7 @@ class ProduitDetail extends StatefulWidget {
 
 class _ProduitDetailState extends State<ProduitDetail> {
 
-  late UserShopAuthProvider authProvider =
+  late UserShopAuthProvider authshopProvider =
   Provider.of<UserShopAuthProvider>(context, listen: false);
   String _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
   int _length = 100; // Remplacez par la longueur souhaitée
@@ -42,7 +43,9 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   late CategorieProduitProvider categorieProduitProvider =
   Provider.of<CategorieProduitProvider>(context, listen: false);
-/*
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+
   void _showBottomSheetCompterNonValide(double width) {
     showModalBottomSheet(
       context: context,
@@ -71,7 +74,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                   onPressed: () {
                    // Navigator.pop(context);
 
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => MyPhone(),));
+                 //   Navigator.push(context, MaterialPageRoute(builder: (context) => MyPhone(),));
 
                   },
                   child: Row(
@@ -98,7 +101,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
   }
 
 
- */
+
   String getRandomString() {
     final _rnd = Random();
     return String.fromCharCodes(Iterable.generate(_length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
@@ -109,7 +112,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
   Future<void> launchWhatsApp(String phone,ArticleData articleData,String code) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Nom du compte*: *${authProvider.loginData!.nom!.toUpperCase()}*,\n\n je vous contacte via *${"Afroshop".toUpperCase()}* à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Code de la commande*: *${code}*";
+    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Nom du compte*: *@${authProvider.loginUserData!.nom!.toUpperCase()} Depuis Afrolook*,\n\n je vous contacte via *${"Afroshop".toUpperCase()}* à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Code de la commande*: *${code}*";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
@@ -151,67 +154,14 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 borderRadius: BorderRadius.all(Radius.circular(10)),
                 child: Column(
                   children: [
-                    Stack(
-                      children: [
-                        SizedBox(
+                    SizedBox(
 
-                          child: InstaImageViewer(
-                            child: Image(
-                              image: Image.network('${widget.article.images![imageIndex]}')
-                                  .image,
-                            ),
-                          ),
+                      child: InstaImageViewer(
+                        child: Image(
+                          image: Image.network('${widget.article.images![imageIndex]}')
+                              .image,
                         ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-
-                          child:onSupTap?Container(
-                            height: 20,
-                              width: 20,
-
-                              child: CircularProgressIndicator()):  Visibility(
-                            visible: authProvider.loginData.phone!=null&&authProvider.loginData.role==RoleUser.ADMIN.name||authProvider.loginData.role==RoleUser.SUPERADMIN.name?true:false,
-
-                            child: IconButton(onPressed: () async {
-                                                            widget.article.disponible=false;
-                                                            setState(() {
-                                onSupTap=true;
-                                                            });
-                                                           await categorieProduitProvider.updateArticle(widget.article, context).then(
-                                                             (value) {
-                                 if (value) {
-
-                                   ScaffoldMessenger.of(context).showSnackBar(
-
-                                     SnackBar(
-                                       backgroundColor: Colors.green,
-                                       content: Text('L\'article a été supprimé avec succès'),
-                                     ),
-                                   );
-                                   setState(() {
-                                     onSupTap=false;
-                                   });
-                                   Navigator.pop(context);
-                                 }  else{
-                                   setState(() {
-                                     onSupTap=false;
-                                   });
-                                   ScaffoldMessenger.of(context).showSnackBar(
-
-                                     SnackBar(
-                                       backgroundColor: Colors.red,
-                                       content: Text('Erreur de suppression'),
-                                     ),
-                                   );
-                                 }
-                                                             },
-                                                           );
-
-                                                          }, icon: Icon(Icons.delete,color: Colors.red,size: 40,)),
-                              ),
-                        )
-                      ],
+                      ),
                     ),
 
                     /*
@@ -334,107 +284,110 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
         child: TextButton(
           onPressed: () async {
-            /*
-
-            if (authProvider.loginData.id!=null) {
-              setState(() {
-                onSaveTap=true;
-              });
-              await categorieProduitProvider.getCommandeById(authProvider.loginData.id!,widget.article.id!).then((value) async {
-                if (value.isNotEmpty) {
-                  launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
-                  setState(() {
-                    onSaveTap=false;
-                  });
-                }  else{
-                  var codeCommande = Random().nextInt(1000000);
-                  CommandeCode cmdCode =CommandeCode();
-                  cmdCode.id=FirebaseFirestore.instance
-                      .collection('CommandeCodes')
-                      .doc()
-                      .id;
-                  cmdCode.code=codeCommande.toString();
-
-
-                  await  categorieProduitProvider.getCodeCommande(cmdCode.code!, cmdCode).then((value) async {
-                    if (value==false) {
-
-                      Commande annonceRegisterData =Commande();
-                      annonceRegisterData.id=FirebaseFirestore.instance
-                          .collection('Commandes')
-                          .doc()
-                          .id;
-                      annonceRegisterData.code=cmdCode.code!;
-                      annonceRegisterData.article=widget.article;
-                      annonceRegisterData.status=UserCmdStatus.ENCOURS.name;
-                      annonceRegisterData.article_id=widget.article.id!;
-                      annonceRegisterData.dernierprix=widget.article.prix;
-                      annonceRegisterData.user_client_id=authProvider.loginData.id;
-                      annonceRegisterData.user_client_status=UserCmdStatus.ENCOURS.name;
-                      annonceRegisterData.user_magasin_id=widget.article.user_id;
-                      annonceRegisterData.user_magasin_status=UserCmdStatus.ENCOURS.name;
-                      annonceRegisterData.updatedAt =
-                          DateTime.now().microsecondsSinceEpoch;
-                      annonceRegisterData.createdAt =
-                          DateTime.now().microsecondsSinceEpoch;
-
-                      await categorieProduitProvider.createCommande(annonceRegisterData).then((value) async {
-                        if (value) {
-                          await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                            if (value.isNotEmpty) {
-                              value.first.contact=value.first.contact!+1;
-                              widget.article.contact=value.first.contact!+1;
-                              categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                                if (value) {
+            await authshopProvider.getUserById(widget.article.user_id!).then((users) async {
+              if (users.isNotEmpty) {
+                setState(() {
+                  onSaveTap=true;
+                });
+                await categorieProduitProvider.getCommandeById(users.first.id!,widget.article.id!).then((value) async {
+                  if (value.isNotEmpty) {
+                    launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
+                    setState(() {
+                      onSaveTap=false;
+                    });
+                  }  else{
+                    var codeCommande = Random().nextInt(1000000);
+                    CommandeCode cmdCode =CommandeCode();
+                    cmdCode.id=FirebaseFirestore.instance
+                        .collection('CommandeCodes')
+                        .doc()
+                        .id;
+                    cmdCode.code=codeCommande.toString();
 
 
-                                }
-                              },);
+                    await  categorieProduitProvider.getCodeCommande(cmdCode.code!, cmdCode).then((value) async {
+                      if (value==false) {
 
-                            }
-                          },);
-                          setState(() {
-                            onSaveTap=false;
-                          });
+                        Commande annonceRegisterData =Commande();
+                        annonceRegisterData.id=FirebaseFirestore.instance
+                            .collection('Commandes')
+                            .doc()
+                            .id;
+                        annonceRegisterData.code=cmdCode.code!;
+                        annonceRegisterData.article=widget.article;
+                        annonceRegisterData.status=UserCmdStatus.ENCOURS.name;
+                        annonceRegisterData.article_id=widget.article.id!;
+                        annonceRegisterData.dernierprix=widget.article.prix;
+                       // annonceRegisterData.user_client_id=users.first.id;
+                        annonceRegisterData.user_client_status=UserCmdStatus.ENCOURS.name;
+                        annonceRegisterData.user_magasin_id=widget.article.user_id;
+                        annonceRegisterData.user_magasin_status=UserCmdStatus.ENCOURS.name;
+                        annonceRegisterData.updatedAt =
+                            DateTime.now().microsecondsSinceEpoch;
+                        annonceRegisterData.createdAt =
+                            DateTime.now().microsecondsSinceEpoch;
 
-                          launchWhatsApp(widget.article.user!.phone!, annonceRegisterData!.article!,annonceRegisterData.code!);
-                        }else{
-                          setState(() {
-                            onSaveTap=false;
-                          });
-                        }
-                      },);
-                      setState(() {
-                        onSaveTap=false;
-                      });
-                    }else{
-                      await categorieProduitProvider.getCommandeByCode(cmdCode.code!).then((value) {
-                        if (value.isNotEmpty) {
-                          launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
-                          setState(() {
-                            onSaveTap=false;
-                          });
+                        await categorieProduitProvider.createCommande(annonceRegisterData).then((value) async {
+                          if (value) {
+                            await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
+                              if (value.isNotEmpty) {
+                                value.first.contact=value.first.contact!+1;
+                                widget.article.contact=value.first.contact!+1;
+                                categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                  if (value) {
 
-                        }
-                      },);
 
-                    }
-                  },);
-                  setState(() {
-                    onSaveTap=false;
-                  });
-                }
-              },);
+                                  }
+                                },);
 
-            }else{
-              setState(() {
-                onSaveTap=false;
-              });
-              _showBottomSheetCompterNonValide(width);
+                              }
+                            },);
+                            setState(() {
+                              onSaveTap=false;
+                            });
 
-            }
+                            launchWhatsApp(widget.article.user!.phone!, annonceRegisterData!.article!,annonceRegisterData.code!);
+                          }else{
+                            setState(() {
+                              onSaveTap=false;
+                            });
+                          }
+                        },);
+                        setState(() {
+                          onSaveTap=false;
+                        });
+                      }else{
+                        await categorieProduitProvider.getCommandeByCode(cmdCode.code!).then((value) {
+                          if (value.isNotEmpty) {
+                            launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
+                            setState(() {
+                              onSaveTap=false;
+                            });
 
-             */
+                          }
+                        },);
+
+                      }
+                    },);
+                    setState(() {
+                      onSaveTap=false;
+                    });
+                  }
+                },);
+
+              }  else{
+                setState(() {
+                  onSaveTap=false;
+                });
+               // _showBottomSheetCompterNonValide(width);
+
+              }
+            },);
+
+
+
+
+
 
 
 

@@ -105,6 +105,45 @@ class CategorieProduitProvider extends ChangeNotifier {
     }
 
   }
+  Future<List<ArticleData>> getAnnoncesArticles() async {
+
+    listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('Articles');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+       .where("disponible",isEqualTo: true)
+       .where("dispo_annonce_afrolook",isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+      //   .limit(10)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+      listArticles.shuffle();
+
+
+
+      print('list article ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
 
   Future<List<ArticleData>> getSearhArticles(String titre,int item_selected,String categorie_id) async {
 

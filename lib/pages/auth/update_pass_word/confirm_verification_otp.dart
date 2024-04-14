@@ -185,7 +185,7 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
       context,
       MaterialPageRoute(
         builder: (context) {
-          return ChangePasswordPage();
+          return ChangePasswordPage(phoneNumber: widget.phoneNumber,);
         },
       ),
     );

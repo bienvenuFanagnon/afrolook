@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:encrypt_decrypt_plus/cipher/cipher.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -290,6 +291,31 @@ class UserAuthProvider extends ChangeNotifier {
 
     return haveData;
   }
+  Future<List<UserData>> getUserById(String id) async {
+    //await getAppData();
+    late List<UserData> list = [];
+    late bool haveData = false;
+
+    CollectionReference collectionRef =
+    FirebaseFirestore.instance.collection('Users');
+    // Get docs from collection reference
+    QuerySnapshot querySnapshot = await collectionRef.where(
+        "id", isEqualTo: id!).get()
+        .then((value) {
+      print(value);
+      return value;
+    }).catchError((onError) {
+
+    });
+
+    // Get data from docs and convert map to List
+    list = querySnapshot.docs.map((doc) =>
+        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+
+
+    return list;
+  }
 
   Future<bool> getUserByPhone(String phone) async {
     //   await getAppData();
@@ -368,6 +394,21 @@ class UserAuthProvider extends ChangeNotifier {
       print("erreur comment : ${e}");
       return false;
     }
+  }
+  String encrypt(String pwd){
+    Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
+    String encryptTxt = cipher.xorEncode("${pwd}");
+    print("password");
+    print(encryptTxt);
+    return encryptTxt;
+  }
+  String decrypt(String pwd_crypted){
+    Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
+
+    String decryptTxt = cipher.xorDecode(pwd_crypted);
+   // print(encryptTxt);
+    print(decryptTxt);
+    return decryptTxt;
   }
 
 

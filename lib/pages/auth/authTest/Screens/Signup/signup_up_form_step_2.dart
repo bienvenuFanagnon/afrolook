@@ -223,7 +223,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         }).catchError((e) {
 
           SnackBar snackBar = SnackBar(
-            content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.red),),
+            backgroundColor: Colors.red,
+            content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.white),),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
           print('error ${e!.message}');
@@ -292,10 +293,22 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
         authProvider.appDefaultData.users_id!.add(id);
       }
+      UserPseudo pseudo=UserPseudo();
+      pseudo.id=firestore
+          .collection('Pseudo')
+          .doc()
+          .id;
+      pseudo.name=authProvider.registerUser.pseudo;
+
+      // users.add(pseudo.toJson());
+
+      await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
+      print("///////////-- save pseudo --///////////////");
       await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
 
       SnackBar snackBar = SnackBar(
-        content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.green),),
+        backgroundColor: Colors.green,
+        content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       Navigator.pop(context);
@@ -347,6 +360,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                     child: Column(
 
                       children: [
+                        Text("Votre photo"),
 
                         Container(
                           alignment: Alignment.center,
@@ -407,6 +421,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                             ],
                           ),
                         ),
+                        SizedBox(height: 10,),
 
 
                         TextFormField(
@@ -439,6 +454,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                             return null;
                           },
                         ),
+                        SizedBox(height: 10,),
+
 
                         Text(
                           'À propos de toi :',
@@ -455,6 +472,14 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                             print('apropos $value');
 
                           },
+                        ),
+                        Text(
+                          'En créant ce compte, vous acceptez les termes et conditions.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                        SizedBox(
+                          height: 5,
                         ),
 
 

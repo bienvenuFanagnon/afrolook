@@ -497,7 +497,7 @@ class UserData {
         this.hasEntreprise=false,
 
         this.apropos,
-        this.password,
+        this.password="",
         this.codeParrain,
         this.state="OFFLINE",
         //this.genreId,
@@ -539,7 +539,7 @@ class UserData {
     latitude = json['latitude'];
     longitude = json['longitude'];
     apropos = json['apropos'];
-    //password = json['password'];
+   // password = json['password']==null?"":json['password'];
    // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
@@ -589,6 +589,7 @@ class UserData {
     data['abonnes'] = this.abonnes;
     data['compte_tarif'] = this.compteTarif;
     data['popularite'] = this.popularite;
+   // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;
     return data;
@@ -602,13 +603,16 @@ class UserShopData {
   double? montant;
 
   String? nom;
-  String? logo;
+  String? nom_magasin;
+  String? magasin_status;
+  String? logo_magasin;
   String? phone;
   String? pwd;
 
   String? role;
   int? createdAt;
   int? updatedAt;
+  int? nbr_aticle_annonce=0;
 
   UserShopData();
 
@@ -638,6 +642,10 @@ class ArticleData {
   @JsonKey(includeFromJson: false, includeToJson: false)
 
   UserShopData? user;
+  bool? dispo_annonce_afrolook;
+  int? annonce_time;
+
+
 
 
   List<String>? images = [];
@@ -651,6 +659,7 @@ class ArticleData {
 
 
 }
+
 
 class EntrepriseData {
   List<EntrepriseAbonnement>? abonnements=[];
@@ -840,63 +849,37 @@ class UserIACompte{
 }
 
 
-
+@JsonSerializable()
 class EntrepriseAbonnement {
   String? type;
   String? id;
   String? entrepriseId;
   String? description;
+  int? nombre_pub;
+  int? nombre_image_pub;
+  int? nbr_jour_pub_afrolook;
+  int? nbr_jour_pub_annonce_afrolook;
+
+
 
   String? userId;
+  String? afroshop_user_magasin_id;
   int? createdAt;
   int? updatedAt;
   int? star;
   int? end;
   bool? isFinished;
+  bool? dispo_afrolook;
 
-  EntrepriseAbonnement({
-    this.type,
-    this.id,
-    this.entrepriseId,
-    this.description,
-    this.userId,
-    this.createdAt,
-    this.updatedAt,
-    this.star,
-    this.end,
-    this.isFinished,
-  });
 
-  factory EntrepriseAbonnement.fromJson(Map<String, dynamic>  jsonData) {
 
-    return EntrepriseAbonnement(
-      type: jsonData['type'],
-      id: jsonData['id'],
-      entrepriseId: jsonData['entrepriseId'],
-      description: jsonData['description'],
-      userId: jsonData['userId'],
-      createdAt: jsonData['createdAt'],
-      updatedAt: jsonData['updatedAt'],
-      star: jsonData['star'],
-      end: jsonData['end'],
-      isFinished: jsonData['isFinished'],
-    );
-  }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'type': type,
-      'id': id,
-      'entrepriseId': entrepriseId,
-      'description': description,
-      'userId': userId,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-      'star': star,
-      'end': end,
-      'isFinished': isFinished,
-    };
-  }
+  EntrepriseAbonnement();
+
+  factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) => _$EntrepriseAbonnementFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$EntrepriseAbonnementToJson(this);
 }
 
 
@@ -1086,6 +1069,7 @@ class Post {
   String? status;
   String? dataType;
   String? description;
+  String? contact_whatsapp;
   int? nombreCollaborateur;
   double? publiCashTotal;
   int? nombreImage;
@@ -1129,6 +1113,7 @@ class Post {
         this.vues,
         this.likes,
         this.commentaires,
+        this.contact_whatsapp,
         this.description,
         this.createdAt,
         this.updatedAt,
@@ -1151,6 +1136,7 @@ class Post {
     updatedAt = json['updated_at'];
     dataType = json['dataType'];
     url_media = json['url_media'];
+    contact_whatsapp =json['contact_whatsapp']==null?"": json['contact_whatsapp'];
     loves = json['loves'];
     images = json['images']==null?[]:json['images'].cast<String>();
     likes = json['likes'];
@@ -1179,6 +1165,7 @@ class Post {
     data['url_media'] = this.url_media;
 
     data['loves'] = this.loves;
+    data['contact_whatsapp'] = this.contact_whatsapp;
     data['dataType'] = this.dataType;
     data['images'] = this.images;
     data['users_like_id'] = this.users_like_id;

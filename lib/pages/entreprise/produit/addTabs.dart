@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_tags/simple_tags.dart';
@@ -36,7 +37,8 @@ class UserPostPubImage extends StatefulWidget {
 class _UserPostPubImageState extends State<UserPostPubImage> {
 
   final _formKey = GlobalKey<FormState>();
-
+  late String phone="";
+  late bool isValidPhoneNumber=false;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _titreController = TextEditingController();
@@ -54,6 +56,61 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
   double publicashTotal=0;
   double convertirPicoVersFemto(double pubCash) {
     return (pubCash * authProvider.appDefaultData.tarifPubliCash_to_xof!);
+  }
+
+  void _showBottomSheetCompterNonValide(double width) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          width: width,
+          //height: 200,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  "Fonctionnalité non disponible",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Cette fonctionnalité est actuellement uniquement disponible pour les entreprises partenaires dans le cadre de la version bêta. veuillez nous contacter.",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+
+                    Navigator.pushNamed(context, '/contact');
+
+
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.email,color: Colors.black,),
+                      SizedBox(width: 5,),
+                      const Text('Contacter',style: TextStyle(color: Colors.white),),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
   String formaterDoubleEnK(double valeur) {
     if (valeur >= 1000000) {
@@ -193,7 +250,7 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
 
 @override
   void initState() {
-  _nbrJour.text="1";
+  _nbrJour.text="30";
   selectedUser=userProvider.listUsers.first;
   listUsers=userProvider.listUsers;
     // TODO: implement initState
@@ -217,6 +274,45 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
             child: Column(
               children: [
                 ListTile(
+                  title: Row(
+                    children: [
+                      Icon(Fontisto.whatsapp,color: Colors.green,),
+                      SizedBox(width: 10,),
+                      Text("Contact WhatsApp"),
+                    ],
+                  ),
+                  trailing: Text(listimages.length.toString()),
+                ),
+                IntlPhoneField(
+
+                  decoration: InputDecoration(
+                    labelText: 'Numéro de téléphone',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(),
+                    ),
+                  ),
+                  initialCountryCode: 'TG',
+                  onChanged: (ph) {
+                    print(ph.completeNumber);
+                    phone=ph.completeNumber;
+                  },
+                  validator: (p0) {
+                    /*
+                    isValidPhoneNumber=p0!.isValidNumber();
+                    if (!isValidPhoneNumber) {
+
+                      return 'Le numéro de téléphone est obligatoire.';
+                    }else{
+
+
+                    }
+
+                     */
+                    return null;
+                  },
+                ),
+
+                ListTile(
                   title: Text("Nombre d'images"),
                   trailing: Text(listimages.length.toString()),
                 ),
@@ -234,6 +330,7 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
                   trailing: SizedBox(
                     width: 50,
                     child: TextFormField(
+                      readOnly: true,
                       onChanged: (value) {
                         setState(() {
                           print('v ${value}');
@@ -267,7 +364,7 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
                       Text(" / jour")
                     ],
                   ),
-                  trailing: Text('${formaterDoubleEnK(totalAbonnes*5)}'),
+                  trailing: Text('${formaterDoubleEnK(totalAbonnes*5+211)}'),
                 ),
                 ListTile(
                   title: Text("Prix total"),
@@ -364,6 +461,8 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
                       onChanged: (value) {
                         setState(() {
                           if (!pseudocollaborateurs.any((element) => value!.pseudo==element)) {
+                            pseudocollaborateurs=[];
+                            collaborateurs=[];
                             pseudocollaborateurs.add(value!.pseudo!);
 
                             collaborateurs.add(value!);
@@ -471,114 +570,146 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
                       //_getImages();
                       if (userProvider.entrepriseData.type=='partenaire') {
                         if (_formKey.currentState!.validate()) {
+                          if (phone.length<5) {
+                            SnackBar snackBar = SnackBar(
+                              backgroundColor: Colors.red,
+                              content: Text(
+                                'le numero de contact whatsapp',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            );
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+                          }  else{
+                            setState(() {
+                              onTap=true;
+                            });
+                            if (userProvider.entrepriseData.publicash!>=publicashTotal) {
+                              if (listimages.isEmpty) {
+                                SnackBar snackBar = SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Veuillez choisir une image.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              }
+                              else {
+                                try {
+                                  if (pseudocollaborateurs.isNotEmpty) {
+                                    await userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
 
-                          setState(() {
-                            onTap=true;
-                          });
-                          if (userProvider.entrepriseData.publicash!>=publicashTotal) {
-                            if (listimages.isEmpty) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'Veuillez choisir une image.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                            else {
-                              try {
-                                if (pseudocollaborateurs.isNotEmpty) {
-                                  await userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
-
-                                  },);
-                                  for(String item in pseudocollaborateurs){
-                                    UserData user=   userProvider.listUsers.firstWhere((element) => element.pseudo==item);
-                                    String postId = FirebaseFirestore.instance
-                                        .collection('Posts')
-                                        .doc()
-                                        .id;
-                                    Post post = Post();
-                                    post.user_id = user.id;
-                                    post.entreprise_id = userProvider.entrepriseData.id;
-                                    post.description = _descriptionController.text;
-                                    post.updatedAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    post.createdAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    post.status = PostStatus.VALIDE.name;
-                                    post.type = PostType.PUB.name;
-                                    post.comments = 0;
-                                    post.dataType = PostDataType.IMAGE.name;
-                                    post.likes = 0;
-                                    post.loves = 0;
-                                    post.id = postId;
-                                    post.images = [];
+                                    },);
+                                    for(String item in pseudocollaborateurs){
+                                      UserData user=   userProvider.listUsers.firstWhere((element) => element.pseudo==item);
+                                      String postId = FirebaseFirestore.instance
+                                          .collection('Posts')
+                                          .doc()
+                                          .id;
+                                      Post post = Post();
+                                      post.user_id = user.id;
+                                      post.contact_whatsapp = phone;
+                                      post.entreprise_id = userProvider.entrepriseData.id;
+                                      post.description = _descriptionController.text;
+                                      post.updatedAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      post.createdAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      post.status = PostStatus.VALIDE.name;
+                                      post.type = PostType.PUB.name;
+                                      post.comments = 0;
+                                      post.dataType = PostDataType.IMAGE.name;
+                                      post.likes = 0;
+                                      post.loves = 0;
+                                      post.id = postId;
+                                      post.images = [];
 
 
-                                    post.publiCashTotal = publicashTotal;
-                                    post.nombreCollaborateur = collaborateurs.length;
-                                    post.nombreImage = listimages.length;
-                                    post.nombrePersonneParJour = int.parse(_nbrJour.text);
-                                    for (XFile _image in listimages) {
-                                      Reference storageReference =
-                                      FirebaseStorage.instance.ref().child(
-                                          'post_media/${Path.basename(File(_image.path).path)}');
+                                      post.publiCashTotal = publicashTotal;
+                                      post.nombreCollaborateur = collaborateurs.length;
+                                      post.nombreImage = listimages.length;
+                                      post.nombrePersonneParJour = int.parse(_nbrJour.text);
+                                      for (XFile _image in listimages) {
+                                        Reference storageReference =
+                                        FirebaseStorage.instance.ref().child(
+                                            'post_media/${Path.basename(File(_image.path).path)}');
 
-                                      UploadTask uploadTask = storageReference
-                                          .putFile(File(_image.path)!);
-                                      await uploadTask.whenComplete(() async {
-                                        await storageReference
-                                            .getDownloadURL()
-                                            .then((fileURL) {
-                                          print("url media");
-                                          //  print(fileURL);
+                                        UploadTask uploadTask = storageReference
+                                            .putFile(File(_image.path)!);
+                                        await uploadTask.whenComplete(() async {
+                                          await storageReference
+                                              .getDownloadURL()
+                                              .then((fileURL) {
+                                            print("url media");
+                                            //  print(fileURL);
 
-                                          post.images!.add(fileURL);
+                                            post.images!.add(fileURL);
+                                          });
                                         });
-                                      });
+                                      }
+                                      print("images: ${post.images!.length}");
+                                      await FirebaseFirestore.instance
+                                          .collection('Posts')
+                                          .doc(postId)
+                                          .set(post.toJson());
+
+
+                                      user.pubEntreprise=user.pubEntreprise!+1;
+                                      user.publiCash=user.publiCash!+user.compteTarif!;
+
+
+                                      userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
+
+
+                                      await userProvider.updateUser(user);
+
                                     }
-                                    print("images: ${post.images!.length}");
-                                    await FirebaseFirestore.instance
-                                        .collection('Posts')
-                                        .doc(postId)
-                                        .set(post.toJson());
+                                    userProvider.entrepriseData.publicash=userProvider.entrepriseData.publicash!-publicashTotal;
+                                    await userProvider.updateEntreprise(userProvider.entrepriseData!);
+                                    listimages=[];
+                                    _descriptionController.text='';
+                                    collaborateurs=[];
+                                    pseudocollaborateurs=[];
+                                    publicashTotal=0;
+                                    prixTotal=0;
+                                    _nbrJour.text='';
 
-
-                                    user.pubEntreprise=user.pubEntreprise!+1;
-                                    user.publiCash=user.publiCash!+user.compteTarif!;
-
-
-                                    userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
-
-
-                                    await userProvider.updateUser(user);
-
+                                    SnackBar snackBar = SnackBar(
+                                      content: Text(
+                                        'Le post a été validé avec succès !',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.green),
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(snackBar);
+                                  } else{
+                                    SnackBar snackBar = SnackBar(
+                                      content: Text(
+                                        'Veillez choisir un collaborateur !',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(snackBar);
                                   }
-                                  userProvider.entrepriseData.publicash=userProvider.entrepriseData.publicash!-publicashTotal;
-                                  await userProvider.updateEntreprise(userProvider.entrepriseData!);
-                                  listimages=[];
-                                  _descriptionController.text='';
-                                  collaborateurs=[];
-                                  pseudocollaborateurs=[];
-                                  publicashTotal=0;
-                                  prixTotal=0;
-                                  _nbrJour.text='';
 
+                                  setState(() {
+                                    onTap=false;
+                                  });
+                                } catch (e) {
+                                  print("erreur ${e}");
+                                  setState(() {
+                                    onTap=false;
+                                  });
                                   SnackBar snackBar = SnackBar(
                                     content: Text(
-                                      'Le post a été validé avec succès !',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.green),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(snackBar);
-                                } else{
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text(
-                                      'Veillez choisir un collaborateur !',
+                                      'La validation du post a échoué. Veuillez réessayer.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(color: Colors.red),
                                     ),
@@ -586,53 +717,28 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
                                   ScaffoldMessenger.of(context)
                                       .showSnackBar(snackBar);
                                 }
-
-                                setState(() {
-                                  onTap=false;
-                                });
-                              } catch (e) {
-                                print("erreur ${e}");
-                                setState(() {
-                                  onTap=false;
-                                });
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'La validation du post a échoué. Veuillez réessayer.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
                               }
+                            }  else{
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'Fonds insuffisants pour cette opération',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
                             }
-                          }  else{
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'Fonds insuffisants pour cette opération',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
+
+                            setState(() {
+                              onTap=false;
+                            });
                           }
 
-                          setState(() {
-                            onTap=false;
-                          });
+
                         }
                       }  else{
-                        SnackBar snackBar = SnackBar(
-                          duration: Duration(seconds: 10),
-                          content: Text(
-                            "Cette fonctionnalité est actuellement uniquement disponible pour les entreprises partenaires dans le cadre de la version bêta.  Les entreprises personnelles auront accès à la version officielle lors de sa sortie.  Pour plus d'informations, veuillez nous contacter.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
+                        _showBottomSheetCompterNonValide(width);
                       }
 
                     },
@@ -672,7 +778,8 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
   final _formKey = GlobalKey<FormState>();
   late String title;
 
-
+  late String phone="";
+  late bool isValidPhoneNumber=false;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _titreController = TextEditingController();
@@ -715,6 +822,62 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
     });
   }
 
+  void _showBottomSheetCompterNonValide(double width) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          width: width,
+          //height: 200,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  "Fonctionnalité non disponible",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Cette fonctionnalité est actuellement uniquement disponible pour les entreprises partenaires dans le cadre de la version bêta. veuillez nous contacter.",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+
+                    Navigator.pushNamed(context, '/contact');
+
+
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.email,color: Colors.black,),
+                      SizedBox(width: 5,),
+                      const Text('Contacter',style: TextStyle(color: Colors.white),),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
 
@@ -740,7 +903,7 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
   double prixTotal=0;
   double publicashTotal=0;
   double convertirPicoVersFemto(double pubCash) {
-    return (pubCash * authProvider.appDefaultData.tarifPubliCash_to_xof!);
+    return (pubCash * authProvider.appDefaultData.tarifPubliCash_to_xof!+1500);
   }
   String formaterDoubleEnK(double valeur) {
     if (valeur >= 1000000) {
@@ -869,7 +1032,7 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
 
   @override
   void initState() {
-    _nbrJour.text="1";
+    _nbrJour.text="30";
     selectedUser=userProvider.listUsers.first;
     listUsers=userProvider.listUsers;
     super.initState();
@@ -899,6 +1062,44 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
             key: _formKey,
             child: Column(
               children: [
+                ListTile(
+                  title: Row(
+                    children: [
+                      Icon(Fontisto.whatsapp,color: Colors.green,),
+                      SizedBox(width: 10,),
+                      Text("Contact WhatsApp"),
+                    ],
+                  ),
+                  trailing: Text(listimages.length.toString()),
+                ),
+                IntlPhoneField(
+
+                  decoration: InputDecoration(
+                    labelText: 'Numéro de téléphone',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(),
+                    ),
+                  ),
+                  initialCountryCode: 'TG',
+                  onChanged: (ph) {
+                    print(ph.completeNumber);
+                    phone=ph.completeNumber;
+                  },
+                  validator: (p0) {
+                    /*
+                    isValidPhoneNumber=p0!.isValidNumber();
+                    if (!isValidPhoneNumber) {
+
+                      return 'Le numéro de téléphone est obligatoire.';
+                    }else{
+
+
+                    }
+
+                     */
+                    return null;
+                  },
+                ),
 
                 ListTile(
                   title: Text("Nombre de collaborateurs"),
@@ -914,6 +1115,7 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                   trailing: SizedBox(
                     width: 50,
                     child: TextFormField(
+                      readOnly: true,
                       onChanged: (value) {
                         setState(() {
                           print('v ${value}');
@@ -947,7 +1149,7 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                       Text(" / jour")
                     ],
                   ),
-                  trailing: Text('${formaterDoubleEnK(totalAbonnes*5) }'),
+                  trailing: Text('${formaterDoubleEnK(totalAbonnes*5+211) }'),
                 ),
                 ListTile(
                   title: Text("Prix total"),
@@ -991,6 +1193,8 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                       onChanged: (value) {
                         setState(() {
                           if (!pseudocollaborateurs.any((element) => value!.pseudo==element)) {
+                            pseudocollaborateurs=[];
+                            collaborateurs=[];
                             pseudocollaborateurs.add(value!.pseudo!);
 
                             collaborateurs.add(value!);
@@ -1127,173 +1331,209 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                       //_getImages();
                       if (userProvider.entrepriseData.type=='partenaire'){
                         if (_formKey.currentState!.validate()) {
-
-                          if (_controller==null) {
+                          if (phone.length<5) {
                             SnackBar snackBar = SnackBar(
+                              backgroundColor: Colors.red,
                               content: Text(
-                                'Veuillez choisir une video (max 30 s).',
+                                'le numero de contact whatsapp',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
+                                style: TextStyle(color: Colors.white),
                               ),
                             );
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(snackBar);
-                          } else {
-                            final size = await videoFile.length();
+                          }else{
 
-                            try {
-                              setState(() {
-                                onTap=true;
-                              });
-                              Duration videoDuration = _controller!.value.duration;
+                            if (_controller==null) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'Veuillez choisir une video (max 30 s).',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                            else {
+                              final size = await videoFile.length();
 
-                              if (videoDuration.inSeconds > 30) {
-                                // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-                                print("Erreur : La durée de la vidéo dépasse 30 secondes");
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'La durée de la vidéo dépasse 30 secondes !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                                setState(() {
-                                  onTap=false;
-                                });
-                              }
-                              else  if (size > 20971520) {
-                                // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'La vidéo est trop grande (plus de 20 Mo).',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                                setState(() {
-                                  onTap=false;
-                                });
-                              }else{
-                                _uploadProgress =0;
-
-
-
+                              try {
                                 setState(() {
                                   onTap=true;
                                 });
-                                if (userProvider.entrepriseData.publicash!>=publicashTotal) {
+                                Duration videoDuration = _controller!.value.duration;
 
-                                  try {
-                                    if (pseudocollaborateurs.isNotEmpty) {
-                                      await userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
+                                if (videoDuration.inSeconds > 30) {
+                                  // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
+                                  print("Erreur : La durée de la vidéo dépasse 30 secondes");
+                                  SnackBar snackBar = SnackBar(
+                                    content: Text(
+                                      'La durée de la vidéo dépasse 30 secondes !',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  );
 
-                                      },);
-                                      for(String item in pseudocollaborateurs){
-                                        UserData user=   userProvider.listUsers.firstWhere((element) => element.pseudo==item);
-                                        String postId = FirebaseFirestore.instance
-                                            .collection('Posts')
-                                            .doc()
-                                            .id;
-                                        Post post = Post();
-                                        post.user_id = user.id;
-                                        post.entreprise_id = userProvider.entrepriseData.id;
-                                        post.description = _descriptionController.text;
-                                        post.updatedAt =
-                                            DateTime.now().microsecondsSinceEpoch;
-                                        post.createdAt =
-                                            DateTime.now().microsecondsSinceEpoch;
-                                        post.status = PostStatus.VALIDE.name;
-                                        post.type = PostType.PUB.name;
-                                        post.comments = 0;
-                                        post.dataType = PostDataType.VIDEO.name;
-                                        post.likes = 0;
-                                        post.loves = 0;
-                                        post.id = postId;
-                                        post.images = [];
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(snackBar);
+                                  setState(() {
+                                    onTap=false;
+                                  });
+                                }
+                                else  if (size > 20971520) {
+                                  // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
+                                  SnackBar snackBar = SnackBar(
+                                    content: Text(
+                                      'La vidéo est trop grande (plus de 20 Mo).',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  );
+
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(snackBar);
+                                  setState(() {
+                                    onTap=false;
+                                  });
+                                }else{
+                                  _uploadProgress =0;
 
 
-                                        post.publiCashTotal = publicashTotal;
-                                        post.nombreCollaborateur = collaborateurs.length;
-                                        post.nombreImage = listimages.length;
-                                        post.nombrePersonneParJour = int.parse(_nbrJour.text);
-                                        Reference storageReference =
-                                        FirebaseStorage.instance.ref().child(
-                                            'post_media/${Path.basename(File(videoFile.path).path)}');
 
-                                        UploadTask uploadTask = storageReference
-                                            .putFile(File(videoFile.path)!);
-                                        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-                                          setState(() {
-                                            _uploadProgress =
-                                                snapshot.bytesTransferred / snapshot.totalBytes;
+                                  setState(() {
+                                    onTap=true;
+                                  });
+                                  if (userProvider.entrepriseData.publicash!>=publicashTotal) {
+
+                                    try {
+                                      if (pseudocollaborateurs.isNotEmpty) {
+                                        await userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
+
+                                        },);
+                                        for(String item in pseudocollaborateurs){
+                                          UserData user=   userProvider.listUsers.firstWhere((element) => element.pseudo==item);
+                                          String postId = FirebaseFirestore.instance
+                                              .collection('Posts')
+                                              .doc()
+                                              .id;
+                                          Post post = Post();
+                                          post.user_id = user.id;
+                                          post.contact_whatsapp = phone;
+
+                                          post.entreprise_id = userProvider.entrepriseData.id;
+                                          post.description = _descriptionController.text;
+                                          post.updatedAt =
+                                              DateTime.now().microsecondsSinceEpoch;
+                                          post.createdAt =
+                                              DateTime.now().microsecondsSinceEpoch;
+                                          post.status = PostStatus.VALIDE.name;
+                                          post.type = PostType.PUB.name;
+                                          post.comments = 0;
+                                          post.dataType = PostDataType.VIDEO.name;
+                                          post.likes = 0;
+                                          post.loves = 0;
+                                          post.id = postId;
+                                          post.images = [];
+
+
+                                          post.publiCashTotal = publicashTotal;
+                                          post.nombreCollaborateur = collaborateurs.length;
+                                          post.nombreImage = listimages.length;
+                                          post.nombrePersonneParJour = int.parse(_nbrJour.text);
+                                          Reference storageReference =
+                                          FirebaseStorage.instance.ref().child(
+                                              'post_media/${Path.basename(File(videoFile.path).path)}');
+
+                                          UploadTask uploadTask = storageReference
+                                              .putFile(File(videoFile.path)!);
+                                          uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+                                            setState(() {
+                                              _uploadProgress =
+                                                  snapshot.bytesTransferred / snapshot.totalBytes;
+                                            });
                                           });
-                                        });
 
-                                        await uploadTask.whenComplete(() {
-                                          // Tâche de téléchargement terminée avec succès
-                                          print('File uploaded successfully');
-                                        });
-                                        await uploadTask.whenComplete(() async {
-                                          await storageReference
-                                              .getDownloadURL()
-                                              .then((fileURL) {
-                                            print("url media");
-                                            //  print(fileURL);
-
-                                            post.url_media=fileURL;
+                                          await uploadTask.whenComplete(() {
+                                            // Tâche de téléchargement terminée avec succès
+                                            print('File uploaded successfully');
                                           });
+                                          await uploadTask.whenComplete(() async {
+                                            await storageReference
+                                                .getDownloadURL()
+                                                .then((fileURL) {
+                                              print("url media");
+                                              //  print(fileURL);
+
+                                              post.url_media=fileURL;
+                                            });
+                                          });
+                                          print("video: ${post.url_media}");
+
+                                          await FirebaseFirestore.instance
+                                              .collection('Posts')
+                                              .doc(postId)
+                                              .set(post.toJson());
+
+
+                                          user.pubEntreprise=user.pubEntreprise!+1;
+                                          user.publiCash=user.publiCash!+user.compteTarif!;
+
+                                          userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
+
+
+
+                                          await userProvider.updateUser(user);
+
+                                        }
+                                        userProvider.entrepriseData.publicash=userProvider.entrepriseData.publicash!-publicashTotal;
+                                        await userProvider.updateEntreprise(userProvider.entrepriseData!);
+                                        listimages=[];
+                                        _descriptionController.text='';
+                                        collaborateurs=[];
+                                        pseudocollaborateurs=[];
+                                        publicashTotal=0;
+                                        prixTotal=0;
+                                        _nbrJour.text='';
+
+                                        SnackBar snackBar = SnackBar(
+                                          content: Text(
+                                            'Le post a été validé avec succès !',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(color: Colors.green),
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(snackBar);
+                                        setState(() {
+                                          _controller!.pause();
+                                          _controller=null;
                                         });
-                                        print("video: ${post.url_media}");
-
-                                        await FirebaseFirestore.instance
-                                            .collection('Posts')
-                                            .doc(postId)
-                                            .set(post.toJson());
-
-
-                                        user.pubEntreprise=user.pubEntreprise!+1;
-                                        user.publiCash=user.publiCash!+user.compteTarif!;
-
-                                        userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
-
-
-
-                                        await userProvider.updateUser(user);
-
+                                      } else{
+                                        SnackBar snackBar = SnackBar(
+                                          content: Text(
+                                            'Veillez choisir un collaborateur !',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(snackBar);
                                       }
-                                      userProvider.entrepriseData.publicash=userProvider.entrepriseData.publicash!-publicashTotal;
-                                      await userProvider.updateEntreprise(userProvider.entrepriseData!);
-                                      listimages=[];
-                                      _descriptionController.text='';
-                                      collaborateurs=[];
-                                      pseudocollaborateurs=[];
-                                      publicashTotal=0;
-                                      prixTotal=0;
-                                      _nbrJour.text='';
 
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text(
-                                          'Le post a été validé avec succès !',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
                                       setState(() {
-                                        _controller!.pause();
-                                        _controller=null;
+                                        onTap=false;
                                       });
-                                    } else{
+
+
+                                    } catch (e) {
+                                      print("erreur ${e}");
+                                      setState(() {
+                                        onTap=false;
+                                      });
                                       SnackBar snackBar = SnackBar(
                                         content: Text(
-                                          'Veillez choisir un collaborateur !',
+                                          'La validation du post a échoué. Veuillez réessayer.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(color: Colors.red),
                                         ),
@@ -1302,19 +1542,10 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                                           .showSnackBar(snackBar);
                                     }
 
-                                    setState(() {
-                                      onTap=false;
-                                    });
-
-
-                                  } catch (e) {
-                                    print("erreur ${e}");
-                                    setState(() {
-                                      onTap=false;
-                                    });
+                                  }  else{
                                     SnackBar snackBar = SnackBar(
                                       content: Text(
-                                        'La validation du post a échoué. Veuillez réessayer.',
+                                        'Fonds insuffisants pour cette opération',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(color: Colors.red),
                                       ),
@@ -1323,55 +1554,36 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
                                         .showSnackBar(snackBar);
                                   }
 
-                                }  else{
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text(
-                                      'Fonds insuffisants pour cette opération',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(snackBar);
+                                  setState(() {
+                                    onTap=false;
+                                  });
+
+
+
                                 }
 
+
+                              } catch (e) {
+                                print("erreur ${e}");
                                 setState(() {
                                   onTap=false;
                                 });
-
-
-
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'La validation du post a échoué. Veuillez réessayer.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
                               }
-
-
-                            } catch (e) {
-                              print("erreur ${e}");
-                              setState(() {
-                                onTap=false;
-                              });
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'La validation du post a échoué. Veuillez réessayer.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
                             }
                           }
+
                         }
                       }else{
-                        SnackBar snackBar = SnackBar(
-                          duration: Duration(seconds: 10),
-                          content: Text(
-                            "Cette fonctionnalité est actuellement uniquement disponible pour les entreprises partenaires dans le cadre de la version bêta.  Les entreprises personnelles auront accès à la version officielle lors de sa sortie.  Pour plus d'informations, veuillez nous contacter.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
+                        _showBottomSheetCompterNonValide( width);
                       }
 
                     },

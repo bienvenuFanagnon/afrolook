@@ -228,7 +228,7 @@ class _ListUserChatsState extends State<ListUserChats> {
         //userData=userList.first;
 
 
-        if (userList.first != null) {
+        if (userList.isNotEmpty) {
           usersChat=Chat.fromJson(chatDoc.data());
           usersChat.chatFriend=userList.first;
           usersChat.receiver=userList.first;
@@ -368,7 +368,7 @@ class _ListUserChatsState extends State<ListUserChats> {
                     );
                 }
                 else if (snapshot.hasError) {
-                  print("${snapshot.error}");
+                  print("erreur ${snapshot.error}");
                   return    Center(
                     child: Column(
                       children: [

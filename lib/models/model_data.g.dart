@@ -11,7 +11,9 @@ UserShopData _$UserShopDataFromJson(Map<String, dynamic> json) => UserShopData()
   ..nombre_pub = json['nombre_pub'] as int?
   ..montant = (json['montant'] as num?)?.toDouble()
   ..nom = json['nom'] as String?
-  ..logo = json['logo'] as String?
+  ..nom_magasin = json['nom_magasin'] as String?
+  ..magasin_status = json['magasin_status'] as String?
+  ..logo_magasin = json['logo_magasin'] as String?
   ..phone = json['phone'] as String?
   ..pwd = json['pwd'] as String?
   ..role = json['role'] as String?
@@ -24,7 +26,9 @@ Map<String, dynamic> _$UserShopDataToJson(UserShopData instance) =>
       'nombre_pub': instance.nombre_pub,
       'montant': instance.montant,
       'nom': instance.nom,
-      'logo': instance.logo,
+      'nom_magasin': instance.nom_magasin,
+      'magasin_status': instance.magasin_status,
+      'logo_magasin': instance.logo_magasin,
       'phone': instance.phone,
       'pwd': instance.pwd,
       'role': instance.role,
@@ -46,6 +50,8 @@ ArticleData _$ArticleDataFromJson(Map<String, dynamic> json) => ArticleData()
   ..jaime = json['jaime'] as int?
   ..createdAt = json['createdAt'] as int?
   ..updatedAt = json['updatedAt'] as int?
+  ..dispo_annonce_afrolook = json['dispo_annonce_afrolook'] as bool?
+  ..annonce_time = json['annonce_time'] as int?
   ..images =
       (json['images'] as List<dynamic>?)?.map((e) => e as String).toList();
 
@@ -64,6 +70,8 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'jaime': instance.jaime,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
+      'dispo_annonce_afrolook': instance.dispo_annonce_afrolook,
+      'annonce_time': instance.annonce_time,
       'images': instance.images,
     };
 
@@ -138,4 +146,46 @@ Map<String, dynamic> _$UserIACompteToJson(UserIACompte instance) =>
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
       'userId': instance.userId,
+    };
+
+EntrepriseAbonnement _$EntrepriseAbonnementFromJson(
+        Map<String, dynamic> json) =>
+    EntrepriseAbonnement()
+      ..type = json['type'] as String?
+      ..id = json['id'] as String?
+      ..entrepriseId = json['entrepriseId'] as String?
+      ..description = json['description'] as String?
+      ..nombre_pub = json['nombre_pub'] as int?
+      ..nombre_image_pub = json['nombre_image_pub'] as int?
+      ..nbr_jour_pub_afrolook = json['nbr_jour_pub_afrolook'] as int?
+      ..nbr_jour_pub_annonce_afrolook =
+          json['nbr_jour_pub_annonce_afrolook'] as int?
+      ..userId = json['userId'] as String?
+      ..afroshop_user_magasin_id = json['afroshop_user_magasin_id'] as String?
+      ..createdAt = json['createdAt'] as int?
+      ..updatedAt = json['updatedAt'] as int?
+      ..star = json['star'] as int?
+      ..end = json['end'] as int?
+      ..isFinished = json['isFinished'] as bool?
+      ..dispo_afrolook = json['dispo_afrolook'] as bool?;
+
+Map<String, dynamic> _$EntrepriseAbonnementToJson(
+        EntrepriseAbonnement instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'id': instance.id,
+      'entrepriseId': instance.entrepriseId,
+      'description': instance.description,
+      'nombre_pub': instance.nombre_pub,
+      'nombre_image_pub': instance.nombre_image_pub,
+      'nbr_jour_pub_afrolook': instance.nbr_jour_pub_afrolook,
+      'nbr_jour_pub_annonce_afrolook': instance.nbr_jour_pub_annonce_afrolook,
+      'userId': instance.userId,
+      'afroshop_user_magasin_id': instance.afroshop_user_magasin_id,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
+      'star': instance.star,
+      'end': instance.end,
+      'isFinished': instance.isFinished,
+      'dispo_afrolook': instance.dispo_afrolook,
     };

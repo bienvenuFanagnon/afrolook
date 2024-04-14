@@ -16,6 +16,7 @@ import 'package:marquee/marquee.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../constant/constColors.dart';
@@ -58,6 +59,18 @@ class _PostVideosState extends State<PostVideos> {
   late CategorieProduitProvider categorieProduitProvider =
   Provider.of<CategorieProduitProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Future<void> launchWhatsApp(String phone) async {
+    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
+    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+    String url = "whatsapp://send?phone="+phone+"";
+    if (!await launchUrl(Uri.parse(url))) {
+      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
+
+      // Afficher le SnackBar en bas de la page
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      throw Exception('Impossible d\'ouvrir WhatsApp');
+    }
+  }
 
   Widget ArticleTile(ArticleData article,double w,double h) {
    // print('article ${article.titre}');
@@ -607,7 +620,7 @@ class _PostVideosState extends State<PostVideos> {
             Padding(
               padding: const EdgeInsets.all(4.0),
               child: FutureBuilder<List<ArticleData>>(
-                  future: categorieProduitProvider.getAllArticles(),
+                  future: categorieProduitProvider.getAnnoncesArticles(),
                   builder: (BuildContext context, AsyncSnapshot snapshot) {
                     if (snapshot.hasData) {
                       List<ArticleData> articles=snapshot.data;
@@ -691,6 +704,29 @@ class _PostVideosState extends State<PostVideos> {
         scrollDirection: Axis.vertical,
         itemCount: datas.length,
         itemBuilder: (context, index) {
+          print("index : ${index}");
+          if (datas[index].type==PostType.PUB.name) {
+            if (!isIn(datas[index].users_vue_id!,authProvider.loginUserData.id!)) {
+
+
+            }else{
+
+              datas[index].users_vue_id!.add(authProvider!.loginUserData.id!);
+            }
+
+            datas[index].vues=datas[index].vues!+1;
+           // vue=post.vues!;
+
+
+            postProvider.updateVuePost(datas[index],context);
+            print("update......");
+            //loves.add(idUser);
+
+
+
+            // }
+          }
+
 
           return   Container(
             color: Colors.black,
@@ -857,45 +893,78 @@ class _PostVideosState extends State<PostVideos> {
                                   ],
                                 ),
                                 SizedBox(height: 5,),
-                                Container(
-                                  //width: 50,
-                                  height: 30,
-                                  margin: EdgeInsets.zero,
-                                  decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      borderRadius: BorderRadius.all(Radius.circular(20))),
+                                Row(
+                                  children: [
+                                    Container(
+                                      //width: 50,
+                                      height: 30,
+                                      margin: EdgeInsets.zero,
+                                      decoration: BoxDecoration(
+                                          color: Colors.blue,
+                                          borderRadius: BorderRadius.all(Radius.circular(20))),
 
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 3.0,right: 3),
-                                    child: TextButton(onPressed: () {
-                                      print('contact tap');
-                                      getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
-                                        userProvider.chat.messages=chat.messages;
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 3.0,right: 3),
+                                        child: TextButton(onPressed: () {
+                                          print('contact tap');
+                                          getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
+                                            userProvider.chat.messages=chat.messages;
 
-                                        //_chewieController.pause();
-                                       // videoPlayerController.pause();
-
-
-                                        Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: datas[index], isEntreprise: false,)));
-
+                                            //_chewieController.pause();
+                                           // videoPlayerController.pause();
 
 
+                                            Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: datas[index], isEntreprise: false,)));
 
 
-                                      },);
 
-                                    },
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(AntDesign.message1,color: Colors.white,size: 12,),
-                                            SizedBox(width: 5,),
-                                            Text("Contacter",style: TextStyle(color: Colors.white,fontSize: 12),),
-                                          ],
-                                        )),
-                                  ),
 
+
+                                          },);
+
+                                        },
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Icon(AntDesign.message1,color: Colors.white,size: 12,),
+                                                SizedBox(width: 5,),
+                                                Text("Afrolook",style: TextStyle(color: Colors.white,fontSize: 12,fontWeight: FontWeight.w600),),
+                                              ],
+                                            )),
+                                      ),
+
+                                    ),
+                                    SizedBox(width: 10,),
+                                    Container(
+                                      //width: 50,
+                                      height: 30,
+                                      margin: EdgeInsets.zero,
+                                      decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.all(Radius.circular(20))),
+
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 3.0,right: 3),
+                                        child: TextButton(onPressed: () {
+                                          launchWhatsApp("${datas[index].contact_whatsapp}");
+
+
+                                        },
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Icon(Fontisto.whatsapp,color: Colors.green,size: 12,),
+                                                SizedBox(width: 5,),
+                                                Text("WhatsApp",style: TextStyle(color: Colors.green,fontSize: 12,fontWeight: FontWeight.w600),),
+                                              ],
+                                            )),
+                                      ),
+
+                                    ),
+
+                                  ],
                                 )
 
                               ],
@@ -1177,12 +1246,12 @@ class _PostVideosState extends State<PostVideos> {
                               if (count == 0) {
                                 result = Text(
                                   "0",textAlign: TextAlign.center,
-                                  style: TextStyle(color: color),
+                                  style: TextStyle(color: color,fontSize: 8),
                                 );
                               } else
                                 result = Text(
                                   text,
-                                  style: TextStyle(color: color),
+                                  style: TextStyle(color: color,fontSize: 8),
                                 );
                               return result;
                             },
@@ -1226,137 +1295,7 @@ class _VideoWidgetState extends State<VideoWidget> {
 
   bool _buttonEnabled = true;
 
-  void _showModalDialog(Post post) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu d\'options'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                ListTile(
-                  onTap: () async {
 
-                    post.status=PostStatus.SIGNALER.name;
-                    await postProvider.updateVuePost(post, context).then((value) {
-                      if (value) {
-                        SnackBar snackBar = SnackBar(
-                          content: Text(
-                            'Post signalé !',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.green),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
-                      }  else{
-                        SnackBar snackBar = SnackBar(
-                          content: Text(
-                            'échec !',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
-                      }
-                      Navigator.pop(context);
-                    },);
-                    setState(() {
-                    });
-
-                  },
-                  leading: Icon(Icons.flag,color: Colors.blueGrey,),
-                  title: Text('Signaler',),
-                ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                ListTile(
-                  onTap: () async {
-                    if (authProvider.loginUserData.role==UserRole.ADM.name) {
-                      post.status=PostStatus.NONVALIDE.name;
-                      await postProvider.updateVuePost(post, context).then((value) {
-                        if (value) {
-                          SnackBar snackBar = SnackBar(
-                            content: Text(
-                              'Post bloqué !',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.green),
-                            ),
-                          );
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(snackBar);
-                        }  else{
-                          SnackBar snackBar = SnackBar(
-                            content: Text(
-                              'échec !',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          );
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(snackBar);
-                        }
-                      },);
-                    }  else
-                    if (post.type==PostType.POST.name){
-                      if (post.user!.id==authProvider.loginUserData.id) {
-                        post.status=PostStatus.SUPPRIMER.name;
-                        await postProvider.updateVuePost(post, context).then((value) {
-                          if (value) {
-                            SnackBar snackBar = SnackBar(
-
-                              content: Text(
-                                'Post supprimé !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
-                          }  else{
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'échec !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
-                          }
-                        },);
-                      }
-
-                    }
-
-
-
-                    setState(() {
-                      Navigator.pop(context);
-
-                    });
-
-                  },
-                  leading: Icon(Icons.delete,color: Colors.red,),
-                  title:authProvider.loginUserData.role==UserRole.ADM.name? Text('Bloquer'):Text('Supprimer'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);

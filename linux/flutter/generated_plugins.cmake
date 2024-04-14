@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   emoji_picker_flutter
+  encrypt_decrypt_plus
   file_selector_linux
   smart_auth
   stories_for_flutter

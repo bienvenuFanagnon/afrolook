@@ -169,6 +169,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                     .collection('Entreprises')
                                     .doc()
                                     .id;
+                                /*
                                 EntrepriseAbonnement abonnement = EntrepriseAbonnement(
                                   type: "exemple",
                                   id: "1",
@@ -181,6 +182,8 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                   end: DateTime.now().add(Duration(days: 30)).millisecondsSinceEpoch,
                                   isFinished: false,
                                 );
+
+                                 */
                                 EntrepriseData entreprise=EntrepriseData();
                                 entreprise.titre=_titreController.text;
                                 entreprise.type=TypeEntreprise.personnel.name;
@@ -189,7 +192,10 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 entreprise.userId=authProvider.loginUserData.id!;
                                 entreprise.description=_descriptionController.text;
                                 entreprise.abonnements=[];
+                                /*
                                 entreprise.abonnements!.add(abonnement);
+
+                                 */
                                 Reference storageReference =
                                 FirebaseStorage.instance.ref().child(
                                     'post_media/${Path.basename(File(imageProfile!.path).path)}');

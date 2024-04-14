@@ -1,22 +1,18 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:encrypt_decrypt_plus/cipher/cipher.dart';
+//import 'package:encrypt/encrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as Path;
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPage.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/components/sign_up_top_image.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as Path;
+import 'package:encrypt_decrypt_plus/encrypt_decrypt_plus.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:geocoding/geocoding.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
+
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_tags/simple_tags.dart';
@@ -31,10 +27,8 @@ import 'dart:async';
 import 'dart:io';
 
 import '../../Login/loginPageUser.dart';
-import '../../Login/login_screen.dart';
-import '../../login.dart';
+
 import '../function.dart';
-import '../signup_up_form_step_2.dart';
 import '../verificationOtps.dart';
 
 class SignUpFormEtap1 extends StatefulWidget {
@@ -82,8 +76,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
   }
   void
   sendOtpCode() {
-    onTap = true;
-    setState(() {});
+
     final _auth = FirebaseAuth.instance;
     if (telephoneController.text.isNotEmpty) {
 
@@ -152,17 +145,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
       try{
 
 
-        UserPseudo pseudo=UserPseudo();
-        pseudo.id=firestore
-            .collection('Pseudo')
-            .doc()
-            .id;
-        pseudo.name=nom;
 
-      // users.add(pseudo.toJson());
-
-        await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
-        print("///////////-- save pseudo --///////////////");
         return false;
       } on FirebaseException catch(error){
         return true;
@@ -292,6 +275,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                         ),
                       ),
 
+
                       TextFormField(
                         controller: motDePasseController,
                         textInputAction: TextInputAction.done,
@@ -371,10 +355,13 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                         child: ElevatedButton(
                           onPressed:onTap?() async { }:
                               () async {
-                            setState(() {
-                              onTap=true;
-                            });
+                      
+                              //  print(encrypted.base64);
+
                             if (_formKey.currentState!.validate()) {
+                              setState(() {
+                                onTap=true;
+                              });
                               // Afficher une SnackBar
                               if (!await verifierPseudo(pseudoController.text)) {
                                 await authProvider.getAppData();
@@ -387,15 +374,20 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                                 authProvider.registerUser.codeParrainage="${pseudoController.text}${genererNombreAleatoire()}";
                                 authProvider.registerUser.pseudo=pseudoController.text;
                                 authProvider.registerUser.password=motDePasseController.text;
+                                //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
                                  sendOtpCode();
 
 
+                              }else{
+                                setState(() {
+                                  onTap=false;
+                                });
                               }
 
 
                             }else{
                               setState(() {
-                                onTap=true;
+                                onTap=false;
                               });
 
                             }

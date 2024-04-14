@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
 
-
 class ChangePasswordPage extends StatefulWidget {
+  final String phoneNumber;
+  const ChangePasswordPage({super.key, required this.phoneNumber});
+
   @override
-  _ChangePasswordPageState createState() => _ChangePasswordPageState();
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
 }
 
 class _ChangePasswordPageState extends State<ChangePasswordPage> {
@@ -30,20 +32,69 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     }
   }
 
+
+  Future<User?> getUserByPhone(String email) async {
+    print("phone number mail : ${email}");
+
+    try {
+      User? user = await FirebaseAuth.instance.authStateChanges().firstWhere((User? user) => user != null && user.email == email);
+      print("email: ${user!.email}");
+      return user;
+    } catch (e) {
+      print("Erreur lors de la récupération de l'utilisateur: $e");
+      return null;
+    }
+  }
+
+  void _changePassword(String currentPassword, String newPassword,User user) async {
+   // final user = await getUserByUid(user_id)!;
+    final cred = EmailAuthProvider.credential(
+        email: user!.email!, password: currentPassword);
+
+    await user.reauthenticateWithCredential(cred).then((value) async {
+      await  user.updatePassword(newPassword).then((_) {
+        //Success, do something
+        SnackBar snackBar = SnackBar(
+          backgroundColor: Colors.green,
+          content: Text('Votre mot de passe a été modifié avec succès. !',style: TextStyle(color: Colors.white),),
+        );
+      }).catchError((error) {
+        SnackBar snackBar = SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Une erreur s'est produite ${error}",style: TextStyle(color: Colors.white),),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        //Error, show something
+      });
+    }).catchError((err) {
+      SnackBar snackBar = SnackBar(
+        backgroundColor: Colors.red,
+        content: Text("Une erreur s'est produite ${err}",style: TextStyle(color: Colors.white),),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    });}
+
   Future<void> changePassword(String uid, String newPassword) async {
-    final FirebaseAuth auth = FirebaseAuth.instance;
+    try{
+      final FirebaseAuth auth = FirebaseAuth.instance;
 
-    // Récupérer l'utilisateur par son ID
-    final User? user = await getUserByUid(uid)!;
+      // Récupérer l'utilisateur par son ID
+      final User? user = await getUserByUid(uid)!;
 
-    // Créer un AuthCredential pour le nouvel mot de passe
-    final AuthCredential credential = EmailAuthProvider.credential(
-      email: user!.email!,
-      password: newPassword,
-    );
+      // Créer un AuthCredential pour le nouvel mot de passe
+      final AuthCredential credential = EmailAuthProvider.credential(
+        email: user!.email!,
+        password: newPassword,
+      );
 
-    // Mettre à jour le mot de passe de l'utilisateur
-    await user.reauthenticateWithCredential(credential);
+      // Mettre à jour le mot de passe de l'utilisateur
+      await user.reauthenticateWithCredential(credential);
+    }catch(e){
+      print("error ${e}");
+
+    }
+
   }
 
   @override
@@ -99,7 +150,19 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     setState(() {
                       onTap=true;
                     });
-                   await changePassword(authProvider.loginUserData.id!, _newPasswordController.text);
+                 await   getUserByPhone("${widget.phoneNumber}@gmail.com").then((user) async {
+                      if (user!=null) {
+                        await    authProvider.getUserById(user.uid).then((users) {
+                          if (users.isNotEmpty) {
+                            _changePassword(authProvider.decrypt(users.first.password!), _newPasswordController.text,user);
+
+                          }
+
+                        },);
+
+                      }
+
+                    },);
                     // Mettre à jour le mot de passe
                     // Afficher un message de succès
                     setState(() {
