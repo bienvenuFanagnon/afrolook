@@ -3832,7 +3832,7 @@ setState(() {
                                       );
 
                                     }
-                                    if (index % 7 == 0) {
+                                    if (index % 6 == 0) {
                                       return Column(
                                         children: <Widget>[
                                           SizedBox(
@@ -4054,7 +4054,107 @@ setState(() {
                                         ],
                                       );
 
-                                    }  else{
+                                    }            if (index % 7 == 0) {
+                                      return Column(
+                                        children: <Widget>[
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.storefront,color: Colors.green,),
+                                                      SizedBox(width: 2,),
+                                                      TextCustomerPostDescription(
+                                                        titre:
+                                                        "Afroshop Annonces ",
+                                                        fontSize: 15,
+                                                        couleur: CustomConstants.kPrimaryColor,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(onPressed: () {
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+
+
+                                              }, child: Text("Afficher plus")),
+                                            ],
+                                          ),
+
+
+                                          Padding(
+                                            padding: const EdgeInsets.all(4.0),
+                                            child: FutureBuilder<List<ArticleData>>(
+                                                future: categorieProduitProvider.getAnnoncesArticles(),
+                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                  if (snapshot.hasData) {
+                                                    List<ArticleData> articles=snapshot.data;
+                                                    return Column(
+                                                      children: [
+                                                        Container(
+                                                          height: height * 0.22,
+                                                          width: width,
+                                                          child: FlutterCarousel.builder(
+                                                            itemCount: articles.length,
+                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                                ArticleTile( articles[index],width,height),
+                                                            options: CarouselOptions(
+                                                              autoPlay: true,
+                                                              //controller: buttonCarouselController,
+                                                              enlargeCenterPage: true,
+                                                              viewportFraction: 0.4,
+                                                              aspectRatio: 1.5,
+                                                              initialPage: 1,
+                                                              reverse: true,
+                                                              autoPlayInterval: const Duration(seconds: 2),
+                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                              autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        /*
+                                                      Container(
+                                                        height: height*0.08,
+                                                        width: width,
+                                                        alignment: Alignment.centerLeft,
+                                                        child: ListView.builder(
+
+                                scrollDirection: Axis.horizontal,
+                                itemCount: articles.length,
+                                itemBuilder:
+                                    (BuildContext context, int index) {
+                                  return ArticleTile( articles[index],width,height);
+                                },
+                                                        ),
+                                                      ),
+
+                                                       */
+                                                      ],
+                                                    );
+                                                  } else if (snapshot.hasError) {
+                                                    return Icon(Icons.error_outline);
+                                                  } else {
+                                                    return Container(
+                                                        width: 30,
+                                                        height: 40,
+
+                                                        child: CircularProgressIndicator());
+                                                  }
+                                                }),
+                                          ),
+                                          Divider(height: 10,),
+                                        ],
+                                      );
+
+                                    }
+                                    else{
                                       return  Padding(
                                         padding: const EdgeInsets.only(top: 5.0, bottom: 5),
                                         child: homePostUsers(listConstposts![index], height, width),
