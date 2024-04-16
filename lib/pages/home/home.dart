@@ -893,6 +893,294 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
   bool _buttonEnabled = true;
 
   bool is_actualised = false;
+
+  Widget homePostUsersSkele(double height, double width) {
+    double h = MediaQuery.of(context).size.height;
+    double w = MediaQuery.of(context).size.width;
+
+
+
+    return Skeletonizer(
+      child: StatefulBuilder(
+
+          builder: (BuildContext context, StateSetter setStateImages) {
+            return Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (PointerDownEvent details){
+
+
+              },
+
+              child: Padding(
+
+                padding: const EdgeInsets.all(5.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+
+                            Row(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/404.png'),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 2,
+                                ),
+                                Row(
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "#afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "&afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre: "0suivi(s)",
+                                          fontSize: 10,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+
+                                      ],
+                                    ),
+
+                                    /*
+                                  IconButton(
+                                      onPressed: () {},
+                                      icon: Icon(
+                                        Icons.add_circle_outlined,
+                                        size: 20,
+                                        color: ConstColors.regIconColors,
+                                      )),
+
+                                   */
+                                  ],
+                                ),
+                              ],
+                            ),
+                            SizedBox(width: 20,),
+                            Icon(Entypo.arrow_long_right,color: Colors.green,),
+                            SizedBox(width: 20,),
+                            Row(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/404.png'),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 2,
+                                ),
+                                Row(
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "@afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre: "0 abonné(s)",
+                                          fontSize: 10,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+
+                                      ],
+                                    ),
+
+                                    /*
+                              IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(
+                                    Icons.add_circle_outlined,
+                                    size: 20,
+                                    color: ConstColors.regIconColors,
+                                  )),
+
+                               */
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                            onPressed: () {
+                             // _showModalDialog(post);
+                            },
+                            icon: Icon(
+                              Icons.more_horiz,
+                              size: 30,
+                              color: ConstColors.blackIconColors,
+                            )),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(Entypo.network,size: 15,),
+                          SizedBox(width: 10,),
+                          TextCustomerUserTitle(
+                            titre: "publicité",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: Colors.green,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        width: width*0.8,
+                        height: 50,
+                        child: Container(
+                          alignment: Alignment.centerLeft,
+                          child: TextCustomerPostDescription(
+                            titre:
+                            "afrolook",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: ConstColors.textColors,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: TextCustomerPostDescription(
+                        titre: "afrolook",
+                        fontSize: SizeText.homeProfileDateTextSize,
+                        couleur: ConstColors.textColors,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        //Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
+                      },
+                      child: Container(
+                        //width: w*0.9,
+                        // height: h*0.5,
+
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                          child: Container(
+
+                            child: Image.asset('assets/images/404.png'),
+                          ),
+                        ),
+                      ),
+                    ),
+
+
+
+                    SizedBox(
+                      height: 10,
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(onPressed:() {
+
+                        },
+                            child:contact_afrolook? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            ):  Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(AntDesign.message1,color: Colors.black,),
+                                SizedBox(width: 5,),
+                                Text("Afrolook",style: TextStyle(color: Colors.black,fontWeight: FontWeight.w600),),
+                              ],
+                            )),
+                        ElevatedButton(onPressed:() {
+
+                        },
+                            child:contact_whatsapp? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            ): Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Fontisto.whatsapp,color: Colors.green,),
+                                SizedBox(width: 5,),
+                                Text("WhatsApp",style: TextStyle(color: Colors.green,fontWeight: FontWeight.w600),),
+                              ],
+                            )),
+                      ],
+                    ),
+
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Divider(
+                      height: 3,
+                    )
+
+                  ],
+                ),
+              ),
+            );
+          }
+      ),
+    );
+  }
+
   Widget homePostUsers(Post post,double height, double width) {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
@@ -2548,6 +2836,181 @@ bool abonneTap =false;
     );
   }
 
+  Widget widgetSeke(double width,double height){
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(3.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            SizedBox(
+              width: width,
+              height: height*0.79,
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.vertical,
+
+                itemCount: 6,
+                itemBuilder:
+                    (BuildContext context, int index) {
+                  if (index==0) {
+                    return Column(
+                      children: <Widget>[
+                        SizedBox(
+                          //width: width,
+                          height: height*0.33,
+                          child:  Skeletonizer(
+                            //enabled: _loading,
+                            child: ListView.builder
+                              (
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 4,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(1.0),
+                                  child: Container(
+                                    width: 300,
+                                    child: Card(
+                                      color: Colors.white,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Column(
+                                          children: [
+                                            Container(
+
+                                              child: CircleAvatar(
+                                                backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                              ),
+                                              height: 100,
+                                              width: 100,
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            SizedBox(
+                                              width: 70,
+                                              child: TextCustomerUserTitle(
+                                                titre: "jhasgjh",
+                                                fontSize: SizeText.homeProfileTextSize,
+                                                couleur: ConstColors.textColors,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            TextCustomerUserTitle(
+                                              titre: "S'abonner",
+                                              fontSize: SizeText.homeProfileTextSize,
+                                              couleur: Colors.blue,
+                                              fontWeight: FontWeight.w600,
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                          ,
+                        ),
+
+                        Divider(height: 10,),
+
+                      ],
+                    );
+
+                  }
+                  if (index==3) {
+                    return Column(
+                      children: <Widget>[
+                        SizedBox(
+                          //width: width,
+                          height: height*0.33,
+                          child:  Skeletonizer(
+                            //enabled: _loading,
+                            child: ListView.builder
+                              (
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 4,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(1.0),
+                                  child: Container(
+                                    width: 300,
+                                    child: Card(
+                                      color: Colors.white,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Column(
+                                          children: [
+                                            Container(
+
+                                              child: CircleAvatar(
+                                                backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                              ),
+                                              height: 100,
+                                              width: 100,
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            SizedBox(
+                                              width: 70,
+                                              child: TextCustomerUserTitle(
+                                                titre: "jhasgjh",
+                                                fontSize: SizeText.homeProfileTextSize,
+                                                couleur: ConstColors.textColors,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            TextCustomerUserTitle(
+                                              titre: "S'abonner",
+                                              fontSize: SizeText.homeProfileTextSize,
+                                              couleur: Colors.blue,
+                                              fontWeight: FontWeight.w600,
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                          ,
+                        ),
+
+                        Divider(height: 10,),
+
+                      ],
+                    );
+
+                  }  else{
+                    return  Padding(
+                      padding: const EdgeInsets.only(top: 5.0, bottom: 5),
+                      child: homePostUsersSkele( height, width),
+                    );
+                  }
+
+                },
+              ),
+            ),
+
+
+          ],
+        ),
+
+      ),
+    );
+  }
+
   Stream<int> getNbrInvitation() async* {
     List<Invitation> invitations = [];
     var invitationsStream =FirebaseFirestore.instance.collection('Invitations')
@@ -3068,1128 +3531,504 @@ setState(() {
         drawer: menu(context),
         body: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(3.0),
-              child: ListView(
-                controller: _scrollController,
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(3.0),
+                child: FutureBuilder<List<Post>>(
+                    future: postProvider.getPostsImages(limitePosts),
+                    builder: (BuildContext context,
+                        AsyncSnapshot snapshot) {
+                      if (snapshot.hasData) {
 
-                children: [
-                  /*
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(2.0),
-                          child: SizedBox(
-                            height: 20,
-                            child: Marquee(
-                              key: Key("keys"),
-                              text: "Afrolook lance un appel à investissement pour soutenir sa croissance exponentielle.",
-                              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red),
-                              scrollAxis: Axis.horizontal,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              blankSpace: 20,
-                              velocity: 100,
-                              pauseAfterRound: Duration(seconds: 1),
-                              showFadingOnlyWhenScrolling: true,
-                              fadingEdgeStartFraction: 0.1,
-                              fadingEdgeEndFraction: 0.1,
-                              numberOfRounds: 1000,
-
-                              startPadding: 10,
-                              accelerationDuration: Duration(milliseconds: 5000),
-                              accelerationCurve: Curves.linear,
-                              decelerationDuration: Duration(milliseconds: 1000),
-                              decelerationCurve: Curves.easeOut,
-
-                            ),
-                          ),
-                        ),
-                      ),
-                      TextButton(onPressed: () {
-                        Navigator.pushNamed(context, '/contact');
-
-                      }, child:      Container(
-                          height: 20,
-                          decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.all(Radius.circular(2))
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
-                            child: Text("Contacter",style: TextStyle(color: Colors.white),),
-                          )))
-                    ],
-                  ),
-                  SizedBox(height: 5,),
-
-                   */
-                  SizedBox(
-                    //width: width,
-                    height: height*0.33,
-                    child: FutureBuilder<List<UserData>>(
-                      future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return
-                            Skeletonizer(
-                              //enabled: _loading,
-                              child: ListView.builder
-                                (
-                                scrollDirection: Axis.horizontal,
-                                itemCount: 10,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(1.0),
-                                    child: Container(
-                                      width: 300,
-                                      child: Card(
-                                        color: Colors.white,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Column(
-                                            children: [
-                                              Container(
-
-                                                child: CircleAvatar(
-                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                ),
-                                                height: 100,
-                                                width: 100,
-                                              ),
-                                              SizedBox(
-                                                height: 2,
-                                              ),
-                                              SizedBox(
-                                                width: 70,
-                                                child: TextCustomerUserTitle(
-                                                  titre: "jhasgjh",
-                                                  fontSize: SizeText.homeProfileTextSize,
-                                                  couleur: ConstColors.textColors,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                height: 2,
-                                              ),
-                                              TextCustomerUserTitle(
-                                                titre: "S'abonner",
-                                                fontSize: SizeText.homeProfileTextSize,
-                                                couleur: Colors.blue,
-                                                fontWeight: FontWeight.w600,
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                        } else if (snapshot.hasError) {
-                          return
-                            Skeletonizer(
-                              //enabled: _loading,
+                        List<Post> listConstposts=snapshot.data;
+                        return  Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            SizedBox(
+                              width: width,
+                              height: height*0.81,
                               child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: 10,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    width: 300,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(1.0),
-                                      child: Card(
-                                        color: Colors.white,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Column(
-                                            children: [
-                                              Container(
+                                controller: _scrollController,
+                                scrollDirection: Axis.vertical,
 
-                                                child: CircleAvatar(
-                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                ),
-                                                height: 100,
-                                                width: 100,
-                                              ),
-                                              SizedBox(
-                                                height: 2,
-                                              ),
-                                              SizedBox(
-                                                width: 70,
-                                                child: TextCustomerUserTitle(
-                                                  titre: "jhasgjh",
-                                                  fontSize: SizeText.homeProfileTextSize,
-                                                  couleur: ConstColors.textColors,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                height: 2,
-                                              ),
-                                              TextCustomerUserTitle(
-                                                titre: "S'abonner",
-                                                fontSize: SizeText.homeProfileTextSize,
-                                                couleur: Colors.blue,
-                                                fontWeight: FontWeight.w600,
-                                              )
-                                            ],
+                                itemCount: listConstposts.length,
+                                itemBuilder:
+                                    (BuildContext context, int index) {
+                                  if (index==0) {
+                                    return Column(
+                                      children: <Widget>[
+                                        SizedBox(
+                                          //width: width,
+                                          height: height*0.33,
+                                          child: FutureBuilder<List<UserData>>(
+                                            future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return
+                                                  Skeletonizer(
+                                                    //enabled: _loading,
+                                                    child: ListView.builder
+                                                      (
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: 10,
+                                                      itemBuilder: (context, index) {
+                                                        return Padding(
+                                                          padding: const EdgeInsets.all(1.0),
+                                                          child: Container(
+                                                            width: 300,
+                                                            child: Card(
+                                                              color: Colors.white,
+                                                              child: Padding(
+                                                                padding: const EdgeInsets.all(8.0),
+                                                                child: Column(
+                                                                  children: [
+                                                                    Container(
+
+                                                                      child: CircleAvatar(
+                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                      ),
+                                                                      height: 100,
+                                                                      width: 100,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 70,
+                                                                      child: TextCustomerUserTitle(
+                                                                        titre: "jhasgjh",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: ConstColors.textColors,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    TextCustomerUserTitle(
+                                                                      titre: "S'abonner",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: Colors.blue,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    )
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  );
+                                              } else if (snapshot.hasError) {
+                                                return
+                                                  Skeletonizer(
+                                                    //enabled: _loading,
+                                                    child: ListView.builder(
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: 10,
+                                                      itemBuilder: (context, index) {
+                                                        return Container(
+                                                          width: 300,
+                                                          child: Padding(
+                                                            padding: const EdgeInsets.all(1.0),
+                                                            child: Card(
+                                                              color: Colors.white,
+                                                              child: Padding(
+                                                                padding: const EdgeInsets.all(8.0),
+                                                                child: Column(
+                                                                  children: [
+                                                                    Container(
+
+                                                                      child: CircleAvatar(
+                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                      ),
+                                                                      height: 100,
+                                                                      width: 100,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 70,
+                                                                      child: TextCustomerUserTitle(
+                                                                        titre: "jhasgjh",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: ConstColors.textColors,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    TextCustomerUserTitle(
+                                                                      titre: "S'abonner",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: Colors.blue,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    )
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  );
+                                              } else {
+                                                // Get data from docs and convert map to List
+                                                List<UserData> list = snapshot.data!;
+                                                // Utiliser les données de snapshot.data
+                                                return  ListView.builder(
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                    itemBuilder: (context, index) {
+
+                                                      //list[index].userAbonnes=[];
+                                                      return  homeProfileUsers(list[index],width,height);
+                                                    });
+                                              }
+                                            },
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  );
+
+                                        Divider(height: 10,),
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.storefront,color: Colors.green,),
+                                                SizedBox(width: 2,),
+                                                TextCustomerPostDescription(
+                                                  titre:
+                                                  "Afroshop Annonces ",
+                                                  fontSize: 15,
+                                                  couleur: CustomConstants.kPrimaryColor,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+
+
+                                        Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: FutureBuilder<List<ArticleData>>(
+                                              future: categorieProduitProvider.getAnnoncesArticles(),
+                                              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                if (snapshot.hasData) {
+                                                  List<ArticleData> articles=snapshot.data;
+                                                  return Column(
+                                                    children: [
+                                                      Container(
+                                                        height: height * 0.22,
+                                                        width: width,
+                                                        child: FlutterCarousel.builder(
+                                                          itemCount: articles.length,
+                                                          itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                              ArticleTile( articles[index],width,height),
+                                                          options: CarouselOptions(
+                                                            autoPlay: true,
+                                                            //controller: buttonCarouselController,
+                                                            enlargeCenterPage: true,
+                                                            viewportFraction: 0.4,
+                                                            aspectRatio: 1.5,
+                                                            initialPage: 1,
+                                                            reverse: true,
+                                                            autoPlayInterval: const Duration(seconds: 2),
+                                                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                            autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      /*
+                                                    Container(
+                                                      height: height*0.08,
+                                                      width: width,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: ListView.builder(
+
+                              scrollDirection: Axis.horizontal,
+                              itemCount: articles.length,
+                              itemBuilder:
+                                  (BuildContext context, int index) {
+                                return ArticleTile( articles[index],width,height);
+                              },
+                                                      ),
+                                                    ),
+
+                                                     */
+                                                    ],
+                                                  );
+                                                } else if (snapshot.hasError) {
+                                                  return Icon(Icons.error_outline);
+                                                } else {
+                                                  return Container(
+                                                      width: 30,
+                                                      height: 40,
+
+                                                      child: CircularProgressIndicator());
+                                                }
+                                              }),
+                                        ),
+                                        Divider(height: 10,),
+                                      ],
+                                    );
+
+                                  }
+                                  if (index==5) {
+                                    return Column(
+                                      children: <Widget>[
+                                        SizedBox(
+                                          //width: width,
+                                          height: height*0.38,
+                                          child: FutureBuilder<List<UserData>>(
+                                            future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return
+                                                  Skeletonizer(
+                                                    //enabled: _loading,
+                                                    child: ListView.builder
+                                                      (
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: 10,
+                                                      itemBuilder: (context, index) {
+                                                        return Padding(
+                                                          padding: const EdgeInsets.all(1.0),
+                                                          child: Container(
+                                                            width: 300,
+                                                            child: Card(
+                                                              color: Colors.white,
+                                                              child: Padding(
+                                                                padding: const EdgeInsets.all(8.0),
+                                                                child: Column(
+                                                                  children: [
+                                                                    Container(
+
+                                                                      child: CircleAvatar(
+                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                      ),
+                                                                      height: 100,
+                                                                      width: 100,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 70,
+                                                                      child: TextCustomerUserTitle(
+                                                                        titre: "jhasgjh",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: ConstColors.textColors,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    TextCustomerUserTitle(
+                                                                      titre: "S'abonner",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: Colors.blue,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    )
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  );
+                                              } else if (snapshot.hasData) {
+                                                // Get data from docs and convert map to List
+                                                List<UserData> list = snapshot.data!;
+                                                // Utiliser les données de snapshot.data
+                                                return  ListView.builder(
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                    itemBuilder: (context, index) {
+
+                                                      //list[index].userAbonnes=[];
+                                                      return  homeProfileUsers(list[index],width,height);
+                                                    });
+
+                                              } else {
+                                                return
+                                                  Skeletonizer(
+                                                    //enabled: _loading,
+                                                    child: ListView.builder(
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: 10,
+                                                      itemBuilder: (context, index) {
+                                                        return Container(
+                                                          width: 300,
+                                                          child: Padding(
+                                                            padding: const EdgeInsets.all(1.0),
+                                                            child: Card(
+                                                              color: Colors.white,
+                                                              child: Padding(
+                                                                padding: const EdgeInsets.all(8.0),
+                                                                child: Column(
+                                                                  children: [
+                                                                    Container(
+
+                                                                      child: CircleAvatar(
+                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                      ),
+                                                                      height: 100,
+                                                                      width: 100,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 70,
+                                                                      child: TextCustomerUserTitle(
+                                                                        titre: "jhasgjh",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: ConstColors.textColors,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height: 2,
+                                                                    ),
+                                                                    TextCustomerUserTitle(
+                                                                      titre: "S'abonner",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: Colors.blue,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    )
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  );
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        Divider(height: 10,),
+                                       /*
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.storefront),
+                                                SizedBox(width: 2,),
+                                                TextCustomerPostDescription(
+                                                  titre:
+                                                  "Afroshop Annonces ",
+                                                  fontSize: 15,
+                                                  couleur: Colors.green,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: FutureBuilder<List<ArticleData>>(
+                                              future: categorieProduitProvider.getAnnoncesArticles(),
+                                              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                if (snapshot.hasData) {
+                                                  List<ArticleData> articles=snapshot.data;
+                                                  return Column(
+                                                    children: [
+                                                      Container(
+                                                        height: height * 0.22,
+                                                        width: width,
+                                                        child: FlutterCarousel.builder(
+                                                          itemCount: articles.length,
+                                                          itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                              ArticleTile( articles[index],width,height),
+                                                          options: CarouselOptions(
+                                                            autoPlay: true,
+                                                            //controller: buttonCarouselController,
+                                                            enlargeCenterPage: true,
+                                                            viewportFraction: 0.4,
+                                                            aspectRatio: 1.5,
+                                                            initialPage: 1,
+                                                            reverse: true,
+                                                            autoPlayInterval: const Duration(seconds: 2),
+                                                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                            autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      /*
+                                                    Container(
+                                                      height: height*0.08,
+                                                      width: width,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: ListView.builder(
+
+                                                        scrollDirection: Axis.horizontal,
+                                                        itemCount: articles.length,
+                                                        itemBuilder:
+                                                            (BuildContext context, int index) {
+                                                          return ArticleTile( articles[index],width,height);
+                                                        },
+                                                      ),
+                                                    ),
+
+                                                     */
+                                                    ],
+                                                  );
+                                                } else if (snapshot.hasError) {
+                                                  return Icon(Icons.error_outline);
+                                                } else {
+                                                  return CircularProgressIndicator();
+                                                }
+                                              }),
+                                        ),
+
+                                        */
+                                      ],
+                                    );
+
+                                  }  else{
+                                    return  Padding(
+                                      padding: const EdgeInsets.only(top: 5.0, bottom: 5),
+                                      child: homePostUsers(listConstposts![index], height, width),
+                                    );
+                                  }
+
                                 },
                               ),
-                            );
-                        } else {
-                          // Get data from docs and convert map to List
-                          List<UserData> list = snapshot.data!;
-                          // Utiliser les données de snapshot.data
-                          return  ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                              itemBuilder: (context, index) {
-
-                                //list[index].userAbonnes=[];
-                                return  homeProfileUsers(list[index],width,height);
-                              });
-                        }
-                      },
-                    ),
-                  ),
-
-                  Divider(height: 10,),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.storefront,color: Colors.green,),
-                          SizedBox(width: 2,),
-                          TextCustomerPostDescription(
-                            titre:
-                            "Afroshop Annonces ",
-                            fontSize: 15,
-                            couleur: CustomConstants.kPrimaryColor,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-
-                  Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: FutureBuilder<List<ArticleData>>(
-                        future: categorieProduitProvider.getAnnoncesArticles(),
-                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                          if (snapshot.hasData) {
-                            List<ArticleData> articles=snapshot.data;
-                            return Column(
-                              children: [
-                                Container(
-                                  height: height * 0.22,
-                                  width: width,
-                                  child: FlutterCarousel.builder(
-                                    itemCount: articles.length,
-                                    itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                        ArticleTile( articles[index],width,height),
-                                    options: CarouselOptions(
-                                      autoPlay: true,
-                                      //controller: buttonCarouselController,
-                                      enlargeCenterPage: true,
-                                      viewportFraction: 0.4,
-                                      aspectRatio: 1.5,
-                                      initialPage: 1,
-                                      reverse: true,
-                                      autoPlayInterval: const Duration(seconds: 2),
-                                      autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                      autoPlayCurve: Curves.fastOutSlowIn,
-
-                                    ),
-                                  ),
-                                ),
-                                /*
-                      Container(
-                        height: height*0.08,
-                        width: width,
-                        alignment: Alignment.centerLeft,
-                        child: ListView.builder(
-
-                          scrollDirection: Axis.horizontal,
-                          itemCount: articles.length,
-                          itemBuilder:
-                              (BuildContext context, int index) {
-                            return ArticleTile( articles[index],width,height);
-                          },
-                        ),
-                      ),
-
-                       */
-                              ],
-                            );
-                          } else if (snapshot.hasError) {
-                            return Icon(Icons.error_outline);
-                          } else {
-                            return Container(
-                              width: 30,
-                                height: 40,
-
-                                child: CircularProgressIndicator());
-                          }
-                        }),
-                  ),
-                  Divider(height: 10,),
-/*
-                  postProvider.listConstposts.isEmpty? Column(
-                    children: [
-
-                      ElevatedButton(
-                        onPressed: () async {
-                          setState(() {
-                            is_actualised = true;
-                          });
-
-                          await postProvider.getPostsImages(limitePosts).then((value) {
-                            setState(() {
-                              postLenght=8;
-                              is_actualised = false;
-                            });
-
-
-                          },);
-
-
-                        },
-                        child:is_actualised?Container(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator()): Text("Actualiser"),
-                      ),
-                      Skeletonizer(
-
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                          child: Container(
-                            width: width*0.8,
-                            height: height*0.4,
-
-                          ),
-                        ),
-                      )
-                    ],
-                  )
-                  :
-
- */
-                  Column(
-                    children: [
-                      FutureBuilder<List<Post>>(
-                          future: postProvider.getPostsImages(limitePosts),
-                          builder: (BuildContext context,
-                              AsyncSnapshot snapshot) {
-                            if (snapshot.hasData) {
-
-
-                                is_actualised = false;
-
-                              List<Post> listConstposts=snapshot.data;
-                              return  Column(
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  // Iterate through the first 4 elements
-                                  /*
-                                  if (listConstposts!.length < postLenght)
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        setState(() {
-                                          is_actualised = true;
-                                        });
-
-                                        await postProvider.getPostsImages(limitePosts).then((value) {
-                                          setState(() {
-                                            print("post lenght ${value!.length}");
-                                            postLenght=8;
-                                            is_actualised = false;
-                                          });
-
-
-                                        },);
-
-
-                                      },
-                                      child:is_actualised?Container(
-                                          width: 50,
-                                          height: 50,
-                                          child: CircularProgressIndicator()): Text("Actualiser"),
-                                    ),
-
-                                   */
-                                  if (listConstposts!.length > postLenght)
-                                    for (int i = 0; i < postLenght; i++)
-
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                                        child: homePostUsers(listConstposts![i], height, width),
-                                      ),
-
-                                  if (listConstposts!.length > 0)
-                                    SizedBox(
-                                      //width: width,
-                                      height: height*0.38,
-                                      child: FutureBuilder<List<UserData>>(
-                                        future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState == ConnectionState.waiting) {
-                                            return
-                                              Skeletonizer(
-                                                //enabled: _loading,
-                                                child: ListView.builder
-                                                  (
-                                                  scrollDirection: Axis.horizontal,
-                                                  itemCount: 10,
-                                                  itemBuilder: (context, index) {
-                                                    return Padding(
-                                                      padding: const EdgeInsets.all(1.0),
-                                                      child: Container(
-                                                        width: 300,
-                                                        child: Card(
-                                                          color: Colors.white,
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.all(8.0),
-                                                            child: Column(
-                                                              children: [
-                                                                Container(
-
-                                                                  child: CircleAvatar(
-                                                                    backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                  ),
-                                                                  height: 100,
-                                                                  width: 100,
-                                                                ),
-                                                                SizedBox(
-                                                                  height: 2,
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 70,
-                                                                  child: TextCustomerUserTitle(
-                                                                    titre: "jhasgjh",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: ConstColors.textColors,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                  height: 2,
-                                                                ),
-                                                                TextCustomerUserTitle(
-                                                                  titre: "S'abonner",
-                                                                  fontSize: SizeText.homeProfileTextSize,
-                                                                  couleur: Colors.blue,
-                                                                  fontWeight: FontWeight.w600,
-                                                                )
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              );
-                                          } else if (snapshot.hasData) {
-                                            // Get data from docs and convert map to List
-                                            List<UserData> list = snapshot.data!;
-                                            // Utiliser les données de snapshot.data
-                                            return  ListView.builder(
-                                                scrollDirection: Axis.horizontal,
-                                                itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                itemBuilder: (context, index) {
-
-                                                  //list[index].userAbonnes=[];
-                                                  return  homeProfileUsers(list[index],width,height);
-                                                });
-
-                                          } else {
-                                            return
-                                              Skeletonizer(
-                                                //enabled: _loading,
-                                                child: ListView.builder(
-                                                  scrollDirection: Axis.horizontal,
-                                                  itemCount: 10,
-                                                  itemBuilder: (context, index) {
-                                                    return Container(
-                                                      width: 300,
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(1.0),
-                                                        child: Card(
-                                                          color: Colors.white,
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.all(8.0),
-                                                            child: Column(
-                                                              children: [
-                                                                Container(
-
-                                                                  child: CircleAvatar(
-                                                                    backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                  ),
-                                                                  height: 100,
-                                                                  width: 100,
-                                                                ),
-                                                                SizedBox(
-                                                                  height: 2,
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 70,
-                                                                  child: TextCustomerUserTitle(
-                                                                    titre: "jhasgjh",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: ConstColors.textColors,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                  height: 2,
-                                                                ),
-                                                                TextCustomerUserTitle(
-                                                                  titre: "S'abonner",
-                                                                  fontSize: SizeText.homeProfileTextSize,
-                                                                  couleur: Colors.blue,
-                                                                  fontWeight: FontWeight.w600,
-                                                                )
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              );
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  Divider(height: 10,),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.storefront),
-                                          SizedBox(width: 2,),
-                                          TextCustomerPostDescription(
-                                            titre:
-                                            "Afroshop Annonces ",
-                                            fontSize: 15,
-                                            couleur: Colors.green,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: FutureBuilder<List<ArticleData>>(
-                                        future: categorieProduitProvider.getAnnoncesArticles(),
-                                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                          if (snapshot.hasData) {
-                                            List<ArticleData> articles=snapshot.data;
-                                            return Column(
-                                              children: [
-                                                Container(
-                                                  height: height * 0.22,
-                                                  width: width,
-                                                  child: FlutterCarousel.builder(
-                                                    itemCount: articles.length,
-                                                    itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                        ArticleTile( articles[index],width,height),
-                                                    options: CarouselOptions(
-                                                      autoPlay: true,
-                                                      //controller: buttonCarouselController,
-                                                      enlargeCenterPage: true,
-                                                      viewportFraction: 0.4,
-                                                      aspectRatio: 1.5,
-                                                      initialPage: 1,
-                                                      reverse: true,
-                                                      autoPlayInterval: const Duration(seconds: 2),
-                                                      autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                      autoPlayCurve: Curves.fastOutSlowIn,
-
-                                                    ),
-                                                  ),
-                                                ),
-                                                /*
-                      Container(
-                        height: height*0.08,
-                        width: width,
-                        alignment: Alignment.centerLeft,
-                        child: ListView.builder(
-
-                          scrollDirection: Axis.horizontal,
-                          itemCount: articles.length,
-                          itemBuilder:
-                              (BuildContext context, int index) {
-                            return ArticleTile( articles[index],width,height);
-                          },
-                        ),
-                      ),
-
-                       */
-                                              ],
-                                            );
-                                          } else if (snapshot.hasError) {
-                                            return Icon(Icons.error_outline);
-                                          } else {
-                                            return CircularProgressIndicator();
-                                          }
-                                        }),
-                                  ),
-
-
-                                  Divider(height: 10,),
-                                  // Check if there are more elements
-                                  if (listConstposts!.length > postLenght)
-                                    TextButton(
-                                      onPressed: () {
-                                        // Show a dialog asking the user if they want to see more
-                                        setState(() {
-                                          /*
-                             if ((postLenght+10)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+10;
-
-                             }   else   if ((postLenght+9)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+9;
-
-                             }   else
-
-                              */
-
-                                          if ((postLenght+8)<listConstposts.length) {
-
-                                            postLenght=postLenght+8;
-
-                                          }   else  if ((postLenght+7)<listConstposts.length) {
-                                            postLenght=postLenght+7;
-
-                                          }   else   if ((postLenght+6)<listConstposts.length) {
-                                            postLenght=postLenght+6;
-
-                                          }   else    if ((postLenght+5)<listConstposts.length) {
-                                            postLenght=postLenght+5;
-
-                                          }   else  if ((postLenght+4)<listConstposts.length) {
-                                            postLenght=postLenght+4;
-
-                                          }else   if ((postLenght+3)<listConstposts.length) {
-                                            postLenght=postLenght+3;
-
-                                          }else
-
-                                          if ((postLenght+2)<listConstposts.length) {
-                                            postLenght=postLenght+2;
-
-                                          }else
-                                          if ((postLenght+1)<listConstposts.length) {
-                                            postLenght=postLenght+1;
-
-                                          }
-                                          print("post : ${listConstposts.length}");
-                                          print("postLenght : ${postLenght}");
-
-                                        });
-                                      },
-                                      child: const Text('Afficher plus',style: TextStyle(fontSize: 15),),
-                                    ),
-                                ],
-                              );
-                            } else if (snapshot.hasError) {
-                              return Icon(Icons.error_outline);
-                            } else {
-                              return CircularProgressIndicator();
-                            }
-                          }),
-                      /*
-                      Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          // Iterate through the first 4 elements
-                          if (postProvider.listConstposts!.length < postLenght)
-                            ElevatedButton(
-                              onPressed: () async {
-                                setState(() {
-                                  is_actualised = true;
-                                });
-
-                                await postProvider.getPostsImages(limitePosts).then((value) {
-                                  setState(() {
-                                    print("post lenght ${value!.length}");
-                                    postLenght=8;
-                                    is_actualised = false;
-                                  });
-
-
-                                },);
-
-
-                              },
-                              child:is_actualised?Container(
-                                  width: 50,
-                                  height: 50,
-                                  child: CircularProgressIndicator()): Text("Actualiser"),
-                            ),
-                          if (postProvider.listConstposts!.length > postLenght)
-                          for (int i = 0; i < postLenght; i++)
-
-                            Padding(
-                              padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                              child: homePostUsers(postProvider.listConstposts![i], height, width),
                             ),
 
-                          if (postProvider.listConstposts!.length > 0)
-                          SizedBox(
-                            //width: width,
-                            height: height*0.38,
-                            child: FutureBuilder<List<UserData>>(
-                              future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return
-                                    Skeletonizer(
-                                      //enabled: _loading,
-                                      child: ListView.builder
-                                        (
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: 10,
-                                        itemBuilder: (context, index) {
-                                          return Padding(
-                                            padding: const EdgeInsets.all(1.0),
-                                            child: Container(
-                                              width: 300,
-                                              child: Card(
-                                                color: Colors.white,
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(8.0),
-                                                  child: Column(
-                                                    children: [
-                                                      Container(
 
-                                                        child: CircleAvatar(
-                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                        ),
-                                                        height: 100,
-                                                        width: 100,
-                                                      ),
-                                                      SizedBox(
-                                                        height: 2,
-                                                      ),
-                                                      SizedBox(
-                                                        width: 70,
-                                                        child: TextCustomerUserTitle(
-                                                          titre: "jhasgjh",
-                                                          fontSize: SizeText.homeProfileTextSize,
-                                                          couleur: ConstColors.textColors,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        height: 2,
-                                                      ),
-                                                      TextCustomerUserTitle(
-                                                        titre: "S'abonner",
-                                                        fontSize: SizeText.homeProfileTextSize,
-                                                        couleur: Colors.blue,
-                                                        fontWeight: FontWeight.w600,
-                                                      )
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                } else if (snapshot.hasData) {
-                                  // Get data from docs and convert map to List
-                                  List<UserData> list = snapshot.data!;
-                                  // Utiliser les données de snapshot.data
-                                  return  ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                      itemBuilder: (context, index) {
+                          ],
+                        );
+                      } else if (snapshot.hasError) {
+                        return Icon(Icons.error_outline);
+                      }if (snapshot.connectionState == ConnectionState.waiting) {
+                        return
+                         widgetSeke(width, height);
+                      }
+                      else {
+                        return
+                          widgetSeke(width, height);
+                      }
+                    }),
 
-                                        //list[index].userAbonnes=[];
-                                        return  homeProfileUsers(list[index],width,height);
-                                      });
-
-                                } else {
-                                  return
-                                    Skeletonizer(
-                                      //enabled: _loading,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: 10,
-                                        itemBuilder: (context, index) {
-                                          return Container(
-                                            width: 300,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(1.0),
-                                              child: Card(
-                                                color: Colors.white,
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(8.0),
-                                                  child: Column(
-                                                    children: [
-                                                      Container(
-
-                                                        child: CircleAvatar(
-                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                        ),
-                                                        height: 100,
-                                                        width: 100,
-                                                      ),
-                                                      SizedBox(
-                                                        height: 2,
-                                                      ),
-                                                      SizedBox(
-                                                        width: 70,
-                                                        child: TextCustomerUserTitle(
-                                                          titre: "jhasgjh",
-                                                          fontSize: SizeText.homeProfileTextSize,
-                                                          couleur: ConstColors.textColors,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        height: 2,
-                                                      ),
-                                                      TextCustomerUserTitle(
-                                                        titre: "S'abonner",
-                                                        fontSize: SizeText.homeProfileTextSize,
-                                                        couleur: Colors.blue,
-                                                        fontWeight: FontWeight.w600,
-                                                      )
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                }
-                              },
-                            ),
-                          ),
-                          Divider(height: 10,),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.storefront),
-                                  SizedBox(width: 2,),
-                                  TextCustomerPostDescription(
-                                    titre:
-                                    "Afroshop Annonces ",
-                                    fontSize: 15,
-                                    couleur: Colors.green,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: FutureBuilder<List<ArticleData>>(
-                                future: categorieProduitProvider.getAllArticles(),
-                                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                  if (snapshot.hasData) {
-                                    List<ArticleData> articles=snapshot.data;
-                                    return Container(
-                                      height: height * 0.29,
-                                      width: width,
-                                      alignment: Alignment.centerLeft,
-                                      child: ListView.builder(
-
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: articles.length,
-                                        itemBuilder:
-                                            (BuildContext context, int index) {
-                                          return ArticleTile( articles[index],width,height);
-                                        },
-                                      ),
-                                    );
-                                  } else if (snapshot.hasError) {
-                                    return Icon(Icons.error_outline);
-                                  } else {
-                                    return CircularProgressIndicator();
-                                  }
-                                }),
-                          ),
-
-
-                          Divider(height: 10,),
-                          // Check if there are more elements
-                          if (postProvider.listConstposts!.length > postLenght)
-                            TextButton(
-                              onPressed: () {
-                                // Show a dialog asking the user if they want to see more
-                           setState(() {
-                             /*
-                             if ((postLenght+10)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+10;
-
-                             }   else   if ((postLenght+9)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+9;
-
-                             }   else
-
-                              */
-
-                                if ((postLenght+8)<postProvider.listConstposts.length) {
-
-                               postLenght=postLenght+8;
-
-                             }   else  if ((postLenght+7)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+7;
-
-                             }   else   if ((postLenght+6)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+6;
-
-                             }   else    if ((postLenght+5)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+5;
-
-                             }   else  if ((postLenght+4)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+4;
-
-                             }else   if ((postLenght+3)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+3;
-
-                             }else
-
-                             if ((postLenght+2)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+2;
-
-                             }else
-                             if ((postLenght+1)<postProvider.listConstposts.length) {
-                               postLenght=postLenght+1;
-
-                             }
-                             print("post : ${postProvider.listConstposts.length}");
-                             print("postLenght : ${postLenght}");
-
-                           });
-                              },
-                              child: const Text('Afficher plus',style: TextStyle(fontSize: 15),),
-                            ),
-                        ],
-                      ),
-
-                       */
-                    ],
-                  ),
-
-                  /*
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0,right: 8,top: 2),
-                    child: FutureBuilder<List<Post>>(
-                      future: postProvider.getPostsImages(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          print("attente");
-                          return SizedBox(
-                            //height: height,
-                            width: width,
-                            child: Column(
-
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                for(Post p in postProvider.listConstposts)
-                                  Skeletonizer(
-
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(5.0),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(right: 8.0),
-                                                      child: CircleAvatar(
-                                                        backgroundImage: AssetImage('assets/images/9230137.jpg'),
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: 2,
-                                                    ),
-                                                    Row(
-                                                      children: [
-                                                        Column(
-                                                          children: [
-                                                            SizedBox(
-                                                              //width: 100,
-                                                              child: Text(
-                                                                "Company X",
-                                                                style: TextStyle(
-                                                                  fontSize: SizeText.homeProfileTextSize,
-                                                                  color: ConstColors.textColors,
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Text(
-                                                              "xxx followers", // Replace with appropriate static value
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        // Remove IconButton and related code
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                // Remove remaining dynamic company data elements
-                                              ],
-                                            ),
-                                            // ... other static content and layout modifications
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                              ],
-                            ),
-                          );
-                        } else if (snapshot.hasError) {
-                          print("erreur ${snapshot.error}");
-                          return
-                            Skeletonizer(
-
-                              //enabled: _loading,
-                              child: SizedBox(
-                                width: width,
-                                height: height*0.4,
-                                child: ListView.builder
-                                  (
-                                  scrollDirection: Axis.vertical,
-                                  itemCount: 5,
-                                  itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(5.0),
-                                      child: Column(
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(right: 8.0),
-                                                    child: CircleAvatar(
-                                                      backgroundImage: AssetImage('assets/images/9230137.jpg'),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: 2,
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      Column(
-                                                        children: [
-                                                          SizedBox(
-                                                            //width: 100,
-                                                            child: Text(
-                                                              "Company X",
-                                                              style: TextStyle(
-                                                                fontSize: SizeText.homeProfileTextSize,
-                                                                color: ConstColors.textColors,
-                                                                fontWeight: FontWeight.bold,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            "xxx followers", // Replace with appropriate static value
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      // Remove IconButton and related code
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                              // Remove remaining dynamic company data elements
-                                            ],
-                                          ),
-                                          // ... other static content and layout modifications
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            );
-                        } else if (snapshot.hasData) {
-
-
-
-                          return  Column(
-
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              for(Post p in snapshot.data!)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                                  child: homePostUsers(p,height, width),
-                                )
-                            ],
-                          );
-                        }else{
-                          return SizedBox(
-                            //height: height,
-                            width: width,
-                            child: Column(
-
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                for(Post p in postProvider.listConstposts)
-                                  Skeletonizer(
-
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                                      child: homePostUsers(p,height, width),
-                                    ),
-                                  )
-                              ],
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-
-                   */
-
-                ],
               ),
             ),
             if (is_actualised)

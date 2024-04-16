@@ -39,37 +39,6 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
 
 
 // Méthode pour récupérer l'UID de l'utilisateur après vérification SMS et vérifier s'il existe dans Firestore
-  Future<void> checkUserAndRedirect(String email) async {
-
-    User? user = _auth.currentUser;
-
-    if (user != null && user.phoneNumber != null) {
-      // Récupérer l'UID de l'utilisateur actuel
-      String uid = user.uid;
-
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-      QuerySnapshot querySnapshot = await firestore
-          .collection('Reservation.Utilisateur') // Remplacez par le nom de votre collection
-          .where('email', isEqualTo: email)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        QueryDocumentSnapshot userDocument = querySnapshot.docs.first;
-        // Ici, vous pouvez accéder aux données de l'utilisateur via userDocument.data()
-        showWarningDialog(_scaffoldKey!.currentContext!,"Ce compte existe déjà");
-        print('Utilisateur existe');
-        loading = false;
-      } else {
-
-        loading = false;
-      }
-
-    } else {
-      // L'utilisateur n'est pas connecté ou le numéro de téléphone n'est pas disponible
-
-    }
-  }
 
   showSuccessDialog(BuildContext context) {
     AwesomeDialog(
