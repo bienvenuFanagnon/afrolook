@@ -82,43 +82,17 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
   // Obtenez les SharedPreferences
   userProvider.changeState(user: authProvider.loginUserData,
       state: UserState.ONLINE.name);
-  await userProvider.getAllAnnonces().then((value) {
+  prefs.setString('token', uid.user!.uid!);
 
-    prefs.setString('token', uid.user!.uid!);
-
-    Navigator.pushNamed(
-        context,
-        '/home');
-    Navigator.pushNamed(context, '/chargement');
-  },);
+  Navigator.pushReplacementNamed(
+      context,
+      '/home');
+  Navigator.pushNamed(context, '/chargement');
 
 
 }
 
 
-
-            /*
-            if (authProvider.loginUserData.isConnected == true) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('Le compte est déjà connecté.',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-              ),),
-            } else{
-            // Obtenez les SharedPreferences
-              userProvider.changeState(user: authProvider.loginUserData,
-                  state: UserState.ONLINE.name),
-
-            prefs.setString('token', uid.user!.uid!),
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Connexion réussie', textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.green),),
-            ),),
-            Navigator.pushNamed(
-                context,
-                '/home'),
-            Navigator.pushNamed(context, '/chargement'),
-          }
-
-             */
             }else{
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Erreur de Chargement',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),

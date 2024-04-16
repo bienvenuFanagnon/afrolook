@@ -536,9 +536,9 @@ bool onTap=false;
   void _checkVideoDuration( Duration videoDuration) {
     Duration videoDuration = _controller!.value.duration;
 
-    if (videoDuration.inSeconds > 30) {
+    if (videoDuration.inSeconds > 60*5) {
       // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-      print("Erreur : La durée de la vidéo dépasse 30 secondes");
+      print("Erreur : La durée de la vidéo dépasse 5 min");
     } else {
       // La durée de la vidéo est inférieure ou égale à 30 secondes
       print("La durée de la vidéo est conforme");
@@ -639,7 +639,7 @@ bool onTap=false;
                         if (_controller==null) {
                           SnackBar snackBar = SnackBar(
                             content: Text(
-                              'Veuillez choisir une video (max 30 s).',
+                              'Veuillez choisir une video (max 5 min).',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.red),
                             ),
@@ -655,12 +655,12 @@ bool onTap=false;
                             Duration videoDuration = _controller!.value.duration;
                             int size =await videoFile.length();
 
-                            if (videoDuration.inSeconds > 30) {
+                            if (videoDuration.inSeconds > 60*5) {
                               // La durée de la vidéo dépasse 30 secondes, vous pouvez afficher une erreur ici
-                              print("Erreur : La durée de la vidéo dépasse 30 secondes");
+                              print("Erreur : La durée de la vidéo dépasse 5 min");
                               SnackBar snackBar = SnackBar(
                                 content: Text(
-                                  'La durée de la vidéo dépasse 30 secondes !',
+                                  'La durée de la vidéo dépasse 5 min !',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: Colors.red),
                                 ),

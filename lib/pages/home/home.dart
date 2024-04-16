@@ -49,6 +49,7 @@ import '../chat/entrepriseChat.dart';
 import '../chat/ia_Chat.dart';
 import '../chat/myChat.dart';
 import '../menu/menuDrawer.dart';
+import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 
 
@@ -3449,746 +3450,680 @@ setState(() {
 
          */
       },
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: ConstColors.backgroundColor,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          leadingWidth: 130,
-          leading: Logo(),
+      child: WillPopScope(
+        onWillPop: () async {
+          // Cette fonction sera appelée lorsque l'utilisateur appuie sur le bouton "Retour"
+          return await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Voulez-vous quitter l\'application ?'),
+              content: const Text('Êtes-vous sûr de vouloir quitter l\'application ? Toutes vos données non enregistrées seront perdues.'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // Annuler la fermeture de l'application
+                  },
+                  child: const Text('Annuler'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true); // Quitter l'application
+                  },
+                  child: const Text('Quitter'),
+                ),
+              ],
+            ),
+          );
+        },
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: ConstColors.backgroundColor,
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leadingWidth: 130,
+            leading: Logo(),
 
-          //backgroundColor: Colors.blue,
-          actions: [
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, "/mes_notifications");
-              },
-              child: StreamBuilder<List<NotificationData>>(
+            //backgroundColor: Colors.blue,
+            actions: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, "/mes_notifications");
+                },
+                child: StreamBuilder<List<NotificationData>>(
 
-                stream: authProvider.getListNotificationAuth(),
-                builder: (context, snapshot) {
+                  stream: authProvider.getListNotificationAuth(),
+                  builder: (context, snapshot) {
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
 
-                    return
-                      Icon(
-                        Icons.notifications,
-                        color: ConstColors.blackIconColors,
-                      );
-                  }else if (snapshot.hasError) {
-                    return
-                      Icon(
-                        Icons.notifications,
-                        color: ConstColors.blackIconColors,
-                      );
-                  }else{
-                    List<NotificationData> list=snapshot!.data!;
-
-
-                    return  Padding(
-                      padding: const EdgeInsets.only(right: 15.0),
-                      child: badges.Badge(
-                        showBadge:list.length<1? false:true,
-                        badgeContent:list.length>9? Text('9+',style: TextStyle(fontSize: 10,color: Colors.white),):Text('${list.length}',style: TextStyle(fontSize: 10,color: Colors.white),),
-                        child: Icon(
+                      return
+                        Icon(
                           Icons.notifications,
                           color: ConstColors.blackIconColors,
+                        );
+                    }else if (snapshot.hasError) {
+                      return
+                        Icon(
+                          Icons.notifications,
+                          color: ConstColors.blackIconColors,
+                        );
+                    }else{
+                      List<NotificationData> list=snapshot!.data!;
+
+
+                      return  Padding(
+                        padding: const EdgeInsets.only(right: 15.0),
+                        child: badges.Badge(
+                          showBadge:list.length<1? false:true,
+                          badgeContent:list.length>9? Text('9+',style: TextStyle(fontSize: 10,color: Colors.white),):Text('${list.length}',style: TextStyle(fontSize: 10,color: Colors.white),),
+                          child: Icon(
+                            Icons.notifications,
+                            color: ConstColors.blackIconColors,
+                          ),
                         ),
-                      ),
-                    );
+                      );
 
-                  }
-                },
+                    }
+                  },
+                ),
               ),
-            ),
-            IconButton(onPressed: () async {
-              _scrollController.animateTo(
-                0.0,
-                duration: Duration(milliseconds: 1000),
-                curve: Curves.ease,
-              );
-              setState(() {
-              // is_actualised = true;
-              });
-              /*
-              await userProvider.getAllAnnonces();
-              await postProvider.getPostsImages(limitePosts).then((value) {
-                print('actualiser');
+              IconButton(onPressed: () async {
+                _scrollController.animateTo(
+                  0.0,
+                  duration: Duration(milliseconds: 1000),
+                  curve: Curves.ease,
+                );
                 setState(() {
-                  postLenght=8;
-                  is_actualised = false;
-
+                // is_actualised = true;
                 });
+                /*
+                await userProvider.getAllAnnonces();
+                await postProvider.getPostsImages(limitePosts).then((value) {
+                  print('actualiser');
+                  setState(() {
+                    postLenght=8;
+                    is_actualised = false;
+
+                  });
 
 
-              },);
+                },);
 
-               */
-            }, icon: Icon(Icons.home))
-          ],
-          //title: Text(widget.title),
-        ),
-        drawer: menu(context),
-        body: Stack(
-          children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(3.0),
-                child: FutureBuilder<List<Post>>(
-                    future: postProvider.getPostsImages(limitePosts),
-                    builder: (BuildContext context,
-                        AsyncSnapshot snapshot) {
-                      if (snapshot.hasData) {
+                 */
+              }, icon: Icon(Icons.home))
+            ],
+            //title: Text(widget.title),
+          ),
+          drawer: menu(context),
+          body: Stack(
+            children: [
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: FutureBuilder<List<Post>>(
+                      future: postProvider.getPostsImages(limitePosts),
+                      builder: (BuildContext context,
+                          AsyncSnapshot snapshot) {
+                        if (snapshot.hasData) {
 
-                        List<Post> listConstposts=snapshot.data;
-                        return  Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            SizedBox(
-                              width: width,
-                              height: height*0.81,
-                              child: ListView.builder(
-                                controller: _scrollController,
-                                scrollDirection: Axis.vertical,
+                          List<Post> listConstposts=snapshot.data;
+                          return  Column(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              SizedBox(
+                                width: width,
+                                height: height*0.81,
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  scrollDirection: Axis.vertical,
 
-                                itemCount: listConstposts.length,
-                                itemBuilder:
-                                    (BuildContext context, int index) {
-                                  if (index==0) {
-                                    return Column(
-                                      children: <Widget>[
-                                        SizedBox(
-                                          //width: width,
-                                          height: height*0.33,
-                                          child: FutureBuilder<List<UserData>>(
-                                            future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                                return
-                                                  Skeletonizer(
-                                                    //enabled: _loading,
-                                                    child: ListView.builder
-                                                      (
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: 10,
-                                                      itemBuilder: (context, index) {
-                                                        return Padding(
-                                                          padding: const EdgeInsets.all(1.0),
-                                                          child: Container(
-                                                            width: 300,
-                                                            child: Card(
-                                                              color: Colors.white,
-                                                              child: Padding(
-                                                                padding: const EdgeInsets.all(8.0),
-                                                                child: Column(
-                                                                  children: [
-                                                                    Container(
+                                  itemCount: listConstposts.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    if (index==0) {
+                                      return Column(
+                                        children: <Widget>[
+                                          Row(
 
-                                                                      child: CircleAvatar(
-                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                      ),
-                                                                      height: 100,
-                                                                      width: 100,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 70,
-                                                                      child: TextCustomerUserTitle(
-                                                                        titre: "jhasgjh",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: ConstColors.textColors,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    TextCustomerUserTitle(
-                                                                      titre: "S'abonner",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: Colors.blue,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  );
-                                              } else if (snapshot.hasError) {
-                                                return
-                                                  Skeletonizer(
-                                                    //enabled: _loading,
-                                                    child: ListView.builder(
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: 10,
-                                                      itemBuilder: (context, index) {
-                                                        return Container(
-                                                          width: 300,
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.all(1.0),
-                                                            child: Card(
-                                                              color: Colors.white,
-                                                              child: Padding(
-                                                                padding: const EdgeInsets.all(8.0),
-                                                                child: Column(
-                                                                  children: [
-                                                                    Container(
+                                            children: [
+                                              TextButton(onPressed: () {
 
-                                                                      child: CircleAvatar(
-                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                      ),
-                                                                      height: 100,
-                                                                      width: 100,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 70,
-                                                                      child: TextCustomerUserTitle(
-                                                                        titre: "jhasgjh",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: ConstColors.textColors,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    TextCustomerUserTitle(
-                                                                      titre: "S'abonner",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: Colors.blue,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  );
-                                              } else {
-                                                // Get data from docs and convert map to List
-                                                List<UserData> list = snapshot.data!;
-                                                // Utiliser les données de snapshot.data
-                                                return  ListView.builder(
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                    itemBuilder: (context, index) {
 
-                                                      //list[index].userAbonnes=[];
-                                                      return  homeProfileUsers(list[index],width,height);
-                                                    });
-                                              }
-                                            },
+                                              }, child: Text("")),
+                                              TextButton(onPressed: () {
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+
+
+                                              }, child: Text("Afficher plus")),
+                                            ],
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           ),
-                                        ),
-
-                                        Divider(height: 10,),
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.storefront,color: Colors.green,),
-                                                SizedBox(width: 2,),
-                                                TextCustomerPostDescription(
-                                                  titre:
-                                                  "Afroshop Annonces ",
-                                                  fontSize: 15,
-                                                  couleur: CustomConstants.kPrimaryColor,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-
-
-                                        Padding(
-                                          padding: const EdgeInsets.all(4.0),
-                                          child: FutureBuilder<List<ArticleData>>(
-                                              future: categorieProduitProvider.getAnnoncesArticles(),
-                                              builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                if (snapshot.hasData) {
-                                                  List<ArticleData> articles=snapshot.data;
-                                                  return Column(
-                                                    children: [
-                                                      Container(
-                                                        height: height * 0.22,
-                                                        width: width,
-                                                        child: FlutterCarousel.builder(
-                                                          itemCount: articles.length,
-                                                          itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                              ArticleTile( articles[index],width,height),
-                                                          options: CarouselOptions(
-                                                            autoPlay: true,
-                                                            //controller: buttonCarouselController,
-                                                            enlargeCenterPage: true,
-                                                            viewportFraction: 0.4,
-                                                            aspectRatio: 1.5,
-                                                            initialPage: 1,
-                                                            reverse: true,
-                                                            autoPlayInterval: const Duration(seconds: 2),
-                                                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                            autoPlayCurve: Curves.fastOutSlowIn,
-
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      /*
-                                                    Container(
-                                                      height: height*0.08,
-                                                      width: width,
-                                                      alignment: Alignment.centerLeft,
-                                                      child: ListView.builder(
-
-                              scrollDirection: Axis.horizontal,
-                              itemCount: articles.length,
-                              itemBuilder:
-                                  (BuildContext context, int index) {
-                                return ArticleTile( articles[index],width,height);
-                              },
-                                                      ),
-                                                    ),
-
-                                                     */
-                                                    ],
-                                                  );
-                                                } else if (snapshot.hasError) {
-                                                  return Icon(Icons.error_outline);
-                                                } else {
-                                                  return Container(
-                                                      width: 30,
-                                                      height: 40,
-
-                                                      child: CircularProgressIndicator());
-                                                }
-                                              }),
-                                        ),
-                                        Divider(height: 10,),
-                                      ],
-                                    );
-
-                                  }
-                                  if (index==5) {
-                                    return Column(
-                                      children: <Widget>[
-                                        SizedBox(
-                                          //width: width,
-                                          height: height*0.38,
-                                          child: FutureBuilder<List<UserData>>(
-                                            future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                                return
-                                                  Skeletonizer(
-                                                    //enabled: _loading,
-                                                    child: ListView.builder
-                                                      (
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: 10,
-                                                      itemBuilder: (context, index) {
-                                                        return Padding(
-                                                          padding: const EdgeInsets.all(1.0),
-                                                          child: Container(
-                                                            width: 300,
-                                                            child: Card(
-                                                              color: Colors.white,
-                                                              child: Padding(
-                                                                padding: const EdgeInsets.all(8.0),
-                                                                child: Column(
-                                                                  children: [
-                                                                    Container(
-
-                                                                      child: CircleAvatar(
-                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                      ),
-                                                                      height: 100,
-                                                                      width: 100,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 70,
-                                                                      child: TextCustomerUserTitle(
-                                                                        titre: "jhasgjh",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: ConstColors.textColors,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    TextCustomerUserTitle(
-                                                                      titre: "S'abonner",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: Colors.blue,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  );
-                                              } else if (snapshot.hasData) {
-                                                // Get data from docs and convert map to List
-                                                List<UserData> list = snapshot.data!;
-                                                // Utiliser les données de snapshot.data
-                                                return  ListView.builder(
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                    itemBuilder: (context, index) {
-
-                                                      //list[index].userAbonnes=[];
-                                                      return  homeProfileUsers(list[index],width,height);
-                                                    });
-
-                                              } else {
-                                                return
-                                                  Skeletonizer(
-                                                    //enabled: _loading,
-                                                    child: ListView.builder(
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: 10,
-                                                      itemBuilder: (context, index) {
-                                                        return Container(
-                                                          width: 300,
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.all(1.0),
-                                                            child: Card(
-                                                              color: Colors.white,
-                                                              child: Padding(
-                                                                padding: const EdgeInsets.all(8.0),
-                                                                child: Column(
-                                                                  children: [
-                                                                    Container(
-
-                                                                      child: CircleAvatar(
-                                                                        backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                      ),
-                                                                      height: 100,
-                                                                      width: 100,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 70,
-                                                                      child: TextCustomerUserTitle(
-                                                                        titre: "jhasgjh",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: ConstColors.textColors,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height: 2,
-                                                                    ),
-                                                                    TextCustomerUserTitle(
-                                                                      titre: "S'abonner",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: Colors.blue,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                        Divider(height: 10,),
-                                       /*
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.storefront),
-                                                SizedBox(width: 2,),
-                                                TextCustomerPostDescription(
-                                                  titre:
-                                                  "Afroshop Annonces ",
-                                                  fontSize: 15,
-                                                  couleur: Colors.green,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(4.0),
-                                          child: FutureBuilder<List<ArticleData>>(
-                                              future: categorieProduitProvider.getAnnoncesArticles(),
-                                              builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                if (snapshot.hasData) {
-                                                  List<ArticleData> articles=snapshot.data;
-                                                  return Column(
-                                                    children: [
-                                                      Container(
-                                                        height: height * 0.22,
-                                                        width: width,
-                                                        child: FlutterCarousel.builder(
-                                                          itemCount: articles.length,
-                                                          itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                              ArticleTile( articles[index],width,height),
-                                                          options: CarouselOptions(
-                                                            autoPlay: true,
-                                                            //controller: buttonCarouselController,
-                                                            enlargeCenterPage: true,
-                                                            viewportFraction: 0.4,
-                                                            aspectRatio: 1.5,
-                                                            initialPage: 1,
-                                                            reverse: true,
-                                                            autoPlayInterval: const Duration(seconds: 2),
-                                                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                            autoPlayCurve: Curves.fastOutSlowIn,
-
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      /*
-                                                    Container(
-                                                      height: height*0.08,
-                                                      width: width,
-                                                      alignment: Alignment.centerLeft,
-                                                      child: ListView.builder(
-
+                                          SizedBox(
+                                            //width: width,
+                                            height: height*0.33,
+                                            child: FutureBuilder<List<UserData>>(
+                                              future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                                  return
+                                                    Skeletonizer(
+                                                      //enabled: _loading,
+                                                      child: ListView.builder
+                                                        (
                                                         scrollDirection: Axis.horizontal,
-                                                        itemCount: articles.length,
-                                                        itemBuilder:
-                                                            (BuildContext context, int index) {
-                                                          return ArticleTile( articles[index],width,height);
+                                                        itemCount: 10,
+                                                        itemBuilder: (context, index) {
+                                                          return Padding(
+                                                            padding: const EdgeInsets.all(1.0),
+                                                            child: Container(
+                                                              width: 300,
+                                                              child: Card(
+                                                                color: Colors.white,
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(8.0),
+                                                                  child: Column(
+                                                                    children: [
+                                                                      Container(
+
+                                                                        child: CircleAvatar(
+                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                        ),
+                                                                        height: 100,
+                                                                        width: 100,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width: 70,
+                                                                        child: TextCustomerUserTitle(
+                                                                          titre: "jhasgjh",
+                                                                          fontSize: SizeText.homeProfileTextSize,
+                                                                          couleur: ConstColors.textColors,
+                                                                          fontWeight: FontWeight.w600,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      TextCustomerUserTitle(
+                                                                        titre: "S'abonner",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: Colors.blue,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      )
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
                                                         },
                                                       ),
-                                                    ),
-
-                                                     */
-                                                    ],
-                                                  );
+                                                    );
                                                 } else if (snapshot.hasError) {
-                                                  return Icon(Icons.error_outline);
+                                                  return
+                                                    Skeletonizer(
+                                                      //enabled: _loading,
+                                                      child: ListView.builder(
+                                                        scrollDirection: Axis.horizontal,
+                                                        itemCount: 10,
+                                                        itemBuilder: (context, index) {
+                                                          return Container(
+                                                            width: 300,
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(1.0),
+                                                              child: Card(
+                                                                color: Colors.white,
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(8.0),
+                                                                  child: Column(
+                                                                    children: [
+                                                                      Container(
+
+                                                                        child: CircleAvatar(
+                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                        ),
+                                                                        height: 100,
+                                                                        width: 100,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width: 70,
+                                                                        child: TextCustomerUserTitle(
+                                                                          titre: "jhasgjh",
+                                                                          fontSize: SizeText.homeProfileTextSize,
+                                                                          couleur: ConstColors.textColors,
+                                                                          fontWeight: FontWeight.w600,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      TextCustomerUserTitle(
+                                                                        titre: "S'abonner",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: Colors.blue,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      )
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    );
                                                 } else {
-                                                  return CircularProgressIndicator();
+                                                  // Get data from docs and convert map to List
+                                                  List<UserData> list = snapshot.data!;
+                                                  // Utiliser les données de snapshot.data
+                                                  return  ListView.builder(
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                      itemBuilder: (context, index) {
+
+                                                        //list[index].userAbonnes=[];
+                                                        return  homeProfileUsers(list[index],width,height);
+                                                      });
                                                 }
-                                              }),
-                                        ),
+                                              },
+                                            ),
+                                          ),
 
-                                        */
-                                      ],
-                                    );
+                                          Divider(height: 10,),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.storefront,color: Colors.green,),
+                                                      SizedBox(width: 2,),
+                                                      TextCustomerPostDescription(
+                                                        titre:
+                                                        "Afroshop Annonces ",
+                                                        fontSize: 15,
+                                                        couleur: CustomConstants.kPrimaryColor,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(onPressed: () {
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
 
-                                  }  else{
-                                    return  Padding(
-                                      padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                                      child: homePostUsers(listConstposts![index], height, width),
-                                    );
-                                  }
 
+                                              }, child: Text("Afficher plus")),
+                                            ],
+                                          ),
+
+
+                                          Padding(
+                                            padding: const EdgeInsets.all(4.0),
+                                            child: FutureBuilder<List<ArticleData>>(
+                                                future: categorieProduitProvider.getAnnoncesArticles(),
+                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                  if (snapshot.hasData) {
+                                                    List<ArticleData> articles=snapshot.data;
+                                                    return Column(
+                                                      children: [
+                                                        Container(
+                                                          height: height * 0.22,
+                                                          width: width,
+                                                          child: FlutterCarousel.builder(
+                                                            itemCount: articles.length,
+                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                                ArticleTile( articles[index],width,height),
+                                                            options: CarouselOptions(
+                                                              autoPlay: true,
+                                                              //controller: buttonCarouselController,
+                                                              enlargeCenterPage: true,
+                                                              viewportFraction: 0.4,
+                                                              aspectRatio: 1.5,
+                                                              initialPage: 1,
+                                                              reverse: true,
+                                                              autoPlayInterval: const Duration(seconds: 2),
+                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                              autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        /*
+                                                      Container(
+                                                        height: height*0.08,
+                                                        width: width,
+                                                        alignment: Alignment.centerLeft,
+                                                        child: ListView.builder(
+
+                                scrollDirection: Axis.horizontal,
+                                itemCount: articles.length,
+                                itemBuilder:
+                                    (BuildContext context, int index) {
+                                  return ArticleTile( articles[index],width,height);
                                 },
+                                                        ),
+                                                      ),
+
+                                                       */
+                                                      ],
+                                                    );
+                                                  } else if (snapshot.hasError) {
+                                                    return Icon(Icons.error_outline);
+                                                  } else {
+                                                    return Container(
+                                                        width: 30,
+                                                        height: 40,
+
+                                                        child: CircularProgressIndicator());
+                                                  }
+                                                }),
+                                          ),
+                                          Divider(height: 10,),
+                                        ],
+                                      );
+
+                                    }
+                                    if (index % 7 == 0) {
+                                      return Column(
+                                        children: <Widget>[
+                                          SizedBox(
+                                            //width: width,
+                                            height: height*0.38,
+                                            child: FutureBuilder<List<UserData>>(
+                                              future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                                  return
+                                                    Skeletonizer(
+                                                      //enabled: _loading,
+                                                      child: ListView.builder
+                                                        (
+                                                        scrollDirection: Axis.horizontal,
+                                                        itemCount: 10,
+                                                        itemBuilder: (context, index) {
+                                                          return Padding(
+                                                            padding: const EdgeInsets.all(1.0),
+                                                            child: Container(
+                                                              width: 300,
+                                                              child: Card(
+                                                                color: Colors.white,
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(8.0),
+                                                                  child: Column(
+                                                                    children: [
+                                                                      Container(
+
+                                                                        child: CircleAvatar(
+                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                        ),
+                                                                        height: 100,
+                                                                        width: 100,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width: 70,
+                                                                        child: TextCustomerUserTitle(
+                                                                          titre: "jhasgjh",
+                                                                          fontSize: SizeText.homeProfileTextSize,
+                                                                          couleur: ConstColors.textColors,
+                                                                          fontWeight: FontWeight.w600,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      TextCustomerUserTitle(
+                                                                        titre: "S'abonner",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: Colors.blue,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      )
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    );
+                                                } else if (snapshot.hasData) {
+                                                  // Get data from docs and convert map to List
+                                                  List<UserData> list = snapshot.data!;
+                                                  // Utiliser les données de snapshot.data
+                                                  return  ListView.builder(
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                      itemBuilder: (context, index) {
+
+                                                        //list[index].userAbonnes=[];
+                                                        return  homeProfileUsers(list[index],width,height);
+                                                      });
+
+                                                } else {
+                                                  return
+                                                    Skeletonizer(
+                                                      //enabled: _loading,
+                                                      child: ListView.builder(
+                                                        scrollDirection: Axis.horizontal,
+                                                        itemCount: 10,
+                                                        itemBuilder: (context, index) {
+                                                          return Container(
+                                                            width: 300,
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(1.0),
+                                                              child: Card(
+                                                                color: Colors.white,
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(8.0),
+                                                                  child: Column(
+                                                                    children: [
+                                                                      Container(
+
+                                                                        child: CircleAvatar(
+                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                        ),
+                                                                        height: 100,
+                                                                        width: 100,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width: 70,
+                                                                        child: TextCustomerUserTitle(
+                                                                          titre: "jhasgjh",
+                                                                          fontSize: SizeText.homeProfileTextSize,
+                                                                          couleur: ConstColors.textColors,
+                                                                          fontWeight: FontWeight.w600,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height: 2,
+                                                                      ),
+                                                                      TextCustomerUserTitle(
+                                                                        titre: "S'abonner",
+                                                                        fontSize: SizeText.homeProfileTextSize,
+                                                                        couleur: Colors.blue,
+                                                                        fontWeight: FontWeight.w600,
+                                                                      )
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    );
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                          Divider(height: 10,),
+                                         /*
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.storefront),
+                                                  SizedBox(width: 2,),
+                                                  TextCustomerPostDescription(
+                                                    titre:
+                                                    "Afroshop Annonces ",
+                                                    fontSize: 15,
+                                                    couleur: Colors.green,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(4.0),
+                                            child: FutureBuilder<List<ArticleData>>(
+                                                future: categorieProduitProvider.getAnnoncesArticles(),
+                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                  if (snapshot.hasData) {
+                                                    List<ArticleData> articles=snapshot.data;
+                                                    return Column(
+                                                      children: [
+                                                        Container(
+                                                          height: height * 0.22,
+                                                          width: width,
+                                                          child: FlutterCarousel.builder(
+                                                            itemCount: articles.length,
+                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                                ArticleTile( articles[index],width,height),
+                                                            options: CarouselOptions(
+                                                              autoPlay: true,
+                                                              //controller: buttonCarouselController,
+                                                              enlargeCenterPage: true,
+                                                              viewportFraction: 0.4,
+                                                              aspectRatio: 1.5,
+                                                              initialPage: 1,
+                                                              reverse: true,
+                                                              autoPlayInterval: const Duration(seconds: 2),
+                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                              autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        /*
+                                                      Container(
+                                                        height: height*0.08,
+                                                        width: width,
+                                                        alignment: Alignment.centerLeft,
+                                                        child: ListView.builder(
+
+                                                          scrollDirection: Axis.horizontal,
+                                                          itemCount: articles.length,
+                                                          itemBuilder:
+                                                              (BuildContext context, int index) {
+                                                            return ArticleTile( articles[index],width,height);
+                                                          },
+                                                        ),
+                                                      ),
+
+                                                       */
+                                                      ],
+                                                    );
+                                                  } else if (snapshot.hasError) {
+                                                    return Icon(Icons.error_outline);
+                                                  } else {
+                                                    return CircularProgressIndicator();
+                                                  }
+                                                }),
+                                          ),
+
+                                          */
+                                        ],
+                                      );
+
+                                    }  else{
+                                      return  Padding(
+                                        padding: const EdgeInsets.only(top: 5.0, bottom: 5),
+                                        child: homePostUsers(listConstposts![index], height, width),
+                                      );
+                                    }
+
+                                  },
+                                ),
                               ),
-                            ),
 
 
-                          ],
-                        );
-                      } else if (snapshot.hasError) {
-                        return Icon(Icons.error_outline);
-                      }if (snapshot.connectionState == ConnectionState.waiting) {
-                        return
-                         widgetSeke(width, height);
-                      }
-                      else {
-                        return
-                          widgetSeke(width, height);
-                      }
-                    }),
-
-              ),
-            ),
-            if (is_actualised)
-              Overlay(
-                initialEntries: [
-                  OverlayEntry(
-                    builder: (context) => SimpleChargement(),
-                  ),
-                ],
-              ),
-          ],
-        ),
-
-
-
-        bottomNavigationBar:  Container(
-          height: 50,
-
-          color: Colors.transparent,
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    /*
-                      userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
-
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => UserCards(),));
-
-
-                      },);
-
-                       */
-
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
-
-                  },
-                  child: StreamBuilder<int>(
-                      stream: getNbrInvitation(),
-                      builder: (context, snapshot){
-                        if(snapshot.hasError){
-                          print("erreur: ${snapshot.error.toString()}");
-                          return badges.Badge(
-                            badgeContent: Text('1'),
-                            showBadge: false,
-                            child: Icon(
-                              Entypo.message,
-                              //AntDesign.message1,
-                              size: 30,
-                              color: ConstColors.blackIconColors,
-                            ),
+                            ],
                           );
-                        }else
-                        if(snapshot.hasData){
-
-
-                          if(snapshot.data!>0){
-                            return badges.Badge(
-
-
-                              badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: Colors.white ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: Colors.white ),),
-                              child: Icon(
-                                MaterialCommunityIcons.account_group,
-                                //AntDesign.message1,
-                                color: ConstColors.blackIconColors,
-
-                              ),
-                            );
-                          }else{
-
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Icon(
-                                MaterialCommunityIcons.account_group,
-                                //AntDesign.message1,
-                                size: 30,
-
-                                color: ConstColors.blackIconColors,
-                              ),
-                            );
-                          }
-
-
-                        }else{
-                          print("data: ${snapshot.data}");
-                          return badges.Badge(
-                            badgeContent: Text('1'),
-                            showBadge: false,
-                            child: Icon(
-                              MaterialCommunityIcons.account_group,
-                              //AntDesign.message1,
-                              size: 30,
-                              color: ConstColors.blackIconColors,
-                            ),
-                          );
+                        } else if (snapshot.hasError) {
+                          return Icon(Icons.error_outline);
+                        }if (snapshot.connectionState == ConnectionState.waiting) {
+                          return
+                           widgetSeke(width, height);
                         }
+                        else {
+                          return
+                            widgetSeke(width, height);
+                        }
+                      }),
 
-
-                      }
-                  ),
                 ),
-                GestureDetector(
-                  onTap: () {
-
-                    Navigator.pushNamed(context, '/list_users_chat');
-                    //Navigator.pushNamed(context, '/test_chat');
-                  },
-
-                  child:  StreamBuilder<int>(
-                        stream: getNbrMessageNonLu(),
-                        builder: (context, snapshot){
-      if(snapshot.hasError){
-        print("erreur: ${snapshot.error.toString()}");
-        return badges.Badge(
-          badgeContent: Text('1'),
-          showBadge: false,
-          child: Icon(
-            Entypo.message,
-            //AntDesign.message1,
-            size: 30,
-            color: ConstColors.blackIconColors,
+              ),
+              if (is_actualised)
+                Overlay(
+                  initialEntries: [
+                    OverlayEntry(
+                      builder: (context) => SimpleChargement(),
+                    ),
+                  ],
+                ),
+            ],
           ),
-        );
-      }else
-                          if(snapshot.hasData){
 
 
-                        if(snapshot.data!>0){
-                          return badges.Badge(
+
+          bottomNavigationBar:  Container(
+            height: 50,
+
+            color: Colors.transparent,
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      /*
+                        userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
+
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => UserCards(),));
 
 
-                            badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: Colors.white ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: Colors.white ),),
-                            child: Icon(
-                              Entypo.message,
-                              //AntDesign.message1,
-                            color: ConstColors.blackIconColors,
+                        },);
 
-                          ),
-                          );
-                        }else{
+                         */
 
-                          return badges.Badge(
-                            badgeContent: Text('1'),
-                            showBadge: false,
-                            child: Icon(
-                              Entypo.message,
-                              //AntDesign.message1,
-                              size: 30,
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
 
-                              color: ConstColors.blackIconColors,
-                            ),
-                          );
-                        }
-
-
-                          }else{
-                            print("data: ${snapshot.data}");
+                    },
+                    child: StreamBuilder<int>(
+                        stream: getNbrInvitation(),
+                        builder: (context, snapshot){
+                          if(snapshot.hasError){
+                            print("erreur: ${snapshot.error.toString()}");
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
@@ -4199,49 +4134,166 @@ setState(() {
                                 color: ConstColors.blackIconColors,
                               ),
                             );
+                          }else
+                          if(snapshot.hasData){
+
+
+                            if(snapshot.data!>0){
+                              return badges.Badge(
+
+
+                                badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: Colors.white ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: Colors.white ),),
+                                child: Icon(
+                                  MaterialCommunityIcons.account_group,
+                                  //AntDesign.message1,
+                                  color: ConstColors.blackIconColors,
+
+                                ),
+                              );
+                            }else{
+
+                              return badges.Badge(
+                                badgeContent: Text('1'),
+                                showBadge: false,
+                                child: Icon(
+                                  MaterialCommunityIcons.account_group,
+                                  //AntDesign.message1,
+                                  size: 30,
+
+                                  color: ConstColors.blackIconColors,
+                                ),
+                              );
+                            }
+
+
+                          }else{
+                            print("data: ${snapshot.data}");
+                            return badges.Badge(
+                              badgeContent: Text('1'),
+                              showBadge: false,
+                              child: Icon(
+                                MaterialCommunityIcons.account_group,
+                                //AntDesign.message1,
+                                size: 30,
+                                color: ConstColors.blackIconColors,
+                              ),
+                            );
                           }
 
 
                         }
-                      ),
-
-
-                ),
-                GestureDetector(
+                    ),
+                  ),
+                  GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/user_posts_form');
-                    },
-                    child: IconPersonaliser(icone: Icons.add_box, size: 40)),
-                IconButton(
-                    onPressed: () {
-                      /*
-                      postProvider.getPostsVideos().then((value) {
-                        if (value.length>0) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCards(),));
-                        }
-                      },);
 
-                       */
+                      Navigator.pushNamed(context, '/list_users_chat');
+                      //Navigator.pushNamed(context, '/test_chat');
+                    },
 
-                      Navigator.pushNamed(context, '/videos');
-                    },
-                    icon: Icon(
-                      Icons.video_library_rounded,
-                      size: 30,
-                      color: ConstColors.blackIconColors,
-                    )),
-                IconButton(
-                    onPressed: () {
-                      print('tap');
-                      _scaffoldKey.currentState!.openDrawer();
-                      // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
-                    },
-                    icon: Icon(
-                      Icons.menu,
-                      size: 30,
-                      color: ConstColors.blackIconColors,
-                    )),
-              ],
+                    child:  StreamBuilder<int>(
+                          stream: getNbrMessageNonLu(),
+                          builder: (context, snapshot){
+        if(snapshot.hasError){
+          print("erreur: ${snapshot.error.toString()}");
+          return badges.Badge(
+            badgeContent: Text('1'),
+            showBadge: false,
+            child: Icon(
+              Entypo.message,
+              //AntDesign.message1,
+              size: 30,
+              color: ConstColors.blackIconColors,
+            ),
+          );
+        }else
+                            if(snapshot.hasData){
+
+
+                          if(snapshot.data!>0){
+                            return badges.Badge(
+
+
+                              badgeContent: snapshot.data!>10?Text('9+',style: TextStyle(fontSize:10,color: Colors.white ),):Text('${snapshot.data!}',style: TextStyle(fontSize:10,color: Colors.white ),),
+                              child: Icon(
+                                Entypo.message,
+                                //AntDesign.message1,
+                              color: ConstColors.blackIconColors,
+
+                            ),
+                            );
+                          }else{
+
+                            return badges.Badge(
+                              badgeContent: Text('1'),
+                              showBadge: false,
+                              child: Icon(
+                                Entypo.message,
+                                //AntDesign.message1,
+                                size: 30,
+
+                                color: ConstColors.blackIconColors,
+                              ),
+                            );
+                          }
+
+
+                            }else{
+                              print("data: ${snapshot.data}");
+                              return badges.Badge(
+                                badgeContent: Text('1'),
+                                showBadge: false,
+                                child: Icon(
+                                  Entypo.message,
+                                  //AntDesign.message1,
+                                  size: 30,
+                                  color: ConstColors.blackIconColors,
+                                ),
+                              );
+                            }
+
+
+                          }
+                        ),
+
+
+                  ),
+                  GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/user_posts_form');
+                      },
+                      child: IconPersonaliser(icone: Icons.add_box, size: 40)),
+                  IconButton(
+                      onPressed: () {
+                        /*
+                        postProvider.getPostsVideos().then((value) {
+                          if (value.length>0) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCards(),));
+                          }
+                        },);
+
+                         */
+
+                        Navigator.pushNamed(context, '/videos');
+                      },
+                      icon: Icon(
+                        Icons.video_library_rounded,
+                        size: 30,
+                        color: ConstColors.blackIconColors,
+                      )),
+                  IconButton(
+                      onPressed: () {
+                        print('tap');
+                        _scaffoldKey.currentState!.openDrawer();
+                        // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
+                      },
+                      icon: Icon(
+                        Icons.menu,
+                        size: 30,
+                        color: ConstColors.blackIconColors,
+                      )),
+                ],
+              ),
             ),
           ),
         ),
