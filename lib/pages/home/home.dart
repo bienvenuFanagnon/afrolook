@@ -744,7 +744,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                           SnackBar snackBar = SnackBar(
                             content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                           );
+
                           ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                          if (user.oneIgnalUserid!=null&&user.oneIgnalUserid!.length>5) {
+                            await authProvider
+                                .sendNotification([user.oneIgnalUserid!],
+                                "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !","${authProvider.loginUserData.imageUrl!}");
+
+                          }
+
 
                         }  else{
                           SnackBar snackBar = SnackBar(
@@ -832,9 +840,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                            await  userProvider.sendAbonnementRequest(userAbonne,user,context).then((value) async {
                              if (value) {
 
+
                                // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                               if (user.oneIgnalUserid!=null&&user.oneIgnalUserid!.length>5) {
+                                 await authProvider
+                                     .sendNotification([user.oneIgnalUserid!],
+                                     "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+
+                               }
                                SnackBar snackBar = SnackBar(
                                  content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                );
@@ -1555,7 +1570,12 @@ bool abonneTap =false;
                                       // Afficher la liste
                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                      if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                        await authProvider
+                                            .sendNotification([post.user!.oneIgnalUserid!],
+                                            "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication","${authProvider.loginUserData.imageUrl!}");
 
+                                      }
 
                                       if (listUsers.isNotEmpty) {
                                         SnackBar snackBar = SnackBar(
@@ -1634,6 +1654,12 @@ bool abonneTap =false;
                                       // Afficher la liste
                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                      if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                        await authProvider
+                                            .sendNotification([post.user!.oneIgnalUserid!],
+                                            "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                      }
                                       if (listUsers.isNotEmpty) {
                                         SnackBar snackBar = SnackBar(
                                           content: Text('+1 point. Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
@@ -1918,6 +1944,12 @@ bool abonneTap =false;
                                               authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                               // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                              if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                                await authProvider
+                                                    .sendNotification([post.user!.oneIgnalUserid!],
+                                                    "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+
+                                              }
                                               SnackBar snackBar = SnackBar(
                                                 content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                               );
@@ -2176,6 +2208,12 @@ bool abonneTap =false;
                                   if (listUsers.isNotEmpty) {
                                     listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
                                     print("user trouver");
+                                    if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                      await authProvider
+                                          .sendNotification([post.user!.oneIgnalUserid!],
+                                          "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                    }
 
                                     //userProvider.updateUser(listUsers.first);
                                     SnackBar snackBar = SnackBar(
@@ -2287,6 +2325,13 @@ bool abonneTap =false;
                                   // Afficher la liste
                                   List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                       UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+                                  if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                    await authProvider
+                                        .sendNotification([post.user!.oneIgnalUserid!],
+                                        "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                  }
                                   if (listUsers.isNotEmpty) {
                                     SnackBar snackBar = SnackBar(
                                       content: Text('+1 point.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
@@ -3835,6 +3880,21 @@ setState(() {
                                     if (index % 6 == 0) {
                                       return Column(
                                         children: <Widget>[
+                                          Row(
+
+                                            children: [
+                                              TextButton(onPressed: () {
+
+
+                                              }, child: Text("")),
+                                              TextButton(onPressed: () {
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+
+
+                                              }, child: Text("Afficher plus")),
+                                            ],
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          ),
                                           SizedBox(
                                             //width: width,
                                             height: height*0.38,
@@ -3972,85 +4032,7 @@ setState(() {
                                             ),
                                           ),
                                           Divider(height: 10,),
-                                         /*
-                                          Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                              padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                              child: Row(
-                                                children: [
-                                                  Icon(Icons.storefront),
-                                                  SizedBox(width: 2,),
-                                                  TextCustomerPostDescription(
-                                                    titre:
-                                                    "Afroshop Annonces ",
-                                                    fontSize: 15,
-                                                    couleur: Colors.green,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(4.0),
-                                            child: FutureBuilder<List<ArticleData>>(
-                                                future: categorieProduitProvider.getAnnoncesArticles(),
-                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                  if (snapshot.hasData) {
-                                                    List<ArticleData> articles=snapshot.data;
-                                                    return Column(
-                                                      children: [
-                                                        Container(
-                                                          height: height * 0.22,
-                                                          width: width,
-                                                          child: FlutterCarousel.builder(
-                                                            itemCount: articles.length,
-                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                                ArticleTile( articles[index],width,height),
-                                                            options: CarouselOptions(
-                                                              autoPlay: true,
-                                                              //controller: buttonCarouselController,
-                                                              enlargeCenterPage: true,
-                                                              viewportFraction: 0.4,
-                                                              aspectRatio: 1.5,
-                                                              initialPage: 1,
-                                                              reverse: true,
-                                                              autoPlayInterval: const Duration(seconds: 2),
-                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                              autoPlayCurve: Curves.fastOutSlowIn,
 
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        /*
-                                                      Container(
-                                                        height: height*0.08,
-                                                        width: width,
-                                                        alignment: Alignment.centerLeft,
-                                                        child: ListView.builder(
-
-                                                          scrollDirection: Axis.horizontal,
-                                                          itemCount: articles.length,
-                                                          itemBuilder:
-                                                              (BuildContext context, int index) {
-                                                            return ArticleTile( articles[index],width,height);
-                                                          },
-                                                        ),
-                                                      ),
-
-                                                       */
-                                                      ],
-                                                    );
-                                                  } else if (snapshot.hasError) {
-                                                    return Icon(Icons.error_outline);
-                                                  } else {
-                                                    return CircularProgressIndicator();
-                                                  }
-                                                }),
-                                          ),
-
-                                          */
                                         ],
                                       );
 

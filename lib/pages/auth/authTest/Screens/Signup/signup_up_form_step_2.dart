@@ -425,13 +425,13 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
 
                         TextFormField(
-                          readOnly: true,
+                         // readOnly: true,
                           controller: adresseController,
                           keyboardType: TextInputType.text,
                           textInputAction: TextInputAction.next,
                           cursorColor: kPrimaryColor,
                           onTap: () {
-                            _getCurrentPosition();
+                           // _getCurrentPosition();
                           },
 
                           onSaved: (email) {},

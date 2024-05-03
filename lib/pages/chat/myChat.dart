@@ -754,6 +754,18 @@ FocusNode _focusNode=FocusNode();
                        msg.replyMessage=reply;
                        await firestore.collection('Messages').doc(msgid).set(msg.toJson());
                        widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+                       await authProvider.getUserById(widget.chat.receiver!.id!).then((users) async {
+                         if(users.isNotEmpty){
+                           if (users.first!.oneIgnalUserid!=null&&users.first!.oneIgnalUserid!.length>5) {
+                             await authProvider
+                                 .sendNotification([users.first!.oneIgnalUserid!],
+                                 "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé un message","${authProvider.loginUserData.imageUrl!}");
+
+                           }
+                         }
+
+                       },);
+
 
 
                        await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());

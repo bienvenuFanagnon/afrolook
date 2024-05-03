@@ -55,6 +55,7 @@ dependencies:
   url_launcher: ^6.1.7
   emoji_picker_flutter: ^1.6.0
   http: any
+  onesignal_flutter: ^5.1.2
   html: ^0.15.1
   any_link_preview: ^3.0.0
   progress_indicators: ^1.0.0

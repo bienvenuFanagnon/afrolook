@@ -358,8 +358,10 @@ class UserPseudo {
 }
 class AppDefaultData {
   String? id;
+  String? app_link;
   List<String>? users_id=[];
   int? nbr_abonnes=0;
+  int? app_version_code=0;
   int? nbr_likes=0;
   int? nbr_comments=0;
   double? tarifPubliCash=2.5;
@@ -373,13 +375,15 @@ class AppDefaultData {
   int? default_point_new_love=1;
  // int? default_point_new_comment=2;
 
-  AppDefaultData({this.id, this.users_id, this.nbr_abonnes=0, this.tarifPubliCash_to_xof=250.0,this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5, this.default_point_new_like=1,this.default_point_new_love=1,});
+  AppDefaultData({this.id, this.users_id, this.nbr_abonnes=0, this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5, this.default_point_new_like=1,this.default_point_new_love=1,});
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     nbr_comments = json['nbr_comments'];
     nbr_likes = json['nbr_likes'];
     nbr_comments = json['nbr_comments'];
+    app_link = json['app_link']==null?"":json['app_link'];
+    app_version_code = json['app_version_code']==null?0:json['app_version_code'];
     nbr_loves = json['nbr_loves'];
     nbr_abonnes = json['nbr_abonnes'];
     tarifPubliCash = json['tarifPubliCash'];
@@ -405,10 +409,12 @@ class AppDefaultData {
     data['nbr_likes'] = this.nbr_likes;
     data['nbr_comments'] = this.nbr_comments;
     data['nbr_abonnes'] = this.nbr_abonnes;
+    data['app_version_code'] = this.app_version_code;
 
     data['tarifPubliCash'] = this.tarifPubliCash;
     data['tarifImage'] = this.tarifImage;
     data['tarifVideo'] = this.tarifVideo;
+    data['app_link'] = this.app_link;
     data['tarifjour'] = this.tarifjour;
     data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
     data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
@@ -426,6 +432,8 @@ class AppDefaultData {
 class UserData {
   String? id;
   String? pseudo="";
+  late String? oneIgnalUserid="";
+
   String? nom;
   String? prenom;
   String? numeroDeTelephone;
@@ -475,6 +483,7 @@ class UserData {
         this.numeroDeTelephone,
         this.adresse,
         this.codeParrainage,
+        this.oneIgnalUserid="",
         this.userPays,
         this.publiCash=0,
         this.pubEntreprise=0,
@@ -515,6 +524,7 @@ class UserData {
     imageUrl = json['imageUrl'];
     numeroDeTelephone = json['numero_de_telephone'];
     adresse = json['adresse'];
+    oneIgnalUserid = json['oneIgnalUserid'];
     codeParrainage = json['code_parrainage'];
     codeParrain = json['code_parrain'];
     isConnected = json['isConnected'];
@@ -571,6 +581,7 @@ class UserData {
     data['has_entreprise'] = this.hasEntreprise;
 
     data['latitude'] = this.latitude;
+    data['oneIgnalUserid'] = this.oneIgnalUserid;
    // data['image'] = this.image;
     data['longitude'] = this.longitude;
     data['apropos'] = this.apropos;

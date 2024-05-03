@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 
+import 'dart:convert';
 import 'package:afrotok/models/model_data.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +10,7 @@ import 'package:encrypt_decrypt_plus/cipher/cipher.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:openai_client/openai_client.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -268,6 +271,14 @@ class UserAuthProvider extends ChangeNotifier {
 
     if (list.isNotEmpty) {
       loginUserData = list.first;
+      print("OneSignal=====");
+
+
+      print("OneSignal id : ${OneSignal.User.pushSubscription.id}");
+      print("OneSignal token : ${OneSignal.User.pushSubscription.token}");
+
+      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +
               loginUserData.jaimes!) /
@@ -316,6 +327,34 @@ class UserAuthProvider extends ChangeNotifier {
 
     return list;
   }
+
+  Future<List<String>> getAllUsersOneSignaUserId() async {
+    late List<UserData> list = [];
+
+    CollectionReference collectionRef =
+    FirebaseFirestore.instance.collection('Users');
+    // Get docs from collection reference
+    QuerySnapshot querySnapshot = await collectionRef.get().then((value) {
+      return value;
+    }).catchError((onError) {});
+
+    // Get data from docs and convert map to List
+    list = querySnapshot.docs
+        .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+    late List<String> listOSUserid = [];
+
+    for (UserData u in list) {
+      if (u.oneIgnalUserid!=null&&u.oneIgnalUserid!.length>5) {
+        listOSUserid.add(u.oneIgnalUserid!);
+        print("onesignaluser size : ${listOSUserid.length}");
+
+      }
+    }
+
+    return listOSUserid;
+  }
+
 
   Future<bool> getUserByPhone(String phone) async {
     //   await getAppData();
@@ -449,5 +488,58 @@ class UserAuthProvider extends ChangeNotifier {
 
 
 // Create a new client
+  String oneSignalUrl = 'https://api.onesignal.com/notifications';
+  String applogo =
+      "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
+  String oneSignalAppId =
+      'b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98'; // Replace with your app ID
+  String oneSignalAuthorization =
+      'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
 
+  // CHANGE THIS parameter to true if you want to test GDPR privacy consent
+  Future<void> sendNotification(List<String> userIds, String message, String smallImage) async {
+    print(
+        'state current user data  ================================================');
+    print("urlimage ; ${smallImage}");
+
+    print(OneSignal.User.pushSubscription.id);
+
+    final body = {
+      'contents': {'en': message},
+      'app_id': oneSignalAppId,
+
+      "include_player_ids":
+      // "include_subscription_ids":
+      userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
+
+      // android_accent_color reprsent the color of the heading text in the notifiction
+      "android_accent_color": "FF9976D2",
+
+      "small_icon":smallImage.length>5?smallImage: applogo,
+
+      "large_icon": smallImage.length>5?smallImage: applogo,
+
+      "headings": {"en": "Afrolook"},
+      //"included_segments": ["Active Users", "Inactive Users"],
+      "data": {"foo": "bar"},
+      'name': 'Afrolook',
+    };
+
+    final response = await http.post(
+      Uri.parse(oneSignalUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': "Basic $oneSignalAuthorization",
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      print('Notification sent successfully!');
+      print('sending notification: ${response.body}');
+    } else {
+      print('Error sending notification: ${response.statusCode}');
+      print('Error sending notification: ${response.body}');
+    }
+  }
 }

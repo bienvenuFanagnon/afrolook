@@ -150,6 +150,8 @@ class _UserPubTextState extends State<UserPubText> {
                                 postProvider.listConstposts.add(post);
 
 
+
+
                                 NotificationData notif=NotificationData();
                                 notif.id=firestore
                                     .collection('Notifications')
@@ -169,6 +171,17 @@ class _UserPubTextState extends State<UserPubText> {
 
                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                                 print("///////////-- save notification --///////////////");
+                                await authProvider
+                                    .getAllUsersOneSignaUserId()
+                                    .then(
+                                      (userIds) async {
+                                    if (userIds.isNotEmpty) {
+                                      await authProvider
+                                          .sendNotification(userIds,
+                                          "📢 Un nouveau post a été publié ✨","");
+                                    }
+                                  },
+                                );
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'Le post a été validé avec succès !',
@@ -408,6 +421,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                 postProvider.listConstposts.add(post);
 
 
+
                                 NotificationData notif=NotificationData();
                                 notif.id=firestore
                                     .collection('Notifications')
@@ -427,6 +441,18 @@ class _UserPubImageState extends State<UserPubImage> {
 
                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                                 print("///////////-- save notification --///////////////");
+
+                                await authProvider
+                                    .getAllUsersOneSignaUserId()
+                                    .then(
+                                      (userIds) async {
+                                    if (userIds.isNotEmpty) {
+                                      await authProvider
+                                          .sendNotification(userIds,
+                                          "📢 Un nouveau post a été publié ✨","");
+                                    }
+                                  },
+                                );
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'Le post a été validé avec succès !',
@@ -437,10 +463,13 @@ class _UserPubImageState extends State<UserPubImage> {
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
                               } catch (e) {
+
                                 print("erreur ${e}");
                                 setState(() {
                                   onTap=false;
                                 });
+                                /*
+
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'La validation du post a échoué. Veuillez réessayer.',
@@ -450,6 +479,8 @@ class _UserPubImageState extends State<UserPubImage> {
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
+
+                                 */
                               }
                             }
                           }
@@ -609,7 +640,7 @@ bool onTap=false;
                           _getImages();
                         },
                         child: PostsButtons(
-                          text: 'Sélectionner une Vidéo (max 30 s)',
+                          text: 'Sélectionner une Vidéo (max 5 min 20 mo)',
                           hauteur: SizeButtons.hauteur,
                           largeur: SizeButtons.largeur,
                           urlImage: '',
@@ -746,6 +777,7 @@ bool onTap=false;
                               });
                               authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
                              await userProvider.updateUser(authProvider.loginUserData!);
+
                               NotificationData notif=NotificationData();
                               notif.id=firestore
                                   .collection('Notifications')
@@ -765,6 +797,17 @@ bool onTap=false;
 
                               await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                               print("///////////-- save notification --///////////////");
+                              await authProvider
+                                  .getAllUsersOneSignaUserId()
+                                  .then(
+                                    (userIds) async {
+                                  if (userIds.isNotEmpty) {
+                                    await authProvider
+                                        .sendNotification(userIds,
+                                        "📢 Une nouvelle video a été publié ✨","");
+                                  }
+                                },
+                              );
 
                               SnackBar snackBar = SnackBar(
                                 content: Text(

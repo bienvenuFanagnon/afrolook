@@ -320,7 +320,7 @@ setMessageNonLu(int nbr){
      //  .where("id",isNotEqualTo: currentUserId)
         //  .orderBy('pseudo').startAt([Random().nextDouble()])
       .orderBy('createdAt', descending: true)
-          .where('id', whereIn: alphabet)
+        //  .where('id', whereIn: alphabet)
           .limit(limit)
           .get();
 
@@ -329,13 +329,9 @@ setMessageNonLu(int nbr){
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
 
+      listUsers.shuffle();
+      listUsers.shuffle();
 
-    // Afficher la liste
-    listUsers = querySnapshotUser.docs.map((doc) =>
-    UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    listUsers.forEach((loginUserData) async {
-
-    });
 
 
       print('list users ${listUsers.length}');
