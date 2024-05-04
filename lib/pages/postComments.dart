@@ -969,9 +969,14 @@ class _PostCommentsState extends State<PostComments> {
                                     ? () {}
                                     : () async {
                                         print("send tap;");
-                                        sendMessageTap = true;
+                                        setState(() {
+                                          sendMessageTap = true;
+
+                                        });
+                                        String textComment=_textController.text;
 
                                         if (_textController.text.isNotEmpty) {
+                                          _textController.text="";
                                           if (replying) {
                                             ResponsePostComment comment =
                                                 ResponsePostComment();
@@ -982,7 +987,7 @@ class _PostCommentsState extends State<PostComments> {
                                             comment.post_comment_id =
                                                 commentSelectedToReply.id;
                                             comment.message =
-                                                _textController.text;
+                                                textComment;
                                             comment.createdAt = DateTime.now()
                                                 .microsecondsSinceEpoch;
                                             comment.updatedAt = DateTime.now()
@@ -1024,7 +1029,7 @@ class _PostCommentsState extends State<PostComments> {
                                             comment.users_like_id = [];
                                             comment.responseAbonnements = [];
                                             comment.message =
-                                                _textController.text;
+                                                textComment;
                                             comment.loves = 0;
                                             comment.likes = 0;
                                             comment.comments = 0;
@@ -1062,7 +1067,9 @@ class _PostCommentsState extends State<PostComments> {
                                                     authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
                                                     authProvider.updateAppData(authProvider.appDefaultData);
                                                   }
-
+                                                  await authProvider
+                                                      .sendNotification([widget.post.user!.oneIgnalUserid!],
+                                                      "📢 @${authProvider.loginUserData.pseudo!} a commenté votre publication","${authProvider.loginUserData.imageUrl!}");
 
                                                   _textController.text = "";
                                                   print("commment envoyer");
@@ -1088,7 +1095,10 @@ class _PostCommentsState extends State<PostComments> {
                                             );
                                           }
                                         }
-                                        sendMessageTap = false;
+                                        setState(() {
+                                          sendMessageTap = false;
+
+                                        });
                                       },
                               ),
                             ),

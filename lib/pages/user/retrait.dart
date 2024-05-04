@@ -30,53 +30,48 @@ class _DepotPageState extends State<RetraitPage> {
     final List<Transaction> transactions = [
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 1)),
-        montant: 100.0,
+        montant: 1000.0,
         status: "Validé",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 2)),
-        montant: 50.0,
+        montant: 5000.0,
         status: "En attente",
         // type: "Retrait",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 1)),
-        montant: 100.0,
+        montant: 2000.0,
         status: "Annulé",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 2)),
-        montant: 50.0,
+        montant: 4000.0,
         status: "Annulé",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 1)),
-        montant: 100.0,
+        montant: 1000.0,
         status: "Validé",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 2)),
-        montant: 50.0,
+        montant: 25000.0,
         status: "En attente",
         type: "Retrait",
       ),
       Transaction(
         date: DateTime.now().subtract(const Duration(days: 1)),
-        montant: 100.0,
+        montant: 12000.0,
         status: "Annulé",
         type: "Retrait",
       ),
-      Transaction(
-        date: DateTime.now().subtract(const Duration(days: 2)),
-        montant: 50.0,
-        status: "En attente",
-        type: "Retrait",
-      ),
+
     ];
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
@@ -86,6 +81,7 @@ class _DepotPageState extends State<RetraitPage> {
       ),
       body: Column(
         children: [
+          /*
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -93,32 +89,50 @@ class _DepotPageState extends State<RetraitPage> {
               style: TextStyle(color: Colors.blue),
             ),
           ),
+
+           */
           Form(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: <Widget>[
                   SizedBox(height: 20,),
-                  ListTile(
+                  Container(
+                    decoration: BoxDecoration(color: Colors.blue,
+                    borderRadius: BorderRadius.all(Radius.circular(10))),
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: ListTile(
 
-                    leading: Icon(Icons.currency_bitcoin,color: Colors.green, size: 50,),
-                  title:  Text(
-                    'Publicash',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                    ),
+                        leading: Icon(Icons.currency_bitcoin,color: Colors.green, size: 50,),
+                      title:  Text(
+                        'Votre Solde',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          color: Colors.white,
 
-                  ),
-                    subtitle:  Text(
-                      '150',
-                      style: TextStyle(
-                        fontSize: 18.0,
+                        ),
+
                       ),
-                    ),
-                    trailing: Text(
-                      '37515.00 FCFA',
-                      style: TextStyle(
-                        fontSize: 18.0,
+                        subtitle:  Text(
+                          '${authProvider.loginUserData.votre_solde} fcfa',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 18.0,
+
+                          ),
+                        ),
+                        /*
+                        trailing: Text(
+                          '37515.00 FCFA',
+                          style: TextStyle(
+                            fontSize: 18.0,
+                          ),
+                        ),
+
+                         */
                       ),
                     ),
                   ),
@@ -128,15 +142,51 @@ class _DepotPageState extends State<RetraitPage> {
                     visible: !demandeDeDepot,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (nombreDeCrypto > 0) {
+                        if (authProvider.loginUserData.abonnes! < 50) {
                           // Envoyer une demande de dépôt
                           print('Demande de dépôt de $montant effectuée');
+                          showModalBottomSheet<void>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return SizedBox(
+                                height: height*0.3,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+
+                                      Text('La première étape pour commencer à gagner et retirer vos soldes est d\'avoir minimum 50 abonnés.',style: TextStyle(fontSize: 16),),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                           setState(() {
                             //demandeDeDepot = true;
                           });
-                        } else {
-                          // Afficher un message d'erreur
-                          print('Le montant du dépôt doit être positif');
+                        }
+                        if (authProvider.loginUserData.pubEntreprise! < 1) {
+                          // Envoyer une demande de dépôt
+                          print('Demande de dépôt de $montant effectuée');
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) => Container(
+                              height: 200,
+                              color: Colors.white,
+                              child: Center(
+                                child: Text(
+                                  "Vous êtes à la dernière étape. Les retraits sur votre compte de monétisation seront disponibles une fois que votre compte aura au minimum une publicité de la part de nos entreprises partenaires. Patientez...",
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          );
+                          setState(() {
+                            //demandeDeDepot = true;
+                          });
                         }
                       },
                       child: Text('Faire une demande de Retrait',style: TextStyle(fontSize: 15),),

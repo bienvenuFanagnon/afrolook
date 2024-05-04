@@ -46,6 +46,13 @@ class _BonASavoirState extends State<BonASavoir> {
                     'Gagner des points en likant des posts et des profils et les échanger pour gagner divers prix lors d\'événements promotionnels.',
                     textAlign: TextAlign.justify,style: TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  SizedBox(height: 16.0),
+
+                  Text(
+                    "Afrolook vous offre un montant entre 1000 et 2000 FCFA que vous pourrez retirer après avoir atteint 50 abonnés. Vérifiez la page Monétisation pour plus d'informations.",
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
 

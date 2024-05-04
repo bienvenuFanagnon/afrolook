@@ -38,6 +38,7 @@ import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
+import 'package:afrotok/services/notification_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
   //Remove this method to stop OneSignal Debugging
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
 
@@ -65,12 +67,17 @@ Future<void> main() async {
 
 // The promptForPushNotificationsWithUserResponse function will show the iOS or Android push notification prompt. We recommend removing the following code and instead using an In-App Message to prompt for notification permission
   OneSignal.Notifications.requestPermission(true);
+ // NotificationService().initNotification();
+
+
+
 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
 
   // This widget is the root of your application.
   @override

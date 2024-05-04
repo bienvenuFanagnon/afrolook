@@ -32,6 +32,10 @@ android {
     compileSdkVersion 34
     ndkVersion "25.1.8937393"
 
+    defaultConfig {
+        multiDexEnabled true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -67,8 +71,8 @@ android {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            //signingConfig signingConfigs.debug
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
+            //signingConfig signingConfigs.release
         }
     }
 }
@@ -90,6 +94,12 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.android.support:multidex:1.0.3'
     implementation 'com.google.firebase:firebase-auth-ktx'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+
     // Add the dependencies for any other desired Firebase products
+    implementation 'androidx.window:window:1.0.0'
+    implementation 'androidx.window:window-java:1.0.0'
+
+
 
 }

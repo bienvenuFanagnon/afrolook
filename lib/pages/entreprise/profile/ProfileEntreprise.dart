@@ -267,7 +267,8 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                             ),
                           ),
                           authProvider.loginUserData.role!=UserRole.ADM.name?Container():       SizedBox(height: 10,),
-                          authProvider.loginUserData.role!=UserRole.ADM.name?Container():     GestureDetector(
+                          authProvider.loginUserData.role!=UserRole.ADM.name?Container():
+                          GestureDetector(
                             onTap: () async {
                               await userProvider.getGratuitInfos().then((value) {
 

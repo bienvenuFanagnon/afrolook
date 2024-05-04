@@ -444,6 +444,7 @@ class UserData {
   UserPays? userPays;
 
   double? publiCash=0.0;
+  double? votre_solde=0.0;
   int? pubEntreprise=0;
   int? mesPubs=0;
   int? last_time_active=0;
@@ -497,6 +498,7 @@ class UserData {
         this.abonnes=0,
         this.compteTarif=0,
         this.popularite=0.0,
+        this.votre_solde=0.0,
         this.latitude=0.0,
         this.longitude=0.0,
 
@@ -532,6 +534,7 @@ class UserData {
         ? new UserPays.fromJson(json['user_pays'])
         : null;
     publiCash = json['publi_cash'];
+    votre_solde = json['votre_solde'];
     pubEntreprise = json['pub_entreprise'];
     pointContribution = json['point_contribution'];
     likes = json['likes'];
@@ -590,6 +593,7 @@ class UserData {
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
     data['publi_cash'] = this.publiCash;
+    data['votre_solde'] = this.votre_solde;
     data['pub_entreprise'] = this.pubEntreprise;
     data['point_contribution'] = this.pointContribution;
     data['likes'] = this.likes;

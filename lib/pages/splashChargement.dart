@@ -74,6 +74,8 @@ class _ChargementState extends State<SplahsChargement> {
                 print("token: existe");
                 await    authProvider.getLoginUser(token!).then((value) async {
                   if (value) {
+                    await userProvider.getAllAnnonces();
+
                     Navigator.pop(context);
                     Navigator.pushNamed(
                         context,

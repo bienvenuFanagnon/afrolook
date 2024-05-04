@@ -550,6 +550,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                                           authProvider.registerUser.imageUrl = fileURL;
 
                                           authProvider.registerUser.apropos=aproposController.text;
+                                          authProvider.registerUser.votre_solde=1000.0;
                                           authProvider.registerUser.userGlobalTags=tagsIds.toSet().toList();
                                           // Afficher une SnackBar
                                           signUp('${authProvider.registerUser.numeroDeTelephone!}@gmail.com',authProvider.registerUser.password!);

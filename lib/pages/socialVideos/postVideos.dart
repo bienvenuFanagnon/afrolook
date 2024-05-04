@@ -595,7 +595,7 @@ class _PostVideosState extends State<PostVideos> {
       backgroundColor: Colors.black,
         body: Column(
           children: [
-
+/*
             Align(
               alignment: Alignment.centerLeft,
               child: Padding(
@@ -675,6 +675,8 @@ class _PostVideosState extends State<PostVideos> {
                   }),
             ),
 
+ */
+
             Expanded(
               child: FutureBuilder<List<Post>>(
                 future: postProvider.getPostsVideos(),
@@ -726,6 +728,9 @@ class _PostVideosState extends State<PostVideos> {
 
             // }
           }
+
+          datas.shuffle();
+          datas.shuffle();
 
 
           return   Container(
@@ -1057,6 +1062,9 @@ class _PostVideosState extends State<PostVideos> {
                                   authProvider.updateAppData(authProvider.appDefaultData);
 
                                 }
+                                await authProvider
+                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
+                                    "📢 @${authProvider.loginUserData.pseudo!} a aimé votre video","${authProvider.loginUserData.imageUrl!}");
 
                               }
 
@@ -1131,6 +1139,9 @@ class _PostVideosState extends State<PostVideos> {
                                   authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
                                   authProvider.updateAppData(authProvider.appDefaultData);
                                 }
+                                await authProvider
+                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
+                                    "📢 @${authProvider.loginUserData.pseudo!} a liké votre video","${authProvider.loginUserData.imageUrl!}");
                               }
 
 

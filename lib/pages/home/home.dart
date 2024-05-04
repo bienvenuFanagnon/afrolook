@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
+import 'package:flutter_share/flutter_share.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -2585,11 +2586,12 @@ bool abonneTap =false;
                         child: Row(
                           children: [
                             TextCustomerUserTitle(
-                              titre: "non monétarisé".toUpperCase(),
+                              titre: "".toUpperCase(),
                               fontSize: SizeText.homeProfileTextSize,
                               couleur: ConstColors.textColors,
                               fontWeight: FontWeight.w400,
                             ),
+                            /*
                             IconButton(
                                 onPressed: () {},
                                 icon: Icon(
@@ -2597,6 +2599,8 @@ bool abonneTap =false;
                                   size: 20,
                                   color: Colors.red,
                                 )),
+
+                             */
                           ],
                         ),
                       ),
@@ -2668,7 +2672,7 @@ bool abonneTap =false;
                       Navigator.pop(context);
                     },
                   ),
-                  */
+
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -2685,6 +2689,8 @@ bool abonneTap =false;
                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
                     },
                   ),
+
+                   */
 /*
 
                   ListTile(
@@ -2841,6 +2847,28 @@ bool abonneTap =false;
 
                         Navigator.pushNamed(context, '/contact');
 
+                      },);
+
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(MaterialIcons.smartphone, color: Colors.green),
+                    title: TextCustomerMenu(
+
+                      titre: "Partager l'application",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+                      await authProvider.getAppData().then((value) async {
+                        await FlutterShare.share(
+                            title: 'Partager Afrolook',
+                            linkUrl: '${authProvider.appDefaultData.app_link}',
+                            chooserTitle: 'Partager Afrolook'
+                        );
                       },);
 
                     },
@@ -3612,6 +3640,21 @@ setState(() {
                         if (snapshot.hasData) {
 
                           List<Post> listConstposts=snapshot.data;
+                          listConstposts.shuffle();
+                          listConstposts.shuffle();
+                          listConstposts.insert(0, listConstposts.elementAt(0));
+                          /*
+                          for(int i=0;i<listConstposts.length;i++){
+    if (i % 6 == 0) {
+       listConstposts.insert(i, listConstposts.elementAt(i));
+
+    }
+
+                          }
+
+                           */
+
+
                           return  Column(
                             mainAxisSize: MainAxisSize.max,
                             children: [
@@ -3625,7 +3668,9 @@ setState(() {
                                   itemCount: listConstposts.length,
                                   itemBuilder:
                                       (BuildContext context, int index) {
+
                                     if (index==0) {
+                                      //listConstposts.insert(0, listConstposts.elementAt(index));
                                       return Column(
                                         children: <Widget>[
                                           Row(
@@ -3781,6 +3826,151 @@ setState(() {
 
                                           Divider(height: 10,),
                                           Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(2.0),
+                                                  child: SizedBox(
+                                                    height: 20,
+                                                    child: Marquee(
+                                                      key: Key("keys"),
+                                                      text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                                      scrollAxis: Axis.horizontal,
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      blankSpace: 20,
+                                                      velocity: 100,
+                                                      pauseAfterRound: Duration(seconds: 1),
+                                                      showFadingOnlyWhenScrolling: true,
+                                                      fadingEdgeStartFraction: 0.1,
+                                                      fadingEdgeEndFraction: 0.1,
+                                                      numberOfRounds: 1000,
+
+                                                      startPadding: 10,
+                                                      accelerationDuration: Duration(milliseconds: 5000),
+                                                      accelerationCurve: Curves.linear,
+                                                      decelerationDuration: Duration(milliseconds: 1000),
+                                                      decelerationCurve: Curves.easeOut,
+
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(onPressed: () {
+                                                Navigator.pushNamed(context, '/contact');
+
+                                              }, child:      Container(
+                                                  height: 20,
+                                                  decoration: BoxDecoration(
+                                                      color: Colors.green,
+                                                      borderRadius: BorderRadius.all(Radius.circular(2))
+                                                  ),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                                    child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                                  )))
+                                            ],
+                                          ),
+                                          // SizedBox(height: 5,),
+
+                                          userProvider.listAnnonces.length<0? Container(): Visibility(
+                                            visible: userProvider.listAnnonces.length>0?true:false,
+                                            child: SizedBox(
+                                              // width: width*0.8,
+                                              //height: height*0.2,
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(2.0),
+                                                child: FlutterCarousel.builder(
+                                                  itemCount: userProvider.listAnnonces.length,
+                                                  itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+                                                      GestureDetector(
+                                                        onTap: () async {
+                                                          Annonce annonce=userProvider.listAnnonces[itemIndex];
+                                                          annonce.vues=annonce.vues!+1;
+                                                          await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
+                                                          _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
+                                                        },
+                                                        child: ClipRRect(
+                                                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                                                          child: Container(
+                                                            width: width*0.9,
+                                                            height: height*0.2,
+                                                            child: Stack(
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: width*0.9,
+                                                                  height: height*0.2,
+                                                                  child: CachedNetworkImage(
+                                                                    fit: BoxFit.cover,
+
+                                                                    imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
+                                                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                                    //  LinearProgressIndicator(),
+
+                                                                    Skeletonizer(
+                                                                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                                                                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                                                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                                  ),
+                                                                ),
+                                                                Positioned(
+                                                                  //width: 100,
+                                                                  //height: 40,
+
+
+                                                                  child: Container(
+
+                                                                    decoration: BoxDecoration(
+                                                                      //  color: Colors.white,
+                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                    ),
+
+                                                                    child: Center(
+                                                                      child: Container(
+                                                                        width: 100,
+                                                                        decoration: BoxDecoration(
+                                                                            color: Colors.green.withOpacity(0.5),
+                                                                            borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                        ),
+                                                                        child: Padding(
+                                                                          padding: const EdgeInsets.all(8.0),
+                                                                          child: Row(
+                                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                                            children: [
+                                                                              Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                              userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  options: CarouselOptions(
+                                                    autoPlay: true,
+                                                    //controller: buttonCarouselController,
+                                                    enlargeCenterPage: true,
+                                                    viewportFraction: 0.9,
+                                                    aspectRatio: 3.0,
+                                                    // initialPage: 1,
+                                                    autoPlayInterval: const Duration(seconds: 2),
+                                                    autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                    autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Divider(height: 10,),
+                                          /*
+                                          Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Align(
@@ -3873,11 +4063,15 @@ setState(() {
                                                 }),
                                           ),
                                           Divider(height: 10,),
+                                          
+                                           */
                                         ],
                                       );
 
                                     }
                                     if (index % 6 == 0) {
+                                     // listConstposts.insert(index, listConstposts.elementAt(index));
+
                                       return Column(
                                         children: <Widget>[
                                           Row(
@@ -4032,11 +4226,157 @@ setState(() {
                                             ),
                                           ),
                                           Divider(height: 10,),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(2.0),
+                                                  child: SizedBox(
+                                                    height: 20,
+                                                    child: Marquee(
+                                                      key: Key("keys"),
+                                                      text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                                      scrollAxis: Axis.horizontal,
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      blankSpace: 20,
+                                                      velocity: 100,
+                                                      pauseAfterRound: Duration(seconds: 1),
+                                                      showFadingOnlyWhenScrolling: true,
+                                                      fadingEdgeStartFraction: 0.1,
+                                                      fadingEdgeEndFraction: 0.1,
+                                                      numberOfRounds: 1000,
+
+                                                      startPadding: 10,
+                                                      accelerationDuration: Duration(milliseconds: 5000),
+                                                      accelerationCurve: Curves.linear,
+                                                      decelerationDuration: Duration(milliseconds: 1000),
+                                                      decelerationCurve: Curves.easeOut,
+
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(onPressed: () {
+                                                Navigator.pushNamed(context, '/contact');
+
+                                              }, child:      Container(
+                                                  height: 20,
+                                                  decoration: BoxDecoration(
+                                                      color: Colors.green,
+                                                      borderRadius: BorderRadius.all(Radius.circular(2))
+                                                  ),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                                    child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                                  )))
+                                            ],
+                                          ),
+                                          // SizedBox(height: 5,),
+
+                                          userProvider.listAnnonces.length<0? Container(): Visibility(
+                                            visible: userProvider.listAnnonces.length>0?true:false,
+                                            child: SizedBox(
+                                              // width: width*0.8,
+                                              //height: height*0.2,
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(2.0),
+                                                child: FlutterCarousel.builder(
+                                                  itemCount: userProvider.listAnnonces.length,
+                                                  itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+                                                      GestureDetector(
+                                                        onTap: () async {
+                                                          Annonce annonce=userProvider.listAnnonces[itemIndex];
+                                                          annonce.vues=annonce.vues!+1;
+                                                          await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
+                                                          _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
+                                                        },
+                                                        child: ClipRRect(
+                                                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                                                          child: Container(
+                                                            width: width*0.9,
+                                                            height: height*0.2,
+                                                            child: Stack(
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: width*0.9,
+                                                                  height: height*0.2,
+                                                                  child: CachedNetworkImage(
+                                                                    fit: BoxFit.cover,
+
+                                                                    imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
+                                                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                                    //  LinearProgressIndicator(),
+
+                                                                    Skeletonizer(
+                                                                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                                                                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                                                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                                  ),
+                                                                ),
+                                                                Positioned(
+                                                                  //width: 100,
+                                                                  //height: 40,
+
+
+                                                                  child: Container(
+
+                                                                    decoration: BoxDecoration(
+                                                                      //  color: Colors.white,
+                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                    ),
+
+                                                                    child: Center(
+                                                                      child: Container(
+                                                                        width: 100,
+                                                                        decoration: BoxDecoration(
+                                                                            color: Colors.green.withOpacity(0.5),
+                                                                            borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                        ),
+                                                                        child: Padding(
+                                                                          padding: const EdgeInsets.all(8.0),
+                                                                          child: Row(
+                                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                                            children: [
+                                                                              Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                              userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  options: CarouselOptions(
+                                                    autoPlay: true,
+                                                    //controller: buttonCarouselController,
+                                                    enlargeCenterPage: true,
+                                                    viewportFraction: 0.9,
+                                                    aspectRatio: 3.0,
+                                                    // initialPage: 1,
+                                                    autoPlayInterval: const Duration(seconds: 2),
+                                                    autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                    autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
 
                                         ],
                                       );
 
-                                    }            if (index % 7 == 0) {
+                                    }
+                                    /*
+
+                                    if (index % 7 == 0) {
                                       return Column(
                                         children: <Widget>[
                                           Row(
@@ -4136,6 +4476,8 @@ setState(() {
                                       );
 
                                     }
+
+                                     */
                                     else{
                                       return  Padding(
                                         padding: const EdgeInsets.only(top: 5.0, bottom: 5),
