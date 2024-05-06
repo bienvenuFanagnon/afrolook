@@ -464,6 +464,8 @@ class UserAuthProvider extends ChangeNotifier {
               loginUserData.jaimes!) /
               (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
                   appDefaultData.nbr_loves!);
+      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+
       loginUserData.compteTarif = loginUserData.popularite! * 80;
       await firestore.collection('Users').doc(loginUserData!.id).update(
           loginUserData!.toJson());

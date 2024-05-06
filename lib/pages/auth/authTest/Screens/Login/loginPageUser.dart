@@ -1,7 +1,5 @@
-import 'dart:convert';
-import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';

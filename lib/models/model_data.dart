@@ -552,7 +552,7 @@ class UserData {
     latitude = json['latitude'];
     longitude = json['longitude'];
     apropos = json['apropos'];
-   // password = json['password']==null?"":json['password'];
+   password = json['password']==null?"":json['password'];
    // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
@@ -588,7 +588,7 @@ class UserData {
    // data['image'] = this.image;
     data['longitude'] = this.longitude;
     data['apropos'] = this.apropos;
-    //data['password'] = this.password;
+    data['password'] = this.password;
    // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;

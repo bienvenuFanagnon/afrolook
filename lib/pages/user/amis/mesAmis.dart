@@ -286,7 +286,26 @@ class _MesAmisState extends State<MesAmis> {
           friends.add(friend);
         }
         listfirends=friends;
+        // Map to store unique user names
+        Map<String, Friends> uniqueUsers = {};
+
+// Iterate through the user list
+        for (Friends user in listfirends) {
+          // Check if the name already exists in the map
+          if (!uniqueUsers.containsKey(user.friend!.pseudo!)) {
+            // Add unique user to the map
+            uniqueUsers[user.friend!.pseudo!] = user;
+          }
+        }
+
+// Access unique users from the map
+        List<Friends> uniqueUserList = uniqueUsers.values.toList();
+
+        print('Unique users: $uniqueUserList');
+        friends=uniqueUserList;
         userProvider.countFriends=friends.length;
+
+
 
 
       }

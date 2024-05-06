@@ -1,14 +1,11 @@
-import 'dart:ffi';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-import 'package:afrotok/constant/logo.dart';
-import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:eva_icons_flutter/eva_icons_flutter.dart';
-import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:like_button/like_button.dart';
@@ -595,87 +592,7 @@ class _PostVideosState extends State<PostVideos> {
       backgroundColor: Colors.black,
         body: Column(
           children: [
-/*
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.storefront,size: 20,color: Colors.green,),
-                    SizedBox(width: 2,),
-                    TextCustomerPostDescription(
-                      titre:
-                      "Afroshop Annonces ",
-                      fontSize: 10,
-                      couleur: CustomConstants.kPrimaryColor,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
-
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: FutureBuilder<List<ArticleData>>(
-                  future: categorieProduitProvider.getAnnoncesArticles(),
-                  builder: (BuildContext context, AsyncSnapshot snapshot) {
-                    if (snapshot.hasData) {
-                      List<ArticleData> articles=snapshot.data;
-                      return Column(
-                        children: [
-                          Container(
-                            height: height*0.08,
-                            width: width,
-                            child: FlutterCarousel.builder(
-                              itemCount: articles.length,
-                              itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                  ArticleTile( articles[index],width,height),
-                              options: CarouselOptions(
-                                autoPlay: true,
-                                //controller: buttonCarouselController,
-                                enlargeCenterPage: true,
-                                viewportFraction: 0.4,
-                                aspectRatio: 2.0,
-                                initialPage: 1,
-                                reverse: true,
-                                autoPlayInterval: const Duration(seconds: 2),
-                                autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                autoPlayCurve: Curves.fastOutSlowIn,
-
-                              ),
-                            ),
-                          ),
-                          /*
-                          Container(
-                            height: height*0.08,
-                            width: width,
-                            alignment: Alignment.centerLeft,
-                            child: ListView.builder(
-
-                              scrollDirection: Axis.horizontal,
-                              itemCount: articles.length,
-                              itemBuilder:
-                                  (BuildContext context, int index) {
-                                return ArticleTile( articles[index],width,height);
-                              },
-                            ),
-                          ),
-
-                           */
-                        ],
-                      );
-                    } else if (snapshot.hasError) {
-                      return Icon(Icons.error_outline);
-                    } else {
-                      return CircularProgressIndicator();
-                    }
-                  }),
-            ),
-
- */
 
             Expanded(
               child: FutureBuilder<List<Post>>(
@@ -694,6 +611,19 @@ class _PostVideosState extends State<PostVideos> {
             ),
           ],
         ));
+  }
+  bool abonneTap=false;
+
+  String formatAbonnes(int nbAbonnes) {
+    if (nbAbonnes >= 1000) {
+      double nombre = nbAbonnes / 1000;
+      return nombre.toStringAsFixed(1) + 'k';
+    } else {
+      return nbAbonnes.toString();
+    }
+  }
+  bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
   }
 
   Widget _buildFeedWidget(List<Post> datas) {
@@ -729,8 +659,8 @@ class _PostVideosState extends State<PostVideos> {
             // }
           }
 
-          datas.shuffle();
-          datas.shuffle();
+        //  datas.shuffle();
+         // datas.shuffle();
 
 
           return   Container(
@@ -1025,6 +955,97 @@ class _PostVideosState extends State<PostVideos> {
                           const SizedBox(
                             height: 20.0,
                           ),
+                          StatefulBuilder(
+
+                              builder: (BuildContext context, void Function(void Function()) setState) {
+                                return Container(
+                                  child:    isUserAbonne(authProvider.loginUserData.userAbonnes!, datas[index].user!.id!)?
+                                  Container(
+
+                                    child: Icon(Icons.check_circle,color:Colors.green),
+                                    alignment: Alignment.center,
+
+                                  ):
+                                  Container(
+
+                                    child: TextButton(
+                                      onPressed:abonneTap?
+                                          ()  { }:
+                                          ()async{
+                                        if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, datas[index].user!.id!)) {
+                                          setState(() {
+                                            abonneTap=true;
+                                          });
+                                          UserAbonnes userAbonne = UserAbonnes();
+                                          userAbonne.compteUserId=authProvider.loginUserData.id;
+                                          userAbonne.abonneUserId=datas[index].user!.id;
+
+                                          userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                          userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                                          await  userProvider.sendAbonnementRequest(userAbonne,datas[index].user!,context).then((value) async {
+                                            if (value) {
+
+
+                                              // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                                              authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                                              await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                              if (datas[index].user!.oneIgnalUserid!=null&&datas[index].user!.oneIgnalUserid!.length>5) {
+                                                await authProvider
+                                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
+                                                    "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+
+                                              }
+                                              SnackBar snackBar = SnackBar(
+                                                content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                              );
+                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                              setState(() {
+                                                abonneTap=false;
+
+                                              });
+                                            }  else{
+                                              SnackBar snackBar = SnackBar(
+                                                content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                                              );
+                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                              setState(() {
+                                                abonneTap=false;
+                                              });
+                                            }
+                                          },);
+
+
+                                          setState(() {
+                                            abonneTap=false;
+                                          });
+                                        }
+                                      },
+                                      child:abonneTap? Center(
+                                        child: LoadingAnimationWidget.flickr(
+                                          size: 20,
+                                          leftDotColor: Colors.green,
+                                          rightDotColor: Colors.black,
+                                        ),
+                                      ):
+                                      Container(
+
+                                        child: Icon(Icons.add,color:Colors.white,size: 15,),
+                                        alignment: Alignment.center,
+                                        width: 40,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.all(Radius.circular(10))
+                                        ),
+                                      ),),
+                                  ),
+                                );
+                              }
+                          ),
+                          const SizedBox(
+                            height: 5.0,
+                          ),
+
                           LikeButton(
 
                             onTap: (bool isLiked) async {
@@ -1438,26 +1459,7 @@ class _VideoWidgetState extends State<VideoWidget> {
     _initializeVideoPlayerFuture = videoPlayerController.initialize().then((_) {
 
     });
-    /*
-    _chewieController = ChewieController(
-      videoPlayerController: videoPlayerController,
-      //placeholder: Container(color: Colors.red, child: Text("afrolook")),
-      materialProgressColors: ChewieProgressColors(backgroundColor: Colors.green,playedColor: Colors.black,handleColor: Colors.black),
-      cupertinoProgressColors: ChewieProgressColors(backgroundColor: Colors.green,playedColor: Colors.black,handleColor: Colors.black),
-      //aspectRatio: 16 / 12, // Réglage de l'aspect ratio de la vidéo
-      autoPlay: true, // Définir si la vidéo doit démarrer automatiquement
-      looping: true, // Définir si la vidéo doit être en mode boucle
-      allowFullScreen: true,
-     //
-      // autoInitialize: true,
 
-      //startAt: Duration(seconds: 1),
-      fullScreenByDefault: true,
-      errorBuilder: (context, errorMessage) => Container(width: 50,height: 50, child: CircularProgressIndicator(color: Colors.green,)),
-    );
-    _chewieController.play();
-
-     */
     super.initState();
 
     videoPlayerController.setLooping(true);

@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as Path;
 import 'package:encrypt_decrypt_plus/encrypt_decrypt_plus.dart';
+import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
 
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
@@ -375,7 +376,16 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                                 authProvider.registerUser.pseudo=pseudoController.text;
                                 authProvider.registerUser.password=motDePasseController.text;
                                 //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
-                                 sendOtpCode();
+                                // sendOtpCode();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) {
+                                      return SignUpFormEtap3();
+                                    },
+                                  ),
+                                );
+
 
 
                               }else{

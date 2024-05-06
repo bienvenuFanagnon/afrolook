@@ -167,8 +167,7 @@ class _DepotPageState extends State<RetraitPage> {
                           setState(() {
                             //demandeDeDepot = true;
                           });
-                        }
-                        if (authProvider.loginUserData.pubEntreprise! < 1) {
+                        }else if (authProvider.loginUserData.pubEntreprise! < 2) {
                           // Envoyer une demande de dépôt
                           print('Demande de dépôt de $montant effectuée');
                           showModalBottomSheet(
@@ -177,9 +176,12 @@ class _DepotPageState extends State<RetraitPage> {
                               height: 200,
                               color: Colors.white,
                               child: Center(
-                                child: Text(
-                                  "Vous êtes à la dernière étape. Les retraits sur votre compte de monétisation seront disponibles une fois que votre compte aura au minimum une publicité de la part de nos entreprises partenaires. Patientez...",
-                                  style: TextStyle(fontSize: 16),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    "Vous êtes à la dernière étape. Les retraits sur votre compte de monétisation seront disponibles une fois que votre compte aura au minimum une publicité de la part de nos entreprises partenaires. Patientez...",
+                                    style: TextStyle(fontSize: 16),
+                                  ),
                                 ),
                               ),
                             ),
@@ -187,6 +189,25 @@ class _DepotPageState extends State<RetraitPage> {
                           setState(() {
                             //demandeDeDepot = true;
                           });
+                        }else{
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Container(
+                                height: 200,
+                                color: Colors.white,
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      "Veuillez nous contacter",
+                                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         }
                       },
                       child: Text('Faire une demande de Retrait',style: TextStyle(fontSize: 15),),

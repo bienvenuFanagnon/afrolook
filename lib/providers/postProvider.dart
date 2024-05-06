@@ -426,6 +426,8 @@ class PostProvider extends ChangeNotifier {
 
     }
 
+    posts.shuffle();
+    //posts.shuffle();
 
 
       return posts;

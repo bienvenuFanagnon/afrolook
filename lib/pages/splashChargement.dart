@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:ripple_wave/ripple_wave.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 
@@ -22,7 +23,8 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=1;
+  late int app_version_code=3
+  ;
 
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
@@ -75,6 +77,8 @@ class _ChargementState extends State<SplahsChargement> {
                 await    authProvider.getLoginUser(token!).then((value) async {
                   if (value) {
                     await userProvider.getAllAnnonces();
+                    userProvider.changeState(user: authProvider.loginUserData,
+                        state: UserState.ONLINE.name);
 
                     Navigator.pop(context);
                     Navigator.pushNamed(
