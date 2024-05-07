@@ -990,9 +990,16 @@ class _PostVideosState extends State<PostVideos> {
                                               authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
                                               if (datas[index].user!.oneIgnalUserid!=null&&datas[index].user!.oneIgnalUserid!.length>5) {
-                                                await authProvider
-                                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
-                                                    "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+                                                await authProvider.sendNotification(
+                                                    userIds: [datas[index].user!.oneIgnalUserid!],
+                                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                    send_user_id: "${authProvider.loginUserData.id!}",
+                                                    recever_user_id: "${datas[index].user!.id!}",
+                                                    message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                                                    type_notif: NotificationType.ABONNER.name,
+                                                    post_id: "${datas[index]!.id!}",
+                                                    post_type: PostDataType.VIDEO.name
+                                                );
 
                                               }
                                               SnackBar snackBar = SnackBar(
@@ -1083,9 +1090,16 @@ class _PostVideosState extends State<PostVideos> {
                                   authProvider.updateAppData(authProvider.appDefaultData);
 
                                 }
-                                await authProvider
-                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
-                                    "📢 @${authProvider.loginUserData.pseudo!} a aimé votre video","${authProvider.loginUserData.imageUrl!}");
+                                await authProvider.sendNotification(
+                                    userIds: [datas[index].user!.oneIgnalUserid!],
+                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                    send_user_id: "${authProvider.loginUserData.id!}",
+                                    recever_user_id: "${datas[index].user!.id!}",
+                                    message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre video",
+                                    type_notif: NotificationType.POST.name,
+                                    post_id: "${datas[index]!.id!}",
+                                    post_type: PostDataType.VIDEO.name
+                                );
 
                               }
 
@@ -1160,10 +1174,18 @@ class _PostVideosState extends State<PostVideos> {
                                   authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
                                   authProvider.updateAppData(authProvider.appDefaultData);
                                 }
-                                await authProvider
-                                    .sendNotification([datas[index].user!.oneIgnalUserid!],
-                                    "📢 @${authProvider.loginUserData.pseudo!} a liké votre video","${authProvider.loginUserData.imageUrl!}");
-                              }
+
+                                await authProvider.sendNotification(
+                                    userIds: [datas[index].user!.oneIgnalUserid!],
+                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                    send_user_id: "${authProvider.loginUserData.id!}",
+                                    recever_user_id: "${datas[index].user!.id!}",
+                                    message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre video",
+                                    type_notif: NotificationType.POST.name,
+                                    post_id: "${datas[index]!.id!}",
+                                    post_type: PostDataType.VIDEO.name
+                                );
+                           }
 
 
 

@@ -748,9 +748,17 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
 
                           ScaffoldMessenger.of(context).showSnackBar(snackBar);
                           if (user.oneIgnalUserid!=null&&user.oneIgnalUserid!.length>5) {
-                            await authProvider
-                                .sendNotification([user.oneIgnalUserid!],
-                                "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !","${authProvider.loginUserData.imageUrl!}");
+
+                            await authProvider.sendNotification(
+                                userIds: [user.oneIgnalUserid!],
+                                smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                send_user_id: "${authProvider.loginUserData.id!}",
+                                recever_user_id: "${user.id!}",
+                                message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
+                                type_notif: NotificationType.INVITATION.name,
+                                post_id: "",
+                                post_type: ""
+                            );
 
                           }
 
@@ -846,9 +854,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                                authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
                                if (user.oneIgnalUserid!=null&&user.oneIgnalUserid!.length>5) {
-                                 await authProvider
-                                     .sendNotification([user.oneIgnalUserid!],
-                                     "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+                                 await authProvider.sendNotification(
+                                     userIds: [user.oneIgnalUserid!],
+                                     smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                     send_user_id: "${authProvider.loginUserData.id!}",
+                                     recever_user_id: "${user.id!}",
+                                     message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+                                     type_notif: NotificationType.ABONNER.name,
+                                     post_id: "",
+                                     post_type: ""
+                                 );
 
                                }
                                SnackBar snackBar = SnackBar(
@@ -1572,9 +1587,16 @@ bool abonneTap =false;
                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
                                       if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                        await authProvider
-                                            .sendNotification([post.user!.oneIgnalUserid!],
-                                            "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication","${authProvider.loginUserData.imageUrl!}");
+                                        await authProvider.sendNotification(
+                                            userIds: [post.user!.oneIgnalUserid!],
+                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "${post.user!.id!}",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication",
+                                            type_notif: NotificationType.POST.name,
+                                            post_id: "${post!.id!}",
+                                            post_type: PostDataType.IMAGE.name
+                                        );
 
                                       }
 
@@ -1656,9 +1678,17 @@ bool abonneTap =false;
                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
                                       if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                        await authProvider
-                                            .sendNotification([post.user!.oneIgnalUserid!],
-                                            "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                        await authProvider.sendNotification(
+                                            userIds: [post.user!.oneIgnalUserid!],
+                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "${post.user!.id!}",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
+                                            type_notif: NotificationType.POST.name,
+                                            post_id: "${post!.id!}",
+                                            post_type: PostDataType.IMAGE.name
+                                        );
 
                                       }
                                       if (listUsers.isNotEmpty) {
@@ -1946,9 +1976,16 @@ bool abonneTap =false;
                                               // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
                                               if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                                await authProvider
-                                                    .sendNotification([post.user!.oneIgnalUserid!],
-                                                    "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte","${authProvider.loginUserData.imageUrl!}");
+                                                await authProvider.sendNotification(
+                                                    userIds: [post.user!.oneIgnalUserid!],
+                                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                    send_user_id: "${authProvider.loginUserData.id!}",
+                                                    recever_user_id: "${post.user!.id!}",
+                                                    message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                                                    type_notif: NotificationType.ABONNER.name,
+                                                    post_id: "${post!.id!}",
+                                                    post_type: PostDataType.IMAGE.name
+                                                );
 
                                               }
                                               SnackBar snackBar = SnackBar(
@@ -2210,9 +2247,17 @@ bool abonneTap =false;
                                     listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
                                     print("user trouver");
                                     if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                      await authProvider
-                                          .sendNotification([post.user!.oneIgnalUserid!],
-                                          "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                      await authProvider.sendNotification(
+                                          userIds: [post.user!.oneIgnalUserid!],
+                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id: "${authProvider.loginUserData.id!}",
+                                          recever_user_id: "${post.user!.id!}",
+                                          message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication",
+                                          type_notif: NotificationType.POST.name,
+                                          post_id: "${post!.id!}",
+                                          post_type: PostDataType.IMAGE.name
+                                      );
 
                                     }
 
@@ -2328,9 +2373,16 @@ bool abonneTap =false;
                                       UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
                                   if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                    await authProvider
-                                        .sendNotification([post.user!.oneIgnalUserid!],
-                                        "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication","${authProvider.loginUserData.imageUrl!}");
+                                    await authProvider.sendNotification(
+                                        userIds: [post.user!.oneIgnalUserid!],
+                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                        send_user_id: "${authProvider.loginUserData.id!}",
+                                        recever_user_id: "${post.user!.id!}",
+                                        message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
+                                        type_notif: NotificationType.POST.name,
+                                        post_id: "${post!.id!}",
+                                        post_type: PostDataType.IMAGE.name
+                                    );
 
                                   }
                                   if (listUsers.isNotEmpty) {

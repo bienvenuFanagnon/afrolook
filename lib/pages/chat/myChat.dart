@@ -757,9 +757,17 @@ FocusNode _focusNode=FocusNode();
                        await authProvider.getUserById(widget.chat.receiver!.id!).then((users) async {
                          if(users.isNotEmpty){
                            if (users.first!.oneIgnalUserid!=null&&users.first!.oneIgnalUserid!.length>5) {
-                             await authProvider
-                                 .sendNotification([users.first!.oneIgnalUserid!],
-                                 "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé un message","${authProvider.loginUserData.imageUrl!}");
+                             await authProvider.sendNotification(
+                                 userIds: [users.first!.oneIgnalUserid!],
+                                 smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                 send_user_id: "${authProvider.loginUserData.id!}",
+                                 recever_user_id: "${widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!}",
+                                 message: "🗨️ @${authProvider.loginUserData.pseudo!} vous a envoyé un message",
+                                 type_notif: NotificationType.MESSAGE.name,
+                                 post_id: "",
+                                 post_type: ""
+                             );
+
 
                            }
                          }

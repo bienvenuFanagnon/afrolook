@@ -371,6 +371,68 @@ class PostProvider extends ChangeNotifier {
 
   }
 
+  Future<List<Post>>
+  getPostsImagesById(String post_id) async {
+
+
+    List<Post> posts = [];
+    listConstposts =[];
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+   .where("id",isEqualTo:'${post_id}')
+
+
+        .get();
+
+    List<Post> postList = querySnapshotPost.docs.map((doc) =>
+        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (Post p in postList) {
+      //  print("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+      if (p.type==PostType.PUB.name) {
+        CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+
+        List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
+            EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        p.entrepriseData=entrepriseList.first;
+      }
+
+
+      p.user=userList.first;
+      if (p.status==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.status==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+
+
+
+
+    }
+    listConstposts=posts;
+
+    return listConstposts;
+
+  }
+
 
   Future<List<Post>> getPostsVideos() async {
 
@@ -433,6 +495,70 @@ class PostProvider extends ChangeNotifier {
       return posts;
 
   }
+
+  Future<List<Post>> getPostsVideosById(String post_id) async {
+
+    List<Post> posts = [];
+    videos =[];
+    //  UserData userData=UserData();
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+    QuerySnapshot querySnapshotPost = await postCollect.where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
+     .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
+     .where("id",isNotEqualTo:'${post_id}')
+       // .orderBy('created_at', descending: true)
+        .get();
+
+    List<Post> postList = querySnapshotPost.docs.map((doc) =>
+        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (Post p in postList) {
+      //  print("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+      if (p.type==PostType.PUB.name) {
+        CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+
+        List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
+            EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        p.entrepriseData=entrepriseList.first;
+      }
+
+
+      p.user=userList.first;
+
+      if (p.status==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.status==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+      videos=posts;
+
+
+    }
+
+    posts.shuffle();
+    //posts.shuffle();
+
+
+    return posts;
+
+  }
+
 
   Future<bool> updateVuePost(Post post,BuildContext context) async {
     try{

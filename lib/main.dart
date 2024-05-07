@@ -67,6 +67,21 @@ Future<void> main() async {
 
 // The promptForPushNotificationsWithUserResponse function will show the iOS or Android push notification prompt. We recommend removing the following code and instead using an In-App Message to prompt for notification permission
   OneSignal.Notifications.requestPermission(true);
+  String _debugLabelString = "";
+
+  OneSignal.Notifications.addClickListener((event) {
+    print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
+    _debugLabelString =
+    "==================================================================================Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+    print("${_debugLabelString}");
+    /*
+    this.setState(() {
+      _debugLabelString =
+      "Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+    });
+
+     */
+  });
  // NotificationService().initNotification();
 
 
@@ -75,13 +90,52 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
+  String _debugLabelString = "";
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT:debut');
+
+    OneSignal.Notifications.addClickListener((event) {
+      print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
+      navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
+
+      /*
+      setState(() {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => MesNotification(),));
+
+      });
+
+       */
+      _debugLabelString =
+      "=====Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+      print("${_debugLabelString}");
+      /*
+    this.setState(() {
+      _debugLabelString =
+      "Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+    });
+
+     */
+    });
+
+  }
   @override
   Widget build(BuildContext context) {
+
     return  MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
@@ -95,7 +149,8 @@ class MyApp extends StatelessWidget {
       ],
 
       child: MaterialApp(
-        title: 'Afrotok',
+          navigatorKey: navigatorKey,
+          title: 'Afrotok',
         debugShowCheckedModeBanner: false,
           theme: ThemeData.light().copyWith(
           textTheme: ThemeData.light().textTheme.apply(

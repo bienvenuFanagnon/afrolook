@@ -176,9 +176,17 @@ class _UserPubTextState extends State<UserPubText> {
                                     .then(
                                       (userIds) async {
                                     if (userIds.isNotEmpty) {
-                                      await authProvider
-                                          .sendNotification(userIds,
-                                          "📢 Un nouveau post a été publié ✨","");
+                                      await authProvider.sendNotification(
+                                          userIds: userIds,
+                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id: "${authProvider.loginUserData.id!}",
+                                          recever_user_id: "",
+                                          message: "📢 Un nouveau post a été publié ✨",
+                                          type_notif: NotificationType.POST.name,
+                                          post_id: "${post!.id!}",
+                                          post_type: PostDataType.IMAGE.name
+                                      );
+
                                     }
                                   },
                                 );
@@ -447,9 +455,18 @@ class _UserPubImageState extends State<UserPubImage> {
                                     .then(
                                       (userIds) async {
                                     if (userIds.isNotEmpty) {
-                                      await authProvider
-                                          .sendNotification(userIds,
-                                          "📢 Un nouveau post a été publié ✨","");
+
+                                      await authProvider.sendNotification(
+                                          userIds: userIds,
+                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id: "${authProvider.loginUserData.id!}",
+                                          recever_user_id: "",
+                                          message: "📢 Un nouveau post a été publié ✨",
+                                          type_notif: NotificationType.POST.name,
+                                          post_id: "${post!.id!}",
+                                          post_type: PostDataType.IMAGE.name
+                                      );
+
                                     }
                                   },
                                 );
@@ -802,10 +819,17 @@ bool onTap=false;
                                   .then(
                                     (userIds) async {
                                   if (userIds.isNotEmpty) {
-                                    await authProvider
-                                        .sendNotification(userIds,
-                                        "📢 Une nouvelle video a été publié ✨","");
-                                  }
+                                    await authProvider.sendNotification(
+                                        userIds: userIds,
+                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                        send_user_id: "${authProvider.loginUserData.id!}",
+                                        recever_user_id: "",
+                                        message: "📢 Une nouvelle video a été publié ✨",
+                                        type_notif: NotificationType.POST.name,
+                                        post_id: "${post!.id!}",
+                                        post_type: PostDataType.VIDEO.name
+                                    );
+                                }
                                 },
                               );
 

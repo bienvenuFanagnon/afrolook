@@ -1067,9 +1067,17 @@ class _PostCommentsState extends State<PostComments> {
                                                     authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
                                                     authProvider.updateAppData(authProvider.appDefaultData);
                                                   }
-                                                  await authProvider
-                                                      .sendNotification([widget.post.user!.oneIgnalUserid!],
-                                                      "📢 @${authProvider.loginUserData.pseudo!} a commenté votre publication","${authProvider.loginUserData.imageUrl!}");
+
+                                                  await authProvider.sendNotification(
+                                                      userIds: [widget.post.user!.oneIgnalUserid!],
+                                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                      send_user_id: "${authProvider.loginUserData.id!}",
+                                                      recever_user_id: "",
+                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a commenté votre publication",
+                                                      type_notif: NotificationType.POST.name,
+                                                      post_id: "${widget.post!.id!}",
+                                                      post_type: PostDataType.VIDEO.name
+                                                  );
 
                                                   _textController.text = "";
                                                   print("commment envoyer");

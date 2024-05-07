@@ -1561,6 +1561,7 @@ enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
 
 enum ChatType { USER, ENTREPRISE }
 enum InfoType { APPINFO, GRATUIT }
+enum NotificationType { MESSAGE, POST,INVITATION,ABONNER }
 
 enum TypeEntreprise { personnel, partenaire }
 
