@@ -160,6 +160,8 @@ class _UserPubTextState extends State<UserPubText> {
                                 notif.titre="Nouveau post";
                                 notif.description="Un nouveau post a été publié !";
                                 notif.users_id_view=[];
+                                notif.receiver_id="";
+
                                 notif.user_id=authProvider.loginUserData.id;
                                 notif.updatedAt =
                                     DateTime.now().microsecondsSinceEpoch;
@@ -184,7 +186,7 @@ class _UserPubTextState extends State<UserPubText> {
                                           message: "📢 Un nouveau post a été publié ✨",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name
+                                          post_type: PostDataType.IMAGE.name, chat_id: ''
                                       );
 
                                     }
@@ -438,6 +440,8 @@ class _UserPubImageState extends State<UserPubImage> {
                                 notif.titre="Nouveau post";
                                 notif.description="Un nouveau post a été publié !";
                                 notif.users_id_view=[];
+                                notif.receiver_id="";
+
                                 notif.user_id=authProvider.loginUserData.id;
                                 notif.updatedAt =
                                     DateTime.now().microsecondsSinceEpoch;
@@ -464,7 +468,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                           message: "📢 Un nouveau post a été publié ✨",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name
+                                          post_type: PostDataType.IMAGE.name, chat_id: ''
                                       );
 
                                     }
@@ -801,6 +805,8 @@ bool onTap=false;
                                   .doc()
                                   .id;
                               notif.titre="Nouveau post";
+                              notif.receiver_id="";
+
                               notif.description="Une nouvelle video a été publié !";
                               notif.users_id_view=[];
                               notif.user_id=authProvider.loginUserData.id;
@@ -827,7 +833,7 @@ bool onTap=false;
                                         message: "📢 Une nouvelle video a été publié ✨",
                                         type_notif: NotificationType.POST.name,
                                         post_id: "${post!.id!}",
-                                        post_type: PostDataType.VIDEO.name
+                                        post_type: PostDataType.VIDEO.name, chat_id: ''
                                     );
                                 }
                                 },

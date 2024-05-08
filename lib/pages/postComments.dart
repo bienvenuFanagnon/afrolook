@@ -1076,7 +1076,7 @@ class _PostCommentsState extends State<PostComments> {
                                                       message: "📢 @${authProvider.loginUserData.pseudo!} a commenté votre publication",
                                                       type_notif: NotificationType.POST.name,
                                                       post_id: "${widget.post!.id!}",
-                                                      post_type: PostDataType.VIDEO.name
+                                                      post_type: PostDataType.VIDEO.name, chat_id: ''
                                                   );
 
                                                   _textController.text = "";

@@ -210,6 +210,8 @@ class _NewGratuitInfoState extends State<NewGratuitInfo> {
                             notif.titre="Nouvelle Information";
                             notif.description="Une nouvelle information post a été publié !";
                             notif.users_id_view=[];
+                            notif.receiver_id="";
+
                             notif.user_id=authProvider.loginUserData.id;
                             notif.updatedAt =
                                 DateTime.now().microsecondsSinceEpoch;

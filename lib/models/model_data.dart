@@ -1345,6 +1345,7 @@ class NotificationData {
   String? id;
   String? media_url;
   String? user_id;
+  String? receiver_id;
   String? type;
   String? titre;
   String? status;
@@ -1361,6 +1362,7 @@ class NotificationData {
         this.titre='',this.status='',
         this.media_url='',
         this.user_id='',
+        this.receiver_id='',
         this.createdAt=0,
         this.updatedAt=0,
 
@@ -1373,6 +1375,7 @@ class NotificationData {
     type = json['type'];
     status = json['status'];
     user_id = json['user_id'];
+    receiver_id = json['receiver_id']==null?"":json['receiver_id'];
     users_id_view = json['users_id_view']==null?[]:json['users_id_view'].cast<String>();
 
     description = json['description'];
@@ -1389,6 +1392,7 @@ class NotificationData {
     data['updated_at'] = this.updatedAt;
     data['type'] = this.type;
     data['user_id'] = this.user_id;
+    data['receiver_id'] = this.receiver_id;
     data['status'] = this.status;
     data['users_id_view'] = this.users_id_view;
 
@@ -1561,7 +1565,7 @@ enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
 
 enum ChatType { USER, ENTREPRISE }
 enum InfoType { APPINFO, GRATUIT }
-enum NotificationType { MESSAGE, POST,INVITATION,ABONNER }
+enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER }
 
 enum TypeEntreprise { personnel, partenaire }
 

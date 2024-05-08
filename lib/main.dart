@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/admin/annonce.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPage.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
@@ -6,6 +9,7 @@ import 'package:afrotok/pages/auth/authTest/Screens/Welcome/welcome_screen.dart'
 import 'package:afrotok/pages/auth/authTest/Screens/login.dart';
 import 'package:afrotok/pages/bonASavoir.dart';
 import 'package:afrotok/pages/chargement.dart';
+import 'package:afrotok/pages/chat/myChat.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
@@ -27,6 +31,7 @@ import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/user/amis/addListAmis.dart';
 import 'package:afrotok/pages/user/amis/ami.dart';
+import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'package:afrotok/pages/user/conversation/listEntrepriseConv.dart';
 import 'package:afrotok/pages/user/conversation/listUserConv.dart';
 import 'package:afrotok/pages/user/profile/profile.dart';
@@ -40,6 +45,7 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/notification_service.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +54,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'models/chatmodels/message.dart';
 
 
 
@@ -68,12 +75,18 @@ Future<void> main() async {
 // The promptForPushNotificationsWithUserResponse function will show the iOS or Android push notification prompt. We recommend removing the following code and instead using an In-App Message to prompt for notification permission
   OneSignal.Notifications.requestPermission(true);
   String _debugLabelString = "";
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/*
   OneSignal.Notifications.addClickListener((event) {
-    print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
+   // print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
     _debugLabelString =
-    "==================================================================================Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
-    print("${_debugLabelString}");
+    "=======Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+    navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
+
+    //print("${_debugLabelString}");
+    print("data: ${event.notification.jsonRepresentation()}");
+
     /*
     this.setState(() {
       _debugLabelString =
@@ -82,7 +95,12 @@ Future<void> main() async {
 
      */
   });
+
+ */
+
  // NotificationService().initNotification();
+
+
 
 
 
@@ -102,16 +120,72 @@ class _MyAppState extends State<MyApp> {
   String _debugLabelString = "";
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
 
-    print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT:debut');
+  onClickNotification(){
+    OneSignal.Notifications.addClickListener((event) async {
+      // print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
+      // print("data: ${jsonDecode(event.notification.jsonRepresentation().replaceAll("\\n", "\n"))}");
+      // print("data: ${jsonEncode(event.notification.additionalData)}");
+      print("data: ${event.notification.additionalData}");
 
-    OneSignal.Notifications.addClickListener((event) {
-      print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
-      navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
+      if (event.notification.additionalData!['type_notif']==NotificationType.MESSAGE.name) {
+
+
+        Chat usersChat=Chat();
+        List<Chat> listChats = [];
+
+        CollectionReference chatCollect = await FirebaseFirestore.instance.collection('Chats');
+        QuerySnapshot querySnapshotChat = await chatCollect.where("id",isEqualTo:event.notification.additionalData!['chat_id']).get();
+        List<Chat> chats = querySnapshotChat.docs.map((doc) =>
+            Chat.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        //print("chats:  /////////////////////  ${chats.first.toJson()}");
+        //  navigatorKey.currentState!.pushNamed('/mes_notifications');
+
+        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:event.notification.additionalData!["recever_user_id"]).get();
+        // Afficher la liste
+        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        if (chats.isNotEmpty) {
+          usersChat=chats.first;
+
+
+          if (userList.isNotEmpty) {
+           // usersChat=Chat.fromJson(chatDoc.data());
+            usersChat.chatFriend=userList.first;
+            usersChat.receiver=userList.first;
+
+           // listChats.add(usersChat);
+          }
+
+          CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
+          QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:event.notification.additionalData!['chat_id']).get();
+          // Afficher la liste
+          List<Message> messages = querySnapshotMessage.docs.map((doc) =>
+              Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+          //snapshot.data![index].messages=messages;
+          usersChat.messages=messages;
+          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
+
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MyChat(title: 'mon chat', chat: usersChat,),));
+
+        }
+
+
+      }
+      else if (event.notification.additionalData!['type_notif']==NotificationType.INVITATION.name) {
+        navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),)); // Assuming your route name is '/specific_page'
+
+
+      } if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
+
+        navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),)); // Assuming your route name is '/specific_page'
+
+
+      }if (event.notification.additionalData!['type_notif']==NotificationType.MESSAGE.name) {
+
+      }
+
 
       /*
       setState(() {
@@ -122,15 +196,36 @@ class _MyAppState extends State<MyApp> {
        */
       _debugLabelString =
       "=====Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
-      print("${_debugLabelString}");
-      /*
-    this.setState(() {
-      _debugLabelString =
-      "Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
+/*
+      authProvider.getToken().then((token) async {
+        print("token: ${token}");
+
+        if (token==null||token=='') {
+          print("token: existe pas");
+          Navigator.pushNamed(context, '/welcome');
+
+
+
+
+        }else{
+          print("token: existe");
+          //Navigator.pushNamed(context, '/welcome');
+          navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
+
+        }
+      },);
+
+ */
+
     });
 
-     */
-    });
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    onClickNotification();
 
   }
   @override

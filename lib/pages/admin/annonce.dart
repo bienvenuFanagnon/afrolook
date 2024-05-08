@@ -217,6 +217,8 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
                               notif.titre="Nouvelle Annonce";
                               notif.description="Une nouvelle annonce a été publié !";
                               notif.users_id_view=[];
+                              notif.receiver_id="";
+
                               notif.user_id=authProvider.loginUserData.id;
                               notif.updatedAt =
                                   DateTime.now().microsecondsSinceEpoch;

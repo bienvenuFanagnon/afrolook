@@ -189,8 +189,9 @@ class UserAuthProvider extends ChangeNotifier {
     return users_id.any((item) => item == userIdToCheck);
   }
 
-  Stream<List<NotificationData>> getListNotificationAuth() async* {
+  Stream<List<NotificationData>> getListNotificationAuth(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
+        .where("receiver_id",isEqualTo:'${user_id}')
 
         .orderBy('created_at', descending: true)
 
@@ -499,7 +500,7 @@ class UserAuthProvider extends ChangeNotifier {
       'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
 
   // CHANGE THIS parameter to true if you want to test GDPR privacy consent
-  Future<void> sendNotification({required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type}) async {
+  Future<void> sendNotification({required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async {
 
 
     //print(OneSignal.User.pushSubscription.id);
@@ -522,7 +523,7 @@ class UserAuthProvider extends ChangeNotifier {
       "headings": {"en": "Afrolook"},
       //"included_segments": ["Active Users", "Inactive Users"],
      // "custom_data": {"order_id": 123, "currency": "USD", "amount": 25},
-      "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}"},
+      "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}","chat_id": "${chat_id}"},
       'name': 'Afrolook',
     };
 

@@ -230,11 +230,12 @@ class PostProvider extends ChangeNotifier {
       yield listConstposts;
     }
   }
-  Stream<List<NotificationData>> getListNotificatio() async* {
+  Stream<List<NotificationData>> getListNotificatio(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
+        .where("receiver_id",isEqualTo:'${user_id}')
 
         .orderBy('created_at', descending: true)
-    .limit(7)
+  //  .limit(7)
 
         .snapshots();
     List<NotificationData> notifications = [];

@@ -765,7 +765,7 @@ FocusNode _focusNode=FocusNode();
                                  message: "🗨️ @${authProvider.loginUserData.pseudo!} vous a envoyé un message",
                                  type_notif: NotificationType.MESSAGE.name,
                                  post_id: "",
-                                 post_type: ""
+                                 post_type: "", chat_id: '${widget.chat.id!}'
                              );
 
 

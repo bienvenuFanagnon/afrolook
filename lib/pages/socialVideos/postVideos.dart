@@ -998,7 +998,7 @@ class _PostVideosState extends State<PostVideos> {
                                                     message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
                                                     type_notif: NotificationType.ABONNER.name,
                                                     post_id: "${datas[index]!.id!}",
-                                                    post_type: PostDataType.VIDEO.name
+                                                    post_type: PostDataType.VIDEO.name, chat_id: ''
                                                 );
 
                                               }
@@ -1098,7 +1098,7 @@ class _PostVideosState extends State<PostVideos> {
                                     message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre video",
                                     type_notif: NotificationType.POST.name,
                                     post_id: "${datas[index]!.id!}",
-                                    post_type: PostDataType.VIDEO.name
+                                    post_type: PostDataType.VIDEO.name, chat_id: ''
                                 );
 
                               }
@@ -1183,7 +1183,7 @@ class _PostVideosState extends State<PostVideos> {
                                     message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre video",
                                     type_notif: NotificationType.POST.name,
                                     post_id: "${datas[index]!.id!}",
-                                    post_type: PostDataType.VIDEO.name
+                                    post_type: PostDataType.VIDEO.name, chat_id: ''
                                 );
                            }
 

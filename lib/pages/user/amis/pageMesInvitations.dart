@@ -104,6 +104,17 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                 await  userProvider.acceptInvitation(userInvitation).then((value) async {
                   if (value) {
 
+                    await authProvider.sendNotification(
+                        userIds: [userInvitation.inviteUser!.oneIgnalUserid!],
+                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                        send_user_id: "${authProvider.loginUserData.id!}",
+                        recever_user_id: "${userInvitation.inviteUser!.id!}",
+                        message: "📢 @${authProvider.loginUserData.pseudo!} a accepté(e) votre invitation !",
+                        type_notif: NotificationType.ACCEPTINVITATION.name,
+                        post_id: "",
+                        post_type: "", chat_id: ''
+                    );
+
 
                     ScaffoldMessenger.of(widget.context).showSnackBar(new SnackBar(
                       //  key: widget.formKey,

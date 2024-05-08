@@ -69,7 +69,7 @@ class _MesNotificationState extends State<MesNotification> {
               padding: const EdgeInsets.all(8),
               child: StreamBuilder<List<NotificationData>>(
 
-                stream: postProvider.getListNotificatio(),
+                stream: postProvider.getListNotificatio(authProvider.loginUserData.id!),
                 builder: (context, snapshot) {
 
                   if (snapshot.connectionState == ConnectionState.waiting) {

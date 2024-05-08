@@ -134,15 +134,33 @@ class _MesAmisState extends State<MesAmis> {
                 ),
                 SizedBox(width: 16,),
                 Expanded(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16),),
-                        SizedBox(height: 6,),
-                        Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
-                      ],
+                  child:  GestureDetector(
+                    onTap: () {
+                      // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
+                      getChatsData(amigo!).then((chat) async {
+                        userProvider.chat.messages=chat.messages;
+
+                        Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+
+
+
+                      },);
+
+
+                      //  Navigator.pushNamed(context, '/basic_chat');
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16),),
+                          SizedBox(height: 6,),
+                          Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                        ],
+                      ),
                     ),
                   ),
                 ),

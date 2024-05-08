@@ -729,9 +729,12 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                               .doc()
                               .id;
                           notif.titre="Nouvelle Invitation";
+                          notif.media_url=authProvider.loginUserData.imageUrl;
+                          notif.type=NotificationType.INVITATION.name;
                           notif.description="Une nouvelle invitation vous a été envoyé !";
                           notif.users_id_view=[];
                           notif.user_id=authProvider.loginUserData.id;
+                          notif.receiver_id=user.id;
                           notif.updatedAt =
                               DateTime.now().microsecondsSinceEpoch;
                           notif.createdAt =
@@ -757,7 +760,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                                 message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
                                 type_notif: NotificationType.INVITATION.name,
                                 post_id: "",
-                                post_type: ""
+                                post_type: "", chat_id: ''
                             );
 
                           }
@@ -862,7 +865,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                                      message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
                                      type_notif: NotificationType.ABONNER.name,
                                      post_id: "",
-                                     post_type: ""
+                                     post_type: "", chat_id: ''
                                  );
 
                                }
@@ -1592,11 +1595,34 @@ bool abonneTap =false;
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "${post.user!.id!}",
-                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre publication",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
-                                            post_type: PostDataType.IMAGE.name
+                                            post_type: PostDataType.IMAGE.name, chat_id: ''
                                         );
+
+                                        NotificationData notif=NotificationData();
+                                        notif.id=firestore
+                                            .collection('Notifications')
+                                            .doc()
+                                            .id;
+                                        notif.titre="Nouveau j'aime ❤️";
+                                        notif.media_url=authProvider.loginUserData.imageUrl;
+                                        notif.type=NotificationType.POST.name;
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé ❤️ votre publication";
+                                        notif.users_id_view=[];
+                                        notif.user_id=authProvider.loginUserData.id;
+                                        notif.receiver_id=post.user!.id!;
+                                        notif.updatedAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.createdAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.status = PostStatus.VALIDE.name;
+
+                                        // users.add(pseudo.toJson());
+
+                                        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
                                       }
 
@@ -1687,10 +1713,32 @@ bool abonneTap =false;
                                             message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
-                                            post_type: PostDataType.IMAGE.name
+                                            post_type: PostDataType.IMAGE.name, chat_id: ''
                                         );
+                                        NotificationData notif=NotificationData();
+                                        notif.id=firestore
+                                            .collection('Notifications')
+                                            .doc()
+                                            .id;
+                                        notif.titre="Nouveau like 👍🏾";
+                                        notif.media_url=authProvider.loginUserData.imageUrl;
+                                        notif.type=NotificationType.POST.name;
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé 👍🏾 votre publication";
+                                    notif.users_id_view=[];
+                                    notif.user_id=authProvider.loginUserData.id;
+                                    notif.receiver_id=post.user!.id!;
+                                    notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                    notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                    notif.status = PostStatus.VALIDE.name;
 
-                                      }
+                                    // users.add(pseudo.toJson());
+
+                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
+                                    }
                                       if (listUsers.isNotEmpty) {
                                         SnackBar snackBar = SnackBar(
                                           content: Text('+1 point. Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
@@ -1984,7 +2032,7 @@ bool abonneTap =false;
                                                     message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
                                                     type_notif: NotificationType.ABONNER.name,
                                                     post_id: "${post!.id!}",
-                                                    post_type: PostDataType.IMAGE.name
+                                                    post_type: PostDataType.IMAGE.name, chat_id: ''
                                                 );
 
                                               }
@@ -2256,8 +2304,32 @@ bool abonneTap =false;
                                           message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name
+                                          post_type: PostDataType.IMAGE.name, chat_id: ''
                                       );
+
+                                      NotificationData notif=NotificationData();
+                                      notif.id=firestore
+                                          .collection('Notifications')
+                                          .doc()
+                                          .id;
+                                      notif.titre="Nouveau j'aime ❤️";
+                                      notif.media_url=authProvider.loginUserData.imageUrl;
+                                      notif.type=NotificationType.POST.name;
+                                      notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre publication";
+                                      notif.users_id_view=[];
+                                      notif.user_id=authProvider.loginUserData.id;
+                                      notif.receiver_id=post.user!.id!;
+                                      notif.updatedAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.createdAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.status = PostStatus.VALIDE.name;
+
+                                      // users.add(pseudo.toJson());
+
+                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
 
                                     }
 
@@ -2381,8 +2453,31 @@ bool abonneTap =false;
                                         message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
                                         type_notif: NotificationType.POST.name,
                                         post_id: "${post!.id!}",
-                                        post_type: PostDataType.IMAGE.name
+                                        post_type: PostDataType.IMAGE.name, chat_id: ''
                                     );
+
+                                    NotificationData notif=NotificationData();
+                                    notif.id=firestore
+                                        .collection('Notifications')
+                                        .doc()
+                                        .id;
+                                    notif.titre="Nouveau like 👍🏾";
+                                    notif.media_url=authProvider.loginUserData.imageUrl;
+                                    notif.type=NotificationType.POST.name;
+                                    notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
+                                    notif.users_id_view=[];
+                                    notif.user_id=authProvider.loginUserData.id;
+                                    notif.receiver_id=post.user!.id!;
+                                    notif.updatedAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.createdAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.status = PostStatus.VALIDE.name;
+
+                                    // users.add(pseudo.toJson());
+
+                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
                                   }
                                   if (listUsers.isNotEmpty) {
@@ -3473,6 +3568,22 @@ bool abonneTap =false;
   },);
 
  */
+  authProvider.getToken().then((token) async {
+    print("token: ${token}");
+
+    if (token==null||token=='') {
+      print("token: existe pas");
+      Navigator.pushNamed(context, '/welcome');
+
+
+
+
+    }else{
+
+
+    }
+  },);
+
     WidgetsBinding.instance.addObserver(this);
     // TODO: implement initState
     super.initState();
@@ -3616,7 +3727,7 @@ setState(() {
                 },
                 child: StreamBuilder<List<NotificationData>>(
 
-                  stream: authProvider.getListNotificationAuth(),
+                  stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
                   builder: (context, snapshot) {
 
                     if (snapshot.connectionState == ConnectionState.waiting) {
