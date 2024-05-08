@@ -174,15 +174,21 @@ class _MyAppState extends State<MyApp> {
 
       }
       else if (event.notification.additionalData!['type_notif']==NotificationType.INVITATION.name) {
+        navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
+
         navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),)); // Assuming your route name is '/specific_page'
 
 
-      } if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
+      }else if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
+        navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
 
         navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),)); // Assuming your route name is '/specific_page'
 
 
-      }if (event.notification.additionalData!['type_notif']==NotificationType.MESSAGE.name) {
+      }else {
+        navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
+
+        navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
 
       }
 

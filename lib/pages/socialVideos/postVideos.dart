@@ -1000,6 +1000,28 @@ class _PostVideosState extends State<PostVideos> {
                                                     post_id: "${datas[index]!.id!}",
                                                     post_type: PostDataType.VIDEO.name, chat_id: ''
                                                 );
+                                                NotificationData notif=NotificationData();
+                                                notif.id=firestore
+                                                    .collection('Notifications')
+                                                    .doc()
+                                                    .id;
+                                                notif.titre="Nouveau Abonnement ✅";
+                                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                                notif.type=NotificationType.ABONNER.name;
+                                                notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                                notif.users_id_view=[];
+                                                notif.user_id=authProvider.loginUserData.id;
+                                                notif.receiver_id="${datas[index].user!.id!}";
+                                                notif.updatedAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.createdAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.status = PostStatus.VALIDE.name;
+
+                                                // users.add(pseudo.toJson());
+
+                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
                                               }
                                               SnackBar snackBar = SnackBar(
@@ -1095,11 +1117,35 @@ class _PostVideosState extends State<PostVideos> {
                                     smallImage: "${authProvider.loginUserData.imageUrl!}",
                                     send_user_id: "${authProvider.loginUserData.id!}",
                                     recever_user_id: "${datas[index].user!.id!}",
-                                    message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre video",
+                                    message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre video",
                                     type_notif: NotificationType.POST.name,
                                     post_id: "${datas[index]!.id!}",
                                     post_type: PostDataType.VIDEO.name, chat_id: ''
                                 );
+
+                                NotificationData notif=NotificationData();
+                                notif.id=firestore
+                                    .collection('Notifications')
+                                    .doc()
+                                    .id;
+                                notif.titre="Nouveau j'aime ❤️";
+                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                notif.type=NotificationType.POST.name;
+                                notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre video";
+                                notif.users_id_view=[];
+                                notif.user_id=authProvider.loginUserData.id;
+                                notif.receiver_id="${datas[index].user!.id!}";
+                                notif.post_id=datas[index].id!;
+                                notif.post_data_type=PostDataType.VIDEO.name!;
+                                notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.status = PostStatus.VALIDE.name;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
                               }
 
@@ -1180,12 +1226,38 @@ class _PostVideosState extends State<PostVideos> {
                                     smallImage: "${authProvider.loginUserData.imageUrl!}",
                                     send_user_id: "${authProvider.loginUserData.id!}",
                                     recever_user_id: "${datas[index].user!.id!}",
-                                    message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre video",
+                                    message: "📢 @${authProvider.loginUserData.pseudo!} a liké 👍🏾 votre video",
                                     type_notif: NotificationType.POST.name,
                                     post_id: "${datas[index]!.id!}",
                                     post_type: PostDataType.VIDEO.name, chat_id: ''
                                 );
-                           }
+
+                                NotificationData notif=NotificationData();
+                                notif.id=firestore
+                                    .collection('Notifications')
+                                    .doc()
+                                    .id;
+                                notif.titre="Nouveau like 👍🏾";
+                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                notif.type=NotificationType.POST.name;
+                                notif.description="@${authProvider.loginUserData.pseudo!} a liké votre video";
+                                notif.users_id_view=[];
+                                notif.user_id=authProvider.loginUserData.id;
+                                notif.receiver_id=datas[index]!.user!.id!;
+                                notif.post_id=datas[index]!.id!;
+                                notif.post_data_type=PostDataType.VIDEO.name!;
+
+                                notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.status = PostStatus.VALIDE.name;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+                              }
 
 
 

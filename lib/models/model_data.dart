@@ -1345,10 +1345,13 @@ class NotificationData {
   String? id;
   String? media_url;
   String? user_id;
+  String? post_id;
   String? receiver_id;
+  String? post_data_type;
   String? type;
   String? titre;
   String? status;
+  bool? is_open;
   String? description;
   List<String>? users_id_view=[];
 
@@ -1361,6 +1364,10 @@ class NotificationData {
         this.type='',this.description='',
         this.titre='',this.status='',
         this.media_url='',
+       // this.lu=false,
+        this.is_open=false,
+        this.post_data_type='',
+        this.post_id='',
         this.user_id='',
         this.receiver_id='',
         this.createdAt=0,
@@ -1376,6 +1383,9 @@ class NotificationData {
     status = json['status'];
     user_id = json['user_id'];
     receiver_id = json['receiver_id']==null?"":json['receiver_id'];
+    is_open = json['is_open']==null?false:json['is_open'];
+    post_data_type = json['post_data_type']==null?"":json['post_data_type'];
+    post_id = json['post_id']==null?"":json['post_id'];
     users_id_view = json['users_id_view']==null?[]:json['users_id_view'].cast<String>();
 
     description = json['description'];
@@ -1394,9 +1404,12 @@ class NotificationData {
     data['user_id'] = this.user_id;
     data['receiver_id'] = this.receiver_id;
     data['status'] = this.status;
+    data['is_open'] = this.is_open;
     data['users_id_view'] = this.users_id_view;
+    data['post_data_type'] = this.post_data_type;
 
     data['description'] = this.description;
+    data['post_id'] = this.post_id;
     data['titre'] = this.titre;
     data['media_url'] = this.media_url;
 
@@ -1560,7 +1573,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 enum PostType { POST, PUB }
-enum PostDataType { IMAGE, VIDEO,TEXT }
+enum PostDataType { IMAGE, VIDEO,TEXT,COMMENT }
 enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
 
 enum ChatType { USER, ENTREPRISE }

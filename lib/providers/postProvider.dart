@@ -504,9 +504,9 @@ class PostProvider extends ChangeNotifier {
     //  UserData userData=UserData();
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
-    QuerySnapshot querySnapshotPost = await postCollect.where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
-     .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
-     .where("id",isNotEqualTo:'${post_id}')
+    QuerySnapshot querySnapshotPost = await postCollect
+    // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
+     .where("id",isEqualTo:'${post_id}')
        // .orderBy('created_at', descending: true)
         .get();
 
@@ -559,6 +559,15 @@ class PostProvider extends ChangeNotifier {
     return posts;
 
   }
+
+  Future<List<Post>> getPostsVideosByPost(List<Post> posts) async {
+
+
+
+    return posts;
+
+  }
+
 
 
   Future<bool> updateVuePost(Post post,BuildContext context) async {

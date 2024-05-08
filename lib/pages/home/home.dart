@@ -868,6 +868,31 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                                      post_type: "", chat_id: ''
                                  );
 
+                                 NotificationData notif=NotificationData();
+                                 notif.id=firestore
+                                     .collection('Notifications')
+                                     .doc()
+                                     .id;
+                                 notif.titre="Nouveau Abonnement ✅";
+                                 notif.media_url=authProvider.loginUserData.imageUrl;
+                                 notif.type=NotificationType.ABONNER.name;
+                                 notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                 notif.users_id_view=[];
+                                 notif.user_id=authProvider.loginUserData.id;
+                                 notif.receiver_id="";
+                                 notif.post_id="";
+                                 notif.post_data_type=PostDataType.IMAGE.name!;
+                                 notif.updatedAt =
+                                     DateTime.now().microsecondsSinceEpoch;
+                                 notif.createdAt =
+                                     DateTime.now().microsecondsSinceEpoch;
+                                 notif.status = PostStatus.VALIDE.name;
+
+                                 // users.add(pseudo.toJson());
+
+                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
                                }
                                SnackBar snackBar = SnackBar(
                                  content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
@@ -1613,6 +1638,8 @@ bool abonneTap =false;
                                         notif.users_id_view=[];
                                         notif.user_id=authProvider.loginUserData.id;
                                         notif.receiver_id=post.user!.id!;
+                                        notif.post_id=post.id!;
+                                        notif.post_data_type=PostDataType.IMAGE.name!;
                                         notif.updatedAt =
                                             DateTime.now().microsecondsSinceEpoch;
                                         notif.createdAt =
@@ -1723,10 +1750,12 @@ bool abonneTap =false;
                                         notif.titre="Nouveau like 👍🏾";
                                         notif.media_url=authProvider.loginUserData.imageUrl;
                                         notif.type=NotificationType.POST.name;
-                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé 👍🏾 votre publication";
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
                                     notif.users_id_view=[];
                                     notif.user_id=authProvider.loginUserData.id;
                                     notif.receiver_id=post.user!.id!;
+                                    notif.post_id=post.id!;
+                                    notif.post_data_type=PostDataType.IMAGE.name!;
                                     notif.updatedAt =
                                     DateTime.now().microsecondsSinceEpoch;
                                     notif.createdAt =
@@ -2034,6 +2063,30 @@ bool abonneTap =false;
                                                     post_id: "${post!.id!}",
                                                     post_type: PostDataType.IMAGE.name, chat_id: ''
                                                 );
+                                                NotificationData notif=NotificationData();
+                                                notif.id=firestore
+                                                    .collection('Notifications')
+                                                    .doc()
+                                                    .id;
+                                                notif.titre="Nouveau Abonnement ✅";
+                                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                                notif.type=NotificationType.ABONNER.name;
+                                                notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                                notif.users_id_view=[];
+                                                notif.user_id=authProvider.loginUserData.id;
+                                                notif.receiver_id=post.user!.id!;
+                                                notif.post_id=post.id!;
+                                                notif.post_data_type=PostDataType.IMAGE.name!;
+                                                notif.updatedAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.createdAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.status = PostStatus.VALIDE.name;
+
+                                                // users.add(pseudo.toJson());
+
+                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
                                               }
                                               SnackBar snackBar = SnackBar(
@@ -2319,6 +2372,9 @@ bool abonneTap =false;
                                       notif.users_id_view=[];
                                       notif.user_id=authProvider.loginUserData.id;
                                       notif.receiver_id=post.user!.id!;
+                                      notif.post_id=post.id!;
+                                      notif.post_data_type=PostDataType.IMAGE.name!;
+
                                       notif.updatedAt =
                                           DateTime.now().microsecondsSinceEpoch;
                                       notif.createdAt =
@@ -2468,6 +2524,9 @@ bool abonneTap =false;
                                     notif.users_id_view=[];
                                     notif.user_id=authProvider.loginUserData.id;
                                     notif.receiver_id=post.user!.id!;
+                                    notif.post_id=post.id!;
+                                    notif.post_data_type=PostDataType.IMAGE.name!;
+
                                     notif.updatedAt =
                                         DateTime.now().microsecondsSinceEpoch;
                                     notif.createdAt =

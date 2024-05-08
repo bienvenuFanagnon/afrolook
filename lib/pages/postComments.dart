@@ -1073,11 +1073,37 @@ class _PostCommentsState extends State<PostComments> {
                                                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                                                       send_user_id: "${authProvider.loginUserData.id!}",
                                                       recever_user_id: "",
-                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a commenté votre publication",
+                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
                                                       type_notif: NotificationType.POST.name,
                                                       post_id: "${widget.post!.id!}",
                                                       post_type: PostDataType.VIDEO.name, chat_id: ''
                                                   );
+
+                                                  NotificationData notif=NotificationData();
+                                                  notif.id=firestore
+                                                      .collection('Notifications')
+                                                      .doc()
+                                                      .id;
+                                                  notif.titre="Commentaire 💬";
+                                                  notif.media_url=authProvider.loginUserData.imageUrl;
+                                                  notif.type=NotificationType.POST.name;
+                                                  notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+                                                  notif.users_id_view=[];
+                                                  notif.user_id=authProvider.loginUserData.id;
+                                                  notif.receiver_id=widget.post!.user!.id!;
+                                                  notif.post_id=widget.post!.id!;
+                                                  notif.post_data_type=PostDataType.COMMENT.name!;
+
+                                                  notif.updatedAt =
+                                                      DateTime.now().microsecondsSinceEpoch;
+                                                  notif.createdAt =
+                                                      DateTime.now().microsecondsSinceEpoch;
+                                                  notif.status = PostStatus.VALIDE.name;
+
+                                                  // users.add(pseudo.toJson());
+
+                                                  await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
                                                   _textController.text = "";
                                                   print("commment envoyer");

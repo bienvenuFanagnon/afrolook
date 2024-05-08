@@ -114,6 +114,32 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                         post_id: "",
                         post_type: "", chat_id: ''
                     );
+                    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+                    NotificationData notif=NotificationData();
+                    notif.id=firestore
+                        .collection('Notifications')
+                        .doc()
+                        .id;
+                    notif.titre="Abonnement ✅";
+                    notif.media_url=authProvider.loginUserData.imageUrl;
+                    notif.type=NotificationType.ACCEPTINVITATION.name;
+                    notif.description="@${authProvider.loginUserData.pseudo!} a accepté(e) votre invitation !";
+                    notif.users_id_view=[];
+                    notif.user_id=authProvider.loginUserData.id;
+                    notif.receiver_id="";
+                    notif.post_id="";
+                    notif.post_data_type="";
+                    notif.updatedAt =
+                        DateTime.now().microsecondsSinceEpoch;
+                    notif.createdAt =
+                        DateTime.now().microsecondsSinceEpoch;
+                    notif.status = PostStatus.VALIDE.name;
+
+                    // users.add(pseudo.toJson());
+
+                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
 
 
                     ScaffoldMessenger.of(widget.context).showSnackBar(new SnackBar(
