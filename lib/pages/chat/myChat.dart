@@ -392,7 +392,12 @@ FocusNode _focusNode=FocusNode();
                               ),
                               Padding(
                                 padding: list[index].sendBy==authProvider.loginUserData.id!? const EdgeInsets.only(right: 20.0,bottom: 20):const EdgeInsets.only(left: 20.0,bottom: 20),
-                                child: Text("${formaterDateTime(DateTime.fromMillisecondsSinceEpoch(list[index].create_at_time_spam))}",style: TextStyle(fontSize: 8),),
+                                child: Column(
+                                  children: [
+                                    Icon(MaterialCommunityIcons.check_all,size: 8,color: Colors.black,),
+                                    Text("${formaterDateTime(DateTime.fromMillisecondsSinceEpoch(list[index].create_at_time_spam))}",style: TextStyle(fontSize: 8),),
+                                  ],
+                                ),
                               ),
                               SizedBox(
                                 height: isLastItem ? 200 : 0.0,
@@ -429,11 +434,7 @@ FocusNode _focusNode=FocusNode();
                   } else if (snapshot.hasError) {
                     return
                       Center(child: Container(width:50 , height:50,child: CircularProgressIndicator()));
-                  } else {
-                    // QuerySnapshot data = snapshot.requireData as QuerySnapshot;
-                    // Get data from docs and convert map to List
-
-
+                  }else if (snapshot.hasData) {
 
 
                     List<Message> list = snapshot.data!;
@@ -462,7 +463,7 @@ FocusNode _focusNode=FocusNode();
 
                           // Déterminer la hauteur de SizedBox en fonction de la condition
                           double sizedBoxHeight = isLastItem ? 20.0 : 0.0;
-                         //list[index].userAbonnes=[];
+                          //list[index].userAbonnes=[];
                           return list[index].messageType==MessageType.text.name?
                           Column(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -495,10 +496,10 @@ FocusNode _focusNode=FocusNode();
                                       });
                                     },
                                     icon: Icon(
-                                    Icons.reply,
-                                    color: Colors.blue,
-                                    size: 15,
-                                                                    ),
+                                      Icons.reply,
+                                      color: Colors.blue,
+                                      size: 15,
+                                    ),
                                   ):Container(),
                                   BubbleSpecialOne(
 
@@ -533,7 +534,14 @@ FocusNode _focusNode=FocusNode();
                               ),
                               Padding(
                                 padding: list[index].sendBy==authProvider.loginUserData.id!? const EdgeInsets.only(right: 20.0,bottom: 20):const EdgeInsets.only(left: 20.0,bottom: 20),
-                                child: Text("${formaterDateTime(DateTime.fromMillisecondsSinceEpoch(list[index].create_at_time_spam))}",style: TextStyle(fontSize: 8),),
+                                child: Column(
+
+                                  children: [
+                                    Icon(MaterialCommunityIcons.check_all,size: 12,color:list[index]!.message_state==MessageState.LU.name?Colors.blue:Colors.black,),
+                                    Text("${formaterDateTime(DateTime.fromMillisecondsSinceEpoch(list[index].create_at_time_spam))}",style: TextStyle(fontSize: 8),),
+                                  ],
+                                  crossAxisAlignment:list[index].sendBy==authProvider.loginUserData.id!? CrossAxisAlignment.end:CrossAxisAlignment.start,
+                                ),
                               ),
                               SizedBox(
                                 height: isLastItem ? 200 : 0.0,
@@ -570,6 +578,10 @@ FocusNode _focusNode=FocusNode();
                             ),
                           );
                         });
+               } else {
+                    return
+                      Center(child: Container(width:50 , height:50,child: CircularProgressIndicator()));
+
                   }
                 },
               ),
