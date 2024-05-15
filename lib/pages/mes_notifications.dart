@@ -5,6 +5,7 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
+import 'package:afrotok/pages/user/retrait.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -127,6 +128,12 @@ class _MesNotificationState extends State<MesNotification> {
         });
         Navigator.push(context, MaterialPageRoute(builder: (context) => MesAmis(context: context),));
 
+      }else if (notification.type == NotificationType.PARRAINAGE.name) {
+        setState(() {
+          onTap=false;
+        });
+        Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
+
       }
 
     }
@@ -191,7 +198,7 @@ class _MesNotificationState extends State<MesNotification> {
                         }else{
                           return Container(
                             width: width,
-                            height: height,
+                            height: height*0.86,
                             child: ListView.builder(
                               //reverse: true,
 

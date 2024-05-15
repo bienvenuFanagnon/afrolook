@@ -1,8 +1,5 @@
 import 'dart:convert';
-import 'dart:math';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_3.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as Path;
 import 'package:afrotok/constant/constColors.dart';
@@ -12,7 +9,6 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:geocoding/geocoding.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -94,9 +90,46 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       list.forEach((element) async {
         if (element.codeParrainage==codeParrain) {
           element.pointContribution=element.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-          print("update user data loading : ${element.toJson()}");
+          element.votre_solde=element.votre_solde! + 50.0;
           await firestore.collection('Users').doc(element.id!).update(element.toJson());
-          print("update user data");
+
+          await authProvider.sendNotification(
+              userIds: [element!.oneIgnalUserid!],
+              smallImage: "${authProvider.loginUserData.imageUrl!}",
+              send_user_id: "${authProvider.loginUserData.id!}",
+              recever_user_id: "${element!.id!}",
+              message: "🤑 Vous avez gagné 50 FCFA grâce à un parrainage !",
+              type_notif: NotificationType.PARRAINAGE.name,
+              post_id: "",
+              post_type: "",
+              chat_id: ''
+          );
+
+          NotificationData notif=NotificationData();
+          notif.id=firestore
+              .collection('Notifications')
+              .doc()
+              .id;
+          notif.titre="Parrainage 🤑";
+          notif.media_url=authProvider.loginUserData.imageUrl;
+          notif.type=NotificationType.POST.name;
+          notif.description="Vous avez gagné 50 FCFA grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+          notif.users_id_view=[];
+          notif.user_id=authProvider.loginUserData.id;
+          notif.receiver_id=element.id!;
+          notif.post_id="";
+          notif.post_data_type="";
+
+          notif.updatedAt =
+              DateTime.now().microsecondsSinceEpoch;
+          notif.createdAt =
+              DateTime.now().microsecondsSinceEpoch;
+          notif.status = PostStatus.VALIDE.name;
+
+          // users.add(pseudo.toJson());
+
+          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
         }
       },);
 
@@ -550,7 +583,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                                           authProvider.registerUser.imageUrl = fileURL;
 
                                           authProvider.registerUser.apropos=aproposController.text;
-                                          authProvider.registerUser.votre_solde=1000.0;
+                                          authProvider.registerUser.votre_solde=0.0;
                                           authProvider.registerUser.userGlobalTags=tagsIds.toSet().toList();
                                           // Afficher une SnackBar
                                           signUp('${authProvider.registerUser.numeroDeTelephone!}@gmail.com',authProvider.registerUser.password!);

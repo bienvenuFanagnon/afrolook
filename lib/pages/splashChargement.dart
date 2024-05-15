@@ -23,7 +23,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=3
+  late int app_version_code=4
   ;
 
   Future<void> _launchUrl(Uri url) async {
@@ -84,36 +84,8 @@ class _ChargementState extends State<SplahsChargement> {
                     Navigator.pushNamed(
                         context,
                         '/home');
-                    Navigator.pushNamed(context, '/chargement');
-                    /*
-                    await      userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,20).then((value) async {
-                      if (value.isNotEmpty) {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(
-                            context,
-                            '/home');
-                        Navigator.pushNamed(context, '/chargement');
-                        /*
+                  //  Navigator.pushNamed(context, '/chargement');
 
-                    await       await userProvider.getAllAnnonces().then((value) {
-
-                      Navigator.pop(context);
-                      Navigator.pushNamed(
-                          context,
-                          '/home');
-                      Navigator.pushNamed(context, '/chargement');
-                    },);
-
-                     */
-
-                      }else{
-                        Navigator.pushNamed(context, '/welcome');
-
-                      }
-
-                    },);
-
-                     */
                   }else{
                     Navigator.pushNamed(context, '/welcome');
 

@@ -366,9 +366,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                               // Afficher une SnackBar
                               if (!await verifierPseudo(pseudoController.text)) {
                                 await authProvider.getAppData();
-                                print("app data 1: ${authProvider.appDefaultData.toJson()!}");
 
-                                print("phone ${telephoneController.text}");
                                 authProvider.initializeData();
                                 authProvider.registerUser.numeroDeTelephone=telephoneController.text;
                                 authProvider.registerUser.codeParrain=code_parrainageController.text;

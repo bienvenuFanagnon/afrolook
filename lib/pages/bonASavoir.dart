@@ -49,7 +49,7 @@ class _BonASavoirState extends State<BonASavoir> {
                   SizedBox(height: 16.0),
 
                   Text(
-                    "Afrolook vous offre un montant entre 1000 et 2000 FCFA que vous pourrez retirer après avoir atteint 50 abonnés. Vérifiez la page Monétisation pour plus d'informations.",
+                    "Gagnez 50 FCFA par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 50 FCFA pour chaque nouvel utilisateur !.\n Vérifiez la page Monétisation pour voir votre solde",
                     textAlign: TextAlign.justify,
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),

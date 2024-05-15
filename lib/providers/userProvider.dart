@@ -387,6 +387,27 @@ setMessageNonLu(int nbr){
       yield userData;
     }
   }
+  Stream<Chat> getStreamChat(String chat_id) async* {
+
+    // Définissez la requête
+    var chatsStream = FirebaseFirestore.instance.collection('Chats').where("id",isEqualTo:chat_id ).snapshots();
+
+// Obtenez la liste des utilisateurs
+    //List<DocumentSnapshot> users = await usersQuery.sget();
+    List<Chat> chats = [];
+    Chat chatData=Chat();
+
+
+    await for (var chatSnapshot in chatsStream) {
+
+      for (var friendDoc in chatSnapshot.docs) {
+
+        chatData=Chat.fromJson(friendDoc.data());
+
+      }
+      yield chatData;
+    }
+  }
 
 
   Future<bool> getOtherAbonnes(String userId) async {

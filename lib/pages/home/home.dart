@@ -50,6 +50,9 @@ import '../chat/entrepriseChat.dart';
 import '../chat/ia_Chat.dart';
 import '../chat/myChat.dart';
 import '../menu/menuDrawer.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 
@@ -3611,31 +3614,167 @@ bool abonneTap =false;
   final ScrollController _scrollController = ScrollController();
 
   int postLenght=8;
-  int limitePosts=50;
-  int limiteUsers=50;
-@override
+  int limitePosts=200;
+  int limiteUsers=100;
+
+  Future<bool> hasShownDialogToday() async {
+    print("====hasShownDialogToday====");
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String lastShownDateKey = 'lastShownDialogDate';
+    final DateTime lastShownDate = prefs.getString(lastShownDateKey) != null
+        ? DateTime.parse(prefs.getString(lastShownDateKey)!)
+        : DateTime(1970); // Set a default date if not found
+    final DateTime today = DateTime.now();
+    return lastShownDate.day == today.day &&
+        lastShownDate.month == today.month &&
+        lastShownDate.year == today.year;
+  }
+
+  Stream<List<Chat>> getAndUpdateChatsData() async* {
+    // Définissez la requête
+    var chatsStream = FirebaseFirestore.instance
+        .collection('Chats')
+        .where(Filter.or(
+      Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
+      Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
+    ))
+        .where("type", isEqualTo: ChatType.USER.name)
+        .orderBy('updated_at', descending: true)
+        .snapshots();
+
+// Obtenez la liste des utilisateurs
+    //List<DocumentSnapshot> users = await usersQuery.sget();
+    Chat usersChat = Chat();
+    List<Chat> listChats = [];
+
+    await for (var chatSnapshot in chatsStream) {
+      for (var chatDoc in chatSnapshot.docs) {
+        CollectionReference friendCollect =
+        await FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await friendCollect
+            .where("id",
+            isEqualTo:
+            authProvider.loginUserData.id == chatDoc["receiver_id"]
+                ? chatDoc["sender_id"]
+                : chatDoc["receiver_id"]!)
+            .get();
+        // Afficher la liste
+        List<UserData> userList = querySnapshotUser.docs
+            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+            .toList();
+        //userData=userList.first;
+
+        if (userList.isNotEmpty) {
+          usersChat = Chat.fromJson(chatDoc.data());
+          usersChat.chatFriend = userList.first;
+          usersChat.receiver = userList.first;
+
+          if (usersChat.senderId == authProvider.loginUserData.id!) {
+            //  widget.chat.receiver_sending=false;
+
+            usersChat.send_sending = IsSendMessage.NOTSENDING.name;
+            print('dispose update chat sender');
+
+            firestore
+                .collection('Chats')
+                .doc(usersChat.id)
+                .update(usersChat.toJson());
+          } else {
+            usersChat.receiver_sending = IsSendMessage.NOTSENDING.name;
+
+            //widget.chat.send_sending=false;
+            print('dispose update chat reicever');
+
+            firestore
+                .collection('Chats')
+                .doc(usersChat.id)
+                .update(usersChat.toJson());
+          }
+
+          //listChats.add(usersChat);
+        }
+      }
+      yield listChats;
+      listChats = [];
+    }
+  }
+
+
+
+  @override
   void initState() {
 
-/*
-  postProvider.getPostsImages(limitePosts).then((value) {
-    print('actualiser');
-    setState(() {
-      print("post lenght ${value!.length}");
-    });
+    hasShownDialogToday().then((value)
+    async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      if (!value) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Nouvelle offre sur Afrolook'),
+              content: Padding(
+                padding:  EdgeInsets.all(8.0),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image.asset("assets/images/bonus_afrolook.jpg",fit: BoxFit.cover,),
+                      SizedBox(height: 5,),
+
+                      Icon(FontAwesome.money,size:50,color:Colors.green),
+                      SizedBox(height: 10,),
+
+                      Text(
+
+                        'Vous avez la possibilité de',
+
+                      ),
+
+                      Text(
+
+                          ' gagner 50 FCFA',
+                          style:TextStyle(
+                              color:Colors.green
+                          )
+                      ),
+                      Text(
+
+                        ' chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage qui se situe dans votre profil. Vous pouvez vérifier votre solde dans la page monétisation.',textAlign: TextAlign.center,
+
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Update the last shown date
+                    prefs.setString('lastShownDateKey', DateTime.now().toString());
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+
+    },);
 
 
-  },);
-
- */
   authProvider.getToken().then((token) async {
     print("token: ${token}");
 
     if (token==null||token=='') {
       print("token: existe pas");
       Navigator.pushNamed(context, '/welcome');
-
-
-
 
     }else{
 
@@ -3644,6 +3783,7 @@ bool abonneTap =false;
   },);
 
     WidgetsBinding.instance.addObserver(this);
+
     // TODO: implement initState
     super.initState();
     dejaVuPub=true;
@@ -3666,10 +3806,13 @@ bool abonneTap =false;
         authProvider.loginUserData!.isConnected=false;
         userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE.name);
         //offline
+        getAndUpdateChatsData();
       }
       return Future.value(message);
     },);
-    authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+   // authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+
+
 
 
 
@@ -3694,36 +3837,10 @@ bool abonneTap =false;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     //userProvider.getUsers(authProvider.loginUserData!.id!);
-    if (!is_actualised) {
-      setState(() {
-
-      });
-
-    }
-
-
-/*
-
-    if (postProvider.listConstposts==null || postProvider.listConstposts.isEmpty ) {
-setState(() {
-  is_actualised=true;
-});
-
-
-       postProvider.getPostsImages(limitePosts).then((value) {
-         print('actualiser');
-        setState(() {
-          is_actualised=false;
-        });
-
-
-      },);
 
 
 
-    }
 
- */
 
     return RefreshIndicator(
       onRefresh: ()async {
@@ -3850,348 +3967,336 @@ setState(() {
             //title: Text(widget.title),
           ),
           drawer: menu(context),
-          body: Stack(
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(3.0),
-                  child: FutureBuilder<List<Post>>(
-                      future: postProvider.getPostsImages(limitePosts),
-                      builder: (BuildContext context,
-                          AsyncSnapshot snapshot) {
-                        if (snapshot.hasData) {
+          body:  Center(
+            child: Padding(
+              padding: const EdgeInsets.all(3.0),
+              child: FutureBuilder<List<Post>>(
+                  future: postProvider.getPostsImages(limitePosts),
+                  builder: (BuildContext context,
+                      AsyncSnapshot snapshot) {
+                    if (snapshot.hasData) {
 
-                          List<Post> listConstposts=snapshot.data;
-                          listConstposts.shuffle();
-                          listConstposts.shuffle();
-                          listConstposts.insert(0, listConstposts.elementAt(0));
-                          /*
-                          for(int i=0;i<listConstposts.length;i++){
-    if (i % 6 == 0) {
-       listConstposts.insert(i, listConstposts.elementAt(i));
-
-    }
-
-                          }
-
-                           */
+                      List<Post> listConstposts=snapshot.data;
+                      listConstposts.shuffle();
+                      listConstposts.shuffle();
+                      listConstposts.insert(0, listConstposts.elementAt(0));
 
 
-                          return  Column(
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              SizedBox(
-                                width: width,
-                                height: height*0.81,
-                                child: ListView.builder(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.vertical,
+                      return  Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          SizedBox(
+                            width: width,
+                            height: height*0.81,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              scrollDirection: Axis.vertical,
 
-                                  itemCount: listConstposts.length,
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
+                              itemCount: listConstposts.length,
+                              itemBuilder:
+                                  (BuildContext context, int index) {
 
-                                    if (index==0) {
-                                      //listConstposts.insert(0, listConstposts.elementAt(index));
-                                      return Column(
-                                        children: <Widget>[
-                                          Row(
+                                if (index==0) {
+                                  //listConstposts.insert(0, listConstposts.elementAt(index));
+                                  return Column(
+                                    children: <Widget>[
+                                      Row(
 
-                                            children: [
-                                              TextButton(onPressed: () {
-
-
-                                              }, child: Text("")),
-                                              TextButton(onPressed: () {
-                                                Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                        children: [
+                                          TextButton(onPressed: () {
 
 
-                                              }, child: Text("Afficher plus")),
-                                            ],
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          ),
-                                          SizedBox(
-                                            //width: width,
-                                            height: height*0.33,
-                                            child: FutureBuilder<List<UserData>>(
-                                              future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                              builder: (context, snapshot) {
-                                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                                  return
-                                                    Skeletonizer(
-                                                      //enabled: _loading,
-                                                      child: ListView.builder
-                                                        (
-                                                        scrollDirection: Axis.horizontal,
-                                                        itemCount: 10,
-                                                        itemBuilder: (context, index) {
-                                                          return Padding(
-                                                            padding: const EdgeInsets.all(1.0),
-                                                            child: Container(
-                                                              width: 300,
-                                                              child: Card(
-                                                                color: Colors.white,
-                                                                child: Padding(
-                                                                  padding: const EdgeInsets.all(8.0),
-                                                                  child: Column(
-                                                                    children: [
-                                                                      Container(
+                                          }, child: Text("")),
+                                          TextButton(onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
 
-                                                                        child: CircleAvatar(
-                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                        ),
-                                                                        height: 100,
-                                                                        width: 100,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: 70,
-                                                                        child: TextCustomerUserTitle(
-                                                                          titre: "jhasgjh",
-                                                                          fontSize: SizeText.homeProfileTextSize,
-                                                                          couleur: ConstColors.textColors,
-                                                                          fontWeight: FontWeight.w600,
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      TextCustomerUserTitle(
-                                                                        titre: "S'abonner",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: Colors.blue,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      )
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    );
-                                                } else if (snapshot.hasError) {
-                                                  return
-                                                    Skeletonizer(
-                                                      //enabled: _loading,
-                                                      child: ListView.builder(
-                                                        scrollDirection: Axis.horizontal,
-                                                        itemCount: 10,
-                                                        itemBuilder: (context, index) {
-                                                          return Container(
-                                                            width: 300,
+
+                                          }, child: Text("Afficher plus")),
+                                        ],
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      ),
+                                      SizedBox(
+                                        //width: width,
+                                        height: height*0.33,
+                                        child: FutureBuilder<List<UserData>>(
+                                          future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState == ConnectionState.waiting) {
+                                              return
+                                                Skeletonizer(
+                                                  //enabled: _loading,
+                                                  child: ListView.builder
+                                                    (
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: 10,
+                                                    itemBuilder: (context, index) {
+                                                      return Padding(
+                                                        padding: const EdgeInsets.all(1.0),
+                                                        child: Container(
+                                                          width: 300,
+                                                          child: Card(
+                                                            color: Colors.white,
                                                             child: Padding(
-                                                              padding: const EdgeInsets.all(1.0),
-                                                              child: Card(
-                                                                color: Colors.white,
-                                                                child: Padding(
-                                                                  padding: const EdgeInsets.all(8.0),
-                                                                  child: Column(
-                                                                    children: [
-                                                                      Container(
+                                                              padding: const EdgeInsets.all(8.0),
+                                                              child: Column(
+                                                                children: [
+                                                                  Container(
 
-                                                                        child: CircleAvatar(
-                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                        ),
-                                                                        height: 100,
-                                                                        width: 100,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: 70,
-                                                                        child: TextCustomerUserTitle(
-                                                                          titre: "jhasgjh",
-                                                                          fontSize: SizeText.homeProfileTextSize,
-                                                                          couleur: ConstColors.textColors,
-                                                                          fontWeight: FontWeight.w600,
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      TextCustomerUserTitle(
-                                                                        titre: "S'abonner",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: Colors.blue,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      )
-                                                                    ],
+                                                                    child: CircleAvatar(
+                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                    ),
+                                                                    height: 100,
+                                                                    width: 100,
                                                                   ),
-                                                                ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    width: 70,
+                                                                    child: TextCustomerUserTitle(
+                                                                      titre: "jhasgjh",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: ConstColors.textColors,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  TextCustomerUserTitle(
+                                                                    titre: "S'abonner",
+                                                                    fontSize: SizeText.homeProfileTextSize,
+                                                                    couleur: Colors.blue,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  )
+                                                                ],
                                                               ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    );
-                                                } else {
-                                                  // Get data from docs and convert map to List
-                                                  List<UserData> list = snapshot.data!;
-                                                  // Utiliser les données de snapshot.data
-                                                  return  ListView.builder(
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                      itemBuilder: (context, index) {
-
-                                                        //list[index].userAbonnes=[];
-                                                        return  homeProfileUsers(list[index],width,height);
-                                                      });
-                                                }
-                                              },
-                                            ),
-                                          ),
-
-                                          Divider(height: 10,),
-                                          Row(
-                                            crossAxisAlignment: CrossAxisAlignment.center,
-                                            children: [
-                                              Expanded(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(2.0),
-                                                  child: SizedBox(
-                                                    height: 20,
-                                                    child: Marquee(
-                                                      key: Key("keys"),
-                                                      text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
-                                                      scrollAxis: Axis.horizontal,
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      blankSpace: 20,
-                                                      velocity: 100,
-                                                      pauseAfterRound: Duration(seconds: 1),
-                                                      showFadingOnlyWhenScrolling: true,
-                                                      fadingEdgeStartFraction: 0.1,
-                                                      fadingEdgeEndFraction: 0.1,
-                                                      numberOfRounds: 1000,
-
-                                                      startPadding: 10,
-                                                      accelerationDuration: Duration(milliseconds: 5000),
-                                                      accelerationCurve: Curves.linear,
-                                                      decelerationDuration: Duration(milliseconds: 1000),
-                                                      decelerationCurve: Curves.easeOut,
-
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(onPressed: () {
-                                                Navigator.pushNamed(context, '/contact');
-
-                                              }, child:      Container(
-                                                  height: 20,
-                                                  decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      borderRadius: BorderRadius.all(Radius.circular(2))
-                                                  ),
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
-                                                    child: Text("Contacter",style: TextStyle(color: Colors.white),),
-                                                  )))
-                                            ],
-                                          ),
-                                          // SizedBox(height: 5,),
-
-                                          userProvider.listAnnonces.length<0? Container(): Visibility(
-                                            visible: userProvider.listAnnonces.length>0?true:false,
-                                            child: SizedBox(
-                                              // width: width*0.8,
-                                              //height: height*0.2,
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(2.0),
-                                                child: FlutterCarousel.builder(
-                                                  itemCount: userProvider.listAnnonces.length,
-                                                  itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-                                                      GestureDetector(
-                                                        onTap: () async {
-                                                          Annonce annonce=userProvider.listAnnonces[itemIndex];
-                                                          annonce.vues=annonce.vues!+1;
-                                                          await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-                                                          _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
-                                                        },
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.all(Radius.circular(10)),
-                                                          child: Container(
-                                                            width: width*0.9,
-                                                            height: height*0.2,
-                                                            child: Stack(
-                                                              children: [
-                                                                SizedBox(
-                                                                  width: width*0.9,
-                                                                  height: height*0.2,
-                                                                  child: CachedNetworkImage(
-                                                                    fit: BoxFit.cover,
-
-                                                                    imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                                    //  LinearProgressIndicator(),
-
-                                                                    Skeletonizer(
-                                                                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                                                                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                                                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                                                                  ),
-                                                                ),
-                                                                Positioned(
-                                                                  //width: 100,
-                                                                  //height: 40,
-
-
-                                                                  child: Container(
-
-                                                                    decoration: BoxDecoration(
-                                                                      //  color: Colors.white,
-                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                    ),
-
-                                                                    child: Center(
-                                                                      child: Container(
-                                                                        width: 100,
-                                                                        decoration: BoxDecoration(
-                                                                            color: Colors.green.withOpacity(0.5),
-                                                                            borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                        ),
-                                                                        child: Padding(
-                                                                          padding: const EdgeInsets.all(8.0),
-                                                                          child: Row(
-                                                                            mainAxisAlignment: MainAxisAlignment.center,
-                                                                            children: [
-                                                                              Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                              userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
                                                             ),
                                                           ),
                                                         ),
-                                                      ),
-                                                  options: CarouselOptions(
-                                                    autoPlay: true,
-                                                    //controller: buttonCarouselController,
-                                                    enlargeCenterPage: true,
-                                                    viewportFraction: 0.9,
-                                                    aspectRatio: 3.0,
-                                                    // initialPage: 1,
-                                                    autoPlayInterval: const Duration(seconds: 2),
-                                                    autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                    autoPlayCurve: Curves.fastOutSlowIn,
-
+                                                      );
+                                                    },
                                                   ),
+                                                );
+                                            } else if (snapshot.hasError) {
+                                              return
+                                                Skeletonizer(
+                                                  //enabled: _loading,
+                                                  child: ListView.builder(
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: 10,
+                                                    itemBuilder: (context, index) {
+                                                      return Container(
+                                                        width: 300,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(1.0),
+                                                          child: Card(
+                                                            color: Colors.white,
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(8.0),
+                                                              child: Column(
+                                                                children: [
+                                                                  Container(
+
+                                                                    child: CircleAvatar(
+                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                    ),
+                                                                    height: 100,
+                                                                    width: 100,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    width: 70,
+                                                                    child: TextCustomerUserTitle(
+                                                                      titre: "jhasgjh",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: ConstColors.textColors,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  TextCustomerUserTitle(
+                                                                    titre: "S'abonner",
+                                                                    fontSize: SizeText.homeProfileTextSize,
+                                                                    couleur: Colors.blue,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  )
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                );
+                                            } else {
+                                              // Get data from docs and convert map to List
+                                              List<UserData> list = snapshot.data!;
+                                              // Utiliser les données de snapshot.data
+                                              return  ListView.builder(
+                                                  scrollDirection: Axis.horizontal,
+                                                  itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                  itemBuilder: (context, index) {
+
+                                                    //list[index].userAbonnes=[];
+                                                    return  homeProfileUsers(list[index],width,height);
+                                                  });
+                                            }
+                                          },
+                                        ),
+                                      ),
+
+                                      Divider(height: 10,),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(2.0),
+                                              child: SizedBox(
+                                                height: 20,
+                                                child: Marquee(
+                                                  key: Key("keys"),
+                                                  text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                                  style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                                  scrollAxis: Axis.horizontal,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  blankSpace: 20,
+                                                  velocity: 100,
+                                                  pauseAfterRound: Duration(seconds: 1),
+                                                  showFadingOnlyWhenScrolling: true,
+                                                  fadingEdgeStartFraction: 0.1,
+                                                  fadingEdgeEndFraction: 0.1,
+                                                  numberOfRounds: 1000,
+
+                                                  startPadding: 10,
+                                                  accelerationDuration: Duration(milliseconds: 5000),
+                                                  accelerationCurve: Curves.linear,
+                                                  decelerationDuration: Duration(milliseconds: 1000),
+                                                  decelerationCurve: Curves.easeOut,
+
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          Divider(height: 10,),
-                                          /*
+                                          TextButton(onPressed: () {
+                                            Navigator.pushNamed(context, '/contact');
+
+                                          }, child:      Container(
+                                              height: 20,
+                                              decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius: BorderRadius.all(Radius.circular(2))
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                                child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                              )))
+                                        ],
+                                      ),
+                                      // SizedBox(height: 5,),
+
+                                      userProvider.listAnnonces.length<0? Container(): Visibility(
+                                        visible: userProvider.listAnnonces.length>0?true:false,
+                                        child: SizedBox(
+                                          // width: width*0.8,
+                                          //height: height*0.2,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(2.0),
+                                            child: FlutterCarousel.builder(
+                                              itemCount: userProvider.listAnnonces.length,
+                                              itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+                                                  GestureDetector(
+                                                    onTap: () async {
+                                                      Annonce annonce=userProvider.listAnnonces[itemIndex];
+                                                      annonce.vues=annonce.vues!+1;
+                                                      await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
+                                                      _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
+                                                    },
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                                                      child: Container(
+                                                        width: width*0.9,
+                                                        height: height*0.2,
+                                                        child: Stack(
+                                                          children: [
+                                                            SizedBox(
+                                                              width: width*0.9,
+                                                              height: height*0.2,
+                                                              child: CachedNetworkImage(
+                                                                fit: BoxFit.cover,
+
+                                                                imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
+                                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                                //  LinearProgressIndicator(),
+
+                                                                Skeletonizer(
+                                                                    child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                                                                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                                                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                              ),
+                                                            ),
+                                                            Positioned(
+                                                              //width: 100,
+                                                              //height: 40,
+
+
+                                                              child: Container(
+
+                                                                decoration: BoxDecoration(
+                                                                  //  color: Colors.white,
+                                                                    borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                ),
+
+                                                                child: Center(
+                                                                  child: Container(
+                                                                    width: 100,
+                                                                    decoration: BoxDecoration(
+                                                                        color: Colors.green.withOpacity(0.5),
+                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                    ),
+                                                                    child: Padding(
+                                                                      padding: const EdgeInsets.all(8.0),
+                                                                      child: Row(
+                                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                                        children: [
+                                                                          Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                          userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              options: CarouselOptions(
+                                                autoPlay: true,
+                                                //controller: buttonCarouselController,
+                                                enlargeCenterPage: true,
+                                                viewportFraction: 0.9,
+                                                aspectRatio: 3.0,
+                                                // initialPage: 1,
+                                                autoPlayInterval: const Duration(seconds: 2),
+                                                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                autoPlayCurve: Curves.fastOutSlowIn,
+
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Divider(height: 10,),
+                                      /*
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
@@ -4285,318 +4390,318 @@ setState(() {
                                                 }),
                                           ),
                                           Divider(height: 10,),
-                                          
+
                                            */
+                                    ],
+                                  );
+
+                                }
+                                if (index % 6 == 0) {
+                                  // listConstposts.insert(index, listConstposts.elementAt(index));
+
+                                  return Column(
+                                    children: <Widget>[
+                                      Row(
+
+                                        children: [
+                                          TextButton(onPressed: () {
+
+
+                                          }, child: Text("")),
+                                          TextButton(onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+
+
+                                          }, child: Text("Afficher plus")),
                                         ],
-                                      );
-
-                                    }
-                                    if (index % 6 == 0) {
-                                     // listConstposts.insert(index, listConstposts.elementAt(index));
-
-                                      return Column(
-                                        children: <Widget>[
-                                          Row(
-
-                                            children: [
-                                              TextButton(onPressed: () {
-
-
-                                              }, child: Text("")),
-                                              TextButton(onPressed: () {
-                                                Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-
-
-                                              }, child: Text("Afficher plus")),
-                                            ],
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          ),
-                                          SizedBox(
-                                            //width: width,
-                                            height: height*0.38,
-                                            child: FutureBuilder<List<UserData>>(
-                                              future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                              builder: (context, snapshot) {
-                                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                                  return
-                                                    Skeletonizer(
-                                                      //enabled: _loading,
-                                                      child: ListView.builder
-                                                        (
-                                                        scrollDirection: Axis.horizontal,
-                                                        itemCount: 10,
-                                                        itemBuilder: (context, index) {
-                                                          return Padding(
-                                                            padding: const EdgeInsets.all(1.0),
-                                                            child: Container(
-                                                              width: 300,
-                                                              child: Card(
-                                                                color: Colors.white,
-                                                                child: Padding(
-                                                                  padding: const EdgeInsets.all(8.0),
-                                                                  child: Column(
-                                                                    children: [
-                                                                      Container(
-
-                                                                        child: CircleAvatar(
-                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                        ),
-                                                                        height: 100,
-                                                                        width: 100,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: 70,
-                                                                        child: TextCustomerUserTitle(
-                                                                          titre: "jhasgjh",
-                                                                          fontSize: SizeText.homeProfileTextSize,
-                                                                          couleur: ConstColors.textColors,
-                                                                          fontWeight: FontWeight.w600,
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      TextCustomerUserTitle(
-                                                                        titre: "S'abonner",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: Colors.blue,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      )
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    );
-                                                } else if (snapshot.hasData) {
-                                                  // Get data from docs and convert map to List
-                                                  List<UserData> list = snapshot.data!;
-                                                  // Utiliser les données de snapshot.data
-                                                  return  ListView.builder(
-                                                      scrollDirection: Axis.horizontal,
-                                                      itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                      itemBuilder: (context, index) {
-
-                                                        //list[index].userAbonnes=[];
-                                                        return  homeProfileUsers(list[index],width,height);
-                                                      });
-
-                                                } else {
-                                                  return
-                                                    Skeletonizer(
-                                                      //enabled: _loading,
-                                                      child: ListView.builder(
-                                                        scrollDirection: Axis.horizontal,
-                                                        itemCount: 10,
-                                                        itemBuilder: (context, index) {
-                                                          return Container(
-                                                            width: 300,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      ),
+                                      SizedBox(
+                                        //width: width,
+                                        height: height*0.38,
+                                        child: FutureBuilder<List<UserData>>(
+                                          future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState == ConnectionState.waiting) {
+                                              return
+                                                Skeletonizer(
+                                                  //enabled: _loading,
+                                                  child: ListView.builder
+                                                    (
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: 10,
+                                                    itemBuilder: (context, index) {
+                                                      return Padding(
+                                                        padding: const EdgeInsets.all(1.0),
+                                                        child: Container(
+                                                          width: 300,
+                                                          child: Card(
+                                                            color: Colors.white,
                                                             child: Padding(
-                                                              padding: const EdgeInsets.all(1.0),
-                                                              child: Card(
-                                                                color: Colors.white,
-                                                                child: Padding(
-                                                                  padding: const EdgeInsets.all(8.0),
-                                                                  child: Column(
-                                                                    children: [
-                                                                      Container(
+                                                              padding: const EdgeInsets.all(8.0),
+                                                              child: Column(
+                                                                children: [
+                                                                  Container(
 
-                                                                        child: CircleAvatar(
-                                                                          backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                        ),
-                                                                        height: 100,
-                                                                        width: 100,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: 70,
-                                                                        child: TextCustomerUserTitle(
-                                                                          titre: "jhasgjh",
-                                                                          fontSize: SizeText.homeProfileTextSize,
-                                                                          couleur: ConstColors.textColors,
-                                                                          fontWeight: FontWeight.w600,
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        height: 2,
-                                                                      ),
-                                                                      TextCustomerUserTitle(
-                                                                        titre: "S'abonner",
-                                                                        fontSize: SizeText.homeProfileTextSize,
-                                                                        couleur: Colors.blue,
-                                                                        fontWeight: FontWeight.w600,
-                                                                      )
-                                                                    ],
+                                                                    child: CircleAvatar(
+                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                    ),
+                                                                    height: 100,
+                                                                    width: 100,
                                                                   ),
-                                                                ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    width: 70,
+                                                                    child: TextCustomerUserTitle(
+                                                                      titre: "jhasgjh",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: ConstColors.textColors,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  TextCustomerUserTitle(
+                                                                    titre: "S'abonner",
+                                                                    fontSize: SizeText.homeProfileTextSize,
+                                                                    couleur: Colors.blue,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  )
+                                                                ],
                                                               ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    );
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                          Divider(height: 10,),
-                                          Row(
-                                            crossAxisAlignment: CrossAxisAlignment.center,
-                                            children: [
-                                              Expanded(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(2.0),
-                                                  child: SizedBox(
-                                                    height: 20,
-                                                    child: Marquee(
-                                                      key: Key("keys"),
-                                                      text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
-                                                      scrollAxis: Axis.horizontal,
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      blankSpace: 20,
-                                                      velocity: 100,
-                                                      pauseAfterRound: Duration(seconds: 1),
-                                                      showFadingOnlyWhenScrolling: true,
-                                                      fadingEdgeStartFraction: 0.1,
-                                                      fadingEdgeEndFraction: 0.1,
-                                                      numberOfRounds: 1000,
-
-                                                      startPadding: 10,
-                                                      accelerationDuration: Duration(milliseconds: 5000),
-                                                      accelerationCurve: Curves.linear,
-                                                      decelerationDuration: Duration(milliseconds: 1000),
-                                                      decelerationCurve: Curves.easeOut,
-
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(onPressed: () {
-                                                Navigator.pushNamed(context, '/contact');
-
-                                              }, child:      Container(
-                                                  height: 20,
-                                                  decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      borderRadius: BorderRadius.all(Radius.circular(2))
-                                                  ),
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
-                                                    child: Text("Contacter",style: TextStyle(color: Colors.white),),
-                                                  )))
-                                            ],
-                                          ),
-                                          // SizedBox(height: 5,),
-
-                                          userProvider.listAnnonces.length<0? Container(): Visibility(
-                                            visible: userProvider.listAnnonces.length>0?true:false,
-                                            child: SizedBox(
-                                              // width: width*0.8,
-                                              //height: height*0.2,
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(2.0),
-                                                child: FlutterCarousel.builder(
-                                                  itemCount: userProvider.listAnnonces.length,
-                                                  itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-                                                      GestureDetector(
-                                                        onTap: () async {
-                                                          Annonce annonce=userProvider.listAnnonces[itemIndex];
-                                                          annonce.vues=annonce.vues!+1;
-                                                          await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-                                                          _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
-                                                        },
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.all(Radius.circular(10)),
-                                                          child: Container(
-                                                            width: width*0.9,
-                                                            height: height*0.2,
-                                                            child: Stack(
-                                                              children: [
-                                                                SizedBox(
-                                                                  width: width*0.9,
-                                                                  height: height*0.2,
-                                                                  child: CachedNetworkImage(
-                                                                    fit: BoxFit.cover,
-
-                                                                    imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                                    //  LinearProgressIndicator(),
-
-                                                                    Skeletonizer(
-                                                                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                                                                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                                                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                                                                  ),
-                                                                ),
-                                                                Positioned(
-                                                                  //width: 100,
-                                                                  //height: 40,
-
-
-                                                                  child: Container(
-
-                                                                    decoration: BoxDecoration(
-                                                                      //  color: Colors.white,
-                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                    ),
-
-                                                                    child: Center(
-                                                                      child: Container(
-                                                                        width: 100,
-                                                                        decoration: BoxDecoration(
-                                                                            color: Colors.green.withOpacity(0.5),
-                                                                            borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                        ),
-                                                                        child: Padding(
-                                                                          padding: const EdgeInsets.all(8.0),
-                                                                          child: Row(
-                                                                            mainAxisAlignment: MainAxisAlignment.center,
-                                                                            children: [
-                                                                              Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                              userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
                                                             ),
                                                           ),
                                                         ),
-                                                      ),
-                                                  options: CarouselOptions(
-                                                    autoPlay: true,
-                                                    //controller: buttonCarouselController,
-                                                    enlargeCenterPage: true,
-                                                    viewportFraction: 0.9,
-                                                    aspectRatio: 3.0,
-                                                    // initialPage: 1,
-                                                    autoPlayInterval: const Duration(seconds: 2),
-                                                    autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                    autoPlayCurve: Curves.fastOutSlowIn,
-
+                                                      );
+                                                    },
                                                   ),
+                                                );
+                                            } else if (snapshot.hasData) {
+                                              // Get data from docs and convert map to List
+                                              List<UserData> list = snapshot.data!;
+                                              // Utiliser les données de snapshot.data
+                                              return  ListView.builder(
+                                                  scrollDirection: Axis.horizontal,
+                                                  itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                                  itemBuilder: (context, index) {
+
+                                                    //list[index].userAbonnes=[];
+                                                    return  homeProfileUsers(list[index],width,height);
+                                                  });
+
+                                            } else {
+                                              return
+                                                Skeletonizer(
+                                                  //enabled: _loading,
+                                                  child: ListView.builder(
+                                                    scrollDirection: Axis.horizontal,
+                                                    itemCount: 10,
+                                                    itemBuilder: (context, index) {
+                                                      return Container(
+                                                        width: 300,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(1.0),
+                                                          child: Card(
+                                                            color: Colors.white,
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(8.0),
+                                                              child: Column(
+                                                                children: [
+                                                                  Container(
+
+                                                                    child: CircleAvatar(
+                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                    ),
+                                                                    height: 100,
+                                                                    width: 100,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  SizedBox(
+                                                                    width: 70,
+                                                                    child: TextCustomerUserTitle(
+                                                                      titre: "jhasgjh",
+                                                                      fontSize: SizeText.homeProfileTextSize,
+                                                                      couleur: ConstColors.textColors,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 2,
+                                                                  ),
+                                                                  TextCustomerUserTitle(
+                                                                    titre: "S'abonner",
+                                                                    fontSize: SizeText.homeProfileTextSize,
+                                                                    couleur: Colors.blue,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  )
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      Divider(height: 10,),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(2.0),
+                                              child: SizedBox(
+                                                height: 20,
+                                                child: Marquee(
+                                                  key: Key("keys"),
+                                                  text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                                  style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                                  scrollAxis: Axis.horizontal,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  blankSpace: 20,
+                                                  velocity: 100,
+                                                  pauseAfterRound: Duration(seconds: 1),
+                                                  showFadingOnlyWhenScrolling: true,
+                                                  fadingEdgeStartFraction: 0.1,
+                                                  fadingEdgeEndFraction: 0.1,
+                                                  numberOfRounds: 1000,
+
+                                                  startPadding: 10,
+                                                  accelerationDuration: Duration(milliseconds: 5000),
+                                                  accelerationCurve: Curves.linear,
+                                                  decelerationDuration: Duration(milliseconds: 1000),
+                                                  decelerationCurve: Curves.easeOut,
+
                                                 ),
                                               ),
                                             ),
                                           ),
+                                          TextButton(onPressed: () {
+                                            Navigator.pushNamed(context, '/contact');
 
+                                          }, child:      Container(
+                                              height: 20,
+                                              decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius: BorderRadius.all(Radius.circular(2))
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                                child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                              )))
                                         ],
-                                      );
+                                      ),
+                                      // SizedBox(height: 5,),
 
-                                    }
-                                    /*
+                                      userProvider.listAnnonces.length<0? Container(): Visibility(
+                                        visible: userProvider.listAnnonces.length>0?true:false,
+                                        child: SizedBox(
+                                          // width: width*0.8,
+                                          //height: height*0.2,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(2.0),
+                                            child: FlutterCarousel.builder(
+                                              itemCount: userProvider.listAnnonces.length,
+                                              itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+                                                  GestureDetector(
+                                                    onTap: () async {
+                                                      Annonce annonce=userProvider.listAnnonces[itemIndex];
+                                                      annonce.vues=annonce.vues!+1;
+                                                      await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
+                                                      _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
+                                                    },
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                                                      child: Container(
+                                                        width: width*0.9,
+                                                        height: height*0.2,
+                                                        child: Stack(
+                                                          children: [
+                                                            SizedBox(
+                                                              width: width*0.9,
+                                                              height: height*0.2,
+                                                              child: CachedNetworkImage(
+                                                                fit: BoxFit.cover,
+
+                                                                imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
+                                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                                //  LinearProgressIndicator(),
+
+                                                                Skeletonizer(
+                                                                    child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                                                                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                                                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                              ),
+                                                            ),
+                                                            Positioned(
+                                                              //width: 100,
+                                                              //height: 40,
+
+
+                                                              child: Container(
+
+                                                                decoration: BoxDecoration(
+                                                                  //  color: Colors.white,
+                                                                    borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                ),
+
+                                                                child: Center(
+                                                                  child: Container(
+                                                                    width: 100,
+                                                                    decoration: BoxDecoration(
+                                                                        color: Colors.green.withOpacity(0.5),
+                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                    ),
+                                                                    child: Padding(
+                                                                      padding: const EdgeInsets.all(8.0),
+                                                                      child: Row(
+                                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                                        children: [
+                                                                          Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                          userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              options: CarouselOptions(
+                                                autoPlay: true,
+                                                //controller: buttonCarouselController,
+                                                enlargeCenterPage: true,
+                                                viewportFraction: 0.9,
+                                                aspectRatio: 3.0,
+                                                // initialPage: 1,
+                                                autoPlayInterval: const Duration(seconds: 2),
+                                                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                autoPlayCurve: Curves.fastOutSlowIn,
+
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                    ],
+                                  );
+
+                                }
+                                /*
 
                                     if (index % 7 == 0) {
                                       return Column(
@@ -4700,43 +4805,33 @@ setState(() {
                                     }
 
                                      */
-                                    else{
-                                      return  Padding(
-                                        padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                                        child: homePostUsers(listConstposts![index], height, width),
-                                      );
-                                    }
+                                else{
+                                  return  Padding(
+                                    padding: const EdgeInsets.only(top: 5.0, bottom: 5),
+                                    child: homePostUsers(listConstposts![index], height, width),
+                                  );
+                                }
 
-                                  },
-                                ),
-                              ),
+                              },
+                            ),
+                          ),
 
 
-                            ],
-                          );
-                        } else if (snapshot.hasError) {
-                          return Icon(Icons.error_outline);
-                        }if (snapshot.connectionState == ConnectionState.waiting) {
-                          return
-                           widgetSeke(width, height);
-                        }
-                        else {
-                          return
-                            widgetSeke(width, height);
-                        }
-                      }),
+                        ],
+                      );
+                    } else if (snapshot.hasError) {
+                      return Icon(Icons.error_outline);
+                    }if (snapshot.connectionState == ConnectionState.waiting) {
+                      return
+                        widgetSeke(width, height);
+                    }
+                    else {
+                      return
+                        widgetSeke(width, height);
+                    }
+                  }),
 
-                ),
-              ),
-              if (is_actualised)
-                Overlay(
-                  initialEntries: [
-                    OverlayEntry(
-                      builder: (context) => SimpleChargement(),
-                    ),
-                  ],
-                ),
-            ],
+            ),
           ),
 
 

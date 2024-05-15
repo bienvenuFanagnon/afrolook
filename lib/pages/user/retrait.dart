@@ -142,7 +142,7 @@ class _DepotPageState extends State<RetraitPage> {
                     visible: !demandeDeDepot,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (authProvider.loginUserData.abonnes! < 50) {
+                        if (authProvider.loginUserData.votre_solde! < 1000) {
                           // Envoyer une demande de dépôt
                           print('Demande de dépôt de $montant effectuée');
                           showModalBottomSheet<void>(
@@ -157,7 +157,7 @@ class _DepotPageState extends State<RetraitPage> {
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
 
-                                      Text('La première étape pour commencer à gagner et retirer vos soldes est d\'avoir minimum 50 abonnés.',style: TextStyle(fontSize: 16),),
+                                      Text('La première étape pour commencer à gagner et retirer vos soldes est d\'avoir minimum 1000 fcfa.',style: TextStyle(fontSize: 16),),
                                     ],
                                   ),
                                 ),
@@ -167,20 +167,37 @@ class _DepotPageState extends State<RetraitPage> {
                           setState(() {
                             //demandeDeDepot = true;
                           });
-                        }else if (authProvider.loginUserData.pubEntreprise! < 2) {
+                        }else {
                           // Envoyer une demande de dépôt
                           print('Demande de dépôt de $montant effectuée');
                           showModalBottomSheet(
                             context: context,
                             builder: (context) => Container(
-                              height: 200,
                               color: Colors.white,
                               child: Center(
                                 child: Padding(
                                   padding: const EdgeInsets.all(20.0),
-                                  child: Text(
-                                    "Vous êtes à la dernière étape. Les retraits sur votre compte de monétisation seront disponibles une fois que votre compte aura au minimum une publicité de la part de nos entreprises partenaires. Patientez...",
-                                    style: TextStyle(fontSize: 16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Félicitations ! Vous avez atteint le solde minimum requis.",
+                                        style: TextStyle(fontSize: 18,fontWeight: FontWeight.w600),
+                                      ),
+                                      SizedBox(height: 5,),
+
+                                      Text(
+                                        "Les retraits sont désormais disponibles dans la version officielle de notre application. Soyez rassuré, vous pourrez bientôt retirer votre argent de contribution.",
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      SizedBox(height: 5,),
+
+
+                                      Text(
+                                        "En attendant la mise en ligne de la version officielle, continuez à parrainer et à gagner de l'argent. Votre contribution est précieuse pour nous et nous vous remercions de votre confiance.",
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -189,25 +206,6 @@ class _DepotPageState extends State<RetraitPage> {
                           setState(() {
                             //demandeDeDepot = true;
                           });
-                        }else{
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Container(
-                                height: 200,
-                                color: Colors.white,
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      "Veuillez nous contacter",
-                                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
                         }
                       },
                       child: Text('Faire une demande de Retrait',style: TextStyle(fontSize: 15),),

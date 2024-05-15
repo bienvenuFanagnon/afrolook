@@ -7,7 +7,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/model_data.dart';
+import '../../../providers/authProvider.dart';
+import '../../../providers/userProvider.dart';
 import '../authTest/Screens/Signup/function.dart';
 import 'change_pass_word.dart';
 
@@ -34,6 +38,11 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
   int count = 20;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  late UserAuthProvider authProvider =
+
+  Provider.of<UserAuthProvider>(context, listen: false);
+  late UserProvider userProvider =
+  Provider.of<UserProvider>(context, listen: false);
 
   final _auth = FirebaseAuth.instance;
 
@@ -142,6 +151,8 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
   }
 
   void onVerifySmsCode() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
     loading = true;
     setState(() {});
     await validateOtp(smsCode, widget.verificationId);
@@ -149,7 +160,39 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
     setState(() {});
     showSuccessDialog(_scaffoldKey!.currentContext!);
     //checkUserAndRedirect("${widget.phoneNumber!}"+"@gmail.com");
-     Navigator.of(context).pop();
+
+    await authProvider.getCurrentUserByPhone(widget.phoneNumber!).then((value) async {
+      //  PhoneVerification phoneverification = PhoneVerification(number:'22896198801' );
+
+      //   phoneverification.sendotp('Your Otp');
+      if (value) {
+
+        if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||authProvider.loginUserData.id!.length>5){
+          await authProvider.getAppData();
+          await userProvider.getAllAnnonces();
+
+          //print("app data2 : ${authProvider.appDefaultData.toJson()!}");
+          // Obtenez les SharedPreferences
+          userProvider.changeState(user: authProvider.loginUserData,
+              state: UserState.ONLINE.name);
+          prefs.setString('token', authProvider.loginUserData.id!);
+
+          Navigator.pushReplacementNamed(
+              context,
+              '/home');
+         // Navigator.pushNamed(context, '/chargement');
+
+
+        }
+
+
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur de Chargement',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+        ),);
+      }
+    },);
+/*
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -158,6 +201,10 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
         },
       ),
     );
+
+ */
+
+
 
   }
 

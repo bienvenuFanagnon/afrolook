@@ -25,7 +25,10 @@ import 'package:afrotok/pages/info.dart';
 import 'package:afrotok/pages/infoGagnePoint.dart';
 import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
+import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/socialVideos/main_screen/main_screen.dart';
+import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 
 import 'package:afrotok/pages/story/storieForm.dart';
@@ -37,6 +40,7 @@ import 'package:afrotok/pages/user/conversation/listUserConv.dart';
 import 'package:afrotok/pages/user/profile/profile.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/page/profile_page.dart';
 import 'package:afrotok/pages/user/profile/userProfileDetails.dart';
+import 'package:afrotok/pages/user/retrait.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
@@ -119,7 +123,125 @@ class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   String _debugLabelString = "";
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  Future<List<Post>> getPostsVideosById(String post_id) async {
 
+    List<Post> posts = [];
+    //  UserData userData=UserData();
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+    QuerySnapshot querySnapshotPost = await postCollect
+    // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
+        .where("id",isEqualTo:'${post_id}')
+    // .orderBy('created_at', descending: true)
+        .get();
+
+    List<Post> postList = querySnapshotPost.docs.map((doc) =>
+        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (Post p in postList) {
+      //  print("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+      if (p.type==PostType.PUB.name) {
+        CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+
+        List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
+            EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        p.entrepriseData=entrepriseList.first;
+      }
+
+
+      p.user=userList.first;
+
+      if (p.status==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.status==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+
+
+    }
+
+    posts.shuffle();
+    //posts.shuffle();
+
+
+    return posts;
+
+  }
+  Future<List<Post>>
+  getPostsImagesById(String post_id) async {
+
+
+    List<Post> posts = [];
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+        .where("id",isEqualTo:'${post_id}')
+
+
+        .get();
+
+    List<Post> postList = querySnapshotPost.docs.map((doc) =>
+        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (Post p in postList) {
+      //  print("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+      if (p.type==PostType.PUB.name) {
+        CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+
+        List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
+            EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        p.entrepriseData=entrepriseList.first;
+      }
+
+
+      p.user=userList.first;
+      if (p.status==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.status==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+
+
+
+
+    }
+
+    return posts;
+
+  }
 
   onClickNotification(){
     OneSignal.Notifications.addClickListener((event) async {
@@ -184,6 +306,50 @@ class _MyAppState extends State<MyApp> {
 
         navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),)); // Assuming your route name is '/specific_page'
 
+
+      }
+      else if (event.notification.additionalData!['type_notif'] == NotificationType.POST.name) {
+
+
+        switch (event.notification.additionalData!['post_type']) {
+          case "VIDEO":
+            await getPostsVideosById(event.notification.additionalData!['post_id']!).then((videos_posts) {
+              if(videos_posts.isNotEmpty){
+
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
+
+              }
+            },);
+
+            break;
+          case "IMAGE":
+            await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+              if(posts.isNotEmpty){
+
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+
+              }
+
+            },);
+            break;
+          case 'COMMENT':
+            getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+              if(posts.isNotEmpty){
+
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post:  posts.first),));
+
+              }
+
+            },);
+            break;
+          default:
+          // Handle unknown post type
+            break;
+        }
+      }
+      else if (event.notification.additionalData!['type_notif'] == NotificationType.PARRAINAGE.name) {
+
+        Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
 
       }else {
         navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'

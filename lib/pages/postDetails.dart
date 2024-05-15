@@ -803,7 +803,7 @@ class _DetailsPostState extends State<DetailsPost> {
                      */
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
+                       // Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
                       },
                       child: Container(
                         //width: w*0.9,
@@ -1528,7 +1528,7 @@ class _DetailsPostState extends State<DetailsPost> {
 
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
+                       // Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
                       },
 
                       child: Container(

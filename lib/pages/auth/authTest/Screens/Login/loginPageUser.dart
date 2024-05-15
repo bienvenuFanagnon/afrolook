@@ -18,12 +18,12 @@ import '../../../../../../constant/sizeButtons.dart';
 import '../../../../../../models/model_data.dart';
 
 import '../../../../../../providers/authProvider.dart';
+import '../../../../../providers/userProvider.dart';
 
 import 'dart:async';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../../providers/userProvider.dart';
 import '../../../update_pass_word/confirm_user.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
@@ -86,7 +86,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
   Navigator.pushReplacementNamed(
       context,
       '/home');
-  Navigator.pushNamed(context, '/chargement');
+ // Navigator.pushNamed(context, '/chargement');
 
 
 }
@@ -289,7 +289,10 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                 TextButton(onPressed: () {
                                   Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser(),));
 
-                                }, child:  Text("Mot de passe oublier ?"),),
+                                }, child:  Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
+                                ),),
 
 
                                 SizedBox(height: 40),

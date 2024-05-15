@@ -487,6 +487,43 @@ class UserAuthProvider extends ChangeNotifier {
     return hasData;
   }
 
+  Future<bool> getCurrentUserByPhone(String phone) async {
+    await getAppData();
+    //listUsers = [];
+    bool hasData = false;
+
+
+    await userService.getUserDataByPhone(phone: phone).then((value) async {
+      loginUserData = value;
+      loginUserData.popularite =
+          (loginUserData.abonnes! + loginUserData.likes! +
+              loginUserData.jaimes!) /
+              (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
+                  appDefaultData.nbr_loves!);
+      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+
+      loginUserData.compteTarif = loginUserData.popularite! * 80;
+      await firestore.collection('Users').doc(loginUserData!.id).update(
+          loginUserData!.toJson());
+      var friendsStream = FirebaseFirestore.instance.collection('Friends');
+      QuerySnapshot friendSnapshot = await friendsStream.where(Filter.or(
+        Filter('current_user_id', isEqualTo: loginUserData.id!),
+        Filter('friend_id', isEqualTo: loginUserData.id!),
+
+      )).get();
+
+      loginUserData.friends = friendSnapshot.docs.map((doc) =>
+          Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      hasData = true;
+    },);
+
+
+    notifyListeners();
+    return hasData;
+  }
+
+
+
   // Create the configuration
 
 

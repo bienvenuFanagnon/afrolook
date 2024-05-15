@@ -86,9 +86,9 @@ class OnBoardingPageState extends State<IntroductionPage> {
             decoration: pageDecoration,
           ),
           PageViewModel(
-            title: "Gagnez des points et des prix avec Afrolook !",
+            title: "Gagnez des prix avec Afrolook !",
             body:
-            "Gagnez des points en: \n s'abonnant\n likant, \n commentant... \n",
+            "Gagnez 50 FCFA par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 50 FCFA pour chaque nouvel utilisateur !",
             image: _buildImage('images/6075540.jpg'),
             decoration: pageDecoration,
           ),

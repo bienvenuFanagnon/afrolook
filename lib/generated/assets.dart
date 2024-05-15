@@ -50,6 +50,7 @@ class Assets {
   static const String images9230137 = 'assets/images/9230137.jpg';
   static const String imagesAfroTok = 'assets/images/AfroTok.png';
   static const String imagesAlojobLogoFinaleE1422526125972 = 'assets/images/alojob-logo-finale-e1422526125972.png';
+  static const String imagesBonusAfrolook = 'assets/images/bonus_afrolook.jpg';
   static const String imagesCOSMETOBIO = 'assets/images/COSMETOBIO.jpg';
   static const String imagesCompanyLogoLogoDesignTemplateB2ba8a7f016a0d2aa8b09bc6f632a15bScreen = 'assets/images/company-logo-logo-design-template-b2ba8a7f016a0d2aa8b09bc6f632a15b_screen.jpg';
   static const String imagesConfidentAfricanBusinesswomanSmilingCloseupPortraitJobsCareerCampaign = 'assets/images/confident-african-businesswoman-smiling-closeup-portrait-jobs-career-campaign.jpg';

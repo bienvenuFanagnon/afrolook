@@ -39,13 +39,17 @@ class Message {
 
   /// Provides actual message it will be text or image/audio file path.
   final String message;
+  final bool is_valide;
+  final bool send_sending;
+  final bool receiver_sending;
+  final String sendBy;
+
   late  String message_state='';
 
   /// Provides message created date time.
   final DateTime createdAt;
 
   /// Provides id of sender of message.
-  final String sendBy;
   final String receiverBy;
   final String chat_id;
 
@@ -65,7 +69,10 @@ class Message {
   /// Provides max duration for recorded voice message.
   Duration? voiceMessageDuration;
 
-  Message(   {
+  Message(    {
+    this.is_valide=true,
+    this.send_sending=false,
+    this.receiver_sending=false,
      this.message_state='',
     required this.receiverBy,
     required this.chat_id,
@@ -111,6 +118,9 @@ class Message {
       message: json["message"],
       createdAt:DateTime.fromMillisecondsSinceEpoch(json["create_at_time_spam"]),
       sendBy: json["send_by"],
+      is_valide: json["is_valide"]==null?true:json["is_valide"],
+      send_sending: json["send_sending"]==null?false:json["send_sending"],
+      receiver_sending: json["receiver_sending"]==null?false:json["receiver_sending"],
       replyMessage: ReplyMessage.fromJson(json["reply_message"]),
       reaction: Reaction.fromJson(json["reaction"]),
       messageType: json["message_type"],
@@ -127,6 +137,9 @@ class Message {
         'message': message,
         'createdAt': createdAt,
         'send_by': sendBy,
+        'receiver_sending': receiver_sending,
+        'send_sending': send_sending,
+        'is_valide': is_valide,
         'chat_id': chat_id,
         'reply_message': replyMessage.toJson(),
         'reaction': reaction.toJson(),

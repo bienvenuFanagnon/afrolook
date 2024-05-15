@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:like_button/like_button.dart';
@@ -632,9 +632,11 @@ class _PostVideosState extends State<PostVideos> {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
+
     return PageView.builder(
         scrollDirection: Axis.vertical,
         itemCount: datas.length,
+
         itemBuilder: (context, index) {
           print("index : ${index}");
           if (datas[index].type==PostType.PUB.name) {
@@ -1401,6 +1403,8 @@ class _PostVideosState extends State<PostVideos> {
             ),
           );
         });
+
+
   }
 }
 

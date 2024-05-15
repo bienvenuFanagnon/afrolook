@@ -115,6 +115,68 @@ class UserService {
     }
   }
 
+  Future<UserData> getUserDataByPhone(
+      {required String phone}) async {
+    //error=null;
+    UserData userData=UserData();
+    try {
+
+      //  utilisateurs connecte
+
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('Users');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect.where("numero_de_telephone",isEqualTo: phone!).get();
+      // Afficher la liste
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      userData=userList.first;
+
+      ///////mes invitation/////
+      CollectionReference collectionRef =
+      FirebaseFirestore.instance.collection('Invitations');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userData.id!).get();
+
+      List<Invitation> inviteList = querySnapshotInv.docs.map((doc) =>
+          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      userData.mesInvitationsEnvoyer=inviteList;
+
+      ///////autre invitation/////
+      CollectionReference collectionRefAutreInv =
+      FirebaseFirestore.instance.collection('Invitations');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userData.id!!).get();
+
+      List<Invitation> autreinviteList = querySnapshotInv.docs.map((doc) =>
+          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      userData.autreInvitationsEnvoyer=autreinviteList;
+
+      //////////abonnement////////////////
+
+      CollectionReference userCollectAbonnes =
+      FirebaseFirestore.instance.collection('Abonnements');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userData.id!).get();
+      // Afficher la liste
+      List<UserAbonnes> userListAbonnes = querySnapshotAbone.docs.map((doc) =>
+          UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+      userData.userAbonnes=userListAbonnes;
+
+
+
+
+      return userData;
+
+    } catch (e) {
+      // Erreur de connexion
+      // error = "Erreur de connexion: $e";
+      print("erreur ${e}");
+      return UserData();
+    }
+  }
+
 
   Future<List<Message>> getMessageByChat(
       {required int chatId}) async {

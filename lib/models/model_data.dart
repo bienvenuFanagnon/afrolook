@@ -980,6 +980,8 @@ class Chat {
   String? entreprise_id;
   int? my_msg_not_read=0;
   int? your_msg_not_read=0;
+  String? send_sending;
+  String? receiver_sending;
   UserData? sender;
   Post? post;
   EntrepriseData? entreprise;
@@ -990,6 +992,8 @@ class Chat {
 
   Chat(
       {this.id,
+        this.send_sending,
+        this.receiver_sending,
         this.senderId,
         this.receiverId,
         this.post_id,
@@ -1013,6 +1017,8 @@ class Chat {
     id = json['id'];
     senderId = json['sender_id'];
     post_id = json['post_id'];
+    send_sending= json["send_sending"]==null?"":json["send_sending"];
+    receiver_sending= json["receiver_sending"]==null?"":json["receiver_sending"];
     receiverId = json['receiver_id'];
     lastMessage = json['last_message'];
     type = json['type'];
@@ -1054,6 +1060,8 @@ class Chat {
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
     data['docId'] = this.docId;
+    data['send_sending'] = this.send_sending;
+    data['receiver_sending'] = this.receiver_sending;
 
     data['my_msg_not_read'] = this.my_msg_not_read;
     data['your_msg_not_read'] = this.your_msg_not_read;
@@ -1577,8 +1585,9 @@ enum PostDataType { IMAGE, VIDEO,TEXT,COMMENT }
 enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
 
 enum ChatType { USER, ENTREPRISE }
+enum IsSendMessage { SENDING, NOTSENDING }
 enum InfoType { APPINFO, GRATUIT }
-enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER }
+enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER,PARRAINAGE }
 
 enum TypeEntreprise { personnel, partenaire }
 
