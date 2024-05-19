@@ -264,7 +264,7 @@ class _MyAppState extends State<MyApp> {
         //  navigatorKey.currentState!.pushNamed('/mes_notifications');
 
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:event.notification.additionalData!["recever_user_id"]).get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:event.notification.additionalData!["send_user_id"]).get();
         // Afficher la liste
         List<UserData> userList = querySnapshotUser.docs.map((doc) =>
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();

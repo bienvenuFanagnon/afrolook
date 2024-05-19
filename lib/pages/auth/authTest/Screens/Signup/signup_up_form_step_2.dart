@@ -76,28 +76,34 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     // Récupérer la liste des utilisateurs
     CollectionReference appdatacollection = firestore.collection('Appdata');
     CollectionReference users = firestore.collection("Users");
-    QuerySnapshot snapshot = await users.get();
+    QuerySnapshot snapshot = await users
+        .where(
+        "code_parrainage", isEqualTo: codeParrain!)
+        .get();
     final list = snapshot.docs.map((doc) =>
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
     bool existe= list.any((e) => e.codeParrainage==codeParrain);
     // Vérifier si le nom existe déjà
     //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
 
-    if (existe) {
+    if (list.isNotEmpty) {
+      print("user trouver");
       await authProvider.getAppData();
 
       authProvider.registerUser!.pointContribution=authProvider.registerUser!.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-      list.forEach((element) async {
-        if (element.codeParrainage==codeParrain) {
-          element.pointContribution=element.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-          element.votre_solde=element.votre_solde! + 50.0;
-          await firestore.collection('Users').doc(element.id!).update(element.toJson());
+
+          print("current user trouver");
+          print("current user trouver :${list.first.toJson()}");
+
+          list.first.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
+          list.first.votre_solde=list.first.votre_solde! + 50.0;
+          await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
 
           await authProvider.sendNotification(
-              userIds: [element!.oneIgnalUserid!],
-              smallImage: "${authProvider.loginUserData.imageUrl!}",
-              send_user_id: "${authProvider.loginUserData.id!}",
-              recever_user_id: "${element!.id!}",
+              userIds: [list.first!.oneIgnalUserid!],
+              smallImage: "${authProvider.registerUser.imageUrl!}",
+              send_user_id: "${authProvider.registerUser.id!}",
+              recever_user_id: "${list.first!.id!}",
               message: "🤑 Vous avez gagné 50 FCFA grâce à un parrainage !",
               type_notif: NotificationType.PARRAINAGE.name,
               post_id: "",
@@ -111,12 +117,12 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               .doc()
               .id;
           notif.titre="Parrainage 🤑";
-          notif.media_url=authProvider.loginUserData.imageUrl;
+          notif.media_url=authProvider.registerUser.imageUrl;
           notif.type=NotificationType.POST.name;
           notif.description="Vous avez gagné 50 FCFA grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
           notif.users_id_view=[];
-          notif.user_id=authProvider.loginUserData.id;
-          notif.receiver_id=element.id!;
+          notif.user_id=authProvider.registerUser.id;
+          notif.receiver_id=list.first.id!;
           notif.post_id="";
           notif.post_data_type="";
 
@@ -130,10 +136,13 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
           await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-        }
-      },);
 
 
+
+
+
+    }else{
+      print("user non trouver^^^^^^^^^^^^^^^^^^^^");
 
     }
   }
@@ -317,7 +326,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     authProvider.registerUser.createdAt =
         DateTime.now().microsecondsSinceEpoch;
     try{
-      await verifierParrain( authProvider.registerUser.codeParrain!);
 
       authProvider.registerUser.id =id;
       await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
@@ -343,6 +351,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         backgroundColor: Colors.green,
         content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
       );
+      await verifierParrain(authProvider.registerUser.codeParrain!);
+
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       Navigator.pop(context);
       Navigator.pushNamed(context, '/bon_a_savoir');

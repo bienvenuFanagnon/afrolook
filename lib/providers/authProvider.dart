@@ -275,8 +275,8 @@ class UserAuthProvider extends ChangeNotifier {
       print("OneSignal=====");
 
 
-      print("OneSignal id : ${OneSignal.User.pushSubscription.id}");
-      print("OneSignal token : ${OneSignal.User.pushSubscription.token}");
+    //  print("OneSignal id : ${OneSignal.User.pushSubscription.id}");
+    //  print("OneSignal token : ${OneSignal.User.pushSubscription.token}");
 
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
 

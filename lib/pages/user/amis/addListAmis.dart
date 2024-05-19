@@ -361,10 +361,10 @@ class _ListUserChatsState extends State<AddListAmis> {
                   .where('id', isNotEqualTo: authProvider.loginUserData.id!)
               //.orderBy('popularite', descending: true)
                  // .orderBy('pseudo').startAt([alphabet.elementAt(Random().nextInt(alphabet.length))])
-                  .where('id', whereIn: alphabet) // Remplacez id1, id2, id3 par les ID de document des utilisateurs
+                 // .where('id', whereIn: alphabet) // Remplacez id1, id2, id3 par les ID de document des utilisateurs
 
 
-                .limit(100)
+                .limit(200)
                   .snapshots()!,
 
               // key: _formKey,

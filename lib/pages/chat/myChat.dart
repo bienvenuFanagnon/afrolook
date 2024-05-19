@@ -1338,8 +1338,10 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                                         send_user_id:
                                                             "${authProvider.loginUserData.id!}",
                                                         recever_user_id:
-                                                            "${widget.chat!.senderId == authProvider.loginUserData.id! ? widget.chat!.receiverId! : widget.chat!.senderId!}",
-                                                        message:
+                                                        "${widget.chat!.senderId ==
+                                                            authProvider.loginUserData.id!
+                                                            ? widget.chat!.receiverId!
+                                                            : widget.chat!.senderId!}",                                                        message:
                                                             "🗨️ @${authProvider.loginUserData.pseudo!} vous a envoyé un message",
                                                         type_notif:
                                                             NotificationType
@@ -1467,7 +1469,10 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                                     send_user_id:
                                                         "${authProvider.loginUserData.id!}",
                                                     recever_user_id:
-                                                        "${widget.chat!.senderId == authProvider.loginUserData.id! ? widget.chat!.receiverId! : widget.chat!.senderId!}",
+                                                        "${widget.chat!.senderId ==
+                                                            authProvider.loginUserData.id!
+                                                            ? widget.chat!.receiverId!
+                                                            : widget.chat!.senderId!}",
                                                     message:
                                                         "🗨️ @${authProvider.loginUserData.pseudo!} vous a envoyé un message",
                                                     type_notif: NotificationType

@@ -173,7 +173,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
           child: Center(
             child: Container(
               alignment: Alignment.center,
-              // height: height*1.1,
+               height: height,
               child: Column(
                 children: [
                  // SizedBox(height: height*0.1,),
@@ -194,14 +194,14 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                       ],
                     ),
                   ),
-                  SizedBox(height: height*0.1,),
+                  SizedBox(height: height*0.06,),
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Container(
                         alignment: Alignment.center,
-                        height: height*0.5,
+                        height: height*0.45,
                         decoration: BoxDecoration(
                           color: Colors.green,
                           borderRadius:BorderRadius.all(Radius.circular(10))
@@ -213,7 +213,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                             child: Column(
                               children: [
 
-                                SizedBox(height: 30,),
+                                SizedBox(height: height*0.005,),
                                 IntlPhoneField(
                                   //controller: telephoneController,
                                   // invalidNumberMessage:'numero invalide' ,
@@ -285,7 +285,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                     return null;
                                   },
                                 ),
-                                SizedBox(height: 20),
+                                SizedBox(height: height*0.01),
                                 TextButton(onPressed: () {
                                   Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser(),));
 
@@ -295,7 +295,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                 ),),
 
 
-                                SizedBox(height: 40),
+                                SizedBox(height: height*0.02),
                                 Container(
                                   width: SizeButtons.loginAndSignupBtnlargeur,
                                   child: ElevatedButton(

@@ -367,6 +367,8 @@ class PostProvider extends ChangeNotifier {
 
       }
     listConstposts=posts;
+    //listConstposts.shuffle();
+    listConstposts.shuffle();
 
     return listConstposts;
 

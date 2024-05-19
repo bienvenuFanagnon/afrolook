@@ -3621,14 +3621,16 @@ bool abonneTap =false;
     print("====hasShownDialogToday====");
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final String lastShownDateKey = 'lastShownDialogDate';
-    final DateTime lastShownDate = prefs.getString(lastShownDateKey) != null
-        ? DateTime.parse(prefs.getString(lastShownDateKey)!)
-        : DateTime(1970); // Set a default date if not found
-    final DateTime today = DateTime.now();
-    return lastShownDate.day == today.day &&
-        lastShownDate.month == today.month &&
-        lastShownDate.year == today.year;
+    final String lastShownDateKey = 'lastShownDialogDate2';
+    DateTime now = DateTime.now();
+    String nowDate = DateFormat('dd, MMMM, yyyy').format(now);
+    if(prefs.getString(lastShownDateKey) == null&&prefs.getString(lastShownDateKey) != "${nowDate}"){
+      prefs.setString(lastShownDateKey, nowDate);
+      return true;
+    }else{
+      return false;
+
+    }
   }
 
   Stream<List<Chat>> getAndUpdateChatsData() async* {
@@ -3709,7 +3711,7 @@ bool abonneTap =false;
     async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      if (!value) {
+      if (value) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -3977,8 +3979,7 @@ bool abonneTap =false;
                     if (snapshot.hasData) {
 
                       List<Post> listConstposts=snapshot.data;
-                      listConstposts.shuffle();
-                      listConstposts.shuffle();
+
                       listConstposts.insert(0, listConstposts.elementAt(0));
 
 
@@ -4201,102 +4202,8 @@ bool abonneTap =false;
                                       ),
                                       // SizedBox(height: 5,),
 
-                                      userProvider.listAnnonces.length<0? Container(): Visibility(
-                                        visible: userProvider.listAnnonces.length>0?true:false,
-                                        child: SizedBox(
-                                          // width: width*0.8,
-                                          //height: height*0.2,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(2.0),
-                                            child: FlutterCarousel.builder(
-                                              itemCount: userProvider.listAnnonces.length,
-                                              itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-                                                  GestureDetector(
-                                                    onTap: () async {
-                                                      Annonce annonce=userProvider.listAnnonces[itemIndex];
-                                                      annonce.vues=annonce.vues!+1;
-                                                      await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-                                                      _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
-                                                    },
-                                                    child: ClipRRect(
-                                                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                                                      child: Container(
-                                                        width: width*0.9,
-                                                        height: height*0.2,
-                                                        child: Stack(
-                                                          children: [
-                                                            SizedBox(
-                                                              width: width*0.9,
-                                                              height: height*0.2,
-                                                              child: CachedNetworkImage(
-                                                                fit: BoxFit.cover,
-
-                                                                imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                                //  LinearProgressIndicator(),
-
-                                                                Skeletonizer(
-                                                                    child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                                                                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                                                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                                                              ),
-                                                            ),
-                                                            Positioned(
-                                                              //width: 100,
-                                                              //height: 40,
-
-
-                                                              child: Container(
-
-                                                                decoration: BoxDecoration(
-                                                                  //  color: Colors.white,
-                                                                    borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                ),
-
-                                                                child: Center(
-                                                                  child: Container(
-                                                                    width: 100,
-                                                                    decoration: BoxDecoration(
-                                                                        color: Colors.green.withOpacity(0.5),
-                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                    ),
-                                                                    child: Padding(
-                                                                      padding: const EdgeInsets.all(8.0),
-                                                                      child: Row(
-                                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                                        children: [
-                                                                          Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                          userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                        ],
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                              options: CarouselOptions(
-                                                autoPlay: true,
-                                                //controller: buttonCarouselController,
-                                                enlargeCenterPage: true,
-                                                viewportFraction: 0.9,
-                                                aspectRatio: 3.0,
-                                                // initialPage: 1,
-                                                autoPlayInterval: const Duration(seconds: 2),
-                                                autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                autoPlayCurve: Curves.fastOutSlowIn,
-
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                       Divider(height: 10,),
-                                      /*
+
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
@@ -4391,7 +4298,7 @@ bool abonneTap =false;
                                           ),
                                           Divider(height: 10,),
 
-                                           */
+
                                     ],
                                   );
 
@@ -4623,12 +4530,12 @@ bool abonneTap =false;
                                                       borderRadius: BorderRadius.all(Radius.circular(10)),
                                                       child: Container(
                                                         width: width*0.9,
-                                                        height: height*0.2,
+                                                        height: height*0.5,
                                                         child: Stack(
                                                           children: [
                                                             SizedBox(
                                                               width: width*0.9,
-                                                              height: height*0.2,
+                                                              height: height*0.5,
                                                               child: CachedNetworkImage(
                                                                 fit: BoxFit.cover,
 
@@ -4637,9 +4544,13 @@ bool abonneTap =false;
                                                                 //  LinearProgressIndicator(),
 
                                                                 Skeletonizer(
-                                                                    child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                                                                    child: SizedBox(
+                                                                        width: width*0.9,
+                                                                        height: height*0.5,
+                                                                        child:  ClipRRect(
                                                                         borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                                                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                                errorWidget: (context, url, error) =>  Container(width: width*0.9,
+                                                                    height: height*0.5,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
                                                               ),
                                                             ),
                                                             Positioned(
@@ -4667,7 +4578,7 @@ bool abonneTap =false;
                                                                         mainAxisAlignment: MainAxisAlignment.center,
                                                                         children: [
                                                                           Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                          userProvider.listAnnonces[itemIndex]!.vues!>99?Text("+99",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                          userProvider.listAnnonces[itemIndex]!.vues!>999?Text("+999",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
                                                                         ],
                                                                       ),
                                                                     ),
@@ -4701,9 +4612,9 @@ bool abonneTap =false;
                                   );
 
                                 }
-                                /*
 
-                                    if (index % 7 == 0) {
+
+                                    if (index % 8== 0) {
                                       return Column(
                                         children: <Widget>[
                                           Row(
@@ -4804,7 +4715,7 @@ bool abonneTap =false;
 
                                     }
 
-                                     */
+
                                 else{
                                   return  Padding(
                                     padding: const EdgeInsets.only(top: 5.0, bottom: 5),
