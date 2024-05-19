@@ -23,7 +23,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=5;
+  late int app_version_code=6;
 
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
