@@ -364,6 +364,8 @@ class AppDefaultData {
   int? app_version_code=0;
   int? nbr_likes=0;
   int? nbr_comments=0;
+  String? ia_instruction="";
+
   double? tarifPubliCash=2.5;
   double? tarifImage=0.5;
   double? tarifPubliCash_to_xof=250.0;
@@ -375,7 +377,7 @@ class AppDefaultData {
   int? default_point_new_love=1;
  // int? default_point_new_comment=2;
 
-  AppDefaultData({this.id, this.users_id, this.nbr_abonnes=0, this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5, this.default_point_new_like=1,this.default_point_new_love=1,});
+  AppDefaultData({this.id, this.users_id, this.nbr_abonnes=0,this.ia_instruction="", this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5, this.default_point_new_like=1,this.default_point_new_love=1,});
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -383,6 +385,7 @@ class AppDefaultData {
     nbr_likes = json['nbr_likes'];
     nbr_comments = json['nbr_comments'];
     app_link = json['app_link']==null?"":json['app_link'];
+    ia_instruction = json['ia_instruction']==null?"":json['ia_instruction'];
     app_version_code = json['app_version_code']==null?0:json['app_version_code'];
     nbr_loves = json['nbr_loves'];
     nbr_abonnes = json['nbr_abonnes'];
@@ -410,6 +413,7 @@ class AppDefaultData {
     data['nbr_comments'] = this.nbr_comments;
     data['nbr_abonnes'] = this.nbr_abonnes;
     data['app_version_code'] = this.app_version_code;
+    data['ia_instruction'] = this.ia_instruction;
 
     data['tarifPubliCash'] = this.tarifPubliCash;
     data['tarifImage'] = this.tarifImage;

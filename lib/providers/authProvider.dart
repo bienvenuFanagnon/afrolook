@@ -1,22 +1,22 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
 import 'package:afrotok/models/model_data.dart';
-import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:encrypt_decrypt_plus/cipher/cipher.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:openai_client/openai_client.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
@@ -522,7 +522,35 @@ class UserAuthProvider extends ChangeNotifier {
     return hasData;
   }
 
+  Future<String?> generateText({required List<Message> ancien_messages,required String message,required String regle,required UserIACompte ia}) async {
+    final apiKey="AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
+    List<Content> contents=[];
+    for(Message message in ancien_messages){
+      contents.add(Content.text(message.message!));
 
+
+    }
+
+    try {
+      //final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
+      final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}"));
+      //final prompt = "pour chaque question voici les regle a respecter "${regle}" voici la question "${message}"";
+      final prompt = "${message}";
+      final content = [Content.text(prompt)];
+      model.startChat(history: contents);
+      final response = await model.generateContent(content);
+      print("Data token: ${response!.usageMetadata!.totalTokenCount!}");
+      ia.jetons=ia.jetons!-response!.usageMetadata!.totalTokenCount!;
+      await firestore.collection('User_Ia_Compte').doc(ia.id!).update( ia.toJson());
+
+
+      return response!.text;
+    } catch (error) {
+      // Handle the error here
+      print("Error generating story: $error");
+      return ""; // Or return a default value
+    }
+  }
 
   // Create the configuration
 

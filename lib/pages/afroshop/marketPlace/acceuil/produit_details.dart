@@ -46,59 +46,6 @@ class _ProduitDetailState extends State<ProduitDetail> {
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
 
-  void _showBottomSheetCompterNonValide(double width) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Container(
-          width: width,
-          //height: 200,
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  "Vous n'êtes pas connecté.",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  "Veuillez vous connecter ou créer un compte.",
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                   // Navigator.pop(context);
-
-                 //   Navigator.push(context, MaterialPageRoute(builder: (context) => MyPhone(),));
-
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.login,color: Colors.black,),
-                      SizedBox(width: 5,),
-                      const Text('Se Connecter maintenant',style: TextStyle(color: Colors.white),),
-                    ],
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
 
 

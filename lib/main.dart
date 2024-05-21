@@ -451,7 +451,7 @@ class _MyAppState extends State<MyApp> {
             break;
           case '/intro_ia_compagnon':
             return PageTransition(
-                child: IntroIaCompagnon(), type: PageTransitionType.fade);
+                child: IntroIaCompagnon(instruction: '',), type: PageTransitionType.fade);
             break;
           case '/videos':
             return PageTransition(

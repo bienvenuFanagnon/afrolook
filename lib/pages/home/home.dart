@@ -49,6 +49,7 @@ import '../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../chat/entrepriseChat.dart';
 import '../chat/ia_Chat.dart';
 import '../chat/myChat.dart';
+import '../ia/compagnon/introIaCompagnon.dart';
 import '../menu/menuDrawer.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -115,6 +116,112 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
       return number.toString();
     }
   }
+
+  Future<Chat> getIAChatsData(UserIACompte amigo) async {
+
+    // Définissez la requête
+    var friendsStream = FirebaseFirestore.instance.collection('Chats').where( Filter.or(
+      Filter('docId', isEqualTo:  '${authProvider.loginUserData.id}${amigo.id}'),
+      Filter('docId', isEqualTo:  '${amigo.id}${authProvider.loginUserData.id}'),
+
+    )).snapshots();
+
+// Obtenez la liste des utilisateurs
+    //List<DocumentSnapshot> users = await usersQuery.sget();
+    Chat usersChat=Chat();
+
+    if (await friendsStream.isEmpty) {
+      print("pas de chat ");
+      String chatId = FirebaseFirestore.instance
+          .collection('Chats')
+          .doc()
+          .id;
+      Chat chat = Chat(
+        docId:'${amigo.id}${authProvider.loginUserData.id}',
+        id: chatId,
+        senderId:'${authProvider.loginUserData.id}',
+        receiverId:'${amigo.id}',
+        lastMessage: 'hi',
+
+        type: ChatType.USER.name,
+        createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
+      );
+      await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
+      usersChat=chat;
+
+    }  else{
+      print("le chat existe  ");
+      print("stream :${friendsStream}");
+      usersChat= await friendsStream.first.then((value) async {
+        print("stream value l :${value.docs.length}");
+        if (value.docs.length<=0) {
+          print("pas de chat ");
+          String chatId = FirebaseFirestore.instance
+              .collection('Chats')
+              .doc()
+              .id;
+          Chat chat = Chat(
+            docId:'${amigo.id}${authProvider.loginUserData.id}',
+            id: chatId,
+            senderId:'${authProvider.loginUserData.id}',
+            receiverId:'${amigo.id}',
+            lastMessage: 'hi',
+
+            type: ChatType.USER.name,
+            createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
+          );
+          await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
+          usersChat=chat;
+          return chat;
+        }  else{
+          return  Chat.fromJson(value.docs.first.data());
+        }
+
+      });
+      CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      // Afficher la liste
+      List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
+          Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+
+      if (messageList.isEmpty) {
+        usersChat.messages=[];
+        userProvider.chat=usersChat;
+        print("messgae vide ");
+      }else{
+        print("have messages");
+        usersChat.messages=messageList;
+        userProvider.chat=usersChat;
+      }
+
+      /////////////ami//////////
+      /*
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').get();
+      // Afficher la liste
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').get();
+
+
+      List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      usersChat.receiver=receiverUserList.first;
+
+      List<UserData> senderUserList = querySnapshotUserSender.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      usersChat.sender=senderUserList.first;
+
+       */
+
+    }
+
+    return usersChat;
+  }
+
 
   Future<Chat> getChatsEntrepriseData(UserData amigo,Post post,EntrepriseData entreprise) async {
 
@@ -2721,6 +2828,8 @@ bool abonneTap =false;
   }
 
   Widget menu(BuildContext context) {
+    bool onTap=false;
+
 
     return RefreshIndicator(
 
@@ -2883,6 +2992,9 @@ bool abonneTap =false;
                   ),
 
 
+
+
+                   */
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.storefront_outlined, color: Colors.green),
@@ -2895,12 +3007,10 @@ bool abonneTap =false;
                     onTap: () async {
 
 
-                 Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
                     },
                   ),
 
-                   */
-/*
 
                   ListTile(
                     trailing: TextCustomerMenu(
@@ -2910,30 +3020,61 @@ bool abonneTap =false;
                       fontWeight: FontWeight.w600,
                     ),
                     leading: Image.asset(
-                      'assets/menu/4.png',
+                      'assets/menu/8.png',
                       height: 20,
                       width: 20,
                     ),
                     title: TextCustomerMenu(
-                      titre: "IA Compagnon",
+                      titre: "Xilo",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: ConstColors.textColors,
                       fontWeight: FontWeight.w600,
                     ),
                     subtitle: TextCustomerMenu(
-                      titre: "10.3 m abonnés",
+                      titre: "Amis imaginaire",
                       fontSize: 9,
                       couleur: ConstColors.textColors,
                       fontWeight: FontWeight.w600,
                     ),
-                    onTap: () {
+                    onTap: () async {
+                      setState(() {
+                        onTap=true;
+                      });
 
-                      Navigator.pushNamed(context, '/intro_ia_compagnon');
+                   await authProvider.getAppData().then((appdata) async {
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+
+
+                     await  authProvider.getUserIa(authProvider.loginUserData.id!).then((value) async {
+                       if (value.isNotEmpty) {
+                         await getIAChatsData(value.first).then((chat) {
+                           setState(() {
+                             onTap=false;
+                           });
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${authProvider.appDefaultData.ia_instruction!}',),));
+                         });
+
+
+                       }else{
+                         Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+
+                       }
+                     },);
+
+
+
+
+
+                      },);
+
+
+
+
+                     // Navigator.pushNamed(context, '/intro_ia_compagnon');
 
                     },
                   ),
 
- */
                   /*
                   ListTile(
                     trailing: TextCustomerMenu(

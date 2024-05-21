@@ -14,6 +14,7 @@ import 'package:flutter_list_view/flutter_list_view.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../constant/buttons.dart';
 import '../../constant/constColors.dart';
@@ -29,7 +30,9 @@ class IaChat extends StatefulWidget {
   final Chat chat;
   final UserData user;
   final UserIACompte userIACompte;
-  IaChat({Key? key, required this.chat, required this.user, required this.userIACompte}) : super(key: key);
+  final String instruction;
+
+  IaChat({Key? key, required this.chat, required this.user, required this.userIACompte, required this.instruction}) : super(key: key);
 
   @override
   _EntrepriseMyChatState createState() => _EntrepriseMyChatState();
@@ -44,6 +47,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
   Duration duration = new Duration();
   Duration position = new Duration();
   bool isPlaying = false;
+  bool messageIsLoarding = false;
   bool isLoading = false;
   bool isPause = false;
   bool sendMessageTap = false;
@@ -54,6 +58,18 @@ class _EntrepriseMyChatState extends State<IaChat> {
   FlutterListViewController fluttercontroller = FlutterListViewController();
 
   FocusNode _focusNode=FocusNode();
+  Future<void> launchWhatsApp(String phone) async {
+    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
+    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+    String url = "whatsapp://send?phone="+phone+"&text=Salut ,\n*je vous contacte Depuis Afrolook*,\n\n  à propos de l'achat du jetons";
+    if (!await launchUrl(Uri.parse(url))) {
+      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
+
+      // Afficher le SnackBar en bas de la page
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      throw Exception('Impossible d\'ouvrir WhatsApp');
+    }
+  }
 
   String formatNumber(int number) {
     if (number < 1000) {
@@ -112,6 +128,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
   @override
   void initState() {
     // TODO: implement initState
+
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
 
@@ -239,7 +256,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-/*
+
     if (_controller.hasClients) {
       _controller.animateTo(
         _controller.position.maxScrollExtent*15,
@@ -248,7 +265,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
       );
     }
 
- */
+
     final now = new DateTime.now();
     return Scaffold(
       appBar: AppBar(
@@ -275,7 +292,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                       child: CircleAvatar(
                         radius: 30,
                         backgroundImage: AssetImage(
-                            'assets/images/3d-rendent-robot-signe-blanc.jpg'),
+                            'assets/menu/8.png'),
                       ),
                     ),
                     SizedBox(
@@ -284,18 +301,19 @@ class _EntrepriseMyChatState extends State<IaChat> {
                     Row(
                       children: [
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(
                               //width: 100,
                               child: TextCustomerUserTitle(
-                                titre: "IA Compagnon",
+                                titre: "@Xilo",
                                 fontSize: SizeText.homeProfileTextSize,
                                 couleur: ConstColors.textColors,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             TextCustomerUserTitle(
-                              titre: "1.5 m abonne",
+                              titre: "Amis imaginaire",
                               fontSize: SizeText.homeProfileTextSize,
                               couleur: ConstColors.textColors,
                               fontWeight: FontWeight.w400,
@@ -305,6 +323,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
 
                       ],
                     ),
+
+
                   ],
                 ),
                 Padding(
@@ -321,10 +341,10 @@ class _EntrepriseMyChatState extends State<IaChat> {
                         ),
                       ),
                       TextCustomerUserTitle(
-                        titre: "500",
+                        titre: "${widget.userIACompte.jetons}",
                         fontSize: SizeText.homeProfileTextSize,
-                        couleur: ConstColors.textColors,
-                        fontWeight: FontWeight.w400,
+                        couleur: widget.userIACompte.jetons!<=0? Colors.red:Colors.green,
+                        fontWeight: FontWeight.w700,
                       ),
                       SizedBox(height: 2,),
                       AchatJetonButton(),
@@ -332,28 +352,21 @@ class _EntrepriseMyChatState extends State<IaChat> {
                     ],
                   ),
                 ),
+                IconButton(
+                    onPressed: () {
+                      _controller.animateTo(
+                        _controller.position.maxScrollExtent * 34,
+                        duration: Duration(milliseconds: 800),
+                        curve: Curves.fastOutSlowIn,
+                      );
+                    },
+                    icon: Icon(Icons.arrow_downward_rounded, color: Colors.green))
+
               ],
             ),
           ),
           Divider(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
 
-
-              child: SizedBox(
-                width: 200,
-                child: TextCustomerIntroIa(
-                  titre: "Salut ! Content(e) de te revoir. De quoi as-tu envie de parler ?",
-                  fontSize: SizeText.homeProfileTextSize,
-                  couleur: ConstColors.textColors,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          Divider(),
           Expanded(
             //flex: 8,
 
@@ -488,6 +501,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                               Row(
                                 mainAxisAlignment:list[index].sendBy==authProvider.loginUserData.id!?  MainAxisAlignment.end:MainAxisAlignment.start,
                                 children: [
+                                  /*
                                   list[index].sendBy==authProvider.loginUserData.id!?
                                   IconButton(
 
@@ -504,6 +518,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
                                       size: 15,
                                     ),
                                   ):Container(),
+
+                                   */
                                   BubbleSpecialOne(
 
                                     text: '${list[index].message}',
@@ -514,6 +530,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                                       color:list[index].sendBy==authProvider.loginUserData.id!? Colors.white: Colors.black,
                                     ),
                                   ),
+                                  /*
                                   list[index].sendBy!=authProvider.loginUserData.id!? Transform.rotate(
                                     angle: 45 * 3.141592653 / 1,
                                     child: IconButton(
@@ -533,6 +550,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                                       ),
                                     ),
                                   ):Container(),
+                               */
                                 ],
                               ),
                               Padding(
@@ -582,52 +600,19 @@ class _EntrepriseMyChatState extends State<IaChat> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  replying
-                      ? Container(
-                      color: const Color(0xffF4F4F5),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.reply,
-                            color: Colors.blue,
-                            size: 24,
-                          ),
-                          Expanded(
-                            child: Container(
-                              child: Text(
-                                'Re : ' + replyingTo,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () {
-                              //onTapCloseReply
-                              replyingTo="";
-                              replying=false;
-                              setState(() {
+                  messageIsLoarding
+                      ? Visibility(
 
-                              });
-                            },
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.black12,
-                              size: 24,
-                            ),
-                          ),
-                        ],
-                      ))
+                        child: Container(
+
+                        child: CircularProgressIndicator(),
+                        height: 20,
+                          width: 20,
+                        ),
+                    visible: messageIsLoarding,
+                      )
                       : Container(),
-                  replying
-                      ? Container(
-                    height: 1,
-                    color: Colors.grey.shade300,
-                  )
-                      : Container(),
+
                   Container(
                     color: const Color(0xffF4F4F5),
                     padding: const EdgeInsets.symmetric(
@@ -636,6 +621,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                     ),
                     child: Row(
                       children: <Widget>[
+                        /*
                         InkWell(
                           child: Icon(
                             Icons.keyboard_voice_outlined,
@@ -655,6 +641,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
                             onTap: () {},
                           ),
                         ),
+
+                         */
                         Expanded(
                           child: Container(
                             child: TextField(
@@ -717,121 +705,193 @@ class _EntrepriseMyChatState extends State<IaChat> {
                               print("send tap;");
                               sendMessageTap=true;
                               String message_text="";
+                              _focusNode.unfocus();
 
-                              if (_textController.text.length>0) {
-                                try{
-                                  message_text=_textController.text;
+                              await  authProvider.getUserIa(authProvider.loginUserData.id!).then((ias_data) async {
+    if (ias_data.isNotEmpty) {
+      if(ias_data.first.jetons!>0){
+        if (_textController.text.length>0) {
+          try{
+            message_text=_textController.text;
 
-                                  final id = userProvider.usermessageList.length + 1;
-                                  ReplyMessage reply=ReplyMessage(message: replyingTo, messageType: MessageType.text.name);
-
-
-                                  Message msg=Message(
-                                    id: id.toString(),
-                                    createdAt: DateTime.now(),
-                                    message: _textController.text,
-                                    // sendBy: authProvider.loginUserData.id!.toString(),
-                                    sendBy:  '${authProvider.loginUserData.id!}',
-                                    replyMessage: reply,
-                                    // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
-
-                                    messageType: MessageType.text.name,
-                                    chat_id: widget.chat.docId!,
-                                    create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
-                                    message_state: MessageState.NONLU.name,
-                                    receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
-
-                                  );
-                                  widget.chat.lastMessage=_textController.text;
-                                  widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
-                                  widget.chat.lastMessage=_textController.text;
-                                 _textController.text = '';
+            final id = userProvider.usermessageList.length + 1;
+            ReplyMessage reply=ReplyMessage(message: replyingTo, messageType: MessageType.text.name);
 
 
+            Message msg=Message(
+              id: id.toString(),
+              createdAt: DateTime.now(),
+              message: _textController.text,
+              // sendBy: authProvider.loginUserData.id!.toString(),
+              sendBy:  '${authProvider.loginUserData.id!}',
+              replyMessage: reply,
+              // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
 
-                                  String msgid = firestore
-                                      .collection('Messages')
-                                      .doc()
-                                      .id;
-                                  msg.setStatus=
-                                      MessageStatus.undelivered;
-                                  msg.id=msgid;
-                                  msg.replyMessage=reply;
-                                  await firestore.collection('Messages').doc(msgid).set(msg.toJson());
-                                  widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+              messageType: MessageType.text.name,
+              chat_id: widget.chat.docId!,
+              create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+              message_state: MessageState.NONLU.name,
+              receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
 
-
-                                  await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
-                                  /*
-
-                                  await authProvider.createMessage(_textController.text).then((value) async {
-
-                                    Message msg=Message(
-                                      id: id.toString(),
-                                      createdAt: DateTime.now(),
-                                      message: value,
-                                      // sendBy: authProvider.loginUserData.id!.toString(),
-                                      sendBy:  '${widget.userIACompte.id}',
-                                      replyMessage: reply,
-                                      // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
-
-                                      messageType: MessageType.text.name,
-                                      chat_id: widget.chat.docId!,
-                                      create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
-                                      message_state: MessageState.NONLU.name,
-                                      receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
-
-                                    );
-                                    widget.chat.lastMessage=message_text;
-                                    widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
-                                    widget.chat.lastMessage=_textController.text;
-                                    message_text = '';
+            );
+            widget.chat.lastMessage=_textController.text;
+            widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+            widget.chat.lastMessage=_textController.text;
+            _textController.text = '';
+            setState(() {
+              messageIsLoarding = true;
+            });
 
 
 
-                                    String msgid = firestore
-                                        .collection('Messages')
-                                        .doc()
-                                        .id;
-                                    msg.setStatus=
-                                        MessageStatus.undelivered;
-                                    msg.id=msgid;
-                                    msg.replyMessage=reply;
-                                    await firestore.collection('Messages').doc(msgid).set(msg.toJson());
-                                    widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+            String msgid = firestore
+                .collection('Messages')
+                .doc()
+                .id;
+            msg.setStatus=
+                MessageStatus.undelivered;
+            msg.id=msgid;
+            msg.replyMessage=reply;
+            await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+            widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
 
 
-                                    await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
-                                    setState(() {
-                                      sendMessageTap=false;
-                                    });
+            await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
 
-                                  },);
 
-                                   */
+            await authProvider.generateText(ancien_messages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte).then((value) async {
 
-                                  _controller.animateTo(
-                                    _controller.position.maxScrollExtent*500,
-                                    duration: Duration(milliseconds: 800),
-                                    curve: Curves.fastOutSlowIn,
-                                  );
-                                  _focusNode.unfocus();
 
-                                  replyingTo="";
 
-                                  replying=false;
-                                  setState(() {
-                                    sendMessageTap=false;
-                                  });
-                                }on FirebaseException catch(error){
-                                  print("error code: ${error.message}");
-                                  print("error message : ${error.message}");
-                                  setState(() {
-                                    sendMessageTap=false;
-                                  });
-                                }
+              Message msg=Message(
+                id: id.toString(),
+                createdAt: DateTime.now(),
+                message: value==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":value!,
+                // sendBy: authProvider.loginUserData.id!.toString(),
+                sendBy:  '${widget.userIACompte.id}',
+                replyMessage: reply,
+                // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
 
-                              }
+                messageType: MessageType.text.name,
+                chat_id: widget.chat.docId!,
+                create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+                message_state: MessageState.NONLU.name,
+                receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
+
+              );
+              widget.chat.lastMessage=message_text;
+              widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+              message_text = '';
+
+
+
+              String msgid = firestore
+                  .collection('Messages')
+                  .doc()
+                  .id;
+              msg.setStatus=
+                  MessageStatus.undelivered;
+              msg.id=msgid;
+              msg.replyMessage=reply;
+              await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+              widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+
+
+              await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+              setState(() {
+                sendMessageTap=false;
+                messageIsLoarding = false;
+
+              });
+
+
+
+            },);
+
+
+
+
+
+            _controller.animateTo(
+              _controller.position.maxScrollExtent*500,
+              duration: Duration(milliseconds: 800),
+              curve: Curves.fastOutSlowIn,
+            );
+            _focusNode.unfocus();
+
+            replyingTo="";
+
+            replying=false;
+            setState(() {
+              sendMessageTap=false;
+            });
+          }on FirebaseException catch(error){
+            print("error code: ${error.message}");
+            print("error message : ${error.message}");
+            setState(() {
+              sendMessageTap=false;
+            });
+          }
+
+        }
+
+
+      }else{
+        showModalBottomSheet(
+          context: context,
+          builder: (BuildContext context) {
+            return Container(
+              height: 300,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info,color: Colors.red,),
+                      Text(
+                        'Vos jetons sont épuisés !',
+                        style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10.0),
+                      Text(
+                        'Vous avez besoin de jetons pour continuer à discuter avec Xilo.  (200 CFA pour 10000 jetons)',textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      SizedBox(height: 20.0),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        onPressed: () {
+                          launchWhatsApp("+22870870240");
+                        },
+                        child: Text('Acheter des jetons',
+                          style: TextStyle(color: Colors.white),),
+
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+    }
+
+                              },);
+
+
+
+                              _controller.animateTo(
+                                _controller.position.maxScrollExtent*500,
+                                duration: Duration(milliseconds: 800),
+                                curve: Curves.fastOutSlowIn,
+                              );
+                              _focusNode.unfocus();
 
                               sendMessageTap=false;
 

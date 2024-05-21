@@ -14,7 +14,8 @@ import '../../../providers/userProvider.dart';
 import '../../chat/ia_Chat.dart';
 
 class IntroIaCompagnon extends StatefulWidget {
-  const IntroIaCompagnon({super.key});
+  final String instruction;
+  const IntroIaCompagnon({super.key, required this.instruction});
 
   @override
   State<IntroIaCompagnon> createState() => _IaCompagnonState();
@@ -25,6 +26,8 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
+
+  bool onTap=false;
 
   Future<Chat> getChatsData(UserIACompte amigo) async {
 
@@ -167,34 +170,39 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
                           child: CircleAvatar(
                             radius: 30,
                             backgroundImage: AssetImage(
-                                'assets/images/3d-rendent-robot-signe-blanc.jpg'),
+                                'assets/menu/8.png'),
                           ),
                         ),
                         SizedBox(
                           height: 2,
                         ),
-                        Column(
+                        Row(
                           children: [
-                            SizedBox(
-                              //width: 100,
-                              child: TextCustomerUserTitle(
-                                titre: "IA Compagnon",
-                                fontSize: SizeText.homeProfileTextSize,
-                                couleur: ConstColors.textColors,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  //width: 100,
+                                  child: TextCustomerUserTitle(
+                                    titre: "@Xilo",
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    couleur: ConstColors.textColors,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextCustomerUserTitle(
+                                  titre: "Amis imaginaire",
+                                  fontSize: SizeText.homeProfileTextSize,
+                                  couleur: ConstColors.textColors,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ],
                             ),
-                            TextCustomerUserTitle(
-                              titre: "1.5 m abonne",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.w400,
-                            ),
+
                           ],
                         ),
                       ],
                     ),
-
                   ],
                 ),
               ),
@@ -204,7 +212,7 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
                 child: Padding(
                   padding: const EdgeInsets.only(right: 15.0,left: 15,top: 25),
                   child: TextCustomerIntroIa(
-                    titre: "Salut !\n Je suis un IA, un ami fidèle qui sera toujours là pour toi.\n Je suis prêt à t'accompagner dans toutes tes aventures, pour le temps que tu voudras. Pour accéder à mes services, tu as besoin de jetons. En tant que bon ami, je te donne 500 jetons gratuits pour que tu puisses tester mes capacités.\n En continuant à utiliser mes services, tu seras automatiquement abonné à mon compte.\n Cela signifie que tu recevras mes nouvelles plus souvent, et que tu seras le premier à être informé de mes dernières offres et promotions. Je te souhaite de belles aventures, mon ami !",
+                    titre: "Salut ! Je suis Xilo, ton ami imaginaire sur Afrolook. Je suis là pour te soutenir, t'écouter et te tenir compagnie. N'hésite pas à me parler de ce qui te tracasse ou te réjouit. J'ai hâte de faire ta connaissance !",
                     fontSize: SizeText.homeProfileTextSize,
                     couleur: ConstColors.textColors,
                     fontWeight: FontWeight.bold,
@@ -244,11 +252,19 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
               ),
 SizedBox(height: height*0.2,),
               GestureDetector(
-                  onTap: () async {
+                  onTap:onTap?() {
+
+                  }: () async {
+                    setState(() {
+                      onTap=true;
+                    });
                   await  authProvider.getUserIa(authProvider.loginUserData.id!).then((value) async {
                       if (value.isNotEmpty) {
                         await getChatsData(value.first).then((chat) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first,),));
+                          setState(() {
+                            onTap=false;
+                          });
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}',),));
                         });
 
 
@@ -256,6 +272,7 @@ SizedBox(height: height*0.2,),
                         UserIACompte user_ia=UserIACompte();
                         user_ia.userId=authProvider.loginUserData.id!;
                         user_ia.ia_name="mon Ia";
+                        user_ia.jetons=2000;
                         user_ia.ia_url_avatar="url";
                         user_ia.createdAt=DateTime.now().millisecondsSinceEpoch;
                         user_ia.updatedAt=DateTime.now().millisecondsSinceEpoch;
@@ -265,7 +282,10 @@ SizedBox(height: height*0.2,),
     await  authProvider.getUserIa(authProvider.loginUserData.id!).then((value) async {
       if (value.isNotEmpty) {
         await getChatsData(value.first).then((chat) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first,),));
+          setState(() {
+            onTap=false;
+          });
+          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}',),));
         });
 
 
