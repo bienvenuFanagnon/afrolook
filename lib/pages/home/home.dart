@@ -4,7 +4,7 @@ import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 
 import 'package:afrotok/pages/user/detailsOtherUser.dart';
 import 'package:flutter/material.dart';
-
+import 'package:restart_app/restart_app.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/simpleChargement.dart';
@@ -374,18 +374,18 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
       return nbAbonnes.toString();
     }
   }
-  bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
-    return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
   }
 
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  bool isMyFriend(List<Friends> userfriendList, String userIdToCheck) {
-    return userfriendList.any((userAbonne) => userAbonne.friendId == userIdToCheck);
+  bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
+    return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
-  bool isInvite(List<Invitation> invitationList, String userIdToCheck) {
-    return invitationList.any((inv) => inv.receiverId == userIdToCheck);
+  bool isInvite(List<String> invitationList, String userIdToCheck) {
+    return invitationList.any((invid) => invid == userIdToCheck);
   }
 
 
@@ -778,7 +778,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                 return Container(
                   width: w*0.5,
                   height: 50,
-                  child:  isMyFriend(authProvider.loginUserData.friends!, user.id!)?
+                  child:  isMyFriend(user.friendsIds!,authProvider.loginUserData.id!)?
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                     child: ElevatedButton(
@@ -805,7 +805,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                       fontWeight: FontWeight.w600,
                     ),)),
                   )
-                      :!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)?
+                      :!isInvite(user.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                     child: Container(
@@ -815,7 +815,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                         onPressed:inviteTap?
                             ()  { }:
                             ()async{
-                    if (!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)) {
+                    if (!isInvite(user.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
                       setState(() {
                         inviteTap=true;
                       });
@@ -858,8 +858,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                           SnackBar snackBar = SnackBar(
                             content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                           );
-
                           ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                          user.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
+                          authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(user.id!);
+                          userProvider.updateUser(user);
+                          userProvider.updateUser(authProvider.loginUserData!);
+
                           if (user.oneIgnalUserid!=null&&user.oneIgnalUserid!.length>5) {
 
                             await authProvider.sendNotification(
@@ -928,7 +933,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
 
                 builder: (BuildContext context, void Function(void Function()) setState) {
                   return Container(
-               child:    isUserAbonne(authProvider.loginUserData.userAbonnes!, user.id!)?
+               child:    isUserAbonne(user.userAbonnesIds!,authProvider.loginUserData.id!)?
                Container(
                  width: w*0.5,
                  height: 35,
@@ -949,7 +954,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                    onPressed:abonneTap?
                        ()  { }:
                        ()async{
-                         if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, user!.id!)) {
+                         if (!isUserAbonne(user.userAbonnesIds!,authProvider.loginUserData.id!)) {
                            setState(() {
                              abonneTap=true;
                            });
@@ -1007,6 +1012,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                                SnackBar snackBar = SnackBar(
                                  content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                );
+                               user.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                               userProvider.updateUser(user);
                                ScaffoldMessenger.of(context).showSnackBar(snackBar);
                                setState(() {
                                  abonneTap=false;
@@ -1665,17 +1672,20 @@ bool abonneTap =false;
                      */
                     GestureDetector(
                       onTap: () {
+                        postProvider.updateVuePost(post,context);
+
                         Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
                       },
                       child: Container(
-                        //width: w*0.9,
-                       // height: h*0.5,
+                        width: w*0.9,
+                        height: h*0.4,
 
                         child: ClipRRect(
                           borderRadius: BorderRadius.all(Radius.circular(5)),
                           child: Container(
 
                             child: CachedNetworkImage(
+
 
                               fit: BoxFit.cover,
                               imageUrl: '${post!.images==null?'':post!.images!.isEmpty? '':post!.images![imageIndex]}',
@@ -2142,12 +2152,12 @@ bool abonneTap =false;
 
                                 builder: (BuildContext context, void Function(void Function()) setState) {
                                   return Container(
-                                  child: isUserAbonne(authProvider.loginUserData.userAbonnes!, post.user!.id!)?Container(): TextButton(
+                                  child: isUserAbonne(post.user!.userAbonnesIds!, authProvider.loginUserData.id!)?Container(): TextButton(
 
                                       onPressed:abonneTap?
                                           ()  { }:
                                           ()async{
-                                        if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, post.user!.id!)) {
+                                        if (!isUserAbonne(post.user!.userAbonnesIds!, authProvider.loginUserData.id!)) {
                                           setState(() {
                                             abonneTap=true;
                                           });
@@ -2162,6 +2172,8 @@ bool abonneTap =false;
                                               authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                               // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                              post.user!.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                              userProvider.updateUser(post.user!);
                                               if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
                                                 await authProvider.sendNotification(
                                                     userIds: [post.user!.oneIgnalUserid!],
@@ -2307,7 +2319,7 @@ bool abonneTap =false;
                       alignment: Alignment.center,
                       child: SizedBox(
                         width: width*0.8,
-                       // height: 50,
+                        height: height*0.5,
                         child: Container(
                          // height: 200,
                           constraints: BoxConstraints(
@@ -2390,12 +2402,13 @@ bool abonneTap =false;
 
                       child: GestureDetector(
                           onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
+                            postProvider.updateVuePost(post,context);
+
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
                       },
 
                                         child: Container(
-                      //width: w*0.9,
-                      //height: h*0.5,
+
 
                       child: ClipRRect(
                         borderRadius: BorderRadius.all(Radius.circular(5)),
@@ -2403,6 +2416,8 @@ bool abonneTap =false;
 
 
                           child: CachedNetworkImage(
+                            width: w*0.9,
+                            height: h*0.4,
 
                             fit: BoxFit.cover,
                             imageUrl: '${post!.images==null?'':post!.images!.isEmpty? '':post!.images![imageIndex]}',
@@ -3955,41 +3970,61 @@ bool abonneTap =false;
     },);
    // authProvider.getCurrentUser(authProvider.loginUserData!.id!);
 
-
-
-
-
-
-
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state==AppLifecycleState.resumed) {
-     //online
-     // userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
-    }  else{
-      //userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE.name);
-      //offline
-    }
-    // TODO: implement didChangeAppLifecycleState
-    super.didChangeAppLifecycleState(state);
+  void dispose() {
+    // Unregister your State class as a binding observer
+    WidgetsBinding.instance.removeObserver(this);
+
+    super.dispose();
   }
+
+
+  // listen to the app lifecycle state changes
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.detached:
+        _onDetached();
+      case AppLifecycleState.resumed:
+        _onResumed();
+      case AppLifecycleState.inactive:
+        _onInactive();
+      case AppLifecycleState.hidden:
+        _onHidden();
+      case AppLifecycleState.paused:
+        _onPaused();
+    }
+  }
+
+  void _onDetached() => print('detached');
+
+  void _onResumed() => print('resumed');
+
+  void _onInactive() => print('inactive');
+
+  void _onHidden() => print('hidden');
+
+  void _onPaused() => print('paused');
+
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     //userProvider.getUsers(authProvider.loginUserData!.id!);
 
-
-
-
-
     return RefreshIndicator(
       onRefresh: ()async {
         setState(() {
-         // is_actualised = true;
+
         });
+
+        //Restart.restartApp();
+        // is_actualised = true;
+
    //     await userProvider.getAllAnnonces();
         /*
        await postProvider.getPostsImages(limitePosts).then((value) {
@@ -4089,8 +4124,12 @@ bool abonneTap =false;
                   curve: Curves.ease,
                 );
                 setState(() {
-                // is_actualised = true;
+
                 });
+
+             //   Restart.restartApp();
+
+
                 /*
                 await userProvider.getAllAnnonces();
                 await postProvider.getPostsImages(limitePosts).then((value) {
@@ -4121,757 +4160,752 @@ bool abonneTap =false;
 
                       List<Post> listConstposts=snapshot.data;
 
-                      listConstposts.insert(0, listConstposts.elementAt(0));
+                     // listConstposts.insert(0, listConstposts.elementAt(0));
 
 
-                      return  Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          SizedBox(
-                            width: width,
-                            height: height*0.81,
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              scrollDirection: Axis.vertical,
+                      return  SizedBox(
+                        width: width,
+                        height: height*0.81,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          scrollDirection: Axis.vertical,
 
-                              itemCount: listConstposts.length,
-                              itemBuilder:
-                                  (BuildContext context, int index) {
+                          itemCount: listConstposts.length,
+                          itemBuilder:
+                              (BuildContext context, int index) {
 
-                                if (index==0) {
-                                  //listConstposts.insert(0, listConstposts.elementAt(index));
-                                  return Column(
-                                    children: <Widget>[
-                                      Row(
+                            if (index==0) {
+                              //listConstposts.insert(0, listConstposts.elementAt(index));
+                              return Column(
+                                children: <Widget>[
+                                  Row(
 
-                                        children: [
-                                          TextButton(onPressed: () {
+                                    children: [
+                                      TextButton(onPressed: () {
 
 
-                                          }, child: Text("")),
-                                          TextButton(onPressed: () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                      }, child: Text("")),
+                                      TextButton(onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
 
 
-                                          }, child: Text("Afficher plus")),
-                                        ],
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      ),
-                                      SizedBox(
-                                        //width: width,
-                                        height: height*0.33,
-                                        child: FutureBuilder<List<UserData>>(
-                                          future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                          builder: (context, snapshot) {
-                                            if (snapshot.connectionState == ConnectionState.waiting) {
-                                              return
-                                                Skeletonizer(
-                                                  //enabled: _loading,
-                                                  child: ListView.builder
-                                                    (
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: 10,
-                                                    itemBuilder: (context, index) {
-                                                      return Padding(
-                                                        padding: const EdgeInsets.all(1.0),
-                                                        child: Container(
-                                                          width: 300,
-                                                          child: Card(
-                                                            color: Colors.white,
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.all(8.0),
-                                                              child: Column(
-                                                                children: [
-                                                                  Container(
-
-                                                                    child: CircleAvatar(
-                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                    ),
-                                                                    height: 100,
-                                                                    width: 100,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 70,
-                                                                    child: TextCustomerUserTitle(
-                                                                      titre: "jhasgjh",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: ConstColors.textColors,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  TextCustomerUserTitle(
-                                                                    titre: "S'abonner",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: Colors.blue,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  )
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                );
-                                            } else if (snapshot.hasError) {
-                                              return
-                                                Skeletonizer(
-                                                  //enabled: _loading,
-                                                  child: ListView.builder(
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: 10,
-                                                    itemBuilder: (context, index) {
-                                                      return Container(
-                                                        width: 300,
-                                                        child: Padding(
-                                                          padding: const EdgeInsets.all(1.0),
-                                                          child: Card(
-                                                            color: Colors.white,
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.all(8.0),
-                                                              child: Column(
-                                                                children: [
-                                                                  Container(
-
-                                                                    child: CircleAvatar(
-                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                    ),
-                                                                    height: 100,
-                                                                    width: 100,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 70,
-                                                                    child: TextCustomerUserTitle(
-                                                                      titre: "jhasgjh",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: ConstColors.textColors,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  TextCustomerUserTitle(
-                                                                    titre: "S'abonner",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: Colors.blue,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  )
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                );
-                                            } else {
-                                              // Get data from docs and convert map to List
-                                              List<UserData> list = snapshot.data!;
-                                              // Utiliser les données de snapshot.data
-                                              return  ListView.builder(
-                                                  scrollDirection: Axis.horizontal,
-                                                  itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                  itemBuilder: (context, index) {
-
-                                                    //list[index].userAbonnes=[];
-                                                    return  homeProfileUsers(list[index],width,height);
-                                                  });
-                                            }
-                                          },
-                                        ),
-                                      ),
-
-                                      Divider(height: 10,),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(2.0),
-                                              child: SizedBox(
-                                                height: 20,
-                                                child: Marquee(
-                                                  key: Key("keys"),
-                                                  text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                  style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
-                                                  scrollAxis: Axis.horizontal,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  blankSpace: 20,
-                                                  velocity: 100,
-                                                  pauseAfterRound: Duration(seconds: 1),
-                                                  showFadingOnlyWhenScrolling: true,
-                                                  fadingEdgeStartFraction: 0.1,
-                                                  fadingEdgeEndFraction: 0.1,
-                                                  numberOfRounds: 1000,
-
-                                                  startPadding: 10,
-                                                  accelerationDuration: Duration(milliseconds: 5000),
-                                                  accelerationCurve: Curves.linear,
-                                                  decelerationDuration: Duration(milliseconds: 1000),
-                                                  decelerationCurve: Curves.easeOut,
-
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          TextButton(onPressed: () {
-                                            Navigator.pushNamed(context, '/contact');
-
-                                          }, child:      Container(
-                                              height: 20,
-                                              decoration: BoxDecoration(
-                                                  color: Colors.green,
-                                                  borderRadius: BorderRadius.all(Radius.circular(2))
-                                              ),
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
-                                                child: Text("Contacter",style: TextStyle(color: Colors.white),),
-                                              )))
-                                        ],
-                                      ),
-                                      // SizedBox(height: 5,),
-
-                                      Divider(height: 10,),
-
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: Padding(
-                                                  padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.storefront,color: Colors.green,),
-                                                      SizedBox(width: 2,),
-                                                      TextCustomerPostDescription(
-                                                        titre:
-                                                        "Afroshop Annonces ",
-                                                        fontSize: 15,
-                                                        couleur: CustomConstants.kPrimaryColor,
-                                                        fontWeight: FontWeight.w800,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(onPressed: () {
-                                                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-
-
-                                              }, child: Text("Afficher plus")),
-                                            ],
-                                          ),
-
-
-                                          Padding(
-                                            padding: const EdgeInsets.all(4.0),
-                                            child: FutureBuilder<List<ArticleData>>(
-                                                future: categorieProduitProvider.getAnnoncesArticles(),
-                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                  if (snapshot.hasData) {
-                                                    List<ArticleData> articles=snapshot.data;
-                                                    return Column(
-                                                      children: [
-                                                        Container(
-                                                          height: height * 0.22,
-                                                          width: width,
-                                                          child: FlutterCarousel.builder(
-                                                            itemCount: articles.length,
-                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                                ArticleTile( articles[index],width,height),
-                                                            options: CarouselOptions(
-                                                              autoPlay: true,
-                                                              //controller: buttonCarouselController,
-                                                              enlargeCenterPage: true,
-                                                              viewportFraction: 0.4,
-                                                              aspectRatio: 1.5,
-                                                              initialPage: 1,
-                                                              reverse: true,
-                                                              autoPlayInterval: const Duration(seconds: 2),
-                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                              autoPlayCurve: Curves.fastOutSlowIn,
-
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        /*
-                                                      Container(
-                                                        height: height*0.08,
-                                                        width: width,
-                                                        alignment: Alignment.centerLeft,
-                                                        child: ListView.builder(
-
-                                scrollDirection: Axis.horizontal,
-                                itemCount: articles.length,
-                                itemBuilder:
-                                    (BuildContext context, int index) {
-                                  return ArticleTile( articles[index],width,height);
-                                },
-                                                        ),
-                                                      ),
-
-                                                       */
-                                                      ],
-                                                    );
-                                                  } else if (snapshot.hasError) {
-                                                    return Icon(Icons.error_outline);
-                                                  } else {
-                                                    return Container(
-                                                        width: 30,
-                                                        height: 40,
-
-                                                        child: CircularProgressIndicator());
-                                                  }
-                                                }),
-                                          ),
-                                          Divider(height: 10,),
-
-
+                                      }, child: Text("Afficher plus")),
                                     ],
-                                  );
-
-                                }
-                                if (index % 6 == 0) {
-                                  // listConstposts.insert(index, listConstposts.elementAt(index));
-
-                                  return Column(
-                                    children: <Widget>[
-                                      Row(
-
-                                        children: [
-                                          TextButton(onPressed: () {
-
-
-                                          }, child: Text("")),
-                                          TextButton(onPressed: () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-
-
-                                          }, child: Text("Afficher plus")),
-                                        ],
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      ),
-                                      SizedBox(
-                                        //width: width,
-                                        height: height*0.38,
-                                        child: FutureBuilder<List<UserData>>(
-                                          future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
-                                          builder: (context, snapshot) {
-                                            if (snapshot.connectionState == ConnectionState.waiting) {
-                                              return
-                                                Skeletonizer(
-                                                  //enabled: _loading,
-                                                  child: ListView.builder
-                                                    (
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: 10,
-                                                    itemBuilder: (context, index) {
-                                                      return Padding(
-                                                        padding: const EdgeInsets.all(1.0),
-                                                        child: Container(
-                                                          width: 300,
-                                                          child: Card(
-                                                            color: Colors.white,
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.all(8.0),
-                                                              child: Column(
-                                                                children: [
-                                                                  Container(
-
-                                                                    child: CircleAvatar(
-                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                    ),
-                                                                    height: 100,
-                                                                    width: 100,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 70,
-                                                                    child: TextCustomerUserTitle(
-                                                                      titre: "jhasgjh",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: ConstColors.textColors,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  TextCustomerUserTitle(
-                                                                    titre: "S'abonner",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: Colors.blue,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  )
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                );
-                                            } else if (snapshot.hasData) {
-                                              // Get data from docs and convert map to List
-                                              List<UserData> list = snapshot.data!;
-                                              // Utiliser les données de snapshot.data
-                                              return  ListView.builder(
-                                                  scrollDirection: Axis.horizontal,
-                                                  itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
-                                                  itemBuilder: (context, index) {
-
-                                                    //list[index].userAbonnes=[];
-                                                    return  homeProfileUsers(list[index],width,height);
-                                                  });
-
-                                            } else {
-                                              return
-                                                Skeletonizer(
-                                                  //enabled: _loading,
-                                                  child: ListView.builder(
-                                                    scrollDirection: Axis.horizontal,
-                                                    itemCount: 10,
-                                                    itemBuilder: (context, index) {
-                                                      return Container(
-                                                        width: 300,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  ),
+                                  SizedBox(
+                                    //width: width,
+                                    height: height*0.33,
+                                    child: FutureBuilder<List<UserData>>(
+                                      future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return
+                                            Skeletonizer(
+                                              //enabled: _loading,
+                                              child: ListView.builder
+                                                (
+                                                scrollDirection: Axis.horizontal,
+                                                itemCount: 10,
+                                                itemBuilder: (context, index) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.all(1.0),
+                                                    child: Container(
+                                                      width: 300,
+                                                      child: Card(
+                                                        color: Colors.white,
                                                         child: Padding(
-                                                          padding: const EdgeInsets.all(1.0),
-                                                          child: Card(
-                                                            color: Colors.white,
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.all(8.0),
-                                                              child: Column(
-                                                                children: [
-                                                                  Container(
+                                                          padding: const EdgeInsets.all(8.0),
+                                                          child: Column(
+                                                            children: [
+                                                              Container(
 
-                                                                    child: CircleAvatar(
-                                                                      backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
-                                                                    ),
-                                                                    height: 100,
-                                                                    width: 100,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 70,
-                                                                    child: TextCustomerUserTitle(
-                                                                      titre: "jhasgjh",
-                                                                      fontSize: SizeText.homeProfileTextSize,
-                                                                      couleur: ConstColors.textColors,
-                                                                      fontWeight: FontWeight.w600,
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: 2,
-                                                                  ),
-                                                                  TextCustomerUserTitle(
-                                                                    titre: "S'abonner",
-                                                                    fontSize: SizeText.homeProfileTextSize,
-                                                                    couleur: Colors.blue,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  )
-                                                                ],
+                                                                child: CircleAvatar(
+                                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                ),
+                                                                height: 100,
+                                                                width: 100,
                                                               ),
-                                                            ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              SizedBox(
+                                                                width: 70,
+                                                                child: TextCustomerUserTitle(
+                                                                  titre: "jhasgjh",
+                                                                  fontSize: SizeText.homeProfileTextSize,
+                                                                  couleur: ConstColors.textColors,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              TextCustomerUserTitle(
+                                                                titre: "S'abonner",
+                                                                fontSize: SizeText.homeProfileTextSize,
+                                                                couleur: Colors.blue,
+                                                                fontWeight: FontWeight.w600,
+                                                              )
+                                                            ],
                                                           ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                );
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      Divider(height: 10,),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(2.0),
-                                              child: SizedBox(
-                                                height: 20,
-                                                child: Marquee(
-                                                  key: Key("keys"),
-                                                  text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                  style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
-                                                  scrollAxis: Axis.horizontal,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  blankSpace: 20,
-                                                  velocity: 100,
-                                                  pauseAfterRound: Duration(seconds: 1),
-                                                  showFadingOnlyWhenScrolling: true,
-                                                  fadingEdgeStartFraction: 0.1,
-                                                  fadingEdgeEndFraction: 0.1,
-                                                  numberOfRounds: 1000,
-
-                                                  startPadding: 10,
-                                                  accelerationDuration: Duration(milliseconds: 5000),
-                                                  accelerationCurve: Curves.linear,
-                                                  decelerationDuration: Duration(milliseconds: 1000),
-                                                  decelerationCurve: Curves.easeOut,
-
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          TextButton(onPressed: () {
-                                            Navigator.pushNamed(context, '/contact');
-
-                                          }, child:      Container(
-                                              height: 20,
-                                              decoration: BoxDecoration(
-                                                  color: Colors.green,
-                                                  borderRadius: BorderRadius.all(Radius.circular(2))
-                                              ),
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
-                                                child: Text("Contacter",style: TextStyle(color: Colors.white),),
-                                              )))
-                                        ],
-                                      ),
-                                      // SizedBox(height: 5,),
-
-                                      userProvider.listAnnonces.length<0? Container(): Visibility(
-                                        visible: userProvider.listAnnonces.length>0?true:false,
-                                        child: SizedBox(
-                                          // width: width*0.8,
-                                          //height: height*0.2,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(2.0),
-                                            child: FlutterCarousel.builder(
-                                              itemCount: userProvider.listAnnonces.length,
-                                              itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-                                                  GestureDetector(
-                                                    onTap: () async {
-                                                      Annonce annonce=userProvider.listAnnonces[itemIndex];
-                                                      annonce.vues=annonce.vues!+1;
-                                                      await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-                                                      _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
-                                                    },
-                                                    child: ClipRRect(
-                                                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                                                      child: Container(
-                                                        width: width*0.9,
-                                                        height: height*0.5,
-                                                        child: Stack(
-                                                          children: [
-                                                            SizedBox(
-                                                              width: width*0.9,
-                                                              height: height*0.5,
-                                                              child: CachedNetworkImage(
-                                                                fit: BoxFit.cover,
-
-                                                                imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                                //  LinearProgressIndicator(),
-
-                                                                Skeletonizer(
-                                                                    child: SizedBox(
-                                                                        width: width*0.9,
-                                                                        height: height*0.5,
-                                                                        child:  ClipRRect(
-                                                                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                                                errorWidget: (context, url, error) =>  Container(width: width*0.9,
-                                                                    height: height*0.5,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                                                              ),
-                                                            ),
-                                                            Positioned(
-                                                              //width: 100,
-                                                              //height: 40,
-
-
-                                                              child: Container(
-
-                                                                decoration: BoxDecoration(
-                                                                  //  color: Colors.white,
-                                                                    borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                ),
-
-                                                                child: Center(
-                                                                  child: Container(
-                                                                    width: 100,
-                                                                    decoration: BoxDecoration(
-                                                                        color: Colors.green.withOpacity(0.5),
-                                                                        borderRadius: BorderRadius.all(Radius.circular(50))
-                                                                    ),
-                                                                    child: Padding(
-                                                                      padding: const EdgeInsets.all(8.0),
-                                                                      child: Row(
-                                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                                        children: [
-                                                                          Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                          userProvider.listAnnonces[itemIndex]!.vues!>999?Text("+999",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
-                                                                        ],
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                              options: CarouselOptions(
-                                                autoPlay: true,
-                                                //controller: buttonCarouselController,
-                                                enlargeCenterPage: true,
-                                                viewportFraction: 0.9,
-                                                aspectRatio: 3.0,
-                                                // initialPage: 1,
-                                                autoPlayInterval: const Duration(seconds: 2),
-                                                autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                autoPlayCurve: Curves.fastOutSlowIn,
-
+                                                  );
+                                                },
                                               ),
+                                            );
+                                        } else if (snapshot.hasError) {
+                                          return
+                                            Skeletonizer(
+                                              //enabled: _loading,
+                                              child: ListView.builder(
+                                                scrollDirection: Axis.horizontal,
+                                                itemCount: 10,
+                                                itemBuilder: (context, index) {
+                                                  return Container(
+                                                    width: 300,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(1.0),
+                                                      child: Card(
+                                                        color: Colors.white,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(8.0),
+                                                          child: Column(
+                                                            children: [
+                                                              Container(
+
+                                                                child: CircleAvatar(
+                                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                ),
+                                                                height: 100,
+                                                                width: 100,
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              SizedBox(
+                                                                width: 70,
+                                                                child: TextCustomerUserTitle(
+                                                                  titre: "jhasgjh",
+                                                                  fontSize: SizeText.homeProfileTextSize,
+                                                                  couleur: ConstColors.textColors,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              TextCustomerUserTitle(
+                                                                titre: "S'abonner",
+                                                                fontSize: SizeText.homeProfileTextSize,
+                                                                couleur: Colors.blue,
+                                                                fontWeight: FontWeight.w600,
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                        } else {
+                                          // Get data from docs and convert map to List
+                                          List<UserData> list = snapshot.data!;
+                                          // Utiliser les données de snapshot.data
+                                          return  ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                              itemBuilder: (context, index) {
+
+                                                //list[index].userAbonnes=[];
+                                                return  homeProfileUsers(list[index],width,height);
+                                              });
+                                        }
+                                      },
+                                    ),
+                                  ),
+
+                                  Divider(height: 10,),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(2.0),
+                                          child: SizedBox(
+                                            height: 20,
+                                            child: Marquee(
+                                              key: Key("keys"),
+                                              text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                              scrollAxis: Axis.horizontal,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              blankSpace: 20,
+                                              velocity: 100,
+                                              pauseAfterRound: Duration(seconds: 1),
+                                              showFadingOnlyWhenScrolling: true,
+                                              fadingEdgeStartFraction: 0.1,
+                                              fadingEdgeEndFraction: 0.1,
+                                              numberOfRounds: 1000,
+
+                                              startPadding: 10,
+                                              accelerationDuration: Duration(milliseconds: 5000),
+                                              accelerationCurve: Curves.linear,
+                                              decelerationDuration: Duration(milliseconds: 1000),
+                                              decelerationCurve: Curves.easeOut,
+
                                             ),
                                           ),
                                         ),
                                       ),
+                                      TextButton(onPressed: () {
+                                        Navigator.pushNamed(context, '/contact');
 
+                                      }, child:      Container(
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius: BorderRadius.all(Radius.circular(2))
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                            child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                          )))
+                                    ],
+                                  ),
+                                  // SizedBox(height: 5,),
+
+                                  Divider(height: 10,),
+
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.storefront,color: Colors.green,),
+                                                  SizedBox(width: 2,),
+                                                  TextCustomerPostDescription(
+                                                    titre:
+                                                    "Afroshop Annonces ",
+                                                    fontSize: 15,
+                                                    couleur: CustomConstants.kPrimaryColor,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton(onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+
+
+                                          }, child: Text("Afficher plus")),
+                                        ],
+                                      ),
+
+
+                                      Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: FutureBuilder<List<ArticleData>>(
+                                            future: categorieProduitProvider.getAnnoncesArticles(),
+                                            builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                              if (snapshot.hasData) {
+                                                List<ArticleData> articles=snapshot.data;
+                                                return Column(
+                                                  children: [
+                                                    Container(
+                                                      height: height * 0.22,
+                                                      width: width,
+                                                      child: FlutterCarousel.builder(
+                                                        itemCount: articles.length,
+                                                        itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                            ArticleTile( articles[index],width,height),
+                                                        options: CarouselOptions(
+                                                          autoPlay: true,
+                                                          //controller: buttonCarouselController,
+                                                          enlargeCenterPage: true,
+                                                          viewportFraction: 0.4,
+                                                          aspectRatio: 1.5,
+                                                          initialPage: 1,
+                                                          reverse: true,
+                                                          autoPlayInterval: const Duration(seconds: 2),
+                                                          autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                          autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    /*
+                                                  Container(
+                                                    height: height*0.08,
+                                                    width: width,
+                                                    alignment: Alignment.centerLeft,
+                                                    child: ListView.builder(
+
+                            scrollDirection: Axis.horizontal,
+                            itemCount: articles.length,
+                            itemBuilder:
+                                (BuildContext context, int index) {
+                              return ArticleTile( articles[index],width,height);
+                            },
+                                                    ),
+                                                  ),
+
+                                                   */
+                                                  ],
+                                                );
+                                              } else if (snapshot.hasError) {
+                                                return Icon(Icons.error_outline);
+                                              } else {
+                                                return Container(
+                                                    width: 30,
+                                                    height: 40,
+
+                                                    child: CircularProgressIndicator());
+                                              }
+                                            }),
+                                      ),
+                                      Divider(height: 10,),
+
+
+                                ],
+                              );
+
+                            }
+                            if (index % 6 == 0) {
+                              // listConstposts.insert(index, listConstposts.elementAt(index));
+
+                              return Column(
+                                children: <Widget>[
+                                  Row(
+
+                                    children: [
+                                      TextButton(onPressed: () {
+
+
+                                      }, child: Text("")),
+                                      TextButton(onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+
+
+                                      }, child: Text("Afficher plus")),
+                                    ],
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  ),
+                                  SizedBox(
+                                    //width: width,
+                                    height: height*0.38,
+                                    child: FutureBuilder<List<UserData>>(
+                                      future: userProvider.getProfileUsers(authProvider.loginUserData.id!,context,limiteUsers),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return
+                                            Skeletonizer(
+                                              //enabled: _loading,
+                                              child: ListView.builder
+                                                (
+                                                scrollDirection: Axis.horizontal,
+                                                itemCount: 10,
+                                                itemBuilder: (context, index) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.all(1.0),
+                                                    child: Container(
+                                                      width: 300,
+                                                      child: Card(
+                                                        color: Colors.white,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(8.0),
+                                                          child: Column(
+                                                            children: [
+                                                              Container(
+
+                                                                child: CircleAvatar(
+                                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                ),
+                                                                height: 100,
+                                                                width: 100,
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              SizedBox(
+                                                                width: 70,
+                                                                child: TextCustomerUserTitle(
+                                                                  titre: "jhasgjh",
+                                                                  fontSize: SizeText.homeProfileTextSize,
+                                                                  couleur: ConstColors.textColors,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              TextCustomerUserTitle(
+                                                                titre: "S'abonner",
+                                                                fontSize: SizeText.homeProfileTextSize,
+                                                                couleur: Colors.blue,
+                                                                fontWeight: FontWeight.w600,
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                        } else if (snapshot.hasData) {
+                                          // Get data from docs and convert map to List
+                                          List<UserData> list = snapshot.data!;
+                                          // Utiliser les données de snapshot.data
+                                          return  ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: snapshot.data!.length, // Nombre d'éléments dans la liste
+                                              itemBuilder: (context, index) {
+
+                                                //list[index].userAbonnes=[];
+                                                return  homeProfileUsers(list[index],width,height);
+                                              });
+
+                                        } else {
+                                          return
+                                            Skeletonizer(
+                                              //enabled: _loading,
+                                              child: ListView.builder(
+                                                scrollDirection: Axis.horizontal,
+                                                itemCount: 10,
+                                                itemBuilder: (context, index) {
+                                                  return Container(
+                                                    width: 300,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(1.0),
+                                                      child: Card(
+                                                        color: Colors.white,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(8.0),
+                                                          child: Column(
+                                                            children: [
+                                                              Container(
+
+                                                                child: CircleAvatar(
+                                                                  backgroundImage: AssetImage("assets/icon/user-removebg-preview.png",),
+                                                                ),
+                                                                height: 100,
+                                                                width: 100,
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              SizedBox(
+                                                                width: 70,
+                                                                child: TextCustomerUserTitle(
+                                                                  titre: "jhasgjh",
+                                                                  fontSize: SizeText.homeProfileTextSize,
+                                                                  couleur: ConstColors.textColors,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 2,
+                                                              ),
+                                                              TextCustomerUserTitle(
+                                                                titre: "S'abonner",
+                                                                fontSize: SizeText.homeProfileTextSize,
+                                                                couleur: Colors.blue,
+                                                                fontWeight: FontWeight.w600,
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  Divider(height: 10,),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(2.0),
+                                          child: SizedBox(
+                                            height: 20,
+                                            child: Marquee(
+                                              key: Key("keys"),
+                                              text: "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
+                                              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black),
+                                              scrollAxis: Axis.horizontal,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              blankSpace: 20,
+                                              velocity: 100,
+                                              pauseAfterRound: Duration(seconds: 1),
+                                              showFadingOnlyWhenScrolling: true,
+                                              fadingEdgeStartFraction: 0.1,
+                                              fadingEdgeEndFraction: 0.1,
+                                              numberOfRounds: 1000,
+
+                                              startPadding: 10,
+                                              accelerationDuration: Duration(milliseconds: 5000),
+                                              accelerationCurve: Curves.linear,
+                                              decelerationDuration: Duration(milliseconds: 1000),
+                                              decelerationCurve: Curves.easeOut,
+
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(onPressed: () {
+                                        Navigator.pushNamed(context, '/contact');
+
+                                      }, child:      Container(
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius: BorderRadius.all(Radius.circular(2))
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(left: 2.0,right: 2,bottom: 1),
+                                            child: Text("Contacter",style: TextStyle(color: Colors.white),),
+                                          )))
+                                    ],
+                                  ),
+                                  // SizedBox(height: 5,),
+
+                                  userProvider.listAnnonces.length<0? Container(): Visibility(
+                                    visible: userProvider.listAnnonces.length>0?true:false,
+                                    child: SizedBox(
+                                      // width: width*0.8,
+                                      //height: height*0.2,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2.0),
+                                        child: FlutterCarousel.builder(
+                                          itemCount: userProvider.listAnnonces.length,
+                                          itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+                                              GestureDetector(
+                                                onTap: () async {
+                                                  Annonce annonce=userProvider.listAnnonces[itemIndex];
+                                                  annonce.vues=annonce.vues!+1;
+                                                  await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
+                                                  _showUserDetailsAnnonceDialog('${userProvider.listAnnonces[itemIndex].media_url!}',userProvider.listAnnonces[itemIndex]);
+                                                },
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                                                  child: Container(
+                                                    width: width*0.9,
+                                                    height: height*0.5,
+                                                    child: Stack(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: width*0.9,
+                                                          height: height*0.5,
+                                                          child: CachedNetworkImage(
+                                                            fit: BoxFit.cover,
+
+                                                            imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
+                                                            progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                            //  LinearProgressIndicator(),
+
+                                                            Skeletonizer(
+                                                                child: SizedBox(
+                                                                    width: width*0.9,
+                                                                    height: height*0.5,
+                                                                    child:  ClipRRect(
+                                                                    borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                                            errorWidget: (context, url, error) =>  Container(width: width*0.9,
+                                                                height: height*0.5,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          //width: 100,
+                                                          //height: 40,
+
+
+                                                          child: Container(
+
+                                                            decoration: BoxDecoration(
+                                                              //  color: Colors.white,
+                                                                borderRadius: BorderRadius.all(Radius.circular(50))
+                                                            ),
+
+                                                            child: Center(
+                                                              child: Container(
+                                                                width: 100,
+                                                                decoration: BoxDecoration(
+                                                                    color: Colors.green.withOpacity(0.5),
+                                                                    borderRadius: BorderRadius.all(Radius.circular(50))
+                                                                ),
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(8.0),
+                                                                  child: Row(
+                                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                                    children: [
+                                                                      Text("vues: ",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                      userProvider.listAnnonces[itemIndex]!.vues!>999?Text("+999",style: TextStyle(fontWeight: FontWeight.w600,color: Colors.red),):  Text("${userProvider.listAnnonces[itemIndex].vues}",style: TextStyle(fontWeight: FontWeight.w600),),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          options: CarouselOptions(
+                                            autoPlay: true,
+                                            //controller: buttonCarouselController,
+                                            enlargeCenterPage: true,
+                                            viewportFraction: 0.9,
+                                            aspectRatio: 3.0,
+                                            // initialPage: 1,
+                                            autoPlayInterval: const Duration(seconds: 2),
+                                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                            autoPlayCurve: Curves.fastOutSlowIn,
+
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                ],
+                              );
+
+                            }
+
+
+                                if (index % 8== 0) {
+                                  return Column(
+                                    children: <Widget>[
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.storefront,color: Colors.green,),
+                                                  SizedBox(width: 2,),
+                                                  TextCustomerPostDescription(
+                                                    titre:
+                                                    "Afroshop Annonces ",
+                                                    fontSize: 15,
+                                                    couleur: CustomConstants.kPrimaryColor,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton(onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+
+
+                                          }, child: Text("Afficher plus")),
+                                        ],
+                                      ),
+
+
+                                      Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: FutureBuilder<List<ArticleData>>(
+                                            future: categorieProduitProvider.getAnnoncesArticles(),
+                                            builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                              if (snapshot.hasData) {
+                                                List<ArticleData> articles=snapshot.data;
+                                                return Column(
+                                                  children: [
+                                                    Container(
+                                                      height: height * 0.22,
+                                                      width: width,
+                                                      child: FlutterCarousel.builder(
+                                                        itemCount: articles.length,
+                                                        itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
+                                                            ArticleTile( articles[index],width,height),
+                                                        options: CarouselOptions(
+                                                          autoPlay: true,
+                                                          //controller: buttonCarouselController,
+                                                          enlargeCenterPage: true,
+                                                          viewportFraction: 0.4,
+                                                          aspectRatio: 1.5,
+                                                          initialPage: 1,
+                                                          reverse: true,
+                                                          autoPlayInterval: const Duration(seconds: 2),
+                                                          autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                                                          autoPlayCurve: Curves.fastOutSlowIn,
+
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    /*
+                                                  Container(
+                                                    height: height*0.08,
+                                                    width: width,
+                                                    alignment: Alignment.centerLeft,
+                                                    child: ListView.builder(
+
+                            scrollDirection: Axis.horizontal,
+                            itemCount: articles.length,
+                            itemBuilder:
+                                (BuildContext context, int index) {
+                              return ArticleTile( articles[index],width,height);
+                            },
+                                                    ),
+                                                  ),
+
+                                                   */
+                                                  ],
+                                                );
+                                              } else if (snapshot.hasError) {
+                                                return Icon(Icons.error_outline);
+                                              } else {
+                                                return Container(
+                                                    width: 30,
+                                                    height: 40,
+
+                                                    child: CircularProgressIndicator());
+                                              }
+                                            }),
+                                      ),
+                                      Divider(height: 10,),
                                     ],
                                   );
 
                                 }
 
 
-                                    if (index % 8== 0) {
-                                      return Column(
-                                        children: <Widget>[
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: Padding(
-                                                  padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.storefront,color: Colors.green,),
-                                                      SizedBox(width: 2,),
-                                                      TextCustomerPostDescription(
-                                                        titre:
-                                                        "Afroshop Annonces ",
-                                                        fontSize: 15,
-                                                        couleur: CustomConstants.kPrimaryColor,
-                                                        fontWeight: FontWeight.w800,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(onPressed: () {
-                                                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+                            else{
+                              return  Padding(
+                                padding: const EdgeInsets.only(top: 5.0, bottom: 5),
+                                child: homePostUsers(listConstposts![index], height, width),
+                              );
+                            }
 
-
-                                              }, child: Text("Afficher plus")),
-                                            ],
-                                          ),
-
-
-                                          Padding(
-                                            padding: const EdgeInsets.all(4.0),
-                                            child: FutureBuilder<List<ArticleData>>(
-                                                future: categorieProduitProvider.getAnnoncesArticles(),
-                                                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                  if (snapshot.hasData) {
-                                                    List<ArticleData> articles=snapshot.data;
-                                                    return Column(
-                                                      children: [
-                                                        Container(
-                                                          height: height * 0.22,
-                                                          width: width,
-                                                          child: FlutterCarousel.builder(
-                                                            itemCount: articles.length,
-                                                            itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                                ArticleTile( articles[index],width,height),
-                                                            options: CarouselOptions(
-                                                              autoPlay: true,
-                                                              //controller: buttonCarouselController,
-                                                              enlargeCenterPage: true,
-                                                              viewportFraction: 0.4,
-                                                              aspectRatio: 1.5,
-                                                              initialPage: 1,
-                                                              reverse: true,
-                                                              autoPlayInterval: const Duration(seconds: 2),
-                                                              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                              autoPlayCurve: Curves.fastOutSlowIn,
-
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        /*
-                                                      Container(
-                                                        height: height*0.08,
-                                                        width: width,
-                                                        alignment: Alignment.centerLeft,
-                                                        child: ListView.builder(
-
-                                scrollDirection: Axis.horizontal,
-                                itemCount: articles.length,
-                                itemBuilder:
-                                    (BuildContext context, int index) {
-                                  return ArticleTile( articles[index],width,height);
-                                },
-                                                        ),
-                                                      ),
-
-                                                       */
-                                                      ],
-                                                    );
-                                                  } else if (snapshot.hasError) {
-                                                    return Icon(Icons.error_outline);
-                                                  } else {
-                                                    return Container(
-                                                        width: 30,
-                                                        height: 40,
-
-                                                        child: CircularProgressIndicator());
-                                                  }
-                                                }),
-                                          ),
-                                          Divider(height: 10,),
-                                        ],
-                                      );
-
-                                    }
-
-
-                                else{
-                                  return  Padding(
-                                    padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                                    child: homePostUsers(listConstposts![index], height, width),
-                                  );
-                                }
-
-                              },
-                            ),
-                          ),
-
-
-                        ],
+                          },
+                        ),
                       );
                     } else if (snapshot.hasError) {
+                      print("erreur ${snapshot.error.toString()}");
+
                       return Icon(Icons.error_outline);
                     }if (snapshot.connectionState == ConnectionState.waiting) {
                       return

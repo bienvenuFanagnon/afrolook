@@ -38,8 +38,8 @@ class Message {
   final GlobalKey key;
 
   /// Provides actual message it will be text or image/audio file path.
-  final String message;
-  final bool is_valide;
+  late String message;
+  late bool is_valide;
   final bool send_sending;
   final bool receiver_sending;
   final String sendBy;

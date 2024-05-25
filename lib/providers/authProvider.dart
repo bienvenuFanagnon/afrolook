@@ -96,94 +96,9 @@ class UserAuthProvider extends ChangeNotifier {
         appDefaultData!.toJson());
   }
 
-  Future<bool> register(UserData user, File imageFile) async {
-    bool resp = false;
-    registerText = "";
-    if (await authService.register(user, imageFile)) {
-      //registerText= ResponseText.registerSuccess;
-      resp = true;
-    } else {
-      //registerText= ResponseText.registerErreur;
-      resp = false;
-    }
-    notifyListeners();
-    return resp;
-  }
 
-  Future<bool> getPseudo(String pseudo) async {
-    listPseudo = [];
-    bool isvalide = true;
 
-    registerText = "";
-    await authService.getPseudos().then(
-          (value) {
-        listPseudo = value;
-        value.forEach((element) {
-          if (pseudo == element.name) {
-            isvalide = false;
-            /*
-            SnackBar snackBar = SnackBar(
-              content: Text('le numéro existe déjà',style: TextStyle(color: Colors.red),),
-            );
-            ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-             */
-          }
-        });
-      },
-    );
-
-    notifyListeners();
-    return isvalide;
-  }
-
-  Future<List<UserGlobalTag>> getUserGlobalTags() async {
-    listUserGlobalTag = [];
-    listUserGlobalTagString = [];
-    bool isvalide = true;
-
-    registerText = "";
-    await authService.getUserGlobalTags().then(
-          (value) {
-        listUserGlobalTag = value;
-
-        listUserGlobalTag.forEach((element) {
-          listUserGlobalTagString.add(element.titre!);
-        });
-      },
-    );
-
-    notifyListeners();
-    return listUserGlobalTag;
-  }
-
-  Future<bool> listNumber(String telephoneController) async {
-    bool isvalide = true;
-    listNumbers = [];
-
-    registerText = "";
-    await authService.listPhoneNumber().then(
-          (value) {
-        listNumbers = value;
-
-        value.forEach((element) {
-          if (telephoneController == element.completNumber) {
-            isvalide = false;
-            /*
-            SnackBar snackBar = SnackBar(
-              content: Text('le numéro existe déjà',style: TextStyle(color: Colors.red),),
-            );
-            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-             */
-          }
-        });
-      },
-    );
-
-    notifyListeners();
-    return isvalide;
-  }
 
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
@@ -215,39 +130,6 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
 
-  Future<bool> getUserByToken({required String token}) async {
-    // loginUserData=User();
-
-    bool resp = false;
-    loginText = "";
-    if (await authService.loginUserByToken(token: token)) {
-      await getAppData();
-      loginUserData = authService.loginUser;
-      loginUserData.popularite =
-          (loginUserData.abonnes! + loginUserData.likes! +
-              loginUserData.jaimes!) /
-              (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
-                  appDefaultData.nbr_loves!);
-      loginUserData.compteTarif = loginUserData.popularite! * 80;
-      await firestore.collection('Users').doc(loginUserData!.id).update(
-          loginUserData!.toJson());
-      var friendsStream = FirebaseFirestore.instance.collection('Friends');
-      QuerySnapshot friendSnapshot = await friendsStream.where(Filter.or(
-        Filter('current_user_id', isEqualTo: loginUserData.id!),
-        Filter('friend_id', isEqualTo: loginUserData.id!),
-
-      )).get();
-
-      loginUserData.friends = friendSnapshot.docs.map((doc) =>
-          Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-      resp = true;
-    } else {
-      resp = false;
-    }
-    notifyListeners();
-    return resp;
-  }
 
   Future<bool> getLoginUser(String id) async {
     await getAppData();
@@ -273,7 +155,8 @@ class UserAuthProvider extends ChangeNotifier {
     if (list.isNotEmpty) {
       loginUserData = list.first;
       print("OneSignal=====");
-
+      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+updateUser(loginUserData);
 
     //  print("OneSignal id : ${OneSignal.User.pushSubscription.id}");
     //  print("OneSignal token : ${OneSignal.User.pushSubscription.token}");
@@ -303,6 +186,23 @@ class UserAuthProvider extends ChangeNotifier {
 
     return haveData;
   }
+  Future<bool> updateUser(UserData user) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.id)
+          .update(user.toJson());
+      //print("user update : ${user!.toJson()}");
+      return true;
+    }catch(e){
+      print("erreur update post : ${e}");
+      return false;
+    }
+  }
+
   Future<List<UserData>> getUserById(String id) async {
     //await getAppData();
     late List<UserData> list = [];
@@ -323,6 +223,12 @@ class UserAuthProvider extends ChangeNotifier {
     // Get data from docs and convert map to List
     list = querySnapshot.docs.map((doc) =>
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    for(UserData user in list){
+      user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+      updateUser(user);
+
+
+    }
 
 
 
@@ -349,6 +255,12 @@ class UserAuthProvider extends ChangeNotifier {
       if (u.oneIgnalUserid!=null&&u.oneIgnalUserid!.length>5) {
         listOSUserid.add(u.oneIgnalUserid!);
         print("onesignaluser size : ${listOSUserid.length}");
+
+          u.abonnes=u.userAbonnesIds==null?0:u.userAbonnesIds!.length;
+          updateUser(u);
+
+
+
 
       }
     }
@@ -379,7 +291,14 @@ class UserAuthProvider extends ChangeNotifier {
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
     if (list.isNotEmpty) {
+      for(UserData user in list){
+        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+        updateUser(user);
+
+
+      }
       loginUserData = list.first;
+
 
       haveData = true;
     }
@@ -460,12 +379,16 @@ class UserAuthProvider extends ChangeNotifier {
 
     await userService.getUserData(userId: currentUserId).then((value) async {
       loginUserData = value;
+      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +
               loginUserData.jaimes!) /
               (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
                   appDefaultData.nbr_loves!);
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+
+
 
       loginUserData.compteTarif = loginUserData.popularite! * 80;
       await firestore.collection('Users').doc(loginUserData!.id).update(
@@ -494,7 +417,10 @@ class UserAuthProvider extends ChangeNotifier {
 
 
     await userService.getUserDataByPhone(phone: phone).then((value) async {
+
       loginUserData = value;
+      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +
               loginUserData.jaimes!) /

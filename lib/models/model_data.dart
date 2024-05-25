@@ -475,10 +475,14 @@ class UserData {
   int? updatedAt;
   List<int>? userGlobalTags;
   List<UserAbonnes>? userAbonnes=[];
+  List<String>? userAbonnesIds=[];
+  List<String>? friendsIds=[];
   List<Friends>? friends=[];
 
   List<Invitation>? mesInvitationsEnvoyer=[];
   List<Invitation>? autreInvitationsEnvoyer=[];
+  List<String>? mesInvitationsEnvoyerId=[];
+  List<String>? autreInvitationsEnvoyerId=[];
    DocumentReference? reference;
   UserData(
       {this.reference,
@@ -527,6 +531,30 @@ class UserData {
     state = json['state'];
     nom = json['nom'];
     prenom = json['prenom'];
+    if (json['userAbonnesIds'] != null) {
+      userAbonnesIds = <String>[];
+      json['userAbonnesIds'].forEach((v) {
+        userAbonnesIds!.add(v);
+      });
+    }
+    if (json['friendsIds'] != null) {
+      friendsIds = <String>[];
+      json['friendsIds'].forEach((v) {
+        friendsIds!.add(v);
+      });
+    }
+    if (json['mesInvitationsEnvoyerId'] != null) {
+      mesInvitationsEnvoyerId = <String>[];
+      json['mesInvitationsEnvoyerId'].forEach((v) {
+        mesInvitationsEnvoyerId!.add(v);
+      });
+    }
+    if (json['autreInvitationsEnvoyerId'] != null) {
+      autreInvitationsEnvoyerId = <String>[];
+      json['autreInvitationsEnvoyerId'].forEach((v) {
+        autreInvitationsEnvoyerId!.add(v);
+      });
+    }
     imageUrl = json['imageUrl'];
     numeroDeTelephone = json['numero_de_telephone'];
     adresse = json['adresse'];
@@ -608,6 +636,10 @@ class UserData {
     data['abonnes'] = this.abonnes;
     data['compte_tarif'] = this.compteTarif;
     data['popularite'] = this.popularite;
+    data['userAbonnesIds'] = this.userAbonnesIds;
+    data['friendsIds'] = this.friendsIds;
+    data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
+    data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
    // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;

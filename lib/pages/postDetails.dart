@@ -1972,6 +1972,13 @@ class _DetailsPostState extends State<DetailsPost> {
     double width = MediaQuery.of(context).size.width;
     return  Scaffold(
         appBar: AppBar(
+          actions: [
+           Padding(
+             padding: const EdgeInsets.only(right: 8.0),
+             child: Logo(),
+           ),
+
+          ],
         ),
         body: SingleChildScrollView(
           child: Padding(

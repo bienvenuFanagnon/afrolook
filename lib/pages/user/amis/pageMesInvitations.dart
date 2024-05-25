@@ -103,6 +103,8 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
 
                 await  userProvider.acceptInvitation(userInvitation).then((value) async {
                   if (value) {
+                    authProvider.loginUserData.friendsIds!.add(userInvitation.receiverId!);
+                    userProvider.updateUser(authProvider.loginUserData);
 
                     await authProvider.sendNotification(
                         userIds: [userInvitation.inviteUser!.oneIgnalUserid!],
@@ -160,7 +162,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                     await authProvider.getToken().then((value) {
 
                     },);
-                    await  authProvider.getUserByToken(token: authProvider.token!);
+                   // await  authProvider.getUserByToken(token: authProvider.token!);
                     await userProvider.getUsersProfile(authProvider.loginUserData!.id!,context);
 
 
@@ -230,7 +232,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                     await authProvider.getToken().then((value) {
 
                     },);
-                    await  authProvider.getUserByToken(token: authProvider.token!);
+                    //await  authProvider.getUserByToken(token: authProvider.token!);
                     await userProvider.getUsersProfile(authProvider.loginUserData!.id!,context);
 
 

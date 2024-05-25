@@ -301,6 +301,8 @@ class _InvitationsState extends State<Invitations> {
                 });
                 await  userProvider.acceptInvitation(widget.userInvitation).then((value) async {
                   if (value) {
+                    authProvider.loginUserData.friendsIds!.add(widget.userInvitation.receiverId!);
+                    userProvider.updateUser(authProvider.loginUserData);
 
                     ScaffoldMessenger.of(context).showSnackBar(new SnackBar(
                       key: widget.formKey,
@@ -319,7 +321,7 @@ class _InvitationsState extends State<Invitations> {
                     await authProvider.getToken().then((value) {
 
                     },);
-                    await  authProvider.getUserByToken(token: authProvider.token!);
+                   // await  authProvider.getUserByToken(token: authProvider.token!);
                     await userProvider.getUsersProfile(authProvider.loginUserData!.id!,context);
                     setState(() {
 

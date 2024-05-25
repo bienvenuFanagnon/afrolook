@@ -204,7 +204,12 @@ setMessageNonLu(int nbr){
         }
       });
 
+      for(UserData user in listUsers){
+        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+        updateUser(user);
 
+
+      }
 
       listUserAnnonces=listUsers;
       print('list users ${listUsers.length}');
@@ -284,10 +289,15 @@ setMessageNonLu(int nbr){
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
 
+      for(UserData user in listAllUsers){
+        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+        updateUser(user);
 
 
+      }
 
-      print('list users ${listAllUsers.length}');
+
+   //   print('list users ${listAllUsers.length}');
       hasData=true;
       return listAllUsers;
     }catch(e){
@@ -327,6 +337,12 @@ setMessageNonLu(int nbr){
       // Afficher la liste
       listUsers = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      for(UserData user in listUsers){
+        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+        updateUser(user);
+
+
+      }
 
 
       listUsers.shuffle();
@@ -567,6 +583,8 @@ setMessageNonLu(int nbr){
 
 
 
+
+
         await firestore.collection('Friends').doc(id).set(friends.toJson());
 
       resp=true;
@@ -579,6 +597,26 @@ setMessageNonLu(int nbr){
     notifyListeners();
     return resp;
   }
+
+  Future<bool> updateMessage(Message message) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Messages')
+          .doc(message.id)
+          .update(message.toJson());
+      //print("user update : ${user!.toJson()}");
+      print(" update message");
+
+      return true;
+    }catch(e){
+      print("erreur update message : ${e}");
+      return false;
+    }
+  }
+
   Future<bool> refuserInvitation(Invitation invitation) async {
 
     bool resp=false;

@@ -205,7 +205,6 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    authProvider.getUserGlobalTags();
     tagsIds = [];
     content = [];
     listGlobaltagString = authProvider.listUserGlobalTagString;

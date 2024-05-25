@@ -320,7 +320,7 @@ class PostProvider extends ChangeNotifier {
         )
 
        )
-        .orderBy('created_at', descending: true)
+        .orderBy('updated_at', descending: true)
         .limit(limite)
 
         .get();
@@ -368,7 +368,6 @@ class PostProvider extends ChangeNotifier {
       }
     listConstposts=posts;
     //listConstposts.shuffle();
-    listConstposts.shuffle();
 
     return listConstposts;
 
@@ -446,7 +445,7 @@ class PostProvider extends ChangeNotifier {
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
     QuerySnapshot querySnapshotPost = await postCollect.where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
        // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
-        .orderBy('created_at', descending: true)
+        .orderBy('updated_at', descending: true)
         .get();
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
@@ -491,7 +490,6 @@ class PostProvider extends ChangeNotifier {
 
     }
 
-    posts.shuffle();
     //posts.shuffle();
 
 
@@ -576,6 +574,7 @@ class PostProvider extends ChangeNotifier {
     try{
 
 
+      post.updatedAt=DateTime.now().microsecondsSinceEpoch;
 
       await FirebaseFirestore.instance
           .collection('Posts')
@@ -592,7 +591,7 @@ class PostProvider extends ChangeNotifier {
     try{
 
 
-
+      post.updatedAt=DateTime.now().microsecondsSinceEpoch;
       await FirebaseFirestore.instance
           .collection('Posts')
           .doc(post.id)
@@ -689,7 +688,25 @@ class PostProvider extends ChangeNotifier {
 
   }
 
- Future<bool> newComment(PostComment comment) async {
+  Future<bool> updateMessage(Message message) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Messages')
+          .doc(message.id)
+          .update(message.toJson());
+      //print("user update : ${user!.toJson()}");
+      return true;
+    }catch(e){
+      print("erreur update message : ${e}");
+      return false;
+    }
+  }
+
+
+  Future<bool> newComment(PostComment comment) async {
     try{
       String cmtId = FirebaseFirestore.instance
           .collection('PostComments')

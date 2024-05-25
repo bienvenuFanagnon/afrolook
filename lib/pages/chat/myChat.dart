@@ -563,22 +563,68 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                       ? CrossAxisAlignment.end
                                       : CrossAxisAlignment.start,
                                   children: [
-                                    BubbleSpecialOne(
-                                      text: '${list[index].message}',
-                                      isSender: list[index].sendBy ==
-                                              authProvider.loginUserData.id!
-                                          ? true
-                                          : false,
-                                      color: list[index].sendBy ==
-                                              authProvider.loginUserData.id!
-                                          ? ConstColors.meMessageColors
-                                          : Color(0xFFE8E8EE),
-                                      textStyle: TextStyle(
-                                        fontSize: 15,
+                                    GestureDetector(
+                                      onLongPress: () {
+                                        if(list[index].sendBy ==
+                                            authProvider.loginUserData.id!){
+                                          showModalBottomSheet(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return Container(
+                                                height: 300,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(20.0),
+                                                    child: Column(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                      children: [
+                                                        Icon(Icons.info,color: Colors.red,),
+                                                        Text(
+                                                          'Action',
+                                                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                                                        ),
+                                                        SizedBox(height: 10.0),
+                                                        ListTile(
+                                                          leading: Icon(Icons.edit),
+                                                          title: Text('Modifier'),
+                                                          onTap: () {
+                                                            // Code de modification de l'élément
+                                                          },
+                                                        ),
+                                                        ListTile(
+                                                          leading: Icon(Icons.delete),
+                                                          title: Text('Supprimer'),
+                                                          onTap: () {
+                                                            // Code de suppression de l'élément
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        }
+                                      },
+                                      child: BubbleSpecialOne(
+                                        text: '${list[index].message}',
+                                        isSender: list[index].sendBy ==
+                                                authProvider.loginUserData.id!
+                                            ? true
+                                            : false,
                                         color: list[index].sendBy ==
                                                 authProvider.loginUserData.id!
-                                            ? Colors.white
-                                            : Colors.black,
+                                            ? ConstColors.meMessageColors
+                                            : Color(0xFFE8E8EE),
+                                        textStyle: TextStyle(
+                                          fontSize: 15,
+                                          color: list[index].sendBy ==
+                                                  authProvider.loginUserData.id!
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
                                       ),
                                     ),
                                     Padding(
@@ -610,6 +656,50 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                               : list[index].messageType ==
                                       MessageType.image.name
                                   ? BubbleNormalImage(
+                            onLongPress: () {
+                              if(list[index].sendBy ==
+                                  authProvider.loginUserData.id!){
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return Container(
+                                      height: 300,
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.info,color: Colors.red,),
+                                              Text(
+                                                'Action',
+                                                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                                              ),
+                                              SizedBox(height: 10.0),
+                                              ListTile(
+                                                leading: Icon(Icons.edit),
+                                                title: Text('Modifier'),
+                                                onTap: () {
+                                                  // Code de modification de l'élément
+                                                },
+                                              ),
+                                              ListTile(
+                                                leading: Icon(Icons.delete),
+                                                title: Text('Supprimer'),
+                                                onTap: () {
+                                                  // Code de suppression de l'élément
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                            },
                                       id: 'id001',
                                       image: _imageUrl(list[index].message),
                                       color: Colors.purpleAccent,
@@ -732,37 +822,126 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                       children: [
                                         list[index].sendBy ==
                                                 authProvider.loginUserData.id!
-                                            ? IconButton(
-                                                onPressed: () {
-                                                  replying = true;
-                                                  replyingTo =
-                                                      list[index].message;
-                                                  setState(() {});
-                                                },
-                                                icon: Icon(
-                                                  Icons.reply,
-                                                  color: Colors.blue,
-                                                  size: 15,
+                                            ? Visibility(
+
+                                              child: IconButton(
+                                                  onPressed: () {
+                                                    replying = true;
+                                                    replyingTo =
+                                                        list[index].message;
+                                                    setState(() {});
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.reply,
+                                                    color: Colors.blue,
+                                                    size: 15,
+                                                  ),
                                                 ),
-                                              )
+                                          visible: list[index].is_valide==false?false:true,
+                                            )
                                             : Container(),
-                                        BubbleSpecialOne(
-                                          text: '${list[index].message}',
-                                          isSender: list[index].sendBy ==
-                                                  authProvider.loginUserData.id!
-                                              ? true
-                                              : false,
-                                          color: list[index].sendBy ==
-                                                  authProvider.loginUserData.id!
-                                              ? ConstColors.meMessageColors
-                                              : Color(0xFFE8E8EE),
-                                          textStyle: TextStyle(
-                                            fontSize: 15,
+                                        GestureDetector(
+                                          onLongPress: () {
+                                            if(list[index].is_valide){
+                                              if(list[index].sendBy ==
+                                                  authProvider.loginUserData.id!){
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  builder: (BuildContext context) {
+                                                    return Container(
+                                                      height: height*0.2,
+                                                      child: Center(
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(20.0),
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.info,color: Colors.red,),
+                                                              Text(
+                                                                'Action',
+                                                                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                                                              ),
+                                                              SizedBox(height: 10.0),
+                                                              /*
+                                                            ListTile(
+                                                              leading: Icon(Icons.edit),
+                                                              title: Text('Modifier'),
+                                                              onTap: () {
+                                                                // Code de modification de l'élément
+                                                              },
+                                                            ),
+
+                                                             */
+                                                              ListTile(
+                                                                leading: Icon(Icons.delete,color: Colors.red,),
+                                                                title: Text('Supprimer'),
+                                                                onTap: () async {
+                                                                  list[index]!.is_valide=false;
+                                                                  await userProvider.updateMessage(list[index]).then(
+                                                                        (value) {
+                                                                      if(value){
+                                                                        SnackBar snackBar = SnackBar(
+                                                                          backgroundColor: Colors.green,
+                                                                          content: Text('message supprimé',textAlign: TextAlign.center,style: TextStyle(color: Colors.white),),
+                                                                        );
+                                                                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                                      }else{
+                                                                        SnackBar snackBar = SnackBar(
+                                                                          backgroundColor: Colors.red,
+                                                                          content: Text('erreur de suppression',textAlign: TextAlign.center,style: TextStyle(color: Colors.white),),
+                                                                        );
+                                                                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                                      }
+
+                                                                    },
+                                                                  );
+                                                                  Navigator.pop(context);
+
+                                                                  // Code de suppression de l'élément
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                            }
+
+                                          },
+                                          child:list[index].is_valide==false?Padding(
+                                            padding: const EdgeInsets.all(5.0),
+                                            child: Container(
+                                                decoration: BoxDecoration(
+                                                    color: Colors.red,
+                                                    borderRadius: BorderRadius.all(Radius.circular(5))
+                                                ),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(5.0),
+                                                  child: Text("message supprimé",style: TextStyle(color: Colors.white),),
+                                                )),
+                                          ): BubbleSpecialOne(
+                                            text: '${list[index].message}',
+                                            isSender: list[index].sendBy ==
+                                                    authProvider.loginUserData.id!
+                                                ? true
+                                                : false,
                                             color: list[index].sendBy ==
-                                                    authProvider
-                                                        .loginUserData.id!
-                                                ? Colors.white
-                                                : Colors.black,
+                                                    authProvider.loginUserData.id!
+                                                ? ConstColors.meMessageColors
+                                                : Color(0xFFE8E8EE),
+                                            textStyle: TextStyle(
+                                              fontSize: 15,
+                                              color: list[index].sendBy ==
+                                                      authProvider
+                                                          .loginUserData.id!
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
                                           ),
                                         ),
                                         list[index].sendBy !=
@@ -829,7 +1008,90 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                           ? CrossAxisAlignment.end
                                           : CrossAxisAlignment.start,
                                       children: [
-                                        BubbleNormalImage(
+                                        list[index].is_valide==false?Padding(
+                                          padding: const EdgeInsets.all(5.0),
+                                          child: Container(
+                                              decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius: BorderRadius.all(Radius.circular(5))
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(5.0),
+                                                child: Text("message supprimé",style: TextStyle(color: Colors.white),),
+                                              )),
+                                        ):  BubbleNormalImage(
+                                          onLongPress: () {
+                                            if(list[index].is_valide){
+                                              if(list[index].sendBy ==
+                                                  authProvider.loginUserData.id!){
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  builder: (BuildContext context) {
+                                                    return Container(
+                                                      height: height*0.2,
+                                                      child: Center(
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.all(20.0),
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.info,color: Colors.red,),
+                                                              Text(
+                                                                'Action',
+                                                                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                                                              ),
+                                                              SizedBox(height: 10.0),
+                                                              /*
+                                                            ListTile(
+                                                              leading: Icon(Icons.edit),
+                                                              title: Text('Modifier'),
+                                                              onTap: () {
+                                                                // Code de modification de l'élément
+                                                              },
+                                                            ),
+
+                                                             */
+                                                              ListTile(
+                                                                leading: Icon(Icons.delete,color: Colors.red,),
+                                                                title: Text('Supprimer'),
+                                                                onTap: () async {
+                                                                  list[index]!.is_valide=false;
+                                                                  await userProvider.updateMessage(list[index]).then(
+                                                                        (value) {
+                                                                      if(value){
+                                                                        SnackBar snackBar = SnackBar(
+                                                                          backgroundColor: Colors.green,
+                                                                          content: Text('message supprimé',textAlign: TextAlign.center,style: TextStyle(color: Colors.white),),
+                                                                        );
+                                                                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                                      }else{
+                                                                        SnackBar snackBar = SnackBar(
+                                                                          backgroundColor: Colors.red,
+                                                                          content: Text('erreur de suppression',textAlign: TextAlign.center,style: TextStyle(color: Colors.white),),
+                                                                        );
+                                                                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                                                      }
+
+                                                                    },
+                                                                  );
+                                                                  Navigator.pop(context);
+
+                                                                  // Code de suppression de l'élément
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                            }
+
+                                          },
                                           id: '${list[index].id!}',
                                           image: _imageUrl(list[index].message),
                                           color: Colors.blue,
