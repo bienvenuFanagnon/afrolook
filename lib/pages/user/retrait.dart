@@ -116,7 +116,7 @@ class _DepotPageState extends State<RetraitPage> {
 
                       ),
                         subtitle:  Text(
-                          '${authProvider.loginUserData.votre_solde} fcfa',
+                          '${authProvider.loginUserData.votre_solde} PubliCach',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -126,7 +126,7 @@ class _DepotPageState extends State<RetraitPage> {
                         ),
                         /*
                         trailing: Text(
-                          '37515.00 FCFA',
+                          '37515.00 PubliCach',
                           style: TextStyle(
                             fontSize: 18.0,
                           ),
@@ -157,7 +157,7 @@ class _DepotPageState extends State<RetraitPage> {
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
 
-                                      Text('La première étape pour commencer à gagner et retirer vos soldes est d\'avoir minimum 1000 fcfa.',style: TextStyle(fontSize: 16),),
+                                      Text('La première étape pour commencer à gagner et retirer vos soldes est d\'avoir minimum 1000 PubliCach.',style: TextStyle(fontSize: 16),),
                                     ],
                                   ),
                                 ),
@@ -242,7 +242,7 @@ class _DepotPageState extends State<RetraitPage> {
                       subtitle: Row(
                         children: [
                           Text(
-                            "${transaction.montant} FCFA - ",
+                            "${transaction.montant} PubliCach - ",
                           ),
                           Text(
                             " ${transaction.status}",

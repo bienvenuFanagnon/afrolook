@@ -70,12 +70,12 @@ class _ListUserChatsState extends State<AddListAmis> {
                     width: w,
                     child: SearchableList<UserData>(
                       initialList: listUser,
-                      builder: (displayedList, itemIndex, user) =>
-                          GestureDetector(
-                              onTap: () {
-                                //  Navigator.pushNamed(context, '/basic_chat');
-                              },
-                              child: otherUsers(user, true)),
+                      // builder: (displayedList, itemIndex, user) =>
+                      //     GestureDetector(
+                      //         onTap: () {
+                      //           //  Navigator.pushNamed(context, '/basic_chat');
+                      //         },
+                      //         child: otherUsers(user, true)),
                       filter: (value) => listUser
                           .where(
                             (element) => element!.pseudo!
@@ -96,7 +96,12 @@ class _ListUserChatsState extends State<AddListAmis> {
                           ),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
-                      ),
+                      ), itemBuilder: (UserData user) =>
+                        GestureDetector(
+                            onTap: () {
+                              //  Navigator.pushNamed(context, '/basic_chat');
+                            },
+                            child: otherUsers(user, true)),
                     ),
                   ),
                 ),

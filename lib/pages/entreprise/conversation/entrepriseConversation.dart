@@ -133,23 +133,23 @@ class _ListUsersEntrepriseChatsState extends State<ListUsersEntrepriseChats> {
                     width: w,
                     child: SearchableList<Chat>(
                       initialList: chats,
-                      builder: (displayedList, itemIndex, chat) => GestureDetector(
-                          onTap: () async {
-                            CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                            QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
-                            // Afficher la liste
-                            List<Message> messages = querySnapshotUser.docs.map((doc) =>
-                                Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                            //snapshot.data![index].messages=messages;
-                            userProvider.chat.messages=messages;
-                            Navigator.of(context).pop();
-                            Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-                            //  Navigator.pushNamed(context, '/basic_chat');
-                          },
-
-                          child: chatWidget(chat,chat.post!)),
+                      // builder: (displayedList, itemIndex, chat) => GestureDetector(
+                      //     onTap: () async {
+                      //       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
+                      //       QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                      //       // Afficher la liste
+                      //       List<Message> messages = querySnapshotUser.docs.map((doc) =>
+                      //           Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                      //       //snapshot.data![index].messages=messages;
+                      //       userProvider.chat.messages=messages;
+                      //       Navigator.of(context).pop();
+                      //       Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+                      //
+                      //
+                      //       //  Navigator.pushNamed(context, '/basic_chat');
+                      //     },
+                      //
+                      //     child: chatWidget(chat,chat.post!)),
                       filter: (value) => chats.where((element) => element.chatFriend!.pseudo!.toLowerCase().contains(value.toLowerCase()),).toList(),
                       emptyWidget:  Container(
                         child: Text('Conversations'),
@@ -164,7 +164,23 @@ class _ListUsersEntrepriseChatsState extends State<ListUsersEntrepriseChats> {
                           ),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
-                      ),
+                      ), itemBuilder: (Chat  chat) => GestureDetector(
+                        onTap: () async {
+                          CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
+                          QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                          // Afficher la liste
+                          List<Message> messages = querySnapshotUser.docs.map((doc) =>
+                              Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                          //snapshot.data![index].messages=messages;
+                          userProvider.chat.messages=messages;
+                          Navigator.of(context).pop();
+                          Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+                          //  Navigator.pushNamed(context, '/basic_chat');
+                        },
+
+                        child: chatWidget(chat,chat.post!)),
                     ),
                   ),
                 ),

@@ -481,58 +481,123 @@ updateUser(loginUserData);
   // Create the configuration
 
 
-// Create a new client
-  String oneSignalUrl = 'https://api.onesignal.com/notifications';
-  String applogo =
-      "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
-  String oneSignalAppId =
-      'b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98'; // Replace with your app ID
-  String oneSignalAuthorization =
-      'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
+// // Create a new client
+//   String oneSignalUrl = 'https://api.onesignal.com/notifications';
+//   String applogo =
+//       "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
+//   String oneSignalAppId =
+//       'b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98'; // Replace with your app ID
+//   String oneSignalAuthorization =
+//       'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
 
   // CHANGE THIS parameter to true if you want to test GDPR privacy consent
   Future<void> sendNotification({required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async {
 
+    String oneSignalUrl = '';
+    String applogo = '';
+    String oneSignalAppId = ''; // Replace with your app ID
+    String oneSignalAuthorization = ''; // Replace with your authorization key
+    getAppData().then((app_datas) async {
+
+        print(
+            'app  data*** ');
+        print(appDefaultData.toJson());
+        oneSignalUrl = appDefaultData.one_signal_app_url;
+        applogo = appDefaultData.app_logo;
+        oneSignalAppId = appDefaultData.one_signal_app_id; // Replace with your app ID
+        oneSignalAuthorization = appDefaultData.one_signal_api_key; // Replace with your authorization key
+        print(
+            'one signal url*** ');
+        print(oneSignalUrl);
+        print(
+            'state current user data  ================================================');
+
+        print(OneSignal.User.pushSubscription.id);
+        final body = {
+          'contents': {'en': message},
+          'app_id': oneSignalAppId,
+
+          "include_player_ids":
+          // "include_subscription_ids":
+          userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
+
+          // android_accent_color reprsent the color of the heading text in the notifiction
+          "android_accent_color": "FF9976D2",
+
+          "small_icon":smallImage.length>5?smallImage: applogo,
+
+          "large_icon": smallImage.length>5?smallImage: applogo,
+
+          "headings": {"en": "Afrolook"},
+          //"included_segments": ["Active Users", "Inactive Users"],
+          // "custom_data": {"order_id": 123, "currency": "USD", "amount": 25},
+          "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}","chat_id": "${chat_id}"},
+          'name': 'Afrolook',
+        };
+
+        final response = await http.post(
+          Uri.parse(oneSignalUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Basic $oneSignalAuthorization",
+          },
+          body: jsonEncode(body),
+        );
+
+        if (response.statusCode == 200) {
+          print('Notification sent successfully!');
+          print('sending notification: ${response.body}');
+        } else {
+          print('Error sending notification: ${response.statusCode}');
+          print('Error sending notification: ${response.body}');
+        }
+        // final body = {
+        //   'contents': {'en': message},
+        //   'app_id': oneSignalAppId,
+        //
+        //   "include_player_ids":
+        //   // "include_subscription_ids":
+        //   userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
+        //
+        //   // android_accent_color reprsent the color of the heading text in the notifiction
+        //   "android_accent_color": "FF9976D2",
+        //
+        //   "small_icon": applogo,
+        //
+        //   "large_icon": applogo,
+        //
+        //   "headings": {"en": "konami"},
+        //   //"included_segments": ["Active Users", "Inactive Users"],
+        //   "data": {"foo": "bar"},
+        //   'name': 'konami',
+        //   'custom_data': {'order_id': 123, 'Prix': '500 fcfa'},
+        // };
+        //
+        // final response = await http.post(
+        //   Uri.parse(oneSignalUrl),
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //     'Authorization': "Basic $oneSignalAuthorization",
+        //   },
+        //   body: jsonEncode(body),
+        // );
+        //
+        // if (response.statusCode == 200) {
+        //   print('Notification sent successfully!');
+        //   print('sending notification: ${response.body}');
+        //   return true;
+        // } else {
+        //   print('Error sending notification: ${response.statusCode}');
+        //   print('Error sending notification: ${response.body}');
+        //   return false;
+        //
+        // }
+
+    },);
+
 
     //print(OneSignal.User.pushSubscription.id);
 
-    final body = {
-      'contents': {'en': message},
-      'app_id': oneSignalAppId,
 
-      "include_player_ids":
-      // "include_subscription_ids":
-      userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
-
-      // android_accent_color reprsent the color of the heading text in the notifiction
-      "android_accent_color": "FF9976D2",
-
-      "small_icon":smallImage.length>5?smallImage: applogo,
-
-      "large_icon": smallImage.length>5?smallImage: applogo,
-
-      "headings": {"en": "Afrolook"},
-      //"included_segments": ["Active Users", "Inactive Users"],
-     // "custom_data": {"order_id": 123, "currency": "USD", "amount": 25},
-      "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}","chat_id": "${chat_id}"},
-      'name': 'Afrolook',
-    };
-
-    final response = await http.post(
-      Uri.parse(oneSignalUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': "Basic $oneSignalAuthorization",
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      print('Notification sent successfully!');
-      print('sending notification: ${response.body}');
-    } else {
-      print('Error sending notification: ${response.statusCode}');
-      print('Error sending notification: ${response.body}');
-    }
   }
 }

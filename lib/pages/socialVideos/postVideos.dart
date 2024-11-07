@@ -1586,40 +1586,41 @@ class _VideoWidgetState extends State<VideoWidget> {
               onPointerDown: (PointerDownEvent details){
                 print('Contact léger détecté 1!');
                 bool isReady=true;
-                if (widget.post!.type==PostType.PUB.name) {
-
-                  if (_buttonEnabled) {
-                    _buttonEnabled = false;
-
-                      if (widget.post!.type==PostType.PUB.name) {
-                        if (!isIn(widget.post!.users_vue_id!,authProvider.loginUserData.id!)) {
-
-
-                        }else{
-
-                          widget.post!.users_vue_id!.add(authProvider!.loginUserData.id!);
-                        }
-
-                          widget.post!.vues=widget.post!.vues!+1;
-
-
-
-                        // vue=datas[index]!.vues!;
-
-
-                        postProvider.updateVuePost(widget.post!,context);
-                        //loves.add(idUser);
-
-
-
-                        // }
-                      }
-                      _buttonEnabled = true;
-
-                  }  else{
-                    print('indispo!');
-                  }
-                }
+                ////// update view video /////
+                // if (widget.post!.type==PostType.PUB.name) {
+                //
+                //   if (_buttonEnabled) {
+                //     _buttonEnabled = false;
+                //
+                //       if (widget.post!.type==PostType.PUB.name) {
+                //         if (!isIn(widget.post!.users_vue_id!,authProvider.loginUserData.id!)) {
+                //
+                //
+                //         }else{
+                //
+                //           widget.post!.users_vue_id!.add(authProvider!.loginUserData.id!);
+                //         }
+                //
+                //           widget.post!.vues=widget.post!.vues!+1;
+                //
+                //
+                //
+                //         // vue=datas[index]!.vues!;
+                //
+                //
+                //         postProvider.updateVuePost(widget.post!,context);
+                //         //loves.add(idUser);
+                //
+                //
+                //
+                //         // }
+                //       }
+                //       _buttonEnabled = true;
+                //
+                //   }  else{
+                //     print('indispo!');
+                //   }
+                // }
 
               },
                   child: GestureDetector(

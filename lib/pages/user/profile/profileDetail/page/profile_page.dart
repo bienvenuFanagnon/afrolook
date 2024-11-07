@@ -307,7 +307,7 @@ bool change_profil_loading= false;
   Widget buildName(UserData user) => Column(
         children: [
           Text(
-            "@${user.nom!}",
+            "@${user.pseudo!}",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
           ),
           const SizedBox(height: 4),

@@ -1,6 +1,7 @@
 
 
 import 'package:afrotok/constant/constColors.dart';
+import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ripple_wave/ripple_wave.dart';
@@ -21,9 +22,12 @@ class _ChargementState extends State<SplahsChargement> {
   late AnimationController animationController;
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=10;
+  late int app_version_code=11;
+  int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
@@ -47,6 +51,12 @@ class _ChargementState extends State<SplahsChargement> {
 
     authProvider.getAppData().then((value) {
       if (app_version_code== authProvider.appDefaultData.app_version_code) {
+        postProvider.getPostsImages(limitePosts).then((value) {
+          // value.forEach((element) {
+          //   print(element.toJson());
+          // },);
+
+        },);
         authProvider.getIsFirst().then((value) {
           print("isfirst: ${value}");
           if (value==null||value==false) {

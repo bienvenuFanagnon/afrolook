@@ -88,7 +88,7 @@ class OnBoardingPageState extends State<IntroductionPage> {
           PageViewModel(
             title: "Gagnez des prix avec Afrolook !",
             body:
-            "Gagnez 50 FCFA par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 50 FCFA pour chaque nouvel utilisateur !",
+            "Gagnez 50 PubliCach par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 50 PubliCach pour chaque nouvel utilisateur !",
             image: _buildImage('images/6075540.jpg'),
             decoration: pageDecoration,
           ),

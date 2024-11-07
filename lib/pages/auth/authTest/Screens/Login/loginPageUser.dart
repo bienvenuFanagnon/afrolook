@@ -63,8 +63,6 @@ class _LoginPageUserState extends State<LoginPageUser> {
         await _auth
             .signInWithEmailAndPassword(email: email, password: password)
             .then((uid) async => {
-
-
           //serviceProvider.getLoginUser( _auth.currentUser!.uid!,context),
 
           await authProvider.getCurrentUser(uid.user!.uid!).then((value) async {
@@ -98,16 +96,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
             ),);
             }
           },),
-
-
-
-
-
-
             telephoneController.clear(),
             motDePasseController.clear(),
-
-
         });
       } on FirebaseAuthException catch (error) {
 
@@ -169,191 +159,201 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
 
       body: Padding(
         padding: const EdgeInsets.only(bottom: 20),
-        child: SingleChildScrollView(
-          child: Center(
-            child: Container(
-              alignment: Alignment.center,
-               height: height,
-              child: Column(
-                children: [
-                 // SizedBox(height: height*0.1,),
-                  Padding(
-                    padding:  EdgeInsets.only(top: height*0.08),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/logo/afrolook_logo.png',width: 100,),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Afrolook",style: TextStyle(fontSize: 20,color: Colors.green,fontWeight: FontWeight.w600)),
-                            Text("Votre popularité est à la une",style: TextStyle(fontSize: 18,color: Colors.black54)),
-                          ],
-                        )
-                      ],
-                    ),
+        child: Center(
+          child: Container(
+            alignment: Alignment.center,
+             height: height,
+            child: ListView(
+              children: [
+               // SizedBox(height: height*0.1,),
+                Padding(
+                  padding:  EdgeInsets.only(top: height*0.08),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/logo/afrolook_logo.png',width: 100,),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Afrolook",style: TextStyle(fontSize: 20,color: Colors.green,fontWeight: FontWeight.w600)),
+                          Text("Votre popularité est à la une",style: TextStyle(fontSize: 18,color: Colors.black54)),
+                        ],
+                      )
+                    ],
                   ),
-                  SizedBox(height: height*0.06,),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: height*0.45,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius:BorderRadius.all(Radius.circular(10))
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Padding(
-                            padding: const EdgeInsets.all(25.0),
-                            child: Column(
-                              children: [
+                ),
+                SizedBox(height: height*0.06,),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      alignment: Alignment.center,
+                      height: height*0.5,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius:BorderRadius.all(Radius.circular(10))
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Padding(
+                          padding: const EdgeInsets.all(25.0),
+                          child: ListView(
+                            children: [
 
-                                SizedBox(height: height*0.005,),
-                                IntlPhoneField(
-                                  //controller: telephoneController,
-                                  // invalidNumberMessage:'numero invalide' ,
-                                  onTap: () {
+                              SizedBox(height: height*0.005,),
+                              IntlPhoneField(
+                                //controller: telephoneController,
+                                // invalidNumberMessage:'numero invalide' ,
+                                onTap: () {
 
-                                  },
+                                },
 
-                                  cursorColor: kPrimaryColor,
-                                  decoration: InputDecoration(
-                                    hintText: 'Téléphone',
-                                    focusColor: kPrimaryColor,
-                                    focusedBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(color: kPrimaryColor)),
+                                cursorColor: kPrimaryColor,
+                                decoration: InputDecoration(
+                                  hintText: 'Téléphone',
+                                  focusColor: kPrimaryColor,
+                                  focusedBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(color: kPrimaryColor)),
 
+                                ),
+                                initialCountryCode: 'TG',
+                                onChanged: (phone) {
+                                  telephoneController.text=phone.completeNumber;
+                                  print(phone.completeNumber);
+                                },
+                                onCountryChanged: (country) {
+                                  print('Country changed to: ' + country.name);
+                                },
+                                validator: (value) {
+                                  if (value!.completeNumber.isEmpty) {
+                                    return 'Le champ "Téléphone" est obligatoire.';
+                                  }
+
+                                  return null;
+                                },
+
+                              ),
+
+
+                              TextFormField(
+                                keyboardType: TextInputType.visiblePassword,
+                                controller: motDePasseController,
+                                textInputAction: TextInputAction.done,
+                                obscureText: !is_open,
+                                cursorColor: kPrimaryColor,
+                                decoration:  InputDecoration(
+                                  focusColor: kPrimaryColor,
+                                  focusedBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(color: kPrimaryColor)),
+                                  hintText: "Votre mot de passe",
+                                  prefixIcon: Padding(
+                                    padding: EdgeInsets.all(defaultPadding),
+                                    child: Icon(Icons.lock),
                                   ),
-                                  initialCountryCode: 'TG',
-                                  onChanged: (phone) {
-                                    telephoneController.text=phone.completeNumber;
-                                    print(phone.completeNumber);
-                                  },
-                                  onCountryChanged: (country) {
-                                    print('Country changed to: ' + country.name);
-                                  },
-                                  validator: (value) {
-                                    if (value!.completeNumber.isEmpty) {
-                                      return 'Le champ "Téléphone" est obligatoire.';
-                                    }
+                                  suffixIcon: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        is_open=!is_open;
 
-                                    return null;
-                                  },
+                                      });
+                                    },
+                                    child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
+                                  ),
 
                                 ),
 
+                                validator: (value) {
+                                  if (value!.isEmpty) {
+                                    return 'Le champ "Mot de passe" est obligatoire.';
+                                  }
+                                  if (value!.length < 6) {
+                                    return 'Le mot de passe doit comporter au moins 6 caractères.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(height: height*0.01),
+                              TextButton(onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser(),));
 
-                                TextFormField(
-                                  keyboardType: TextInputType.visiblePassword,
-                                  controller: motDePasseController,
-                                  textInputAction: TextInputAction.done,
-                                  obscureText: !is_open,
-                                  cursorColor: kPrimaryColor,
-                                  decoration:  InputDecoration(
-                                    focusColor: kPrimaryColor,
-                                    focusedBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(color: kPrimaryColor)),
-                                    hintText: "Votre mot de passe",
-                                    prefixIcon: Padding(
-                                      padding: EdgeInsets.all(defaultPadding),
-                                      child: Icon(Icons.lock),
-                                    ),
-                                    suffixIcon: GestureDetector(
-                                      onTap: () {
+                              }, child:  Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
+                              ),),
+
+
+                              SizedBox(height: height*0.02),
+                              Container(
+                                width: SizeButtons.loginAndSignupBtnlargeur,
+                                child: ElevatedButton(
+                                  onPressed:onTap?() async { }:
+                                      () async {
+
+                                    if (_formKey.currentState!.validate()) {
+                                      setState(() {
+                                        onTap=true;
+                                        print("on tap");
+                                      });
+                                      // Afficher une SnackBar
+                                      try{
+                                        await  signIn( '${telephoneController.text}@gmail.com',motDePasseController.text);
+
+                                      }catch(e){
+                                        print("Erreur connextion ---------------");
+                                        print(e);
                                         setState(() {
-                                          is_open=!is_open;
-
-                                        });
-                                      },
-                                      child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
-                                    ),
-
-                                  ),
-
-                                  validator: (value) {
-                                    if (value!.isEmpty) {
-                                      return 'Le champ "Mot de passe" est obligatoire.';
-                                    }
-                                    if (value!.length < 6) {
-                                      return 'Le mot de passe doit comporter au moins 6 caractères.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                SizedBox(height: height*0.01),
-                                TextButton(onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser(),));
-
-                                }, child:  Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
-                                ),),
-
-
-                                SizedBox(height: height*0.02),
-                                Container(
-                                  width: SizeButtons.loginAndSignupBtnlargeur,
-                                  child: ElevatedButton(
-                                    onPressed:onTap?() async { }:
-                                        () async {
-
-                                      if (_formKey.currentState!.validate()) {
-                                        setState(() {
-                                          onTap=true;
+                                          onTap=false;
                                           print("on tap");
                                         });
-                                        // Afficher une SnackBar
-
-                                      await  signIn( '${telephoneController.text}@gmail.com',motDePasseController.text);
-
-
                                       }
 
-                                      setState(() {
-                                       onTap=false;
-                                      });
 
 
-                                    },
-                                    child:onTap? Center(
-                                      child: LoadingAnimationWidget.flickr(
-                                        size: 30,
-                                        leftDotColor: Colors.green,
-                                        rightDotColor: Colors.black,
-                                      ),
-                                    ): Text("Se Connecter",
-                                      style: TextStyle(color: Colors.black),
+                                    }
 
+                                    setState(() {
+                                     onTap=false;
+                                    });
+
+
+                                  },
+                                  child:onTap? Center(
+                                    child: LoadingAnimationWidget.flickr(
+                                      size: 30,
+                                      leftDotColor: Colors.green,
+                                      rightDotColor: Colors.black,
                                     ),
+                                  ): Text("Se Connecter",
+                                    style: TextStyle(color: Colors.black),
+
                                   ),
                                 ),
-                                const SizedBox(height: defaultPadding),
-                                AlreadyHaveAnAccountCheck(
-                                  press: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) {
-                                          return  SignUpScreen();
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: defaultPadding),
+                              AlreadyHaveAnAccountCheck(
+                                press: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) {
+                                        return  SignUpScreen();
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: height*0.02),
+
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

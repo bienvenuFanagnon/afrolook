@@ -210,24 +210,24 @@ class _MesAmisState extends State<MesAmis> {
                     width: w,
                     child: SearchableList<Friends>(
                       initialList: firends,
-                      builder: (displayedList, itemIndex, friend) => GestureDetector(
-                          onTap: () {
-                            // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
-                            getChatsData(friend).then((chat) {
-                              userProvider.chat.messages=chat.messages;
-                              Navigator.pop(context);
-
-                              Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-
-                            },);
-
-
-                            //  Navigator.pushNamed(context, '/basic_chat');
-                          },
-
-                          child: Monami(friend)),
+                      // builder: (displayedList, itemIndex, friend) => GestureDetector(
+                      //     onTap: () {
+                      //       // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
+                      //       getChatsData(friend).then((chat) {
+                      //         userProvider.chat.messages=chat.messages;
+                      //         Navigator.pop(context);
+                      //
+                      //         Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+                      //
+                      //
+                      //
+                      //       },);
+                      //
+                      //
+                      //       //  Navigator.pushNamed(context, '/basic_chat');
+                      //     },
+                      //
+                      //     child: Monami(friend)),
                       filter: (value) => firends.where((element) => element.friend!.pseudo!.toLowerCase().contains(value.toLowerCase()),).toList(),
                       emptyWidget:  Container(
                         child: Text('vide'),
@@ -242,7 +242,24 @@ class _MesAmisState extends State<MesAmis> {
                           ),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
-                      ),
+                      ), itemBuilder: (Friends friend) => GestureDetector(
+                        onTap: () {
+                          // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
+                          getChatsData(friend).then((chat) {
+                            userProvider.chat.messages=chat.messages;
+                            Navigator.pop(context);
+
+                            Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+
+                          },);
+
+
+                          //  Navigator.pushNamed(context, '/basic_chat');
+                        },
+
+                        child: Monami(friend)),
                     ),
                   ),
                 ),

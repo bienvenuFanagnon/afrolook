@@ -52,6 +52,8 @@ class _UserPubTextState extends State<UserPubText> {
 
   final ImagePicker picker = ImagePicker();
 
+  int  limitePosts = 30;
+
   Future<void> _getImages() async {
     await picker.pickMultiImage().then((images) {
       // Mettre à jour la liste des images
@@ -201,6 +203,13 @@ class _UserPubTextState extends State<UserPubText> {
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
+                                postProvider.getPostsImages(limitePosts).then((value) {
+                                  // value.forEach((element) {
+                                  //   print(element.toJson());
+                                  // },);
+
+                                },);
+
                               } catch (e) {
                                 print("erreur ${e}");
                                 setState(() {
@@ -267,6 +276,8 @@ class _UserPubImageState extends State<UserPubImage> {
   late List<XFile> listimages = [];
 
   final ImagePicker picker = ImagePicker();
+
+  int  limitePosts = 30;
 
   Future<void> _getImages() async {
     await picker.pickMultiImage().then((images) {
@@ -483,6 +494,13 @@ class _UserPubImageState extends State<UserPubImage> {
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
+                                postProvider.getPostsImages(limitePosts).then((value) {
+                                  // value.forEach((element) {
+                                  //   print(element.toJson());
+                                  // },);
+
+                                },);
+
                               } catch (e) {
 
                                 print("erreur ${e}");

@@ -422,6 +422,8 @@ class _MyAppState extends State<MyApp> {
           theme: ThemeData.light().copyWith(
           textTheme: ThemeData.light().textTheme.apply(
             fontFamily: 'Nunito',
+
+
           ),
           primaryTextTheme: ThemeData.dark().textTheme.apply(
             fontFamily: 'Nunito',

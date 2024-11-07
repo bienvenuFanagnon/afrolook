@@ -104,7 +104,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               smallImage: "${authProvider.registerUser.imageUrl!}",
               send_user_id: "${authProvider.registerUser.id!}",
               recever_user_id: "${list.first!.id!}",
-              message: "🤑 Vous avez gagné 50 FCFA grâce à un parrainage !",
+              message: "🤑 Vous avez gagné 50 PubliCach grâce à un parrainage !",
               type_notif: NotificationType.PARRAINAGE.name,
               post_id: "",
               post_type: "",
@@ -119,7 +119,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           notif.titre="Parrainage 🤑";
           notif.media_url=authProvider.registerUser.imageUrl;
           notif.type=NotificationType.POST.name;
-          notif.description="Vous avez gagné 50 FCFA grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+          notif.description="Vous avez gagné 50 PubliCach grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
           notif.users_id_view=[];
           notif.user_id=authProvider.registerUser.id;
           notif.receiver_id=list.first.id!;

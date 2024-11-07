@@ -179,260 +179,258 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
 
     return Scaffold(
 
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all( 10),
+      body: Padding(
+        padding: const EdgeInsets.all( 10),
+        child: Container(
+         // height: height*1.1,
           child: Container(
-           // height: height*1.1,
-            child: Container(
-              alignment: Alignment.center,
-           //   height: height*0.6,
-              decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius:BorderRadius.all(Radius.circular(10))
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                    //  SizedBox(height: 30,),
-                      IntlPhoneField(
-                        //controller: telephoneController,
-                       // invalidNumberMessage:'numero invalide' ,
-                        onTap: () {
+            alignment: Alignment.center,
+           height: height*0.6,
+            decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius:BorderRadius.all(Radius.circular(10))
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                  //  SizedBox(height: 30,),
+                    IntlPhoneField(
+                      //controller: telephoneController,
+                     // invalidNumberMessage:'numero invalide' ,
+                      onTap: () {
 
-                        },
+                      },
 
-                        cursorColor: kPrimaryColor,
-                        decoration: InputDecoration(
-                          hintText: 'Téléphone',
-                          focusColor: kPrimaryColor,
-                          focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: kPrimaryColor)),
-
-                        ),
-                        initialCountryCode: 'TG',
-                        onChanged: (phone) {
-                          telephoneController.text=phone.completeNumber;
-                          print(phone.completeNumber);
-                        },
-                        onCountryChanged: (country) {
-                          print('Country changed to: ' + country.name);
-                        },
-                        validator: (value) {
-                          if (value!.completeNumber.isEmpty) {
-                            return 'Le champ "Téléphone" est obligatoire.';
-                          }
-
-                          return null;
-                        },
+                      cursorColor: kPrimaryColor,
+                      decoration: InputDecoration(
+                        hintText: 'Téléphone',
+                        focusColor: kPrimaryColor,
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: kPrimaryColor)),
 
                       ),
-                      TextFormField(
-                        controller: code_parrainageController,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.next,
-                        cursorColor: kPrimaryColor,
+                      initialCountryCode: 'TG',
+                      onChanged: (phone) {
+                        telephoneController.text=phone.completeNumber;
+                        print(phone.completeNumber);
+                      },
+                      onCountryChanged: (country) {
+                        print('Country changed to: ' + country.name);
+                      },
+                      validator: (value) {
+                        if (value!.completeNumber.isEmpty) {
+                          return 'Le champ "Téléphone" est obligatoire.';
+                        }
 
-                        onSaved: (email) {},
-                        decoration: const InputDecoration(
-                          focusColor: kPrimaryColor,
-                          focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: kPrimaryColor)),
-                          hintText: "Code de parrainage(optionel)",
-                          prefixIcon: Padding(
-                            padding: EdgeInsets.all(defaultPadding),
-                            child: Icon(Icons.person),
-                          ),
+                        return null;
+                      },
+
+                    ),
+                    TextFormField(
+                      controller: code_parrainageController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      cursorColor: kPrimaryColor,
+
+                      onSaved: (email) {},
+                      decoration: const InputDecoration(
+                        focusColor: kPrimaryColor,
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: kPrimaryColor)),
+                        hintText: "Code de parrainage(optionel)",
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.all(defaultPadding),
+                          child: Icon(Icons.person),
+                        ),
+                      ),
+                    ),
+
+                    TextFormField(
+                      controller: pseudoController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      cursorColor: kPrimaryColor,
+                      validator: (value)  {
+                        if (value!.isEmpty) {
+                          return 'Le champ "Pseudo" est obligatoire.';
+                        }
+                        if (value!.length < 3) {
+                          return 'Le pseudo doit comporter au moins 3 caractères.';
+                        }
+                        return null;
+                      },
+                      onSaved: (email) {},
+                      decoration: const InputDecoration(
+                        focusColor: kPrimaryColor,
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: kPrimaryColor)),
+                        hintText: "Pseudo(unique)",
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.all(defaultPadding),
+                          child: Icon(Icons.person),
+                        ),
+                      ),
+                    ),
+
+
+                    TextFormField(
+                      controller: motDePasseController,
+                      textInputAction: TextInputAction.done,
+                      obscureText: !is_open,
+                      cursorColor: kPrimaryColor,
+                      decoration:  InputDecoration(
+                        focusColor: kPrimaryColor,
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: kPrimaryColor)),
+                        hintText: "Votre mot de passe",
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.all(defaultPadding),
+                          child: Icon(Icons.lock),
+                        ),
+
+                        suffixIcon: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              is_open=!is_open;
+
+                            });
+                          },
+                          child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
                         ),
                       ),
 
-                      TextFormField(
-                        controller: pseudoController,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.next,
-                        cursorColor: kPrimaryColor,
-                        validator: (value)  {
-                          if (value!.isEmpty) {
-                            return 'Le champ "Pseudo" est obligatoire.';
-                          }
-                          if (value!.length < 3) {
-                            return 'Le pseudo doit comporter au moins 3 caractères.';
-                          }
-                          return null;
-                        },
-                        onSaved: (email) {},
-                        decoration: const InputDecoration(
-                          focusColor: kPrimaryColor,
-                          focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: kPrimaryColor)),
-                          hintText: "Pseudo(unique)",
-                          prefixIcon: Padding(
-                            padding: EdgeInsets.all(defaultPadding),
-                            child: Icon(Icons.person),
-                          ),
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Le champ "Mot de passe" est obligatoire.';
+                        }
+                        if (value!.length < 8) {
+                          return 'Le mot de passe doit comporter au moins 8 caractères.';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      textInputAction: TextInputAction.done,
+                      obscureText: !is_open,
+                      cursorColor: kPrimaryColor,
+                      decoration:  InputDecoration(
+                        focusColor: kPrimaryColor,
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: kPrimaryColor)),
+                        hintText: "Confirmer mot de passe",
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.all(defaultPadding),
+                          child: Icon(Icons.lock),
                         ),
-                      ),
+                        suffixIcon: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              is_open=!is_open;
 
-
-                      TextFormField(
-                        controller: motDePasseController,
-                        textInputAction: TextInputAction.done,
-                        obscureText: !is_open,
-                        cursorColor: kPrimaryColor,
-                        decoration:  InputDecoration(
-                          focusColor: kPrimaryColor,
-                          focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: kPrimaryColor)),
-                          hintText: "Votre mot de passe",
-                          prefixIcon: Padding(
-                            padding: EdgeInsets.all(defaultPadding),
-                            child: Icon(Icons.lock),
-                          ),
-
-                          suffixIcon: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                is_open=!is_open;
-
-                              });
-                            },
-                            child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
-                          ),
+                            });
+                          },
+                          child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
                         ),
 
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Le champ "Mot de passe" est obligatoire.';
-                          }
-                          if (value!.length < 8) {
-                            return 'Le mot de passe doit comporter au moins 8 caractères.';
-                          }
-                          return null;
-                        },
                       ),
-                      TextFormField(
-                        textInputAction: TextInputAction.done,
-                        obscureText: !is_open,
-                        cursorColor: kPrimaryColor,
-                        decoration:  InputDecoration(
-                          focusColor: kPrimaryColor,
-                          focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: kPrimaryColor)),
-                          hintText: "Confirmer mot de passe",
-                          prefixIcon: Padding(
-                            padding: EdgeInsets.all(defaultPadding),
-                            child: Icon(Icons.lock),
-                          ),
-                          suffixIcon: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                is_open=!is_open;
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Le champ "Confirmer Mot de passe" est obligatoire.';
+                        }
+                        if (value!.length < 8) {
+                          return 'Le mot de passe doit comporter au moins 8 caractères.';
+                        }
+                        if (value != motDePasseController.text) {
+                          return 'Les mots de passe ne correspondent pas';
+                        }
+                        return null;
+                      },
+                    ),
+                     SizedBox(height: 50),
+                    Container(
+                      width: SizeButtons.loginAndSignupBtnlargeur,
+                      child: ElevatedButton(
+                        onPressed:onTap?() async { }:
+                            () async {
 
-                              });
-                            },
-                            child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
-                          ),
+                            //  print(encrypted.base64);
 
-                        ),
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Le champ "Confirmer Mot de passe" est obligatoire.';
-                          }
-                          if (value!.length < 8) {
-                            return 'Le mot de passe doit comporter au moins 8 caractères.';
-                          }
-                          if (value != motDePasseController.text) {
-                            return 'Les mots de passe ne correspondent pas';
-                          }
-                          return null;
-                        },
-                      ),
-                       SizedBox(height: 50),
-                      Container(
-                        width: SizeButtons.loginAndSignupBtnlargeur,
-                        child: ElevatedButton(
-                          onPressed:onTap?() async { }:
-                              () async {
-                      
-                              //  print(encrypted.base64);
+                          if (_formKey.currentState!.validate()) {
+                            setState(() {
+                              onTap=true;
+                            });
+                            // Afficher une SnackBar
+                            if (!await verifierPseudo(pseudoController.text)) {
+                              await authProvider.getAppData();
 
-                            if (_formKey.currentState!.validate()) {
-                              setState(() {
-                                onTap=true;
-                              });
-                              // Afficher une SnackBar
-                              if (!await verifierPseudo(pseudoController.text)) {
-                                await authProvider.getAppData();
+                              authProvider.initializeData();
+                              authProvider.registerUser.numeroDeTelephone=telephoneController.text;
+                              authProvider.registerUser.codeParrain=code_parrainageController.text;
+                              authProvider.registerUser.codeParrainage="${pseudoController.text}${genererNombreAleatoire()}";
+                              authProvider.registerUser.pseudo=pseudoController.text;
+                              authProvider.registerUser.password=motDePasseController.text;
+                              //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
+                              // sendOtpCode();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return SignUpFormEtap3();
+                                  },
+                                ),
+                              );
 
-                                authProvider.initializeData();
-                                authProvider.registerUser.numeroDeTelephone=telephoneController.text;
-                                authProvider.registerUser.codeParrain=code_parrainageController.text;
-                                authProvider.registerUser.codeParrainage="${pseudoController.text}${genererNombreAleatoire()}";
-                                authProvider.registerUser.pseudo=pseudoController.text;
-                                authProvider.registerUser.password=motDePasseController.text;
-                                //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
-                                // sendOtpCode();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) {
-                                      return SignUpFormEtap3();
-                                    },
-                                  ),
-                                );
-
-
-
-                              }else{
-                                setState(() {
-                                  onTap=false;
-                                });
-                              }
 
 
                             }else{
                               setState(() {
                                 onTap=false;
                               });
-
                             }
 
 
+                          }else{
+                            setState(() {
+                              onTap=false;
+                            });
+
+                          }
 
 
-                          },
-                          child:onTap? Center(
-                            child: LoadingAnimationWidget.flickr(
-                              size: 30,
-                              leftDotColor: Colors.green,
-                              rightDotColor: Colors.black,
-                            ),
-                          ): Text("Suivant",
-                              style: TextStyle(color: Colors.black),
 
-                        ),
-                        ),
-                      ),
-                      const SizedBox(height: defaultPadding),
-                      AlreadyHaveAnAccountCheck(
-                        login: false,
-                        press: () {
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return  LoginPageUser();
-                              },
-                            ),
-                          );
                         },
+                        child:onTap? Center(
+                          child: LoadingAnimationWidget.flickr(
+                            size: 30,
+                            leftDotColor: Colors.green,
+                            rightDotColor: Colors.black,
+                          ),
+                        ): Text("Suivant",
+                            style: TextStyle(color: Colors.black),
+
                       ),
-                    ],
-                  ),
+                      ),
+                    ),
+                    const SizedBox(height: defaultPadding),
+                    AlreadyHaveAnAccountCheck(
+                      login: false,
+                      press: () {
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return  LoginPageUser();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),

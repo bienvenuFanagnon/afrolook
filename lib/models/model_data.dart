@@ -365,7 +365,10 @@ class AppDefaultData {
   int? nbr_likes=0;
   int? nbr_comments=0;
   String? ia_instruction="";
-
+  late String app_logo="";
+  late String one_signal_api_key="";
+  late String one_signal_app_id="";
+  late String one_signal_app_url="";
   double? tarifPubliCash=2.5;
   double? tarifImage=0.5;
   double? tarifPubliCash_to_xof=250.0;
@@ -377,7 +380,12 @@ class AppDefaultData {
   int? default_point_new_love=1;
  // int? default_point_new_comment=2;
 
-  AppDefaultData({this.id, this.users_id, this.nbr_abonnes=0,this.ia_instruction="", this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5, this.default_point_new_like=1,this.default_point_new_love=1,});
+  AppDefaultData({this.id, this.users_id,
+  this.nbr_abonnes=0,this.ia_instruction="",
+  this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,
+  this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,
+  this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5,
+  this.default_point_new_like=1,this.default_point_new_love=1});
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -397,6 +405,11 @@ class AppDefaultData {
     default_point_new_user = json['default_point_new_user'];
     default_point_new_like = json['default_point_new_like'];
     default_point_new_love = json['default_point_new_love'];
+
+    app_logo = json['app_logo'];
+    one_signal_api_key = json['one_signal_api_key'];
+    one_signal_app_id = json['one_signal_app_id'];
+    one_signal_app_url = json['one_signal_app_url'];
     if (json['users_id'] != null) {
       users_id = <String>[];
       json['users_id'].forEach((v) {
@@ -427,6 +440,11 @@ class AppDefaultData {
     data['default_point_new_user'] = this.default_point_new_user;
     data['default_point_new_like'] = this.default_point_new_like;
     data['default_point_new_love'] = this.default_point_new_love;
+
+    data['app_logo'] = this.app_logo;
+    data['one_signal_app_url'] = this.one_signal_app_url;
+    data['one_signal_app_id'] = this.one_signal_app_id;
+    data['one_signal_api_key'] = this.one_signal_api_key;
 
     return data;
   }
