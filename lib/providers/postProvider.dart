@@ -380,6 +380,85 @@ class PostProvider extends ChangeNotifier {
 
   }
 
+  Future<List<Post>>
+  getHomePostsImages(int limite) async {
+
+
+    List<Post> posts = [];
+    // listConstposts =[];
+    DateTime afterDate = DateTime(2024, 11, 06); // Replace with your desired date
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+    // .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
+        .where(
+        Filter.or(
+          Filter( "dataType",isEqualTo:'${PostDataType.IMAGE.name}'),
+          Filter( "dataType",isEqualTo:'${PostDataType.TEXT.name}'),
+
+        )
+
+    )
+    // .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(afterDate))
+
+        .orderBy('created_at', descending: true)
+    // .orderBy('updated_at', descending: true)
+        .limit(limite)
+
+        .get();
+
+    List<Post> postList = querySnapshotPost.docs.map((doc) =>
+        Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+    print("post length  ${postList.length}");
+
+
+    for (Post p in postList) {
+      //  print("post : ${jsonDecode(post.toString())}");
+
+      if (p.status==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.status==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        //get user
+        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+//         if (p.type==PostType.PUB.name) {
+//           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
+//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+//
+//           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
+//               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+//           p.entrepriseData=entrepriseList.first;
+//         }
+        p.user=userList.first;
+
+        posts.add(p);
+      }
+
+
+
+
+
+
+
+
+    }
+    listConstposts=posts;
+    //listConstposts.shuffle();
+    notifyListeners(); // Notifie les écouteurs d'un changement
+
+    return listConstposts;
+
+  }
+
   Future<List<Post>> getPostsImagesAlready() async {
     // notifyListeners(); // Notifie les écouteurs d'un changement
 

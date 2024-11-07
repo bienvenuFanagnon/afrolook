@@ -4130,7 +4130,39 @@ bool abonneTap =false;
                   curve: Curves.ease,
                 );
                 setState(() {
+                  postProvider.getPostsImages(limitePosts).then((value) {
 
+                  },);
+                });
+
+             //   Restart.restartApp();
+
+
+                /*
+                await userProvider.getAllAnnonces();
+                await postProvider.getPostsImages(limitePosts).then((value) {
+                  print('actualiser');
+                  setState(() {
+                    postLenght=8;
+                    is_actualised = false;
+
+                  });
+
+
+                },);
+
+                 */
+              }, icon: Icon(FontAwesome.refresh)),
+              IconButton(onPressed: () async {
+                _scrollController.animateTo(
+                  0.0,
+                  duration: Duration(milliseconds: 1000),
+                  curve: Curves.ease,
+                );
+                setState(() {
+                  postProvider.getHomePostsImages(limitePosts).then((value) {
+
+                  },);
                 });
 
              //   Restart.restartApp();
@@ -4167,11 +4199,11 @@ bool abonneTap =false;
                           AsyncSnapshot snapshot) {
                         if (snapshot.hasData) {
 
-                          // List<Post> listConstposts=snapshot.data;
+                          List<Post> listConstposts=postListProvider.listConstposts;
 
                          // listConstposts.insert(0, listConstposts.elementAt(0));
 
-                          postListProvider.listConstposts.insert(0, postListProvider.listConstposts.elementAt(0));
+                          listConstposts.insert(0, listConstposts.elementAt(0));
 
                           return  SizedBox(
                             width: width,
@@ -4180,7 +4212,7 @@ bool abonneTap =false;
                               controller: _scrollController,
                               scrollDirection: Axis.vertical,
 
-                              itemCount: postListProvider.listConstposts.length,
+                              itemCount: listConstposts.length,
                               itemBuilder:
                                   (BuildContext context, int index) {
                                     // postListProvider.listConstposts.insert(0, postListProvider.listConstposts.elementAt(index));
@@ -4906,7 +4938,7 @@ bool abonneTap =false;
                                 else{
                                   return  Padding(
                                     padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                                    child: homePostUsers(postListProvider.listConstposts![index], height, width),
+                                    child: homePostUsers(listConstposts![index], height, width),
                                   );
                                 }
 
