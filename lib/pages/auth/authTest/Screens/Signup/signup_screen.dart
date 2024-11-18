@@ -24,7 +24,7 @@ class SignUpScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(
-                      width: 450,
+                      // width: 450,
                       child: SignUpFormEtap1(),
                     ),
                     SizedBox(height: defaultPadding / 2),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
+import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 
 import 'package:afrotok/pages/user/detailsOtherUser.dart';
 import 'package:flutter/material.dart';
@@ -31,15 +32,12 @@ import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:marquee/marquee.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:popover_gtk/popover_gtk.dart';
 import 'package:popup_menu_plus/popup_menu_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:stories_for_flutter/stories_for_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
-import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
@@ -50,7 +48,6 @@ import '../chat/entrepriseChat.dart';
 import '../chat/ia_Chat.dart';
 import '../chat/myChat.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
-import '../menu/menuDrawer.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -736,8 +733,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
               child: ClipRRect(
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
                 child: Container(
-                  width: w*0.5,
-                   height: h*0.17,
+                 width: w*0.45,
+                   height: h*0.15,
                   child: CachedNetworkImage(
                     fit: BoxFit.cover,
 
@@ -776,7 +773,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                 builder: (BuildContext context, void Function(void Function()) setState) {
 
                 return Container(
-                  width: w*0.5,
+                  //width: w*0.45,
                   height: 50,
                   child:  isMyFriend(user.friendsIds!,authProvider.loginUserData.id!)?
                   Padding(
@@ -910,7 +907,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                           fontWeight: FontWeight.w600,
                         ),),
                     ),
-                  ):Padding(
+                  ):
+                  Padding(
                     padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                     child: Container(
                       //width: 120,
@@ -935,19 +933,20 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver,Tic
                   return Container(
                child:    isUserAbonne(user.userAbonnesIds!,authProvider.loginUserData.id!)?
                Container(
-                 width: w*0.5,
+                width: w*0.45,
                  height: 35,
                  child: ElevatedButton(
                    onPressed:
                        ()  { },
                    child: TextCustomerUserTitle(
-                     titre: "vous êtes déjà abonné",
+                     titre: "déjà abonné",
                      fontSize: SizeText.homeProfileTextSize,
                      couleur: Colors.green,
                      fontWeight: FontWeight.w600,
                    ),),
-               ):Container(
-                 width: w*0.5,
+               ):
+               Container(
+                width: w*0.45,
                  height: 35,
 
                  child: ElevatedButton(
@@ -3577,8 +3576,8 @@ bool abonneTap =false;
               child: ClipRRect(
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(5)),
                 child: Container(
-                  width: w*0.5,
-                  height: h*0.15,
+                 width: w*0.45,
+                  height: h*0.16,
                   child: CachedNetworkImage(
                     fit: BoxFit.cover,
 
@@ -4179,7 +4178,7 @@ bool abonneTap =false;
               padding: const EdgeInsets.all(3.0),
               child: Consumer<PostProvider>(
                   builder: (context, postListProvider, child) {
-                  return postListProvider.listConstposts.isEmpty?CircularProgressIndicator():  Column(
+                  return postListProvider.listConstposts.isEmpty?CircularProgressIndicator():  ListView(
                     children: [
                       Stack(
                         children: [
@@ -4220,11 +4219,16 @@ bool abonneTap =false;
 
 
                                                   }, child: Text("")),
-                                                  TextButton(onPressed: () {
-                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                                  TextButton(onPressed: () async {
+                                                    // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                                    await userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
+
+                                                      Navigator.push(context, MaterialPageRoute(builder: (context) => UserCards(),));
 
 
-                                                  }, child: Text("Afficher plus")),
+                                                    },);
+
+                                                  }, child: Text("Voir autres profiles")),
                                                 ],
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               ),
@@ -4527,11 +4531,16 @@ bool abonneTap =false;
 
 
                                                   }, child: Text("")),
-                                                  TextButton(onPressed: () {
-                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                                  TextButton(onPressed: () async {
+                                                    // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                                    await userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
+
+                                                      Navigator.push(context, MaterialPageRoute(builder: (context) => UserCards(),));
 
 
-                                                  }, child: Text("Afficher plus")),
+                                                    },);
+
+                                                  }, child: Text("Voir autres profiles")),
                                                 ],
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               ),
@@ -4983,18 +4992,18 @@ bool abonneTap =false;
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      /*
-                        userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
+                    onTap: () async {
+
+                       await userProvider.getProfileUsers(authProvider.loginUserData!.id!,context,limiteUsers).then((value) {
 
                           Navigator.push(context, MaterialPageRoute(builder: (context) => UserCards(),));
 
 
                         },);
 
-                         */
 
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
+
+                      // Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
 
                     },
                     child: StreamBuilder<int>(

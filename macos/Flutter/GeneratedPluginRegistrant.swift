@@ -20,7 +20,7 @@ import path_provider_foundation
 import rive_common
 import shared_preferences_foundation
 import smart_auth
-import sqflite
+import sqflite_darwin
 import stories_for_flutter
 import url_launcher_macos
 import video_player_avfoundation

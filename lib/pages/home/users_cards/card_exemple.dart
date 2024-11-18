@@ -1,25 +1,29 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:rate_in_stars/rate_in_stars.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
+import '../../../models/chatmodels/message.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../chat/myChat.dart';
 import 'cardModel.dart';
 
 class ExampleCard extends StatefulWidget {
-  final UserData candidate;
+  final UserData cardUser;
 
   const ExampleCard(
-      this.candidate, {
+      this.cardUser, {
         super.key,
       });
 
@@ -28,9 +32,7 @@ class ExampleCard extends StatefulWidget {
 }
 
 class _ExampleCardState extends State<ExampleCard> {
-  bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
-    return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
-  }
+
   bool abonneTap =false;
   bool inviteTap =false;
   bool dejaInviter =false;
@@ -42,6 +44,8 @@ class _ExampleCardState extends State<ExampleCard> {
   final List<String> noms = ['Alice', 'Bob', 'Charlie'];
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
+
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String formatNumber(int number) {
     if (number < 1000) {
       return number.toString();
@@ -53,15 +57,131 @@ class _ExampleCardState extends State<ExampleCard> {
       return "${number / 1000000000} b";
     }
   }
+  String formatAbonnes(int nbAbonnes) {
+    if (nbAbonnes >= 1000) {
+      double nombre = nbAbonnes / 1000;
+      return nombre.toStringAsFixed(1) + 'k';
+    } else {
+      return nbAbonnes.toString();
+    }
+  }
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+  }
+
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  bool isMyFriend(List<Friends> userfriendList, String userIdToCheck) {
-    return userfriendList.any((userAbonne) => userAbonne.friendId == userIdToCheck);
+  bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
+    return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
-  bool isInvite(List<Invitation> invitationList, String userIdToCheck) {
-    return invitationList.any((inv) => inv.receiverId == userIdToCheck);
+  bool isInvite(List<String> invitationList, String userIdToCheck) {
+    return invitationList.any((invid) => invid == userIdToCheck);
   }
+
+  Future<Chat> getChatsData(UserData amigo) async {
+
+    // Définissez la requête
+    var friendsStream = FirebaseFirestore.instance.collection('Chats').where( Filter.or(
+      Filter('docId', isEqualTo:  '${amigo.id}${authProvider.loginUserData.id!}'),
+      Filter('docId', isEqualTo:  '${authProvider.loginUserData.id!}${amigo.id}'),
+
+    )).snapshots();
+
+// Obtenez la liste des utilisateurs
+    //List<DocumentSnapshot> users = await usersQuery.sget();
+    Chat usersChat=Chat();
+
+    if (await friendsStream.isEmpty) {
+      print("pas de chat ");
+      String chatId = FirebaseFirestore.instance
+          .collection('Chats')
+          .doc()
+          .id;
+      Chat chat = Chat(
+        docId:'${amigo.id}${authProvider.loginUserData.id!}',
+        id: chatId,
+        senderId: authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}',
+        receiverId: authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}',
+        lastMessage: 'hi',
+
+        type: ChatType.USER.name,
+        createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
+      );
+      await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
+      usersChat=chat;
+
+    }  else{
+      print("le chat existe  ");
+      print("stream :${friendsStream}");
+      usersChat= await friendsStream.first.then((value) async {
+        print("stream value l :${value.docs.length}");
+        if (value.docs.length<=0) {
+          print("pas de chat ");
+
+          String chatId = FirebaseFirestore.instance
+              .collection('Chats')
+              .doc()
+              .id;
+          Chat chat = Chat(
+            docId:'${amigo.id}${authProvider.loginUserData.id!}',
+            id: chatId,
+            senderId: authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}',
+            receiverId: authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}',
+            lastMessage: 'hi',
+
+            type: ChatType.USER.name,
+            createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
+          );
+          await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
+          usersChat=chat;
+          return chat;
+        }  else{
+          return  Chat.fromJson(value.docs.first.data());
+        }
+
+      });
+      CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      // Afficher la liste
+      List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
+          Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+
+      if (messageList.isEmpty) {
+        usersChat.messages=[];
+        userProvider.chat=usersChat;
+        print("messgae vide ");
+      }else{
+        print("have messages");
+        usersChat.messages=messageList;
+        userProvider.chat=usersChat;
+      }
+
+      /////////////ami//////////
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').get();
+      // Afficher la liste
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').get();
+
+
+      List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      usersChat.receiver=receiverUserList.first;
+
+      List<UserData> senderUserList = querySnapshotUserSender.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      usersChat.sender=senderUserList.first;
+
+    }
+
+    return usersChat;
+  }
+
   @override
   Widget build(BuildContext context) {
     double h = MediaQuery.of(context).size.height;
@@ -99,7 +219,7 @@ class _ExampleCardState extends State<ExampleCard> {
                 child: CachedNetworkImage(
                   fit: BoxFit.cover,
 
-                  imageUrl: '${widget.candidate.imageUrl!}',
+                  imageUrl: '${widget.cardUser.imageUrl!}',
                   progressIndicatorBuilder: (context, url, downloadProgress) =>
                   //  LinearProgressIndicator(),
 
@@ -117,7 +237,8 @@ class _ExampleCardState extends State<ExampleCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "@${widget.candidate.pseudo}",                  style: const TextStyle(
+                  "@${widget.cardUser.pseudo}",
+                  style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
@@ -125,7 +246,7 @@ class _ExampleCardState extends State<ExampleCard> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  "${widget.candidate.abonnes} abonné(s)",
+                  "${widget.cardUser.abonnes} abonné(s)",
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 15,
@@ -135,27 +256,43 @@ class _ExampleCardState extends State<ExampleCard> {
                 Row(
                   children: [
                     Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         StatefulBuilder(
 
                             builder: (BuildContext context, void Function(void Function()) setState) {
 
                               return Container(
-                                width: w*0.45,
+                                // width: w*0.45,
                                 height: 50,
-                                child:  isMyFriend(authProvider.loginUserData.friends!, widget.candidate.id!)?
+                                child:  isMyFriend(widget.cardUser.friendsIds!,authProvider.loginUserData.id!)?
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                   child: ElevatedButton(
 
-                                      onPressed: (){}, child:  Container(child: TextCustomerUserTitle(
+                                      onPressed: () async {
+                                        getChatsData(widget.cardUser).then((chat) async {
+                                          CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
+                                          QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                                          // Afficher la liste
+                                          List<Message> messages = querySnapshotUser.docs.map((doc) =>
+                                              Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                          //snapshot.data![index].messages=messages;
+                                          userProvider.chat.messages=messages;
+                                          //Navigator.of(context).pop();
+                                          Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+                                        },);
+
+                                      }, child:  Container(child: TextCustomerUserTitle(
                                     titre: "envoyer un message",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: Colors.blue,
+                                    fontSize: 10,
+                                    couleur: Colors.black,
                                     fontWeight: FontWeight.w600,
                                   ),)),
                                 )
-                                    :!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, widget.candidate.id!)?
+                                    :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                   child: Container(
@@ -165,13 +302,13 @@ class _ExampleCardState extends State<ExampleCard> {
                                       onPressed:inviteTap?
                                           ()  { }:
                                           ()async{
-                                        if (!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, widget.candidate.id!)) {
+                                        if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
                                           setState(() {
                                             inviteTap=true;
                                           });
                                           Invitation invitation = Invitation();
                                           invitation.senderId=authProvider.loginUserData.id;
-                                          invitation.receiverId=widget.candidate.id;
+                                          invitation.receiverId=widget.cardUser.id;
                                           invitation.status=InvitationStatus.ENCOURS.name;
                                           invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
                                           invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
@@ -183,16 +320,60 @@ class _ExampleCardState extends State<ExampleCard> {
                                               // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                               authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                              NotificationData notif=NotificationData();
+                                              notif.id=firestore
+                                                  .collection('Notifications')
+                                                  .doc()
+                                                  .id;
+                                              notif.titre="Nouvelle Invitation";
+                                              notif.media_url=authProvider.loginUserData.imageUrl;
+                                              notif.type=NotificationType.INVITATION.name;
+                                              notif.description="Une nouvelle invitation vous a été envoyé !";
+                                              notif.users_id_view=[];
+                                              notif.user_id=authProvider.loginUserData.id;
+                                              notif.receiver_id=widget.cardUser.id;
+                                              notif.updatedAt =
+                                                  DateTime.now().microsecondsSinceEpoch;
+                                              notif.createdAt =
+                                                  DateTime.now().microsecondsSinceEpoch;
+                                              notif.status = PostStatus.VALIDE.name;
+
+                                              // users.add(pseudo.toJson());
+
+                                              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                              print("///////////-- save notification --///////////////");
                                               SnackBar snackBar = SnackBar(
                                                 content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                               );
                                               ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                                              widget.cardUser.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
+                                              authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.cardUser.id!);
+                                              userProvider.updateUser(widget.cardUser);
+                                              userProvider.updateUser(authProvider.loginUserData!);
+
+                                              if (widget.cardUser.oneIgnalUserid!=null&&widget.cardUser.oneIgnalUserid!.length>5) {
+
+                                                await authProvider.sendNotification(
+                                                    userIds: [widget.cardUser.oneIgnalUserid!],
+                                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                    send_user_id: "${authProvider.loginUserData.id!}",
+                                                    recever_user_id: "${widget.cardUser.id!}",
+                                                    message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
+                                                    type_notif: NotificationType.INVITATION.name,
+                                                    post_id: "",
+                                                    post_type: "", chat_id: ''
+                                                );
+
+                                              }
+
 
                                             }  else{
                                               SnackBar snackBar = SnackBar(
                                                 content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
                                               );
                                               ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
 
                                             }
                                           },);
@@ -211,12 +392,13 @@ class _ExampleCardState extends State<ExampleCard> {
                                         ),
                                       ): TextCustomerUserTitle(
                                         titre: "envoyer une invitation",
-                                        fontSize: SizeText.homeProfileTextSize,
+                                        fontSize: 10,
                                         couleur: Colors.blue,
                                         fontWeight: FontWeight.w600,
                                       ),),
                                   ),
-                                ):Padding(
+                                ):
+                                Padding(
                                   padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                   child: Container(
                                     //width: 120,
@@ -226,7 +408,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                           ()  { },
                                       child:TextCustomerUserTitle(
                                         titre: "invitation déjà envoyée",
-                                        fontSize: SizeText.homeProfileTextSize,
+                                        fontSize: 10,
                                         couleur: Colors.black38,
                                         fontWeight: FontWeight.w600,
                                       ),),
@@ -239,46 +421,90 @@ class _ExampleCardState extends State<ExampleCard> {
 
                             builder: (BuildContext context, void Function(void Function()) setState) {
                               return Container(
-                                child:    isUserAbonne(authProvider.loginUserData.userAbonnes!, widget.candidate.id!)?
+                                child:     isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)?
                                 Container(
-                                  width: w*0.45,
+                                  // // width: w*0.5,
+
                                   height: 35,
                                   child: ElevatedButton(
                                     onPressed:
                                         ()  { },
                                     child: TextCustomerUserTitle(
                                       titre: "vous êtes déjà abonné",
-                                      fontSize: SizeText.homeProfileTextSize,
+                                      fontSize: 10,
                                       couleur: Colors.green,
                                       fontWeight: FontWeight.w600,
                                     ),),
-                                ):Container(
-                                  width: w*0.45,
+                                ):
+                                Container(
+                                  // width: w*0.3,
+
                                   height: 35,
 
                                   child: ElevatedButton(
                                     onPressed:abonneTap?
                                         ()  { }:
                                         ()async{
-                                      if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, widget.candidate!.id!)) {
+                                      if (!isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)) {
                                         setState(() {
                                           abonneTap=true;
                                         });
                                         UserAbonnes userAbonne = UserAbonnes();
                                         userAbonne.compteUserId=authProvider.loginUserData.id;
-                                        userAbonne.abonneUserId=widget.candidate!.id;
+                                        userAbonne.abonneUserId=widget.cardUser!.id;
 
                                         userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
                                         userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                        await  userProvider.sendAbonnementRequest(userAbonne,widget.candidate,context).then((value) async {
+                                        await  userProvider.sendAbonnementRequest(userAbonne,widget.cardUser,context).then((value) async {
                                           if (value) {
+
 
                                             // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                             authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                             await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                            if (widget.cardUser.oneIgnalUserid!=null&&widget.cardUser.oneIgnalUserid!.length>5) {
+                                              await authProvider.sendNotification(
+                                                  userIds: [widget.cardUser.oneIgnalUserid!],
+                                                  smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                  send_user_id: "${authProvider.loginUserData.id!}",
+                                                  recever_user_id: "${widget.cardUser.id!}",
+                                                  message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+                                                  type_notif: NotificationType.ABONNER.name,
+                                                  post_id: "",
+                                                  post_type: "", chat_id: ''
+                                              );
+
+                                              NotificationData notif=NotificationData();
+                                              notif.id=firestore
+                                                  .collection('Notifications')
+                                                  .doc()
+                                                  .id;
+                                              notif.titre="Nouveau Abonnement ✅";
+                                              notif.media_url=authProvider.loginUserData.imageUrl;
+                                              notif.type=NotificationType.ABONNER.name;
+                                              notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                              notif.users_id_view=[];
+                                              notif.user_id=authProvider.loginUserData.id;
+                                              notif.receiver_id="";
+                                              notif.post_id="";
+                                              notif.post_data_type=PostDataType.IMAGE.name!;
+                                              notif.updatedAt =
+                                                  DateTime.now().microsecondsSinceEpoch;
+                                              notif.createdAt =
+                                                  DateTime.now().microsecondsSinceEpoch;
+                                              notif.status = PostStatus.VALIDE.name;
+
+                                              // users.add(pseudo.toJson());
+
+                                              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
+                                            }
                                             SnackBar snackBar = SnackBar(
-                                              content: Text('abonné',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                              content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                             );
+                                            widget.cardUser.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                            userProvider.updateUser(widget.cardUser);
                                             ScaffoldMessenger.of(context).showSnackBar(snackBar);
                                             setState(() {
                                               abonneTap=false;
@@ -309,7 +535,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                       ),
                                     ): TextCustomerUserTitle(
                                       titre: "abonnez vous",
-                                      fontSize: SizeText.homeProfileTextSize,
+                                      fontSize: 10,
                                       couleur: Colors.red,
                                       fontWeight: FontWeight.w600,
                                     ),),
@@ -322,52 +548,250 @@ class _ExampleCardState extends State<ExampleCard> {
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
+                      padding: const EdgeInsets.only(left: 0.0),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
 
                           RatingStars(
-                            rating: 5*widget.candidate.popularite!,
+                            rating: 5*widget.cardUser.popularite!,
                             editable: true,
-                            iconSize: 25,
+                            iconSize: 20,
                             color: Colors.green,
                           ),
-                          LikeButton(
+                          SizedBox(height: 10,),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              LikeButton(
+                                onTap: (isLiked) async {
 
-                            isLiked: false,
-                            size: 35,
-                            circleColor:
-                            CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                            bubblesColor: BubblesColor(
-                              dotPrimaryColor: Color(0xff3b9ade),
-                              dotSecondaryColor: Color(0xff027f19),
-                            ),
-                            countPostion: CountPostion.bottom,
-                            likeBuilder: (bool isLiked) {
-                              return Icon(
-                                !isLiked ?AntDesign.like1:AntDesign.like1,
-                                color: !isLiked ? Colors.black38 : Colors.blue,
-                                size: 35,
-                              );
-                            },
-                            // likeCount: 30,
-                            countBuilder: (int? count, bool isLiked, String text) {
-                              var color = isLiked ? Colors.black : Colors.black;
-                              Widget result;
-                              if (count == 0) {
-                                result = Text(
-                                  "0",textAlign: TextAlign.center,
-                                  style: TextStyle(color: color),
-                                );
-                              } else
-                                result = Text(
-                                  text,
-                                  style: TextStyle(color: color),
-                                );
-                              return result;
-                            },
 
+                                    CollectionReference userCollect =
+                                    FirebaseFirestore.instance.collection('Users');
+                                    // Get docs from collection reference
+                                    QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
+                                    // Afficher la liste
+                                    List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                    if (listUsers.isNotEmpty) {
+                                      listUsers.first!.userlikes=listUsers.first!.userlikes!+1;
+                                      widget.cardUser!.userlikes=listUsers.first!.userlikes;
+
+                                      print("user trouver ${listUsers.first!.toJson()}");
+                                      await authProvider.updateUser( listUsers.first);
+
+
+                                      if (widget.cardUser!.oneIgnalUserid!=null&&widget.cardUser!.oneIgnalUserid!.length>5) {
+
+                                        await authProvider.sendNotification(
+                                            userIds: [widget.cardUser!.oneIgnalUserid!],
+                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "${widget.cardUser!.id!}",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre profile",
+                                            type_notif: NotificationType.USER.name,
+                                            post_id: "",
+                                            post_type: "",
+                                            chat_id: ''
+                                        );
+
+                                        NotificationData notif=NotificationData();
+                                        notif.id=firestore
+                                            .collection('Notifications')
+                                            .doc()
+                                            .id;
+                                        notif.titre="@${widget.cardUser!.pseudo} -> 👍🏾";
+                                        notif.media_url=authProvider.loginUserData.imageUrl;
+                                        notif.type=NotificationType.USER.name;
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
+                                        notif.users_id_view=[];
+                                        notif.user_id=authProvider.loginUserData.id;
+                                        notif.receiver_id=widget.cardUser!.id!;
+                                        // notif.post_id=post.id!;
+                                        // notif.post_data_type=PostDataType.IMAGE.name!;
+
+                                        notif.updatedAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.createdAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.status = PostStatus.VALIDE.name;
+
+                                        // users.add(pseudo.toJson());
+
+                                        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                        //userProvider.updateUser(listUsers.first);
+                                        // SnackBar snackBar = SnackBar(
+                                        //   content: Text('+1 points.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                        // );
+                                        // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                        // postProvider.updatePost(post, listUsers.first,context);
+                                        // await authProvider.getAppData();
+                                        // authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                        // authProvider.updateAppData(authProvider.appDefaultData);
+
+// setState(() {
+//
+// });
+                                      }
+
+
+
+
+
+
+                                  }
+                                  return true;
+                                },
+                                isLiked: false,
+                                size: 20,
+                                circleColor:
+                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                bubblesColor: BubblesColor(
+                                  dotPrimaryColor: Color(0xff3b9ade),
+                                  dotSecondaryColor: Color(0xff027f19),
+                                ),
+                                countPostion: CountPostion.bottom,
+                                likeBuilder: (bool isLiked) {
+                                  return Icon(
+                                    !isLiked ?AntDesign.like1:AntDesign.like1,
+                                    color: !isLiked ? Colors.black38 : Colors.blue,
+                                    size: 20,
+                                  );
+                                },
+                                likeCount: widget.cardUser.userlikes ==null?0:widget.cardUser.userlikes,
+
+                                countBuilder: (int? count, bool isLiked, String text) {
+                                  var color = isLiked ? Colors.black : Colors.black;
+                                  Widget result;
+                                  if (count == 0) {
+                                    result = Text(
+                                      "0",textAlign: TextAlign.center,
+                                      style: TextStyle(color: color,),
+                                    );
+                                  } else
+                                    result = Text(
+                                      text,
+                                      style: TextStyle(color: color),
+                                    );
+                                  return result;
+                                },
+
+                              ),
+                              SizedBox(width: 20,),
+                              LikeButton(
+                                onTap: (isLiked) async {
+
+
+                                  CollectionReference userCollect =
+                                  FirebaseFirestore.instance.collection('Users');
+                                  // Get docs from collection reference
+                                  QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
+                                  // Afficher la liste
+                                  List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                  if (listUsers.isNotEmpty) {
+                                    listUsers.first!.userjaimes=listUsers.first!.userjaimes!+1;
+                                    print("user trouver");
+                                    await  authProvider.updateUser( listUsers.first);
+                                    widget.cardUser!.userjaimes=listUsers.first!.userjaimes;
+
+                                    if (widget.cardUser!.oneIgnalUserid!=null&&widget.cardUser!.oneIgnalUserid!.length>5) {
+
+                                      await authProvider.sendNotification(
+                                          userIds: [widget.cardUser!.oneIgnalUserid!],
+                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id: "${authProvider.loginUserData.id!}",
+                                          recever_user_id: "${widget.cardUser!.id!}",
+                                          message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre profile",
+                                          type_notif: NotificationType.USER.name,
+                                          post_id: "",
+                                          post_type: "",
+                                          chat_id: ''
+                                      );
+
+                                      NotificationData notif=NotificationData();
+                                      notif.id=firestore
+                                          .collection('Notifications')
+                                          .doc()
+                                          .id;
+                                      notif.titre="@${widget.cardUser!.pseudo} -> ❤️";
+                                      notif.media_url=authProvider.loginUserData.imageUrl;
+                                      notif.type=NotificationType.USER.name;
+                                      notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre publication";
+                                      notif.users_id_view=[];
+                                      notif.user_id=authProvider.loginUserData.id;
+                                      notif.receiver_id=widget.cardUser!.id!;
+                                      // notif.post_id=post.id!;
+                                      // notif.post_data_type=PostDataType.IMAGE.name!;
+
+                                      notif.updatedAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.createdAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.status = PostStatus.VALIDE.name;
+
+                                      // users.add(pseudo.toJson());
+
+                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                      //userProvider.updateUser(listUsers.first);
+                                      // SnackBar snackBar = SnackBar(
+                                      //   content: Text('+1 points.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                      // );
+                                      // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                      // postProvider.updatePost(post, listUsers.first,context);
+                                      await authProvider.getAppData();
+                                      authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                      authProvider.updateAppData(authProvider.appDefaultData);
+
+
+                                    }
+
+
+
+
+
+
+                                  }
+                                  return true;
+                                },
+
+                                isLiked: false,
+                                size: 20,
+                                circleColor:
+                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                bubblesColor: BubblesColor(
+                                  dotPrimaryColor: Color(0xff3b9ade),
+                                  dotSecondaryColor: Color(0xff027f19),
+                                ),
+                                countPostion: CountPostion.bottom,
+                                likeBuilder: (bool isLiked) {
+                                  return Icon(
+                                    !isLiked ?AntDesign.heart:AntDesign.heart,
+                                    color: !isLiked ? Colors.black38 : Colors.red,
+                                    size: 20,
+                                  );
+                                },
+                                likeCount: widget.cardUser.userjaimes ==null?0:widget.cardUser.userjaimes,
+                                countBuilder: (int? count, bool isLiked, String text) {
+                                  var color = isLiked ? Colors.black : Colors.black;
+                                  Widget result;
+                                  if (count == 0) {
+                                    result = Text(
+                                      "0",textAlign: TextAlign.center,
+                                      style: TextStyle(color: color,),
+                                    );
+                                  } else
+                                    result = Text(
+                                      text,
+                                      style: TextStyle(color: color),
+                                    );
+                                  return result;
+                                },
+
+                              ),
+
+                            ],
                           ),
 
 

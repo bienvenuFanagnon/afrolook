@@ -460,6 +460,7 @@ class UserData {
   String? prenom;
   String? numeroDeTelephone;
   String? adresse="";
+  String? genre="";
   String? codeParrainage;
   String? codeParrain;
   String? state;
@@ -471,6 +472,8 @@ class UserData {
   int? mesPubs=0;
   int? last_time_active=0;
   int? pointContribution=0;
+  int? userlikes=0;
+  int? userjaimes=0;
   int? likes=0;
   int? jaimes=0;
   int? comments=0;
@@ -509,6 +512,7 @@ class UserData {
         this.prenom,
         this.numeroDeTelephone,
         this.adresse,
+        this.genre,
         this.codeParrainage,
         this.oneIgnalUserid="",
         this.userPays,
@@ -518,6 +522,8 @@ class UserData {
         this.pointContribution=0,
         this.likes=0,
         this.jaimes=0,
+        this.userlikes=0,
+        this.userjaimes=0,
         this.comments=0,
         this.createdAt=0,
         this.updatedAt=0,
@@ -603,6 +609,9 @@ class UserData {
     longitude = json['longitude'];
     apropos = json['apropos'];
    password = json['password']==null?"":json['password'];
+   genre = json['genre']==null?"":json['genre'];
+   userlikes = json['userlikes']==null?0:json['userlikes'];
+   userjaimes = json['userjaimes']==null?0:json['userjaimes'];
    // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
@@ -639,6 +648,9 @@ class UserData {
     data['longitude'] = this.longitude;
     data['apropos'] = this.apropos;
     data['password'] = this.password;
+    data['genre'] = this.genre;
+    data['userlikes'] = this.userlikes;
+    data['userjaimes'] = this.userjaimes;
    // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
@@ -1641,7 +1653,7 @@ enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
 enum ChatType { USER, ENTREPRISE }
 enum IsSendMessage { SENDING, NOTSENDING }
 enum InfoType { APPINFO, GRATUIT }
-enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER,PARRAINAGE }
+enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER,PARRAINAGE,USER }
 
 enum TypeEntreprise { personnel, partenaire }
 
