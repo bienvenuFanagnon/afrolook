@@ -17,6 +17,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../chat/myChat.dart';
+import '../../component/consoleWidget.dart';
 import 'cardModel.dart';
 
 class ExampleCard extends StatefulWidget {
@@ -93,7 +94,7 @@ class _ExampleCardState extends State<ExampleCard> {
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -114,12 +115,12 @@ class _ExampleCardState extends State<ExampleCard> {
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        print("stream value l :${value.docs.length}");
+        printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
 
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
@@ -155,9 +156,9 @@ class _ExampleCardState extends State<ExampleCard> {
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messgae vide ");
+        printVm("messgae vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }
@@ -255,296 +256,300 @@ class _ExampleCardState extends State<ExampleCard> {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        StatefulBuilder(
+                    Visibility(
+                      visible: authProvider.loginUserData.id!=widget.cardUser.id,
 
-                            builder: (BuildContext context, void Function(void Function()) setState) {
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          StatefulBuilder(
 
-                              return Container(
-                                // width: w*0.45,
-                                height: 50,
-                                child:  isMyFriend(widget.cardUser.friendsIds!,authProvider.loginUserData.id!)?
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
-                                  child: ElevatedButton(
+                              builder: (BuildContext context, void Function(void Function()) setState) {
 
-                                      onPressed: () async {
-                                        getChatsData(widget.cardUser).then((chat) async {
-                                          CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                                          QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
-                                          // Afficher la liste
-                                          List<Message> messages = querySnapshotUser.docs.map((doc) =>
-                                              Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                          //snapshot.data![index].messages=messages;
-                                          userProvider.chat.messages=messages;
-                                          //Navigator.of(context).pop();
-                                          Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-                                        },);
-
-                                      }, child:  Container(child: TextCustomerUserTitle(
-                                    titre: "envoyer un message",
-                                    fontSize: 10,
-                                    couleur: Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                  ),)),
-                                )
-                                    :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
-                                  child: Container(
-                                    //width: 120,
-                                    //height: 30,
+                                return Container(
+                                  // width: w*0.45,
+                                  height: 50,
+                                  child:  isMyFriend(widget.cardUser.friendsIds!,authProvider.loginUserData.id!)?
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                     child: ElevatedButton(
-                                      onPressed:inviteTap?
+
+                                        onPressed: () async {
+                                          getChatsData(widget.cardUser).then((chat) async {
+                                            CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
+                                            QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                                            // Afficher la liste
+                                            List<Message> messages = querySnapshotUser.docs.map((doc) =>
+                                                Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                            //snapshot.data![index].messages=messages;
+                                            userProvider.chat.messages=messages;
+                                            //Navigator.of(context).pop();
+                                            Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+                                          },);
+
+                                        }, child:  Container(child: TextCustomerUserTitle(
+                                      titre: "envoyer un message",
+                                      fontSize: 10,
+                                      couleur: Colors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),)),
+                                  )
+                                      :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
+                                    child: Container(
+                                      //width: 120,
+                                      //height: 30,
+                                      child: ElevatedButton(
+                                        onPressed:inviteTap?
+                                            ()  { }:
+                                            ()async{
+                                          if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                                            setState(() {
+                                              inviteTap=true;
+                                            });
+                                            Invitation invitation = Invitation();
+                                            invitation.senderId=authProvider.loginUserData.id;
+                                            invitation.receiverId=widget.cardUser.id;
+                                            invitation.status=InvitationStatus.ENCOURS.name;
+                                            invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                            invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+
+                                            // invitation.inviteUser=authProvider.loginUserData!;
+                                            await  userProvider.sendInvitation(invitation,context).then((value) async {
+                                              if (value) {
+
+                                                // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                                                authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
+                                                await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                                NotificationData notif=NotificationData();
+                                                notif.id=firestore
+                                                    .collection('Notifications')
+                                                    .doc()
+                                                    .id;
+                                                notif.titre="Nouvelle Invitation";
+                                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                                notif.type=NotificationType.INVITATION.name;
+                                                notif.description="Une nouvelle invitation vous a été envoyé !";
+                                                notif.users_id_view=[];
+                                                notif.user_id=authProvider.loginUserData.id;
+                                                notif.receiver_id=widget.cardUser.id;
+                                                notif.updatedAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.createdAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.status = PostStatus.VALIDE.name;
+
+                                                // users.add(pseudo.toJson());
+
+                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                                printVm("///////////-- save notification --///////////////");
+                                                SnackBar snackBar = SnackBar(
+                                                  content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                                );
+                                                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                                                widget.cardUser.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
+                                                authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.cardUser.id!);
+                                                userProvider.updateUser(widget.cardUser);
+                                                userProvider.updateUser(authProvider.loginUserData!);
+
+                                                if (widget.cardUser.oneIgnalUserid!=null&&widget.cardUser.oneIgnalUserid!.length>5) {
+
+                                                  await authProvider.sendNotification(
+                                                      userIds: [widget.cardUser.oneIgnalUserid!],
+                                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                      send_user_id: "${authProvider.loginUserData.id!}",
+                                                      recever_user_id: "${widget.cardUser.id!}",
+                                                      message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
+                                                      type_notif: NotificationType.INVITATION.name,
+                                                      post_id: "",
+                                                      post_type: "", chat_id: ''
+                                                  );
+
+                                                }
+
+
+                                              }  else{
+                                                SnackBar snackBar = SnackBar(
+                                                  content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                                                );
+                                                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+
+                                              }
+                                            },);
+
+
+                                            setState(() {
+                                              inviteTap=false;
+                                            });
+                                          }
+                                        },
+                                        child:inviteTap? Center(
+                                          child: LoadingAnimationWidget.flickr(
+                                            size: 20,
+                                            leftDotColor: Colors.green,
+                                            rightDotColor: Colors.black,
+                                          ),
+                                        ): TextCustomerUserTitle(
+                                          titre: "envoyer une invitation",
+                                          fontSize: 10,
+                                          couleur: Colors.blue,
+                                          fontWeight: FontWeight.w600,
+                                        ),),
+                                    ),
+                                  ):
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
+                                    child: Container(
+                                      //width: 120,
+                                      // height: 30,
+                                      child: ElevatedButton(
+                                        onPressed:
+                                            ()  { },
+                                        child:TextCustomerUserTitle(
+                                          titre: "invitation déjà envoyée",
+                                          fontSize: 10,
+                                          couleur: Colors.black38,
+                                          fontWeight: FontWeight.w600,
+                                        ),),
+                                    ),
+                                  ),
+                                );
+                              }
+                          ),
+                          StatefulBuilder(
+
+                              builder: (BuildContext context, void Function(void Function()) setState) {
+                                return Container(
+                                  child:     isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)?
+                                  Container(
+                                    // // width: w*0.5,
+
+                                    height: 35,
+                                    child: ElevatedButton(
+                                      onPressed:
+                                          ()  { },
+                                      child: TextCustomerUserTitle(
+                                        titre: "vous êtes déjà abonné",
+                                        fontSize: 10,
+                                        couleur: Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),),
+                                  ):
+                                  Container(
+                                    // width: w*0.3,
+
+                                    height: 35,
+
+                                    child: ElevatedButton(
+                                      onPressed:abonneTap?
                                           ()  { }:
                                           ()async{
-                                        if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                                        if (!isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)) {
                                           setState(() {
-                                            inviteTap=true;
+                                            abonneTap=true;
                                           });
-                                          Invitation invitation = Invitation();
-                                          invitation.senderId=authProvider.loginUserData.id;
-                                          invitation.receiverId=widget.cardUser.id;
-                                          invitation.status=InvitationStatus.ENCOURS.name;
-                                          invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                          invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                                          UserAbonnes userAbonne = UserAbonnes();
+                                          userAbonne.compteUserId=authProvider.loginUserData.id;
+                                          userAbonne.abonneUserId=widget.cardUser!.id;
 
-                                          // invitation.inviteUser=authProvider.loginUserData!;
-                                          await  userProvider.sendInvitation(invitation,context).then((value) async {
+                                          userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                          userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                                          await  userProvider.sendAbonnementRequest(userAbonne,widget.cardUser,context).then((value) async {
                                             if (value) {
 
+
                                               // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                              authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
+                                              authProvider.loginUserData.userAbonnes!.add(userAbonne);
                                               await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                              NotificationData notif=NotificationData();
-                                              notif.id=firestore
-                                                  .collection('Notifications')
-                                                  .doc()
-                                                  .id;
-                                              notif.titre="Nouvelle Invitation";
-                                              notif.media_url=authProvider.loginUserData.imageUrl;
-                                              notif.type=NotificationType.INVITATION.name;
-                                              notif.description="Une nouvelle invitation vous a été envoyé !";
-                                              notif.users_id_view=[];
-                                              notif.user_id=authProvider.loginUserData.id;
-                                              notif.receiver_id=widget.cardUser.id;
-                                              notif.updatedAt =
-                                                  DateTime.now().microsecondsSinceEpoch;
-                                              notif.createdAt =
-                                                  DateTime.now().microsecondsSinceEpoch;
-                                              notif.status = PostStatus.VALIDE.name;
-
-                                              // users.add(pseudo.toJson());
-
-                                              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                              print("///////////-- save notification --///////////////");
-                                              SnackBar snackBar = SnackBar(
-                                                content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                              );
-                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                                              widget.cardUser.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
-                                              authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.cardUser.id!);
-                                              userProvider.updateUser(widget.cardUser);
-                                              userProvider.updateUser(authProvider.loginUserData!);
-
                                               if (widget.cardUser.oneIgnalUserid!=null&&widget.cardUser.oneIgnalUserid!.length>5) {
-
                                                 await authProvider.sendNotification(
                                                     userIds: [widget.cardUser.oneIgnalUserid!],
                                                     smallImage: "${authProvider.loginUserData.imageUrl!}",
                                                     send_user_id: "${authProvider.loginUserData.id!}",
                                                     recever_user_id: "${widget.cardUser.id!}",
-                                                    message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
-                                                    type_notif: NotificationType.INVITATION.name,
+                                                    message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+                                                    type_notif: NotificationType.ABONNER.name,
                                                     post_id: "",
                                                     post_type: "", chat_id: ''
                                                 );
 
+                                                NotificationData notif=NotificationData();
+                                                notif.id=firestore
+                                                    .collection('Notifications')
+                                                    .doc()
+                                                    .id;
+                                                notif.titre="Nouveau Abonnement ✅";
+                                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                                notif.type=NotificationType.ABONNER.name;
+                                                notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                                notif.users_id_view=[];
+                                                notif.user_id=authProvider.loginUserData.id;
+                                                notif.receiver_id="";
+                                                notif.post_id="";
+                                                notif.post_data_type=PostDataType.IMAGE.name!;
+                                                notif.updatedAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.createdAt =
+                                                    DateTime.now().microsecondsSinceEpoch;
+                                                notif.status = PostStatus.VALIDE.name;
+
+                                                // users.add(pseudo.toJson());
+
+                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
                                               }
+                                              SnackBar snackBar = SnackBar(
+                                                content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                              );
+                                              widget.cardUser.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                              userProvider.updateUser(widget.cardUser);
+                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                              setState(() {
+                                                abonneTap=false;
 
-
+                                              });
                                             }  else{
                                               SnackBar snackBar = SnackBar(
                                                 content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
                                               );
                                               ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-
+                                              setState(() {
+                                                abonneTap=false;
+                                              });
                                             }
                                           },);
 
 
                                           setState(() {
-                                            inviteTap=false;
+                                            abonneTap=false;
                                           });
                                         }
                                       },
-                                      child:inviteTap? Center(
+                                      child:abonneTap? Center(
                                         child: LoadingAnimationWidget.flickr(
                                           size: 20,
                                           leftDotColor: Colors.green,
                                           rightDotColor: Colors.black,
                                         ),
                                       ): TextCustomerUserTitle(
-                                        titre: "envoyer une invitation",
+                                        titre: "abonnez vous",
                                         fontSize: 10,
-                                        couleur: Colors.blue,
+                                        couleur: Colors.red,
                                         fontWeight: FontWeight.w600,
                                       ),),
                                   ),
-                                ):
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
-                                  child: Container(
-                                    //width: 120,
-                                    // height: 30,
-                                    child: ElevatedButton(
-                                      onPressed:
-                                          ()  { },
-                                      child:TextCustomerUserTitle(
-                                        titre: "invitation déjà envoyée",
-                                        fontSize: 10,
-                                        couleur: Colors.black38,
-                                        fontWeight: FontWeight.w600,
-                                      ),),
-                                  ),
-                                ),
-                              );
-                            }
-                        ),
-                        StatefulBuilder(
+                                );
+                              }
+                          )
 
-                            builder: (BuildContext context, void Function(void Function()) setState) {
-                              return Container(
-                                child:     isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)?
-                                Container(
-                                  // // width: w*0.5,
-
-                                  height: 35,
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        ()  { },
-                                    child: TextCustomerUserTitle(
-                                      titre: "vous êtes déjà abonné",
-                                      fontSize: 10,
-                                      couleur: Colors.green,
-                                      fontWeight: FontWeight.w600,
-                                    ),),
-                                ):
-                                Container(
-                                  // width: w*0.3,
-
-                                  height: 35,
-
-                                  child: ElevatedButton(
-                                    onPressed:abonneTap?
-                                        ()  { }:
-                                        ()async{
-                                      if (!isUserAbonne(widget.cardUser.userAbonnesIds!,authProvider.loginUserData.id!)) {
-                                        setState(() {
-                                          abonneTap=true;
-                                        });
-                                        UserAbonnes userAbonne = UserAbonnes();
-                                        userAbonne.compteUserId=authProvider.loginUserData.id;
-                                        userAbonne.abonneUserId=widget.cardUser!.id;
-
-                                        userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                        userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                        await  userProvider.sendAbonnementRequest(userAbonne,widget.cardUser,context).then((value) async {
-                                          if (value) {
-
-
-                                            // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                            authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                            await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                            if (widget.cardUser.oneIgnalUserid!=null&&widget.cardUser.oneIgnalUserid!.length>5) {
-                                              await authProvider.sendNotification(
-                                                  userIds: [widget.cardUser.oneIgnalUserid!],
-                                                  smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                  send_user_id: "${authProvider.loginUserData.id!}",
-                                                  recever_user_id: "${widget.cardUser.id!}",
-                                                  message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
-                                                  type_notif: NotificationType.ABONNER.name,
-                                                  post_id: "",
-                                                  post_type: "", chat_id: ''
-                                              );
-
-                                              NotificationData notif=NotificationData();
-                                              notif.id=firestore
-                                                  .collection('Notifications')
-                                                  .doc()
-                                                  .id;
-                                              notif.titre="Nouveau Abonnement ✅";
-                                              notif.media_url=authProvider.loginUserData.imageUrl;
-                                              notif.type=NotificationType.ABONNER.name;
-                                              notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                              notif.users_id_view=[];
-                                              notif.user_id=authProvider.loginUserData.id;
-                                              notif.receiver_id="";
-                                              notif.post_id="";
-                                              notif.post_data_type=PostDataType.IMAGE.name!;
-                                              notif.updatedAt =
-                                                  DateTime.now().microsecondsSinceEpoch;
-                                              notif.createdAt =
-                                                  DateTime.now().microsecondsSinceEpoch;
-                                              notif.status = PostStatus.VALIDE.name;
-
-                                              // users.add(pseudo.toJson());
-
-                                              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                                            }
-                                            SnackBar snackBar = SnackBar(
-                                              content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                            );
-                                            widget.cardUser.userAbonnesIds!.add(authProvider.loginUserData.id!);
-                                            userProvider.updateUser(widget.cardUser);
-                                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                            setState(() {
-                                              abonneTap=false;
-
-                                            });
-                                          }  else{
-                                            SnackBar snackBar = SnackBar(
-                                              content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                            );
-                                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                            setState(() {
-                                              abonneTap=false;
-                                            });
-                                          }
-                                        },);
-
-
-                                        setState(() {
-                                          abonneTap=false;
-                                        });
-                                      }
-                                    },
-                                    child:abonneTap? Center(
-                                      child: LoadingAnimationWidget.flickr(
-                                        size: 20,
-                                        leftDotColor: Colors.green,
-                                        rightDotColor: Colors.black,
-                                      ),
-                                    ): TextCustomerUserTitle(
-                                      titre: "abonnez vous",
-                                      fontSize: 10,
-                                      couleur: Colors.red,
-                                      fontWeight: FontWeight.w600,
-                                    ),),
-                                ),
-                              );
-                            }
-                        )
-
-                      ],
+                        ],
+                      ),
                     ),
 
                     Padding(
@@ -578,7 +583,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                       listUsers.first!.userlikes=listUsers.first!.userlikes!+1;
                                       widget.cardUser!.userlikes=listUsers.first!.userlikes;
 
-                                      print("user trouver ${listUsers.first!.toJson()}");
+                                      printVm("user trouver ${listUsers.first!.toJson()}");
                                       await authProvider.updateUser( listUsers.first);
 
 
@@ -692,7 +697,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                       UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
                                   if (listUsers.isNotEmpty) {
                                     listUsers.first!.userjaimes=listUsers.first!.userjaimes!+1;
-                                    print("user trouver");
+                                    printVm("user trouver");
                                     await  authProvider.updateUser( listUsers.first);
                                     widget.cardUser!.userjaimes=listUsers.first!.userjaimes;
 

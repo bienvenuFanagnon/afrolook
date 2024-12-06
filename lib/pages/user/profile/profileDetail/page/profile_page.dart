@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../../../../constant/logo.dart';
 import '../../../../../providers/authProvider.dart';
 import '../../../../../services/api.dart';
+import '../../../../component/consoleWidget.dart';
 import '../utils/user_preferences.dart';
 import '../widget/appbar_widget.dart';
 import '../widget/button_widget.dart';
@@ -193,8 +194,8 @@ bool change_profil_loading= false;
 
                                   storageReference.getDownloadURL().then((fileURL) async {
 
-                                    print("url photo1");
-                                    print(fileURL);
+                                    printVm("url photo1");
+                                    printVm(fileURL);
 
 
 

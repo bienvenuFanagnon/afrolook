@@ -18,6 +18,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
 import '../../chat/myChat.dart';
+import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
 
 class ListUserChats extends StatefulWidget {
@@ -117,7 +118,7 @@ class _ListUserChatsState extends State<ListUserChats> {
                             builder: (context, snapshot) {
                               if (snapshot.hasData) {
                                 Chat streamchat=snapshot!.data!;
-                              //  print("update chat: ${streamchat.toJson()}");
+                              //  printVm("update chat: ${streamchat.toJson()}");
 
                                 if (authProvider.loginUserData.id ==
                                     snapshot!.data!.senderId) {
@@ -372,7 +373,7 @@ class _ListUserChatsState extends State<ListUserChats> {
     Chat usersChat = Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
       Chat chat = Chat(
         docId: '${amigo.friendId}${amigo.currentUserId}',
@@ -397,12 +398,12 @@ class _ListUserChatsState extends State<ListUserChats> {
           .set(chat.toJson());
       usersChat = chat;
     } else {
-      print("le chat existe  ");
-      print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      printVm("stream :${friendsStream}");
       usersChat = await friendsStream.first.then((value) async {
-        print("stream value l :${value.docs.length}");
+        printVm("stream value l :${value.docs.length}");
         if (value.docs.length <= 0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
           String chatId =
               FirebaseFirestore.instance.collection('Chats').doc().id;
           Chat chat = Chat(
@@ -444,9 +445,9 @@ class _ListUserChatsState extends State<ListUserChats> {
       if (messageList.isEmpty) {
         usersChat.messages = [];
         userProvider.chat = usersChat;
-        print("messgae vide ");
+        printVm("messgae vide ");
       } else {
-        print("have messages");
+        printVm("have messages");
         usersChat.messages = messageList;
         userProvider.chat = usersChat;
       }
@@ -882,7 +883,7 @@ class _ListUserChatsState extends State<ListUserChats> {
                   );
                 }
               } else if (snapshot.hasError) {
-                print("${snapshot.error}");
+                printVm("${snapshot.error}");
                 return Center(
                   child: Column(
                     children: [
@@ -1224,7 +1225,7 @@ class _ListUserChatsState extends State<ListUserChats> {
                   },
                 );
               } else if (snapshot.hasError) {
-                print("erreur ${snapshot.error}");
+                printVm("erreur ${snapshot.error}");
                 return Center(
                   child: Column(
                     children: [

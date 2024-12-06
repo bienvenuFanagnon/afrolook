@@ -13,6 +13,7 @@ import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../component/consoleWidget.dart';
 
 class UserPostForm extends StatefulWidget {
   const UserPostForm({super.key});
@@ -173,7 +174,7 @@ class _UserProfilState extends State<UserPostForm> {
                         padding: const EdgeInsets.only(top: 8.0),
                         child: UserPubVideo()),
                   ],
-                  onChange: (index) => print(index),
+                  onChange: (index) => printVm(index),
                 ),
               ),
 

@@ -1318,9 +1318,11 @@ class PostImage {
 class ResponsePostComment {
   String? id;
   String? post_comment_id;
+  String? user_id;
   String? user_logo_url;
   String? user_pseudo;
   String? message;
+  UserData? user;
 
   int? createdAt;
   int? updatedAt;
@@ -1332,8 +1334,10 @@ class ResponsePostComment {
         this.user_pseudo='',
         this.user_logo_url='',
         this.post_comment_id='',
+       required this.user_id,
         this.createdAt=0,
         this.updatedAt=0,
+        // required this.user,
 
       });
 
@@ -1345,6 +1349,7 @@ class ResponsePostComment {
     user_pseudo = json['user_pseudo'];
     user_logo_url = json['user_logo_url'];
     post_comment_id = json['post_comment_id'];
+    user_id = json['user_id']==null? "":json['user_id'];
 
 
   }
@@ -1358,6 +1363,7 @@ class ResponsePostComment {
     data['user_pseudo'] = this.user_pseudo;
     data['user_logo_url'] = this.user_logo_url;
     data['post_comment_id'] = this.post_comment_id;
+    data['user_id'] = this.user_id;
 
     return data;
   }

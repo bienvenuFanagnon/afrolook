@@ -29,12 +29,18 @@ def keystorePropertiesFile = rootProject.file('key.properties')
 }
 android {
     namespace "com.afrotok.afrotok"
+    testNamespace = "com.afrotok.afrotok"
     compileSdkVersion 34
     ndkVersion "25.1.8937393"
 
-    defaultConfig {
-        multiDexEnabled true
-    }
+////    namespace = "com.anvt.vnmobile"
+//    compileSdk = flutter.compileSdkVersion
+////    ndkVersion = flutter.ndkVersion
+//    ndkVersion = "25.1.8937393"
+
+//    defaultConfig {
+//        multiDexEnabled true
+//    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -58,6 +64,13 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+
+//        minSdk = flutter.minSdkVersion
+//        targetSdk = flutter.targetSdkVersion
+//        versionCode = flutter.versionCode
+//        versionName = flutter.versionName
+
     }
     signingConfigs {
                release {

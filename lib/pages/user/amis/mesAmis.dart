@@ -21,6 +21,7 @@ import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
 
 import '../../chat/myChat.dart';
+import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
 
 
@@ -336,7 +337,7 @@ class _MesAmisState extends State<MesAmis> {
 // Access unique users from the map
         List<Friends> uniqueUserList = uniqueUsers.values.toList();
 
-        print('Unique users: $uniqueUserList');
+        printVm('Unique users: $uniqueUserList');
         friends=uniqueUserList;
         userProvider.countFriends=friends.length;
 
@@ -364,7 +365,7 @@ class _MesAmisState extends State<MesAmis> {
     Chat usersChat=Chat();
 
 if (await friendsStream.isEmpty) {
-  print("pas de chat ");
+  printVm("pas de chat ");
   String chatId = FirebaseFirestore.instance
       .collection('Chats')
       .doc()
@@ -385,12 +386,12 @@ if (await friendsStream.isEmpty) {
   usersChat=chat;
 
 }  else{
-  print("le chat existe  ");
-  print("stream :${friendsStream}");
+  printVm("le chat existe  ");
+  printVm("stream :${friendsStream}");
   usersChat= await friendsStream.first.then((value) async {
-    print("stream value l :${value.docs.length}");
+    printVm("stream value l :${value.docs.length}");
     if (value.docs.length<=0) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -425,9 +426,9 @@ if (await friendsStream.isEmpty) {
   if (messageList.isEmpty) {
     usersChat.messages=[];
     userProvider.chat=usersChat;
-    print("messgae vide ");
+    printVm("messgae vide ");
   }else{
-    print("have messages");
+    printVm("have messages");
     usersChat.messages=messageList;
     userProvider.chat=usersChat;
   }
@@ -527,7 +528,7 @@ if (await friendsStream.isEmpty) {
                   );
               }
               else if (snapshot.hasError) {
-                print("${snapshot.error}");
+                printVm("${snapshot.error}");
                 return    Center(
                   child: Column(
                     children: [

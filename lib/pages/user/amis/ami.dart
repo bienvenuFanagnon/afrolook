@@ -20,6 +20,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
 
+import '../../component/consoleWidget.dart';
 import 'mesInvitationTable.dart';
 
 
@@ -179,7 +180,7 @@ class _ListUserChatsState extends State<Amis> {
                   MesInvitations(context: context,),
                   
                 ],
-                onChange: (index) => print(index),
+                onChange: (index) => printVm(index),
               ),
             ),
 

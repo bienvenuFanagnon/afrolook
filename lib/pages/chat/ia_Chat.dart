@@ -1,4 +1,5 @@
 import 'package:afrotok/models/chatmodels/message.dart';
+import 'package:afrotok/pages/contact.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
 import 'package:afrotok/models/chatmodels/reply_message.dart';
@@ -23,6 +24,7 @@ import '../../constant/sizeText.dart';
 import '../../constant/textCustom.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../component/consoleWidget.dart';
 import '../postDetails.dart';
 
 class IaChat extends StatefulWidget {
@@ -454,7 +456,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
 
 
                     List<Message> list = snapshot.data!;
-                    print("message lenght: ${list.length}");
+                    printVm("message lenght: ${list.length}");
 
                     userProvider.chat.messages=list;
                     // Utiliser les données de snapshot.data
@@ -654,7 +656,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                                   duration: Duration(milliseconds: 800),
                                   curve: Curves.fastOutSlowIn,
                                 );
-                                print("tap");
+                                printVm("tap");
                               },
                               controller: _textController,
                               keyboardType: TextInputType.multiline,
@@ -702,7 +704,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                             ),
                             onTap:sendMessageTap?(){}: ()
                             async {
-                              print("send tap;");
+                              printVm("send tap;");
                               sendMessageTap=true;
                               String message_text="";
                               _focusNode.unfocus();
@@ -826,8 +828,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
               sendMessageTap=false;
             });
           }on FirebaseException catch(error){
-            print("error code: ${error.message}");
-            print("error message : ${error.message}");
+            printVm("error code: ${error.message}");
+            printVm("error message : ${error.message}");
             setState(() {
               sendMessageTap=false;
             });
@@ -856,7 +858,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                       ),
                       SizedBox(height: 10.0),
                       Text(
-                        'Vous avez besoin de jetons pour continuer à discuter avec Xilo.  (200 CFA pour 10000 jetons)',textAlign: TextAlign.center,
+                        'Vous avez besoin de jetons pour continuer à discuter avec Xilo.  (200 PubliCash pour 10000 jetons)',textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16.0),
                       ),
                       SizedBox(height: 20.0),
@@ -865,7 +867,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
                           backgroundColor: Colors.green,
                         ),
                         onPressed: () {
-                          launchWhatsApp("+22870870240");
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => ContactPage(),));
+                          // launchWhatsApp("+22870870240");
                         },
                         child: Text('Acheter des jetons',
                           style: TextStyle(color: Colors.white),),
@@ -969,7 +972,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
 
     audioPlayer.onDurationChanged.listen((Duration d) {
       setState(() {
-        print("duration ${d}");
+        printVm("duration ${d}");
 
         duration = d;
         isLoading = false;

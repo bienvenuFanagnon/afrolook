@@ -1,4 +1,3 @@
-import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:math';
@@ -23,7 +22,9 @@ import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../../providers/userProvider.dart';
+import '../../../component/consoleWidget.dart';
 import '../../../postComments.dart';
+import '../../../socialVideos/afrovideos/SimpleVideoView.dart';
 
 class ProfileVideoTab extends StatefulWidget {
   const ProfileVideoTab({super.key});
@@ -144,7 +145,7 @@ class _ProfileVideoTabState extends State<ProfileVideoTab> {
 
 
     //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  print("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
+    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
 
     bool abonneTap =false;
     bool inviteTap =false;
@@ -584,7 +585,7 @@ class _ProfileVideoTabState extends State<ProfileVideoTab> {
 
                     child: ClipRRect(
                       borderRadius: BorderRadius.all(Radius.circular(5)),
-                      child: VideoPlayerWidget(videoUrl: '${post!.url_media==null?'':post!.url_media}'),
+                      child: SimpleVideoPlayerWidget(videoUrl: '${post!.url_media==null?'':post!.url_media}'),
                     ),
                   ),
 
@@ -823,7 +824,7 @@ class _ProfileVideoTabState extends State<ProfileVideoTab> {
             stream: postProvider.getPostsVideoByUser(authProvider.loginUserData.id!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                print("attente");
+                printVm("attente");
                 return SizedBox(
                   //height: height,
                   width: width,
@@ -843,7 +844,7 @@ class _ProfileVideoTabState extends State<ProfileVideoTab> {
                   ),
                 );
               } else if (snapshot.hasError) {
-                print("erreur ${snapshot.error}");
+                printVm("erreur ${snapshot.error}");
                 return
                   Skeletonizer(
 

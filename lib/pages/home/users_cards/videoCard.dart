@@ -13,7 +13,7 @@ import '../../../constant/textCustom.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
-import '../../socialVideos/main_screen/home_screen/home_screen.dart';
+import '../../socialVideos/afrovideos/SimpleVideoView.dart';
 import 'cardModel.dart';
 
 class VideoCard extends StatefulWidget {
@@ -94,7 +94,7 @@ class _ExampleCardState extends State<VideoCard> {
                   colors: const [Color(0xFF0BA4E0), Color(0xFFA9E4BD)],
                 ),
               ),
-              child: Container(child: VideoWidget( url: widget.video!.url_media!,),),
+              child: Container(child: SimpleVideoPlayerWidget( videoUrl: widget.video!.url_media!,),),
             ),
           ),
         ],

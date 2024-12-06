@@ -16,6 +16,7 @@ import '../../../constant/textCustom.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
+import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
 
 
@@ -293,7 +294,7 @@ class _ListUserChatsState extends State<AddListAmis> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    //print("alphabetlg : ${authProvider.appDefaultData.users_id!.length}");
+    //printVm("alphabetlg : ${authProvider.appDefaultData.users_id!.length}");
     alphabet= authProvider.appDefaultData.users_id!;
 
 
@@ -404,7 +405,7 @@ class _ListUserChatsState extends State<AddListAmis> {
                     },
                   );
                 } else if (snapshot.hasError) {
-                  print("${snapshot.error}");
+                  printVm("${snapshot.error}");
                   return Center(
                     child: Column(
                       children: [

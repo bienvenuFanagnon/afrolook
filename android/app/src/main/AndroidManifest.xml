@@ -24,7 +24,7 @@
     </queries>
 
     <application
-        android:label="afrolook"
+        android:label="Afrolook"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
 

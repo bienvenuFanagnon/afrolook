@@ -33,6 +33,7 @@ import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
 import 'chat/entrepriseChat.dart';
+import 'component/consoleWidget.dart';
 
 class DetailsPost extends StatefulWidget {
   final Post post;
@@ -107,7 +108,7 @@ class _DetailsPostState extends State<DetailsPost> {
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -129,12 +130,12 @@ class _DetailsPostState extends State<DetailsPost> {
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      // print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      // printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        // print("stream value l :${value.docs.length}");
+        // printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
               .doc()
@@ -170,9 +171,9 @@ class _DetailsPostState extends State<DetailsPost> {
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messages vide ");
+        printVm("messages vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }
@@ -244,8 +245,8 @@ class _DetailsPostState extends State<DetailsPost> {
       return nbAbonnes.toString();
     }
   }
-  bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
-    return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
   }
 
   bool isIn(List<String> users_id, String userIdToCheck) {
@@ -260,7 +261,7 @@ class _DetailsPostState extends State<DetailsPost> {
 
 
   void onShow() {
-    print('Menu is show');
+    printVm('Menu is show');
   }
   void _showModalDialog(Post post) {
     showDialog(
@@ -408,7 +409,7 @@ class _DetailsPostState extends State<DetailsPost> {
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -429,12 +430,12 @@ class _DetailsPostState extends State<DetailsPost> {
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        print("stream value l :${value.docs.length}");
+        printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
 
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
@@ -470,9 +471,9 @@ class _DetailsPostState extends State<DetailsPost> {
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messgae vide ");
+        printVm("messgae vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }
@@ -533,7 +534,7 @@ class _DetailsPostState extends State<DetailsPost> {
                 if (_buttonEnabled) {
                   _buttonEnabled = false;
                   Future.delayed(Duration(seconds: 5), () {
-                    print('Contact léger détecté !');
+                    printVm('Contact léger détecté !');
                     if (post.type==PostType.PUB.name) {
                       if (!isIn(post.users_vue_id!,authProvider.loginUserData.id!)) {
 
@@ -558,7 +559,7 @@ class _DetailsPostState extends State<DetailsPost> {
                   });
 
                 }  else{
-                  print('indispo!');
+                  printVm('indispo!');
                 }
 
 
@@ -694,15 +695,15 @@ class _DetailsPostState extends State<DetailsPost> {
                             ),
                           ],
                         ),
-                        IconButton(
-                            onPressed: () {
-                              _showModalDialog(post);
-                            },
-                            icon: Icon(
-                              Icons.more_horiz,
-                              size: 30,
-                              color: ConstColors.blackIconColors,
-                            )),
+                        // IconButton(
+                        //     onPressed: () {
+                        //       _showModalDialog(post);
+                        //     },
+                        //     icon: Icon(
+                        //       Icons.more_horiz,
+                        //       size: 30,
+                        //       color: ConstColors.blackIconColors,
+                        //     )),
                       ],
                     ),
                     SizedBox(
@@ -1280,12 +1281,14 @@ class _DetailsPostState extends State<DetailsPost> {
 
                                   builder: (BuildContext context, void Function(void Function()) setState) {
                                     return Container(
-                                      child: isUserAbonne(authProvider.loginUserData.userAbonnes!, post.user!.id!)?Container(): TextButton(
+                                      child: isUserAbonne(post.user!.userAbonnesIds!,
+                                          authProvider.loginUserData.id!)?Container(): TextButton(
 
                                           onPressed:abonneTap?
                                               ()  { }:
                                               ()async{
-                                            if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, post.user!.id!)) {
+                                            if (!isUserAbonne(post.user!.userAbonnesIds!,
+                                                authProvider.loginUserData.id!)) {
                                               setState(() {
                                                 abonneTap=true;
                                               });
@@ -1387,15 +1390,15 @@ class _DetailsPostState extends State<DetailsPost> {
                           ),
                         ],
                       ),
-                      IconButton(
-                          onPressed: () {
-                            _showModalDialog(post);
-                          },
-                          icon: Icon(
-                            Icons.more_horiz,
-                            size: 30,
-                            color: ConstColors.blackIconColors,
-                          )),
+                      // IconButton(
+                      //     onPressed: () {
+                      //       _showModalDialog(post);
+                      //     },
+                      //     icon: Icon(
+                      //       Icons.more_horiz,
+                      //       size: 30,
+                      //       color: ConstColors.blackIconColors,
+                      //     )),
                     ],
                   ),
                   SizedBox(
@@ -1594,7 +1597,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
                                     if (listUsers.isNotEmpty) {
                                       listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
-                                      print("user trouver");
+                                      printVm("user trouver");
                                       if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
 
                                         await authProvider.sendNotification(
@@ -1663,7 +1666,7 @@ class _DetailsPostState extends State<DetailsPost> {
 
 
                                   }
-                                  print("jaime");
+                                  printVm("jaime");
                                   setState(() {
                                   });
 
@@ -1793,7 +1796,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                       );
                                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
                                       listUsers.first!.likes=listUsers.first!.likes!+1;
-                                      print("user trouver");
+                                      printVm("user trouver");
 
                                       //userProvider.updateUser(listUsers.first);
                                       postProvider.updatePost(post, listUsers.first,context);

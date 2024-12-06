@@ -11,6 +11,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../../pages/component/consoleWidget.dart';
+
 
 class AuthService {
   late UserData loginUser2=UserData();
@@ -46,15 +48,15 @@ appData=AppDefaultData.fromJson(premierDocument.data() as Map<String, dynamic>);
             .doc()
             .id;
         appData.id =id;
-        print("La collection est vide");
+        printVm("La collection est vide");
         await firestore.collection('AppData').doc(appData.id).set(appData.toJson()).then((value) {
-          print('new app data');
+          printVm('new app data');
         },);
 
 
       }
     } catch (e) {
-      print("Erreur lors de la récupération du premier document : $e");
+      printVm("Erreur lors de la récupération du premier document : $e");
 
     }
    return appData;

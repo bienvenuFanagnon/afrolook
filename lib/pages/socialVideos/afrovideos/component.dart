@@ -1,5 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 
 Widget buildErrorWidget(String error) {
   return Center(
@@ -26,5 +27,23 @@ Widget buildErrorWidget(String error) {
         ],
       ),
     ),
+  );
+}
+
+Widget buildLoadingWidget() {
+  return Container(
+    color: Colors.black,
+    child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            SizedBox(
+              height: 100.0,
+              width: 100.0,
+              child: CupertinoActivityIndicator(color: Colors.green),
+
+            )
+          ],
+        )),
   );
 }

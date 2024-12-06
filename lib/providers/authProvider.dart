@@ -14,6 +14,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -50,7 +51,7 @@ class UserAuthProvider extends ChangeNotifier {
   Future<bool?> getIsFirst() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     // token = prefs.getString('token');
-    // print("get token : ${token}");
+    // printVm("get token : ${token}");
     //notifyListeners();
     return prefs.getBool('isFirst');
   }
@@ -63,7 +64,7 @@ class UserAuthProvider extends ChangeNotifier {
   Future<String?> getToken() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     token = prefs.getString('token');
-    // print("get token : ${token}");
+    // printVm("get token : ${token}");
     //notifyListeners();
     return prefs.getString('token');
   }
@@ -85,12 +86,12 @@ class UserAuthProvider extends ChangeNotifier {
 
   Future<void> getAppData() async {
     appDefaultData = await authService.getAppData();
-    // print("app data : ${appDefaultData.toJson()}");
+    // printVm("app data : ${appDefaultData.toJson()}");
 
   }
 
   Future<void> updateAppData(AppDefaultData appDefaultData) async {
-    print("app data : ${appDefaultData!.toJson()}");
+    printVm("app data : ${appDefaultData!.toJson()}");
 
     await firestore.collection('AppData').doc(appDefaultData!.id).update(
         appDefaultData!.toJson());
@@ -117,7 +118,7 @@ class UserAuthProvider extends ChangeNotifier {
       notifications = [];
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         NotificationData notification = NotificationData.fromJson(post.data());
         // listConstposts=posts;
 
@@ -142,7 +143,7 @@ class UserAuthProvider extends ChangeNotifier {
     QuerySnapshot querySnapshot = await collectionRef.where(
         "id", isEqualTo: id!).get()
         .then((value) {
-      print(value);
+      printVm(value);
       return value;
     }).catchError((onError) {
 
@@ -154,12 +155,12 @@ class UserAuthProvider extends ChangeNotifier {
 
     if (list.isNotEmpty) {
       loginUserData = list.first;
-      print("OneSignal=====");
+      printVm("OneSignal=====");
       loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
 updateUser(loginUserData);
 
-    //  print("OneSignal id : ${OneSignal.User.pushSubscription.id}");
-    //  print("OneSignal token : ${OneSignal.User.pushSubscription.token}");
+    //  printVm("OneSignal id : ${OneSignal.User.pushSubscription.id}");
+    //  printVm("OneSignal token : ${OneSignal.User.pushSubscription.token}");
 
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
 
@@ -195,10 +196,27 @@ updateUser(loginUserData);
           .collection('Users')
           .doc(user.id)
           .update(user.toJson());
-      //print("user update : ${user!.toJson()}");
+      //printVm("user update : ${user!.toJson()}");
       return true;
     }catch(e){
-      print("erreur update post : ${e}");
+      printVm("erreur update post : ${e}");
+      return false;
+    }
+  }
+
+  Future<bool> updateNotif(NotificationData notif) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Notifications')
+          .doc(notif.id)
+          .update(notif.toJson());
+      //printVm("user update : ${user!.toJson()}");
+      return true;
+    }catch(e){
+      printVm("erreur update Invitations : ${e}");
       return false;
     }
   }
@@ -214,7 +232,7 @@ updateUser(loginUserData);
     QuerySnapshot querySnapshot = await collectionRef.where(
         "id", isEqualTo: id!).get()
         .then((value) {
-      print(value);
+      printVm(value);
       return value;
     }).catchError((onError) {
 
@@ -254,7 +272,7 @@ updateUser(loginUserData);
     for (UserData u in list) {
       if (u.oneIgnalUserid!=null&&u.oneIgnalUserid!.length>5) {
         listOSUserid.add(u.oneIgnalUserid!);
-        print("onesignaluser size : ${listOSUserid.length}");
+        printVm("onesignaluser size : ${listOSUserid.length}");
 
           u.abonnes=u.userAbonnesIds==null?0:u.userAbonnesIds!.length;
           updateUser(u);
@@ -280,7 +298,7 @@ updateUser(loginUserData);
     QuerySnapshot querySnapshot = await collectionRef.where(
         "numero_de_telephone", isEqualTo: phone!).get()
         .then((value) {
-      print(value);
+      printVm(value);
       return value;
     }).catchError((onError) {
 
@@ -318,7 +336,7 @@ updateUser(loginUserData);
     QuerySnapshot querySnapshot = await collectionRef.where(
         "userId", isEqualTo: user_id!).get()
         .then((value) {
-      print(value);
+      printVm(value);
       return value;
     }).catchError((onError) {
 
@@ -350,23 +368,23 @@ updateUser(loginUserData);
       notifyListeners();
       return true;
     } catch (e) {
-      print("erreur comment : ${e}");
+      printVm("erreur comment : ${e}");
       return false;
     }
   }
   String encrypt(String pwd){
     Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
     String encryptTxt = cipher.xorEncode("${pwd}");
-    print("password");
-    print(encryptTxt);
+    printVm("password");
+    printVm(encryptTxt);
     return encryptTxt;
   }
   String decrypt(String pwd_crypted){
     Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
 
     String decryptTxt = cipher.xorDecode(pwd_crypted);
-   // print(encryptTxt);
-    print(decryptTxt);
+   // printVm(encryptTxt);
+    printVm(decryptTxt);
     return decryptTxt;
   }
 
@@ -465,7 +483,7 @@ updateUser(loginUserData);
       final content = [Content.text(prompt)];
       model.startChat(history: contents);
       final response = await model.generateContent(content);
-      print("Data token: ${response!.usageMetadata!.totalTokenCount!}");
+      printVm("Data token: ${response!.usageMetadata!.totalTokenCount!}");
       ia.jetons=ia.jetons!-response!.usageMetadata!.totalTokenCount!;
       await firestore.collection('User_Ia_Compte').doc(ia.id!).update( ia.toJson());
 
@@ -473,7 +491,7 @@ updateUser(loginUserData);
       return response!.text;
     } catch (error) {
       // Handle the error here
-      print("Error generating story: $error");
+      printVm("Error generating story: $error");
       return ""; // Or return a default value
     }
   }
@@ -499,20 +517,20 @@ updateUser(loginUserData);
     String oneSignalAuthorization = ''; // Replace with your authorization key
     getAppData().then((app_datas) async {
 
-        print(
+        printVm(
             'app  data*** ');
-        print(appDefaultData.toJson());
+        printVm(appDefaultData.toJson());
         oneSignalUrl = appDefaultData.one_signal_app_url;
         applogo = appDefaultData.app_logo;
         oneSignalAppId = appDefaultData.one_signal_app_id; // Replace with your app ID
         oneSignalAuthorization = appDefaultData.one_signal_api_key; // Replace with your authorization key
-        print(
+        printVm(
             'one signal url*** ');
-        print(oneSignalUrl);
-        print(
+        printVm(oneSignalUrl);
+        printVm(
             'state current user data  ================================================');
 
-        print(OneSignal.User.pushSubscription.id);
+        printVm(OneSignal.User.pushSubscription.id);
         final body = {
           'contents': {'en': message},
           'app_id': oneSignalAppId,
@@ -545,11 +563,11 @@ updateUser(loginUserData);
         );
 
         if (response.statusCode == 200) {
-          print('Notification sent successfully!');
-          print('sending notification: ${response.body}');
+          printVm('Notification sent successfully!');
+          printVm('sending notification: ${response.body}');
         } else {
-          print('Error sending notification: ${response.statusCode}');
-          print('Error sending notification: ${response.body}');
+          printVm('Error sending notification: ${response.statusCode}');
+          printVm('Error sending notification: ${response.body}');
         }
         // final body = {
         //   'contents': {'en': message},
@@ -583,12 +601,12 @@ updateUser(loginUserData);
         // );
         //
         // if (response.statusCode == 200) {
-        //   print('Notification sent successfully!');
-        //   print('sending notification: ${response.body}');
+        //   printVm('Notification sent successfully!');
+        //   printVm('sending notification: ${response.body}');
         //   return true;
         // } else {
-        //   print('Error sending notification: ${response.statusCode}');
-        //   print('Error sending notification: ${response.body}');
+        //   printVm('Error sending notification: ${response.statusCode}');
+        //   printVm('Error sending notification: ${response.body}');
         //   return false;
         //
         // }
@@ -596,7 +614,7 @@ updateUser(loginUserData);
     },);
 
 
-    //print(OneSignal.User.pushSubscription.id);
+    //printVm(OneSignal.User.pushSubscription.id);
 
 
   }

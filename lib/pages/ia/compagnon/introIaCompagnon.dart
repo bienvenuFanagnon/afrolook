@@ -12,6 +12,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../chat/ia_Chat.dart';
+import '../../component/consoleWidget.dart';
 
 class IntroIaCompagnon extends StatefulWidget {
   final String instruction;
@@ -43,7 +44,7 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
     Chat usersChat=Chat();
 
     if (await friendsStream.isEmpty) {
-      print("pas de chat ");
+      printVm("pas de chat ");
       String chatId = FirebaseFirestore.instance
           .collection('Chats')
           .doc()
@@ -64,12 +65,12 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
       usersChat=chat;
 
     }  else{
-      print("le chat existe  ");
-      print("stream :${friendsStream}");
+      printVm("le chat existe  ");
+      printVm("stream :${friendsStream}");
       usersChat= await friendsStream.first.then((value) async {
-        print("stream value l :${value.docs.length}");
+        printVm("stream value l :${value.docs.length}");
         if (value.docs.length<=0) {
-          print("pas de chat ");
+          printVm("pas de chat ");
           String chatId = FirebaseFirestore.instance
               .collection('Chats')
               .doc()
@@ -104,9 +105,9 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
       if (messageList.isEmpty) {
         usersChat.messages=[];
         userProvider.chat=usersChat;
-        print("messgae vide ");
+        printVm("messgae vide ");
       }else{
-        print("have messages");
+        printVm("have messages");
         usersChat.messages=messageList;
         userProvider.chat=usersChat;
       }

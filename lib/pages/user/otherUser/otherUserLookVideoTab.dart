@@ -1,12 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:math';
 
-import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
-import 'package:flutter/material.dart';
+
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -15,7 +12,6 @@ import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../constant/constColors.dart';
-import '../../../../constant/iconGradient.dart';
 import '../../../../constant/listItemsCarousel.dart';
 import '../../../../constant/sizeText.dart';
 import '../../../../constant/textCustom.dart';
@@ -23,16 +19,21 @@ import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../../providers/userProvider.dart';
-import '../../../component/consoleWidget.dart';
+import '../../component/consoleWidget.dart';
+import '../../postComments.dart';
+import '../../socialVideos/afrovideos/SimpleVideoView.dart';
 
-class ProfileImageTab extends StatefulWidget {
-  const ProfileImageTab({super.key});
+
+class OtherUserLookVideoTab extends StatefulWidget {
+  final UserData otherUser;
+
+  const OtherUserLookVideoTab({super.key, required this.otherUser});
 
   @override
-  State<ProfileImageTab> createState() => _ProfileImageTabState();
+  State<OtherUserLookVideoTab> createState() => _OtherUserLookVideoTabState();
 }
 
-class _ProfileImageTabState extends State<ProfileImageTab> {
+class _OtherUserLookVideoTabState extends State<OtherUserLookVideoTab> {
   final _formKey = GlobalKey<FormState>();
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -140,252 +141,6 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
       },
     );
   }
-  Widget homeProfileUsers(UserData user)  {
-
-
-    //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
-
-    bool abonneTap =false;
-    bool inviteTap =false;
-    bool dejaInviter =false;
-
-    return Padding(
-      padding: const EdgeInsets.all(1.0),
-      child: Card(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-
-
-              ClipRRect(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-                child: Container(
-                  width: 120,height: 100,
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-
-                    imageUrl: '${user.imageUrl!}',
-                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                    //  LinearProgressIndicator(),
-
-                    Skeletonizer(
-                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                  ),
-                ),
-              ),
-
-
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0,bottom: 2),
-                child: SizedBox(
-                  //width: 70,
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: TextCustomerPostDescription(
-                      titre: "@${user.pseudo}",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-
-              StatefulBuilder(
-
-                  builder: (BuildContext context, void Function(void Function()) setState) {
-
-                    return Container(
-                      child:  isMyFriend(authProvider.loginUserData.friends!, user.id!)?
-                      ElevatedButton(
-
-                          onPressed: (){}, child:  Container(child: TextCustomerUserTitle(
-                        titre: "discuter",
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: Colors.blue,
-                        fontWeight: FontWeight.w600,
-                      ),))
-                          :!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)?
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
-                        child: Container(
-                          width: 120,
-                          height: 30,
-                          child: ElevatedButton(
-                            onPressed:inviteTap?
-                                ()  { }:
-                                ()async{
-                              if (!isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)) {
-                                setState(() {
-                                  inviteTap=true;
-                                });
-                                Invitation invitation = Invitation();
-                                invitation.senderId=authProvider.loginUserData.id;
-                                invitation.receiverId=user.id;
-                                invitation.status=InvitationStatus.ENCOURS.name;
-                                invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-
-                                // invitation.inviteUser=authProvider.loginUserData!;
-                                await  userProvider.sendInvitation(invitation,context).then((value) async {
-                                  if (value) {
-
-                                    // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                    authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
-                                    await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                    SnackBar snackBar = SnackBar(
-                                      content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                                  }  else{
-                                    SnackBar snackBar = SnackBar(
-                                      content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                                  }
-                                },);
-
-
-                                setState(() {
-                                  inviteTap=false;
-                                });
-                              }
-                            },
-                            child:inviteTap? Center(
-                              child: LoadingAnimationWidget.flickr(
-                                size: 20,
-                                leftDotColor: Colors.green,
-                                rightDotColor: Colors.black,
-                              ),
-                            ): TextCustomerUserTitle(
-                              titre: "inviter",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: Colors.blue,
-                              fontWeight: FontWeight.w600,
-                            ),),
-                        ),
-                      ):Padding(
-                        padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
-                        child: Container(
-                          width: 120,
-                          height: 30,
-                          child: ElevatedButton(
-                            onPressed:
-                                ()  { },
-                            child:TextCustomerUserTitle(
-                              titre: "déjà invité",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),),
-                        ),
-                      ),
-                    );
-                  }
-              ),
-              StatefulBuilder(
-
-                  builder: (BuildContext context, void Function(void Function()) setState) {
-                    return Container(
-                      child:    isUserAbonne(authProvider.loginUserData.userAbonnes!, user.id!)?
-                      Container(
-                        width: 120,
-                        height: 30,
-                        child: ElevatedButton(
-                          onPressed:
-                              ()  { },
-                          child: TextCustomerUserTitle(
-                            titre: "abonné",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: Colors.green,
-                            fontWeight: FontWeight.w600,
-                          ),),
-                      ):Container(
-                        width: 120,
-                        height: 30,
-                        child: ElevatedButton(
-                          onPressed:abonneTap?
-                              ()  { }:
-                              ()async{
-                            if (!isUserAbonne(authProvider.loginUserData.userAbonnes!, user!.id!)) {
-                              setState(() {
-                                abonneTap=true;
-                              });
-                              UserAbonnes userAbonne = UserAbonnes();
-                              userAbonne.compteUserId=authProvider.loginUserData.id;
-                              userAbonne.abonneUserId=user!.id;
-
-                              userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                              userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                              await  userProvider.sendAbonnementRequest(userAbonne,user,context).then((value) async {
-                                if (value) {
-
-                                  // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                  authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                  await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text('abonné',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                  setState(() {
-                                    abonneTap=false;
-                                  });
-                                }  else{
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                  setState(() {
-                                    abonneTap=false;
-                                  });
-                                }
-                              },);
-
-
-                              setState(() {
-                                abonneTap=false;
-                              });
-                            }
-                          },
-                          child:abonneTap? Center(
-                            child: LoadingAnimationWidget.flickr(
-                              size: 20,
-                              leftDotColor: Colors.green,
-                              rightDotColor: Colors.black,
-                            ),
-                          ): TextCustomerUserTitle(
-                            titre: "S'abonner",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: Colors.red,
-                            fontWeight: FontWeight.w600,
-                          ),),
-                      ),
-                    );
-                  }
-              )
-
-
-
-            ],
-          ),
-        ),
-      ),
-    );
-
-
-  }
-
-
-
 
   String formatNumber(int number) {
     if (number < 1000) {
@@ -398,6 +153,8 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
       return "${number / 1000000000} b";
     }
   }
+
+
 
   Widget homePostUsers(Post post,double height, double width) {
     double h = MediaQuery.of(context).size.height;
@@ -440,6 +197,7 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                             children: [
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+
                                 children: [
                                   SizedBox(
                                     //width: 100,
@@ -576,65 +334,15 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                   SizedBox(
                     height: 5,
                   ),
-                  post!.images==null? Container():  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                  post!.images==null? Container():
 
-                        for(int i=0;i<post!.images!.length;i++)
-                          TextButton(onPressed: ()
-                          {
-                            setStateImages(() {
-                              imageIndex=i;
-                            });
-
-                          }, child:   Container(
-                            width: 100,
-                            height: 50,
-
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.all(Radius.circular(10)),
-                              child: Container(
-
-                                child: CachedNetworkImage(
-
-                                  fit: BoxFit.cover,
-                                  imageUrl: '${post!.images![i]}',
-                                  progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                  //  LinearProgressIndicator(),
-
-                                  Skeletonizer(
-                                      child: SizedBox(width: 400,height: 450, child:  ClipRRect(
-                                          borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                  errorWidget: (context, url, error) =>  Skeletonizer(child: Container(width: 400,height: 450,child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
-                                ),
-                              ),
-                            ),
-                          ),)
-                      ],
-                    ),
-                  ),
                   Container(
-                    //width: w,
-                   // height: h*0.6,
+                    width: w,
+                    height: h*0.3,
 
                     child: ClipRRect(
                       borderRadius: BorderRadius.all(Radius.circular(5)),
-                      child: Container(
-
-                        child: CachedNetworkImage(
-                          fit: BoxFit.cover,
-                          imageUrl: '${post!.images==null?'':post!.images!.isEmpty?'': post!.images![imageIndex]}',
-                          progressIndicatorBuilder: (context, url, downloadProgress) =>
-                          //  LinearProgressIndicator(),
-
-                          Skeletonizer(
-                              child: SizedBox(width: 400,height: 450, child:  ClipRRect(
-                                  borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                          errorWidget: (context, url, error) =>  Skeletonizer(child: Container(width: 400,height: 450,child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
-                        ),
-                      ),
+                      child: SimpleVideoPlayerWidget(videoUrl: '${post!.url_media==null?'':post!.url_media}'),
                     ),
                   ),
 
@@ -686,7 +394,26 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                                           ),
                                         ],
                                       ),
-
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                          child: SizedBox(
+                                            height: 2,
+                                            width: 5,
+                                            child: LinearProgressIndicator(
+                                              color: Colors.red,
+                                              value: love/505,
+                                              semanticsLabel: 'Linear progress indicator',
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TextCustomerPostDescription(
+                                        titre: "${(love/505*100).toStringAsFixed(2)}%",
+                                        fontSize: SizeText.homeProfileDateTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -697,9 +424,8 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                         StatefulBuilder(
                             builder: (BuildContext context, StateSetter setState) {
                               return GestureDetector(
-                                onTap: () async {
+                                onTap: () {
                                   if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
-
 
                                   }
 
@@ -731,7 +457,26 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                                           ),
                                         ],
                                       ),
-
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                          child: SizedBox(
+                                            height: 2,
+                                            // width: width*0.75,
+                                            child: LinearProgressIndicator(
+                                              color: Colors.blue,
+                                              value: like/post.user!.abonnes!+1,
+                                              semanticsLabel: 'Linear progress indicator',
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TextCustomerPostDescription(
+                                        titre: "${(like/post.user!.abonnes!*100+1).toStringAsFixed(2)}%",
+                                        fontSize: SizeText.homeProfileDateTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -743,7 +488,7 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                             builder: (BuildContext context, StateSetter setState) {
                               return   GestureDetector(
                                 onTap: () {
-                                  //sheetComments(height*0.7,width,post);
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post: post),));
 
                                 },
                                 child: Container(
@@ -772,7 +517,26 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                                           ),
                                         ],
                                       ),
-
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                          child: SizedBox(
+                                            height: 2,
+                                            //width: width*0.75,
+                                            child: LinearProgressIndicator(
+                                              color: Colors.blueGrey,
+                                              value: comments/505,
+                                              semanticsLabel: 'Linear progress indicator',
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TextCustomerPostDescription(
+                                        titre: "${(comments/505*100).toStringAsFixed(2)}%",
+                                        fontSize: SizeText.homeProfileDateTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -814,7 +578,7 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
         child:  Padding(
           padding: const EdgeInsets.only(left: 8.0,right: 8,top: 2),
           child: StreamBuilder<List<Post>>(
-            stream: postProvider.getPostsImagesByUser(authProvider.loginUserData.id!),
+            stream: postProvider.getPostsVideoByUser(widget.otherUser.id!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 printVm("attente");

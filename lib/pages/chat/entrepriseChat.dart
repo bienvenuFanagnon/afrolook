@@ -20,6 +20,7 @@ import '../../constant/sizeText.dart';
 import '../../constant/textCustom.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../component/consoleWidget.dart';
 import '../postDetails.dart';
 
 class EntrepriseMyChat extends StatefulWidget {
@@ -479,7 +480,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
 
 
                     List<Message> list = snapshot.data!;
-                    print("message lenght: ${list.length}");
+                    printVm("message lenght: ${list.length}");
 
                     userProvider.chat.messages=list;
                     // Utiliser les données de snapshot.data
@@ -704,7 +705,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
                                   duration: Duration(milliseconds: 800),
                                   curve: Curves.fastOutSlowIn,
                                 );
-                                print("tap");
+                                printVm("tap");
                               },
                               controller: _textController,
                               keyboardType: TextInputType.multiline,
@@ -752,7 +753,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
                             ),
                             onTap:sendMessageTap?(){}: ()
                             async {
-                              print("send tap;");
+                              printVm("send tap;");
                               sendMessageTap=true;
 
                               if (_textController.text.length>0) {
@@ -810,8 +811,8 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
                                     sendMessageTap=false;
                                   });
                                 }on FirebaseException catch(error){
-                                  print("error code: ${error.message}");
-                                  print("error message : ${error.message}");
+                                  printVm("error code: ${error.message}");
+                                  printVm("error message : ${error.message}");
                                   setState(() {
                                     sendMessageTap=false;
                                   });
@@ -893,7 +894,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
 
     audioPlayer.onDurationChanged.listen((Duration d) {
       setState(() {
-        print("duration ${d}");
+        printVm("duration ${d}");
 
         duration = d;
         isLoading = false;

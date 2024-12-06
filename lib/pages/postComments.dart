@@ -32,6 +32,7 @@ import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
+import 'component/consoleWidget.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -99,46 +100,139 @@ class _PostCommentsState extends State<PostComments> {
     }
   }
 
-  void _showModalDialog() {
+   _showPostMenuModalDialog(Post post) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Menu d\'options'),
+          title: Text('Menu'),
           content: SingleChildScrollView(
             child: Column(
               children: <Widget>[
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(
-                    Icons.flag,
-                    color: Colors.blueGrey,
-                  ),
-                  title: Text(
-                    'Signaler',
+                Visibility(
+                  visible: post.user!.id != authProvider.loginUserData.id,
+                  child: ListTile(
+                    onTap: () async {
+                      post.status = PostStatus.SIGNALER.name;
+                      await postProviders.updateVuePost(post, context).then(
+                            (value) {
+                          if (value) {
+                            SnackBar snackBar = SnackBar(
+                              content: Text(
+                                'Post signalé !',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                          } else {
+                            SnackBar snackBar = SnackBar(
+                              content: Text(
+                                'échec !',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                          }
+                          Navigator.pop(context);
+                        },
+                      );
+                      setState(() {});
+                    },
+                    leading: Icon(
+                      Icons.flag,
+                      color: Colors.blueGrey,
+                    ),
+                    title: Text(
+                      'Signaler',
+                    ),
                   ),
                 ),
+                /*
                 ListTile(
                   onTap: () {
                     Navigator.pop(context);
                   },
-                  leading: Icon(
-                    Icons.edit,
-                    color: Colors.blue,
-                  ),
+                  leading: Icon(Icons.edit,color: Colors.blue,),
                   title: Text('Modifier'),
                 ),
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(
-                    Icons.delete,
-                    color: Colors.red,
+
+                 */
+                Visibility(
+                  visible: post.user!.id == authProvider.loginUserData.id,
+                  child: ListTile(
+                    onTap: () async {
+                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                        post.status = PostStatus.NONVALIDE.name;
+                        await postProviders.updateVuePost(post, context).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'Post bloqué !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      } else if (post.type == PostType.POST.name) {
+                        if (post.user!.id == authProvider.loginUserData.id) {
+                          post.status = PostStatus.SUPPRIMER.name;
+                          await postProviders.updateVuePost(post, context).then(
+                                (value) {
+                              if (value) {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'Post supprimé !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              } else {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'échec !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              }
+                            },
+                          );
+                        }
+                      }
+
+                      setState(() {
+                        Navigator.pop(context);
+                      });
+                    },
+                    leading: Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    title: authProvider.loginUserData.role == UserRole.ADM.name
+                        ? Text('Bloquer')
+                        : Text('Supprimer'),
                   ),
-                  title: Text('Supprimer'),
                 ),
               ],
             ),
@@ -148,8 +242,13 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
+
+
   late bool replying = false;
+  late UserData commentRecever = UserData();
   late String replyingTo = '';
+  late String replyUser_pseudo = '';
+  late String replyUser_id = '';
   //late List<Widget> actions;
   late TextEditingController _textController = TextEditingController();
   Duration duration = new Duration();
@@ -213,30 +312,63 @@ class _PostCommentsState extends State<PostComments> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    subtitle: Container(
-                      width: width * 0.8,
-                      //height: 100,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: width * 0.8,
+                          //height: 100,
 
-                      child:GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            commentSelectedToReply = PostComment();
-                            commentSelectedToReply = pcm;
-                            replyingTo = "@${pcm.user!.pseudo}";
-                            replying = true;
-                          });
-                        },
-                        child: TextCustomerPostDescription(
-                          titre: "${pcm.message!}",
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.w400,
+                          child:Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    commentSelectedToReply = PostComment();
+                                    commentSelectedToReply = pcm;
+                                    // commentRecever=pcm.user!;
+                                    replyingTo = "@${pcm.user!.pseudo}";
+                                    // replyUser_id=pcm.user!.id!;
+                                    // replyUser_pseudo=pcm.user!.pseudo!;
+                                    replying = true;
+                                  });
+                                },
+
+                                child: SizedBox(
+                                  width: width * 0.3,
+                                  child: TextCustomerPostDescription(
+                                    titre: "${pcm.message!}",
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    couleur: ConstColors.textColors,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                              IconButton(onPressed: () {
+                                setState(() {
+                                  commentSelectedToReply = PostComment();
+                                  commentSelectedToReply = pcm;
+                                  commentRecever=commentSelectedToReply.user!;
+
+                                  // replyUser_id=commentSelectedToReply.user!.id!;
+                                  replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
+
+                                  replyingTo = "@${commentSelectedToReply.user!.pseudo}";
+                                  replying = true;
+                                });
+
+
+                              }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,))
+
+                            ],
+                          ),
                         ),
-                      ),
+                        Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold),),
+                      ],
                     ),
                     trailing: Container(
                         child: Padding(
-                          padding: const EdgeInsets.all(2.0),
+                          padding: const EdgeInsets.all(1.0),
                           child: Text('${formatNumber(pcm.responseAbonnements!.length)}',style: TextStyle(color: Colors.red),),
                         )),
                     /*
@@ -287,16 +419,49 @@ class _PostCommentsState extends State<PostComments> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: Container(
-                            width: width * 0.8,
-                            //height: 100,
+                          subtitle: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: width * 0.8,
+                                //height: 100,
 
-                            child: TextCustomerPostDescription(
-                              titre: "${rpc!.message}",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.w400,
-                            ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: width * 0.3,
+                                      child: TextCustomerPostDescription(
+                                        titre: "${rpc!.message}",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+
+                                    IconButton(onPressed: () {
+                                      setState(() {
+                                        commentSelectedToReply = PostComment();
+                                        commentSelectedToReply = pcm;
+                                        commentRecever=pcm.user!;
+
+                                        printVm('rpc data ${rpc.toJson()}');
+                                        replyUser_id=rpc.user_id!;
+                                        replyUser_pseudo=pcm.user!.pseudo!;
+
+                                        replyingTo = "@${rpc!.user_pseudo}";
+                                        replying = true;
+                                      });
+
+
+                                    }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,))
+
+                                  ],
+                                ),
+                              ),
+                              Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!))}",style: TextStyle(fontSize: 7,fontWeight: FontWeight.bold),),
+
+                            ],
                           ),
                           /*
                             trailing: Align(
@@ -329,515 +494,521 @@ class _PostCommentsState extends State<PostComments> {
     double width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(),
-      body: Consumer<PostProvider>(builder: (context, postPro, _) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Stack(children: <Widget>[
-            Container(
-              child: widget.post.type == PostType.PUB.name
-                  ? StatefulBuilder(builder:
-                      (BuildContext context, StateSetter setStateImages) {
-                      return Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 8.0),
-                                            child: CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                  '${widget.post.entrepriseData!.urlImage!}'),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 2,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Column(
-                                                children: [
-                                                  SizedBox(
-                                                    //width: 100,
-                                                    child:
-                                                        TextCustomerUserTitle(
-                                                      titre:
-                                                          "${widget.post.entrepriseData!.titre!}",
-                                                      fontSize: SizeText
-                                                          .homeProfileTextSize,
-                                                      couleur: ConstColors
-                                                          .textColors,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  TextCustomerUserTitle(
-                                                    titre:
-                                                        "${widget.post.entrepriseData!.suivi!} suivi(s)",
-                                                    fontSize: 10,
-                                                    couleur:
-                                                        ConstColors.textColors,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                                ],
-                                              ),
-
-                                              /*
-                                        IconButton(
-                                            onPressed: () {},
-                                            icon: Icon(
-                                              Icons.add_circle_outlined,
-                                              size: 20,
-                                              color: ConstColors.regIconColors,
-                                            )),
-
-                                         */
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(
-                                        width: 20,
-                                      ),
-                                      Icon(
-                                        Entypo.arrow_long_right,
-                                        color: Colors.green,
-                                      ),
-                                      SizedBox(
-                                        width: 20,
-                                      ),
-                                      Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 8.0),
-                                            child: CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                  '${widget.post.user!.imageUrl!}'),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 2,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  SizedBox(
-                                                    //width: 100,
-                                                    child:
-                                                        TextCustomerUserTitle(
-                                                      titre:
-                                                          "@${widget.post.user!.pseudo!}",
-                                                      fontSize: SizeText
-                                                          .homeProfileTextSize,
-                                                      couleur: ConstColors
-                                                          .textColors,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  TextCustomerUserTitle(
-                                                    titre:
-                                                        "${formatNumber(widget.post.user!.abonnes!)} abonné(s)",
-                                                    fontSize: 10,
-                                                    couleur:
-                                                        ConstColors.textColors,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                                ],
-                                              ),
-
-                                              /*
-                                    IconButton(
-                                        onPressed: () {},
-                                        icon: Icon(
-                                          Icons.add_circle_outlined,
-                                          size: 20,
-                                          color: ConstColors.regIconColors,
-                                        )),
-
-                                     */
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  IconButton(
-                                      onPressed: _showModalDialog,
-                                      icon: Icon(
-                                        Icons.more_horiz,
-                                        size: 30,
-                                        color: ConstColors.blackIconColors,
-                                      )),
-                                ],
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
+      body: SingleChildScrollView(
+        child: Consumer<PostProvider>(builder: (context, postPro, _) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(children: <Widget>[
+              Container(
+                child: widget.post.type == PostType.PUB.name
+                    ? StatefulBuilder(builder:
+                        (BuildContext context, StateSetter setStateImages) {
+                        return Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Icon(
-                                      Entypo.network,
-                                      size: 15,
+                                    Row(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0),
+                                              child: CircleAvatar(
+                                                backgroundImage: NetworkImage(
+                                                    '${widget.post.entrepriseData!.urlImage!}'),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            Row(
+                                              children: [
+                                                Column(
+                                                  children: [
+                                                    SizedBox(
+                                                      //width: 100,
+                                                      child:
+                                                          TextCustomerUserTitle(
+                                                        titre:
+                                                            "${widget.post.entrepriseData!.titre!}",
+                                                        fontSize: SizeText
+                                                            .homeProfileTextSize,
+                                                        couleur: ConstColors
+                                                            .textColors,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    TextCustomerUserTitle(
+                                                      titre:
+                                                          "${widget.post.entrepriseData!.suivi!} suivi(s)",
+                                                      fontSize: 10,
+                                                      couleur:
+                                                          ConstColors.textColors,
+                                                      fontWeight: FontWeight.w400,
+                                                    ),
+                                                  ],
+                                                ),
+        
+                                                /*
+                                          IconButton(
+                                              onPressed: () {},
+                                              icon: Icon(
+                                                Icons.add_circle_outlined,
+                                                size: 20,
+                                                color: ConstColors.regIconColors,
+                                              )),
+        
+                                           */
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          width: 20,
+                                        ),
+                                        Icon(
+                                          Entypo.arrow_long_right,
+                                          color: Colors.green,
+                                        ),
+                                        SizedBox(
+                                          width: 20,
+                                        ),
+                                        Row(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0),
+                                              child: CircleAvatar(
+                                                backgroundImage: NetworkImage(
+                                                    '${widget.post.user!.imageUrl!}'),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 2,
+                                            ),
+                                            Row(
+                                              children: [
+                                                Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    SizedBox(
+                                                      //width: 100,
+                                                      child:
+                                                          TextCustomerUserTitle(
+                                                        titre:
+                                                            "@${widget.post.user!.pseudo!}",
+                                                        fontSize: SizeText
+                                                            .homeProfileTextSize,
+                                                        couleur: ConstColors
+                                                            .textColors,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    TextCustomerUserTitle(
+                                                      titre:
+                                                          "${formatNumber(widget.post.user!.abonnes!)} abonné(s)",
+                                                      fontSize: 10,
+                                                      couleur:
+                                                          ConstColors.textColors,
+                                                      fontWeight: FontWeight.w400,
+                                                    ),
+                                                  ],
+                                                ),
+        
+                                                /*
+                                      IconButton(
+                                          onPressed: () {},
+                                          icon: Icon(
+                                            Icons.add_circle_outlined,
+                                            size: 20,
+                                            color: ConstColors.regIconColors,
+                                          )),
+        
+                                       */
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                    SizedBox(
-                                      width: 10,
-                                    ),
-                                    TextCustomerUserTitle(
-                                      titre: "publicité",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: Colors.green,
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                                    IconButton(
+                                        onPressed: () {
+                                          _showPostMenuModalDialog(widget.post);
+                                        },
+                                        icon: Icon(
+                                          Icons.more_horiz,
+                                          size: 30,
+                                          color: ConstColors.blackIconColors,
+                                        )),
                                   ],
                                 ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: SizedBox(
-                                  width: width * 0.9,
-                                  height: 100,
-                                  child: Container(
-                                    alignment: Alignment.centerLeft,
-                                    child: TextCustomerPostDescription(
-                                      titre: "${widget.post.description}",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: ConstColors.textColors,
-                                      fontWeight: FontWeight.normal,
-                                    ),
-                                  ),
+                                SizedBox(
+                                  height: 5,
                                 ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: TextCustomerPostDescription(
-                                  titre:
-                                      "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
-                                  fontSize: SizeText.homeProfileDateTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              widget.post!.images == null
-                                  ? Container()
-                                  : Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          for (int i = 0;
-                                              i < widget.post!.images!.length;
-                                              i++)
-                                            TextButton(
-                                              onPressed: () {
-                                                setStateImages(() {
-                                                  imageIndex = i;
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 100,
-                                                height: 50,
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.all(
-                                                          Radius.circular(10)),
-                                                  child: Container(
-                                                    child: CachedNetworkImage(
-                                                      fit: BoxFit.cover,
-                                                      imageUrl:
-                                                          '${widget.post!.images![i]}',
-                                                      progressIndicatorBuilder: (context,
-                                                              url,
-                                                              downloadProgress) =>
-                                                          //  LinearProgressIndicator(),
-
-                                                          Skeletonizer(
-                                                              child: SizedBox(
-                                                                  width: 400,
-                                                                  height: 450,
-                                                                  child: ClipRRect(
-                                                                      borderRadius:
-                                                                          BorderRadius.all(Radius.circular(
-                                                                              10)),
-                                                                      child: Image
-                                                                          .asset(
-                                                                              'assets/images/404.png')))),
-                                                      errorWidget: (context,
-                                                              url, error) =>
-                                                          Skeletonizer(
-                                                              child: Container(
-                                                                  width: 400,
-                                                                  height: 450,
-                                                                  child: Image
-                                                                      .asset(
-                                                                    "assets/images/404.png",
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                  ))),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                        ],
-                                      ),
-                                    ),
-                              SizedBox(
-                                height: 10,
-                              ),
-                              Provider<PostProvider>(
-                                create: (context) => PostProvider(),
-                                child: SizedBox(
-                                  height: height * 0.6,
-                                  width: width,
-                                  child: FutureBuilder<List<PostComment>>(
-                                      future: postProviders
-                                          .getPostCommentsNoStream(
-                                              widget.post),
-                                      builder: (BuildContext context,
-                                          AsyncSnapshot snapshot) {
-                                        if (snapshot.hasData) {
-                                          return commentAndResponseListWidget(
-                                              snapshot.data!,
-                                              width,height);
-                                        } else if (snapshot.hasError) {
-                                          return Icon(Icons.error_outline);
-                                        } else {
-                                          return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
-                                        }
-                                      }),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    })
-                  : StatefulBuilder(builder:
-                      (BuildContext context, StateSetter setStateImages) {
-                      return Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
                                     children: [
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8.0),
-                                        child: CircleAvatar(
-                                          backgroundImage: NetworkImage(
-                                              '${widget.post.user!.imageUrl!}'),
-                                        ),
+                                      Icon(
+                                        Entypo.network,
+                                        size: 15,
                                       ),
                                       SizedBox(
-                                        height: 2,
+                                        width: 10,
                                       ),
-                                      Row(
-                                        children: [
-                                          Column(
-                                            children: [
-                                              SizedBox(
-                                                //width: 100,
-                                                child: TextCustomerUserTitle(
-                                                  titre:
-                                                      "${widget.post.user!.pseudo!}",
-                                                  fontSize: SizeText
-                                                      .homeProfileTextSize,
-                                                  couleur:
-                                                      ConstColors.textColors,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              TextCustomerUserTitle(
-                                                titre:
-                                                    "${widget.post.user!.abonnes!} abonné(s)",
-                                                fontSize: SizeText
-                                                    .homeProfileTextSize,
-                                                couleur: ConstColors.textColors,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      TextCustomerUserTitle(
+                                        titre: "publicité",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: Colors.green,
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ],
                                   ),
-                                  IconButton(
-                                      onPressed: _showModalDialog,
-                                      icon: Icon(
-                                        Icons.more_horiz,
-                                        size: 30,
-                                        color: ConstColors.blackIconColors,
-                                      )),
-                                ],
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: SizedBox(
-                                  width: width * 0.9,
-                                  height: 100,
-                                  child: Container(
-                                    alignment: Alignment.centerLeft,
-                                    child: TextCustomerPostDescription(
-                                      titre: "${widget.post.description}",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: ConstColors.textColors,
-                                      fontWeight: FontWeight.normal,
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: SizedBox(
+                                    width: width * 0.9,
+                                    height: 100,
+                                    child: Container(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextCustomerPostDescription(
+                                        titre: "${widget.post.description}",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.normal,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: TextCustomerPostDescription(
-                                  titre:
-                                      "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
-                                  fontSize: SizeText.homeProfileDateTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.bold,
+                                SizedBox(
+                                  height: 5,
                                 ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              widget.post!.images == null
-                                  ? Container()
-                                  : Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          for (int i = 0;
-                                              i < widget.post!.images!.length;
-                                              i++)
-                                            TextButton(
-                                              onPressed: () {
-                                                setStateImages(() {
-                                                  imageIndex = i;
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 100,
-                                                height: 50,
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.all(
-                                                          Radius.circular(10)),
-                                                  child: Container(
-                                                    child: CachedNetworkImage(
-                                                      fit: BoxFit.cover,
-                                                      imageUrl:
-                                                          '${widget.post!.images![i]}',
-                                                      progressIndicatorBuilder: (context,
-                                                              url,
-                                                              downloadProgress) =>
-                                                          //  LinearProgressIndicator(),
-
-                                                          Skeletonizer(
-                                                              child: SizedBox(
-                                                                  width: 400,
-                                                                  height: 450,
-                                                                  child: ClipRRect(
-                                                                      borderRadius:
-                                                                          BorderRadius.all(Radius.circular(
-                                                                              10)),
-                                                                      child: Image
-                                                                          .asset(
-                                                                              'assets/images/404.png')))),
-                                                      errorWidget: (context,
-                                                              url, error) =>
-                                                          Skeletonizer(
-                                                              child: Container(
-                                                                  width: 400,
-                                                                  height: 450,
-                                                                  child: Image
-                                                                      .asset(
-                                                                    "assets/images/404.png",
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                  ))),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: TextCustomerPostDescription(
+                                    titre:
+                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
+                                    fontSize: SizeText.homeProfileDateTextSize,
+                                    couleur: ConstColors.textColors,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                widget.post!.images == null
+                                    ? Container()
+                                    : Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            for (int i = 0;
+                                                i < widget.post!.images!.length;
+                                                i++)
+                                              TextButton(
+                                                onPressed: () {
+                                                  setStateImages(() {
+                                                    imageIndex = i;
+                                                  });
+                                                },
+                                                child: Container(
+                                                  width: 100,
+                                                  height: 50,
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(10)),
+                                                    child: Container(
+                                                      child: CachedNetworkImage(
+                                                        fit: BoxFit.cover,
+                                                        imageUrl:
+                                                            '${widget.post!.images![i]}',
+                                                        progressIndicatorBuilder: (context,
+                                                                url,
+                                                                downloadProgress) =>
+                                                            //  LinearProgressIndicator(),
+        
+                                                            Skeletonizer(
+                                                                child: SizedBox(
+                                                                    width: 400,
+                                                                    height: 450,
+                                                                    child: ClipRRect(
+                                                                        borderRadius:
+                                                                            BorderRadius.all(Radius.circular(
+                                                                                10)),
+                                                                        child: Image
+                                                                            .asset(
+                                                                                'assets/images/404.png')))),
+                                                        errorWidget: (context,
+                                                                url, error) =>
+                                                            Skeletonizer(
+                                                                child: Container(
+                                                                    width: 400,
+                                                                    height: 450,
+                                                                    child: Image
+                                                                        .asset(
+                                                                      "assets/images/404.png",
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                    ))),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            )
-                                        ],
+                                              )
+                                          ],
+                                        ),
+                                      ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Provider<PostProvider>(
+                                  create: (context) => PostProvider(),
+                                  child: SizedBox(
+                                    height: height * 0.5,
+                                    width: width,
+                                    child: FutureBuilder<List<PostComment>>(
+                                        future: postProviders
+                                            .getPostCommentsNoStream(
+                                                widget.post),
+                                        builder: (BuildContext context,
+                                            AsyncSnapshot snapshot) {
+                                          if (snapshot.hasData) {
+                                            return commentAndResponseListWidget(
+                                                snapshot.data!,
+                                                width,height);
+                                          } else if (snapshot.hasError) {
+                                            return Icon(Icons.error_outline);
+                                          } else {
+                                            return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
+                                          }
+                                        }),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      })
+                    : StatefulBuilder(builder:
+                        (BuildContext context, StateSetter setStateImages) {
+                        return Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 8.0),
+                                          child: CircleAvatar(
+                                            backgroundImage: NetworkImage(
+                                                '${widget.post.user!.imageUrl!}'),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: 2,
+                                        ),
+                                        Row(
+                                          children: [
+                                            Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+        
+                                              children: [
+                                                SizedBox(
+                                                  //width: 100,
+                                                  child: TextCustomerUserTitle(
+                                                    titre:
+                                                        "@${widget.post.user!.pseudo!}",
+                                                    fontSize: SizeText
+                                                        .homeProfileTextSize,
+                                                    couleur:
+                                                        ConstColors.textColors,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                TextCustomerUserTitle(
+                                                  titre:
+                                                      "${widget.post.user!.abonnes!} abonné(s)",
+                                                  fontSize: SizeText
+                                                      .homeProfileTextSize,
+                                                  couleur: ConstColors.textColors,
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                        onPressed: () {
+                                          _showPostMenuModalDialog(widget.post);
+                                        },
+                                        icon: Icon(
+                                          Icons.more_horiz,
+                                          size: 30,
+                                          color: ConstColors.blackIconColors,
+                                        )),
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: SizedBox(
+                                    width: width * 0.9,
+                                    height: 80,
+                                    child: Container(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextCustomerPostDescription(
+                                        titre: "${widget.post.description}",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.normal,
                                       ),
                                     ),
-                              SizedBox(
-                                height: 10,
-                              ),
-                              Provider<PostProvider>(
-                                create: (context) => PostProvider(),
-                                child: SizedBox(
-                                  height: height * 0.51,
-                                  width: width,
-                                  child: FutureBuilder<List<PostComment>>(
-                                      future: postProviders
-                                          .getPostCommentsNoStream(
-                                          widget.post),
-                                      builder: (BuildContext context,
-                                          AsyncSnapshot snapshot) {
-                                        if (snapshot.hasData) {
-                                          return commentAndResponseListWidget(
-                                              snapshot.data!,
-                                              width,height);
-                                        } else if (snapshot.hasError) {
-                                          return Icon(Icons.error_outline);
-                                        } else {
-                                          return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
-                                        }
-                                      }),
+                                  ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: TextCustomerPostDescription(
+                                    titre:
+                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
+                                    fontSize: SizeText.homeProfileDateTextSize,
+                                    couleur: ConstColors.textColors,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                widget.post!.images == null
+                                    ? Container()
+                                    : Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            for (int i = 0;
+                                                i < widget.post!.images!.length;
+                                                i++)
+                                              TextButton(
+                                                onPressed: () {
+                                                  setStateImages(() {
+                                                    imageIndex = i;
+                                                  });
+                                                },
+                                                child: Container(
+                                                  width: 100,
+                                                  height: 50,
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(10)),
+                                                    child: Container(
+                                                      child: CachedNetworkImage(
+                                                        fit: BoxFit.cover,
+                                                        imageUrl:
+                                                            '${widget.post!.images![i]}',
+                                                        progressIndicatorBuilder: (context,
+                                                                url,
+                                                                downloadProgress) =>
+                                                            //  LinearProgressIndicator(),
+        
+                                                            Skeletonizer(
+                                                                child: SizedBox(
+                                                                    width: 400,
+                                                                    height: 450,
+                                                                    child: ClipRRect(
+                                                                        borderRadius:
+                                                                            BorderRadius.all(Radius.circular(
+                                                                                10)),
+                                                                        child: Image
+                                                                            .asset(
+                                                                                'assets/images/404.png')))),
+                                                        errorWidget: (context,
+                                                                url, error) =>
+                                                            Skeletonizer(
+                                                                child: Container(
+                                                                    width: 400,
+                                                                    height: 450,
+                                                                    child: Image
+                                                                        .asset(
+                                                                      "assets/images/404.png",
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                    ))),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                          ],
+                                        ),
+                                      ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Provider<PostProvider>(
+                                  create: (context) => PostProvider(),
+                                  child: SizedBox(
+                                    height:widget.post!.images != null? height * 0.44:height * 0.45,
+                                    width: width,
+                                    child: FutureBuilder<List<PostComment>>(
+                                        future: postProviders
+                                            .getPostCommentsNoStream(
+                                            widget.post),
+                                        builder: (BuildContext context,
+                                            AsyncSnapshot snapshot) {
+                                          if (snapshot.hasData) {
+                                            return commentAndResponseListWidget(
+                                                snapshot.data!,
+                                                width,height);
+                                          } else if (snapshot.hasError) {
+                                            return Icon(Icons.error_outline);
+                                          } else {
+                                            return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
+                                          }
+                                        }),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }),
-            ),
-            Positioned(
-              bottom: 0,
-              child: Align(
-                //alignment: Alignment.bottomCenter,
+                        );
+                      }),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
                 child: Container(
                   //height: 50,
                   child: Column(
@@ -845,49 +1016,49 @@ class _PostCommentsState extends State<PostComments> {
                     children: [
                       replying
                           ? Container(
-                              width: width * 0.8,
-                              height: 60,
-                              color: const Color(0xffF4F4F5),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 16,
+                          width: width * 0.8,
+                          height: 60,
+                          color: const Color(0xffF4F4F5),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.reply,
+                                color: Colors.blue,
+                                size: 24,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.reply,
-                                    color: Colors.blue,
-                                    size: 24,
+                              Expanded(
+                                child: Container(
+                                  child: Text(
+                                    'Re : ' + replyingTo,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  Expanded(
-                                    child: Container(
-                                      child: Text(
-                                        'Re : ' + replyingTo,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      //onTapCloseReply
-                                      replyingTo = "";
-                                      replying = false;
-                                      setState(() {});
-                                    },
-                                    child: Icon(
-                                      Icons.close,
-                                      color: Colors.black12,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ],
-                              ))
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  //onTapCloseReply
+                                  replyingTo = "";
+                                  replying = false;
+                                  setState(() {});
+                                },
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.black12,
+                                  size: 24,
+                                ),
+                              ),
+                            ],
+                          ))
                           : Container(),
                       replying
                           ? Container(
-                              height: 1,
-                              color: Colors.grey.shade300,
-                            )
+                        height: 1,
+                        color: Colors.grey.shade300,
+                      )
                           : Container(),
                       Container(
                         width: width * 0.95,
@@ -904,7 +1075,7 @@ class _PostCommentsState extends State<PostComments> {
                                 child: GestureDetector(
                                   onTap: () {
                                     // Action à effectuer lorsque le champ de saisie est tapé
-                                    print('TextField tapped');
+                                    printVm('TextField tapped');
                                   },
                                   child: TextField(
                                     focusNode: _focusNode,
@@ -915,12 +1086,12 @@ class _PostCommentsState extends State<PostComments> {
                                         duration: Duration(milliseconds: 800),
                                         curve: Curves.fastOutSlowIn,
                                       );
-                                      print("tap");
+                                      printVm("tap");
                                     },
                                     controller: _textController,
                                     keyboardType: TextInputType.multiline,
                                     textCapitalization:
-                                        TextCapitalization.sentences,
+                                    TextCapitalization.sentences,
                                     minLines: 1,
                                     maxLines: 3,
                                     onChanged: (value) {
@@ -931,14 +1102,14 @@ class _PostCommentsState extends State<PostComments> {
                                       hintText: "commentez...",
                                       hintMaxLines: 1,
                                       contentPadding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal: 8.0, vertical: 10),
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 8.0, vertical: 10),
                                       hintStyle: const TextStyle(fontSize: 16),
                                       fillColor: Colors.white,
                                       filled: true,
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius:
-                                            BorderRadius.circular(30.0),
+                                        BorderRadius.circular(30.0),
                                         borderSide: const BorderSide(
                                           color: Colors.white,
                                           width: 0.2,
@@ -946,7 +1117,7 @@ class _PostCommentsState extends State<PostComments> {
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius:
-                                            BorderRadius.circular(30.0),
+                                        BorderRadius.circular(30.0),
                                         borderSide: const BorderSide(
                                           color: Colors.black26,
                                           width: 0.2,
@@ -968,117 +1139,62 @@ class _PostCommentsState extends State<PostComments> {
                                 onTap: sendMessageTap
                                     ? () {}
                                     : () async {
-                                        print("send tap;");
-                                        setState(() {
-                                          sendMessageTap = true;
-
-                                        });
-                                        String textComment=_textController.text;
-
-                                        if (_textController.text.isNotEmpty) {
-                                          _textController.text="";
-                                          if (replying) {
-                                            ResponsePostComment comment =
-                                                ResponsePostComment();
-                                            comment.user_logo_url =
-                                                authProvider.loginUserData!.imageUrl;
-                                            comment.user_pseudo =
-                                                authProvider.loginUserData!.pseudo;
-                                            comment.post_comment_id =
-                                                commentSelectedToReply.id;
-                                            comment.message =
-                                                textComment;
-                                            comment.createdAt = DateTime.now()
-                                                .microsecondsSinceEpoch;
-                                            comment.updatedAt = DateTime.now()
-                                                .microsecondsSinceEpoch;
-                                            commentSelectedToReply
-                                                .responseAbonnements!
-                                                .add(comment);
-                                            postPro
-                                                .updateComment(
-                                                    commentSelectedToReply)
-                                                .then(
-                                              (value) {
-                                                if (value) {
-                                                  _textController.text = "";
-                                                  print("response sended");
-                                                  sendMessageTap = false;
-                                                  _focusNode.unfocus();
-
-                                                  setState(() {
-                                                    replying = false;
-                                                  });
-                                                } else {
-                                                  print(
-                                                      "erreru sender response");
-
-                                                  sendMessageTap = false;
-                                                }
-
-                                                sendMessageTap = false;
-                                              },
-                                            );
-                                          } else {
-                                            PostComment comment = PostComment();
-                                            comment.user_id =
-                                                authProvider.loginUserData.id;
-                                            comment.user =
-                                                authProvider.loginUserData;
-                                            comment.post_id = widget.post.id;
-                                            comment.users_like_id = [];
-                                            comment.responseAbonnements = [];
-                                            comment.message =
-                                                textComment;
-                                            comment.loves = 0;
-                                            comment.likes = 0;
-                                            comment.comments = 0;
-                                            comment.createdAt = DateTime.now()
-                                                .microsecondsSinceEpoch;
-                                            comment.updatedAt = DateTime.now()
-                                                .microsecondsSinceEpoch;
-
-                                            postPro.newComment(comment).then(
-                                              (value) async {
-                                                if (value) {
-                                                  widget.post.comments =
-                                                      widget.post.comments! + 1;
-
-
-                                                  CollectionReference userCollect =
-                                                  FirebaseFirestore.instance.collection('Users');
-                                                  // Get docs from collection reference
-                                                  QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
-                                                  // Afficher la liste
-                                                  List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                                  if (listUsers.isNotEmpty) {
-
-                                                    listUsers.first!.comments=listUsers.first!.comments!+1;
-                                                    postPro.updatePost(widget.post, listUsers.first!!,context);
-                                                    await authProvider.getAppData();
-                                                    authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                                                    authProvider.updateAppData(authProvider.appDefaultData);
-                                                  }else{
-                                                    widget.post.user!.comments=widget.post.user!.comments!+1;
-                                                    postPro.updatePost(widget.post,widget.post.user!,context);
-                                                    await authProvider.getAppData();
-
-                                                    authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                                                    authProvider.updateAppData(authProvider.appDefaultData);
-                                                  }
-
+                                  printVm("send tap;");
+                                  setState(() {
+                                    sendMessageTap = true;
+        
+                                  });
+                                  String textComment=_textController.text;
+        
+                                  if (_textController.text.isNotEmpty) {
+                                    _textController.text="";
+                                    if (replying) {
+                                      ResponsePostComment comment =
+                                      ResponsePostComment(user_id: authProvider.loginUserData!.id);
+                                      comment.user_id =
+                                          authProvider.loginUserData!.id;
+                                      comment.user_logo_url =
+                                          authProvider.loginUserData!.imageUrl;
+                                      comment.user_pseudo =
+                                          authProvider.loginUserData!.pseudo;
+                                      comment.post_comment_id =
+                                          commentSelectedToReply.id;
+                                      comment.message =
+                                          textComment;
+                                      comment.createdAt = DateTime.now()
+                                          .microsecondsSinceEpoch;
+                                      comment.updatedAt = DateTime.now()
+                                          .microsecondsSinceEpoch;
+                                      commentSelectedToReply
+                                          .responseAbonnements!
+                                          .add(comment);
+                                      postPro
+                                          .updateComment(
+                                          commentSelectedToReply)
+                                          .then(
+                                            (value) async {
+                                          if (value) {
+                                            _textController.text = "";
+                                            printVm("****** response sended user id **** : ${replyUser_id}");
+        
+                                            await authProvider.getUserById(replyUser_id).then(
+                                                  (users) async {
+                                                if(users.isNotEmpty){
+        
+                                                  UserData receiver = users.first;
+                                                  printVm("****** response sended user **** : ${receiver.toJson()}");
+        
                                                   await authProvider.sendNotification(
-                                                      userIds: [widget.post.user!.oneIgnalUserid!],
+                                                      userIds: [receiver!.oneIgnalUserid!],
                                                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                                                       send_user_id: "${authProvider.loginUserData.id!}",
-                                                      recever_user_id: "",
-                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
+                                                      recever_user_id: "${receiver!.id!}",
+                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
                                                       type_notif: NotificationType.POST.name,
                                                       post_id: "${widget.post!.id!}",
-                                                      post_type: PostDataType.VIDEO.name, chat_id: ''
+                                                      post_type: PostDataType.COMMENT.name, chat_id: ''
                                                   );
-
+        
                                                   NotificationData notif=NotificationData();
                                                   notif.id=firestore
                                                       .collection('Notifications')
@@ -1087,53 +1203,160 @@ class _PostCommentsState extends State<PostComments> {
                                                   notif.titre="Commentaire 💬";
                                                   notif.media_url=authProvider.loginUserData.imageUrl;
                                                   notif.type=NotificationType.POST.name;
-                                                  notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+                                                  notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬";
                                                   notif.users_id_view=[];
                                                   notif.user_id=authProvider.loginUserData.id;
-                                                  notif.receiver_id=widget.post!.user!.id!;
+                                                  notif.receiver_id=receiver!.id!;
                                                   notif.post_id=widget.post!.id!;
                                                   notif.post_data_type=PostDataType.COMMENT.name!;
-
+        
                                                   notif.updatedAt =
                                                       DateTime.now().microsecondsSinceEpoch;
                                                   notif.createdAt =
                                                       DateTime.now().microsecondsSinceEpoch;
                                                   notif.status = PostStatus.VALIDE.name;
-
+        
                                                   // users.add(pseudo.toJson());
-
+        
                                                   await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                                                  _textController.text = "";
-                                                  print("commment envoyer");
-                                                  _focusNode.unfocus();
-                                                  postPro.listConstpostsComment
-                                                      .add(comment);
-
-                                                  postPro.listConstpostsComment
-                                                      .sort((a, b) => b
-                                                          .createdAt!
-                                                          .compareTo(
-                                                              a.createdAt!));
-
-                                                  sendMessageTap = false;
-                                                } else {
-                                                  print("erreru commment");
-
-                                                  sendMessageTap = false;
+        
                                                 }
-
-                                                sendMessageTap = false;
                                               },
                                             );
+        
+                                            sendMessageTap = false;
+                                            _focusNode.unfocus();
+        
+                                            setState(() {
+                                              replying = false;
+                                            });
+                                          } else {
+                                            printVm(
+                                                "erreru sender response");
+        
+                                            sendMessageTap = false;
                                           }
-                                        }
-                                        setState(() {
+        
                                           sendMessageTap = false;
-
-                                        });
-                                      },
+                                        },
+                                      );
+                                    } else {
+                                      PostComment comment = PostComment();
+                                      comment.user_id =
+                                          authProvider.loginUserData.id;
+                                      comment.user =
+                                          authProvider.loginUserData;
+                                      comment.post_id = widget.post.id;
+                                      comment.users_like_id = [];
+                                      comment.responseAbonnements = [];
+                                      comment.message =
+                                          textComment;
+                                      comment.loves = 0;
+                                      comment.likes = 0;
+                                      comment.comments = 0;
+                                      comment.createdAt = DateTime.now()
+                                          .microsecondsSinceEpoch;
+                                      comment.updatedAt = DateTime.now()
+                                          .microsecondsSinceEpoch;
+        
+                                      postPro.newComment(comment).then(
+                                            (value) async {
+                                          if (value) {
+                                            widget.post.comments =
+                                                widget.post.comments! + 1;
+        
+        
+                                            CollectionReference userCollect =
+                                            FirebaseFirestore.instance.collection('Users');
+                                            // Get docs from collection reference
+                                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
+                                            // Afficher la liste
+                                            List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                                UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                            if (listUsers.isNotEmpty) {
+        
+                                              listUsers.first!.comments=listUsers.first!.comments!+1;
+                                              postPro.updatePost(widget.post, listUsers.first!!,context);
+                                              await authProvider.getAppData();
+                                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                                              authProvider.updateAppData(authProvider.appDefaultData);
+                                            }else{
+                                              widget.post.user!.comments=widget.post.user!.comments!+1;
+                                              postPro.updatePost(widget.post,widget.post.user!,context);
+                                              await authProvider.getAppData();
+        
+                                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                                              authProvider.updateAppData(authProvider.appDefaultData);
+                                            }
+        
+                                            await authProvider.sendNotification(
+                                                userIds: [widget.post.user!.oneIgnalUserid!],
+                                                smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                send_user_id: "${authProvider.loginUserData.id!}",
+                                                recever_user_id: "",
+                                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
+                                                type_notif: NotificationType.POST.name,
+                                                post_id: "${widget.post!.id!}",
+                                                post_type: PostDataType.COMMENT.name, chat_id: ''
+                                            );
+        
+                                            NotificationData notif=NotificationData();
+                                            notif.id=firestore
+                                                .collection('Notifications')
+                                                .doc()
+                                                .id;
+                                            notif.titre="Commentaire 💬";
+                                            notif.media_url=authProvider.loginUserData.imageUrl;
+                                            notif.type=NotificationType.POST.name;
+                                            notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+                                            notif.users_id_view=[];
+                                            notif.user_id=authProvider.loginUserData.id;
+                                            notif.receiver_id=widget.post!.user!.id!;
+                                            notif.post_id=widget.post!.id!;
+                                            notif.post_data_type=PostDataType.COMMENT.name!;
+        
+                                            notif.updatedAt =
+                                                DateTime.now().microsecondsSinceEpoch;
+                                            notif.createdAt =
+                                                DateTime.now().microsecondsSinceEpoch;
+                                            notif.status = PostStatus.VALIDE.name;
+        
+                                            // users.add(pseudo.toJson());
+        
+                                            await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+        
+        
+                                            _textController.text = "";
+                                            printVm("commment envoyer");
+                                            _focusNode.unfocus();
+                                            postPro.listConstpostsComment
+                                                .add(comment);
+        
+                                            postPro.listConstpostsComment
+                                                .sort((a, b) => b
+                                                .createdAt!
+                                                .compareTo(
+                                                a.createdAt!));
+        
+                                            sendMessageTap = false;
+                                            _focusNode.unfocus();
+        
+                                          } else {
+                                            printVm("erreru commment");
+        
+                                            sendMessageTap = false;
+                                          }
+        
+                                          sendMessageTap = false;
+                                        },
+                                      );
+                                    }
+                                  }
+                                  setState(() {
+                                    sendMessageTap = false;
+        
+                                  });
+                                },
                               ),
                             ),
                           ],
@@ -1142,11 +1365,376 @@ class _PostCommentsState extends State<PostComments> {
                     ],
                   ),
                 ),
-              ),
-            ),
-          ]),
-        );
-      }),
+              )
+              // Positioned(
+              //
+              //   bottom: 0,
+              //   right: 0,
+              //   left: 0,
+              //   child: Align(
+              //     alignment: Alignment.bottomCenter,
+              //     child: Container(
+              //       //height: 50,
+              //       child: Column(
+              //         mainAxisAlignment: MainAxisAlignment.end,
+              //         children: [
+              //           replying
+              //               ? Container(
+              //                   width: width * 0.8,
+              //                   height: 60,
+              //                   color: const Color(0xffF4F4F5),
+              //                   padding: const EdgeInsets.symmetric(
+              //                     vertical: 8,
+              //                     horizontal: 16,
+              //                   ),
+              //                   child: Row(
+              //                     children: [
+              //                       Icon(
+              //                         Icons.reply,
+              //                         color: Colors.blue,
+              //                         size: 24,
+              //                       ),
+              //                       Expanded(
+              //                         child: Container(
+              //                           child: Text(
+              //                             'Re : ' + replyingTo,
+              //                             overflow: TextOverflow.ellipsis,
+              //                           ),
+              //                         ),
+              //                       ),
+              //                       InkWell(
+              //                         onTap: () {
+              //                           //onTapCloseReply
+              //                           replyingTo = "";
+              //                           replying = false;
+              //                           setState(() {});
+              //                         },
+              //                         child: Icon(
+              //                           Icons.close,
+              //                           color: Colors.black12,
+              //                           size: 24,
+              //                         ),
+              //                       ),
+              //                     ],
+              //                   ))
+              //               : Container(),
+              //           replying
+              //               ? Container(
+              //                   height: 1,
+              //                   color: Colors.grey.shade300,
+              //                 )
+              //               : Container(),
+              //           Container(
+              //             width: width * 0.95,
+              //             height: 60,
+              //             color: const Color(0xffF4F4F5),
+              //             padding: const EdgeInsets.symmetric(
+              //               vertical: 8,
+              //               horizontal: 16,
+              //             ),
+              //             child: Row(
+              //               children: <Widget>[
+              //                 Expanded(
+              //                   child: Container(
+              //                     child: GestureDetector(
+              //                       onTap: () {
+              //                         // Action à effectuer lorsque le champ de saisie est tapé
+              //                         printVm('TextField tapped');
+              //                       },
+              //                       child: TextField(
+              //                         focusNode: _focusNode,
+              //                         onTap: () async {
+              //                           _controller.animateTo(
+              //                             _controller.position.maxScrollExtent *
+              //                                 34,
+              //                             duration: Duration(milliseconds: 800),
+              //                             curve: Curves.fastOutSlowIn,
+              //                           );
+              //                           printVm("tap");
+              //                         },
+              //                         controller: _textController,
+              //                         keyboardType: TextInputType.multiline,
+              //                         textCapitalization:
+              //                             TextCapitalization.sentences,
+              //                         minLines: 1,
+              //                         maxLines: 3,
+              //                         onChanged: (value) {
+              //                           //onTextChanged
+              //                         },
+              //                         style: const TextStyle(color: Colors.black),
+              //                         decoration: InputDecoration(
+              //                           hintText: "commentez...",
+              //                           hintMaxLines: 1,
+              //                           contentPadding:
+              //                               const EdgeInsets.symmetric(
+              //                                   horizontal: 8.0, vertical: 10),
+              //                           hintStyle: const TextStyle(fontSize: 16),
+              //                           fillColor: Colors.white,
+              //                           filled: true,
+              //                           enabledBorder: OutlineInputBorder(
+              //                             borderRadius:
+              //                                 BorderRadius.circular(30.0),
+              //                             borderSide: const BorderSide(
+              //                               color: Colors.white,
+              //                               width: 0.2,
+              //                             ),
+              //                           ),
+              //                           focusedBorder: OutlineInputBorder(
+              //                             borderRadius:
+              //                                 BorderRadius.circular(30.0),
+              //                             borderSide: const BorderSide(
+              //                               color: Colors.black26,
+              //                               width: 0.2,
+              //                             ),
+              //                           ),
+              //                         ),
+              //                       ),
+              //                     ),
+              //                   ),
+              //                 ),
+              //                 Padding(
+              //                   padding: const EdgeInsets.only(left: 16),
+              //                   child: GestureDetector(
+              //                     child: Icon(
+              //                       Icons.send,
+              //                       color: Colors.green,
+              //                       size: 24,
+              //                     ),
+              //                     onTap: sendMessageTap
+              //                         ? () {}
+              //                         : () async {
+              //                             printVm("send tap;");
+              //                             setState(() {
+              //                               sendMessageTap = true;
+              //
+              //                             });
+              //                             String textComment=_textController.text;
+              //
+              //                             if (_textController.text.isNotEmpty) {
+              //                               _textController.text="";
+              //                               if (replying) {
+              //                                 ResponsePostComment comment =
+              //                                     ResponsePostComment(user_id: authProvider.loginUserData!.id);
+              //                                 comment.user_id =
+              //                                     authProvider.loginUserData!.id;
+              //                                 comment.user_logo_url =
+              //                                     authProvider.loginUserData!.imageUrl;
+              //                                 comment.user_pseudo =
+              //                                     authProvider.loginUserData!.pseudo;
+              //                                 comment.post_comment_id =
+              //                                     commentSelectedToReply.id;
+              //                                 comment.message =
+              //                                     textComment;
+              //                                 comment.createdAt = DateTime.now()
+              //                                     .microsecondsSinceEpoch;
+              //                                 comment.updatedAt = DateTime.now()
+              //                                     .microsecondsSinceEpoch;
+              //                                 commentSelectedToReply
+              //                                     .responseAbonnements!
+              //                                     .add(comment);
+              //                                 postPro
+              //                                     .updateComment(
+              //                                         commentSelectedToReply)
+              //                                     .then(
+              //                                   (value) async {
+              //                                     if (value) {
+              //                                       _textController.text = "";
+              //                                       printVm("****** response sended user id **** : ${replyUser_id}");
+              //
+              //                                      await authProvider.getUserById(replyUser_id).then(
+              //                                         (users) async {
+              //                                           if(users.isNotEmpty){
+              //
+              //                                             UserData receiver = users.first;
+              //                                             printVm("****** response sended user **** : ${receiver.toJson()}");
+              //
+              //                                             await authProvider.sendNotification(
+              //                                                 userIds: [receiver!.oneIgnalUserid!],
+              //                                                 smallImage: "${authProvider.loginUserData.imageUrl!}",
+              //                                                 send_user_id: "${authProvider.loginUserData.id!}",
+              //                                                 recever_user_id: "${receiver!.id!}",
+              //                                                 message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
+              //                                                 type_notif: NotificationType.POST.name,
+              //                                                 post_id: "${widget.post!.id!}",
+              //                                                 post_type: PostDataType.COMMENT.name, chat_id: ''
+              //                                             );
+              //
+              //                                             NotificationData notif=NotificationData();
+              //                                             notif.id=firestore
+              //                                                 .collection('Notifications')
+              //                                                 .doc()
+              //                                                 .id;
+              //                                             notif.titre="Commentaire 💬";
+              //                                             notif.media_url=authProvider.loginUserData.imageUrl;
+              //                                             notif.type=NotificationType.POST.name;
+              //                                             notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬";
+              //                                             notif.users_id_view=[];
+              //                                             notif.user_id=authProvider.loginUserData.id;
+              //                                             notif.receiver_id=receiver!.id!;
+              //                                             notif.post_id=widget.post!.id!;
+              //                                             notif.post_data_type=PostDataType.COMMENT.name!;
+              //
+              //                                             notif.updatedAt =
+              //                                                 DateTime.now().microsecondsSinceEpoch;
+              //                                             notif.createdAt =
+              //                                                 DateTime.now().microsecondsSinceEpoch;
+              //                                             notif.status = PostStatus.VALIDE.name;
+              //
+              //                                             // users.add(pseudo.toJson());
+              //
+              //                                             await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+              //
+              //                                           }
+              //                                         },
+              //                                       );
+              //
+              //                                       sendMessageTap = false;
+              //                                       _focusNode.unfocus();
+              //
+              //                                       setState(() {
+              //                                         replying = false;
+              //                                       });
+              //                                     } else {
+              //                                       printVm(
+              //                                           "erreru sender response");
+              //
+              //                                       sendMessageTap = false;
+              //                                     }
+              //
+              //                                     sendMessageTap = false;
+              //                                   },
+              //                                 );
+              //                               } else {
+              //                                 PostComment comment = PostComment();
+              //                                 comment.user_id =
+              //                                     authProvider.loginUserData.id;
+              //                                 comment.user =
+              //                                     authProvider.loginUserData;
+              //                                 comment.post_id = widget.post.id;
+              //                                 comment.users_like_id = [];
+              //                                 comment.responseAbonnements = [];
+              //                                 comment.message =
+              //                                     textComment;
+              //                                 comment.loves = 0;
+              //                                 comment.likes = 0;
+              //                                 comment.comments = 0;
+              //                                 comment.createdAt = DateTime.now()
+              //                                     .microsecondsSinceEpoch;
+              //                                 comment.updatedAt = DateTime.now()
+              //                                     .microsecondsSinceEpoch;
+              //
+              //                                 postPro.newComment(comment).then(
+              //                                   (value) async {
+              //                                     if (value) {
+              //                                       widget.post.comments =
+              //                                           widget.post.comments! + 1;
+              //
+              //
+              //                                       CollectionReference userCollect =
+              //                                       FirebaseFirestore.instance.collection('Users');
+              //                                       // Get docs from collection reference
+              //                                       QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
+              //                                       // Afficher la liste
+              //                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+              //                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+              //                                       if (listUsers.isNotEmpty) {
+              //
+              //                                         listUsers.first!.comments=listUsers.first!.comments!+1;
+              //                                         postPro.updatePost(widget.post, listUsers.first!!,context);
+              //                                         await authProvider.getAppData();
+              //                                         authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+              //                                         authProvider.updateAppData(authProvider.appDefaultData);
+              //                                       }else{
+              //                                         widget.post.user!.comments=widget.post.user!.comments!+1;
+              //                                         postPro.updatePost(widget.post,widget.post.user!,context);
+              //                                         await authProvider.getAppData();
+              //
+              //                                         authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+              //                                         authProvider.updateAppData(authProvider.appDefaultData);
+              //                                       }
+              //
+              //                                       await authProvider.sendNotification(
+              //                                           userIds: [widget.post.user!.oneIgnalUserid!],
+              //                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
+              //                                           send_user_id: "${authProvider.loginUserData.id!}",
+              //                                           recever_user_id: "",
+              //                                           message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
+              //                                           type_notif: NotificationType.POST.name,
+              //                                           post_id: "${widget.post!.id!}",
+              //                                           post_type: PostDataType.COMMENT.name, chat_id: ''
+              //                                       );
+              //
+              //                                       NotificationData notif=NotificationData();
+              //                                       notif.id=firestore
+              //                                           .collection('Notifications')
+              //                                           .doc()
+              //                                           .id;
+              //                                       notif.titre="Commentaire 💬";
+              //                                       notif.media_url=authProvider.loginUserData.imageUrl;
+              //                                       notif.type=NotificationType.POST.name;
+              //                                       notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+              //                                       notif.users_id_view=[];
+              //                                       notif.user_id=authProvider.loginUserData.id;
+              //                                       notif.receiver_id=widget.post!.user!.id!;
+              //                                       notif.post_id=widget.post!.id!;
+              //                                       notif.post_data_type=PostDataType.COMMENT.name!;
+              //
+              //                                       notif.updatedAt =
+              //                                           DateTime.now().microsecondsSinceEpoch;
+              //                                       notif.createdAt =
+              //                                           DateTime.now().microsecondsSinceEpoch;
+              //                                       notif.status = PostStatus.VALIDE.name;
+              //
+              //                                       // users.add(pseudo.toJson());
+              //
+              //                                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+              //
+              //
+              //                                       _textController.text = "";
+              //                                       printVm("commment envoyer");
+              //                                       _focusNode.unfocus();
+              //                                       postPro.listConstpostsComment
+              //                                           .add(comment);
+              //
+              //                                       postPro.listConstpostsComment
+              //                                           .sort((a, b) => b
+              //                                               .createdAt!
+              //                                               .compareTo(
+              //                                                   a.createdAt!));
+              //
+              //                                       sendMessageTap = false;
+              //                                       _focusNode.unfocus();
+              //
+              //                                     } else {
+              //                                       printVm("erreru commment");
+              //
+              //                                       sendMessageTap = false;
+              //                                     }
+              //
+              //                                     sendMessageTap = false;
+              //                                   },
+              //                                 );
+              //                               }
+              //                             }
+              //                             setState(() {
+              //                               sendMessageTap = false;
+              //
+              //                             });
+              //                           },
+              //                   ),
+              //                 ),
+              //               ],
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ),
+            ]),
+          );
+        }),
+      ),
     );
   }
 }

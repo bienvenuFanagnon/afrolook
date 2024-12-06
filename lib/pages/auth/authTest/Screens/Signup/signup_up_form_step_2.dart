@@ -24,6 +24,7 @@ import '../../../../../../providers/authProvider.dart';
 import 'dart:async';
 import 'dart:io';
 
+import '../../../../component/consoleWidget.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
 import '../Login/loginPageUser.dart';
@@ -78,7 +79,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     CollectionReference users = firestore.collection("Users");
     QuerySnapshot snapshot = await users
         .where(
-        "code_parrainage", isEqualTo: codeParrain!)
+        "code_parrainage", isEqualTo: codeParrain)
         .get();
     final list = snapshot.docs.map((doc) =>
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -87,62 +88,67 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
 
     if (list.isNotEmpty) {
-      print("user trouver");
+      printVm("user trouver");
       await authProvider.getAppData();
 
       authProvider.registerUser!.pointContribution=authProvider.registerUser!.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
 
-          print("current user trouver");
-          print("current user trouver :${list.first.toJson()}");
+          printVm("current user trouver");
+          printVm("current user trouver :${list.first.toJson()}");
 
           list.first.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-          list.first.votre_solde=list.first.votre_solde! + 50.0;
-          await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
+          list.first.votre_solde=list.first.votre_solde! + 50.1;
+          authProvider.updateUser(list.first).then((value) async {
+            if(value){
+              await authProvider.sendNotification(
+                  userIds: [list.first!.oneIgnalUserid!],
+                  smallImage: "${authProvider.registerUser.imageUrl!}",
+                  send_user_id: "${authProvider.registerUser.id!}",
+                  recever_user_id: "${list.first!.id!}",
+                  message: "🤑 Vous avez gagné 50 PubliCach grâce à un parrainage !",
+                  type_notif: NotificationType.PARRAINAGE.name,
+                  post_id: "",
+                  post_type: "",
+                  chat_id: ''
+              );
 
-          await authProvider.sendNotification(
-              userIds: [list.first!.oneIgnalUserid!],
-              smallImage: "${authProvider.registerUser.imageUrl!}",
-              send_user_id: "${authProvider.registerUser.id!}",
-              recever_user_id: "${list.first!.id!}",
-              message: "🤑 Vous avez gagné 50 PubliCach grâce à un parrainage !",
-              type_notif: NotificationType.PARRAINAGE.name,
-              post_id: "",
-              post_type: "",
-              chat_id: ''
-          );
+              NotificationData notif=NotificationData();
+              notif.id=firestore
+                  .collection('Notifications')
+                  .doc()
+                  .id;
+              notif.titre="Parrainage 🤑";
+              notif.media_url=authProvider.registerUser.imageUrl;
+              notif.type=NotificationType.PARRAINAGE.name;
+              notif.description="Vous avez gagné 50 PubliCach grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+              notif.users_id_view=[];
+              notif.user_id=authProvider.registerUser.id;
+              notif.receiver_id=list.first.id!;
+              notif.post_id="";
+              notif.post_data_type="";
 
-          NotificationData notif=NotificationData();
-          notif.id=firestore
-              .collection('Notifications')
-              .doc()
-              .id;
-          notif.titre="Parrainage 🤑";
-          notif.media_url=authProvider.registerUser.imageUrl;
-          notif.type=NotificationType.POST.name;
-          notif.description="Vous avez gagné 50 PubliCach grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
-          notif.users_id_view=[];
-          notif.user_id=authProvider.registerUser.id;
-          notif.receiver_id=list.first.id!;
-          notif.post_id="";
-          notif.post_data_type="";
+              notif.updatedAt =
+                  DateTime.now().microsecondsSinceEpoch;
+              notif.createdAt =
+                  DateTime.now().microsecondsSinceEpoch;
+              notif.status = PostStatus.VALIDE.name;
 
-          notif.updatedAt =
-              DateTime.now().microsecondsSinceEpoch;
-          notif.createdAt =
-              DateTime.now().microsecondsSinceEpoch;
-          notif.status = PostStatus.VALIDE.name;
+              // users.add(pseudo.toJson());
 
-          // users.add(pseudo.toJson());
-
-          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
 
 
+            }
+          });
+          // await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
+
+       
 
 
 
     }else{
-      print("user non trouver^^^^^^^^^^^^^^^^^^^^");
+      printVm("user non trouver^^^^^^^^^^^^^^^^^^^^");
 
     }
   }
@@ -196,7 +202,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         String adress=_currentAddress!;
       });
     }).catchError((e) {
-      debugPrint(e);
+     printVm(e);
     });
   }
   Future<void> _getCurrentPosition() async {
@@ -211,13 +217,13 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       setState(() => _currentPosition = position);
       _getAddressFromLatLng(_currentPosition!);
 
-      print("Adresse: $_currentAddress");
+      printVm("Adresse: $_currentAddress");
       setState(() {
         adreseLoging=false;
       });
 
     }).catchError((e) {
-      debugPrint(e);
+     printVm(e);
       setState(() {
         adreseLoging=false;
       });
@@ -269,7 +275,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
             content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.white),),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          print('error ${e!.message}');
+          printVm('error ${e!.message}');
           setState(() {
             tap= false;
           });
@@ -307,7 +313,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-        print(error.code);
+        printVm(error.code);
         setState(() {
           tap= false;
         });
@@ -344,7 +350,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       // users.add(pseudo.toJson());
 
       await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
-      print("///////////-- save pseudo --///////////////");
+      printVm("///////////-- save pseudo --///////////////");
       await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
 
       SnackBar snackBar = SnackBar(
@@ -365,7 +371,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         content: Text('${error}',style: TextStyle(color: Colors.red),),
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      print('error ${error}');
+      printVm('error ${error}');
     }
     setState(() {
       tap= false;
@@ -512,7 +518,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                             border: OutlineInputBorder(), // Ajoute une bordure autour du champ de texte
                           ),
                           validator: (value) {
-                            print('apropos $value');
+                            printVm('apropos $value');
 
                           },
                         ),
@@ -585,8 +591,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                                         storageReference.getDownloadURL().then((fileURL) {
 
-                                          print("url photo1");
-                                          print(fileURL);
+                                          printVm("url photo1");
+                                          printVm(fileURL);
 
 
 

@@ -27,7 +27,7 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/socialVideos/main_screen/main_screen.dart';
+import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 
@@ -47,7 +47,6 @@ import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/services/notification_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -457,7 +456,8 @@ class _MyAppState extends State<MyApp> {
             break;
           case '/videos':
             return PageTransition(
-                child: MainScreen(), type: PageTransitionType.fade);
+                // child: MainScreen(), type: PageTransitionType.fade);
+                child: AfroVideo(), type: PageTransitionType.fade);
             break;
 
           case '/home_profile_user':

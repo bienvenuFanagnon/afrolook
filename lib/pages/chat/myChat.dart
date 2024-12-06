@@ -27,6 +27,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../component/consoleWidget.dart';
 import '../user/detailsOtherUser.dart';
 
 class MyChat extends StatefulWidget {
@@ -156,15 +157,15 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
 
       if (message!.contains('resume')) {
         //online
-        print('state en ligne chat:  --- ${message}');
+        printVm('state en ligne chat:  --- ${message}');
  }  else{
-        print('state hors chat ligne :  --- ${message}');
+        printVm('state hors chat ligne :  --- ${message}');
         if (widget.chat.senderId == authProvider.loginUserData.id!) {
           //  widget.chat.receiver_sending=false;
 
           widget.chat.send_sending = IsSendMessage.NOTSENDING.name;
 
-          print('state hors chat ligne update chat sender');
+          printVm('state hors chat ligne update chat sender');
 
           firestore
               .collection('Chats')
@@ -174,7 +175,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
           widget.chat.receiver_sending = IsSendMessage.NOTSENDING.name;
 
           //widget.chat.send_sending=false;
-          print('state hors chat ligne update chat receiver');
+          printVm('state hors chat ligne update chat receiver');
 
           firestore
               .collection('Chats')
@@ -334,7 +335,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
       //  widget.chat.receiver_sending=false;
 
       widget.chat.send_sending = IsSendMessage.NOTSENDING.name;
-      print('dispose update chat sender');
+      printVm('dispose update chat sender');
 
       firestore
           .collection('Chats')
@@ -344,7 +345,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
       widget.chat.receiver_sending = IsSendMessage.NOTSENDING.name;
 
       //widget.chat.send_sending=false;
-      print('dispose update chat reicever');
+      printVm('dispose update chat reicever');
 
       firestore
           .collection('Chats')
@@ -455,7 +456,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         Chat chat=snapshot!.data!;
-                       // print("update chat: ${chat.toJson()}");
+                       // printVm("update chat: ${chat.toJson()}");
 
                         if (authProvider.loginUserData.id ==
                             chat!.senderId) {
@@ -756,7 +757,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                             child: CircularProgressIndicator()));
                   } else if (snapshot.hasData) {
                     List<Message> list = snapshot.data!;
-                    print("message lenght: ${list.length}");
+                    printVm("message lenght: ${list.length}");
 
                     userProvider.chat.messages = list;
                     // Utiliser les données de snapshot.data
@@ -1369,7 +1370,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                             authProvider.loginUserData.id!) {
 
                                             streamChat.send_sending = IsSendMessage.SENDING.name;
-                                            print('textEdit update chat sender');
+                                            printVm('textEdit update chat sender');
 
                                             firestore
                                                 .collection('Chats')
@@ -1385,7 +1386,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
 
 
                                             streamChat.receiver_sending = IsSendMessage.SENDING.name;
-                                            print('textEdit update chat receiver');
+                                            printVm('textEdit update chat receiver');
 
                                             firestore
                                                 .collection('Chats')
@@ -1405,7 +1406,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
 
 
                                             streamChat.send_sending = IsSendMessage.NOTSENDING.name;
-                                            print('empty textEdit update chat sender');
+                                            printVm('empty textEdit update chat sender');
 
                                             firestore
                                                 .collection('Chats')
@@ -1417,7 +1418,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                             authProvider.loginUserData.id!)  {
 
                                             streamChat.receiver_sending = IsSendMessage.NOTSENDING.name;
-                                            print('empty textEdit update chat receiver');
+                                            printVm('empty textEdit update chat receiver');
 
                                             firestore
                                                 .collection('Chats')
@@ -1441,7 +1442,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                         duration: Duration(milliseconds: 800),
                                         curve: Curves.fastOutSlowIn,
                                       );
-                                      print("tap");
+                                      printVm("tap");
                                     },
                                     controller: _textController,
                                     keyboardType: TextInputType.multiline,
@@ -1490,7 +1491,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                             onTap: sendMessageTap
                                 ? () {}
                                 : () async {
-                                    print("send tap;");
+                                    printVm("send tap;");
                                     sendMessageTap = true;
 
                                     if (_image != null) {
@@ -1507,8 +1508,8 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                           storageReference
                                               .getDownloadURL()
                                               .then((fileURL) async {
-                                            print("url photo1");
-                                            print(fileURL);
+                                            printVm("url photo1");
+                                            printVm(fileURL);
 
                                             authProvider.registerUser.imageUrl =
                                                 fileURL;
@@ -1644,8 +1645,8 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                           });
                                         });
                                       } on FirebaseException catch (error) {
-                                        print("error code: ${error.message}");
-                                        print(
+                                        printVm("error code: ${error.message}");
+                                        printVm(
                                             "error message : ${error.message}");
                                         setState(() {
                                           sendMessageTap = false;
@@ -1754,7 +1755,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
 
 
                                           widget.chat.send_sending = IsSendMessage.NOTSENDING.name;
-                                          print('empty textEdit update chat sender');
+                                          printVm('empty textEdit update chat sender');
 
                                           firestore
                                               .collection('Chats')
@@ -1766,7 +1767,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                             authProvider.loginUserData.id!)  {
 
                                           widget.chat.receiver_sending = IsSendMessage.NOTSENDING.name;
-                                          print('empty textEdit update chat receiver');
+                                          printVm('empty textEdit update chat receiver');
 
                                           firestore
                                               .collection('Chats')
@@ -1795,8 +1796,8 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                           sendMessageTap = false;
                                         });
                                       } on FirebaseException catch (error) {
-                                        print("error code: ${error.message}");
-                                        print(
+                                        printVm("error code: ${error.message}");
+                                        printVm(
                                             "error message : ${error.message}");
                                         setState(() {
                                           sendMessageTap = false;
@@ -1870,7 +1871,7 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
 
     audioPlayer.onDurationChanged.listen((Duration d) {
       setState(() {
-        print("duration ${d}");
+        printVm("duration ${d}");
 
         duration = d;
         isLoading = false;

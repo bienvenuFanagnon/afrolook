@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/chatmodels/message.dart';
 
+import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import 'authProvider.dart';
 
@@ -52,10 +53,10 @@ setMessageNonLu(int nbr){
           .collection('Users')
           .doc(user.id)
           .update(user.toJson());
-      //print("user update : ${user!.toJson()}");
+      //printVm("user update : ${user!.toJson()}");
       return true;
     }catch(e){
-      print("erreur update post : ${e}");
+      printVm("erreur update post : ${e}");
       return false;
     }
   }
@@ -71,7 +72,7 @@ setMessageNonLu(int nbr){
           .update(entrepriseData.toJson());
       return true;
     }catch(e){
-      print("erreur update post : ${e}");
+      printVm("erreur update post : ${e}");
       return false;
     }
   }
@@ -139,7 +140,7 @@ setMessageNonLu(int nbr){
 
       // Calcul du nombre de jours depuis l'époque Unix
       int daysSinceEpoch = now.difference(date).inDays;
-      print("nombre de jour: ${daysSinceEpoch}");
+      printVm("nombre de jour: ${daysSinceEpoch}");
 
       if (daysSinceEpoch>annonce.jour!) {
         //annonces.remove(annonce);
@@ -212,11 +213,11 @@ setMessageNonLu(int nbr){
       }
 
       listUserAnnonces=listUsers;
-      print('list users ${listUsers.length}');
+      printVm('list users ${listUsers.length}');
       hasData=true;
 
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
     }
 
@@ -256,11 +257,11 @@ setMessageNonLu(int nbr){
 
 
 
-      print('list users ${listUsers.length}');
+      printVm('list users ${listUsers.length}');
       hasData=true;
 
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
     }
 
@@ -297,11 +298,11 @@ setMessageNonLu(int nbr){
       }
 
 
-   //   print('list users ${listAllUsers.length}');
+   //   printVm('list users ${listAllUsers.length}');
       hasData=true;
       return listAllUsers;
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
       return [];
     }
@@ -350,11 +351,11 @@ setMessageNonLu(int nbr){
 
 
 
-      print('list users ${listUsers.length}');
+      printVm('list users ${listUsers.length}');
       hasData=true;
 
     }catch(e){
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       hasData=false;
     }
 
@@ -373,7 +374,7 @@ setMessageNonLu(int nbr){
     // Afficher la liste
     users.then((snapshot) {
       snapshot.docs.forEach((doc) {
-        //print(doc.data());
+        //printVm(doc.data());
         listUsers.add(  UserData.fromJson(doc.data() as Map<String, dynamic>));
 
       });
@@ -590,7 +591,7 @@ setMessageNonLu(int nbr){
       resp=true;
     } catch (e) {
 
-      print(e);
+      printVm(e);
       resp=false;
     }
 
@@ -607,12 +608,12 @@ setMessageNonLu(int nbr){
           .collection('Messages')
           .doc(message.id)
           .update(message.toJson());
-      //print("user update : ${user!.toJson()}");
-      print(" update message");
+      //printVm("user update : ${user!.toJson()}");
+      printVm(" update message");
 
       return true;
     }catch(e){
-      print("erreur update message : ${e}");
+      printVm("erreur update message : ${e}");
       return false;
     }
   }
@@ -630,7 +631,7 @@ setMessageNonLu(int nbr){
       resp=true;
     } catch (e) {
 
-      print(e);
+      printVm(e);
       resp=false;
     }
 
@@ -644,7 +645,7 @@ setMessageNonLu(int nbr){
 
     try {
       user.state=state;
-      print('update user state: $state');
+      printVm('update user state: $state');
 
       await firestore.collection('Users').doc(user.id).update(user.toJson());
 
@@ -652,7 +653,7 @@ setMessageNonLu(int nbr){
       resp=true;
     } catch (e) {
 
-      print(e);
+      printVm(e);
       resp=false;
     }
 

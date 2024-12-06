@@ -29,6 +29,7 @@ import '../../../../../../providers/authProvider.dart';
 import 'dart:async';
 import 'dart:io';
 
+import '../../../../component/consoleWidget.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
 import '../Login/loginPageUser.dart';
@@ -78,9 +79,9 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
        list.forEach((element) async {
           if (element.codeParrainage==codeParrain) {
             element.pointContribution=element.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-            print("update user data loading : ${element.toJson()}");
+            printVm("update user data loading : ${element.toJson()}");
             await firestore.collection('Users').doc(element.id!).update(element.toJson());
-            print("update user data");
+            printVm("update user data");
           }  
         },);
 
@@ -111,7 +112,7 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
             content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.red),),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          print('error ${e!.message}');
+          printVm('error ${e!.message}');
           setState(() {
             tap= false;
           });
@@ -149,7 +150,7 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
         );
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-        print(error.code);
+        printVm(error.code);
         setState(() {
           tap= false;
         });
@@ -194,7 +195,7 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
         content: Text('${error}',style: TextStyle(color: Colors.red),),
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      print('error ${error}');
+      printVm('error ${error}');
     }
     setState(() {
       tap= false;
@@ -239,7 +240,7 @@ class _SignUpFormEtap2State extends State<SignUpFormEtap2> {
                     border: OutlineInputBorder(), // Ajoute une bordure autour du champ de texte
                   ),
                   validator: (value) {
-                    print('apropos $value');
+                    printVm('apropos $value');
 
                   },
                 ),

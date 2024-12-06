@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../models/chatmodels/message.dart';
+import '../../pages/component/consoleWidget.dart';
 
 
 
@@ -35,7 +36,7 @@ class UserService {
       // Afficher la liste
       users.then((snapshot) {
         snapshot.docs.forEach((doc) {
-          print(doc.data());
+          printVm(doc.data());
           listUser.add(  UserData.fromJson(doc.data() as Map<String, dynamic>))
         ;
         });
@@ -48,7 +49,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return [];
     }
   }
@@ -110,7 +111,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return UserData();
     }
   }
@@ -172,7 +173,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return UserData();
     }
   }
@@ -189,8 +190,8 @@ class UserService {
           'chat_id': chatId,
         }),
       );
-      print("code ${response.statusCode}");
-    //  print("list message data ${jsonDecode(response.body)['0']}");
+      printVm("code ${response.statusCode}");
+    //  printVm("list message data ${jsonDecode(response.body)['0']}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         listMessage = [];
@@ -208,7 +209,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return [];
     }
   }
@@ -224,8 +225,8 @@ class UserService {
           'abonne_user_id': abonne_user_id,
         }),
       );
-      print("code ${response.statusCode}");
-      //print("abonnee user data ${jsonDecode(response.body)}");
+      printVm("code ${response.statusCode}");
+      //printVm("abonnee user data ${jsonDecode(response.body)}");
 
       if (response.statusCode == 200|| response.statusCode == 201){
 
@@ -242,7 +243,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return false;
     }
 
@@ -258,8 +259,8 @@ class UserService {
           'sender_id': sender_id,
         }),
       );
-      print("code ${response.statusCode}");
-     // print("invitation user data ${jsonDecode(response.body)}");
+      printVm("code ${response.statusCode}");
+     // printVm("invitation user data ${jsonDecode(response.body)}");
 
       if (response.statusCode == 200|| response.statusCode == 201){
 
@@ -276,7 +277,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return false;
     }
 
@@ -295,8 +296,8 @@ class UserService {
           'user_accepter_id': user_accepter_id,
         }),
       );
-      print("code ${response.statusCode}");
-     // print("invitation user data ${jsonDecode(response.body)}");
+      printVm("code ${response.statusCode}");
+     // printVm("invitation user data ${jsonDecode(response.body)}");
 
       if (response.statusCode == 200|| response.statusCode == 201){
 
@@ -313,7 +314,7 @@ class UserService {
     } catch (e) {
       // Erreur de connexion
       // error = "Erreur de connexion: $e";
-      print("erreur ${e}");
+      printVm("erreur ${e}");
       return false;
     }
 
@@ -330,17 +331,17 @@ class UserService {
 
 
       FormData formData = FormData.fromMap(message.toJson());
-      print("donnee envoyer : ${message.toJson()}");
+      printVm("donnee envoyer : ${message.toJson()}");
       //formData.fields.add(MapEntry('send_by', 'sender_id'));
       formData.fields.add(MapEntry('receiver_id', receiver_id.toString()));
      // formData.fields.add(MapEntry('sendBy', sender_id.toString()));
       //formData.fields. set('key_to_modify', 'new_value');
-      print("formData donnee envoyer : ${formData.fields}");
+      printVm("formData donnee envoyer : ${formData.fields}");
       final response = await dio.post(ApiConstantData.newMessage, data: formData);
 
 
-      print("code ${response.statusCode}");
-      // print("data create ${jsonDecode(response.data)}");
+      printVm("code ${response.statusCode}");
+      // printVm("data create ${jsonDecode(response.data)}");
 
       if (response.statusCode == 200|| response.statusCode == 201){
         // Succès, le compte a été créé
@@ -348,14 +349,14 @@ class UserService {
 
         return true;
       } else {
-        print("Erreur lors de la création du compte code ${response.statusCode}");
+        printVm("Erreur lors de la création du compte code ${response.statusCode}");
         // Gérer les erreurs en fonction du code de statut
         return false;
       }
     } on DioError catch ( e) {
       // Erreur de connexion
       //  error = "Erreur de connexion: $e";
-      print("erreur ${e.message}");
+      printVm("erreur ${e.message}");
       return false;
     }
 
@@ -413,9 +414,9 @@ class UserService {
       //  final response3 = await request.send();
       final response = await dio.post(ApiConstantData.register, data: formData);
 
-      print("donnee envoyer : ${message.toJson()}");
-      print("code ${response.statusCode}");
-      // print("data create ${jsonDecode(response.data)}");
+      printVm("donnee envoyer : ${message.toJson()}");
+      printVm("code ${response.statusCode}");
+      // printVm("data create ${jsonDecode(response.data)}");
 
       if (response.statusCode == 200|| response.statusCode == 201){
         // Succès, le compte a été créé
@@ -423,14 +424,14 @@ class UserService {
 
         return true;
       } else {
-        print("Erreur lors de la création du compte code ${response.statusCode}");
+        printVm("Erreur lors de la création du compte code ${response.statusCode}");
         // Gérer les erreurs en fonction du code de statut
         return false;
       }
     } on DioError catch ( e) {
       // Erreur de connexion
       //  error = "Erreur de connexion: $e";
-      print("erreur ${e.message}");
+      printVm("erreur ${e.message}");
       return false;
     }
 

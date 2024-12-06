@@ -66,7 +66,8 @@ class Assets {
   static const String imagesLogoAfrotok = 'assets/images/logoAfrotok.png';
   static const String imagesMainBottom = 'assets/images/main_bottom.png';
   static const String imagesMainTop = 'assets/images/main_top.png';
-  static const String imagesMobile feedBro = 'assets/images/Mobile feed-bro.png';
+  static const String imagesMobile  = 'assets/images/Mobile feed-bro.png';
+  static const String  feedBro = 'assets/images/Mobile feed-bro.png';
   static const String imagesPersonHoldingSmartphoneWithSocialMediaApp = 'assets/images/person-holding-smartphone-with-social-media-app.jpg';
   static const String imagesPexelsMohamedAbdelghaffar771742 = 'assets/images/pexels-mohamed-abdelghaffar-771742.jpg';
   static const String imagesProduitsCosmetiquesNaturelsImg = 'assets/images/produits-cosmetiques-naturels-img.jpg';

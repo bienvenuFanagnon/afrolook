@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../component/consoleWidget.dart';
 import 'function.dart';
 
 
@@ -56,7 +57,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
         QueryDocumentSnapshot userDocument = querySnapshot.docs.first;
         // Ici, vous pouvez accéder aux données de l'utilisateur via userDocument.data()
         showWarningDialog(_scaffoldKey!.currentContext!,"Ce compte existe déjà");
-        print('Utilisateur existe');
+        printVm('Utilisateur existe');
         loading = false;
       } else {
 
@@ -80,11 +81,11 @@ class _VerificationOtpState extends State<VerificationOtp> {
       desc:
       'Vérification réussie',
       btnOkOnPress: () {
-        debugPrint('OnClcik');
+       printVm('OnClcik');
       },
       btnOkIcon: Icons.check_circle,
       onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
+       printVm('Dialog Dissmiss from callback $type');
       },
     ).show();
 
@@ -100,11 +101,11 @@ class _VerificationOtpState extends State<VerificationOtp> {
       desc:
       'Erreur de verification',
       btnCancelOnPress: () {
-        debugPrint('OnClcik');
+       printVm('OnClcik');
       },
       btnOkIcon: Icons.error,
       onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
+       printVm('Dialog Dissmiss from callback $type');
       },
     ).show();
 
@@ -120,11 +121,11 @@ class _VerificationOtpState extends State<VerificationOtp> {
       desc:
       msg,
       btnCancelOnPress: () {
-        debugPrint('OnClcik');
+       printVm('OnClcik');
       },
       btnOkIcon: Icons.warning,
       onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
+       printVm('Dialog Dissmiss from callback $type');
       },
     ).show();
 
@@ -166,7 +167,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
       loading = false;
       setState(() {});
       showErrorDialog(_scaffoldKey!.currentContext!);
-      print("Le code est erroné");
+      printVm("Le code est erroné");
     }, autoRetrieval: (v) {});
   }
 

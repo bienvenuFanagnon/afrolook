@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import 'component/consoleWidget.dart';
 
 class MesNotification extends StatefulWidget {
   const MesNotification({super.key});
@@ -74,7 +75,7 @@ class _MesNotificationState extends State<MesNotification> {
             postProvider.getPostsVideosById(notification.post_id!).then((videos_posts) {
               if(videos_posts.isNotEmpty){
 
-                print("video detail ======== : ${videos_posts.first.toJson()}");
+                printVm("video detail ======== : ${videos_posts.first.toJson()}");
 
                 setState(() {
                   onTap=false;
@@ -133,6 +134,9 @@ class _MesNotificationState extends State<MesNotification> {
           onTap=false;
         });
         Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
+
+      }else{
+        Navigator.pop(context);
 
       }
 
@@ -215,20 +219,25 @@ class _MesNotificationState extends State<MesNotification> {
 
                                   return GestureDetector(
                                     onTap: () {
-
+                                      list[index].is_open=true;
+                                      printVm("notif data : ${list[index].toJson()}");
+                                      authProvider.updateNotif(list[index]);
+                                      // if(list[index].type==NotificationType.ABONNER.name)
                                       handleNotification(list[index]);
+
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.all(4.0),
                                       child: Container(
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.all(Radius.circular(5)),
-                                          color: Colors.black12,
+                                          color:list[index].is_open!? Colors.black12:Colors.green.shade100,
 
                                         ),
                                         child: Padding(
                                           padding: const EdgeInsets.all(2.0),
                                           child: ListTile(
+
 
                                             title: Text('${list[index].titre}',style: TextStyle(color: Colors.blue),),
                                             subtitle: Text('${list[index].description}'),

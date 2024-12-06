@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
+import 'component/consoleWidget.dart';
 
 class SplahsChargement extends StatefulWidget {
   const SplahsChargement({super.key});
@@ -26,8 +27,8 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=11;
-  int limitePosts=30;
+  late int app_version_code=13;
+  int limitePosts=40;
 
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
@@ -51,16 +52,19 @@ class _ChargementState extends State<SplahsChargement> {
 
     authProvider.getAppData().then((value) {
       if (app_version_code== authProvider.appDefaultData.app_version_code) {
+
         postProvider.getPostsImages(limitePosts).then((value) {
           // value.forEach((element) {
-          //   print(element.toJson());
+          //   printVm(element.toJson());
           // },);
 
+
         },);
+
         authProvider.getIsFirst().then((value) {
-          print("isfirst: ${value}");
+          printVm("isfirst: ${value}");
           if (value==null||value==false) {
-            print("is_first");
+            printVm("is_first");
 
             authProvider.storeIsFirst(true);
             Navigator.pushNamed(context, '/introduction');
@@ -69,23 +73,23 @@ class _ChargementState extends State<SplahsChargement> {
 
           }else{
             // authProvider.storeIsFirst(false);
-            print("is_not_first");
+            printVm("is_not_first");
 
             authProvider.getToken().then((token) async {
-              print("token: ${token}");
+              printVm("token: ${token}");
 
               if (token==null||token=='') {
-                print("token: existe pas");
+                printVm("token: existe pas");
                 Navigator.pushNamed(context, '/welcome');
 
 
 
 
               }else{
-                print("token: existe");
+                printVm("token: existe");
                 await    authProvider.getLoginUser(token!).then((value) async {
                   if (value) {
-                    await userProvider.getAllAnnonces();
+                    // await userProvider.getAllAnnonces();
                     userProvider.changeState(user: authProvider.loginUserData,
                         state: UserState.ONLINE.name);
 

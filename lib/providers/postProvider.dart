@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/chatmodels/message.dart';
 
+import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import 'authProvider.dart';
 
@@ -47,7 +48,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -79,7 +80,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -120,7 +121,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -161,7 +162,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -204,7 +205,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -235,18 +236,18 @@ class PostProvider extends ChangeNotifier {
         .where("receiver_id",isEqualTo:'${user_id}')
 
         .orderBy('created_at', descending: true)
-  //  .limit(7)
+   .limit(25)
 
         .snapshots();
     List<NotificationData> notifications = [];
-    listConstposts =[];
+    // listConstposts =[];
     //  UserData userData=UserData();
 
     await for (var snapshot in postStream) {
       notifications=[];
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         NotificationData notification=NotificationData.fromJson(post.data());
         notifications.add(notification);
       // listConstposts=posts;
@@ -270,7 +271,7 @@ class PostProvider extends ChangeNotifier {
     await for (var snapshot in postStream) {
 
       for (var post in snapshot.docs) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
@@ -334,11 +335,11 @@ class PostProvider extends ChangeNotifier {
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
     //  UserData userData=UserData();
-    print("post length  ${postList.length}");
+    printVm("post length  ${postList.length}");
 
 
       for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
         if (p.status==PostStatus.NONVALIDE.name) {
           // posts.add(p);
@@ -413,11 +414,11 @@ bool isReload=false;
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
     //  UserData userData=UserData();
-    print("post length  ${postList.length}");
+    printVm("post length  ${postList.length}");
 
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
       if (p.status==PostStatus.NONVALIDE.name) {
         // posts.add(p);
@@ -503,11 +504,11 @@ bool isReload=false;
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
     //  UserData userData=UserData();
-    print("post length  ${postList.length}");
+    printVm("post length  ${postList.length}");
 
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
       if (p.status==PostStatus.NONVALIDE.name) {
         // posts.add(p);
@@ -588,7 +589,7 @@ bool isReload=false;
 
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
 
 
@@ -639,7 +640,8 @@ bool isReload=false;
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
     QuerySnapshot querySnapshotPost = await postCollect.where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
        // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
-        .orderBy('updated_at', descending: true)
+       //  .orderBy('updated_at', descending: true)
+        .orderBy('created_at', descending: true)
         .get();
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
@@ -648,7 +650,7 @@ bool isReload=false;
 
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
 
 
@@ -710,7 +712,7 @@ bool isReload=false;
 
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
+      //  printVm("post : ${jsonDecode(post.toString())}");
 
 
 
@@ -777,7 +779,7 @@ bool isReload=false;
 
       return true;
     }catch(e){
-      print("erreur update post : ${e}");
+      printVm("erreur update post : ${e}");
       return false;
     }
   }
@@ -795,12 +797,12 @@ bool isReload=false;
       authProvider.loginUserData!.pointContribution=authProvider.loginUserData!.pointContribution!+1;
       await firestore.collection('Users').doc( authProvider.loginUserData!.id).update( authProvider.loginUserData!.toJson());
      // post.user!.pointContribution=post.user!.pointContribution!+1;
-     // print("user avant 2 : ${post.user!.toJson()}");
+     // printVm("user avant 2 : ${post.user!.toJson()}");
       await firestore.collection('Users').doc( userAction!.id).update( userAction!.toJson());
-      //print("user apres 2 : ${userAction!.toJson()}");
+      //printVm("user apres 2 : ${userAction!.toJson()}");
       return true;
     }catch(e){
-      print("erreur update post : ${e}");
+      printVm("erreur update post : ${e}");
       return false;
     }
   }
@@ -825,7 +827,7 @@ bool isReload=false;
 
 
       for (var postcmt in listConstpostsComment) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         //PostComment pm=PostComment.fromJson(postcmt.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${postcmt.user_id}').get();
@@ -864,7 +866,7 @@ bool isReload=false;
 
 
       for (PostComment pm in commentList) {
-        //  print("post : ${jsonDecode(post.toString())}");
+        //  printVm("post : ${jsonDecode(post.toString())}");
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${pm.user_id}').get();
         // Afficher la liste
@@ -891,10 +893,10 @@ bool isReload=false;
           .collection('Messages')
           .doc(message.id)
           .update(message.toJson());
-      //print("user update : ${user!.toJson()}");
+      //printVm("user update : ${user!.toJson()}");
       return true;
     }catch(e){
-      print("erreur update message : ${e}");
+      printVm("erreur update message : ${e}");
       return false;
     }
   }
@@ -915,7 +917,7 @@ bool isReload=false;
       notifyListeners();
       return true;
     }catch(e){
-      print("erreur comment : ${e}");
+      printVm("erreur comment : ${e}");
       return false;
     }
   }
@@ -930,7 +932,7 @@ bool isReload=false;
       notifyListeners();
       return true;
     }catch(e){
-      print("erreur comment : ${e}");
+      printVm("erreur comment : ${e}");
       return false;
     }
   }

@@ -24,6 +24,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../component/consoleWidget.dart';
 import '../../../update_pass_word/confirm_user.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
@@ -75,7 +76,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
   await authProvider.getAppData();
   await userProvider.getAllAnnonces();
 
-  //print("app data2 : ${authProvider.appDefaultData.toJson()!}");
+  //printVm("app data2 : ${authProvider.appDefaultData.toJson()!}");
   // Obtenez les SharedPreferences
   userProvider.changeState(user: authProvider.loginUserData,
       state: UserState.ONLINE.name);
@@ -134,7 +135,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
           content: Text(errorMessage.toString(),textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
         );
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        print(error.code);
+        printVm(error.code);
       }
     }
   }
@@ -221,10 +222,10 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                 initialCountryCode: 'TG',
                                 onChanged: (phone) {
                                   telephoneController.text=phone.completeNumber;
-                                  print(phone.completeNumber);
+                                  printVm(phone.completeNumber);
                                 },
                                 onCountryChanged: (country) {
-                                  print('Country changed to: ' + country.name);
+                                  printVm('Country changed to: ' + country.name);
                                 },
                                 validator: (value) {
                                   if (value!.completeNumber.isEmpty) {
@@ -294,18 +295,18 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                     if (_formKey.currentState!.validate()) {
                                       setState(() {
                                         onTap=true;
-                                        print("on tap");
+                                        printVm("on tap");
                                       });
                                       // Afficher une SnackBar
                                       try{
                                         await  signIn( '${telephoneController.text}@gmail.com',motDePasseController.text);
 
                                       }catch(e){
-                                        print("Erreur connextion ---------------");
-                                        print(e);
+                                        printVm("Erreur connextion ---------------");
+                                        printVm(e);
                                         setState(() {
                                           onTap=false;
-                                          print("on tap");
+                                          printVm("on tap");
                                         });
                                       }
 

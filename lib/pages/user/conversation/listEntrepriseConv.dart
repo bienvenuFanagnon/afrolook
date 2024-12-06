@@ -19,6 +19,7 @@ import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
 import '../../chat/entrepriseChat.dart';
 import '../../chat/myChat.dart';
+import '../../component/consoleWidget.dart';
 
 
 class ListEntrepriseUserChats extends StatefulWidget {
@@ -377,7 +378,7 @@ class _ListEntrepriseUserChatsState extends State<ListEntrepriseUserChats> {
                     );
                 }
                 else if (snapshot.hasError) {
-                  print("${snapshot.error}");
+                  printVm("${snapshot.error}");
                   return    Center(
                     child: Column(
                       children: [

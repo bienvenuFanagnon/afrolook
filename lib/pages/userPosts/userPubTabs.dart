@@ -185,7 +185,7 @@ class _UserPubTextState extends State<UserPubText> {
                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
                                           send_user_id: "${authProvider.loginUserData.id!}",
                                           recever_user_id: "",
-                                          message: "📢 Un nouveau post a été publié ✨",
+                                          message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
                                           post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -476,7 +476,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
                                           send_user_id: "${authProvider.loginUserData.id!}",
                                           recever_user_id: "",
-                                          message: "📢 Un nouveau post a été publié ✨",
+                                          message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
                                           post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -848,7 +848,8 @@ bool onTap=false;
                                         smallImage: "${authProvider.loginUserData.imageUrl!}",
                                         send_user_id: "${authProvider.loginUserData.id!}",
                                         recever_user_id: "",
-                                        message: "📢 Une nouvelle video a été publié ✨",
+                                        message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look video ✨",
+
                                         type_notif: NotificationType.POST.name,
                                         post_id: "${post!.id!}",
                                         post_type: PostDataType.VIDEO.name, chat_id: ''
