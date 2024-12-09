@@ -55,6 +55,7 @@ import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:upgrader/upgrader.dart';
 
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
@@ -437,8 +438,14 @@ class _MyAppState extends State<MyApp> {
         ),
 
          */
+home: UpgradeAlert(
+  upgrader: Upgrader(),
+  child: Scaffold(
+    body: SplahsChargement(),
+  ),
+),
 
-      initialRoute: '/splahs_chargement',
+      // initialRoute: '/splahs_chargement',
       //initialRoute: '/introduction',
       onGenerateRoute: (settings) {
         switch (settings.name) {

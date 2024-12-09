@@ -50,6 +50,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
 
   final TextEditingController motDePasseController = TextEditingController();
   final TextEditingController code_parrainageController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTap=false;
@@ -166,6 +167,12 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
       return true;
     }
   }
+
+  bool isValidEmail(String email) {
+    final RegExp emailRegExp = RegExp(
+        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+    return emailRegExp.hasMatch(email);
+  }
 @override
   void initState() {
     // TODO: implement initState
@@ -187,9 +194,11 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
           alignment: Alignment.center,
           height: height*0.6,
           decoration: BoxDecoration(
-              color: Colors.green,
+              color: Colors.white70,
+              border: Border.all(color: Colors.green,width: 5),
               borderRadius:BorderRadius.all(Radius.circular(10))
           ),
+
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Form(
@@ -207,6 +216,8 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                     cursorColor: kPrimaryColor,
                     decoration: InputDecoration(
                       hintText: 'Téléphone',
+                      hintStyle: TextStyle(color: Colors.green),
+
                       focusColor: kPrimaryColor,
                       focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: kPrimaryColor)),
@@ -241,9 +252,39 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                       focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: kPrimaryColor)),
                       hintText: "Code de parrainage(optionel)",
+
+                      hintStyle: TextStyle(color: Colors.green),
                       prefixIcon: Padding(
                         padding: EdgeInsets.all(defaultPadding),
                         child: Icon(Icons.person),
+                      ),
+                    ),
+                  ),
+                  TextFormField(
+                    controller: emailController,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.next,
+                    cursorColor: kPrimaryColor,
+                    validator: (value)  {
+                      if (value!.isEmpty) {
+                        return 'Le champ "Email" est obligatoire.';
+                      }
+                      if (!isValidEmail(value)) {
+                        return 'Email invalide';
+                      }
+                      return null;
+                    },
+                    onSaved: (email) {},
+                    decoration: const InputDecoration(
+                      focusColor: kPrimaryColor,
+                      focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: kPrimaryColor)),
+                      hintText: "Email",
+                      hintStyle: TextStyle(color: Colors.green),
+
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.all(defaultPadding),
+                        child: Icon(Icons.email,color: Colors.green,),
                       ),
                     ),
                   ),
@@ -268,15 +309,19 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                       focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: kPrimaryColor)),
                       hintText: "Pseudo(unique)",
+                      hintStyle: TextStyle(color: Colors.green),
+
                       prefixIcon: Padding(
                         padding: EdgeInsets.all(defaultPadding),
-                        child: Icon(Icons.person),
+                        child: Icon(Icons.person,color: Colors.green,),
                       ),
                     ),
                   ),
 
                   DropdownButtonFormField(
                     value: selectedGenre,
+                    // icon: Icon(Icons.verified_user),
+
                     items: genres.map((genre) {
                       return DropdownMenuItem(
                         value: genre,
@@ -298,6 +343,8 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
 
                     decoration: InputDecoration(
                       labelText: 'Genre',
+                      labelStyle: TextStyle(color: Colors.green),
+
                     ),
                   ),
                   TextFormField(
@@ -310,9 +357,11 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                       focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: kPrimaryColor)),
                       hintText: "Votre mot de passe",
+                      hintStyle: TextStyle(color: Colors.green),
+
                       prefixIcon: Padding(
                         padding: EdgeInsets.all(defaultPadding),
-                        child: Icon(Icons.lock),
+                        child: Icon(Icons.lock,color: Colors.green,),
                       ),
 
                       suffixIcon: GestureDetector(
@@ -345,9 +394,11 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                       focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: kPrimaryColor)),
                       hintText: "Confirmer mot de passe",
+                      hintStyle: TextStyle(color: Colors.green),
+
                       prefixIcon: Padding(
                         padding: EdgeInsets.all(defaultPadding),
-                        child: Icon(Icons.lock),
+                        child: Icon(Icons.lock,color: Colors.green,),
                       ),
                       suffixIcon: GestureDetector(
                         onTap: () {
@@ -373,7 +424,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 50),
+                  SizedBox(height: 30),
                   Container(
                     width: SizeButtons.loginAndSignupBtnlargeur,
                     child: ElevatedButton(
@@ -397,6 +448,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                             authProvider.registerUser.pseudo=pseudoController.text;
                             authProvider.registerUser.genre=selectedGenre;
                             authProvider.registerUser.password=motDePasseController.text;
+                            authProvider.registerUser.email=emailController.text;
                             //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
                             // sendOtpCode();
                             Navigator.push(
@@ -408,7 +460,9 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                               ),
                             );
 
-
+                            setState(() {
+                              onTap=false;
+                            });
 
                           }else{
                             setState(() {
@@ -435,7 +489,7 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                           rightDotColor: Colors.black,
                         ),
                       ): Text("Suivant",
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),
 
                       ),
                     ),

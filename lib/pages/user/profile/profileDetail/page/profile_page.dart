@@ -305,26 +305,49 @@ bool change_profil_loading= false;
     );
   }
 
-  Widget buildName(UserData user) => Column(
-        children: [
-          Text(
-            "@${user.pseudo!}",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            user.numeroDeTelephone!,
-            style: TextStyle(color: Colors.grey),
-          ),
-          /*
-          Text(
-            "+228 96198801",
-            style: TextStyle(color: Colors.grey),
-          )
+  Widget buildName(UserData user) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              "@${user.pseudo!}",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.phone),
+                Text(
+                  user.numeroDeTelephone!,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.email),
+                Text(
+                  user.email!,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+            /*
+            Text(
+              "+228 96198801",
+              style: TextStyle(color: Colors.grey),
+            )
 
-           */
-        ],
-      );
+             */
+          ],
+        ),
+  );
   String formatNumber(double number) {
     if (number < 1000) {
       return number.toString();

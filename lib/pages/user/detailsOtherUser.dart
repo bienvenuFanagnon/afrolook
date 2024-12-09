@@ -38,6 +38,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../chat/myChat.dart';
+import 'otherUser/otherUser.dart';
 
 
 class DetailsOtherUser extends StatefulWidget {
@@ -277,8 +278,8 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
           ClipRRect(
             borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
             child: Container(
-              // width: widget.w*0.8,
-              // height: widget.h*0.4,
+              width: widget.w,
+              height: widget.h*0.5,
               child: CachedNetworkImage(
                 fit: BoxFit.cover,
 
@@ -349,6 +350,20 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
               ],
             ),
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text("Voir le profil"),
+              IconButton(onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OtherUserPage(otherUser: widget.user),
+                    ));
+              }, icon: Icon(Icons.remove_red_eye)),
+            ],
+          ),
           Visibility(
             visible:authProvider.loginUserData.id!=widget.user.id ,
             child: StatefulBuilder(
@@ -360,7 +375,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                     height: 50,
                     child:  isMyFriend(widget.user.friendsIds!,authProvider.loginUserData.id!)?
                     Padding(
-                      padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
+                      padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: ElevatedButton(
 
                           onPressed: () async {
@@ -387,7 +402,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                     )
                         :!isInvite(widget.user.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
                     Padding(
-                      padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
+                      padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: Container(
                         //width: 120,
                         //height: 30,
@@ -492,7 +507,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                       ),
                     ):
                     Padding(
-                      padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
+                      padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: Container(
                         //width: 120,
                         // height: 30,
@@ -640,6 +655,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                 }
             ),
           )
+
           // Row(
           //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
           //   children: [

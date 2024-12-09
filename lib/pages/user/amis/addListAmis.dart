@@ -38,17 +38,20 @@ class _ListUserChatsState extends State<AddListAmis> {
       Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late List<UserData> listUser = [];
-  bool isUserAbonne(List<UserAbonnes> userAbonnesList, String userIdToCheck) {
-    return userAbonnesList.any((userAbonne) => userAbonne.abonneUserId == userIdToCheck);
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
   }
-  bool isMyFriend(List<Friends> userfriendList, String userIdToCheck) {
-    return userfriendList.any((userAbonne) => userAbonne.friendId == userIdToCheck);
-  }
-  bool isInvite(List<Invitation> invitationList, String userIdToCheck) {
 
-    return invitationList.any((inv) {
-      return inv.receiverId == userIdToCheck?true:false;
-    },);
+  bool isIn(List<String> users_id, String userIdToCheck) {
+    return users_id.any((item) => item == userIdToCheck);
+  }
+
+  bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
+    return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
+  }
+
+  bool isInvite(List<String> invitationList, String userIdToCheck) {
+    return invitationList.any((invid) => invid == userIdToCheck);
   }
   List<String> alphabet = [];
 
@@ -195,94 +198,94 @@ class _ListUserChatsState extends State<AddListAmis> {
               ),
             ),
           ),
-          Row(
-            children: [
-              TextButton(
-                  onPressed:  () {},
-
-                  child: Text(
-                    isAbonne ? '' : 'abonner',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                        color: isAbonne ? Colors.red : Colors.green),
-                  )),
-    StatefulBuilder(
-
-    builder: (BuildContext context, void Function(void Function()) setState) {
-      return isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)?Container(): TextButton(
-          onPressed: inviteTap
-              ? () {}
-
-              : () async {
-            setState(() {
-              inviteTap = true;
-            });
-            Invitation invitation = Invitation();
-            invitation.senderId = authProvider.loginUserData.id;
-            invitation.receiverId = user.id;
-            invitation.status = InvitationStatus.ENCOURS.name;
-            invitation.createdAt =
-                DateTime
-                    .now()
-                    .millisecondsSinceEpoch;
-            invitation.updatedAt =
-                DateTime
-                    .now()
-                    .millisecondsSinceEpoch;
-
-            // invitation.inviteUser=authProvider.loginUserData!;
-            await userProvider.sendInvitation(invitation,context).then(
-                  (value) async {
-                if (value) {
-                  // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                  await authProvider.getCurrentUser(
-                      authProvider.loginUserData!.id!);
-                  SnackBar snackBar = SnackBar(
-                    content: Text(
-                      'invitation envoyée',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(snackBar);
-                } else {
-                  SnackBar snackBar = SnackBar(
-                    content: Text(
-                      'une erreur',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(snackBar);
-                }
-              },
-            );
-
-            setState(() {
-              inviteTap = false;
-            });
-          },
-          child:inviteTap? Center(
-            child: LoadingAnimationWidget.flickr(
-              size: 20,
-              leftDotColor: Colors.green,
-              rightDotColor: Colors.black,
-            ),
-          ): Text(
-            'inviter',
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-                color: Colors.blue),
-          )
-      );
-    }
-              ),
-            ],
-          ),
+    //       Row(
+    //         children: [
+    //           TextButton(
+    //               onPressed:  () {},
+    //
+    //               child: Text(
+    //                 isAbonne ? '' : 'abonner',
+    //                 style: TextStyle(
+    //                     fontSize: 12,
+    //                     fontWeight: FontWeight.normal,
+    //                     color: isAbonne ? Colors.red : Colors.green),
+    //               )),
+    // // StatefulBuilder(
+    // //
+    // // builder: (BuildContext context, void Function(void Function()) setState) {
+    // //   return isInvite(authProvider.loginUserData.mesInvitationsEnvoyer!, user.id!)?Container(): TextButton(
+    // //       onPressed: inviteTap
+    // //           ? () {}
+    // //
+    // //           : () async {
+    // //         setState(() {
+    // //           inviteTap = true;
+    // //         });
+    // //         Invitation invitation = Invitation();
+    // //         invitation.senderId = authProvider.loginUserData.id;
+    // //         invitation.receiverId = user.id;
+    // //         invitation.status = InvitationStatus.ENCOURS.name;
+    // //         invitation.createdAt =
+    // //             DateTime
+    // //                 .now()
+    // //                 .millisecondsSinceEpoch;
+    // //         invitation.updatedAt =
+    // //             DateTime
+    // //                 .now()
+    // //                 .millisecondsSinceEpoch;
+    // //
+    // //         // invitation.inviteUser=authProvider.loginUserData!;
+    // //         await userProvider.sendInvitation(invitation,context).then(
+    // //               (value) async {
+    // //             if (value) {
+    // //               // await userProvider.getUsers(authProvider.loginUserData!.id!);
+    // //               await authProvider.getCurrentUser(
+    // //                   authProvider.loginUserData!.id!);
+    // //               SnackBar snackBar = SnackBar(
+    // //                 content: Text(
+    // //                   'invitation envoyée',
+    // //                   textAlign: TextAlign.center,
+    // //                   style: TextStyle(color: Colors.green),
+    // //                 ),
+    // //               );
+    // //               ScaffoldMessenger.of(context)
+    // //                   .showSnackBar(snackBar);
+    // //             } else {
+    // //               SnackBar snackBar = SnackBar(
+    // //                 content: Text(
+    // //                   'une erreur',
+    // //                   textAlign: TextAlign.center,
+    // //                   style: TextStyle(color: Colors.red),
+    // //                 ),
+    // //               );
+    // //               ScaffoldMessenger.of(context)
+    // //                   .showSnackBar(snackBar);
+    // //             }
+    // //           },
+    // //         );
+    // //
+    // //         setState(() {
+    // //           inviteTap = false;
+    // //         });
+    // //       },
+    // //       child:inviteTap? Center(
+    // //         child: LoadingAnimationWidget.flickr(
+    // //           size: 20,
+    // //           leftDotColor: Colors.green,
+    // //           rightDotColor: Colors.black,
+    // //         ),
+    // //       ): Text(
+    // //         'inviter',
+    // //         style: TextStyle(
+    // //             fontSize: 12,
+    // //             fontWeight: FontWeight.normal,
+    // //             color: Colors.blue),
+    // //       )
+    // //   );
+    // // }
+    // //           ),
+    //         ],
+    //       ),
         ],
       ),
     );

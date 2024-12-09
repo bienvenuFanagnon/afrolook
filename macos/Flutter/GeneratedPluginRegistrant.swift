@@ -7,6 +7,7 @@ import Foundation
 
 import audioplayers_darwin
 import cloud_firestore
+import device_info_plus
 import encrypt_decrypt_plus
 import file_selector_macos
 import firebase_auth
@@ -28,6 +29,7 @@ import wakelock_plus
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
   FLTFirebaseFirestorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseFirestorePlugin"))
+  DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
   EncryptDecryptPlusPlugin.register(with: registry.registrar(forPlugin: "EncryptDecryptPlusPlugin"))
   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
   FLTFirebaseAuthPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseAuthPlugin"))

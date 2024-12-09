@@ -37,6 +37,7 @@ import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
 import '../../constant/textCustom.dart';
@@ -492,6 +493,82 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                  */
+                Visibility(
+                  visible: authProvider.loginUserData.role == UserRole.ADM.name,
+                  child: ListTile(
+                    onTap: () async {
+                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                        post.status = PostStatus.NONVALIDE.name;
+                        await postProvider.updateVuePost(post, context).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'Post bloqué !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      } else if (post.type == PostType.POST.name) {
+                        if (post.user!.id == authProvider.loginUserData.id) {
+                          post.status = PostStatus.SUPPRIMER.name;
+                          await postProvider.updateVuePost(post, context).then(
+                                (value) {
+                              if (value) {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'Post supprimé !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              } else {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'échec !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              }
+                            },
+                          );
+                        }
+                      }
+
+                      setState(() {
+                        Navigator.pop(context);
+                      });
+                    },
+                    leading: Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    title: authProvider.loginUserData.role == UserRole.ADM.name
+                        ? Text('Bloquer')
+                        : Text('Supprimer'),
+                  ),
+                ),
+
                 Visibility(
                   visible: post.user!.id == authProvider.loginUserData.id,
                   child: ListTile(
@@ -3250,7 +3327,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                   ListTile(
                     trailing: TextCustomerMenu(
-                      titre: "Tester",
+                      titre: "Discuter",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: Colors.blue,
                       fontWeight: FontWeight.w600,
@@ -3477,9 +3554,12 @@ class _MyHomePageState extends State<MyHomePage>
                       );
                     },
                   ),
+
                 ],
               ),
             ),
+            SizedBox(height: 5,),
+            Text('Version: 1.0.5 (5)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -5433,7 +5513,26 @@ class _MyHomePageState extends State<MyHomePage>
                                       printVm(
                                           "erreur ${snapshot.error.toString()}");
 
-                                      return Icon(Icons.error_outline);
+                                      return Center(child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.error_outline),
+                                          ElevatedButton(onPressed: () {
+                                            setState(() {
+                                              postProvider
+                                                  .reloadPostsImages(limitePosts, _scrollController)
+                                                  .then(
+                                                    (value) {},
+                                              );
+                                              postProvider.getPostsVideos().then((value) {
+
+                                              },);
+
+                                            });
+                                          }, child: Text('Actualiser'))
+                                        ],
+                                      ));
                                     }
                                     if (snapshot.connectionState ==
                                         ConnectionState.waiting) {

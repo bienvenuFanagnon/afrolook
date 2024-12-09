@@ -169,7 +169,7 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
 
         if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||authProvider.loginUserData.id!.length>5){
           await authProvider.getAppData();
-          await userProvider.getAllAnnonces();
+          // await userProvider.getAllAnnonces();
 
           //print("app data2 : ${authProvider.appDefaultData.toJson()!}");
           // Obtenez les SharedPreferences

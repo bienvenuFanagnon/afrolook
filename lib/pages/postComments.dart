@@ -242,6 +242,310 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
+  _showCommentMenuModalDialog(PostComment postComment) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Menu'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                // Visibility(
+                //   visible: postComment.user!.id != authProvider.loginUserData.id,
+                //   child: ListTile(
+                //     onTap: () async {
+                //       postComment.status = PostStatus.SIGNALER.name;
+                //       await postProviders.updateComment(postComment).then(
+                //             (value) {
+                //           if (value) {
+                //             SnackBar snackBar = SnackBar(
+                //               content: Text(
+                //                 'Post signalé !',
+                //                 textAlign: TextAlign.center,
+                //                 style: TextStyle(color: Colors.green),
+                //               ),
+                //             );
+                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //           } else {
+                //             SnackBar snackBar = SnackBar(
+                //               content: Text(
+                //                 'échec !',
+                //                 textAlign: TextAlign.center,
+                //                 style: TextStyle(color: Colors.red),
+                //               ),
+                //             );
+                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //           }
+                //           Navigator.pop(context);
+                //         },
+                //       );
+                //       setState(() {});
+                //     },
+                //     leading: Icon(
+                //       Icons.flag,
+                //       color: Colors.blueGrey,
+                //     ),
+                //     title: Text(
+                //       'Signaler',
+                //     ),
+                //   ),
+                // ),
+                /*
+                ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  leading: Icon(Icons.edit,color: Colors.blue,),
+                  title: Text('Modifier'),
+                ),
+
+                 */
+                Visibility(
+                  visible: postComment.user!.id == authProvider.loginUserData.id||authProvider.loginUserData.role == UserRole.ADM.name,
+                  child: ListTile(
+                    onTap: () async {
+                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                        postComment.status = PostStatus.SUPPRIMER.name;
+                        await postProviders.updateComment(postComment).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'commentaire supprimé !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                              setState(() {
+
+                              });
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      } else
+                        if (postComment.user!.id == authProvider.loginUserData.id) {
+                          postComment.status = PostStatus.SUPPRIMER.name;
+                          await postProviders.updateComment(postComment).then(
+                                (value) {
+                              if (value) {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'commentaire supprimé !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                                setState(() {
+
+                                });
+                              } else {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'échec !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              }
+                            },
+                          );
+                        }
+
+
+                      setState(() {
+                        Navigator.pop(context);
+                      });
+                    },
+                    leading: Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    title: authProvider.loginUserData.role == UserRole.ADM.name
+                        // ? Text('Bloquer')
+                        ? Text('Supprimer')
+                        : Text('Supprimer'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  _showResponseCommentMenuModalDialog(PostComment postComment,ResponsePostComment response) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Menu'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                // Visibility(
+                //   visible: postComment.user!.id != authProvider.loginUserData.id,
+                //   child: ListTile(
+                //     onTap: () async {
+                //       postComment.status = PostStatus.SIGNALER.name;
+                //       await postProviders.updateComment(postComment).then(
+                //             (value) {
+                //           if (value) {
+                //             SnackBar snackBar = SnackBar(
+                //               content: Text(
+                //                 'Post signalé !',
+                //                 textAlign: TextAlign.center,
+                //                 style: TextStyle(color: Colors.green),
+                //               ),
+                //             );
+                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //           } else {
+                //             SnackBar snackBar = SnackBar(
+                //               content: Text(
+                //                 'échec !',
+                //                 textAlign: TextAlign.center,
+                //                 style: TextStyle(color: Colors.red),
+                //               ),
+                //             );
+                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //           }
+                //           Navigator.pop(context);
+                //         },
+                //       );
+                //       setState(() {});
+                //     },
+                //     leading: Icon(
+                //       Icons.flag,
+                //       color: Colors.blueGrey,
+                //     ),
+                //     title: Text(
+                //       'Signaler',
+                //     ),
+                //   ),
+                // ),
+                /*
+                ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  leading: Icon(Icons.edit,color: Colors.blue,),
+                  title: Text('Modifier'),
+                ),
+
+                 */
+                Visibility(
+                  visible: postComment.user!.id == authProvider.loginUserData.id||authProvider.loginUserData.role == UserRole.ADM.name,
+                  child: ListTile(
+                    onTap: () async {
+                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                        response.status = PostStatus.SUPPRIMER.name;
+                     int indexResponse=   postComment.responseComments!.indexOf(response);
+                        postComment.responseComments!.elementAt(indexResponse).status= PostStatus.SUPPRIMER.name;
+
+
+                        await postProviders.updateComment(postComment).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'commentaire supprimé !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      } else
+                      if (postComment.user!.id == authProvider.loginUserData.id) {
+                        response.status = PostStatus.SUPPRIMER.name;
+                        int indexResponse=   postComment.responseComments!.indexOf(response);
+                        // postComment.responseComments![indexResponse]=response;
+                        postComment.responseComments!.elementAt(indexResponse).status= PostStatus.SUPPRIMER.name;
+
+                        await postProviders.updateComment(postComment).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'commentaire supprimé !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      }
+
+
+                      setState(() {
+                        Navigator.pop(context);
+                      });
+                    },
+                    leading: Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    title: authProvider.loginUserData.role == UserRole.ADM.name
+                    // ? Text('Bloquer')
+                        ? Text('Supprimer')
+                        : Text('Supprimer'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+
+
+
 
 
   late bool replying = false;
@@ -291,6 +595,11 @@ class _PostCommentsState extends State<PostComments> {
               children: [
                 for(PostComment pcm in pcms!)
                 ExpansionTile(
+                  trailing: Container(
+                      child: Padding(
+                        padding: const EdgeInsets.all(1.0),
+                        child: Text('${formatNumber(pcm.responseComments!.length)}',style: TextStyle(color: Colors.red),),
+                      )),
 
                   title: ListTile(
 
@@ -316,7 +625,7 @@ class _PostCommentsState extends State<PostComments> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: width * 0.8,
+                          width: width,
                           //height: 100,
 
                           child:Row(
@@ -335,30 +644,46 @@ class _PostCommentsState extends State<PostComments> {
                                 },
 
                                 child: SizedBox(
-                                  width: width * 0.3,
+                                  width: width * 0.2,
                                   child: TextCustomerPostDescription(
-                                    titre: "${pcm.message!}",
+                                    titre: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message!}",
                                     fontSize: SizeText.homeProfileTextSize,
-                                    couleur: ConstColors.textColors,
+                                    couleur: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
-                              IconButton(onPressed: () {
-                                setState(() {
-                                  commentSelectedToReply = PostComment();
-                                  commentSelectedToReply = pcm;
-                                  commentRecever=commentSelectedToReply.user!;
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  IconButton(onPressed: () {
+                                    setState(() {
+                                      commentSelectedToReply = PostComment();
+                                      commentSelectedToReply = pcm;
+                                      commentRecever=commentSelectedToReply.user!;
 
-                                  // replyUser_id=commentSelectedToReply.user!.id!;
-                                  replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
+                                      replyUser_id=commentSelectedToReply.user!.id!;
+                                      replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
 
-                                  replyingTo = "@${commentSelectedToReply.user!.pseudo}";
-                                  replying = true;
-                                });
+                                      replyingTo = "@${commentSelectedToReply.user!.pseudo}";
+                                      replying = true;
+                                    });
 
 
-                              }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,))
+                                  }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,)),
+                                  IconButton(onPressed: () {
+                                    setState(() {
+
+                                      _showCommentMenuModalDialog(pcm);
+
+                                    });
+
+
+                                  }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 15,)),
+
+                                ],
+                              )
 
                             ],
                           ),
@@ -366,11 +691,11 @@ class _PostCommentsState extends State<PostComments> {
                         Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold),),
                       ],
                     ),
-                    trailing: Container(
-                        child: Padding(
-                          padding: const EdgeInsets.all(1.0),
-                          child: Text('${formatNumber(pcm.responseAbonnements!.length)}',style: TextStyle(color: Colors.red),),
-                        )),
+                    // trailing: Container(
+                    //     child: Padding(
+                    //       padding: const EdgeInsets.all(1.0),
+                    //       child: Text('${formatNumber(pcm.responseAbonnements!.length)}',style: TextStyle(color: Colors.red),),
+                    //     )),
                     /*
                       trailing: Align(
                         alignment: Alignment.centerRight,
@@ -386,7 +711,7 @@ class _PostCommentsState extends State<PostComments> {
                        */
                   ),
                   children: [
-                    for(ResponsePostComment rpc in pcm.responseAbonnements!)
+                    for(ResponsePostComment rpc in pcm.responseComments!)
                       Padding(
                         padding: const EdgeInsets.only(left: 30.0),
                         child: ListTile(
@@ -432,29 +757,45 @@ class _PostCommentsState extends State<PostComments> {
                                     SizedBox(
                                       width: width * 0.3,
                                       child: TextCustomerPostDescription(
-                                        titre: "${rpc!.message}",
+                                        titre: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message!}",
                                         fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
+                                        couleur: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+
                                         fontWeight: FontWeight.w400,
                                       ),
                                     ),
 
-                                    IconButton(onPressed: () {
-                                      setState(() {
-                                        commentSelectedToReply = PostComment();
-                                        commentSelectedToReply = pcm;
-                                        commentRecever=pcm.user!;
+                                    Row(
+                                      children: [
+                                        IconButton(onPressed: () {
+                                          printVm("****** response pcm selected");
 
-                                        printVm('rpc data ${rpc.toJson()}');
-                                        replyUser_id=rpc.user_id!;
-                                        replyUser_pseudo=pcm.user!.pseudo!;
+                                          setState(() {
+                                            // printVm("****** response pcm **** : ${pcm.toJson()}");
 
-                                        replyingTo = "@${rpc!.user_pseudo}";
-                                        replying = true;
-                                      });
+                                            commentSelectedToReply = PostComment();
+                                            commentSelectedToReply = pcm;
+                                            commentRecever=pcm.user!;
+
+                                            printVm('rpc data ${rpc.toJson()}');
+                                            replyUser_id=rpc.user_id!;
+                                            replyUser_pseudo=pcm.user!.pseudo!;
+
+                                            replyingTo = "@${rpc!.user_pseudo}";
+                                            replying = true;
+                                          });
 
 
-                                    }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,))
+                                        }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,)),
+                                        IconButton(onPressed: () {
+
+                                          _showResponseCommentMenuModalDialog(pcm,rpc);
+
+
+
+                                        }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 14,)),
+                                      ],
+                                    )
 
                                   ],
                                 ),
@@ -1080,12 +1421,12 @@ class _PostCommentsState extends State<PostComments> {
                                   child: TextField(
                                     focusNode: _focusNode,
                                     onTap: () async {
-                                      _controller.animateTo(
-                                        _controller.position.maxScrollExtent *
-                                            34,
-                                        duration: Duration(milliseconds: 800),
-                                        curve: Curves.fastOutSlowIn,
-                                      );
+                                      // _controller.animateTo(
+                                      //   _controller.position.maxScrollExtent *
+                                      //       34,
+                                      //   duration: Duration(milliseconds: 800),
+                                      //   curve: Curves.fastOutSlowIn,
+                                      // );
                                       printVm("tap");
                                     },
                                     controller: _textController,
@@ -1149,6 +1490,9 @@ class _PostCommentsState extends State<PostComments> {
                                   if (_textController.text.isNotEmpty) {
                                     _textController.text="";
                                     if (replying) {
+
+                                      printVm("****** reply ++++response sended user id **** : ${replyUser_id}");
+
                                       ResponsePostComment comment =
                                       ResponsePostComment(user_id: authProvider.loginUserData!.id);
                                       comment.user_id =
@@ -1166,7 +1510,7 @@ class _PostCommentsState extends State<PostComments> {
                                       comment.updatedAt = DateTime.now()
                                           .microsecondsSinceEpoch;
                                       commentSelectedToReply
-                                          .responseAbonnements!
+                                          .responseComments!
                                           .add(comment);
                                       postPro
                                           .updateComment(
@@ -1174,7 +1518,7 @@ class _PostCommentsState extends State<PostComments> {
                                           .then(
                                             (value) async {
                                           if (value) {
-                                            _textController.text = "";
+                                            // _textController.text = "";
                                             printVm("****** response sended user id **** : ${replyUser_id}");
         
                                             await authProvider.getUserById(replyUser_id).then(
@@ -1183,18 +1527,6 @@ class _PostCommentsState extends State<PostComments> {
         
                                                   UserData receiver = users.first;
                                                   printVm("****** response sended user **** : ${receiver.toJson()}");
-        
-                                                  await authProvider.sendNotification(
-                                                      userIds: [receiver!.oneIgnalUserid!],
-                                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                      send_user_id: "${authProvider.loginUserData.id!}",
-                                                      recever_user_id: "${receiver!.id!}",
-                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
-                                                      type_notif: NotificationType.POST.name,
-                                                      post_id: "${widget.post!.id!}",
-                                                      post_type: PostDataType.COMMENT.name, chat_id: ''
-                                                  );
-        
                                                   NotificationData notif=NotificationData();
                                                   notif.id=firestore
                                                       .collection('Notifications')
@@ -1209,24 +1541,37 @@ class _PostCommentsState extends State<PostComments> {
                                                   notif.receiver_id=receiver!.id!;
                                                   notif.post_id=widget.post!.id!;
                                                   notif.post_data_type=PostDataType.COMMENT.name!;
-        
+
                                                   notif.updatedAt =
                                                       DateTime.now().microsecondsSinceEpoch;
                                                   notif.createdAt =
                                                       DateTime.now().microsecondsSinceEpoch;
                                                   notif.status = PostStatus.VALIDE.name;
-        
+
                                                   // users.add(pseudo.toJson());
-        
+
                                                   await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+                                                  await authProvider.sendNotification(
+                                                      userIds: [receiver!.oneIgnalUserid!],
+                                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                      send_user_id: "${authProvider.loginUserData.id!}",
+                                                      recever_user_id: "${receiver!.id!}",
+                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
+                                                      type_notif: NotificationType.POST.name,
+                                                      post_id: "${widget.post!.id!}",
+                                                      post_type: PostDataType.COMMENT.name, chat_id: ''
+                                                  );
         
+
                                                 }
                                               },
                                             );
         
                                             sendMessageTap = false;
                                             _focusNode.unfocus();
-        
+                                            _textController.text = "";
+
                                             setState(() {
                                               replying = false;
                                             });
@@ -1248,7 +1593,7 @@ class _PostCommentsState extends State<PostComments> {
                                           authProvider.loginUserData;
                                       comment.post_id = widget.post.id;
                                       comment.users_like_id = [];
-                                      comment.responseAbonnements = [];
+                                      comment.responseComments = [];
                                       comment.message =
                                           textComment;
                                       comment.loves = 0;
@@ -1294,7 +1639,7 @@ class _PostCommentsState extends State<PostComments> {
                                                 smallImage: "${authProvider.loginUserData.imageUrl!}",
                                                 send_user_id: "${authProvider.loginUserData.id!}",
                                                 recever_user_id: "",
-                                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
+                                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre look",
                                                 type_notif: NotificationType.POST.name,
                                                 post_id: "${widget.post!.id!}",
                                                 post_type: PostDataType.COMMENT.name, chat_id: ''
@@ -1308,7 +1653,7 @@ class _PostCommentsState extends State<PostComments> {
                                             notif.titre="Commentaire 💬";
                                             notif.media_url=authProvider.loginUserData.imageUrl;
                                             notif.type=NotificationType.POST.name;
-                                            notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+                                            notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre look";
                                             notif.users_id_view=[];
                                             notif.user_id=authProvider.loginUserData.id;
                                             notif.receiver_id=widget.post!.user!.id!;
@@ -1658,7 +2003,7 @@ class _PostCommentsState extends State<PostComments> {
               //                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
               //                                           send_user_id: "${authProvider.loginUserData.id!}",
               //                                           recever_user_id: "",
-              //                                           message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication",
+              //                                           message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre look",
               //                                           type_notif: NotificationType.POST.name,
               //                                           post_id: "${widget.post!.id!}",
               //                                           post_type: PostDataType.COMMENT.name, chat_id: ''
@@ -1672,7 +2017,7 @@ class _PostCommentsState extends State<PostComments> {
               //                                       notif.titre="Commentaire 💬";
               //                                       notif.media_url=authProvider.loginUserData.imageUrl;
               //                                       notif.type=NotificationType.POST.name;
-              //                                       notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre publication";
+              //                                       notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre look";
               //                                       notif.users_id_view=[];
               //                                       notif.user_id=authProvider.loginUserData.id;
               //                                       notif.receiver_id=widget.post!.user!.id!;

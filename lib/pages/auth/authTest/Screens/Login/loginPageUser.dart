@@ -1,4 +1,5 @@
 
+import 'package:afrotok/pages/contact.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -46,6 +47,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
   Provider.of<UserProvider>(context, listen: false);
 
   final TextEditingController pseudoController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
   final TextEditingController motDePasseController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -139,6 +141,12 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
       }
     }
   }
+
+  bool isValidEmail(String email) {
+    final RegExp emailRegExp = RegExp(
+        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+    return emailRegExp.hasMatch(email);
+  }
   @override
   void initState() {
     // TODO: implement initState
@@ -193,7 +201,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                       alignment: Alignment.center,
                       height: height*0.5,
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                          color: Colors.white70,
+                        border: Border.all(color: Colors.green,width: 5),
                         borderRadius:BorderRadius.all(Radius.circular(10))
                       ),
                       child: Form(
@@ -204,37 +213,64 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                             children: [
 
                               SizedBox(height: height*0.005,),
-                              IntlPhoneField(
-                                //controller: telephoneController,
-                                // invalidNumberMessage:'numero invalide' ,
-                                onTap: () {
-
-                                },
-
+                              // IntlPhoneField(
+                              //   //controller: telephoneController,
+                              //   // invalidNumberMessage:'numero invalide' ,
+                              //   onTap: () {
+                              //
+                              //   },
+                              //
+                              //   cursorColor: kPrimaryColor,
+                              //   decoration: InputDecoration(
+                              //     hintText: 'Téléphone',
+                              //     focusColor: kPrimaryColor,
+                              //     focusedBorder: UnderlineInputBorder(
+                              //         borderSide: BorderSide(color: kPrimaryColor)),
+                              //
+                              //   ),
+                              //   initialCountryCode: 'TG',
+                              //   onChanged: (phone) {
+                              //     telephoneController.text=phone.completeNumber;
+                              //     printVm(phone.completeNumber);
+                              //   },
+                              //   onCountryChanged: (country) {
+                              //     printVm('Country changed to: ' + country.name);
+                              //   },
+                              //   validator: (value) {
+                              //     if (value!.completeNumber.isEmpty) {
+                              //       return 'Le champ "Téléphone" est obligatoire.';
+                              //     }
+                              //
+                              //     return null;
+                              //   },
+                              //
+                              // ),
+                              TextFormField(
+                                controller: emailController,
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.next,
                                 cursorColor: kPrimaryColor,
-                                decoration: InputDecoration(
-                                  hintText: 'Téléphone',
+                                validator: (value)  {
+                                  if (value!.isEmpty) {
+                                    return 'Le champ "Email" est obligatoire.';
+                                  }
+                                  if (!isValidEmail(value)) {
+                                    return 'Email invalide';
+                                  }
+                                  return null;
+                                },
+                                onSaved: (email) {},
+                                decoration: const InputDecoration(
                                   focusColor: kPrimaryColor,
                                   focusedBorder: UnderlineInputBorder(
                                       borderSide: BorderSide(color: kPrimaryColor)),
-
+                                  hintText: "Email",
+                                  hintStyle: TextStyle(color: Colors.green),
+                                  prefixIcon: Padding(
+                                    padding: EdgeInsets.all(defaultPadding),
+                                    child: Icon(Icons.email,color: Colors.green,),
+                                  ),
                                 ),
-                                initialCountryCode: 'TG',
-                                onChanged: (phone) {
-                                  telephoneController.text=phone.completeNumber;
-                                  printVm(phone.completeNumber);
-                                },
-                                onCountryChanged: (country) {
-                                  printVm('Country changed to: ' + country.name);
-                                },
-                                validator: (value) {
-                                  if (value!.completeNumber.isEmpty) {
-                                    return 'Le champ "Téléphone" est obligatoire.';
-                                  }
-
-                                  return null;
-                                },
-
                               ),
 
 
@@ -249,9 +285,11 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                   focusedBorder: UnderlineInputBorder(
                                       borderSide: BorderSide(color: kPrimaryColor)),
                                   hintText: "Votre mot de passe",
+                                  hintStyle: TextStyle(color: Colors.green),
+
                                   prefixIcon: Padding(
                                     padding: EdgeInsets.all(defaultPadding),
-                                    child: Icon(Icons.lock),
+                                    child: Icon(Icons.lock,color: Colors.green,),
                                   ),
                                   suffixIcon: GestureDetector(
                                     onTap: () {
@@ -260,7 +298,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
 
                                       });
                                     },
-                                    child: is_open? Icon(Entypo.eye):Icon(Entypo.eye_with_line),
+                                    child: is_open? Icon(Entypo.eye,color: Colors.black87,):Icon(Entypo.eye_with_line,color: Colors.black87,),
                                   ),
 
                                 ),
@@ -275,17 +313,18 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                   return null;
                                 },
                               ),
-                              SizedBox(height: height*0.01),
+                              SizedBox(height: height*0.003),
                               TextButton(onPressed: () {
                                 Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser(),));
 
                               }, child:  Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
+                                // child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
+                                child: Text("Mot de passe oublier? Demander un changement",textAlign: TextAlign.center,style: TextStyle(color: Colors.black87),),
                               ),),
 
 
-                              SizedBox(height: height*0.02),
+                              SizedBox(height: height*0.005),
                               Container(
                                 width: SizeButtons.loginAndSignupBtnlargeur,
                                 child: ElevatedButton(
@@ -299,7 +338,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                       });
                                       // Afficher une SnackBar
                                       try{
-                                        await  signIn( '${telephoneController.text}@gmail.com',motDePasseController.text);
+                                        // await  signIn( '${telephoneController.text}@gmail.com',motDePasseController.text);
+                                        await  signIn( emailController.text,motDePasseController.text);
 
                                       }catch(e){
                                         printVm("Erreur connextion ---------------");
@@ -326,8 +366,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                       leftDotColor: Colors.green,
                                       rightDotColor: Colors.black,
                                     ),
-                                  ): Text("Se Connecter",
-                                    style: TextStyle(color: Colors.black),
+                                  ): Text("Se connecter",
+                                    style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),
 
                                   ),
                                 ),
@@ -344,6 +384,27 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                     ),
                                   );
                                 },
+                              ),
+                              SizedBox(height: height*0.002),
+
+                              Container(
+                                width: SizeButtons.loginAndSignupBtnlargeur,
+                                child: TextButton(
+                                  onPressed:
+                                      () async {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => ContactPage(),));
+
+
+
+
+                                  },
+                                  child:Center(
+                                    child:  Text("Nous contacter",
+                                    style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),
+
+                                  ),
+                                ),
+                              ),
                               ),
                               SizedBox(height: height*0.02),
 

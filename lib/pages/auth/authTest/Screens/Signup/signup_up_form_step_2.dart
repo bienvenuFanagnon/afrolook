@@ -98,6 +98,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
           list.first.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
           list.first.votre_solde=list.first.votre_solde! + 50.1;
+          list.first.publi_cash=list.first.publi_cash! + 50.1;
           authProvider.updateUser(list.first).then((value) async {
             if(value){
               await authProvider.sendNotification(
@@ -120,7 +121,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               notif.titre="Parrainage 🤑";
               notif.media_url=authProvider.registerUser.imageUrl;
               notif.type=NotificationType.PARRAINAGE.name;
-              notif.description="Vous avez gagné 50 PubliCach grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+              notif.description="Vous avez gagné 50 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
               notif.users_id_view=[];
               notif.user_id=authProvider.registerUser.id;
               notif.receiver_id=list.first.id!;
@@ -265,9 +266,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
             .then((value) => {
 
           postDetailsToFirestore(value.user!.uid!),
-          setState(() {
-            tap= false;
-          }),
+
         }).catchError((e) {
 
           SnackBar snackBar = SnackBar(
@@ -281,9 +280,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           });
 
         });
-        setState(() {
-          tap= false;
-        });
+        // setState(() {
+        //   tap= false;
+        // });
       } on FirebaseAuthException catch (error) {
         switch (error.code) {
           case "invalid-email":
@@ -361,6 +360,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       Navigator.pop(context);
+      setState(() {
+        tap= false;
+      });
       Navigator.pushNamed(context, '/bon_a_savoir');
 
 
@@ -399,7 +401,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                 alignment: Alignment.center,
                 //   height: height*0.6,
                 decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.white70,
+                    border: Border.all(color: Colors.green,width: 5),
                     borderRadius:BorderRadius.all(Radius.circular(10))
                 ),
                 child: Padding(
@@ -410,6 +413,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                       children: [
                         Text("Votre photo"),
+                        SizedBox(height: 5,),
 
                         Container(
                           alignment: Alignment.center,
@@ -490,9 +494,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                               borderSide: BorderSide(color: kPrimaryColor),
                             ),
                             hintText: "Adresse",
+                            hintStyle: TextStyle(color: Colors.green),
                             prefixIcon: Padding(
                               padding: EdgeInsets.all(defaultPadding),
-                              child: adreseLoging==true? SizedBox( width: 10,height: 10, child: CircularProgressIndicator()):Icon(Icons.map),
+                              child: adreseLoging==true? SizedBox( width: 10,height: 10, child: CircularProgressIndicator()):Icon(Icons.map,color: Colors.green,),
                             ),
                           ),
                           validator: (value) {
@@ -508,7 +513,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                         Text(
                           'À propos de toi :',
-                          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold,color: Colors.green),
                         ),
                         SizedBox(height: 8.0),
                         TextFormField(
@@ -522,126 +527,132 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
                           },
                         ),
+                        SizedBox(height: 10,),
+
                         Text(
                           'En créant ce compte, vous acceptez les termes et conditions.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16.0),
                         ),
-                        SizedBox(
-                          height: 5,
-                        ),
 
 
-                        SizedBox(height: 50,),
+                        SizedBox(height: 10,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              width: 150,
-                              child: ElevatedButton(
-                                onPressed: () {
+                              // width: 150,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: ElevatedButton(
+                                  onPressed: () {
 
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) {
-                                        return SignUpScreen();
-                                      },
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) {
+                                          return SignUpScreen();
+                                        },
+                                      ),
+                                    );
+
+
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Icon(Icons.arrow_back_ios_new_rounded,color: Colors.red,),
+                                        ),
+                                        Text("Précédent",
+                                          style: TextStyle(color: Colors.red,fontWeight: FontWeight.bold),
+
+                                        ),
+                                      ],
                                     ),
-                                  );
-
-
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(2.0),
-                                  child: Row(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 5.0),
-                                        child: Icon(Icons.arrow_back_ios_new_rounded),
-                                      ),
-                                      Text("Précédent",
-                                        style: TextStyle(color: Colors.black),
-
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ),
                             ),
                             Container(
-                              width: 150,
-                              child: ElevatedButton(
-                                onPressed:onTap?() async { }:
-                                    () async {
-                                  setState(() {
-                                    onTap=true;
-                                  });
-                                  if (_formKey.currentState!.validate()) {
+                              // width: 150,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: ElevatedButton(
+                                  onPressed:onTap?() async { }:
+                                      () async {
+                                    setState(() {
+                                      onTap=true;
+                                    });
+                                    if (_formKey.currentState!.validate()) {
 
-                                    authProvider.registerUser.adresse=adresseController.text;
-                                    authProvider.registerUser.nom=nomController.text;
-                                    authProvider.registerUser.prenom=prenomController.text;
-                                    if (_image != null) {
-                                      Reference storageReference = FirebaseStorage.instance
-                                          .ref()
-                                          .child('user_profile/${Path.basename(_image!.path)}');
-                                      UploadTask uploadTask = storageReference.putFile(_image!);
-                                      await uploadTask.whenComplete((){
+                                      authProvider.registerUser.adresse=adresseController.text;
+                                      authProvider.registerUser.nom=nomController.text;
+                                      authProvider.registerUser.prenom=prenomController.text;
+                                      if (_image != null) {
+                                        Reference storageReference = FirebaseStorage.instance
+                                            .ref()
+                                            .child('user_profile/${Path.basename(_image!.path)}');
+                                        UploadTask uploadTask = storageReference.putFile(_image!);
+                                        await uploadTask.whenComplete((){
 
-                                        storageReference.getDownloadURL().then((fileURL) {
+                                          storageReference.getDownloadURL().then((fileURL) {
 
-                                          printVm("url photo1");
-                                          printVm(fileURL);
+                                            printVm("url photo1");
+                                            printVm(fileURL);
 
 
 
-                                          authProvider.registerUser.imageUrl = fileURL;
+                                            authProvider.registerUser.imageUrl = fileURL;
 
-                                          authProvider.registerUser.apropos=aproposController.text;
-                                          authProvider.registerUser.votre_solde=0.0;
-                                          authProvider.registerUser.userGlobalTags=tagsIds.toSet().toList();
-                                          // Afficher une SnackBar
-                                          signUp('${authProvider.registerUser.numeroDeTelephone!}@gmail.com',authProvider.registerUser.password!);
-/*
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) {
-                                                return SignUpFormEtap2(imageFile:  _image!,);
-                                              },
-                                            ),
-                                          );
+                                            authProvider.registerUser.apropos=aproposController.text;
+                                            authProvider.registerUser.votre_solde=0.0;
+                                            authProvider.registerUser.userGlobalTags=tagsIds.toSet().toList();
+                                            // Afficher une SnackBar
+                                            // signUp('${authProvider.registerUser.numeroDeTelephone!}@gmail.com',authProvider.registerUser.password!);
+                                            signUp(authProvider.registerUser.email!,authProvider.registerUser.password!);
+                                /*
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) {
+                                                  return SignUpFormEtap2(imageFile:  _image!,);
+                                                },
+                                              ),
+                                            );
 
- */
+                                 */
 
+                                          });
                                         });
-                                      });
 
-                                    }else{
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content:
-                                          Text('image invalide',style: TextStyle(color: Colors.red),),
-                                        ),
-                                      );
+                                      }else{
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content:
+                                            Text('image invalide',style: TextStyle(color: Colors.red),),
+                                          ),
+                                        );
+
+                                      }
 
                                     }
+                                    setState(() {
+                                      onTap=false;
+                                    });
+                                  },
+                                  child:onTap? Center(
+                                    child: LoadingAnimationWidget.flickr(
+                                      size: 30,
+                                      leftDotColor: Colors.green,
+                                      rightDotColor: Colors.black,
+                                    ),
+                                  ): Text("S'inscrire",
+                                    style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),
 
-                                  }
-                                  setState(() {
-                                    onTap=false;
-                                  });
-                                },
-                                child:onTap? Center(
-                                  child: LoadingAnimationWidget.flickr(
-                                    size: 30,
-                                    leftDotColor: Colors.green,
-                                    rightDotColor: Colors.black,
                                   ),
-                                ): Text("S'inscrire",
-                                  style: TextStyle(color: Colors.black),
-
                                 ),
                               ),
                             ),

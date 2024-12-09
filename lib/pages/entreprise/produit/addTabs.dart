@@ -659,7 +659,7 @@ class _UserPostPubImageState extends State<UserPostPubImage> {
 
 
                                       user.pubEntreprise=user.pubEntreprise!+1;
-                                      user.publiCash=user.publiCash!+user.compteTarif!;
+                                      user.publi_cash=user.publi_cash!+user.compteTarif!;
 
 
                                       userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
@@ -1477,7 +1477,7 @@ class _UserPostPubVideoState extends State<UserPostPubVideo> {
 
 
                                           user.pubEntreprise=user.pubEntreprise!+1;
-                                          user.publiCash=user.publiCash!+user.compteTarif!;
+                                          user.publi_cash=user.publi_cash!+user.compteTarif!;
 
                                           userProvider.entrepriseData.publication=userProvider.entrepriseData.publication!+1;
 

@@ -883,7 +883,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                         notif.titre="Nouveau j'aime ❤️";
                                         notif.media_url=authProvider.loginUserData.imageUrl;
                                         notif.type=NotificationType.POST.name;
-                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé ❤️ votre publication";
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look";
                                         notif.users_id_view=[];
                                         notif.user_id=authProvider.loginUserData.id;
                                         notif.receiver_id=post.user!.id!;
@@ -986,7 +986,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "${post.user!.id!}",
-                                            message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -999,7 +999,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                         notif.titre="Nouveau like 👍🏾";
                                         notif.media_url=authProvider.loginUserData.imageUrl;
                                         notif.type=NotificationType.POST.name;
-                                        notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a liké votre look";
                                         notif.users_id_view=[];
                                         notif.user_id=authProvider.loginUserData.id;
                                         notif.receiver_id=post.user!.id!;
@@ -1277,105 +1277,105 @@ class _DetailsPostState extends State<DetailsPost> {
                                   ),
                                 ],
                               ),
-                              StatefulBuilder(
-
-                                  builder: (BuildContext context, void Function(void Function()) setState) {
-                                    return Container(
-                                      child: isUserAbonne(post.user!.userAbonnesIds!,
-                                          authProvider.loginUserData.id!)?Container(): TextButton(
-
-                                          onPressed:abonneTap?
-                                              ()  { }:
-                                              ()async{
-                                            if (!isUserAbonne(post.user!.userAbonnesIds!,
-                                                authProvider.loginUserData.id!)) {
-                                              setState(() {
-                                                abonneTap=true;
-                                              });
-                                              UserAbonnes userAbonne = UserAbonnes();
-                                              userAbonne.compteUserId=authProvider.loginUserData.id;
-                                              userAbonne.abonneUserId=post.user!.id;
-
-                                              userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                              userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                              await  userProvider.sendAbonnementRequest(userAbonne,post.user!,context).then((value) async {
-                                                if (value) {
-                                                  authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                                  // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                                  await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                                  if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                                    await authProvider.sendNotification(
-                                                        userIds: [post.user!.oneIgnalUserid!],
-                                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                        send_user_id: "${authProvider.loginUserData.id!}",
-                                                        recever_user_id: "${post.user!.id!}",
-                                                        message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
-                                                        type_notif: NotificationType.ABONNER.name,
-                                                        post_id: "${post!.id!}",
-                                                        post_type: PostDataType.IMAGE.name, chat_id: ''
-                                                    );
-                                                    NotificationData notif=NotificationData();
-                                                    notif.id=firestore
-                                                        .collection('Notifications')
-                                                        .doc()
-                                                        .id;
-                                                    notif.titre="Nouveau Abonnement ✅";
-                                                    notif.media_url=authProvider.loginUserData.imageUrl;
-                                                    notif.type=NotificationType.ABONNER.name;
-                                                    notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                                    notif.users_id_view=[];
-                                                    notif.user_id=authProvider.loginUserData.id;
-                                                    notif.receiver_id=post.user!.id!;
-                                                    notif.post_id=post.id!;
-                                                    notif.post_data_type=PostDataType.IMAGE.name!;
-                                                    notif.updatedAt =
-                                                        DateTime.now().microsecondsSinceEpoch;
-                                                    notif.createdAt =
-                                                        DateTime.now().microsecondsSinceEpoch;
-                                                    notif.status = PostStatus.VALIDE.name;
-
-                                                    // users.add(pseudo.toJson());
-
-                                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                                                  }
-                                                  SnackBar snackBar = SnackBar(
-                                                    content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                                  );
-                                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                  setState(() {
-                                                    abonneTap=false;
-                                                  });
-                                                }  else{
-                                                  SnackBar snackBar = SnackBar(
-                                                    content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                                  );
-                                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                  setState(() {
-                                                    abonneTap=false;
-                                                  });
-                                                }
-                                              },);
-
-
-                                              setState(() {
-                                                abonneTap=false;
-                                              });
-                                            }
-
-                                          },
-                                          child:abonneTap? Center(
-                                            child: LoadingAnimationWidget.flickr(
-                                              size: 20,
-                                              leftDotColor: Colors.green,
-                                              rightDotColor: Colors.black,
-                                            ),
-                                          ): Text("S'abonner",style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.blue),)
-                                      ),
-                                    );
-                                  }
-                              ),
+                              // StatefulBuilder(
+                              //
+                              //     builder: (BuildContext context, void Function(void Function()) setState) {
+                              //       return Container(
+                              //         child: isUserAbonne(post.user!.userAbonnesIds!,
+                              //             authProvider.loginUserData.id!)?Container(): TextButton(
+                              //
+                              //             onPressed:abonneTap?
+                              //                 ()  { }:
+                              //                 ()async{
+                              //               if (!isUserAbonne(post.user!.userAbonnesIds!,
+                              //                   authProvider.loginUserData.id!)) {
+                              //                 setState(() {
+                              //                   abonneTap=true;
+                              //                 });
+                              //                 UserAbonnes userAbonne = UserAbonnes();
+                              //                 userAbonne.compteUserId=authProvider.loginUserData.id;
+                              //                 userAbonne.abonneUserId=post.user!.id;
+                              //
+                              //                 userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                              //                 userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                              //                 await  userProvider.sendAbonnementRequest(userAbonne,post.user!,context).then((value) async {
+                              //                   if (value) {
+                              //                     authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                              //                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                              //                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                              //                     if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                              //                       await authProvider.sendNotification(
+                              //                           userIds: [post.user!.oneIgnalUserid!],
+                              //                           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                              //                           send_user_id: "${authProvider.loginUserData.id!}",
+                              //                           recever_user_id: "${post.user!.id!}",
+                              //                           message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                              //                           type_notif: NotificationType.ABONNER.name,
+                              //                           post_id: "${post!.id!}",
+                              //                           post_type: PostDataType.IMAGE.name, chat_id: ''
+                              //                       );
+                              //                       NotificationData notif=NotificationData();
+                              //                       notif.id=firestore
+                              //                           .collection('Notifications')
+                              //                           .doc()
+                              //                           .id;
+                              //                       notif.titre="Nouveau Abonnement ✅";
+                              //                       notif.media_url=authProvider.loginUserData.imageUrl;
+                              //                       notif.type=NotificationType.ABONNER.name;
+                              //                       notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                              //                       notif.users_id_view=[];
+                              //                       notif.user_id=authProvider.loginUserData.id;
+                              //                       notif.receiver_id=post.user!.id!;
+                              //                       notif.post_id=post.id!;
+                              //                       notif.post_data_type=PostDataType.IMAGE.name!;
+                              //                       notif.updatedAt =
+                              //                           DateTime.now().microsecondsSinceEpoch;
+                              //                       notif.createdAt =
+                              //                           DateTime.now().microsecondsSinceEpoch;
+                              //                       notif.status = PostStatus.VALIDE.name;
+                              //
+                              //                       // users.add(pseudo.toJson());
+                              //
+                              //                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                              //
+                              //
+                              //                     }
+                              //                     SnackBar snackBar = SnackBar(
+                              //                       content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                              //                     );
+                              //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                              //                     setState(() {
+                              //                       abonneTap=false;
+                              //                     });
+                              //                   }  else{
+                              //                     SnackBar snackBar = SnackBar(
+                              //                       content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                              //                     );
+                              //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                              //                     setState(() {
+                              //                       abonneTap=false;
+                              //                     });
+                              //                   }
+                              //                 },);
+                              //
+                              //
+                              //                 setState(() {
+                              //                   abonneTap=false;
+                              //                 });
+                              //               }
+                              //
+                              //             },
+                              //             child:abonneTap? Center(
+                              //               child: LoadingAnimationWidget.flickr(
+                              //                 size: 20,
+                              //                 leftDotColor: Colors.green,
+                              //                 rightDotColor: Colors.black,
+                              //               ),
+                              //             ): Text("S'abonner",style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.blue),)
+                              //         ),
+                              //       );
+                              //     }
+                              // ),
                               /*
                             IconButton(
                                 onPressed: () {},
@@ -1605,7 +1605,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "${post.user!.id!}",
-                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre publication",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -1619,7 +1619,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                         notif.titre="Nouveau j'aime ❤️";
                                         notif.media_url=authProvider.loginUserData.imageUrl;
                                         notif.type=NotificationType.POST.name;
-                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre publication";
+                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look";
                                         notif.users_id_view=[];
                                         notif.user_id=authProvider.loginUserData.id;
                                         notif.receiver_id=post.user!.id!;
@@ -1757,7 +1757,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
                                           send_user_id: "${authProvider.loginUserData.id!}",
                                           recever_user_id: "${post.user!.id!}",
-                                          message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre publication",
+                                          message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
                                           post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -1771,7 +1771,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                       notif.titre="Nouveau like 👍🏾";
                                       notif.media_url=authProvider.loginUserData.imageUrl;
                                       notif.type=NotificationType.POST.name;
-                                      notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
+                                      notif.description="@${authProvider.loginUserData.pseudo!} a liké votre look";
                                       notif.users_id_view=[];
                                       notif.user_id=authProvider.loginUserData.id;
                                       notif.receiver_id=post.user!.id!;

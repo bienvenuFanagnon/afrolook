@@ -37,13 +37,21 @@ class PostProvider extends ChangeNotifier {
     var postStream = FirebaseFirestore.instance.collection('Posts')
         .where("user_id",isEqualTo:'${userId}')
         .where("type",isEqualTo:'${PostType.POST.name}')
-        .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
+        // .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
+        .where(
+        Filter.or(
+          Filter( "dataType",isEqualTo:'${PostDataType.IMAGE.name}'),
+          Filter( "dataType",isEqualTo:'${PostDataType.TEXT.name}'),
+
+        )
+
+    )
 
         .orderBy('created_at', descending: true)
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -75,7 +83,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -116,7 +124,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -157,7 +165,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -200,7 +208,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -240,7 +248,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<NotificationData> notifications = [];
-    // listConstposts =[];
+    // //listConstposts =[];
     //  UserData userData=UserData();
 
     await for (var snapshot in postStream) {
@@ -266,7 +274,7 @@ class PostProvider extends ChangeNotifier {
 
         .snapshots();
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
 
@@ -307,7 +315,7 @@ class PostProvider extends ChangeNotifier {
 
 
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
     DateTime afterDate = DateTime(2024, 11, 06); // Replace with your desired date
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
@@ -324,8 +332,8 @@ class PostProvider extends ChangeNotifier {
        )
         // .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(afterDate))
 
-        .orderBy('created_at', descending: true)
-        // .orderBy('updated_at', descending: true)
+        // .orderBy('created_at', descending: true)
+        .orderBy('updated_at', descending: true)
     // .where('created_at', isGreaterThanOrEqualTo:  DateTime.now().microsecondsSinceEpoch)
 
         .limit(limite)
@@ -388,7 +396,7 @@ bool isReload=false;
 
     isReload=true;
     List<Post> posts = [];
-    // listConstposts =[];
+    // //listConstposts =[];
     DateTime afterDate = DateTime(2024, 11, 06); // Replace with your desired date
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
@@ -478,7 +486,7 @@ bool isReload=false;
 
 
     List<Post> posts = [];
-    // listConstposts =[];
+    // //listConstposts =[];
     DateTime afterDate = DateTime(2024, 11, 06); // Replace with your desired date
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
@@ -573,7 +581,7 @@ bool isReload=false;
 
 
     List<Post> posts = [];
-    listConstposts =[];
+    //listConstposts =[];
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
     QuerySnapshot querySnapshotPost = await postCollect
@@ -936,6 +944,8 @@ bool isReload=false;
       return false;
     }
   }
+
+
 
 
 

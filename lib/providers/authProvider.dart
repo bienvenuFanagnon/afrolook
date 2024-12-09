@@ -196,7 +196,7 @@ updateUser(loginUserData);
           .collection('Users')
           .doc(user.id)
           .update(user.toJson());
-      //printVm("user update : ${user!.toJson()}");
+      printVm("user update : ${user!.toJson()}");
       return true;
     }catch(e){
       printVm("erreur update post : ${e}");
@@ -213,7 +213,7 @@ updateUser(loginUserData);
           .collection('Notifications')
           .doc(notif.id)
           .update(notif.toJson());
-      //printVm("user update : ${user!.toJson()}");
+      //printVm("notif update : ${notif!.toJson()}");
       return true;
     }catch(e){
       printVm("erreur update Invitations : ${e}");

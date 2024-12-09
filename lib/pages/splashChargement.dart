@@ -3,8 +3,10 @@
 import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:ripple_wave/ripple_wave.dart';
+import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/model_data.dart';
@@ -27,7 +29,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=13;
+  late int app_version_code=6;
   int limitePosts=40;
 
   Future<void> _launchUrl(Uri url) async {
@@ -144,8 +146,15 @@ class _ChargementState extends State<SplahsChargement> {
                         onPressed: () {
                           _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
                         },
-                        child: Text('Télécharger sur le site',
-                          style: TextStyle(color: Colors.white),),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+                            SizedBox(width: 5,),
+                            Text('Télécharger sur le play store',
+                              style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                          ],
+                        ),
 
                       ),
                     ],
@@ -170,32 +179,33 @@ class _ChargementState extends State<SplahsChargement> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                height: 200,
-                width: 200,
-                child:  RippleWave(
-
-                  childTween: Tween(begin: 0.9, end: 1.0,),
-                  color: ConstColors.chargementColors,
-                  repeat: true,
-                  //  animationController: animationController,
-                  child: Image.asset('assets/logo/afrolook_logo.png',height: 70,width: 70,),
+    return
+     Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  height: 200,
+                  width: 200,
+                  child:  RippleWave(
+      
+                    childTween: Tween(begin: 0.9, end: 1.0,),
+                    color: ConstColors.chargementColors,
+                    repeat: true,
+                    //  animationController: animationController,
+                    child: Image.asset('assets/logo/afrolook_logo.png',height: 70,width: 70,),
+                  ),
                 ),
-              ),
-              Text("Connexion...")
-            ],
+                Text("Connexion...")
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

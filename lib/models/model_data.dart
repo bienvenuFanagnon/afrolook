@@ -6,9 +6,6 @@ import 'chatmodels/message.dart';
 part 'model_data.g.dart'; // Generated file name based on the class name
 /* flutter pub run build_runner build */
 
-
-
-
 class UserDatas {
   UserData? user;
   String? accessToken;
@@ -35,8 +32,6 @@ class UserDatas {
     return data;
   }
 }
-
-
 
 class Role {
   int? id;
@@ -76,11 +71,11 @@ class Tags {
 
   Tags(
       {this.id,
-        this.tagId,
-        this.userId,
-        this.createdAt,
-        this.updatedAt,
-        this.tag});
+      this.tagId,
+      this.userId,
+      this.createdAt,
+      this.updatedAt,
+      this.tag});
 
   Tags.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -115,11 +110,11 @@ class Tag {
 
   Tag(
       {this.id,
-        this.titre,
-        this.description,
-        this.popularite,
-        this.createdAt,
-        this.updatedAt});
+      this.titre,
+      this.description,
+      this.popularite,
+      this.createdAt,
+      this.updatedAt});
 
   Tag.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -151,10 +146,10 @@ class UserAbonnes {
 
   UserAbonnes(
       {this.id,
-        this.compteUserId,
-        this.abonneUserId,
-        this.createdAt,
-        this.updatedAt});
+      this.compteUserId,
+      this.abonneUserId,
+      this.createdAt,
+      this.updatedAt});
 
   UserAbonnes.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -186,12 +181,12 @@ class Friends {
 
   Friends(
       {this.id,
-        this.friendId,
-        this.currentUserId,
-        this.createdAt,
-        this.updatedAt,
-        this.isBlocked=false,
-        this.friend});
+      this.friendId,
+      this.currentUserId,
+      this.createdAt,
+      this.updatedAt,
+      this.isBlocked = false,
+      this.friend});
 
   Friends.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -201,7 +196,7 @@ class Friends {
     updatedAt = json['updated_at'];
     isBlocked = json['isBlocked'];
     friend =
-    json['friend'] != null ? new UserData.fromJson(json['friend']) : null;
+        json['friend'] != null ? new UserData.fromJson(json['friend']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -219,8 +214,6 @@ class Friends {
   }
 }
 
-
-
 class Invitation {
   String? id;
   String? senderId;
@@ -234,20 +227,20 @@ class Invitation {
 
   Invitation(
       {this.reference,
-        this.id,
-        this.senderId,
-        this.message='invitation',
-        this.status,
-        this.receiverId,
-        this.createdAt,
-        this.updatedAt,
-      this.inviteUser
-      });
+      this.id,
+      this.senderId,
+      this.message = 'invitation',
+      this.status,
+      this.receiverId,
+      this.createdAt,
+      this.updatedAt,
+      this.inviteUser});
   Invitation.fromMap(Map<String, dynamic> map, {this.reference})
       : inviteUser = map['user_invite'];
 
   Invitation.fromSnapshot(DocumentSnapshot snapshot)
-      : this.fromMap(snapshot!.data()! as Map<String, dynamic>, reference: snapshot.reference);
+      : this.fromMap(snapshot!.data()! as Map<String, dynamic>,
+            reference: snapshot.reference);
   Invitation.fromJson(Map<String, dynamic> json, {this.reference}) {
     id = json['id'];
     senderId = json['sender_id'];
@@ -289,11 +282,11 @@ class UserPays {
 
   UserPays(
       {this.id,
-        this.name,
-        this.placeName,
-        this.subAdministrativeArea,
-        this.createdAt,
-        this.updatedAt});
+      this.name,
+      this.placeName,
+      this.subAdministrativeArea,
+      this.createdAt,
+      this.updatedAt});
 
   UserPays.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -320,13 +313,11 @@ class UserPhoneNumber {
   int? id;
   String? completNumber;
 
-  UserPhoneNumber(
-      {this.id, this.completNumber});
+  UserPhoneNumber({this.id, this.completNumber});
 
   UserPhoneNumber.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     completNumber = json['complet_number'];
-
   }
 
   Map<String, dynamic> toJson() {
@@ -356,45 +347,60 @@ class UserPseudo {
     return data;
   }
 }
+
 class AppDefaultData {
   String? id;
   String? app_link;
-  List<String>? users_id=[];
-  int? nbr_abonnes=0;
-  int? app_version_code=0;
-  int? nbr_likes=0;
-  int? nbr_comments=0;
-  String? ia_instruction="";
-  late String app_logo="";
-  late String one_signal_api_key="";
-  late String one_signal_app_id="";
-  late String one_signal_app_url="";
-  double? tarifPubliCash=2.5;
-  double? tarifImage=0.5;
-  double? tarifPubliCash_to_xof=250.0;
-  double? tarifVideo=1.0;
-  double? tarifjour=0.5;
-  int? nbr_loves=0;
-  int? default_point_new_user=5;
-  int? default_point_new_like=1;
-  int? default_point_new_love=1;
- // int? default_point_new_comment=2;
+  List<String>? users_id = [];
+  int? nbr_abonnes = 0;
+  int? app_version_code = 0;
+  int? nbr_likes = 0;
+  int? nbr_comments = 0;
+  String? ia_instruction = "";
+  late String app_logo = "";
+  late String one_signal_api_key = "";
+  late String one_signal_app_id = "";
+  late String one_signal_app_url = "";
+  double? tarifPubliCash = 2.5;
+  double? tarifImage = 0.5;
+  double? tarifPubliCash_to_xof = 250.0;
+  double? tarifVideo = 1.0;
+  double? tarifjour = 0.5;
+  int? nbr_loves = 0;
+  int? default_point_new_user = 5;
+  int? default_point_new_like = 1;
+  int? default_point_new_love = 1;
+  // int? default_point_new_comment=2;
 
-  AppDefaultData({this.id, this.users_id,
-  this.nbr_abonnes=0,this.ia_instruction="",
-  this.app_link,this.app_version_code=0, this.tarifPubliCash_to_xof=250.0,
-  this.tarifPubliCash=2.5,this.tarifjour=0.5,this.tarifImage=0.5,this.tarifVideo=1.0,
-  this.nbr_likes=0, this.nbr_comments=0,this.nbr_loves=0,this.default_point_new_user=5,
-  this.default_point_new_like=1,this.default_point_new_love=1});
+  AppDefaultData(
+      {this.id,
+      this.users_id,
+      this.nbr_abonnes = 0,
+      this.ia_instruction = "",
+      this.app_link,
+      this.app_version_code = 0,
+      this.tarifPubliCash_to_xof = 250.0,
+      this.tarifPubliCash = 2.5,
+      this.tarifjour = 0.5,
+      this.tarifImage = 0.5,
+      this.tarifVideo = 1.0,
+      this.nbr_likes = 0,
+      this.nbr_comments = 0,
+      this.nbr_loves = 0,
+      this.default_point_new_user = 5,
+      this.default_point_new_like = 1,
+      this.default_point_new_love = 1});
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     nbr_comments = json['nbr_comments'];
     nbr_likes = json['nbr_likes'];
     nbr_comments = json['nbr_comments'];
-    app_link = json['app_link']==null?"":json['app_link'];
-    ia_instruction = json['ia_instruction']==null?"":json['ia_instruction'];
-    app_version_code = json['app_version_code']==null?0:json['app_version_code'];
+    app_link = json['app_link'] == null ? "" : json['app_link'];
+    ia_instruction =
+        json['ia_instruction'] == null ? "" : json['ia_instruction'];
+    app_version_code =
+        json['app_version_code'] == null ? 0 : json['app_version_code'];
     nbr_loves = json['nbr_loves'];
     nbr_abonnes = json['nbr_abonnes'];
     tarifPubliCash = json['tarifPubliCash'];
@@ -450,44 +456,44 @@ class AppDefaultData {
   }
 }
 
-
 class UserData {
   String? id;
-  String? pseudo="";
-  late String? oneIgnalUserid="";
+  String? pseudo = "";
+  late String? oneIgnalUserid = "";
 
   String? nom;
   String? prenom;
   String? numeroDeTelephone;
-  String? adresse="";
-  String? genre="";
+  String? adresse = "";
+  String? email = "";
+  String? genre = "";
   String? codeParrainage;
   String? codeParrain;
   String? state;
   UserPays? userPays;
 
-  double? publiCash=0.0;
-  double? votre_solde=0.0;
-  int? pubEntreprise=0;
-  int? mesPubs=0;
-  int? last_time_active=0;
-  int? pointContribution=0;
-  int? userlikes=0;
-  int? userjaimes=0;
-  int? likes=0;
-  int? jaimes=0;
-  int? comments=0;
-  int? abonnes=0;
-  double? compteTarif=0.0;
-  double? popularite=0.0;
+  double? publi_cash = 0.0;
+  double? votre_solde = 0.0;
+  int? pubEntreprise = 0;
+  int? mesPubs = 0;
+  int? last_time_active = 0;
+  int? pointContribution = 0;
+  int? userlikes = 0;
+  int? userjaimes = 0;
+  int? likes = 0;
+  int? jaimes = 0;
+  int? comments = 0;
+  int? abonnes = 0;
+  double? compteTarif = 0.0;
+  double? popularite = 0.0;
   double? latitude;
   double? longitude;
   String? apropos;
-  String? imageUrl="";
-  bool? isConnected=false;
-  bool? isBlocked=false;
-  bool? completeData=false;
-  bool? hasEntreprise=false;
+  String? imageUrl = "";
+  bool? isConnected = false;
+  bool? isBlocked = false;
+  bool? completeData = false;
+  bool? hasEntreprise = false;
   File? image;
   String? password;
   //int? genreId;
@@ -495,59 +501,56 @@ class UserData {
   int? createdAt;
   int? updatedAt;
   List<int>? userGlobalTags;
-  List<UserAbonnes>? userAbonnes=[];
-  List<String>? userAbonnesIds=[];
-  List<String>? friendsIds=[];
-  List<Friends>? friends=[];
+  List<UserAbonnes>? userAbonnes = [];
+  List<String>? userAbonnesIds = [];
+  List<String>? friendsIds = [];
+  List<Friends>? friends = [];
 
-  List<Invitation>? mesInvitationsEnvoyer=[];
-  List<Invitation>? autreInvitationsEnvoyer=[];
-  List<String>? mesInvitationsEnvoyerId=[];
-  List<String>? autreInvitationsEnvoyerId=[];
-   DocumentReference? reference;
+  List<Invitation>? mesInvitationsEnvoyer = [];
+  List<Invitation>? autreInvitationsEnvoyer = [];
+  List<String>? mesInvitationsEnvoyerId = [];
+  List<String>? autreInvitationsEnvoyerId = [];
+  DocumentReference? reference;
   UserData(
       {this.reference,
-        this.pseudo,
-        this.nom,
-        this.prenom,
-        this.numeroDeTelephone,
-        this.adresse,
-        this.genre,
-        this.codeParrainage,
-        this.oneIgnalUserid="",
-        this.userPays,
-        this.publiCash=0,
-        this.pubEntreprise=0,
-        this.mesPubs=0,
-        this.pointContribution=0,
-        this.likes=0,
-        this.jaimes=0,
-        this.userlikes=0,
-        this.userjaimes=0,
-        this.comments=0,
-        this.createdAt=0,
-        this.updatedAt=0,
-        this.abonnes=0,
-        this.compteTarif=0,
-        this.popularite=0.0,
-        this.votre_solde=0.0,
-        this.latitude=0.0,
-        this.longitude=0.0,
-
-        this.isBlocked=false,
-        this.isConnected=false,
-        this.completeData=false,
-        this.hasEntreprise=false,
-
-        this.apropos,
-        this.password="",
-        this.codeParrain,
-        this.state="OFFLINE",
-        //this.genreId,
-        this.role,
-        this.userGlobalTags});
-
-
+      this.pseudo,
+      this.nom,
+      this.prenom,
+      this.email,
+      this.numeroDeTelephone,
+      this.adresse,
+      this.genre,
+      this.codeParrainage,
+      this.oneIgnalUserid = "",
+      this.userPays,
+      this.publi_cash = 0,
+      this.pubEntreprise = 0,
+      this.mesPubs = 0,
+      this.pointContribution = 0,
+      this.likes = 0,
+      this.jaimes = 0,
+      this.userlikes = 0,
+      this.userjaimes = 0,
+      this.comments = 0,
+      this.createdAt = 0,
+      this.updatedAt = 0,
+      this.abonnes = 0,
+      this.compteTarif = 0,
+      this.popularite = 0.0,
+      this.votre_solde = 0.0,
+      this.latitude = 0.0,
+      this.longitude = 0.0,
+      this.isBlocked = false,
+      this.isConnected = false,
+      this.completeData = false,
+      this.hasEntreprise = false,
+      this.apropos,
+      this.password = "",
+      this.codeParrain,
+      this.state = "OFFLINE",
+      //this.genreId,
+      this.role,
+      this.userGlobalTags});
 
   UserData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -582,6 +585,7 @@ class UserData {
     imageUrl = json['imageUrl'];
     numeroDeTelephone = json['numero_de_telephone'];
     adresse = json['adresse'];
+    // email = json['adresse'];
     oneIgnalUserid = json['oneIgnalUserid'];
     codeParrainage = json['code_parrainage'];
     codeParrain = json['code_parrain'];
@@ -589,7 +593,7 @@ class UserData {
     userPays = json['user_pays'] != null
         ? new UserPays.fromJson(json['user_pays'])
         : null;
-    publiCash = json['publi_cash'];
+    publi_cash = json['publi_cash'];
     votre_solde = json['votre_solde'];
     pubEntreprise = json['pub_entreprise'];
     pointContribution = json['point_contribution'];
@@ -597,7 +601,7 @@ class UserData {
     jaimes = json['jaimes'];
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
-   // mesPubs = json['mesPubs'];
+    // mesPubs = json['mesPubs'];
     comments = json['comments'];
     abonnes = json['abonnes'];
     compteTarif = json['compte_tarif']!.toDouble();
@@ -608,16 +612,15 @@ class UserData {
     latitude = json['latitude'];
     longitude = json['longitude'];
     apropos = json['apropos'];
-   password = json['password']==null?"":json['password'];
-   genre = json['genre']==null?"":json['genre'];
-   userlikes = json['userlikes']==null?0:json['userlikes'];
-   userjaimes = json['userjaimes']==null?0:json['userjaimes'];
-   // genreId = json['genre_id'];
+    password = json['password'] == null ? "" : json['password'];
+    email = json['email'] == null ? "" : json['email'];
+    genre = json['genre'] == null ? "" : json['genre'];
+    userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
+    userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
+    // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
   }
-
-
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
@@ -625,6 +628,7 @@ class UserData {
     data['pseudo'] = this.pseudo;
     data['nom'] = this.nom;
     data['prenom'] = this.prenom;
+    data['email'] = this.email;
     data['imageUrl'] = this.imageUrl;
     data['numero_de_telephone'] = this.numeroDeTelephone;
     data['adresse'] = this.adresse;
@@ -637,24 +641,23 @@ class UserData {
       data['user_pays'] = this.userPays!.toJson();
     }
 
-
     data['isBlocked'] = this.isBlocked;
     data['complete_data'] = this.completeData;
     data['has_entreprise'] = this.hasEntreprise;
 
     data['latitude'] = this.latitude;
     data['oneIgnalUserid'] = this.oneIgnalUserid;
-   // data['image'] = this.image;
+    // data['image'] = this.image;
     data['longitude'] = this.longitude;
     data['apropos'] = this.apropos;
-    data['password'] = this.password;
+    // data['password'] = this.password;
     data['genre'] = this.genre;
     data['userlikes'] = this.userlikes;
     data['userjaimes'] = this.userjaimes;
-   // data['genre_id'] = this.genreId;
+    // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
-    data['publi_cash'] = this.publiCash;
+    data['publi_cash'] = this.publi_cash;
     data['votre_solde'] = this.votre_solde;
     data['pub_entreprise'] = this.pubEntreprise;
     data['point_contribution'] = this.pointContribution;
@@ -670,7 +673,7 @@ class UserData {
     data['friendsIds'] = this.friendsIds;
     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
     data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
-   // data['password'] = this.password;
+    // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;
     return data;
@@ -693,17 +696,18 @@ class UserShopData {
   String? role;
   int? createdAt;
   int? updatedAt;
-  int? nbr_aticle_annonce=0;
+  int? nbr_aticle_annonce = 0;
 
   UserShopData();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory UserShopData.fromJson(Map<String, dynamic> json) => _$UserShopDataFromJson(json);
+  factory UserShopData.fromJson(Map<String, dynamic> json) =>
+      _$UserShopDataFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$UserShopDataToJson(this);
-
 }
+
 @JsonSerializable()
 class ArticleData {
   String? id;
@@ -712,123 +716,110 @@ class ArticleData {
   String? description;
   String? titre;
   int? prix;
-  int? popularite=1;
+  int? popularite = 1;
 
   int? vues;
-  bool? disponible=true;
+  bool? disponible = true;
   int? contact;
   int? jaime;
   int? createdAt;
   int? updatedAt;
   @JsonKey(includeFromJson: false, includeToJson: false)
-
   UserShopData? user;
   bool? dispo_annonce_afrolook;
   int? annonce_time;
-
-
-
 
   List<String>? images = [];
   ArticleData();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory ArticleData.fromJson(Map<String, dynamic> json) => _$ArticleDataFromJson(json);
+  factory ArticleData.fromJson(Map<String, dynamic> json) =>
+      _$ArticleDataFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$ArticleDataToJson(this);
-
-
 }
 
-
 class EntrepriseData {
-  List<EntrepriseAbonnement>? abonnements=[];
-   String? titre;
+  List<EntrepriseAbonnement>? abonnements = [];
+  String? titre;
   String? type;
-   String? id;
-   String? description;
-   int? suivi=0;
-  int? publication=0;
-   double? publicash=0;
-   String? urlImage;
-   String? userId;
-   bool? haveSubscription;
-   UserData? user;
-
+  String? id;
+  String? description;
+  int? suivi = 0;
+  int? publication = 0;
+  double? publicash = 0;
+  String? urlImage;
+  String? userId;
+  bool? haveSubscription;
+  UserData? user;
 
   EntrepriseData({
-     this.user,
-     this.titre,
+    this.user,
+    this.titre,
     this.type,
-     this.description,
-     this.urlImage,
+    this.description,
+    this.urlImage,
     this.abonnements,
-     this.userId,
-    this.suivi=0,
-    this.publicash=0.0,
-    this.publication=0,
+    this.userId,
+    this.suivi = 0,
+    this.publicash = 0.0,
+    this.publication = 0,
     this.id,
   });
 
-   EntrepriseData.fromJson(Map<String, dynamic> json) {
-
-      titre= json['titre'];
-      type= json['type'];
-      id= json['id'];
-      publicash= json['publicash'];
-      publication= json['publication'];
-        if (json['abonnements'] != null) {
-          abonnements = <EntrepriseAbonnement>[];
+  EntrepriseData.fromJson(Map<String, dynamic> json) {
+    titre = json['titre'];
+    type = json['type'];
+    id = json['id'];
+    publicash = json['publicash'];
+    publication = json['publication'];
+    if (json['abonnements'] != null) {
+      abonnements = <EntrepriseAbonnement>[];
       json['abonnements'].forEach((v) {
         abonnements!.add(new EntrepriseAbonnement.fromJson(v));
       });
     }
 
-      description= json['description'];
-      urlImage= json['urlImage'];
-      suivi= json['suivi'];
-      userId= json['userId'];
-      user= UserData();
-
+    description = json['description'];
+    urlImage = json['urlImage'];
+    suivi = json['suivi'];
+    userId = json['userId'];
+    user = UserData();
   }
 
   Map<String, dynamic> toJson() => {
-    'titre': titre,
-    'description': description,
-    'urlImage': urlImage,
-    'userId': userId,
-    'suivi': suivi,
-    'type': type,
-    'publication': publication,
-    'abonnements': abonnements!.map((abonnement) => abonnement.toJson()).toList(),
-
-    'publicash': publicash,
-    'id': id,
-  };
+        'titre': titre,
+        'description': description,
+        'urlImage': urlImage,
+        'userId': userId,
+        'suivi': suivi,
+        'type': type,
+        'publication': publication,
+        'abonnements':
+            abonnements!.map((abonnement) => abonnement.toJson()).toList(),
+        'publicash': publicash,
+        'id': id,
+      };
 }
+
 @JsonSerializable()
 class Categorie {
-
-  late String? id="";
-  late String? nom="";
-  late String? logo="";
+  late String? id = "";
+  late String? nom = "";
+  late String? logo = "";
   int? createdAt;
   int? updatedAt;
-
-
-
-
 
   Categorie();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory Categorie.fromJson(Map<String, dynamic> json) => _$CategorieFromJson(json);
+  factory Categorie.fromJson(Map<String, dynamic> json) =>
+      _$CategorieFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$CategorieToJson(this);
 }
-
 
 @JsonSerializable()
 class Commande {
@@ -840,31 +831,25 @@ class Commande {
   String? status;
   String? user_client_status;
   String? user_magasin_status;
-  int? dernierprix=0;
-
+  int? dernierprix = 0;
 
   int? createdAt;
   int? updatedAt;
   @JsonKey(includeFromJson: false, includeToJson: false)
-
   UserShopData? user_client;
   @JsonKey(includeFromJson: false, includeToJson: false)
-
   UserShopData? user_magasin;
   @JsonKey(includeFromJson: false, includeToJson: false)
-
   ArticleData? article;
-
 
   Commande();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory Commande.fromJson(Map<String, dynamic> json) => _$CommandeFromJson(json);
+  factory Commande.fromJson(Map<String, dynamic> json) =>
+      _$CommandeFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$CommandeToJson(this);
-
-
 }
 
 @JsonSerializable()
@@ -872,63 +857,50 @@ class CommandeCode {
   String? id;
   String? code;
 
-
-
-
   CommandeCode();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory CommandeCode.fromJson(Map<String, dynamic> json) => _$CommandeCodeFromJson(json);
+  factory CommandeCode.fromJson(Map<String, dynamic> json) =>
+      _$CommandeCodeFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$CommandeCodeToJson(this);
-
-
-}
-enum RoleUser{
-  ADMIN,USER,SUPERADMIN
-}
-enum UserCmdStatus{
-  ENCOURS,ANNULER,VALIDER
 }
 
+enum RoleUser { ADMIN, USER, SUPERADMIN }
 
-
+enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 @JsonSerializable()
-class UserIACompte{
+class UserIACompte {
   String? ia_name;
   String? ia_url_avatar;
   String? id;
 
-  int? jetons=0;
+  int? jetons = 0;
   int? createdAt;
   int? updatedAt;
 
   String? userId;
   @JsonKey(includeFromJson: false, includeToJson: false)
-
   UserData? user;
-
 
   UserIACompte({
     this.user,
     this.ia_url_avatar,
     this.ia_name,
-    this.jetons=0,
+    this.jetons = 0,
     this.userId,
-
     this.id,
   });
 
-
   // Add a factory constructor that creates a new instance from a JSON map
-  factory UserIACompte.fromJson(Map<String, dynamic> json) => _$UserIACompteFromJson(json);
+  factory UserIACompte.fromJson(Map<String, dynamic> json) =>
+      _$UserIACompteFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$UserIACompteToJson(this);
 }
-
 
 @JsonSerializable()
 class EntrepriseAbonnement {
@@ -941,8 +913,6 @@ class EntrepriseAbonnement {
   int? nbr_jour_pub_afrolook;
   int? nbr_jour_pub_annonce_afrolook;
 
-
-
   String? userId;
   String? afroshop_user_magasin_id;
   int? createdAt;
@@ -952,18 +922,14 @@ class EntrepriseAbonnement {
   bool? isFinished;
   bool? dispo_afrolook;
 
-
-
-
   EntrepriseAbonnement();
 
-  factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) => _$EntrepriseAbonnementFromJson(json);
+  factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) =>
+      _$EntrepriseAbonnementFromJson(json);
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$EntrepriseAbonnementToJson(this);
 }
-
-
 
 class UserGlobalTag {
   int? id;
@@ -975,11 +941,11 @@ class UserGlobalTag {
 
   UserGlobalTag(
       {this.id,
-        this.titre,
-        this.description,
-        this.popularite,
-        this.createdAt,
-        this.updatedAt});
+      this.titre,
+      this.description,
+      this.popularite,
+      this.createdAt,
+      this.updatedAt});
 
   UserGlobalTag.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1001,8 +967,6 @@ class UserGlobalTag {
     return data;
   }
 }
-
-
 
 class SendMessageData {
   String? message;
@@ -1030,7 +994,6 @@ class SendMessageData {
   }
 }
 
-
 class Chat {
   String? id;
   String? senderId;
@@ -1041,11 +1004,11 @@ class Chat {
   String? type;
   int? createdAt;
   int? updatedAt;
-  bool? lastMessageIsRead=false;
-  bool? isConnected=false;
+  bool? lastMessageIsRead = false;
+  bool? isConnected = false;
   String? entreprise_id;
-  int? my_msg_not_read=0;
-  int? your_msg_not_read=0;
+  int? my_msg_not_read = 0;
+  int? your_msg_not_read = 0;
   String? send_sending;
   String? receiver_sending;
   UserData? sender;
@@ -1054,41 +1017,42 @@ class Chat {
   UserData? receiver;
   UserData? chatFriend;
   UserIACompte? chatIa;
-  List<Message>? messages=[];
+  List<Message>? messages = [];
 
   Chat(
       {this.id,
-        this.send_sending,
-        this.receiver_sending,
-        this.senderId,
-        this.receiverId,
-        this.post_id,
-        this.entreprise_id,
-        this.lastMessage,
-        this.entreprise,
-        this.lastMessageIsRead=false,
-        this.isConnected=false,
-        this.type,
-        this.messages,
-        this.docId,
-        this.createdAt,
-        this.updatedAt,
-        this.my_msg_not_read=0,
-        this.your_msg_not_read=0,
-        this.sender,
-        this.chatIa,
-        this.receiver});
+      this.send_sending,
+      this.receiver_sending,
+      this.senderId,
+      this.receiverId,
+      this.post_id,
+      this.entreprise_id,
+      this.lastMessage,
+      this.entreprise,
+      this.lastMessageIsRead = false,
+      this.isConnected = false,
+      this.type,
+      this.messages,
+      this.docId,
+      this.createdAt,
+      this.updatedAt,
+      this.my_msg_not_read = 0,
+      this.your_msg_not_read = 0,
+      this.sender,
+      this.chatIa,
+      this.receiver});
 
   Chat.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     senderId = json['sender_id'];
     post_id = json['post_id'];
-    send_sending= json["send_sending"]==null?"":json["send_sending"];
-    receiver_sending= json["receiver_sending"]==null?"":json["receiver_sending"];
+    send_sending = json["send_sending"] == null ? "" : json["send_sending"];
+    receiver_sending =
+        json["receiver_sending"] == null ? "" : json["receiver_sending"];
     receiverId = json['receiver_id'];
     lastMessage = json['last_message'];
     type = json['type'];
-    entreprise_id = json['entreprise_id']==null?'':json['entreprise_id'];
+    entreprise_id = json['entreprise_id'] == null ? '' : json['entreprise_id'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     my_msg_not_read = json['my_msg_not_read'];
@@ -1147,7 +1111,6 @@ class Chat {
 
     return data;
   }
-
 }
 
 class Post {
@@ -1167,47 +1130,47 @@ class Post {
   int? createdAt;
   int? updatedAt;
 
-  int? comments=0;
-  int? loves=0;
-  int? vues=0;
-  int? likes=0;
+  int? comments = 0;
+  int? loves = 0;
+  int? vues = 0;
+  int? likes = 0;
   UserData? user;
   EntrepriseData? entrepriseData;
 
-  List<PostComment>? commentaires=[];
-  List<String>? images=[];
-  List<String>? users_like_id=[];
-  List<String>? users_love_id=[];
+  List<PostComment>? commentaires = [];
+  List<String>? images = [];
+  List<String>? users_like_id = [];
+  List<String>? users_love_id = [];
 
-  List<String>? users_vue_id=[];
+  List<String>? users_vue_id = [];
 
-  Post(
-      {this.id,
-        this.comments,
-        this.dataType,
-        this.user_id,
-        this.entreprise_id,
-        this.status,
-        this.url_media,
-         this.nombreCollaborateur=0,
-         this.publiCashTotal=0,
-         this.nombreImage=0,
-         this.nombrePersonneParJour=0,
-        this.type,
-        this.images,
-        this.users_like_id,
-        this.users_love_id,
-        this.loves,
-        this.users_vue_id,
-        this.vues,
-        this.likes,
-        this.commentaires,
-        this.contact_whatsapp,
-        this.description,
-        this.createdAt,
-        this.updatedAt,
-        this.user,
-      });
+  Post({
+    this.id,
+    this.comments,
+    this.dataType,
+    this.user_id,
+    this.entreprise_id,
+    this.status,
+    this.url_media,
+    this.nombreCollaborateur = 0,
+    this.publiCashTotal = 0,
+    this.nombreImage = 0,
+    this.nombrePersonneParJour = 0,
+    this.type,
+    this.images,
+    this.users_like_id,
+    this.users_love_id,
+    this.loves,
+    this.users_vue_id,
+    this.vues,
+    this.likes,
+    this.commentaires,
+    this.contact_whatsapp,
+    this.description,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+  });
 
   int compareTo(Post other) {
     return other.createdAt!.compareTo(createdAt!);
@@ -1225,19 +1188,24 @@ class Post {
     updatedAt = json['updated_at'];
     dataType = json['dataType'];
     url_media = json['url_media'];
-    contact_whatsapp =json['contact_whatsapp']==null?"": json['contact_whatsapp'];
+    contact_whatsapp =
+        json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
     loves = json['loves'];
-    images = json['images']==null?[]:json['images'].cast<String>();
+    images = json['images'] == null ? [] : json['images'].cast<String>();
     likes = json['likes'];
-    vues = json['vues']==null?0:json['vues'];
-    users_like_id = json['users_like_id']==null?[]:json['users_like_id'].cast<String>();
-    users_love_id = json['users_love_id']==null?[]:json['users_love_id'].cast<String>();
-    users_vue_id = json['users_vue_id']==null?[]:json['users_vue_id'].cast<String>();
+    vues = json['vues'] == null ? 0 : json['vues'];
+    users_like_id = json['users_like_id'] == null
+        ? []
+        : json['users_like_id'].cast<String>();
+    users_love_id = json['users_love_id'] == null
+        ? []
+        : json['users_love_id'].cast<String>();
+    users_vue_id =
+        json['users_vue_id'] == null ? [] : json['users_vue_id'].cast<String>();
     nombreCollaborateur = json['nombreCollaborateur'];
     publiCashTotal = json['publiCashTotal'];
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1267,11 +1235,8 @@ class Post {
     data['nombreImage'] = this.nombreImage;
     data['nombrePersonneParJour'] = this.nombrePersonneParJour;
 
-
-
     return data;
   }
-
 }
 
 class PostImage {
@@ -1281,16 +1246,13 @@ class PostImage {
   int? createdAt;
   int? updatedAt;
 
-
-  PostImage(
-      {this.id,
-
-        this.url_media,
-        this.post_id,
-        this.createdAt,
-        this.updatedAt,
-
-      });
+  PostImage({
+    this.id,
+    this.url_media,
+    this.post_id,
+    this.createdAt,
+    this.updatedAt,
+  });
 
   PostImage.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1298,8 +1260,6 @@ class PostImage {
     updatedAt = json['updated_at'];
     url_media = json['url_media'];
     post_id = json['post_id'];
-
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1312,7 +1272,6 @@ class PostImage {
 
     return data;
   }
-
 }
 
 class ResponsePostComment {
@@ -1322,24 +1281,24 @@ class ResponsePostComment {
   String? user_logo_url;
   String? user_pseudo;
   String? message;
+  String? status;
   UserData? user;
 
   int? createdAt;
   int? updatedAt;
 
-
-  ResponsePostComment(
-      {this.id='',
-        this.message='',
-        this.user_pseudo='',
-        this.user_logo_url='',
-        this.post_comment_id='',
-       required this.user_id,
-        this.createdAt=0,
-        this.updatedAt=0,
-        // required this.user,
-
-      });
+  ResponsePostComment({
+    this.id = '',
+    this.message = '',
+    this.user_pseudo = '',
+    this.user_logo_url = '',
+    this.post_comment_id = '',
+    this.status = '',
+    required this.user_id,
+    this.createdAt = 0,
+    this.updatedAt = 0,
+    // required this.user,
+  });
 
   ResponsePostComment.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1349,9 +1308,8 @@ class ResponsePostComment {
     user_pseudo = json['user_pseudo'];
     user_logo_url = json['user_logo_url'];
     post_comment_id = json['post_comment_id'];
-    user_id = json['user_id']==null? "":json['user_id'];
-
-
+    user_id = json['user_id'] == null ? "" : json['user_id'];
+    status = json['status'] == null ? "" : json['status'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1360,6 +1318,7 @@ class ResponsePostComment {
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
     data['message'] = this.message;
+    data['status'] = this.status;
     data['user_pseudo'] = this.user_pseudo;
     data['user_logo_url'] = this.user_logo_url;
     data['post_comment_id'] = this.post_comment_id;
@@ -1367,7 +1326,6 @@ class ResponsePostComment {
 
     return data;
   }
-
 }
 
 class Information {
@@ -1381,16 +1339,16 @@ class Information {
   int? createdAt;
   int? updatedAt;
 
-
-  Information(
-      {this.id='',
-        this.type='',this.description='',
-        this.titre='',this.status='',
-        this.media_url='',
-        this.createdAt=0,
-        this.updatedAt=0,
-
-      });
+  Information({
+    this.id = '',
+    this.type = '',
+    this.description = '',
+    this.titre = '',
+    this.status = '',
+    this.media_url = '',
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
 
   Information.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1401,8 +1359,6 @@ class Information {
     description = json['description'];
     titre = json['titre'];
     media_url = json['media_url'];
-
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1418,7 +1374,6 @@ class Information {
 
     return data;
   }
-
 }
 
 class NotificationData {
@@ -1433,27 +1388,27 @@ class NotificationData {
   String? status;
   bool? is_open;
   String? description;
-  List<String>? users_id_view=[];
+  List<String>? users_id_view = [];
 
   int? createdAt;
   int? updatedAt;
 
-
-  NotificationData(
-      {this.id='',
-        this.type='',this.description='',
-        this.titre='',this.status='',
-        this.media_url='',
-       // this.lu=false,
-        this.is_open=false,
-        this.post_data_type='',
-        this.post_id='',
-        this.user_id='',
-        this.receiver_id='',
-        this.createdAt=0,
-        this.updatedAt=0,
-
-      });
+  NotificationData({
+    this.id = '',
+    this.type = '',
+    this.description = '',
+    this.titre = '',
+    this.status = '',
+    this.media_url = '',
+    // this.lu=false,
+    this.is_open = false,
+    this.post_data_type = '',
+    this.post_id = '',
+    this.user_id = '',
+    this.receiver_id = '',
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
 
   NotificationData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1462,17 +1417,18 @@ class NotificationData {
     type = json['type'];
     status = json['status'];
     user_id = json['user_id'];
-    receiver_id = json['receiver_id']==null?"":json['receiver_id'];
-    is_open = json['is_open']==null?false:json['is_open'];
-    post_data_type = json['post_data_type']==null?"":json['post_data_type'];
-    post_id = json['post_id']==null?"":json['post_id'];
-    users_id_view = json['users_id_view']==null?[]:json['users_id_view'].cast<String>();
+    receiver_id = json['receiver_id'] == null ? "" : json['receiver_id'];
+    is_open = json['is_open'] == null ? false : json['is_open'];
+    post_data_type =
+        json['post_data_type'] == null ? "" : json['post_data_type'];
+    post_id = json['post_id'] == null ? "" : json['post_id'];
+    users_id_view = json['users_id_view'] == null
+        ? []
+        : json['users_id_view'].cast<String>();
 
     description = json['description'];
     titre = json['titre'];
     media_url = json['media_url'];
-
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1495,7 +1451,6 @@ class NotificationData {
 
     return data;
   }
-
 }
 
 class Annonce {
@@ -1509,17 +1464,15 @@ class Annonce {
   int? createdAt;
   int? updatedAt;
 
-
-  Annonce(
-      {this.id='',
-        this.vues=0,
-        this.jour=0,
-        this.status='',
-        this.media_url='',
-        this.createdAt=0,
-        this.updatedAt=0,
-
-      });
+  Annonce({
+    this.id = '',
+    this.vues = 0,
+    this.jour = 0,
+    this.status = '',
+    this.media_url = '',
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
 
   Annonce.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1530,8 +1483,6 @@ class Annonce {
     status = json['status'];
     vues = json['vues'];
     media_url = json['media_url'];
-
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1547,7 +1498,6 @@ class Annonce {
 
     return data;
   }
-
 }
 
 class PostComment {
@@ -1558,31 +1508,30 @@ class PostComment {
   String? message;
   int? createdAt;
   int? updatedAt;
-  List<int>? users_like_id=[];
+  List<int>? users_like_id = [];
 
-  int? comments=0;
-  int? loves=0;
-  int? likes=0;
+  int? comments = 0;
+  int? loves = 0;
+  int? likes = 0;
   UserData? user;
-  List<ResponsePostComment>? responseAbonnements=[];
-  List<Message>? replycommentaires=[];
+  List<ResponsePostComment>? responseComments = [];
+  List<Message>? replycommentaires = [];
 
-  PostComment(
-      {this.id,
-        this.comments,
-        this.users_like_id,
-        this.user_id,
-        this.status,
-        this.message,
-        this.post_id,
-        this.responseAbonnements,
-        this.loves,
-        this.likes,
-
-        this.createdAt,
-        this.updatedAt,
-        this.user,
-      });
+  PostComment({
+    this.id,
+    this.comments,
+    this.users_like_id,
+    this.user_id,
+    this.status,
+    this.message,
+    this.post_id,
+    this.responseComments,
+    this.loves,
+    this.likes,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+  });
 
   PostComment.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1593,17 +1542,16 @@ class PostComment {
     message = json['message'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
-    users_like_id = json['users_like_id']==null?[]:json['users_like_id'].cast<int>();
+    users_like_id =
+        json['users_like_id'] == null ? [] : json['users_like_id'].cast<int>();
     loves = json['loves'];
     likes = json['likes'];
-    if (json['responseAbonnements'] != null) {
-      responseAbonnements = <ResponsePostComment>[];
-      json['responseAbonnements'].forEach((v) {
-        responseAbonnements!.add(new ResponsePostComment.fromJson(v));
+    if (json['responseComments'] != null) {
+      responseComments = <ResponsePostComment>[];
+      json['responseComments'].forEach((v) {
+        responseComments!.add(new ResponsePostComment.fromJson(v));
       });
     }
-
-
   }
 
   Map<String, dynamic> toJson() {
@@ -1617,16 +1565,14 @@ class PostComment {
     data['post_id'] = this.post_id;
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
-    data['responseAbonnements'] = responseAbonnements!.map((response) => response.toJson()).toList();
-
+    data['responseComments'] =
+        responseComments!.map((response) => response.toJson()).toList();
 
     data['loves'] = this.loves;
     data['likes'] = this.likes;
 
-
     return data;
   }
-
 }
 
 class Transaction {
@@ -1642,40 +1588,37 @@ class Transaction {
     required this.type,
   });
 }
-enum UserRole { ADM, USER }
-enum RoleUserShop{
-  ADMIN,USER,SUPERADMIN
-}
 
-enum InvitationStatus { ENCOURS, ACCEPTER,REFUSER }
+enum UserRole { ADM, USER }
+
+enum RoleUserShop { ADMIN, USER, SUPERADMIN }
+
+enum InvitationStatus { ENCOURS, ACCEPTER, REFUSER }
 
 enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
+
 enum PostType { POST, PUB }
-enum PostDataType { IMAGE, VIDEO,TEXT,COMMENT }
-enum PostStatus { VALIDE, SIGNALER,NONVALIDE,SUPPRIMER }
+
+enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
+
+enum PostStatus { VALIDE, SIGNALER, NONVALIDE, SUPPRIMER }
 
 enum ChatType { USER, ENTREPRISE }
+
 enum IsSendMessage { SENDING, NOTSENDING }
+
 enum InfoType { APPINFO, GRATUIT }
-enum NotificationType { MESSAGE, POST,INVITATION,ACCEPTINVITATION,ABONNER,PARRAINAGE,USER }
+
+enum NotificationType {
+  MESSAGE,
+  POST,
+  INVITATION,
+  ACCEPTINVITATION,
+  ABONNER,
+  PARRAINAGE,
+  USER
+}
 
 enum TypeEntreprise { personnel, partenaire }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

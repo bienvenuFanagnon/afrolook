@@ -98,14 +98,23 @@ class _DepotPageState extends State<RetraitPage> {
                 children: <Widget>[
                   SizedBox(height: 20,),
                   Container(
-                    decoration: BoxDecoration(color: Colors.blue,
+                    decoration: BoxDecoration(color: Colors.blue.shade200,
                     borderRadius: BorderRadius.all(Radius.circular(10))),
                     alignment: Alignment.center,
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: ListTile(
 
-                        leading: Icon(Icons.currency_bitcoin,color: Colors.green, size: 50,),
+                        leading: Icon(Icons.money,color: Colors.green, size: 40,),
+                        trailing: IconButton(onPressed: () {
+                          setState(()  {
+                            authProvider.getLoginUser(authProvider.loginUserData!.id!).then((value) {
+
+                            },);
+
+                          });
+
+                        }, icon: Icon(Icons.refresh,color: Colors.green, size: 40,)),
                       title:  Text(
                         'Votre Solde',
                         style: TextStyle(
@@ -116,7 +125,7 @@ class _DepotPageState extends State<RetraitPage> {
 
                       ),
                         subtitle:  Text(
-                          '${authProvider.loginUserData.votre_solde} PubliCach (PC)',
+                          '${authProvider.loginUserData.publi_cash} PubliCash (PC)',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Colors.white,

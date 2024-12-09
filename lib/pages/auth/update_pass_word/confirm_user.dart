@@ -21,6 +21,7 @@ class ConfirmUser extends StatefulWidget {
 class _ConfirmUserState extends State<ConfirmUser> {
   bool onTap=false;
   final TextEditingController telephoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   showErrorDialog(BuildContext context,String text) {
@@ -92,11 +93,18 @@ class _ConfirmUserState extends State<ConfirmUser> {
     }
   }
 
+  bool isValidEmail(String email) {
+    final RegExp emailRegExp = RegExp(
+        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+    return emailRegExp.hasMatch(email);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirmation'),
+        // title: const Text('Confirmation'),
+        title: const Text('Changement de mot de passe',style: TextStyle(fontSize: 18),),
       ),
       body: Center(
         child: Padding(
@@ -105,42 +113,69 @@ class _ConfirmUserState extends State<ConfirmUser> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Êtes-vous sûr que ce compte vous appartient ?',
+                "Un lien pour réinitialiser votre mot de passe vous sera envoyer "
+                    "Veuillez vérifier votre boîte de réception (et éventuellement vos spams).",
                 style: TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
-              IntlPhoneField(
-                //controller: telephoneController,
-                // invalidNumberMessage:'numero invalide' ,
-                onTap: () {
-
-                },
-
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
                 cursorColor: kPrimaryColor,
-                decoration: InputDecoration(
-                  hintText: 'Téléphone',
+                validator: (value)  {
+                  if (value!.isEmpty) {
+                    return 'Le champ "Email" est obligatoire.';
+                  }
+                  if (!isValidEmail(value)) {
+                    return 'Email invalide';
+                  }
+                  return null;
+                },
+                onSaved: (email) {},
+                decoration: const InputDecoration(
                   focusColor: kPrimaryColor,
                   focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: kPrimaryColor)),
-
+                  hintText: "Email",
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(defaultPadding),
+                    child: Icon(Icons.email),
+                  ),
                 ),
-                initialCountryCode: 'TG',
-                onChanged: (phone) {
-                  telephoneController.text=phone.completeNumber;
-                  print(phone.completeNumber);
-                },
-                onCountryChanged: (country) {
-                  print('Country changed to: ' + country.name);
-                },
-                validator: (value) {
-                  if (value!.completeNumber.isEmpty) {
-                    return 'Le champ "Téléphone" est obligatoire.';
-                  }
-
-                  return null;
-                },
-
               ),
+              // IntlPhoneField(
+              //   //controller: telephoneController,
+              //   // invalidNumberMessage:'numero invalide' ,
+              //   onTap: () {
+              //
+              //   },
+              //
+              //   cursorColor: kPrimaryColor,
+              //   decoration: InputDecoration(
+              //     hintText: 'Téléphone',
+              //     focusColor: kPrimaryColor,
+              //     focusedBorder: UnderlineInputBorder(
+              //         borderSide: BorderSide(color: kPrimaryColor)),
+              //
+              //   ),
+              //   initialCountryCode: 'TG',
+              //   onChanged: (phone) {
+              //     telephoneController.text=phone.completeNumber;
+              //     print(phone.completeNumber);
+              //   },
+              //   onCountryChanged: (country) {
+              //     print('Country changed to: ' + country.name);
+              //   },
+              //   validator: (value) {
+              //     if (value!.completeNumber.isEmpty) {
+              //       return 'Le champ "Téléphone" est obligatoire.';
+              //     }
+              //
+              //     return null;
+              //   },
+              //
+              // ),
               const SizedBox(height: 40),
               ElevatedButton(
                 onPressed:onTap?() {
@@ -149,25 +184,43 @@ class _ConfirmUserState extends State<ConfirmUser> {
                   setState(() {
                     onTap=true;
                   });
-                  if (telephoneController.text.isNotEmpty) {
-                  await  authProvider.getUserByPhone( telephoneController.text).then((value) {
-                      if (value) {
-                        sendOtpCode();
-                      }  else{
-                        SnackBar snackBar = SnackBar(
-                          content: Text("Ce compte n'existe pas",textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                        setState(() {
-                          onTap=false;
-                        });
-                      }
+                  if (emailController.text.isNotEmpty) {
 
-                    },);
+    FirebaseAuth.instance.sendPasswordResetEmail(email: emailController.text).then((_) {
+      SnackBar snackBar = SnackBar(
+        // duration: ,
+        content: Text("Un email vous a été envoyé à l'adresse ${emailController.text} avec un lien pour réinitialiser votre mot de passe. "
+            "Veuillez vérifier votre boîte de réception (et éventuellement vos spams).",textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }).catchError((error) {
+      SnackBar snackBar = SnackBar(
+        content: Text("Une erreur s'est produite lors de l'envoi de l'email de réinitialisation."
+            " Veuillez réessayer ultérieurement ou contacter notre support.",textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } );
+    setState(() {
+      onTap=false;
+    });
+                  // await  authProvider.getUserByPhone( telephoneController.text).then((value) {
+                  //     if (value) {
+                  //       sendOtpCode();
+                  //     }  else{
+                  //       SnackBar snackBar = SnackBar(
+                  //         content: Text("Ce compte n'existe pas",textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                  //       );
+                  //       ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  //       setState(() {
+                  //         onTap=false;
+                  //       });
+                  //     }
+                  //
+                  //   },);
 
                   }  else{
                     SnackBar snackBar = SnackBar(
-                      content: Text('le numero est obligatoire',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                      content: Text('email est obligatoire',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
                     );
                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
                     setState(() {

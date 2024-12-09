@@ -133,14 +133,10 @@ class _AidePageState extends State<ContactPage> {
                           const Icon(Icons.email,color: Colors.black,),
 
                           Text(
-                            'Info générale',
+                            'Info générale, signaler un souci',
                             style: TextStyle(fontSize: 16.0,color: Colors.black),
                           ),
 
-                          Text(
-                            'Email',
-                            style: TextStyle(fontSize: 12.0,color: Colors.black),
-                          ),
                         ],
                       ),
                     ),
@@ -172,10 +168,6 @@ class _AidePageState extends State<ContactPage> {
                             style: TextStyle(fontSize: 16.0,color: Colors.black),
                           ),
 
-                          Text(
-                            'Email',
-                            style: TextStyle(fontSize: 12.0,color: Colors.black),
-                          ),
                         ],
                       ),
                     ),
@@ -208,10 +200,7 @@ class _AidePageState extends State<ContactPage> {
                             style: TextStyle(fontSize: 16.0,color: Colors.black),
                           ),
 
-                          Text(
-                            'Email',
-                            style: TextStyle(fontSize: 12.0,color: Colors.black),
-                          ),
+
                         ],
                       ),
                     ),
