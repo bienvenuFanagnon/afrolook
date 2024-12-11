@@ -42,10 +42,6 @@ android {
 //        multiDexEnabled true
 //    }
 
-    aaptOptions {
-        noCompress 'tflite'
-        noCompress 'lite'
-    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -124,10 +120,6 @@ dependencies {
     // Add the dependencies for any other desired Firebase products
     implementation 'androidx.window:window:1.0.0'
     implementation 'androidx.window:window-java:1.0.0'
-    implementation 'org.tensorflow:tensorflow-lite:+'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:+'
-
-
 
 }
 

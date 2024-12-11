@@ -3,14 +3,12 @@ class Assets {
   Assets._();
 
   static const String afrotokAssetsDeeplabv3257MvGpu = 'assets/deeplabv3_257_mv_gpu.txt';
-  static const String afrotokAssetsMobilenetV11.0224 = 'assets/mobilenet_v1_1.0_224.tflite';
   static const String afrotokAssetsPosenetMv1075FloatFromCheckpoints = 'assets/posenet_mv1_075_float_from_checkpoints.tflite';
   static const String afrotokAssetsSsdMobilenet = 'assets/ssd_mobilenet.txt';
   static const String afrotokAssetsYolov2Tiny = 'assets/yolov2_tiny.txt';
   static const String assetsDeeplabv3257MvGpu = 'assets/deeplabv3_257_mv_gpu.txt';
   static const String assetsFriendIA = 'assets/friendIA.png';
   static const String assetsImagesVector = 'assets/images/Vector.svg';
-  static const String assetsMobilenetV11.0224 = 'assets/mobilenet_v1_1.0_224.txt';
   static const String assetsPlaceholder = 'assets/placeholder.png';
   static const String assetsPosenetMv1075FloatFromCheckpoints = 'assets/posenet_mv1_075_float_from_checkpoints.tflite';
   static const String assetsProfilePlaceholder = 'assets/profile_placeholder.png';
@@ -78,7 +76,6 @@ class Assets {
   static const String imagesLogoAfrotok = 'assets/images/logoAfrotok.png';
   static const String imagesMainBottom = 'assets/images/main_bottom.png';
   static const String imagesMainTop = 'assets/images/main_top.png';
-  static const String imagesMobile feedBro = 'assets/images/Mobile feed-bro.png';
   static const String imagesPersonHoldingSmartphoneWithSocialMediaApp = 'assets/images/person-holding-smartphone-with-social-media-app.jpg';
   static const String imagesPexelsMohamedAbdelghaffar771742 = 'assets/images/pexels-mohamed-abdelghaffar-771742.jpg';
   static const String imagesProduitsCosmetiquesNaturelsImg = 'assets/images/produits-cosmetiques-naturels-img.jpg';

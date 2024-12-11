@@ -199,16 +199,7 @@ flutter:
      - assets/menu/
      - assets/icons/
      - assets/
-     - assets/tflite/
-     - assets/mobilenet_v1_1.0_224.txt
-     - assets/mobilenet_v1_1.0_224.tflite
-     - assets/yolov2_tiny.tflite
-     - assets/yolov2_tiny.txt
-     - assets/ssd_mobilenet.tflite
-     - assets/ssd_mobilenet.txt
-     - assets/deeplabv3_257_mv_gpu.tflite
-     - assets/deeplabv3_257_mv_gpu.txt
-     - assets/posenet_mv1_075_float_from_checkpoints.tflite
+
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
