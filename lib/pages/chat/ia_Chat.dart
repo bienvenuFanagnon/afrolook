@@ -761,7 +761,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
             await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
 
 
-            await authProvider.generateText(ancien_messages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte).then((value) async {
+            await authProvider.generateText(ancien_messages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte, user: authProvider.loginUserData).then((value) async {
 
 
 
@@ -858,20 +858,30 @@ class _EntrepriseMyChatState extends State<IaChat> {
                       ),
                       SizedBox(height: 10.0),
                       Text(
-                        'Vous avez besoin de jetons pour continuer à discuter avec Xilo.  (200 PubliCash pour 10000 jetons)',textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16.0),
+                        'Les jetons vous manquent pour discuter avec Xilo ? ❌ Pas de panique ! ➡️ Contactez-nous dès maintenant pour acquérir les 20000 '
+                            'jetons nécessaires et poursuivre vos conversations. 100 PubliCash ==> (1000 fcfa) seulement ! ',textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13.0),
                       ),
                       SizedBox(height: 20.0),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: Colors.black87,
                         ),
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => ContactPage(),));
-                          // launchWhatsApp("+22870870240");
+                          // Navigator.push(context, MaterialPageRoute(builder: (context) => ContactPage(),));
+                          launchWhatsApp("+22896198801");
                         },
-                        child: Text('Acheter des jetons',
-                          style: TextStyle(color: Colors.white),),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment
+                          .center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Fontisto.whatsapp,color: Colors.green),
+                            SizedBox(width: 5,),
+                            Text('Contactez-nous',
+                              style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),),
+                          ],
+                        ),
 
                       ),
                     ],

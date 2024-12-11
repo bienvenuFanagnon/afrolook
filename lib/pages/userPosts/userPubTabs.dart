@@ -1,4 +1,6 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:camera/camera.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
 import 'dart:io';
@@ -272,6 +274,7 @@ class _UserPubImageState extends State<UserPubImage> {
       Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTap = false;
+  late CameraController _cameraController;
 
   late List<XFile> listimages = [];
 
@@ -289,10 +292,61 @@ class _UserPubImageState extends State<UserPubImage> {
     });
   }
 
+
+
+  late List<CameraDescription> _cameras=[];
+
+  // List<CameraDescription> cameras = [];
+  Future<List<CameraDescription>> init() async {
+    // cameras = await availableCameras();
+  return  _cameras = await availableCameras();
+  }
+
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+     // Tflite.close();
+    _cameraController.dispose();
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    init().then((cameras) {
+      _cameras=cameras;
+      _cameraController = CameraController(_cameras[0], ResolutionPreset.max);
+      _cameraController.initialize().then((_) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {});
+      }).catchError((Object e) {
+        if (e is CameraException) {
+          switch (e.code) {
+            case 'CameraAccessDenied':
+            // Handle access errors here.
+              break;
+            default:
+            // Handle other errors here.
+              break;
+          }
+        }
+      });
+    },);
+
+
+  }
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    // if (!_cameraController.value.isInitialized) {
+    //   return Container();
+    // }
+    // return CameraPreview(_cameraController);
+    // return TfLiteSnap();
     return SingleChildScrollView(
       child: SizedBox(
         width: width,

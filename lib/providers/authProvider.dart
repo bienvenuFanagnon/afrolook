@@ -466,7 +466,7 @@ updateUser(loginUserData);
     return hasData;
   }
 
-  Future<String?> generateText({required List<Message> ancien_messages,required String message,required String regle,required UserIACompte ia}) async {
+  Future<String?> generateText({required List<Message> ancien_messages,required String message,required String regle,required UserData user,required UserIACompte ia}) async {
     final apiKey="AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
     List<Content> contents=[];
     for(Message message in ancien_messages){
@@ -477,7 +477,7 @@ updateUser(loginUserData);
 
     try {
       //final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
-      final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}"));
+      final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}. vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
       //final prompt = "pour chaque question voici les regle a respecter "${regle}" voici la question "${message}"";
       final prompt = "${message}";
       final content = [Content.text(prompt)];

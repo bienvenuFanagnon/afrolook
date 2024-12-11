@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 #version: 1.0.0+1
-version: 1.0.6+6
+version: 1.0.8+8
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -89,6 +89,16 @@ dependencies:
   searchable_listview: ^2.10.1
   popover_gtk: ^0.2.6+3
 
+#  image: ^2.1.4
+
+  image: ^4.3.0
+#  tflite: ^1.1.2
+  camera: ^0.11.0+2
+#  tflite_flutter: ^0.11.0
+#  tflite_v2: ^1.0.0
+
+
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
@@ -129,6 +139,8 @@ dependencies:
   google_generative_ai: ^0.4.0
   fading_edge_scrollview: ^4.1.1
   upgrader: ^11.3.1
+  carousel_slider: ^5.0.0
+  flutter_image_slideshow: ^0.1.6
 
 
 
@@ -153,7 +165,8 @@ dependency_overrides:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo/afrolook_logo.png"
+#  image_path: "assets/logo/afrolook_logo.png"
+  image_path: "assets/logo/afrolook_noel.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
@@ -162,7 +175,8 @@ flutter_launcher_icons:
     theme_color: "#hexcode"
   windows:
     generate: true
-    image_path: "assets/logo/afrolook_logo.png"
+#    image_path: "assets/logo/afrolook_logo.png"
+    image_path: "assets/logo/afrolook_noel.png"
     icon_size: 48 # min:48, max:256, default: 48
 
 
@@ -185,6 +199,16 @@ flutter:
      - assets/menu/
      - assets/icons/
      - assets/
+     - assets/tflite/
+     - assets/mobilenet_v1_1.0_224.txt
+     - assets/mobilenet_v1_1.0_224.tflite
+     - assets/yolov2_tiny.tflite
+     - assets/yolov2_tiny.txt
+     - assets/ssd_mobilenet.tflite
+     - assets/ssd_mobilenet.txt
+     - assets/deeplabv3_257_mv_gpu.tflite
+     - assets/deeplabv3_257_mv_gpu.txt
+     - assets/posenet_mv1_075_float_from_checkpoints.tflite
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -1151,120 +1151,120 @@ class _PostVideosState extends State<OnlyPostVideo> {
                                             },
 
                                           ),
-                                          LikeButton(
-                                            onTap: (bool isLiked) async {
-                                              if (!isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!)) {
-                                                print('tap');
-                                                setState(()  {
-                                                  datas[index]!.likes= datas[index]!.likes!+1;
-
-                                                  datas[index].users_like_id!.add(authProvider!.loginUserData.id!);
-
-                                                  print('update');
-                                                  //loves.add(idUser);
-                                                });
-                                                CollectionReference userCollect =
-                                                FirebaseFirestore.instance.collection('Users');
-                                                // Get docs from collection reference
-                                                QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
-                                                // Afficher la liste
-                                                List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                    UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-                                                if (listUsers.isNotEmpty) {
-                                                  listUsers.first!.likes=listUsers.first!.likes!+1;
-                                                  postProvider.updatePost(datas[index], listUsers.first,context);
-                                                  authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
-                                                  authProvider.updateAppData(authProvider.appDefaultData);
-
-
-                                                }else{
-                                                  datas[index].user!.likes=datas[index].user!.likes!+1;
-                                                  postProvider.updatePost( datas[index],datas[index].user!,context);
-                                                  authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
-                                                  authProvider.updateAppData(authProvider.appDefaultData);
-                                                }
-
-                                                await authProvider.sendNotification(
-                                                    userIds: [datas[index].user!.oneIgnalUserid!],
-                                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                    send_user_id: "${authProvider.loginUserData.id!}",
-                                                    recever_user_id: "${datas[index].user!.id!}",
-                                                    message: "📢 @${authProvider.loginUserData.pseudo!} a liké 👍🏾 votre video",
-                                                    type_notif: NotificationType.POST.name,
-                                                    post_id: "${datas[index]!.id!}",
-                                                    post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                );
-
-                                                NotificationData notif=NotificationData();
-                                                notif.id=firestore
-                                                    .collection('Notifications')
-                                                    .doc()
-                                                    .id;
-                                                notif.titre="Nouveau like 👍🏾";
-                                                notif.media_url=authProvider.loginUserData.imageUrl;
-                                                notif.type=NotificationType.POST.name;
-                                                notif.description="@${authProvider.loginUserData.pseudo!} a liké votre video";
-                                                notif.users_id_view=[];
-                                                notif.user_id=authProvider.loginUserData.id;
-                                                notif.receiver_id=datas[index]!.user!.id!;
-                                                notif.post_id=datas[index]!.id!;
-                                                notif.post_data_type=PostDataType.VIDEO.name!;
-
-                                                notif.updatedAt =
-                                                    DateTime.now().microsecondsSinceEpoch;
-                                                notif.createdAt =
-                                                    DateTime.now().microsecondsSinceEpoch;
-                                                notif.status = PostStatus.VALIDE.name;
-
-                                                // users.add(pseudo.toJson());
-
-                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-                                              }
-
-
-
-                                              return Future.value(!isLiked);
-                                            },
-                                            isLiked: isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!),
-                                            size: 35,
-                                            circleColor:
-                                            CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                            bubblesColor: BubblesColor(
-                                              dotPrimaryColor: Color(0xff3b9ade),
-                                              dotSecondaryColor: Color(0xff1176f3),
-                                            ),
-                                            countPostion: CountPostion.bottom,
-                                            likeBuilder: (bool isLiked) {
-                                              return Icon(
-                                                AntDesign.like1,
-                                                color: isLiked ? Colors.blue : Colors.white,
-                                                size: 35,
-
-
-
-                                              );
-                                            },
-                                            likeCount:  datas[index]!.users_like_id!.length!,
-                                            countBuilder: (int? count, bool isLiked, String text) {
-                                              var color = isLiked ? Colors.white : Colors.white;
-                                              Widget result;
-                                              if (count == 0) {
-                                                result = Text(
-                                                  "0",textAlign: TextAlign.center,
-                                                  style: TextStyle(color: color),
-                                                );
-                                              } else
-                                                result = Text(
-                                                  text,
-                                                  style: TextStyle(color: color),
-                                                );
-                                              return result;
-                                            },
-
-                                          ),
+                                          // LikeButton(
+                                          //   onTap: (bool isLiked) async {
+                                          //     if (!isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!)) {
+                                          //       print('tap');
+                                          //       setState(()  {
+                                          //         datas[index]!.likes= datas[index]!.likes!+1;
+                                          //
+                                          //         datas[index].users_like_id!.add(authProvider!.loginUserData.id!);
+                                          //
+                                          //         print('update');
+                                          //         //loves.add(idUser);
+                                          //       });
+                                          //       CollectionReference userCollect =
+                                          //       FirebaseFirestore.instance.collection('Users');
+                                          //       // Get docs from collection reference
+                                          //       QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                          //       // Afficher la liste
+                                          //       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                          //           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                          //
+                                          //
+                                          //       if (listUsers.isNotEmpty) {
+                                          //         listUsers.first!.likes=listUsers.first!.likes!+1;
+                                          //         postProvider.updatePost(datas[index], listUsers.first,context);
+                                          //         authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
+                                          //         authProvider.updateAppData(authProvider.appDefaultData);
+                                          //
+                                          //
+                                          //       }else{
+                                          //         datas[index].user!.likes=datas[index].user!.likes!+1;
+                                          //         postProvider.updatePost( datas[index],datas[index].user!,context);
+                                          //         authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
+                                          //         authProvider.updateAppData(authProvider.appDefaultData);
+                                          //       }
+                                          //
+                                          //       await authProvider.sendNotification(
+                                          //           userIds: [datas[index].user!.oneIgnalUserid!],
+                                          //           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          //           send_user_id: "${authProvider.loginUserData.id!}",
+                                          //           recever_user_id: "${datas[index].user!.id!}",
+                                          //           message: "📢 @${authProvider.loginUserData.pseudo!} a liké 👍🏾 votre video",
+                                          //           type_notif: NotificationType.POST.name,
+                                          //           post_id: "${datas[index]!.id!}",
+                                          //           post_type: PostDataType.VIDEO.name, chat_id: ''
+                                          //       );
+                                          //
+                                          //       NotificationData notif=NotificationData();
+                                          //       notif.id=firestore
+                                          //           .collection('Notifications')
+                                          //           .doc()
+                                          //           .id;
+                                          //       notif.titre="Nouveau like 👍🏾";
+                                          //       notif.media_url=authProvider.loginUserData.imageUrl;
+                                          //       notif.type=NotificationType.POST.name;
+                                          //       notif.description="@${authProvider.loginUserData.pseudo!} a liké votre video";
+                                          //       notif.users_id_view=[];
+                                          //       notif.user_id=authProvider.loginUserData.id;
+                                          //       notif.receiver_id=datas[index]!.user!.id!;
+                                          //       notif.post_id=datas[index]!.id!;
+                                          //       notif.post_data_type=PostDataType.VIDEO.name!;
+                                          //
+                                          //       notif.updatedAt =
+                                          //           DateTime.now().microsecondsSinceEpoch;
+                                          //       notif.createdAt =
+                                          //           DateTime.now().microsecondsSinceEpoch;
+                                          //       notif.status = PostStatus.VALIDE.name;
+                                          //
+                                          //       // users.add(pseudo.toJson());
+                                          //
+                                          //       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                          //
+                                          //     }
+                                          //
+                                          //
+                                          //
+                                          //     return Future.value(!isLiked);
+                                          //   },
+                                          //   isLiked: isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!),
+                                          //   size: 35,
+                                          //   circleColor:
+                                          //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                          //   bubblesColor: BubblesColor(
+                                          //     dotPrimaryColor: Color(0xff3b9ade),
+                                          //     dotSecondaryColor: Color(0xff1176f3),
+                                          //   ),
+                                          //   countPostion: CountPostion.bottom,
+                                          //   likeBuilder: (bool isLiked) {
+                                          //     return Icon(
+                                          //       AntDesign.like1,
+                                          //       color: isLiked ? Colors.blue : Colors.white,
+                                          //       size: 35,
+                                          //
+                                          //
+                                          //
+                                          //     );
+                                          //   },
+                                          //   likeCount:  datas[index]!.users_like_id!.length!,
+                                          //   countBuilder: (int? count, bool isLiked, String text) {
+                                          //     var color = isLiked ? Colors.white : Colors.white;
+                                          //     Widget result;
+                                          //     if (count == 0) {
+                                          //       result = Text(
+                                          //         "0",textAlign: TextAlign.center,
+                                          //         style: TextStyle(color: color),
+                                          //       );
+                                          //     } else
+                                          //       result = Text(
+                                          //         text,
+                                          //         style: TextStyle(color: color),
+                                          //       );
+                                          //     return result;
+                                          //   },
+                                          //
+                                          // ),
 
                                           LikeButton(
                                             onTap: (bool isLiked) {

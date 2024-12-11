@@ -22,7 +22,7 @@ class _LogoState extends State<Logo> {
             children: [
               //Image.asset("assets/images/Vector.png",width: 20,height: 20,),
              // SizedBox(width: 5), // Espacement entre les images
-             // Image.asset("assets/images/AfroTok.png"),
+             Image.asset("assets/logo/logo_noel-removebg-preview.png",width: 20,height: 20,),
               TextCustomerMenu(
                 titre: "Afrolook",
                 fontSize: 20,

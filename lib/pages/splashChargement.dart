@@ -29,7 +29,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=6;
+  late int app_version_code=8;
   int limitePosts=40;
 
   Future<void> _launchUrl(Uri url) async {
@@ -198,7 +198,7 @@ class _ChargementState extends State<SplahsChargement> {
                     color: ConstColors.chargementColors,
                     repeat: true,
                     //  animationController: animationController,
-                    child: Image.asset('assets/logo/afrolook_logo.png',height: 70,width: 70,),
+                    child: Image.asset('assets/logo/afrolook_noel.png',height: 70,width: 70,),
                   ),
                 ),
                 Text("Connexion...")

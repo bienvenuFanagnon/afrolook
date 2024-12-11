@@ -48,6 +48,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -59,6 +60,7 @@ import 'package:upgrader/upgrader.dart';
 
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
+late List<CameraDescription> _cameras;
 
 
 
@@ -66,8 +68,10 @@ Future<void> main() async {
   //WidgetsFlutterBinding.ensureInitialized();
   //await TikTokSDK.instance.setup(clientKey: 'aw95aeb86u1rqdhj');
   WidgetsFlutterBinding.ensureInitialized();
+  _cameras = await availableCameras();
 
-    await Firebase.initializeApp(
+
+  await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
@@ -441,6 +445,7 @@ class _MyAppState extends State<MyApp> {
 home: UpgradeAlert(
   upgrader: Upgrader(),
   child: Scaffold(
+    // body: UserPostForm(),
     body: SplahsChargement(),
   ),
 ),

@@ -6,12 +6,21 @@ buildscript {
         google()
         mavenCentral()
     }
+//    aaptOptions {
+//        noCompress 'tflite'
+//        noCompress 'lite'
+//    }
 
     dependencies {
        // classpath 'com.android.tools.build:gradle:4.1.0'
 
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.gms:google-services:4.3.3'
+//        classpath 'org.tensorflow:tensorflow-lite:+'
+//        classpath 'org.tensorflow:tensorflow-lite-gpu:+'
+//        implementation 'org.tensorflow:tensorflow-lite:+'
+//        implementation 'org.tensorflow:tensorflow-lite-gpu:+'
+
     }
 }
 

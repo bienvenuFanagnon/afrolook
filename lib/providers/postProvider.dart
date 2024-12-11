@@ -244,7 +244,7 @@ class PostProvider extends ChangeNotifier {
         .where("receiver_id",isEqualTo:'${user_id}')
 
         .orderBy('created_at', descending: true)
-   .limit(25)
+   .limit(100)
 
         .snapshots();
     List<NotificationData> notifications = [];

@@ -694,50 +694,50 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                             }
                         ),
 
-                        StatefulBuilder(
-                            builder: (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () async {
-                                  if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
-
-
-                                  }
-
-
-                                },
-                                child: Container(
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            tapLike?MaterialCommunityIcons.thumb_up:MaterialCommunityIcons.thumb_up_outline,
-                                            size: 20,
-                                            color: tapLike?Colors.blue:Colors.black,
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 1.0,right: 1),
-                                            child: TextCustomerPostDescription(
-                                              titre: "${like}",
-                                              fontSize: SizeText.homeProfileDateTextSize,
-                                              couleur: ConstColors.textColors,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                        ),
+                        // StatefulBuilder(
+                        //     builder: (BuildContext context, StateSetter setState) {
+                        //       return GestureDetector(
+                        //         onTap: () async {
+                        //           if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
+                        //
+                        //
+                        //           }
+                        //
+                        //
+                        //         },
+                        //         child: Container(
+                        //           width: 70,
+                        //           height: 30,
+                        //           child: Row(
+                        //
+                        //             crossAxisAlignment: CrossAxisAlignment.center,
+                        //             // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //             children: [
+                        //               Row(
+                        //                 children: [
+                        //                   Icon(
+                        //                     tapLike?MaterialCommunityIcons.thumb_up:MaterialCommunityIcons.thumb_up_outline,
+                        //                     size: 20,
+                        //                     color: tapLike?Colors.blue:Colors.black,
+                        //                   ),
+                        //                   Padding(
+                        //                     padding: const EdgeInsets.only(left: 1.0,right: 1),
+                        //                     child: TextCustomerPostDescription(
+                        //                       titre: "${like}",
+                        //                       fontSize: SizeText.homeProfileDateTextSize,
+                        //                       couleur: ConstColors.textColors,
+                        //                       fontWeight: FontWeight.bold,
+                        //                     ),
+                        //                   ),
+                        //                 ],
+                        //               ),
+                        //
+                        //             ],
+                        //           ),
+                        //         ),
+                        //       );
+                        //     }
+                        // ),
 
                         StatefulBuilder(
                             builder: (BuildContext context, StateSetter setState) {

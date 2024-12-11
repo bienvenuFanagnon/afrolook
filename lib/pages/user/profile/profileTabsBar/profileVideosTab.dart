@@ -664,68 +664,68 @@ class _ProfileVideoTabState extends State<ProfileVideoTab> {
                             }
                         ),
 
-                        StatefulBuilder(
-                            builder: (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () {
-                                  if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
-
-                                  }
-
-
-                                },
-                                child: Container(
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            tapLike?MaterialCommunityIcons.thumb_up:MaterialCommunityIcons.thumb_up_outline,
-                                            size: 20,
-                                            color: tapLike?Colors.blue:Colors.black,
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 1.0,right: 1),
-                                            child: TextCustomerPostDescription(
-                                              titre: "${like}",
-                                              fontSize: SizeText.homeProfileDateTextSize,
-                                              couleur: ConstColors.textColors,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(left: 1.0,right: 1),
-                                          child: SizedBox(
-                                            height: 2,
-                                            // width: width*0.75,
-                                            child: LinearProgressIndicator(
-                                              color: Colors.blue,
-                                              value: like/post.user!.abonnes!+1,
-                                              semanticsLabel: 'Linear progress indicator',
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      TextCustomerPostDescription(
-                                        titre: "${(like/post.user!.abonnes!*100+1).toStringAsFixed(2)}%",
-                                        fontSize: SizeText.homeProfileDateTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                        ),
+                        // StatefulBuilder(
+                        //     builder: (BuildContext context, StateSetter setState) {
+                        //       return GestureDetector(
+                        //         onTap: () {
+                        //           if (!isIn(post.users_like_id!,authProvider.loginUserData.id!)) {
+                        //
+                        //           }
+                        //
+                        //
+                        //         },
+                        //         child: Container(
+                        //           width: 70,
+                        //           height: 30,
+                        //           child: Row(
+                        //
+                        //             crossAxisAlignment: CrossAxisAlignment.center,
+                        //             // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //             children: [
+                        //               Row(
+                        //                 children: [
+                        //                   Icon(
+                        //                     tapLike?MaterialCommunityIcons.thumb_up:MaterialCommunityIcons.thumb_up_outline,
+                        //                     size: 20,
+                        //                     color: tapLike?Colors.blue:Colors.black,
+                        //                   ),
+                        //                   Padding(
+                        //                     padding: const EdgeInsets.only(left: 1.0,right: 1),
+                        //                     child: TextCustomerPostDescription(
+                        //                       titre: "${like}",
+                        //                       fontSize: SizeText.homeProfileDateTextSize,
+                        //                       couleur: ConstColors.textColors,
+                        //                       fontWeight: FontWeight.bold,
+                        //                     ),
+                        //                   ),
+                        //                 ],
+                        //               ),
+                        //               Expanded(
+                        //                 child: Padding(
+                        //                   padding: const EdgeInsets.only(left: 1.0,right: 1),
+                        //                   child: SizedBox(
+                        //                     height: 2,
+                        //                     // width: width*0.75,
+                        //                     child: LinearProgressIndicator(
+                        //                       color: Colors.blue,
+                        //                       value: like/post.user!.abonnes!+1,
+                        //                       semanticsLabel: 'Linear progress indicator',
+                        //                     ),
+                        //                   ),
+                        //                 ),
+                        //               ),
+                        //               TextCustomerPostDescription(
+                        //                 titre: "${(like/post.user!.abonnes!*100+1).toStringAsFixed(2)}%",
+                        //                 fontSize: SizeText.homeProfileDateTextSize,
+                        //                 couleur: ConstColors.textColors,
+                        //                 fontWeight: FontWeight.bold,
+                        //               ),
+                        //             ],
+                        //           ),
+                        //         ),
+                        //       );
+                        //     }
+                        // ),
 
                         StatefulBuilder(
                             builder: (BuildContext context, StateSetter setState) {

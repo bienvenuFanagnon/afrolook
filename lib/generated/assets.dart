@@ -2,9 +2,21 @@
 class Assets {
   Assets._();
 
+  static const String afrotokAssetsDeeplabv3257MvGpu = 'assets/deeplabv3_257_mv_gpu.txt';
+  static const String afrotokAssetsMobilenetV11.0224 = 'assets/mobilenet_v1_1.0_224.tflite';
+  static const String afrotokAssetsPosenetMv1075FloatFromCheckpoints = 'assets/posenet_mv1_075_float_from_checkpoints.tflite';
+  static const String afrotokAssetsSsdMobilenet = 'assets/ssd_mobilenet.txt';
+  static const String afrotokAssetsYolov2Tiny = 'assets/yolov2_tiny.txt';
+  static const String assetsDeeplabv3257MvGpu = 'assets/deeplabv3_257_mv_gpu.txt';
+  static const String assetsFriendIA = 'assets/friendIA.png';
   static const String assetsImagesVector = 'assets/images/Vector.svg';
+  static const String assetsMobilenetV11.0224 = 'assets/mobilenet_v1_1.0_224.txt';
   static const String assetsPlaceholder = 'assets/placeholder.png';
+  static const String assetsPosenetMv1075FloatFromCheckpoints = 'assets/posenet_mv1_075_float_from_checkpoints.tflite';
   static const String assetsProfilePlaceholder = 'assets/profile_placeholder.png';
+  static const String assetsSsdMobilenet = 'assets/ssd_mobilenet.txt';
+  static const String assetsTfliteCamdb = 'assets/tflite/camdb.txt';
+  static const String assetsYolov2Tiny = 'assets/yolov2_tiny.txt';
   static const String fontsNunitoExtraBold = 'assets/fonts/Nunito-ExtraBold.ttf';
   static const String fontsNunitoLight = 'assets/fonts/Nunito-Light.ttf';
   static const String fontsNunitoRegular = 'assets/fonts/Nunito-Regular.ttf';
@@ -66,8 +78,7 @@ class Assets {
   static const String imagesLogoAfrotok = 'assets/images/logoAfrotok.png';
   static const String imagesMainBottom = 'assets/images/main_bottom.png';
   static const String imagesMainTop = 'assets/images/main_top.png';
-  static const String imagesMobile  = 'assets/images/Mobile feed-bro.png';
-  static const String  feedBro = 'assets/images/Mobile feed-bro.png';
+  static const String imagesMobile feedBro = 'assets/images/Mobile feed-bro.png';
   static const String imagesPersonHoldingSmartphoneWithSocialMediaApp = 'assets/images/person-holding-smartphone-with-social-media-app.jpg';
   static const String imagesPexelsMohamedAbdelghaffar771742 = 'assets/images/pexels-mohamed-abdelghaffar-771742.jpg';
   static const String imagesProduitsCosmetiquesNaturelsImg = 'assets/images/produits-cosmetiques-naturels-img.jpg';
@@ -81,7 +92,11 @@ class Assets {
   static const String imagesVector = 'assets/images/Vector.png';
   static const String imagesWelcom = 'assets/images/welcom.jpg';
   static const String imagesWelcomtof = 'assets/images/welcomtof.png';
+  static const String logoA = 'assets/logo/A.java';
   static const String logoAfrolookLogo = 'assets/logo/afrolook_logo.png';
+  static const String logoAfrolookNoelRemovebgPreview = 'assets/logo/afrolook_noel.png';
+  static const String logoLogoNoel = 'assets/logo/logo_noel.png';
+  static const String logoLogoNoelRemovebgPreview = 'assets/logo/logo_noel-removebg-preview.png';
   static const String menu1 = 'assets/menu/1.png';
   static const String menu2 = 'assets/menu/2.png';
   static const String menu3 = 'assets/menu/3.png';
@@ -89,5 +104,16 @@ class Assets {
   static const String menu5 = 'assets/menu/5.png';
   static const String menu6 = 'assets/menu/6.png';
   static const String menu7 = 'assets/menu/7.png';
+  static const String menu8 = 'assets/menu/8.png';
+  static const String tfliteCamdb = 'assets/tflite/camdb.csv';
+  static const String tfliteDetect = 'assets/tflite/detect.tflite';
+  static const String tfliteFaceDetectionBack = 'assets/tflite/face_detection_back.tflite';
+  static const String tfliteFaceDetectionFront = 'assets/tflite/face_detection_front.tflite';
+  static const String tfliteFaceDetectionFullRange = 'assets/tflite/face_detection_full_range.tflite';
+  static const String tfliteFaceDetectionFullRangeSparse = 'assets/tflite/face_detection_full_range_sparse.tflite';
+  static const String tfliteFaceDetectionShortRange = 'assets/tflite/face_detection_short_range.tflite';
+  static const String tfliteFaceLandmark = 'assets/tflite/face_landmark.tflite';
+  static const String tfliteIrisLandmark = 'assets/tflite/iris_landmark.tflite';
+  static const String tfliteLabelmap = 'assets/tflite/labelmap.txt';
 
 }

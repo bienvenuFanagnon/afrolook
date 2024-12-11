@@ -181,7 +181,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Image.asset('assets/logo/afrolook_logo.png',width: 100,),
+                      // Image.asset('assets/logo/afrolook_logo.png',width: 100,),
+                      Image.asset('assets/logo/afrolook_noel.png',width: 100,),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

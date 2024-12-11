@@ -1607,6 +1607,7 @@ class _PostCommentsState extends State<PostComments> {
                                       postPro.newComment(comment).then(
                                             (value) async {
                                           if (value) {
+
                                             widget.post.comments =
                                                 widget.post.comments! + 1;
         
