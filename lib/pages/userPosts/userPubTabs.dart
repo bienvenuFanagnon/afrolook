@@ -279,15 +279,19 @@ class _UserPubImageState extends State<UserPubImage> {
   late List<XFile> listimages = [];
 
   final ImagePicker picker = ImagePicker();
-
+  late  Uint8List? fileReadAsStringContent;
   int  limitePosts = 30;
 
   Future<void> _getImages() async {
     await picker.pickMultiImage().then((images) {
       // Mettre à jour la liste des images
-      setState(() {
+      setState(() async {
         listimages =
             images.where((image) => images.indexOf(image) < 2).toList();
+       images.first.readAsBytes().then((value) {
+         fileReadAsStringContent =value;
+        },);
+
       });
     });
   }
@@ -406,7 +410,10 @@ class _UserPubImageState extends State<UserPubImage> {
                                         child: Container(
                                           width: 100.0,
                                           height: 100.0,
-                                          child: Image.file(
+                                          child:kIsWeb?Image.memory(
+                                            fileReadAsStringContent!,
+                                            fit: BoxFit.cover,
+                                          ): Image.file(
                                             File(image.path),
                                             fit: BoxFit.cover,
                                           ),
@@ -632,10 +639,17 @@ bool onTap=false;
   Future<void> _getImages() async {
     await picker.pickVideo(source: ImageSource.gallery).then((video) async {
       late VideoPlayerController controller;
+      if(kIsWeb){
+        controller = VideoPlayerController.networkUrl(Uri.parse(video!.path));
+        videoFile=video;
+        _controller = controller;
+      }else{
+        controller = VideoPlayerController.file(File(video!.path));
+        videoFile=video;
+        _controller = controller;
+      }
 
-      controller = VideoPlayerController.file(File(video!.path));
-      videoFile=video;
-      _controller = controller;
+
 
 
 
@@ -936,7 +950,7 @@ bool onTap=false;
                             });
                             SnackBar snackBar = SnackBar(
                               content: Text(
-                                'La validation du post a échoué. Veuillez réessayer.',
+                                'La validation du post a échouée. Veuillez réessayer.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.red),
                               ),

@@ -10,10 +10,12 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Background(
+    return  Background(
       child: SingleChildScrollView(
         child: SafeArea(
           child: Responsive(
+
+            mobile: MobileWelcomeScreen(),
             desktop: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -33,7 +35,6 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-            mobile: MobileWelcomeScreen(),
           ),
         ),
       ),
@@ -48,7 +49,7 @@ class MobileWelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return  Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         WelcomeImage(),

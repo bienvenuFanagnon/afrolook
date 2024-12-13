@@ -18,18 +18,18 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="afrotok projet officiel">
+  <meta name="description" content="afrolook projet officiel">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="afrotok">
+  <meta name="apple-mobile-web-app-title" content="afrolook">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>afrotok</title>
+  <title>afrolook</title>
   <link rel="manifest" href="manifest.json">
 
   <script>
@@ -37,23 +37,51 @@
     const serviceWorkerVersion = null;
   </script>
   <!-- This script adds the flutter initialization JS code -->
+
   <script src="flutter.js" defer></script>
+
+
 </head>
 <body>
+<!--  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"  type="application/javascript"></script>
+
+<script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-firestore.js"></script>
+<!--    <script src="main.dart.js" type="application/javascript"></script>-->
+<script src="flutter_bootstrap.js" async></script>
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBES1Ej6uR4FouRRkh-1PF1B89wRpW7bQo",
+      authDomain: "afrolooki.firebaseapp.com",
+      projectId: "afrolooki",
+      storageBucket: "afrolooki.appspot.com",
+      messagingSenderId: "186049947777",
+      appId: "1:186049947777:web:7dc6951123bfb3ff940580",
+      measurementId: "G-EZ3X8CT1ZR"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
-        }
-      });
+    // Download main.dart.js
+    _flutter.loader.loadEntrypoint({
+      serviceWorker: {
+        serviceWorkerVersion: serviceWorkerVersion,
+      },
+      onEntrypointLoaded: function(engineInitializer) {
+        engineInitializer.initializeEngine().then(function(appRunner) {
+          appRunner.runApp();
+        });
+      }
     });
+    });
+
   </script>
+
+
 </body>
 </html>

@@ -1,11 +1,11 @@
 {
-    "name": "afrotok",
-    "short_name": "afrotok",
+    "name": "afrolook",
+    "short_name": "afrolook",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",
-    "description": "afrotok projet officiel",
+    "description": "afrolook projet officiel",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

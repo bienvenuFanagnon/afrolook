@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';

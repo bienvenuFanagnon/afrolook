@@ -4400,14 +4400,21 @@ class _MyHomePageState extends State<MyHomePage>
     switch (state) {
       case AppLifecycleState.detached:
         _onDetached();
+        break;
       case AppLifecycleState.resumed:
         _onResumed();
+        break;
       case AppLifecycleState.inactive:
         _onInactive();
-      case AppLifecycleState.hidden:
-        _onHidden();
+        break;
+      // case AppLifecycleState.hidden:
+      //   _onHidden();
+      //   break;
       case AppLifecycleState.paused:
         _onPaused();
+      case AppLifecycleState.hidden:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 

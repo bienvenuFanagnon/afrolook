@@ -126,6 +126,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
           case "operation-not-allowed":
             errorMessage =
             "La connexion avec le numero et un mot de passe n'est pas activée.";
+            break;
           case "network-request-failed":
           errorMessage =
           "erreur de connexion.";
