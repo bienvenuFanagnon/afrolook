@@ -870,7 +870,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "${post.user!.id!}",
-                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre publication",
+                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''

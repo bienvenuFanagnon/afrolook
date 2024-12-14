@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/userPubTabs.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
@@ -168,7 +169,8 @@ class _UserProfilState extends State<UserPostForm> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: UserPubImage(),
+                      // child: UserPubImage(),
+                      child: PostPhotoEditor(),
                     ),
                     Padding(
                         padding: const EdgeInsets.only(top: 8.0),

@@ -238,8 +238,8 @@ class _UserPubTextState extends State<UserPubText> {
                           ),
                         ): PostsButtons(
                           text: 'Créer',
-                          hauteur: SizeButtons.creerButtonshauteur,
-                          largeur: SizeButtons.creerButtonslargeur,
+                          hauteur: height*0.07,
+                          largeur: width*0.9,
                           urlImage: 'assets/images/sender.png',
                         )),
                   ],
@@ -298,13 +298,7 @@ class _UserPubImageState extends State<UserPubImage> {
 
 
 
-  late List<CameraDescription> _cameras=[];
 
-  // List<CameraDescription> cameras = [];
-  Future<List<CameraDescription>> init() async {
-    // cameras = await availableCameras();
-  return  _cameras = await availableCameras();
-  }
 
 
   @override
@@ -312,33 +306,13 @@ class _UserPubImageState extends State<UserPubImage> {
     // TODO: implement dispose
     super.dispose();
      // Tflite.close();
-    _cameraController.dispose();
+    // _cameraController.dispose();
   }
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    init().then((cameras) {
-      _cameras=cameras;
-      _cameraController = CameraController(_cameras[0], ResolutionPreset.max);
-      _cameraController.initialize().then((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {});
-      }).catchError((Object e) {
-        if (e is CameraException) {
-          switch (e.code) {
-            case 'CameraAccessDenied':
-            // Handle access errors here.
-              break;
-            default:
-            // Handle other errors here.
-              break;
-          }
-        }
-      });
-    },);
+
 
 
   }
@@ -748,8 +722,8 @@ bool onTap=false;
                         },
                         child: PostsButtons(
                           text: 'Sélectionner une Vidéo (max 5 min 20 mo)',
-                          hauteur: SizeButtons.hauteur,
-                          largeur: SizeButtons.largeur,
+                          hauteur: height*0.07,
+                          largeur: width*0.9,
                           urlImage: '',
                         )),
                     _controller != null
@@ -976,8 +950,8 @@ bool onTap=false;
                       ],
                     ): PostsButtons(
                       text: 'Créer',
-                      hauteur: SizeButtons.creerButtonshauteur,
-                      largeur: SizeButtons.creerButtonslargeur,
+                      hauteur: height*0.07,
+                      largeur: width*0.9,
                       urlImage: 'assets/images/sender.png',
                     )),
                   ],

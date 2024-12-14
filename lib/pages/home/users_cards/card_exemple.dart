@@ -683,118 +683,118 @@ class _ExampleCardState extends State<ExampleCard> {
                                 },
 
                               ),
-                              SizedBox(width: 20,),
-                              LikeButton(
-                                onTap: (isLiked) async {
-
-
-                                  CollectionReference userCollect =
-                                  FirebaseFirestore.instance.collection('Users');
-                                  // Get docs from collection reference
-                                  QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
-                                  // Afficher la liste
-                                  List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                  if (listUsers.isNotEmpty) {
-                                    listUsers.first!.userjaimes=listUsers.first!.userjaimes!+1;
-                                    printVm("user trouver");
-                                    await  authProvider.updateUser( listUsers.first);
-                                    widget.cardUser!.userjaimes=listUsers.first!.userjaimes;
-
-                                    if (widget.cardUser!.oneIgnalUserid!=null&&widget.cardUser!.oneIgnalUserid!.length>5) {
-
-                                      await authProvider.sendNotification(
-                                          userIds: [widget.cardUser!.oneIgnalUserid!],
-                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id: "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "${widget.cardUser!.id!}",
-                                          message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre profile",
-                                          type_notif: NotificationType.USER.name,
-                                          post_id: "",
-                                          post_type: "",
-                                          chat_id: ''
-                                      );
-
-                                      NotificationData notif=NotificationData();
-                                      notif.id=firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre="@${widget.cardUser!.pseudo} -> ❤️";
-                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                      notif.type=NotificationType.USER.name;
-                                      notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre publication";
-                                      notif.users_id_view=[];
-                                      notif.user_id=authProvider.loginUserData.id;
-                                      notif.receiver_id=widget.cardUser!.id!;
-                                      // notif.post_id=post.id!;
-                                      // notif.post_data_type=PostDataType.IMAGE.name!;
-
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                      //userProvider.updateUser(listUsers.first);
-                                      // SnackBar snackBar = SnackBar(
-                                      //   content: Text('+1 points.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                      // );
-                                      // ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                      // postProvider.updatePost(post, listUsers.first,context);
-                                      await authProvider.getAppData();
-                                      authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                      authProvider.updateAppData(authProvider.appDefaultData);
-
-
-                                    }
-
-
-
-
-
-
-                                  }
-                                  return true;
-                                },
-
-                                isLiked: false,
-                                size: 20,
-                                circleColor:
-                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                bubblesColor: BubblesColor(
-                                  dotPrimaryColor: Color(0xff3b9ade),
-                                  dotSecondaryColor: Color(0xff027f19),
-                                ),
-                                countPostion: CountPostion.bottom,
-                                likeBuilder: (bool isLiked) {
-                                  return Icon(
-                                    !isLiked ?AntDesign.heart:AntDesign.heart,
-                                    color: !isLiked ? Colors.black38 : Colors.red,
-                                    size: 20,
-                                  );
-                                },
-                                likeCount: widget.cardUser.userjaimes ==null?0:widget.cardUser.userjaimes,
-                                countBuilder: (int? count, bool isLiked, String text) {
-                                  var color = isLiked ? Colors.black : Colors.black;
-                                  Widget result;
-                                  if (count == 0) {
-                                    result = Text(
-                                      "0",textAlign: TextAlign.center,
-                                      style: TextStyle(color: color,),
-                                    );
-                                  } else
-                                    result = Text(
-                                      text,
-                                      style: TextStyle(color: color),
-                                    );
-                                  return result;
-                                },
-
-                              ),
+                              // SizedBox(width: 20,),
+                              // LikeButton(
+                              //   onTap: (isLiked) async {
+                              //
+                              //
+                              //     CollectionReference userCollect =
+                              //     FirebaseFirestore.instance.collection('Users');
+                              //     // Get docs from collection reference
+                              //     QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
+                              //     // Afficher la liste
+                              //     List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                              //         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                              //     if (listUsers.isNotEmpty) {
+                              //       listUsers.first!.userjaimes=listUsers.first!.userjaimes!+1;
+                              //       printVm("user trouver");
+                              //       await  authProvider.updateUser( listUsers.first);
+                              //       widget.cardUser!.userjaimes=listUsers.first!.userjaimes;
+                              //
+                              //       if (widget.cardUser!.oneIgnalUserid!=null&&widget.cardUser!.oneIgnalUserid!.length>5) {
+                              //
+                              //         await authProvider.sendNotification(
+                              //             userIds: [widget.cardUser!.oneIgnalUserid!],
+                              //             smallImage: "${authProvider.loginUserData.imageUrl!}",
+                              //             send_user_id: "${authProvider.loginUserData.id!}",
+                              //             recever_user_id: "${widget.cardUser!.id!}",
+                              //             message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre profile",
+                              //             type_notif: NotificationType.USER.name,
+                              //             post_id: "",
+                              //             post_type: "",
+                              //             chat_id: ''
+                              //         );
+                              //
+                              //         NotificationData notif=NotificationData();
+                              //         notif.id=firestore
+                              //             .collection('Notifications')
+                              //             .doc()
+                              //             .id;
+                              //         notif.titre="@${widget.cardUser!.pseudo} -> ❤️";
+                              //         notif.media_url=authProvider.loginUserData.imageUrl;
+                              //         notif.type=NotificationType.USER.name;
+                              //         notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre publication";
+                              //         notif.users_id_view=[];
+                              //         notif.user_id=authProvider.loginUserData.id;
+                              //         notif.receiver_id=widget.cardUser!.id!;
+                              //         // notif.post_id=post.id!;
+                              //         // notif.post_data_type=PostDataType.IMAGE.name!;
+                              //
+                              //         notif.updatedAt =
+                              //             DateTime.now().microsecondsSinceEpoch;
+                              //         notif.createdAt =
+                              //             DateTime.now().microsecondsSinceEpoch;
+                              //         notif.status = PostStatus.VALIDE.name;
+                              //
+                              //         // users.add(pseudo.toJson());
+                              //
+                              //         await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                              //         //userProvider.updateUser(listUsers.first);
+                              //         // SnackBar snackBar = SnackBar(
+                              //         //   content: Text('+1 points.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                              //         // );
+                              //         // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                              //         // postProvider.updatePost(post, listUsers.first,context);
+                              //         await authProvider.getAppData();
+                              //         authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                              //         authProvider.updateAppData(authProvider.appDefaultData);
+                              //
+                              //
+                              //       }
+                              //
+                              //
+                              //
+                              //
+                              //
+                              //
+                              //     }
+                              //     return true;
+                              //   },
+                              //
+                              //   isLiked: false,
+                              //   size: 20,
+                              //   circleColor:
+                              //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                              //   bubblesColor: BubblesColor(
+                              //     dotPrimaryColor: Color(0xff3b9ade),
+                              //     dotSecondaryColor: Color(0xff027f19),
+                              //   ),
+                              //   countPostion: CountPostion.bottom,
+                              //   likeBuilder: (bool isLiked) {
+                              //     return Icon(
+                              //       !isLiked ?AntDesign.heart:AntDesign.heart,
+                              //       color: !isLiked ? Colors.black38 : Colors.red,
+                              //       size: 20,
+                              //     );
+                              //   },
+                              //   likeCount: widget.cardUser.userjaimes ==null?0:widget.cardUser.userjaimes,
+                              //   countBuilder: (int? count, bool isLiked, String text) {
+                              //     var color = isLiked ? Colors.black : Colors.black;
+                              //     Widget result;
+                              //     if (count == 0) {
+                              //       result = Text(
+                              //         "0",textAlign: TextAlign.center,
+                              //         style: TextStyle(color: color,),
+                              //       );
+                              //     } else
+                              //       result = Text(
+                              //         text,
+                              //         style: TextStyle(color: color),
+                              //       );
+                              //     return result;
+                              //   },
+                              //
+                              // ),
 
                             ],
                           ),

@@ -41,6 +41,7 @@ import 'package:afrotok/pages/user/profile/profile.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/page/profile_page.dart';
 import 'package:afrotok/pages/user/profile/userProfileDetails.dart';
 import 'package:afrotok/pages/user/retrait.dart';
+import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
@@ -50,6 +51,7 @@ import 'package:afrotok/providers/userProvider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -74,6 +76,15 @@ Future<void> main() async {
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  // Activate app check after initialization, but before
+  // usage of any Firebase services.
+  await FirebaseAppCheck.instance
+  // Your personal reCaptcha public key goes here:
+      .activate(
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
+    // webProvider: ReCaptchaV3Provider(kWebRecaptchaSiteKey),
+  );
 
   //Remove this method to stop OneSignal Debugging
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
@@ -445,6 +456,8 @@ class _MyAppState extends State<MyApp> {
 home: UpgradeAlert(
   upgrader: Upgrader(),
   child: Scaffold(
+    // body: PickImageExample(),
+    // body: PhotoVideoEditorPage(),
     // body: UserPostForm(),
     body: SplahsChargement(),
   ),

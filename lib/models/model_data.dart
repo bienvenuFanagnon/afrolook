@@ -593,8 +593,9 @@ class UserData {
     userPays = json['user_pays'] != null
         ? new UserPays.fromJson(json['user_pays'])
         : null;
-    publi_cash = json['publi_cash'];
-    votre_solde = json['votre_solde'];
+    publi_cash =double.parse(json['publi_cash'].toString()) ;
+    votre_solde =double.parse(json['votre_solde'].toString()) ;
+    // votre_solde = json['votre_solde'];
     pubEntreprise = json['pub_entreprise'];
     pointContribution = json['point_contribution'];
     likes = json['likes'];
@@ -605,12 +606,15 @@ class UserData {
     comments = json['comments'];
     abonnes = json['abonnes'];
     compteTarif = json['compte_tarif']!.toDouble();
-    popularite = json['popularite'];
+    popularite =double.parse(json['popularite'].toString()) ;
+
+    // popularite = json['popularite'];
     isBlocked = json['isBlocked'];
     completeData = json['complete_data'];
     hasEntreprise = json['has_entreprise'];
-    latitude = json['latitude'];
-    longitude = json['longitude'];
+    latitude =double.parse(json['latitude'].toString()) ;
+    longitude =double.parse(json['longitude'].toString()) ;
+    // longitude = json['longitude'];
     apropos = json['apropos'];
     password = json['password'] == null ? "" : json['password'];
     email = json['email'] == null ? "" : json['email'];
@@ -1203,7 +1207,7 @@ class Post {
     users_vue_id =
         json['users_vue_id'] == null ? [] : json['users_vue_id'].cast<String>();
     nombreCollaborateur = json['nombreCollaborateur'];
-    publiCashTotal = json['publiCashTotal'];
+    // publiCashTotal = json['publiCashTotal'];
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];
   }

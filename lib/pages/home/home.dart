@@ -3593,7 +3593,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.8 (8)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.10 (10)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -4307,10 +4307,18 @@ class _MyHomePageState extends State<MyHomePage>
                         Text(
                           'Vous avez la possibilité de',
                         ),
-                        Text(' gagner 50 PubliCach',
+                        Text(' gagner 50 PubliCash',
                             style: TextStyle(color: Colors.green)),
                         Text(
                           ' chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage qui se situe dans votre profil. Vous pouvez vérifier votre solde dans la page monétisation.',
+                          textAlign: TextAlign.center,
+                        ),
+                        Divider(),
+
+                        Text('Nouvelle fonctionnalité',
+                            style: TextStyle(color: Colors.green)),
+                        Text(
+                          "Afrolook a intégré un éditeur de look",
                           textAlign: TextAlign.center,
                         ),
                       ],

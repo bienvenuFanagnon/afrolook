@@ -209,20 +209,20 @@ class PostsButtons extends StatelessWidget {
   final String urlImage;
   final double hauteur;
   final double largeur;
-  const PostsButtons({super.key, required this.text, required this.hauteur, required this.largeur, required this.urlImage});
+  const PostsButtons({super.key, required this.text,  this.hauteur=100.0,  this.largeur=100.0, required this.urlImage});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: ClipRRect(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
+        borderRadius: BorderRadius.all(Radius.circular(100)),
         child: Container(
           alignment: Alignment.center,
           color: ConstColors.buttonsColors,
           width: largeur,
           height: hauteur,
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(20.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
