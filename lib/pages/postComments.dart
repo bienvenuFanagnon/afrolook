@@ -836,13 +836,18 @@ class _PostCommentsState extends State<PostComments> {
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+
+
         child: Consumer<PostProvider>(builder: (context, postPro, _) {
           return Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(children: <Widget>[
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+
               Container(
-                child: widget.post.type == PostType.PUB.name
-                    ? StatefulBuilder(builder:
+                child: StatefulBuilder(builder:
                         (BuildContext context, StateSetter setStateImages) {
                         return Padding(
                           padding: const EdgeInsets.all(5.0),
@@ -853,312 +858,12 @@ class _PostCommentsState extends State<PostComments> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 8.0),
-                                              child: CircleAvatar(
-                                                backgroundImage: NetworkImage(
-                                                    '${widget.post.entrepriseData!.urlImage!}'),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            Row(
-                                              children: [
-                                                Column(
-                                                  children: [
-                                                    SizedBox(
-                                                      //width: 100,
-                                                      child:
-                                                          TextCustomerUserTitle(
-                                                        titre:
-                                                            "${widget.post.entrepriseData!.titre!}",
-                                                        fontSize: SizeText
-                                                            .homeProfileTextSize,
-                                                        couleur: ConstColors
-                                                            .textColors,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    TextCustomerUserTitle(
-                                                      titre:
-                                                          "${widget.post.entrepriseData!.suivi!} suivi(s)",
-                                                      fontSize: 10,
-                                                      couleur:
-                                                          ConstColors.textColors,
-                                                      fontWeight: FontWeight.w400,
-                                                    ),
-                                                  ],
-                                                ),
-        
-                                                /*
-                                          IconButton(
-                                              onPressed: () {},
-                                              icon: Icon(
-                                                Icons.add_circle_outlined,
-                                                size: 20,
-                                                color: ConstColors.regIconColors,
-                                              )),
-        
-                                           */
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(
-                                          width: 20,
-                                        ),
-                                        Icon(
-                                          Entypo.arrow_long_right,
-                                          color: Colors.green,
-                                        ),
-                                        SizedBox(
-                                          width: 20,
-                                        ),
-                                        Row(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 8.0),
-                                              child: CircleAvatar(
-                                                backgroundImage: NetworkImage(
-                                                    '${widget.post.user!.imageUrl!}'),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            Row(
-                                              children: [
-                                                Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    SizedBox(
-                                                      //width: 100,
-                                                      child:
-                                                          TextCustomerUserTitle(
-                                                        titre:
-                                                            "@${widget.post.user!.pseudo!}",
-                                                        fontSize: SizeText
-                                                            .homeProfileTextSize,
-                                                        couleur: ConstColors
-                                                            .textColors,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    TextCustomerUserTitle(
-                                                      titre:
-                                                          "${formatNumber(widget.post.user!.abonnes!)} abonné(s)",
-                                                      fontSize: 10,
-                                                      couleur:
-                                                          ConstColors.textColors,
-                                                      fontWeight: FontWeight.w400,
-                                                    ),
-                                                  ],
-                                                ),
-        
-                                                /*
-                                      IconButton(
-                                          onPressed: () {},
-                                          icon: Icon(
-                                            Icons.add_circle_outlined,
-                                            size: 20,
-                                            color: ConstColors.regIconColors,
-                                          )),
-        
-                                       */
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                    IconButton(
-                                        onPressed: () {
-                                          _showPostMenuModalDialog(widget.post);
-                                        },
-                                        icon: Icon(
-                                          Icons.more_horiz,
-                                          size: 30,
-                                          color: ConstColors.blackIconColors,
-                                        )),
-                                  ],
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Entypo.network,
-                                        size: 15,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      TextCustomerUserTitle(
-                                        titre: "publicité",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: Colors.green,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: SizedBox(
-                                    width: width * 0.9,
-                                    height: 100,
-                                    child: Container(
-                                      alignment: Alignment.centerLeft,
-                                      child: TextCustomerPostDescription(
-                                        titre: "${widget.post.description}",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: TextCustomerPostDescription(
-                                    titre:
-                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
-                                    fontSize: SizeText.homeProfileDateTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                widget.post!.images == null
-                                    ? Container()
-                                    : Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            for (int i = 0;
-                                                i < widget.post!.images!.length;
-                                                i++)
-                                              TextButton(
-                                                onPressed: () {
-                                                  setStateImages(() {
-                                                    imageIndex = i;
-                                                  });
-                                                },
-                                                child: Container(
-                                                  width: 100,
-                                                  height: 50,
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(10)),
-                                                    child: Container(
-                                                      child: CachedNetworkImage(
-                                                        fit: BoxFit.cover,
-                                                        imageUrl:
-                                                            '${widget.post!.images![i]}',
-                                                        progressIndicatorBuilder: (context,
-                                                                url,
-                                                                downloadProgress) =>
-                                                            //  LinearProgressIndicator(),
-        
-                                                            Skeletonizer(
-                                                                child: SizedBox(
-                                                                    width: 400,
-                                                                    height: 450,
-                                                                    child: ClipRRect(
-                                                                        borderRadius:
-                                                                            BorderRadius.all(Radius.circular(
-                                                                                10)),
-                                                                        child: Image
-                                                                            .asset(
-                                                                                'assets/images/404.png')))),
-                                                        errorWidget: (context,
-                                                                url, error) =>
-                                                            Skeletonizer(
-                                                                child: Container(
-                                                                    width: 400,
-                                                                    height: 450,
-                                                                    child: Image
-                                                                        .asset(
-                                                                      "assets/images/404.png",
-                                                                      fit: BoxFit
-                                                                          .cover,
-                                                                    ))),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                          ],
-                                        ),
-                                      ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Provider<PostProvider>(
-                                  create: (context) => PostProvider(),
-                                  child: SizedBox(
-                                    height: height * 0.5,
-                                    width: width,
-                                    child: FutureBuilder<List<PostComment>>(
-                                        future: postProviders
-                                            .getPostCommentsNoStream(
-                                                widget.post),
-                                        builder: (BuildContext context,
-                                            AsyncSnapshot snapshot) {
-                                          if (snapshot.hasData) {
-                                            return commentAndResponseListWidget(
-                                                snapshot.data!,
-                                                width,height);
-                                          } else if (snapshot.hasError) {
-                                            return Icon(Icons.error_outline);
-                                          } else {
-                                            return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
-                                          }
-                                        }),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      })
-                    : StatefulBuilder(builder:
-                        (BuildContext context, StateSetter setStateImages) {
-                        return Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
+                                    // Align(
+                                    //   alignment: Alignment.centerLeft,
+                                    //   child: IconButton(onPressed: () {
+                                    //
+                                    //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
+                                    // ),
                                     Row(
                                       children: [
                                         Padding(
@@ -1358,7 +1063,7 @@ class _PostCommentsState extends State<PostComments> {
                       replying
                           ? Container(
                           width: width * 0.8,
-                          height: 60,
+                          height: 70,
                           color: const Color(0xffF4F4F5),
                           padding: const EdgeInsets.symmetric(
                             vertical: 8,
@@ -1418,8 +1123,10 @@ class _PostCommentsState extends State<PostComments> {
                                     // Action à effectuer lorsque le champ de saisie est tapé
                                     printVm('TextField tapped');
                                   },
-                                  child: TextField(
+                                  child: TextFormField(
                                     focusNode: _focusNode,
+
+
                                     onTap: () async {
                                       // _controller.animateTo(
                                       //   _controller.position.maxScrollExtent *

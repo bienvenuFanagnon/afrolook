@@ -93,6 +93,10 @@ class _MyHomePageState extends State<MyHomePage>
   late PostProvider postProvider =
       Provider.of<PostProvider>(context, listen: false);
   TextEditingController commentController = TextEditingController();
+  List<Post> listConstposts=[];
+
+  DocumentSnapshot? lastDocument;
+  bool isLoading = false;
   Future<void> launchWhatsApp(String phone) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
@@ -113,7 +117,17 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  StreamController<List<Post>> _streamController = StreamController<List<Post>>();
+  bool _buttonEnabled = true;
+  RandomColor _randomColor = RandomColor();
 
+  final ScrollController _scrollController = ScrollController();
+  Color _color =Colors.blue;
+
+  int postLenght = 8;
+  int limitePosts = 40;
+  int limiteUsers = 100;
+  bool is_actualised = false;
   late AnimationController _starController;
   late AnimationController _unlikeController;
   String formatNumber(int number) {
@@ -370,7 +384,6 @@ class _MyHomePageState extends State<MyHomePage>
     return usersChat;
   }
 
-  RandomColor _randomColor = RandomColor();
 
   String formaterDateTime(DateTime dateTime) {
     final now = DateTime.now();
@@ -500,13 +513,13 @@ class _MyHomePageState extends State<MyHomePage>
                   child: ListTile(
                     onTap: () async {
                       if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        post.status = PostStatus.NONVALIDE.name;
+                        post.status = PostStatus.SUPPRIMER.name;
                         await postProvider.updateVuePost(post, context).then(
                               (value) {
                             if (value) {
                               SnackBar snackBar = SnackBar(
                                 content: Text(
-                                  'Post bloqué !',
+                                  'Post supprimé !',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: Colors.green),
                                 ),
@@ -566,86 +579,86 @@ class _MyHomePageState extends State<MyHomePage>
                       color: Colors.red,
                     ),
                     title: authProvider.loginUserData.role == UserRole.ADM.name
-                        ? Text('Bloquer')
+                        ? Text('Supprimer')
                         : Text('Supprimer'),
                   ),
                 ),
 
-                Visibility(
-                  visible: post.user!.id == authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        post.status = PostStatus.NONVALIDE.name;
-                        await postProvider.updateVuePost(post, context).then(
-                          (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'Post bloqué !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else if (post.type == PostType.POST.name) {
-                        if (post.user!.id == authProvider.loginUserData.id) {
-                          post.status = PostStatus.SUPPRIMER.name;
-                          await postProvider.updateVuePost(post, context).then(
-                            (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'Post supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
-                      }
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                        ? Text('Bloquer')
-                        : Text('Supprimer'),
-                  ),
-                ),
+                // Visibility(
+                //   visible: post.user!.id == authProvider.loginUserData.id,
+                //   child: ListTile(
+                //     onTap: () async {
+                //       if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                //         post.status = PostStatus.NONVALIDE.name;
+                //         await postProvider.updateVuePost(post, context).then(
+                //           (value) {
+                //             if (value) {
+                //               SnackBar snackBar = SnackBar(
+                //                 content: Text(
+                //                   'Post bloqué !',
+                //                   textAlign: TextAlign.center,
+                //                   style: TextStyle(color: Colors.green),
+                //                 ),
+                //               );
+                //               ScaffoldMessenger.of(context)
+                //                   .showSnackBar(snackBar);
+                //             } else {
+                //               SnackBar snackBar = SnackBar(
+                //                 content: Text(
+                //                   'échec !',
+                //                   textAlign: TextAlign.center,
+                //                   style: TextStyle(color: Colors.red),
+                //                 ),
+                //               );
+                //               ScaffoldMessenger.of(context)
+                //                   .showSnackBar(snackBar);
+                //             }
+                //           },
+                //         );
+                //       } else if (post.type == PostType.POST.name) {
+                //         if (post.user!.id == authProvider.loginUserData.id) {
+                //           post.status = PostStatus.SUPPRIMER.name;
+                //           await postProvider.updateVuePost(post, context).then(
+                //             (value) {
+                //               if (value) {
+                //                 SnackBar snackBar = SnackBar(
+                //                   content: Text(
+                //                     'Post supprimé !',
+                //                     textAlign: TextAlign.center,
+                //                     style: TextStyle(color: Colors.green),
+                //                   ),
+                //                 );
+                //                 ScaffoldMessenger.of(context)
+                //                     .showSnackBar(snackBar);
+                //               } else {
+                //                 SnackBar snackBar = SnackBar(
+                //                   content: Text(
+                //                     'échec !',
+                //                     textAlign: TextAlign.center,
+                //                     style: TextStyle(color: Colors.red),
+                //                   ),
+                //                 );
+                //                 ScaffoldMessenger.of(context)
+                //                     .showSnackBar(snackBar);
+                //               }
+                //             },
+                //           );
+                //         }
+                //       }
+                //
+                //       setState(() {
+                //         Navigator.pop(context);
+                //       });
+                //     },
+                //     leading: Icon(
+                //       Icons.delete,
+                //       color: Colors.red,
+                //     ),
+                //     title: authProvider.loginUserData.role == UserRole.ADM.name
+                //         ? Text('Bloquer')
+                //         : Text('Supprimer'),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -983,9 +996,7 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  bool _buttonEnabled = true;
 
-  bool is_actualised = false;
 
   Widget homePostUsersSkele(double height, double width) {
     double h = MediaQuery.of(context).size.height;
@@ -1291,7 +1302,7 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  Widget homePostUsers(Post post, double height, double width) {
+  Widget homePostUsers(Post post,Color color, double height, double width) {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
 
@@ -1307,15 +1318,6 @@ class _MyHomePageState extends State<MyHomePage>
     List<int> likes = [];
     List<int> loves = [];
     int idUser = 7;
-    Color _color = _randomColor.randomColor(
-        colorHue: ColorHue.multiple(colorHues: [
-      ColorHue.red,
-      ColorHue.blue,
-      ColorHue.green,
-      ColorHue.orange,
-      ColorHue.yellow,
-      ColorHue.purple
-    ]));
 
     int limitePosts = 30;
 
@@ -2529,7 +2531,7 @@ class _MyHomePageState extends State<MyHomePage>
                           ? true
                           : false,
                       child: Container(
-                        color: _color,
+                        color: color,
                         child: Align(
                           alignment: Alignment.center,
                           child: SizedBox(
@@ -2542,7 +2544,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 maxHeight:
                                     height * 0.6, // Set your maximum height
                               ),
-                              alignment: Alignment.centerLeft,
+                              alignment: Alignment.center,
                               child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(
@@ -3593,7 +3595,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.10 (10)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.11 (11)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -4182,11 +4184,6 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  final ScrollController _scrollController = ScrollController();
-
-  int postLenght = 8;
-  int limitePosts = 40;
-  int limiteUsers = 100;
 
   Future<bool> hasShownDialogToday() async {
     printVm("====hasShownDialogToday====");
@@ -4275,6 +4272,15 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void initState() {
+  _color=  _randomColor.randomColor(
+        colorHue: ColorHue.multiple(colorHues: [
+          ColorHue.red,
+          ColorHue.blue,
+          ColorHue.green,
+          ColorHue.orange,
+          ColorHue.yellow,
+          ColorHue.purple
+        ]));
     hasShownDialogToday().then(
       (value) async {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -4343,9 +4349,14 @@ class _MyHomePageState extends State<MyHomePage>
       },
     );
 
+
     authProvider.getToken().then(
       (token) async {
         printVm("token: ${token}");
+        // Vous pouvez ajouter des données dans le StreamController à partir d'une source
+        postProvider.getPostsImages2(limitePosts).listen((data) {
+          _streamController.add(data);
+        });
         postProvider.getPostsVideos().then((value) {
 
         },);
@@ -4395,6 +4406,8 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     // Unregister your State class as a binding observer
+    _streamController.close();
+
     WidgetsBinding.instance.removeObserver(this);
 
     super.dispose();
@@ -4435,6 +4448,8 @@ class _MyHomePageState extends State<MyHomePage>
   void _onHidden() => printVm('hidden');
 
   void _onPaused() => printVm('paused');
+  int _currentIndex = 0;
+  final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
@@ -4449,12 +4464,12 @@ class _MyHomePageState extends State<MyHomePage>
     return RefreshIndicator(
       onRefresh: () async {
         setState(() {
-          postProvider.getPostsImages(limitePosts).then(
-                (value) {},
-              );
-          postProvider.getPostsVideos().then((value) {
-
-          },);
+          // postProvider.getPostsImages(limitePosts).then(
+          //       (value) {},
+          //     );
+          // postProvider.getPostsVideos().then((value) {
+          //
+          // },);
 
         });
 
@@ -4559,33 +4574,43 @@ class _MyHomePageState extends State<MyHomePage>
                   },
                 ),
               ),
+              // IconButton(
+              //     onPressed: () async {
+              //       // _scrollController.animateTo(
+              //       //   0.0,
+              //       //   duration: Duration(milliseconds: 1000),
+              //       //   curve: Curves.ease,
+              //       // );
+              //       // setState(() {
+              //       //   postProvider
+              //       //       .reloadPostsImages(limitePosts, _scrollController)
+              //       //       .then(
+              //       //         (value) {},
+              //       //       );
+              //       //   postProvider.getPostsVideos().then((value) {
+              //       //
+              //       //   },);
+              //       //
+              //       // });
+              //     },
+              //     icon: Icon(FontAwesome.refresh)),
               IconButton(
                   onPressed: () async {
-                    // _scrollController.animateTo(
-                    //   0.0,
-                    //   duration: Duration(milliseconds: 1000),
-                    //   curve: Curves.ease,
-                    // );
+                    if (_scrollController.hasClients) {
+
+                      _scrollController.animateTo(
+                        0.0,
+                        duration: Duration(milliseconds: 1000),
+                        curve: Curves.ease,
+                      );
+                      }
                     setState(() {
-                      postProvider
-                          .reloadPostsImages(limitePosts, _scrollController)
-                          .then(
-                            (value) {},
-                          );
-                      postProvider.getPostsVideos().then((value) {
-
-                      },);
-
+listConstposts.clear();
+postProvider.getPostsImages2(limitePosts).listen((data) {
+  _streamController.add(data);
+});
                     });
-                  },
-                  icon: Icon(FontAwesome.refresh)),
-              IconButton(
-                  onPressed: () async {
-                    _scrollController.animateTo(
-                      0.0,
-                      duration: Duration(milliseconds: 1000),
-                      curve: Curves.ease,
-                    );
+
                     // setState(() {
                     //   postProvider.getHomePostsImages(limitePosts).then((value) {
                     //
@@ -4619,989 +4644,188 @@ class _MyHomePageState extends State<MyHomePage>
               padding: const EdgeInsets.all(3.0),
               child: Consumer<PostProvider>(
                   builder: (context, postListProvider, child) {
-                return postListProvider.listConstposts.isEmpty
-                    ? Skeletonizer(
-                  enabled: true,
-                  enableSwitchAnimation: true,
-                  child: ListView.builder(
-                    itemCount: 10,
-                    padding: const EdgeInsets.all(16),
-                    itemBuilder: (context, index) {
-                      return Card(
-                        child: ListTile(
-                          title: Text('Item number $index as title'),
-                          subtitle: const Text('Subtitle here'),
-                          trailing: const Icon(
-                            Icons.ac_unit,
-                            size: 32,
+                return ListView(
+                  children: [
+
+                    Column(
+                      children: <Widget>[
+                        Row(
+                          children: [
+                            TextButton(
+                                onPressed: () {},
+                                child: Text("")),
+                            TextButton(
+                                onPressed: () async {
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                                  await userProvider
+                                      .getProfileUsers(
+                                      authProvider
+                                          .loginUserData!
+                                          .id!,
+                                      context,
+                                      limiteUsers)
+                                      .then(
+                                        (value) {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) =>
+                                                UserCards(),
+                                          ));
+                                    },
+                                  );
+                                },
+                                child: Text(
+                                    "Voir autres profiles")),
+                          ],
+                          mainAxisAlignment:
+                          MainAxisAlignment
+                              .spaceBetween,
+                        ),
+                        SizedBox(
+                          width: width,
+                          height: height*0.35,
+                          child: FutureBuilder<
+                              List<UserData>>(
+                            future: userProvider
+                                .getProfileUsers(
+                                authProvider
+                                    .loginUserData
+                                    .id!,
+                                context,
+                                limiteUsers),
+                            builder:
+                                (context, snapshot) {
+                              if (snapshot
+                                  .connectionState ==
+                                  ConnectionState
+                                      .waiting) {
+                                return widgetSeke2(width,height);
+                              } else if (snapshot
+                                  .hasError) {
+                                return widgetSeke2(width,height);
+                              } else {
+                                // Get data from docs and convert map to List
+                                List<UserData> list =
+                                snapshot.data!;
+
+                                // Utiliser les données de snapshot.data
+                                return ListView
+                                    .builder(
+                                    scrollDirection:
+                                    Axis
+                                        .horizontal,
+                                    itemCount:
+                                    snapshot
+                                        .data!
+                                        .length, // Nombre d'éléments dans la liste
+                                    itemBuilder:
+                                        (context,
+                                        index) {
+                                      //list[index].userAbonnes=[];
+                                      return homeProfileUsers(
+                                          list[
+                                          index],
+                                          width,
+                                          height);
+                                    });
+                              }
+                            },
                           ),
                         ),
-                      );
-                    },
-                  ),
-                )
 
-                        : ListView(
-                        children: [
-                          Stack(
-                            children: [
-                              // Votre contenu principal ici
+                        Divider(
+                          height: 10,
+                        ),
+                      ],
+                    ),
+                    StreamBuilder<List<Post>>(
+                      // stream: postProvider.getPostsImages2(limitePosts,),
+                      stream: _streamController.stream,
 
-                              FutureBuilder<List<Post>>(
-                                  // future: postProvider.getPostsImages(limitePosts),
-                                  future:
-                                      postListProvider.getPostsImagesAlready(),
-                                  builder: (BuildContext context,
-                                      AsyncSnapshot snapshot) {
-                                    if (snapshot.hasData) {
-                                      List<Post> listConstposts =
-                                          postListProvider.listConstposts;
+                      // initialData: postProvider.listConstposts,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          printVm('Error: ${snapshot.error}');
+                          return Center(child: Icon(Icons.error));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(child: Text('No posts found'));
+                        }
+                        // Mettre à jour seulement si de nouvelles données arrivent
+                        if (!isLoading && snapshot.data != listConstposts) {
 
-                                      // listConstposts.insert(0, listConstposts.elementAt(0));
+                            listConstposts = snapshot.data!;
 
-                                      // listConstposts.insert(0, listConstposts.elementAt(0));
+                        }
 
-                                      return SizedBox(
-                                        width: width,
-                                        height: height * 0.81,
-                                        child: ListView.builder(
-                                          controller: _scrollController,
-                                          scrollDirection: Axis.vertical,
-                                          itemCount: listConstposts.length,
-                                          itemBuilder: (BuildContext context,
-                                              int index) {
-                                            // postListProvider.listConstposts.insert(0, postListProvider.listConstposts.elementAt(index));
+                         listConstposts = snapshot.data!;
 
-                                            if (index == 0) {
-                                              return Column(
-                                                children: <Widget>[
-                                                  Row(
-                                                    children: [
-                                                      TextButton(
-                                                          onPressed: () {},
-                                                          child: Text("")),
-                                                      TextButton(
-                                                          onPressed: () async {
-                                                            // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-                                                            await userProvider
-                                                                .getProfileUsers(
-                                                                    authProvider
-                                                                        .loginUserData!
-                                                                        .id!,
-                                                                    context,
-                                                                    limiteUsers)
-                                                                .then(
-                                                              (value) {
-                                                                Navigator.push(
-                                                                    context,
-                                                                    MaterialPageRoute(
-                                                                      builder:
-                                                                          (context) =>
-                                                                              UserCards(),
-                                                                    ));
-                                                              },
-                                                            );
-                                                          },
-                                                          child: Text(
-                                                              "Voir autres profiles")),
-                                                    ],
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                  ),
-                                                  SizedBox(
-                                                    width: width,
-                                                    height: height*0.35,
-                                                    child: FutureBuilder<
-                                                        List<UserData>>(
-                                                      future: userProvider
-                                                          .getProfileUsers(
-                                                              authProvider
-                                                                  .loginUserData
-                                                                  .id!,
-                                                              context,
-                                                              limiteUsers),
-                                                      builder:
-                                                          (context, snapshot) {
-                                                        if (snapshot
-                                                                .connectionState ==
-                                                            ConnectionState
-                                                                .waiting) {
-                                                          return widgetSeke2(width,height);
-                                                        } else if (snapshot
-                                                            .hasError) {
-                                                          return widgetSeke2(width,height);
-                                                        } else {
-                                                          // Get data from docs and convert map to List
-                                                          List<UserData> list =
-                                                              snapshot.data!;
-                                                          // Utiliser les données de snapshot.data
-                                                          return ListView
-                                                              .builder(
-                                                                  scrollDirection:
-                                                                      Axis
-                                                                          .horizontal,
-                                                                  itemCount:
-                                                                      snapshot
-                                                                          .data!
-                                                                          .length, // Nombre d'éléments dans la liste
-                                                                  itemBuilder:
-                                                                      (context,
-                                                                          index) {
-                                                                    //list[index].userAbonnes=[];
-                                                                    return homeProfileUsers(
-                                                                        list[
-                                                                            index],
-                                                                        width,
-                                                                        height);
-                                                                  });
-                                                        }
-                                                      },
-                                                    ),
-                                                  ),
+                        return Column(
+                          children: [
+                            SizedBox(
+                              width: width,
+                              height: height * 0.7,
+                              child: ListView.builder(
+                                itemCount: listConstposts.length,
+                                itemBuilder: (BuildContext context,
+                                    int index) {
 
-                                                  Divider(
-                                                    height: 10,
-                                                  ),
-                                                  Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Expanded(
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(2.0),
-                                                          child: SizedBox(
-                                                            height: 20,
-                                                            child: Marquee(
-                                                              key: Key("keys"),
-                                                              text:
-                                                                  "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                              style: TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  color: Colors
-                                                                      .black),
-                                                              scrollAxis: Axis
-                                                                  .horizontal,
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              blankSpace: 20,
-                                                              velocity: 100,
-                                                              pauseAfterRound:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          1),
-                                                              showFadingOnlyWhenScrolling:
-                                                                  true,
-                                                              fadingEdgeStartFraction:
-                                                                  0.1,
-                                                              fadingEdgeEndFraction:
-                                                                  0.1,
-                                                              numberOfRounds:
-                                                                  1000,
-                                                              startPadding: 10,
-                                                              accelerationDuration:
-                                                                  Duration(
-                                                                      milliseconds:
-                                                                          5000),
-                                                              accelerationCurve:
-                                                                  Curves.linear,
-                                                              decelerationDuration:
-                                                                  Duration(
-                                                                      milliseconds:
-                                                                          1000),
-                                                              decelerationCurve:
-                                                                  Curves
-                                                                      .easeOut,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.pushNamed(
-                                                                context,
-                                                                '/contact');
-                                                          },
-                                                          child: Container(
-                                                              height: 20,
-                                                              decoration: BoxDecoration(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  borderRadius:
-                                                                      BorderRadius.all(
-                                                                          Radius.circular(
-                                                                              2))),
-                                                              child: Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .only(
-                                                                        left:
-                                                                            2.0,
-                                                                        right:
-                                                                            2,
-                                                                        bottom:
-                                                                            1),
-                                                                child: Text(
-                                                                  "Contacter",
-                                                                  style: TextStyle(
-                                                                      color: Colors
-                                                                          .white),
-                                                                ),
-                                                              )))
-                                                    ],
-                                                  ),
-                                                  // SizedBox(height: 5,),
+                                    return SizedBox(
 
-                                                  Divider(
-                                                    height: 10,
-                                                  ),
+                                      width: width,
+                                      height: height * 0.7,
+                                      child: PageView(
+                                        physics: NeverScrollableScrollPhysics(), // Désactiver le scroll physique
 
-                                                  //           Row(
-                                                  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  //             children: [
-                                                  //               Align(
-                                                  //                 alignment: Alignment.centerLeft,
-                                                  //                 child: Padding(
-                                                  //                   padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                                  //                   child: Row(
-                                                  //                     children: [
-                                                  //                       Icon(Icons.storefront,color: Colors.green,),
-                                                  //                       SizedBox(width: 2,),
-                                                  //                       TextCustomerPostDescription(
-                                                  //                         titre:
-                                                  //                         "Afroshop Annonces ",
-                                                  //                         fontSize: 15,
-                                                  //                         couleur: CustomConstants.kPrimaryColor,
-                                                  //                         fontWeight: FontWeight.w800,
-                                                  //                       ),
-                                                  //                     ],
-                                                  //                   ),
-                                                  //                 ),
-                                                  //               ),
-                                                  //               TextButton(onPressed: () {
-                                                  //                 Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-                                                  //
-                                                  //
-                                                  //               }, child: Text("Afficher plus")),
-                                                  //             ],
-                                                  //           ),
-                                                  //
-                                                  //
-                                                  //           Padding(
-                                                  //             padding: const EdgeInsets.all(4.0),
-                                                  //             child: FutureBuilder<List<ArticleData>>(
-                                                  //                 future: categorieProduitProvider.getAnnoncesArticles(),
-                                                  //                 builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                  //                   if (snapshot.hasData) {
-                                                  //                     List<ArticleData> articles=snapshot.data;
-                                                  //                     return Column(
-                                                  //                       children: [
-                                                  //                         Container(
-                                                  //                           height: height * 0.22,
-                                                  //                           width: width,
-                                                  //                           child: FlutterCarousel.builder(
-                                                  //                             itemCount: articles.length,
-                                                  //                             itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                                  //                                 ArticleTile( articles[index],width,height),
-                                                  //                             options: CarouselOptions(
-                                                  //                               autoPlay: true,
-                                                  //                               //controller: buttonCarouselController,
-                                                  //                               enlargeCenterPage: true,
-                                                  //                               viewportFraction: 0.4,
-                                                  //                               aspectRatio: 1.5,
-                                                  //                               initialPage: 1,
-                                                  //                               reverse: true,
-                                                  //                               autoPlayInterval: const Duration(seconds: 2),
-                                                  //                               autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                                  //                               autoPlayCurve: Curves.fastOutSlowIn,
-                                                  //
-                                                  //                             ),
-                                                  //                           ),
-                                                  //                         ),
-                                                  //                         /*
-                                                  //                       Container(
-                                                  //                         height: height*0.08,
-                                                  //                         width: width,
-                                                  //                         alignment: Alignment.centerLeft,
-                                                  //                         child: ListView.builder(
-                                                  //
-                                                  // scrollDirection: Axis.horizontal,
-                                                  // itemCount: articles.length,
-                                                  // itemBuilder:
-                                                  //     (BuildContext context, int index) {
-                                                  //   return ArticleTile( articles[index],width,height);
-                                                  // },
-                                                  //                         ),
-                                                  //                       ),
-                                                  //
-                                                  //                        */
-                                                  //                       ],
-                                                  //                     );
-                                                  //                   } else if (snapshot.hasError) {
-                                                  //                     return Icon(Icons.error_outline);
-                                                  //                   } else {
-                                                  //                     return Container(
-                                                  //                         width: 30,
-                                                  //                         height: 40,
-                                                  //
-                                                  //                         child: CircularProgressIndicator());
-                                                  //                   }
-                                                  //                 }),
-                                                  //           ),
-                                                  //           Divider(height: 10,),
-                                                ],
-                                              );
-                                            }
-                                            if (index % 6 == 0) {
-                                              // listConstposts.insert(index, listConstposts.elementAt(index));
+                                        controller: _pageController,
 
-                                              return Column(
-                                                children: <Widget>[
-                                                  Row(
-                                                    children: [
-                                                      TextButton(
-                                                          onPressed: () {},
-                                                          child: Text("")),
-                                                      TextButton(
-                                                          onPressed: () async {
-                                                            // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-                                                            await userProvider
-                                                                .getProfileUsers(
-                                                                    authProvider
-                                                                        .loginUserData!
-                                                                        .id!,
-                                                                    context,
-                                                                    limiteUsers)
-                                                                .then(
-                                                              (value) {
-                                                                Navigator.push(
-                                                                    context,
-                                                                    MaterialPageRoute(
-                                                                      builder:
-                                                                          (context) =>
-                                                                              UserCards(),
-                                                                    ));
-                                                              },
-                                                            );
-                                                          },
-                                                          child: Text(
-                                                              "Voir autres profiles")),
-                                                    ],
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                  ),
-                                                  SizedBox(
-                                                    //width: width,
-                                                    height: height * 0.38,
-                                                    child: FutureBuilder<
-                                                        List<UserData>>(
-                                                      future: userProvider
-                                                          .getProfileUsers(
-                                                              authProvider
-                                                                  .loginUserData
-                                                                  .id!,
-                                                              context,
-                                                              limiteUsers),
-                                                      builder:
-                                                          (context, snapshot) {
-                                                        if (snapshot
-                                                                .connectionState ==
-                                                            ConnectionState
-                                                                .waiting) {
-                                                          return Skeletonizer(
-                                                            //enabled: _loading,
-                                                            child: ListView
-                                                                .builder(
-                                                              scrollDirection:
-                                                                  Axis.horizontal,
-                                                              itemCount: 10,
-                                                              itemBuilder:
-                                                                  (context,
-                                                                      index) {
-                                                                return Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .all(
-                                                                          1.0),
-                                                                  child:
-                                                                      Container(
-                                                                    width: 300,
-                                                                    child: Card(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      child:
-                                                                          Padding(
-                                                                        padding: const EdgeInsets
-                                                                            .all(
-                                                                            8.0),
-                                                                        child:
-                                                                            Column(
-                                                                          children: [
-                                                                            Container(
-                                                                              child: CircleAvatar(
-                                                                                backgroundImage: AssetImage(
-                                                                                  "assets/icon/user-removebg-preview.png",
-                                                                                ),
-                                                                              ),
-                                                                              height: 100,
-                                                                              width: 100,
-                                                                            ),
-                                                                            SizedBox(
-                                                                              height: 2,
-                                                                            ),
-                                                                            SizedBox(
-                                                                              width: 70,
-                                                                              child: TextCustomerUserTitle(
-                                                                                titre: "jhasgjh",
-                                                                                fontSize: SizeText.homeProfileTextSize,
-                                                                                couleur: ConstColors.textColors,
-                                                                                fontWeight: FontWeight.w600,
-                                                                              ),
-                                                                            ),
-                                                                            SizedBox(
-                                                                              height: 2,
-                                                                            ),
-                                                                            TextCustomerUserTitle(
-                                                                              titre: "S'abonner",
-                                                                              fontSize: SizeText.homeProfileTextSize,
-                                                                              couleur: Colors.blue,
-                                                                              fontWeight: FontWeight.w600,
-                                                                            )
-                                                                          ],
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                            ),
-                                                          );
-                                                        } else if (snapshot
-                                                            .hasData) {
-                                                          // Get data from docs and convert map to List
-                                                          List<UserData> list =
-                                                              snapshot.data!;
-                                                          // Utiliser les données de snapshot.data
-                                                          return ListView
-                                                              .builder(
-                                                                  scrollDirection:
-                                                                      Axis
-                                                                          .horizontal,
-                                                                  itemCount:
-                                                                      snapshot
-                                                                          .data!
-                                                                          .length, // Nombre d'éléments dans la liste
-                                                                  itemBuilder:
-                                                                      (context,
-                                                                          index) {
-                                                                    //list[index].userAbonnes=[];
-                                                                    return homeProfileUsers(
-                                                                        list[
-                                                                            index],
-                                                                        width,
-                                                                        height);
-                                                                  });
-                                                        } else {
-                                                          return Skeletonizer(
-                                                            //enabled: _loading,
-                                                            child: ListView
-                                                                .builder(
-                                                              scrollDirection:
-                                                                  Axis.horizontal,
-                                                              itemCount: 10,
-                                                              itemBuilder:
-                                                                  (context,
-                                                                      index) {
-                                                                return Container(
-                                                                  width: 300,
-                                                                  child:
-                                                                      Padding(
-                                                                    padding:
-                                                                        const EdgeInsets
-                                                                            .all(
-                                                                            1.0),
-                                                                    child: Card(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      child:
-                                                                          Padding(
-                                                                        padding: const EdgeInsets
-                                                                            .all(
-                                                                            8.0),
-                                                                        child:
-                                                                            Column(
-                                                                          children: [
-                                                                            Container(
-                                                                              child: CircleAvatar(
-                                                                                backgroundImage: AssetImage(
-                                                                                  "assets/icon/user-removebg-preview.png",
-                                                                                ),
-                                                                              ),
-                                                                              height: 100,
-                                                                              width: 100,
-                                                                            ),
-                                                                            SizedBox(
-                                                                              height: 2,
-                                                                            ),
-                                                                            SizedBox(
-                                                                              width: 70,
-                                                                              child: TextCustomerUserTitle(
-                                                                                titre: "jhasgjh",
-                                                                                fontSize: SizeText.homeProfileTextSize,
-                                                                                couleur: ConstColors.textColors,
-                                                                                fontWeight: FontWeight.w600,
-                                                                              ),
-                                                                            ),
-                                                                            SizedBox(
-                                                                              height: 2,
-                                                                            ),
-                                                                            TextCustomerUserTitle(
-                                                                              titre: "S'abonner",
-                                                                              fontSize: SizeText.homeProfileTextSize,
-                                                                              couleur: Colors.blue,
-                                                                              fontWeight: FontWeight.w600,
-                                                                            )
-                                                                          ],
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                            ),
-                                                          );
-                                                        }
-                                                      },
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    height: 10,
-                                                  ),
-                                                  Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Expanded(
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(2.0),
-                                                          child: SizedBox(
-                                                            height: 20,
-                                                            child: Marquee(
-                                                              key: Key("keys"),
-                                                              text:
-                                                                  "Faites la promotion de vos annonces et publicités ! Contactez-nous pour des offres limitées.",
-                                                              style: TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  color: Colors
-                                                                      .black),
-                                                              scrollAxis: Axis
-                                                                  .horizontal,
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              blankSpace: 20,
-                                                              velocity: 100,
-                                                              pauseAfterRound:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          1),
-                                                              showFadingOnlyWhenScrolling:
-                                                                  true,
-                                                              fadingEdgeStartFraction:
-                                                                  0.1,
-                                                              fadingEdgeEndFraction:
-                                                                  0.1,
-                                                              numberOfRounds:
-                                                                  1000,
-                                                              startPadding: 10,
-                                                              accelerationDuration:
-                                                                  Duration(
-                                                                      milliseconds:
-                                                                          5000),
-                                                              accelerationCurve:
-                                                                  Curves.linear,
-                                                              decelerationDuration:
-                                                                  Duration(
-                                                                      milliseconds:
-                                                                          1000),
-                                                              decelerationCurve:
-                                                                  Curves
-                                                                      .easeOut,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.pushNamed(
-                                                                context,
-                                                                '/contact');
-                                                          },
-                                                          child: Container(
-                                                              height: 20,
-                                                              decoration: BoxDecoration(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  borderRadius:
-                                                                      BorderRadius.all(
-                                                                          Radius.circular(
-                                                                              2))),
-                                                              child: Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .only(
-                                                                        left:
-                                                                            2.0,
-                                                                        right:
-                                                                            2,
-                                                                        bottom:
-                                                                            1),
-                                                                child: Text(
-                                                                  "Contacter",
-                                                                  style: TextStyle(
-                                                                      color: Colors
-                                                                          .white),
-                                                                ),
-                                                              )))
-                                                    ],
-                                                  ),
-                                                  // SizedBox(height: 5,),
-                                                  //
-                                                  // userProvider.listAnnonces
-                                                  //             .length <
-                                                  //         0
-                                                  //     ? Container()
-                                                  //     : Visibility(
-                                                  //         visible: userProvider
-                                                  //                     .listAnnonces
-                                                  //                     .length >
-                                                  //                 0
-                                                  //             ? true
-                                                  //             : false,
-                                                  //         child: SizedBox(
-                                                  //           // width: width*0.8,
-                                                  //           //height: height*0.2,
-                                                  //           child: Padding(
-                                                  //             padding:
-                                                  //                 const EdgeInsets
-                                                  //                     .all(2.0),
-                                                  //             child:
-                                                  //                 FlutterCarousel
-                                                  //                     .builder(
-                                                  //               itemCount:
-                                                  //                   userProvider
-                                                  //                       .listAnnonces
-                                                  //                       .length,
-                                                  //               itemBuilder: (BuildContext
-                                                  //                           context,
-                                                  //                       int itemIndex,
-                                                  //                       int pageViewIndex) =>
-                                                  //                   GestureDetector(
-                                                  //                 onTap:
-                                                  //                     () async {
-                                                  //                   Annonce
-                                                  //                       annonce =
-                                                  //                       userProvider
-                                                  //                           .listAnnonces[itemIndex];
-                                                  //                   annonce.vues =
-                                                  //                       annonce.vues! +
-                                                  //                           1;
-                                                  //                   await firestore
-                                                  //                       .collection(
-                                                  //                           'Annonces')
-                                                  //                       .doc(annonce!
-                                                  //                           .id)
-                                                  //                       .update(
-                                                  //                           annonce!.toJson());
-                                                  //                   _showUserDetailsAnnonceDialog(
-                                                  //                       '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                  //                       userProvider
-                                                  //                           .listAnnonces[itemIndex]);
-                                                  //                 },
-                                                  //                 child:
-                                                  //                     ClipRRect(
-                                                  //                   borderRadius:
-                                                  //                       BorderRadius.all(
-                                                  //                           Radius.circular(10)),
-                                                  //                   child:
-                                                  //                       Container(
-                                                  //                     width:
-                                                  //                         width *
-                                                  //                             0.9,
-                                                  //                     height:
-                                                  //                         height *
-                                                  //                             0.5,
-                                                  //                     child:
-                                                  //                         Stack(
-                                                  //                       children: [
-                                                  //                         SizedBox(
-                                                  //                           width:
-                                                  //                               width * 0.9,
-                                                  //                           height:
-                                                  //                               height * 0.5,
-                                                  //                           child:
-                                                  //                               CachedNetworkImage(
-                                                  //                             fit: BoxFit.cover,
-                                                  //                             imageUrl: '${userProvider.listAnnonces[itemIndex].media_url!}',
-                                                  //                             progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                  //                                 //  LinearProgressIndicator(),
-                                                  //
-                                                  //                                 Skeletonizer(child: SizedBox(width: width * 0.9, height: height * 0.5, child: ClipRRect(borderRadius: BorderRadius.all(Radius.circular(10)), child: Image.asset('assets/images/404.png')))),
-                                                  //                             errorWidget: (context, url, error) => Container(
-                                                  //                                 width: width * 0.9,
-                                                  //                                 height: height * 0.5,
-                                                  //                                 child: Image.asset(
-                                                  //                                   "assets/icon/user-removebg-preview.png",
-                                                  //                                   fit: BoxFit.cover,
-                                                  //                                 )),
-                                                  //                           ),
-                                                  //                         ),
-                                                  //                         Positioned(
-                                                  //                           //width: 100,
-                                                  //                           //height: 40,
-                                                  //
-                                                  //                           child:
-                                                  //                               Container(
-                                                  //                             decoration: BoxDecoration(
-                                                  //                                 //  color: Colors.white,
-                                                  //                                 borderRadius: BorderRadius.all(Radius.circular(50))),
-                                                  //                             child: Center(
-                                                  //                               child: Container(
-                                                  //                                 width: 100,
-                                                  //                                 decoration: BoxDecoration(color: Colors.green.withOpacity(0.5), borderRadius: BorderRadius.all(Radius.circular(50))),
-                                                  //                                 child: Padding(
-                                                  //                                   padding: const EdgeInsets.all(8.0),
-                                                  //                                   child: Row(
-                                                  //                                     mainAxisAlignment: MainAxisAlignment.center,
-                                                  //                                     children: [
-                                                  //                                       Text(
-                                                  //                                         "vues: ",
-                                                  //                                         style: TextStyle(fontWeight: FontWeight.w600),
-                                                  //                                       ),
-                                                  //                                       userProvider.listAnnonces[itemIndex]!.vues! > 999
-                                                  //                                           ? Text(
-                                                  //                                               "+999",
-                                                  //                                               style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
-                                                  //                                             )
-                                                  //                                           : Text(
-                                                  //                                               "${userProvider.listAnnonces[itemIndex].vues}",
-                                                  //                                               style: TextStyle(fontWeight: FontWeight.w600),
-                                                  //                                             ),
-                                                  //                                     ],
-                                                  //                                   ),
-                                                  //                                 ),
-                                                  //                               ),
-                                                  //                             ),
-                                                  //                           ),
-                                                  //                         ),
-                                                  //                       ],
-                                                  //                     ),
-                                                  //                   ),
-                                                  //                 ),
-                                                  //               ),
-                                                  //               options:
-                                                  //                   CarouselOptions(
-                                                  //                 autoPlay:
-                                                  //                     true,
-                                                  //                 //controller: buttonCarouselController,
-                                                  //                 enlargeCenterPage:
-                                                  //                     true,
-                                                  //                 viewportFraction:
-                                                  //                     0.9,
-                                                  //                 aspectRatio:
-                                                  //                     3.0,
-                                                  //                 // initialPage: 1,
-                                                  //                 autoPlayInterval:
-                                                  //                     const Duration(
-                                                  //                         seconds:
-                                                  //                             2),
-                                                  //                 autoPlayAnimationDuration:
-                                                  //                     const Duration(
-                                                  //                         milliseconds:
-                                                  //                             800),
-                                                  //                 autoPlayCurve:
-                                                  //                     Curves
-                                                  //                         .fastOutSlowIn,
-                                                  //               ),
-                                                  //             ),
-                                                  //           ),
-                                                  //         ),
-                                                  //       ),
-                                                ],
-                                              );
-                                            }
-                                            //     if (index % 8== 0) {
-                                            //       return Column(
-                                            //         children: <Widget>[
-                                            //           Row(
-                                            //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            //             children: [
-                                            //               Align(
-                                            //                 alignment: Alignment.centerLeft,
-                                            //                 child: Padding(
-                                            //                   padding: const EdgeInsets.only(top: 2.0,bottom: 0,left: 8),
-                                            //                   child: Row(
-                                            //                     children: [
-                                            //                       Icon(Icons.storefront,color: Colors.green,),
-                                            //                       SizedBox(width: 2,),
-                                            //                       TextCustomerPostDescription(
-                                            //                         titre:
-                                            //                         "Afroshop Annonces ",
-                                            //                         fontSize: 15,
-                                            //                         couleur: CustomConstants.kPrimaryColor,
-                                            //                         fontWeight: FontWeight.w800,
-                                            //                       ),
-                                            //                     ],
-                                            //                   ),
-                                            //                 ),
-                                            //               ),
-                                            //               TextButton(onPressed: () {
-                                            //                 Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-                                            //
-                                            //
-                                            //               }, child: Text("Afficher plus")),
-                                            //             ],
-                                            //           ),
-                                            //
-                                            //
-                                            //           Padding(
-                                            //             padding: const EdgeInsets.all(4.0),
-                                            //             child: FutureBuilder<List<ArticleData>>(
-                                            //                 future: categorieProduitProvider.getAnnoncesArticles(),
-                                            //                 builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                            //                   if (snapshot.hasData) {
-                                            //                     List<ArticleData> articles=snapshot.data;
-                                            //                     return Column(
-                                            //                       children: [
-                                            //                         Container(
-                                            //                           height: height * 0.22,
-                                            //                           width: width,
-                                            //                           child: FlutterCarousel.builder(
-                                            //                             itemCount: articles.length,
-                                            //                             itemBuilder: (BuildContext context, int index, int pageViewIndex) =>
-                                            //                                 ArticleTile( articles[index],width,height),
-                                            //                             options: CarouselOptions(
-                                            //                               autoPlay: true,
-                                            //                               //controller: buttonCarouselController,
-                                            //                               enlargeCenterPage: true,
-                                            //                               viewportFraction: 0.4,
-                                            //                               aspectRatio: 1.5,
-                                            //                               initialPage: 1,
-                                            //                               reverse: true,
-                                            //                               autoPlayInterval: const Duration(seconds: 2),
-                                            //                               autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                                            //                               autoPlayCurve: Curves.fastOutSlowIn,
-                                            //
-                                            //                             ),
-                                            //                           ),
-                                            //                         ),
-                                            //                         /*
-                                            //                       Container(
-                                            //                         height: height*0.08,
-                                            //                         width: width,
-                                            //                         alignment: Alignment.centerLeft,
-                                            //                         child: ListView.builder(
-                                            //
-                                            // scrollDirection: Axis.horizontal,
-                                            // itemCount: articles.length,
-                                            // itemBuilder:
-                                            //     (BuildContext context, int index) {
-                                            //   return ArticleTile( articles[index],width,height);
-                                            // },
-                                            //                         ),
-                                            //                       ),
-                                            //
-                                            //                        */
-                                            //                       ],
-                                            //                     );
-                                            //                   } else if (snapshot.hasError) {
-                                            //                     return Icon(Icons.error_outline);
-                                            //                   } else {
-                                            //                     return Container(
-                                            //                         width: 30,
-                                            //                         height: 40,
-                                            //
-                                            //                         child: CircularProgressIndicator());
-                                            //                   }
-                                            //                 }),
-                                            //           ),
-                                            //           Divider(height: 10,),
-                                            //         ],
-                                            //       );
-                                            //
-                                            //     }
+                                        onPageChanged: (index) {
+                                          setState(() {
+                                            _currentIndex = index;
+                                          });
+                                        },
 
-                                            else {
-                                              // listConstposts.insert(0, postListProvider.listConstposts.elementAt(index));
-
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 5.0, bottom: 5),
-                                                child: homePostUsers(
-                                                    listConstposts![index],
-                                                    height,
-                                                    width),
-                                              );
-                                            }
-                                          },
-                                        ),
-                                      );
-                                    } else if (snapshot.hasError) {
-                                      printVm(
-                                          "erreur ${snapshot.error.toString()}");
-
-                                      return Center(child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.error_outline),
-                                          ElevatedButton(onPressed: () {
-                                            setState(() {
-                                              postProvider
-                                                  .reloadPostsImages(limitePosts, _scrollController)
-                                                  .then(
-                                                    (value) {},
-                                              );
-                                              postProvider.getPostsVideos().then((value) {
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                top: 5.0, bottom: 5),
+                                            child: homePostUsers(
+                                                listConstposts![index],
+                                                _color,
+                                                height,
+                                                width),
+                                          ),                                        // AfroVideo(),
+                                          PostComments(post: listConstposts![index]),
+                                          // _pageController.jumpToPage(index);
 
-                                              },);
-
-                                            });
-                                          }, child: Text('Actualiser'))
                                         ],
-                                      ));
-                                    }
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return widgetSeke(width, height);
-                                    } else {
-                                      return widgetSeke(width, height);
-                                    }
-                                  }),
-
-                              // Le CircularProgressIndicator
-                              Visibility(
-                                visible: postListProvider.isReload,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
+                                      ),
+                                    );
+                                  }
+                               // },
                               ),
-                            ],
-                          ),
-                        ],
-                      );
+                            ),
+                            // if (!postProvider.isLoading)
+                            //   ElevatedButton(
+                            //     onPressed: () {
+                            //       setState(() {
+                            //         postProvider.isLoading = true;
+                            //         // lastDocument = listConstposts.last as DocumentSnapshot<Object?>?; // Set the last document for next fetch
+                            //       });
+                            //     },
+                            //     child: Text('Suivant'),
+                            //   ),
+                            // if (postProvider.isLoading) CircularProgressIndicator(),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                )
+                ;
               }),
             ),
           ),

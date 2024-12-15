@@ -23,6 +23,7 @@ class PostProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
   late UserService userService = UserService();
   late Chat chat = Chat();
+  late Post postSelected = Post();
   List<Post> listConstposts = [];
 
 
@@ -390,7 +391,225 @@ class PostProvider extends ChangeNotifier {
     return listConstposts;
 
   }
-bool isReload=false;
+
+  Stream<List<Post>> getPostsImages2(int limite) async* {
+    List<Post> posts = [];
+     listConstposts = [];
+    DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+
+    // Effectuer une requête pour récupérer les posts
+    Query query = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+
+    )      .where(
+        "status", isNotEqualTo: PostStatus.SUPPRIMER.name
+
+    )
+
+        .orderBy('updated_at', descending: true)
+        .limit(limite);
+
+    QuerySnapshot querySnapshotPost = await query.get();
+
+    // QuerySnapshot querySnapshotPost = await query.get();
+
+    // List<Post> postList = querySnapshotPost.docs.map((doc) {
+    //   Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+    //   return post;
+    // }).where((post) =>
+    // post.status != PostStatus.NONVALIDE.name &&
+    //     post.status != PostStatus.SUPPRIMER.name).toList();
+
+    // Traiter les documents progressivement
+    for (var doc in querySnapshotPost.docs) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Filtrer selon le statut
+      // if (post.status != PostStatus.NONVALIDE.name &&
+      //     post.status != PostStatus.SUPPRIMER.name) {
+        // Récupérer les données utilisateur liées
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: '${post.user_id}')
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          post.user = userList.first;
+        }
+
+        // Ajouter le post à la liste
+        posts.add(post);
+      listConstposts.add(post);
+        // Transmettre les données partiellement récupérées
+        yield posts;
+      //}
+    }
+  }
+  DocumentSnapshot? lastDocumentData;
+  Post? lastPostData;
+  bool isLoading=false;
+
+
+  Stream<List<Post>> getPostsImages3(int limite,
+      {required bool getLast})
+  async* {
+    List<Post> posts = [];
+    DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+    printVm("lastDocument data");
+
+    // printVm("lastDocument: ${lastDocument!.data()}");
+
+    // Construct query for first 25 cities, ordered by population
+    final query = postCollect.where(
+    Filter.or(
+    Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    ),
+    )
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        // .orderBy('updated_at', descending: true).startAfterDocument(lastDocument!)
+        .limit(limite);
+    if(getLast){
+
+      query.get().then(
+            (documentSnapshots) {
+          // Get the last visible document
+          final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
+
+          // Construct a new query starting at this document,
+          // get the next 25 cities.
+          final next = postCollect.where(
+            Filter.or(
+              Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+              Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+            ),
+          )
+              .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+              .orderBy('updated_at', descending: true)
+              .startAfterDocument(lastVisible!)
+              .limit(limite);
+
+          // Use the query for pagination
+          // ...
+        },
+        onError: (e) => print("Error completing: $e"),
+      );
+    }else{
+
+      query.get().then(
+            (documentSnapshots) {
+          // Get the last visible document
+          // final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
+
+          // Construct a new query starting at this document,
+          // get the next 25 cities.
+          final next = postCollect.where(
+            Filter.or(
+              Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+              Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+            ),
+          )
+              .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+              .orderBy('updated_at', descending: true)
+              // .startAfterDocument(lastVisible!)
+              .limit(limite);
+
+          // Use the query for pagination
+          // ...
+        },
+        onError: (e) => print("Error completing: $e"),
+      );
+    }
+
+    query.get().then(
+          (documentSnapshots) {
+        // Get the last visible document
+        final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
+
+        // Construct a new query starting at this document,
+        // get the next 25 cities.
+        final next = postCollect.where(
+          Filter.or(
+            Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+            Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+          ),
+        )
+            .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+            .orderBy('updated_at', descending: true)
+            .startAfterDocument(lastVisible!)
+            .limit(limite);
+
+        // Use the query for pagination
+        // ...
+      },
+      onError: (e) => print("Error completing: $e"),
+    );
+
+    // Effectuer une requête pour récupérer les posts
+    // Query query = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    // )
+    //     .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .orderBy('updated_at', descending: true).startAfterDocument(lastDocument!)
+    //     .limit(limite);
+
+
+
+    // Si un dernier document est fourni, on pagine à partir de celui-ci
+    // if (lastDocument != null) {
+    //   query = query.startAfterDocument(lastDocument!);
+    // }
+
+    // Exécuter la requête
+    QuerySnapshot querySnapshotPost = await query.get();
+    lastDocumentData= querySnapshotPost.docs.last;
+
+    // Traiter les documents récupérés
+    for (var doc in querySnapshotPost.docs) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+
+      posts.add(post);
+    }
+    isLoading=false;
+    // Transmettre les données récupérées
+    yield posts;
+
+    // Si des documents ont été récupérés, on donne la possibilité de charger plus
+    // if (querySnapshotPost.docs.isNotEmpty) {
+    //   yield* getPostsImages2(limite, lastDocument: querySnapshotPost.docs.last);
+    // }
+  }
+
+
+  bool isReload=false;
   Future<List<Post>>
   reloadPostsImages(int limite,ScrollController _scrollController ) async {
 

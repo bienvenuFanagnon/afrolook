@@ -29,7 +29,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=10;
+  late int app_version_code=11;
   int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {
@@ -55,9 +55,9 @@ class _ChargementState extends State<SplahsChargement> {
     authProvider.getAppData().then((value) {
       if (app_version_code== authProvider.appDefaultData.app_version_code) {
 
-        postProvider.getPostsImages(limitePosts).then((value) {
-
-        },);
+        // postProvider.getPostsImages(limitePosts).then((value) {
+        //
+        // },);
 
         authProvider.getIsFirst().then((value) {
           printVm("isfirst: ${value}");

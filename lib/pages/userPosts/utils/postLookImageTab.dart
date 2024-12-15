@@ -269,7 +269,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> {
                         },
                       );
 
-          postProvider.getPostsImages(limitePosts);
+          // postProvider.getPostsImages(limitePosts);
           _imageBytes!=null;
 
           Navigator.pop(context); // Fermer le dialog de chargement

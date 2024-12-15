@@ -19,6 +19,7 @@ import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
 import 'package:afrotok/pages/home/home.dart';
+import 'package:afrotok/pages/home/postView.dart';
 import 'package:afrotok/pages/ia/compagnon/iaCompagnon.dart';
 import 'package:afrotok/pages/ia/compagnon/introIaCompagnon.dart';
 import 'package:afrotok/pages/info.dart';
@@ -470,6 +471,7 @@ home: UpgradeAlert(
           case '/home':
             return PageTransition(
                 child: MyHomePage(title: ""), type: PageTransitionType.fade);
+                // child: PostsPage(), type: PageTransitionType.fade);
             break;
           case '/ia_compagnon':
             return PageTransition(
