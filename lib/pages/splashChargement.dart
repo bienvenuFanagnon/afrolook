@@ -1,6 +1,7 @@
 
 
 import 'package:afrotok/constant/constColors.dart';
+import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -15,7 +16,8 @@ import '../providers/userProvider.dart';
 import 'component/consoleWidget.dart';
 
 class SplahsChargement extends StatefulWidget {
-  const SplahsChargement({super.key});
+  final String postId;
+  const SplahsChargement({super.key, required this.postId});
 
   @override
   State<SplahsChargement> createState() => _ChargementState();
@@ -29,7 +31,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=11;
+  late int app_version_code=12;
   int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {
@@ -91,10 +93,27 @@ class _ChargementState extends State<SplahsChargement> {
                     userProvider.changeState(user: authProvider.loginUserData,
                         state: UserState.ONLINE.name);
 
-                    Navigator.pop(context);
-                    Navigator.pushNamed(
-                        context,
-                        '/home');
+                    // Navigator.pop(context);
+                    if(widget.postId!=null&&widget.postId.isNotEmpty){
+                      await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+                        if(posts.isNotEmpty){
+                          Navigator.pushNamed(
+                              context,
+                              '/home');
+Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                        }else{
+                          Navigator.pushNamed(
+                              context,
+                              '/home');
+                        }
+
+                      },);
+                    }else{
+                      Navigator.pushNamed(
+                          context,
+                          '/home');
+                    }
+
                   //  Navigator.pushNamed(context, '/chargement');
 
                   }else{

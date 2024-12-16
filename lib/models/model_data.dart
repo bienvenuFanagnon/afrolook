@@ -476,6 +476,7 @@ class UserData {
   double? votre_solde = 0.0;
   int? pubEntreprise = 0;
   int? mesPubs = 0;
+  int? partage = 0;
   int? last_time_active = 0;
   int? pointContribution = 0;
   int? userlikes = 0;
@@ -530,6 +531,7 @@ class UserData {
       this.likes = 0,
       this.jaimes = 0,
       this.userlikes = 0,
+      this.partage = 0,
       this.userjaimes = 0,
       this.comments = 0,
       this.createdAt = 0,
@@ -621,6 +623,7 @@ class UserData {
     genre = json['genre'] == null ? "" : json['genre'];
     userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
     userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
+    partage = json['partage'] == null ? 0 : json['partage'];
     // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
@@ -657,6 +660,7 @@ class UserData {
     // data['password'] = this.password;
     data['genre'] = this.genre;
     data['userlikes'] = this.userlikes;
+    data['partage'] = this.partage;
     data['userjaimes'] = this.userjaimes;
     // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
@@ -1136,6 +1140,7 @@ class Post {
 
   int? comments = 0;
   int? loves = 0;
+  int? partage = 0;
   int? vues = 0;
   int? likes = 0;
   UserData? user;
@@ -1165,6 +1170,7 @@ class Post {
     this.users_like_id,
     this.users_love_id,
     this.loves,
+    this.partage=0,
     this.users_vue_id,
     this.vues,
     this.likes,
@@ -1198,6 +1204,7 @@ class Post {
     images = json['images'] == null ? [] : json['images'].cast<String>();
     likes = json['likes'];
     vues = json['vues'] == null ? 0 : json['vues'];
+    partage = json['partage'] == null ? 0 : json['partage'];
     users_like_id = json['users_like_id'] == null
         ? []
         : json['users_like_id'].cast<String>();
@@ -1232,6 +1239,7 @@ class Post {
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;
     data['likes'] = this.likes;
+    data['partage'] = this.partage;
     data['users_vue_id'] = this.users_vue_id;
     data['vues'] = this.vues;
     data['nombreCollaborateur'] = this.nombreCollaborateur;

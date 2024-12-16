@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:afrotok/models/chatmodels/message.dart';
+import 'package:deeplynks/services/deeplynks_service.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
@@ -27,7 +29,7 @@ class UserAuthProvider extends ChangeNotifier {
   late int? userId = 0;
   late String loginText = "";
   late UserService userService = UserService();
-
+  final _deeplynks = Deeplynks();
   //List<Pays>? listPays=[];
   late UserData loginUserData2 = UserData();
   late UserData loginUserData = UserData();
@@ -41,6 +43,123 @@ class UserAuthProvider extends ChangeNotifier {
 
   initializeData() {
     registerUser = UserData();
+  }
+  String? _linkMessage;
+  bool _isCreatingLink = false;
+  Future<void> createLink3(bool short) async {
+    FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+
+    final String _testString =
+        'To test: long press link and then copy and click from a non-browser '
+        "app. Make sure this isn't being tested on iOS simulator and iOS xcode "
+        'is properly setup. Look at firebase_dynamic_links/README.md for more '
+        'details.';
+
+    final String DynamicLink = 'https://afrotok.page.link/post';
+    final String Link = 'https://flutterfiretests.page.link/MEGs';
+    // setState(() {
+    //   _isCreatingLink = true;
+    // });
+
+    final DynamicLinkParameters parameters = DynamicLinkParameters(
+      uriPrefix: 'https://afrotok.page.link',
+      longDynamicLink: Uri.parse(
+        'https://afrotok.page.link?efr=0&ibi=com.afrotok.afrotok&apn=com.afrotok.afrotok&imv=0&amv=0&link=https%3A%2F%2Fexample%2Fhelloworld&ofl=https://ofl-example.com',
+      ),
+      link: Uri.parse(DynamicLink),
+      androidParameters: const AndroidParameters(
+        packageName: 'com.afrotok.afrotok',
+        minimumVersion: 0,
+      ),
+      // iosParameters: const IOSParameters(
+      //   bundleId: 'com.afrotok.afrotok',
+      //   minimumVersion: '0',
+      // ),
+    );
+
+    Uri url;
+    if (short) {
+      final ShortDynamicLink shortLink =
+      await dynamicLinks.buildShortLink(parameters);
+      url = shortLink.shortUrl;
+    } else {
+      url = await dynamicLinks.buildLink(parameters);
+    }
+    _linkMessage = url.toString();
+    _isCreatingLink = false;
+  //   setState(() {
+  //     _linkMessage = url.toString();
+  //     _isCreatingLink = false;
+  //   });
+
+    printVm('***********dynamicLinks Link 1:**************');
+
+    printVm('***********Deeplynks Link 1: $_linkMessage');
+
+  }
+
+  Future<String> createLink(bool short, Post post) async {
+    FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+
+    final String DynamicLink = 'https://afrotok.page.link/post';
+    final String appLogo="https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
+
+    // Paramètres que vous souhaitez ajouter à l'URL du lien dynamique
+    final Uri link = Uri.parse(
+        'https://afrotok.page.link/post?postId=${post.id}&postImage=${post.images!.isEmpty?appLogo:post.images!.first}'
+    );
+
+    final DynamicLinkParameters parameters = DynamicLinkParameters(
+      uriPrefix: 'https://afrotok.page.link',
+      link: link,
+      androidParameters: const AndroidParameters(
+        packageName: 'com.afrotok.afrotok',
+        minimumVersion: 0,
+      ),
+      iosParameters: const IOSParameters(
+        bundleId: 'com.afrotok.afrotok',
+        minimumVersion: '0',
+      ),
+      socialMetaTagParameters: SocialMetaTagParameters(
+        title: 'Afrolook media ♠☺♥',  // Titre de la publication
+        description: post.description,  // Description de la publication
+        imageUrl: Uri.parse(post.images!.isEmpty?appLogo:post.images!.first),  // URL de l'image du post
+      ),
+    );
+
+    Uri url;
+    if (short) {
+      final ShortDynamicLink shortLink =
+      await dynamicLinks.buildShortLink(parameters);
+      url = shortLink.shortUrl;
+    } else {
+      url = await dynamicLinks.buildLink(parameters);
+    }
+
+    _linkMessage = url.toString();
+    _isCreatingLink = false;
+
+    print('Generated Dynamic Link: $_linkMessage');
+    return url.toString();
+  }
+
+
+
+  Future<void> createLink2(Post post) async {
+    printVm('***********Deeplynks Link 1:**************');
+
+    final link = await _deeplynks.createLink(jsonEncode({
+      'referredBy': '12345',
+      'referralCode': 'WELCOME50',
+      'postId': post.id,
+      'description': post.description,
+      'urlImage': post.images!.isNotEmpty?post.images!.first!:'',
+    }));
+
+    printVm('***********Deeplynks Link 2:**************');
+    printVm('Deeplynks Link: $link');
+
+    log('Deeplynks Link: $link');
   }
 
   Future<void> storeIsFirst(bool value) async {

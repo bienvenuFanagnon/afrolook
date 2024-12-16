@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 #version: 1.0.0+1
-version: 1.0.11+11
+version: 1.0.12+12
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -88,6 +88,8 @@ dependencies:
   pulp_flash: ^0.0.6
   searchable_listview: ^2.10.1
   popover_gtk: ^0.2.6+3
+  deeplynks: ^1.0.7
+  firebase_dynamic_links: ^6.0.11
 
 #  image: ^2.1.4
 

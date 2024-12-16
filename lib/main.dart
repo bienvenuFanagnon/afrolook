@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/admin/annonce.dart';
@@ -11,6 +12,7 @@ import 'package:afrotok/pages/bonASavoir.dart';
 import 'package:afrotok/pages/chargement.dart';
 import 'package:afrotok/pages/chat/myChat.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
 import 'package:afrotok/pages/entreprise/conversation/listConversationUser.dart';
@@ -52,8 +54,10 @@ import 'package:afrotok/providers/userProvider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:deeplynks/deeplynks.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -138,6 +142,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   String _debugLabelString = "";
+  final _deeplynks = Deeplynks();
+
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   Future<List<Post>> getPostsVideosById(String post_id) async {
 
@@ -408,16 +414,98 @@ class _MyAppState extends State<MyApp> {
     });
 
   }
+
+  /// Initialize deeplynks & listen for link data
+  Future<void> _init() async {
+    final appId = await _deeplynks.init(
+      context: context,
+      metaData: MetaInfo(
+        name: 'Afrolook',
+        description:
+        'Afrolook votre popularité à la une',
+      ),
+      androidInfo: AndroidInfo(
+        sha256: ['FD:0F:AD:CF:15:14:B1:F6:E7:F9:92:7F:CB:72:18:A1:58:56:0B:6C:20:EC:D8:3D:50:F0:61:DE:38:52:EB:8B'],
+        playStoreURL: 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok',
+        applicationId: 'com.afrotok.afrotok',
+        // applicationId: 'com.example.deeplynks',
+      ),
+      // iosInfo: IOSInfo(
+      //   teamId: '',
+      //   appStoreURL: '',
+      //   bundleId: 'com.example.deeplynks',
+      // ),
+    );
+
+    // Use this appId for Android platform setup
+    printVm('*************Deeplynks App Id:**********************');
+    printVm('Deeplynks App Id: $appId');
+    log('Deeplynks App Id: $appId');
+
+    // Listen for link data
+    _deeplynks.stream.listen((data) {
+      // Handle link data
+      printVm('*******************Deeplynks Data:*********************');
+      printVm('Deeplynks Data: $data');
+      log('Deeplynks Data: $data');
+      // Listen for link data
+      // Handle link data
+
+      // After using the link data, mark it as completed
+      // in case you don't want it again next time
+      // _deeplynks.markCompleted();
+    });
+  }
+  String? _linkMessage;
+  bool _isCreatingLink = false;
+
+  FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+  final String _testString =
+      'To test: long press link and then copy and click from a non-browser '
+      "app. Make sure this isn't being tested on iOS simulator and iOS xcode "
+      'is properly setup. Look at firebase_dynamic_links/README.md for more '
+      'details.';
+
+  final String DynamicLink = 'https://example/helloworld';
+  final String Link = 'https://flutterfiretests.page.link/MEGs';
+  /// Create a new deep link
+
+  Future<void> initDynamicLinks() async {
+    dynamicLinks.onLink.listen((dynamicLinkData) async {
+      // printVm('onLink data: ${jsonEncode(dynamicLinkData}');
+      // printVm('onLink path: ${dynamicLinkData.link.path}');
+      // printVm('onLink data: ${dynamicLinkData.link.data}');
+
+      // Récupérer l'URL du lien dynamique
+      print('onLink path: ${dynamicLinkData.link.path}');
+      print('onLink data: ${dynamicLinkData.link.queryParameters}');
+
+      // Extraire les paramètres de l'URL
+      String? userId = dynamicLinkData.link.queryParameters['userId'];
+      String? postId = dynamicLinkData.link.queryParameters['postId'];
+      String? postImage = dynamicLinkData.link.queryParameters['postImage'];
+
+      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!,),));
+
+
+
+    }).onError((error) {
+      printVm('onLink error');
+      printVm(error.message);
+    });
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-
+    // WidgetsBinding.instance.addPostFrameCallback((_) => _init());
     onClickNotification();
-
+    initDynamicLinks();
   }
   @override
   Widget build(BuildContext context) {
+    // _createLink();
 
     return  MultiProvider(
       providers: [
@@ -454,17 +542,17 @@ class _MyAppState extends State<MyApp> {
         ),
 
          */
-home: UpgradeAlert(
-  upgrader: Upgrader(),
-  child: Scaffold(
-    // body: PickImageExample(),
-    // body: PhotoVideoEditorPage(),
-    // body: UserPostForm(),
-    body: SplahsChargement(),
-  ),
-),
+// home: UpgradeAlert(
+//   upgrader: Upgrader(),
+//   child: Scaffold(
+//     // body: PickImageExample(),
+//     // body: PhotoVideoEditorPage(),
+//     // body: UserPostForm(),
+//     body: SplahsChargement(),
+//   ),
+// ),
 
-      // initialRoute: '/splahs_chargement',
+      initialRoute: '/splahs_chargement',
       //initialRoute: '/introduction',
       onGenerateRoute: (settings) {
         switch (settings.name) {
@@ -588,7 +676,7 @@ home: UpgradeAlert(
             break;
             case '/splahs_chargement':
             return PageTransition(
-                child: SplahsChargement(), type: PageTransitionType.fade);
+                child: SplahsChargement(postId: '',), type: PageTransitionType.fade);
             break;
           case '/chargement':
             return PageTransition(

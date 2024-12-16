@@ -1332,856 +1332,7 @@ class _MyHomePageState extends State<MyHomePage>
     ).animate(_controller);
 
     return Container(
-      child: post.type == PostType.PUB.name
-          ? StatefulBuilder(
-              builder: (BuildContext context, StateSetter setStateImages) {
-              return Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (PointerDownEvent details) {
-                  bool isReady = true;
-                  if (_buttonEnabled) {
-                    _buttonEnabled = false;
-                    Future.delayed(Duration(seconds: 5), () {
-                      printVm('Contact léger détecté !');
-                      if (post.type == PostType.PUB.name) {
-                        if (!isIn(post.users_vue_id!,
-                            authProvider.loginUserData.id!)) {
-                        } else {
-                          post.users_vue_id!
-                              .add(authProvider!.loginUserData.id!);
-                        }
-
-                        post.vues = post.vues! + 1;
-                        vue = post.vues!;
-
-                        postProvider.updateVuePost(post, context);
-                        //loves.add(idUser);
-
-                        // }
-                      }
-                      _buttonEnabled = true;
-                    });
-                  } else {
-                    printVm('indispo!');
-                  }
-
-                  //  if (isReady) {
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Row(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                          '${post.entrepriseData!.urlImage!}'),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: 2,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          SizedBox(
-                                            //width: 100,
-                                            child: TextCustomerUserTitle(
-                                              titre:
-                                                  "#${post.entrepriseData!.titre!}",
-                                              fontSize:
-                                                  SizeText.homeProfileTextSize,
-                                              couleur: ConstColors.textColors,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            //width: 100,
-                                            child: TextCustomerUserTitle(
-                                              titre:
-                                                  "&${post.entrepriseData!.type!}",
-                                              fontSize:
-                                                  SizeText.homeProfileTextSize,
-                                              couleur: ConstColors.textColors,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                          TextCustomerUserTitle(
-                                            titre:
-                                                "${formatNumber(post.entrepriseData!.suivi!)} suivi(s)",
-                                            fontSize: 10,
-                                            couleur: ConstColors.textColors,
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                        ],
-                                      ),
-
-                                      /*
-                                  IconButton(
-                                      onPressed: () {},
-                                      icon: Icon(
-                                        Icons.add_circle_outlined,
-                                        size: 20,
-                                        color: ConstColors.regIconColors,
-                                      )),
-
-                                   */
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                width: 20,
-                              ),
-                              Icon(
-                                Entypo.arrow_long_right,
-                                color: Colors.green,
-                              ),
-                              SizedBox(
-                                width: 20,
-                              ),
-                              Row(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                          '${post.user!.imageUrl!}'),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: 2,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          SizedBox(
-                                            //width: 100,
-                                            child: TextCustomerUserTitle(
-                                              titre: "@${post.user!.pseudo!}",
-                                              fontSize:
-                                                  SizeText.homeProfileTextSize,
-                                              couleur: ConstColors.textColors,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          TextCustomerUserTitle(
-                                            titre:
-                                                "${formatNumber(post.user!.abonnes!)} abonné(s)",
-                                            fontSize: 10,
-                                            couleur: ConstColors.textColors,
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                        ],
-                                      ),
-
-                                      /*
-                              IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    Icons.add_circle_outlined,
-                                    size: 20,
-                                    color: ConstColors.regIconColors,
-                                  )),
-
-                               */
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          IconButton(
-                              onPressed: () {
-                                _showPostMenuModalDialog(post);
-                              },
-                              icon: Icon(
-                                Icons.more_horiz,
-                                size: 30,
-                                color: ConstColors.blackIconColors,
-                              )),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Entypo.network,
-                              size: 15,
-                            ),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            TextCustomerUserTitle(
-                              titre: "publicité",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: Colors.green,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: SizedBox(
-                          width: width * 0.8,
-                          height: 50,
-                          child: Container(
-                            alignment: Alignment.centerLeft,
-                            child: TextCustomerPostDescription(
-                              titre: "${post.description}",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: TextCustomerPostDescription(
-                          titre:
-                              "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!))}",
-                          fontSize: SizeText.homeProfileDateTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      /*
-                    post!.images==null? Container():  Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-
-                          for(int i=0;i<post!.images!.length;i++)
-                            TextButton(onPressed: ()
-                            {
-                              setStateImages(() {
-                                imageIndex=i;
-                              });
-
-                            }, child:
-                            Container(
-                              width: 100,
-                              height: 50,
-
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.all(Radius.circular(10)),
-                                child: Container(
-
-                                  child: CachedNetworkImage(
-
-                                    fit: BoxFit.cover,
-                                    imageUrl: '${post!.images![i]}',
-                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                    //  LinearProgressIndicator(),
-
-                                    Skeletonizer(
-                                        child: SizedBox(width: 400,height: 450, child:  ClipRRect(
-                                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                    errorWidget: (context, url, error) =>  Skeletonizer(child: Container(width: 400,height: 450,child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
-                                  ),
-                                ),
-                              ),
-                            ),)
-                        ],
-                      ),
-                    ),
-
-                     */
-                      GestureDetector(
-                        onTap: () {
-                          postProvider.updateVuePost(post, context);
-
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailsPost(post: post),
-                              ));
-                        },
-                        child: Container(
-                          width: w * 0.9,
-                          height: h * 0.4,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(5)),
-                            child: Container(
-                              child: CachedNetworkImage(
-                                fit: BoxFit.cover,
-                                imageUrl:
-                                    '${post!.images == null ? '' : post!.images!.isEmpty ? '' : post!.images![imageIndex]}',
-                                progressIndicatorBuilder: (context, url,
-                                        downloadProgress) =>
-                                    //  LinearProgressIndicator(),
-
-                                    Skeletonizer(
-                                        child: SizedBox(
-                                            width: 400,
-                                            height: 450,
-                                            child: ClipRRect(
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(10)),
-                                                child: Image.asset(
-                                                    'assets/images/404.png')))),
-                                errorWidget: (context, url, error) =>
-                                    Skeletonizer(
-                                        child: Container(
-                                            width: 400,
-                                            height: 450,
-                                            child: Image.asset(
-                                              "assets/images/404.png",
-                                              fit: BoxFit.cover,
-                                            ))),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Container(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            StatefulBuilder(builder:
-                                (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () async {
-                                  if (!isIn(post.users_love_id!,
-                                      authProvider.loginUserData.id!)) {
-                                    setState(() {
-                                      post.loves = post.loves! + 1;
-
-                                      love = post.loves!;
-                                      post.users_love_id!
-                                          .add(authProvider!.loginUserData.id!);
-
-                                      //loves.add(idUser);
-                                    });
-                                    CollectionReference userCollect =
-                                        FirebaseFirestore.instance
-                                            .collection('Users');
-                                    // Get docs from collection reference
-                                    QuerySnapshot querySnapshotUser =
-                                        await userCollect
-                                            .where("id",
-                                                isEqualTo: post.user!.id!)
-                                            .get();
-                                    // Afficher la liste
-                                    List<UserData> listUsers = querySnapshotUser
-                                        .docs
-                                        .map((doc) => UserData.fromJson(
-                                            doc.data() as Map<String, dynamic>))
-                                        .toList();
-                                    if (post.user!.oneIgnalUserid != null &&
-                                        post.user!.oneIgnalUserid!.length > 5) {
-                                      await authProvider.sendNotification(
-                                          userIds: [post.user!.oneIgnalUserid!],
-                                          smallImage:
-                                              "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id:
-                                              "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "${post.user!.id!}",
-                                          message:
-                                              "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look",
-                                          type_notif:
-                                              NotificationType.POST.name,
-                                          post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name,
-                                          chat_id: '');
-
-                                      NotificationData notif =
-                                          NotificationData();
-                                      notif.id = firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre = "Nouveau j'aime ❤️";
-                                      notif.media_url =
-                                          authProvider.loginUserData.imageUrl;
-                                      notif.type = NotificationType.POST.name;
-                                      notif.description =
-                                          "@${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look";
-                                      notif.users_id_view = [];
-                                      notif.user_id =
-                                          authProvider.loginUserData.id;
-                                      notif.receiver_id = post.user!.id!;
-                                      notif.post_id = post.id!;
-                                      notif.post_data_type =
-                                          PostDataType.IMAGE.name!;
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore
-                                          .collection('Notifications')
-                                          .doc(notif.id)
-                                          .set(notif.toJson());
-                                    }
-
-                                    if (listUsers.isNotEmpty) {
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text(
-                                          '+2 points.  Voir le classement',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
-
-                                      listUsers.first!.jaimes =
-                                          listUsers.first!.jaimes! + 1;
-                                      postProvider.updatePost(
-                                          post, listUsers.first!!, context);
-                                      await authProvider.getAppData();
-                                      authProvider.appDefaultData.nbr_loves =
-                                          authProvider
-                                                  .appDefaultData.nbr_loves! +
-                                              2;
-                                      await authProvider.updateAppData(
-                                          authProvider.appDefaultData);
-                                    } else {
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text(
-                                          '+2 points.  Voir le classement',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
-                                      post.user!.jaimes =
-                                          post.user!.jaimes! + 1;
-                                      postProvider.updatePost(
-                                          post, post.user!, context);
-                                      await authProvider.getAppData();
-                                      authProvider.appDefaultData.nbr_loves =
-                                          authProvider
-                                                  .appDefaultData.nbr_loves! +
-                                              2;
-                                      await authProvider.updateAppData(
-                                          authProvider.appDefaultData);
-                                    }
-                                  }
-                                },
-                                child: Container(
-                                  //height: 20,
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isIn(post.users_love_id!,
-                                                authProvider.loginUserData.id!)
-                                            ? Ionicons.heart
-                                            : Ionicons.md_heart_outline,
-                                        color: Colors.red,
-                                        size: 20,
-                                        // color: ConstColors.likeColors,
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 1.0, right: 1),
-                                        child: TextCustomerPostDescription(
-                                          titre: "${formatAbonnes(love)}",
-                                          fontSize:
-                                              SizeText.homeProfileDateTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                            StatefulBuilder(builder:
-                                (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () async {
-                                  if (!isIn(post.users_like_id!,
-                                      authProvider.loginUserData.id!)) {
-                                    setState(() {
-                                      post.likes = post.likes! + 1;
-
-                                      like = post.likes!;
-                                      post.users_like_id!
-                                          .add(authProvider!.loginUserData.id!);
-
-                                      //loves.add(idUser);
-                                    });
-                                    CollectionReference userCollect =
-                                        FirebaseFirestore.instance
-                                            .collection('Users');
-                                    // Get docs from collection reference
-                                    QuerySnapshot querySnapshotUser =
-                                        await userCollect
-                                            .where("id",
-                                                isEqualTo: post.user!.id!)
-                                            .get();
-                                    // Afficher la liste
-                                    List<UserData> listUsers = querySnapshotUser
-                                        .docs
-                                        .map((doc) => UserData.fromJson(
-                                            doc.data() as Map<String, dynamic>))
-                                        .toList();
-                                    if (post.user!.oneIgnalUserid != null &&
-                                        post.user!.oneIgnalUserid!.length > 5) {
-                                      await authProvider.sendNotification(
-                                          userIds: [post.user!.oneIgnalUserid!],
-                                          smallImage:
-                                              "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id:
-                                              "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "${post.user!.id!}",
-                                          message:
-                                              "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
-                                          type_notif:
-                                              NotificationType.POST.name,
-                                          post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name,
-                                          chat_id: '');
-                                      NotificationData notif =
-                                          NotificationData();
-                                      notif.id = firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre = "Nouveau like 👍🏾";
-                                      notif.media_url =
-                                          authProvider.loginUserData.imageUrl;
-                                      notif.type = NotificationType.POST.name;
-                                      notif.description =
-                                          "@${authProvider.loginUserData.pseudo!} a liké votre look";
-                                      notif.users_id_view = [];
-                                      notif.user_id =
-                                          authProvider.loginUserData.id;
-                                      notif.receiver_id = post.user!.id!;
-                                      notif.post_id = post.id!;
-                                      notif.post_data_type =
-                                          PostDataType.IMAGE.name!;
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore
-                                          .collection('Notifications')
-                                          .doc(notif.id)
-                                          .set(notif.toJson());
-                                    }
-                                    if (listUsers.isNotEmpty) {
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text(
-                                          '+1 point. Voir le classement',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
-
-                                      listUsers.first!.likes =
-                                          listUsers.first!.likes! + 1;
-                                      postProvider.updatePost(
-                                          post, listUsers.first!!, context);
-                                      await authProvider.getAppData();
-                                      authProvider.appDefaultData.nbr_likes =
-                                          authProvider
-                                                  .appDefaultData.nbr_likes! +
-                                              1;
-                                      authProvider.updateAppData(
-                                          authProvider.appDefaultData);
-                                    } else {
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text(
-                                          '+1 point. Voir le classement',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
-                                      post.user!.likes = post.user!.likes! + 1;
-                                      postProvider.updatePost(
-                                          post, post.user!, context);
-                                      await authProvider.getAppData();
-                                      authProvider.appDefaultData.nbr_likes =
-                                          authProvider
-                                                  .appDefaultData.nbr_likes! +
-                                              1;
-                                      authProvider.updateAppData(
-                                          authProvider.appDefaultData);
-                                    }
-                                  }
-                                },
-                                child: Container(
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isIn(post.users_like_id!,
-                                                authProvider.loginUserData.id!)
-                                            ? MaterialCommunityIcons.thumb_up
-                                            : MaterialCommunityIcons
-                                                .thumb_up_outline,
-                                        size: 20,
-                                        color: isIn(post.users_like_id!,
-                                                authProvider.loginUserData.id!)
-                                            ? Colors.blue
-                                            : Colors.black,
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 1.0, right: 1),
-                                        child: TextCustomerPostDescription(
-                                          titre: "${formatAbonnes(like)}",
-                                          fontSize:
-                                              SizeText.homeProfileDateTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                            StatefulBuilder(builder:
-                                (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () async {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            PostComments(post: post),
-                                      ));
-
-                                  //sheetComments(height*0.7,width,post);
-                                  /*
-                                    postProvider.listConstpostsComment=[];
-                                   await postProvider.getPostCommentsNoStream(post).then((value) {
-                                     Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post: post),));
-
-                                   },);
-
-                                     */
-                                },
-                                child: Container(
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        FontAwesome.comments,
-                                        size: 20,
-                                        color: Colors.green,
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 1.0, right: 1),
-                                        child: TextCustomerPostDescription(
-                                          titre: "${formatAbonnes(comments)}",
-                                          fontSize:
-                                              SizeText.homeProfileDateTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                            StatefulBuilder(builder:
-                                (BuildContext context, StateSetter setState) {
-                              return GestureDetector(
-                                onTap: () {},
-                                child: Container(
-                                  width: 70,
-                                  height: 30,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        FontAwesome.eye,
-                                        size: 20,
-                                        color: Colors.black,
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 1.0, right: 1),
-                                        child: TextCustomerPostDescription(
-                                          titre: "${vue}",
-                                          fontSize:
-                                              SizeText.homeProfileDateTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton(
-                              onPressed: contact_afrolook
-                                  ? () {}
-                                  : () async {
-                                      setState(() {
-                                        contact_afrolook = true;
-                                      });
-                                      await getChatsEntrepriseData(post.user!,
-                                              post, post.entrepriseData!)
-                                          .then(
-                                        (chat) async {
-                                          userProvider.chat.messages =
-                                              chat.messages;
-
-                                          Navigator.push(
-                                              context,
-                                              PageTransition(
-                                                  type: PageTransitionType.fade,
-                                                  child: EntrepriseMyChat(
-                                                    title: 'mon chat',
-                                                    chat: chat,
-                                                    post: post,
-                                                    isEntreprise: false,
-                                                  )));
-
-                                          setState(() {
-                                            contact_afrolook = false;
-                                          });
-                                        },
-                                      );
-                                    },
-                              child: contact_afrolook
-                                  ? Center(
-                                      child: LoadingAnimationWidget.flickr(
-                                        size: 30,
-                                        leftDotColor: Colors.green,
-                                        rightDotColor: Colors.black,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          AntDesign.message1,
-                                          color: Colors.black,
-                                        ),
-                                        SizedBox(
-                                          width: 5,
-                                        ),
-                                        Text(
-                                          "Afrolook",
-                                          style: TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    )),
-                          ElevatedButton(
-                              onPressed: contact_whatsapp
-                                  ? () {}
-                                  : () {
-                                      launchWhatsApp(
-                                          "${post.contact_whatsapp}");
-                                      setState(() {
-                                        contact_whatsapp = false;
-                                      });
-                                    },
-                              child: contact_whatsapp
-                                  ? Center(
-                                      child: LoadingAnimationWidget.flickr(
-                                        size: 30,
-                                        leftDotColor: Colors.green,
-                                        rightDotColor: Colors.black,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Fontisto.whatsapp,
-                                          color: Colors.green,
-                                        ),
-                                        SizedBox(
-                                          width: 5,
-                                        ),
-                                        Text(
-                                          "WhatsApp",
-                                          style: TextStyle(
-                                              color: Colors.green,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    )),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Divider(
-                        height: 3,
-                      )
-                    ],
-                  ),
-                ),
-              );
-            })
-          : StatefulBuilder(
+      child: StatefulBuilder(
               builder: (BuildContext context, StateSetter setStateImages) {
               return Padding(
                 padding: const EdgeInsets.all(5.0),
@@ -2233,6 +1384,13 @@ class _MyHomePageState extends State<MyHomePage>
                                       fontSize: SizeText.homeProfileTextSize,
                                       couleur: ConstColors.textColors,
                                       fontWeight: FontWeight.w400,
+                                    ),
+                                    TextCustomerUserTitle(
+                                      titre:
+                                          "${formatNumber(post.user!.userlikes!)} like(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: Colors.green,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ],
                                 ),
@@ -3162,6 +2320,314 @@ class _MyHomePageState extends State<MyHomePage>
                               ),
                             );
                           }),
+
+                          StatefulBuilder(builder:
+                              (BuildContext context, StateSetter setState) {
+                            return GestureDetector(
+                              onTap: () async {
+                                // await authProvider.createLink(post).then((value) {
+                                final box = context.findRenderObject() as RenderBox?;
+
+                                await authProvider.createLink(true,post).then((url) async {
+                                  await Share.shareUri(
+                                    Uri.parse(
+                                        '${url}'),
+                                    sharePositionOrigin:
+                                    box!.localToGlobal(Offset.zero) & box.size,
+                                  );
+
+
+                                    setState(() {
+                                      post.partage = post.partage! + 1;
+
+                                      // post.users_love_id!
+                                      //     .add(authProvider!.loginUserData.id!);
+                                      // love = post.loves!;
+                                      // //loves.add(idUser);
+                                    });
+                                    CollectionReference userCollect =
+                                    FirebaseFirestore.instance
+                                        .collection('Users');
+                                    // Get docs from collection reference
+                                    QuerySnapshot querySnapshotUser =
+                                    await userCollect
+                                        .where("id",
+                                        isEqualTo: post.user!.id!)
+                                        .get();
+                                    // Afficher la liste
+                                    List<UserData> listUsers = querySnapshotUser
+                                        .docs
+                                        .map((doc) => UserData.fromJson(
+                                        doc.data() as Map<String, dynamic>))
+                                        .toList();
+                                    if (listUsers.isNotEmpty) {
+                                      listUsers.first!.partage =
+                                          listUsers.first!.partage! + 1;
+                                      printVm("user trouver");
+                                      if (post.user!.oneIgnalUserid != null &&
+                                          post.user!.oneIgnalUserid!.length > 5) {
+                                        await authProvider.sendNotification(
+                                            userIds: [post.user!.oneIgnalUserid!],
+                                            smallImage:
+                                            "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id:
+                                            "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "${post.user!.id!}",
+                                            message:
+                                            "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
+                                            type_notif:
+                                            NotificationType.POST.name,
+                                            post_id: "${post!.id!}",
+                                            post_type: PostDataType.IMAGE.name,
+                                            chat_id: '');
+
+                                        NotificationData notif =
+                                        NotificationData();
+                                        notif.id = firestore
+                                            .collection('Notifications')
+                                            .doc()
+                                            .id;
+                                        notif.titre = "Nouveau partage 📲";
+                                        notif.media_url =
+                                            authProvider.loginUserData.imageUrl;
+                                        notif.type = NotificationType.POST.name;
+                                        notif.description =
+                                        "@${authProvider.loginUserData.pseudo!} a partagé votre look";
+                                        notif.users_id_view = [];
+                                        notif.user_id =
+                                            authProvider.loginUserData.id;
+                                        notif.receiver_id = post.user!.id!;
+                                        notif.post_id = post.id!;
+                                        notif.post_data_type =
+                                        PostDataType.IMAGE.name!;
+
+                                        notif.updatedAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.createdAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.status = PostStatus.VALIDE.name;
+
+                                        // users.add(pseudo.toJson());
+
+                                        await firestore
+                                            .collection('Notifications')
+                                            .doc(notif.id)
+                                            .set(notif.toJson());
+                                      }
+                                      // postProvider.updateVuePost(post, context);
+
+                                      //userProvider.updateUser(listUsers.first);
+                                      // SnackBar snackBar = SnackBar(
+                                      //   content: Text(
+                                      //     '+2 points.  Voir le classement',
+                                      //     textAlign: TextAlign.center,
+                                      //     style: TextStyle(color: Colors.green),
+                                      //   ),
+                                      // );
+                                      // ScaffoldMessenger.of(context)
+                                      //     .showSnackBar(snackBar);
+                                      postProvider.updatePost(
+                                          post, listUsers.first, context);
+                                      // await authProvider.getAppData();
+                                      // authProvider.appDefaultData.nbr_loves =
+                                      //     authProvider.appDefaultData.nbr_loves! +
+                                      //         2;
+                                      // authProvider.updateAppData(
+                                      //     authProvider.appDefaultData);
+
+
+                                    tapLove = true;
+                                  }
+
+                                },);
+                                // if (!isIn(post.users_love_id!,
+                                //     authProvider.loginUserData.id!)) {
+                                //   setState(() {
+                                //     post.loves = post.loves! + 1;
+                                //
+                                //     post.users_love_id!
+                                //         .add(authProvider!.loginUserData.id!);
+                                //     love = post.loves!;
+                                //     //loves.add(idUser);
+                                //   });
+                                //   CollectionReference userCollect =
+                                //   FirebaseFirestore.instance
+                                //       .collection('Users');
+                                //   // Get docs from collection reference
+                                //   QuerySnapshot querySnapshotUser =
+                                //   await userCollect
+                                //       .where("id",
+                                //       isEqualTo: post.user!.id!)
+                                //       .get();
+                                //   // Afficher la liste
+                                //   List<UserData> listUsers = querySnapshotUser
+                                //       .docs
+                                //       .map((doc) => UserData.fromJson(
+                                //       doc.data() as Map<String, dynamic>))
+                                //       .toList();
+                                //   if (listUsers.isNotEmpty) {
+                                //     listUsers.first!.jaimes =
+                                //         listUsers.first!.jaimes! + 1;
+                                //     printVm("user trouver");
+                                //     if (post.user!.oneIgnalUserid != null &&
+                                //         post.user!.oneIgnalUserid!.length > 5) {
+                                //       await authProvider.sendNotification(
+                                //           userIds: [post.user!.oneIgnalUserid!],
+                                //           smallImage:
+                                //           "${authProvider.loginUserData.imageUrl!}",
+                                //           send_user_id:
+                                //           "${authProvider.loginUserData.id!}",
+                                //           recever_user_id: "${post.user!.id!}",
+                                //           message:
+                                //           "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+                                //           type_notif:
+                                //           NotificationType.POST.name,
+                                //           post_id: "${post!.id!}",
+                                //           post_type: PostDataType.IMAGE.name,
+                                //           chat_id: '');
+                                //
+                                //       NotificationData notif =
+                                //       NotificationData();
+                                //       notif.id = firestore
+                                //           .collection('Notifications')
+                                //           .doc()
+                                //           .id;
+                                //       notif.titre = "Nouveau j'aime ❤️";
+                                //       notif.media_url =
+                                //           authProvider.loginUserData.imageUrl;
+                                //       notif.type = NotificationType.POST.name;
+                                //       notif.description =
+                                //       "@${authProvider.loginUserData.pseudo!} a aimé votre look";
+                                //       notif.users_id_view = [];
+                                //       notif.user_id =
+                                //           authProvider.loginUserData.id;
+                                //       notif.receiver_id = post.user!.id!;
+                                //       notif.post_id = post.id!;
+                                //       notif.post_data_type =
+                                //       PostDataType.IMAGE.name!;
+                                //
+                                //       notif.updatedAt =
+                                //           DateTime.now().microsecondsSinceEpoch;
+                                //       notif.createdAt =
+                                //           DateTime.now().microsecondsSinceEpoch;
+                                //       notif.status = PostStatus.VALIDE.name;
+                                //
+                                //       // users.add(pseudo.toJson());
+                                //
+                                //       await firestore
+                                //           .collection('Notifications')
+                                //           .doc(notif.id)
+                                //           .set(notif.toJson());
+                                //     }
+                                //     // postProvider.updateVuePost(post, context);
+                                //
+                                //     //userProvider.updateUser(listUsers.first);
+                                //     SnackBar snackBar = SnackBar(
+                                //       content: Text(
+                                //         '+2 points.  Voir le classement',
+                                //         textAlign: TextAlign.center,
+                                //         style: TextStyle(color: Colors.green),
+                                //       ),
+                                //     );
+                                //     ScaffoldMessenger.of(context)
+                                //         .showSnackBar(snackBar);
+                                //     postProvider.updatePost(
+                                //         post, listUsers.first, context);
+                                //     await authProvider.getAppData();
+                                //     authProvider.appDefaultData.nbr_loves =
+                                //         authProvider.appDefaultData.nbr_loves! +
+                                //             2;
+                                //     authProvider.updateAppData(
+                                //         authProvider.appDefaultData);
+                                //   } else {
+                                //     post.user!.jaimes = post.user!.jaimes! + 1;
+                                //     SnackBar snackBar = SnackBar(
+                                //       content: Text(
+                                //         '+2 points.  Voir le classement',
+                                //         textAlign: TextAlign.center,
+                                //         style: TextStyle(color: Colors.green),
+                                //       ),
+                                //     );
+                                //     ScaffoldMessenger.of(context)
+                                //         .showSnackBar(snackBar);
+                                //     postProvider.updatePost(
+                                //         post, post.user!, context);
+                                //     await authProvider.getAppData();
+                                //     authProvider.appDefaultData.nbr_loves =
+                                //         authProvider.appDefaultData.nbr_loves! +
+                                //             2;
+                                //     authProvider.updateAppData(
+                                //         authProvider.appDefaultData);
+                                //   }
+                                //
+                                //   tapLove = true;
+                                // }
+                                // printVm("jaime");
+                                // // setState(() {
+                                // // });
+                              },
+                              child: Container(
+                                //height: 20,
+                                width: 70,
+                                height: 30,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          isIn(
+                                              post.users_love_id!,
+                                              authProvider
+                                                  .loginUserData.id!)
+                                              ? Icons.share
+                                              : Icons.share,
+                                          color: Colors.red,
+                                          size: 20,
+                                          // color: ConstColors.likeColors,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 1.0, right: 1),
+                                          child: TextCustomerPostDescription(
+                                            titre: "${formatAbonnes(post.partage!)}",
+                                            fontSize: SizeText
+                                                .homeProfileDateTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    /*
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                        child: SizedBox(
+                                          height: 2,
+                                          width: 5,
+                                          child: LinearProgressIndicator(
+                                            color: Colors.red,
+                                            value: love/post.user!.abonnes!+1,
+                                            semanticsLabel: 'Linear progress indicator',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextCustomerPostDescription(
+                                      titre: "${((love/post.user!.abonnes!+1)).toStringAsFixed(2)}%",
+                                      fontSize: SizeText.homeProfileDateTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+
+                                     */
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -3244,6 +2710,14 @@ class _MyHomePageState extends State<MyHomePage>
                                 couleur: ConstColors.textColors,
                                 fontWeight: FontWeight.w400,
                               ),
+                              TextCustomerUserTitle(
+                                titre:
+                                "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                                fontSize: SizeText.homeProfileTextSize,
+                                couleur: Colors.green,
+                                fontWeight: FontWeight.w700,
+                              ),
+
                             ],
                           ),
                         ],
@@ -3595,7 +3069,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.11 (11)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.12 (12)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,

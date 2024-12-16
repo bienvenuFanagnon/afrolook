@@ -349,6 +349,23 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+            child: SizedBox(
+              //width: 70,
+              child: Container(
+                alignment: Alignment.center,
+                child: TextCustomerPostDescription(
+                  titre: "${widget.user.userlikes} like(s)",
+                  fontSize: 15,
+                  couleur: Colors.green,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
