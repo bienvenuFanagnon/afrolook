@@ -37,6 +37,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../chat/myChat.dart';
+import 'operation.dart';
 import 'otherUser/otherUser.dart';
 
 
@@ -133,9 +134,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
   bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
     return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
-  bool isInvite(List<String> invitationList, String userIdToCheck) {
-    return invitationList.any((invid) => invid == userIdToCheck);
-  }
+
   Future<Chat> getChatsData(UserData amigo) async {
 
     // Définissez la requête
@@ -416,7 +415,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                         fontWeight: FontWeight.w600,
                       ),)),
                     )
-                        :!isInvite(widget.user.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
+                        :!isInvite(widget.user.autreInvitationsEnvoyerId!,widget.user.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
                     Padding(
                       padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: Container(
@@ -426,7 +425,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                           onPressed:inviteTap?
                               ()  { }:
                               ()async{
-                            if (!isInvite(widget.user.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                            if (!isInvite(widget.user.autreInvitationsEnvoyerId!,widget.user.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
                               setState(() {
                                 inviteTap=true;
                               });

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../constant/logo.dart';
+import '../../../../../constant/textCustom.dart';
 import '../../../../../providers/authProvider.dart';
 import '../../../../../services/api.dart';
 import '../../../../component/consoleWidget.dart';
@@ -294,9 +295,17 @@ bool change_profil_loading= false;
                   Center(child: buildUpgradeButtonTarif(authProvider.loginUserData)),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
               NumbersWidget(followers: authProvider.loginUserData!.abonnes!, taux: authProvider.loginUserData!.popularite!*100, points: authProvider.loginUserData!.pointContribution!,),
-              const SizedBox(height: 48),
+              const SizedBox(height: 10),
+              TextCustomerUserTitle(
+                titre:
+                "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                fontSize: 16,
+                couleur: Colors.green,
+                fontWeight: FontWeight.w700,
+              ),
+              const SizedBox(height: 10),
               buildAbout(authProvider.loginUserData),
             ],
           ),
@@ -348,7 +357,7 @@ bool change_profil_loading= false;
           ],
         ),
   );
-  String formatNumber(double number) {
+  String formatNumber(int number) {
     if (number < 1000) {
       return number.toString();
     } else if (number < 1000000) {

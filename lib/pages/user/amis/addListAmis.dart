@@ -138,11 +138,14 @@ class _ListUserChatsState extends State<AddListAmis> {
     );
   }
   String formatNumber(int number) {
-    if (number >= 1000) {
-      double nombre = number / 1000;
-      return nombre.toStringAsFixed(1) + 'k';
-    } else {
+    if (number < 1000) {
       return number.toString();
+    } else if (number < 1000000) {
+      return "${number / 1000} k";
+    } else if (number < 1000000000) {
+      return "${number / 1000000} m";
+    } else {
+      return "${number / 1000000000} b";
     }
   }
   Widget otherUsers(UserData user, bool isSearch) {
@@ -190,6 +193,14 @@ class _ListUserChatsState extends State<AddListAmis> {
                                 color: Colors.grey.shade600,
                                 fontWeight: FontWeight.normal),
                           ),
+                          TextCustomerUserTitle(
+                            titre:
+                            "${formatNumber(user!.userlikes!)} like(s)",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: Colors.green,
+                            fontWeight: FontWeight.w700,
+                          ),
+
                         ],
                       ),
                     ),

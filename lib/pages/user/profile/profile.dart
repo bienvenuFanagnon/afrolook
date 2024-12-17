@@ -113,6 +113,14 @@ class _UserProfilState extends State<UserProfil> {
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.w400,
                                   ),
+                                  TextCustomerUserTitle(
+                                    titre:
+                                    "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    couleur: Colors.green,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+
                                 ],
                               ),
 

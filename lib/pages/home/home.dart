@@ -433,9 +433,7 @@ class _MyHomePageState extends State<MyHomePage>
     return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
 
-  bool isInvite(List<String> invitationList, String userIdToCheck) {
-    return invitationList.any((invid) => invid == userIdToCheck);
-  }
+
 
   void onClickMenu(PopUpMenuItemProvider item) {
     printVm('Click menu -> ${item.menuTitle}');

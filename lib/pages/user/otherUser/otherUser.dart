@@ -182,9 +182,20 @@ class _OtherUserPageState extends State<OtherUserPage> {
               const SizedBox(height: 10),
 
               NumbersWidget(followers: widget.otherUser!.abonnes!, taux: widget.otherUser!.popularite!*100, points: widget.otherUser.pointContribution!,),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              TextCustomerUserTitle(
+                titre:
+                "${formatNumberLike(widget.otherUser!.userlikes!)} like(s)",
+                fontSize: 16,
+                couleur: Colors.green,
+                fontWeight: FontWeight.w700,
+              ),
+              const SizedBox(height: 10),
+
               buildAbout(widget.otherUser),
+
               const SizedBox(height: 15),
+
 
               Container(
                 child:   SizedBox(
@@ -283,6 +294,18 @@ class _OtherUserPageState extends State<OtherUserPage> {
     ],
   );
   String formatNumber(double number) {
+    if (number < 1000) {
+      return number.toString();
+    } else if (number < 1000000) {
+      return "${number / 1000} k";
+    } else if (number < 1000000000) {
+      return "${number / 1000000} m";
+    } else {
+      return "${number / 1000000000} b";
+    }
+  }
+
+  String formatNumberLike(int number) {
     if (number < 1000) {
       return number.toString();
     } else if (number < 1000000) {

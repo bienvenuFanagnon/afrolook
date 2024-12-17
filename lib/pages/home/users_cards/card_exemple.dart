@@ -18,6 +18,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
+import '../../user/operation.dart';
 import 'cardModel.dart';
 
 class ExampleCard extends StatefulWidget {
@@ -76,9 +77,7 @@ class _ExampleCardState extends State<ExampleCard> {
   bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
     return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
-  bool isInvite(List<String> invitationList, String userIdToCheck) {
-    return invitationList.any((invid) => invid == userIdToCheck);
-  }
+
 
   Future<Chat> getChatsData(UserData amigo) async {
 
@@ -296,7 +295,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                       fontWeight: FontWeight.w600,
                                     ),)),
                                   )
-                                      :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
+                                      :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,widget.cardUser.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                     child: Container(
@@ -306,7 +305,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                         onPressed:inviteTap?
                                             ()  { }:
                                             ()async{
-                                          if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                                          if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,widget.cardUser.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
                                             setState(() {
                                               inviteTap=true;
                                             });

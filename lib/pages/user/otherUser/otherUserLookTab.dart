@@ -12,6 +12,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:popup_menu/popup_menu.dart';
 import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../constant/constColors.dart';
@@ -1691,6 +1692,7 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                                         .doc(notif.id)
                                         .set(notif.toJson());
                                   }
+                                  // postProvider.updateVuePost(post, context);
 
                                   //userProvider.updateUser(listUsers.first);
                                   SnackBar snackBar = SnackBar(
@@ -1815,19 +1817,19 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                         //           //loves.add(idUser);
                         //         });
                         //         CollectionReference userCollect =
-                        //         FirebaseFirestore.instance
-                        //             .collection('Users');
+                        //             FirebaseFirestore.instance
+                        //                 .collection('Users');
                         //         // Get docs from collection reference
                         //         QuerySnapshot querySnapshotUser =
-                        //         await userCollect
-                        //             .where("id",
-                        //             isEqualTo: post.user!.id!)
-                        //             .get();
+                        //             await userCollect
+                        //                 .where("id",
+                        //                     isEqualTo: post.user!.id!)
+                        //                 .get();
                         //         // Afficher la liste
                         //         List<UserData> listUsers = querySnapshotUser
                         //             .docs
                         //             .map((doc) => UserData.fromJson(
-                        //             doc.data() as Map<String, dynamic>))
+                        //                 doc.data() as Map<String, dynamic>))
                         //             .toList();
                         //
                         //         if (post.user!.oneIgnalUserid != null &&
@@ -1835,12 +1837,12 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                         //           await authProvider.sendNotification(
                         //               userIds: [post.user!.oneIgnalUserid!],
                         //               smallImage:
-                        //               "${authProvider.loginUserData.imageUrl!}",
+                        //                   "${authProvider.loginUserData.imageUrl!}",
                         //               send_user_id:
-                        //               "${authProvider.loginUserData.id!}",
+                        //                   "${authProvider.loginUserData.id!}",
                         //               recever_user_id: "${post.user!.id!}",
                         //               message:
-                        //               "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
+                        //                   "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
                         //               type_notif: NotificationType.POST.name,
                         //               post_id: "${post!.id!}",
                         //               post_type: PostDataType.IMAGE.name,
@@ -1856,14 +1858,14 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                         //               authProvider.loginUserData.imageUrl;
                         //           notif.type = NotificationType.POST.name;
                         //           notif.description =
-                        //           "@${authProvider.loginUserData.pseudo!} a liké votre look";
+                        //               "@${authProvider.loginUserData.pseudo!} a liké votre look";
                         //           notif.users_id_view = [];
                         //           notif.user_id =
                         //               authProvider.loginUserData.id;
                         //           notif.receiver_id = post.user!.id!;
                         //           notif.post_id = post.id!;
                         //           notif.post_data_type =
-                        //           PostDataType.IMAGE.name!;
+                        //               PostDataType.IMAGE.name!;
                         //
                         //           notif.updatedAt =
                         //               DateTime.now().microsecondsSinceEpoch;
@@ -1938,17 +1940,17 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                         //             children: [
                         //               Icon(
                         //                 isIn(
-                        //                     post.users_like_id!,
-                        //                     authProvider
-                        //                         .loginUserData.id!)
+                        //                         post.users_like_id!,
+                        //                         authProvider
+                        //                             .loginUserData.id!)
                         //                     ? MaterialCommunityIcons.thumb_up
                         //                     : MaterialCommunityIcons
-                        //                     .thumb_up_outline,
+                        //                         .thumb_up_outline,
                         //                 size: 20,
                         //                 color: isIn(
-                        //                     post.users_like_id!,
-                        //                     authProvider
-                        //                         .loginUserData.id!)
+                        //                         post.users_like_id!,
+                        //                         authProvider
+                        //                             .loginUserData.id!)
                         //                     ? Colors.blue
                         //                     : Colors.black,
                         //               ),
@@ -1966,28 +1968,28 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                         //             ],
                         //           ),
                         //           /*
-                        //             Expanded(
-                        //               child: Padding(
-                        //                 padding: const EdgeInsets.only(left: 1.0,right: 1),
-                        //                 child: SizedBox(
-                        //                   height: 2,
-                        //                   // width: width*0.75,
-                        //                   child: LinearProgressIndicator(
-                        //                     color: Colors.blue,
-                        //                     value: like/post.user!.abonnes!+1,
-                        //                     semanticsLabel: 'Linear progress indicator',
-                        //                   ),
+                        //           Expanded(
+                        //             child: Padding(
+                        //               padding: const EdgeInsets.only(left: 1.0,right: 1),
+                        //               child: SizedBox(
+                        //                 height: 2,
+                        //                 // width: width*0.75,
+                        //                 child: LinearProgressIndicator(
+                        //                   color: Colors.blue,
+                        //                   value: like/post.user!.abonnes!+1,
+                        //                   semanticsLabel: 'Linear progress indicator',
                         //                 ),
                         //               ),
                         //             ),
-                        //             TextCustomerPostDescription(
-                        //               titre: "${(like/post.user!.abonnes!+1).toStringAsFixed(2)}%",
-                        //               fontSize: SizeText.homeProfileDateTextSize,
-                        //               couleur: ConstColors.textColors,
-                        //               fontWeight: FontWeight.bold,
-                        //             ),
+                        //           ),
+                        //           TextCustomerPostDescription(
+                        //             titre: "${(like/post.user!.abonnes!+1).toStringAsFixed(2)}%",
+                        //             fontSize: SizeText.homeProfileDateTextSize,
+                        //             couleur: ConstColors.textColors,
+                        //             fontWeight: FontWeight.bold,
+                        //           ),
                         //
-                        //              */
+                        //            */
                         //         ],
                         //       ),
                         //     ),
@@ -2050,6 +2052,314 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                                     ),
                                     TextCustomerPostDescription(
                                       titre: "${(comments/post.user!.abonnes!+1).toStringAsFixed(2)}%",
+                                      fontSize: SizeText.homeProfileDateTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+
+                                     */
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+
+                        StatefulBuilder(builder:
+                            (BuildContext context, StateSetter setState) {
+                          return GestureDetector(
+                            onTap: () async {
+                              // await authProvider.createLink(post).then((value) {
+                              final box = context.findRenderObject() as RenderBox?;
+
+                              await authProvider.createLink(true,post).then((url) async {
+                                await Share.shareUri(
+                                  Uri.parse(
+                                      '${url}'),
+                                  sharePositionOrigin:
+                                  box!.localToGlobal(Offset.zero) & box.size,
+                                );
+
+
+                                setState(() {
+                                  post.partage = post.partage! + 1;
+
+                                  // post.users_love_id!
+                                  //     .add(authProvider!.loginUserData.id!);
+                                  // love = post.loves!;
+                                  // //loves.add(idUser);
+                                });
+                                CollectionReference userCollect =
+                                FirebaseFirestore.instance
+                                    .collection('Users');
+                                // Get docs from collection reference
+                                QuerySnapshot querySnapshotUser =
+                                await userCollect
+                                    .where("id",
+                                    isEqualTo: post.user!.id!)
+                                    .get();
+                                // Afficher la liste
+                                List<UserData> listUsers = querySnapshotUser
+                                    .docs
+                                    .map((doc) => UserData.fromJson(
+                                    doc.data() as Map<String, dynamic>))
+                                    .toList();
+                                if (listUsers.isNotEmpty) {
+                                  listUsers.first!.partage =
+                                      listUsers.first!.partage! + 1;
+                                  printVm("user trouver");
+                                  if (post.user!.oneIgnalUserid != null &&
+                                      post.user!.oneIgnalUserid!.length > 5) {
+                                    await authProvider.sendNotification(
+                                        userIds: [post.user!.oneIgnalUserid!],
+                                        smallImage:
+                                        "${authProvider.loginUserData.imageUrl!}",
+                                        send_user_id:
+                                        "${authProvider.loginUserData.id!}",
+                                        recever_user_id: "${post.user!.id!}",
+                                        message:
+                                        "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
+                                        type_notif:
+                                        NotificationType.POST.name,
+                                        post_id: "${post!.id!}",
+                                        post_type: PostDataType.IMAGE.name,
+                                        chat_id: '');
+
+                                    NotificationData notif =
+                                    NotificationData();
+                                    notif.id = firestore
+                                        .collection('Notifications')
+                                        .doc()
+                                        .id;
+                                    notif.titre = "Nouveau partage 📲";
+                                    notif.media_url =
+                                        authProvider.loginUserData.imageUrl;
+                                    notif.type = NotificationType.POST.name;
+                                    notif.description =
+                                    "@${authProvider.loginUserData.pseudo!} a partagé votre look";
+                                    notif.users_id_view = [];
+                                    notif.user_id =
+                                        authProvider.loginUserData.id;
+                                    notif.receiver_id = post.user!.id!;
+                                    notif.post_id = post.id!;
+                                    notif.post_data_type =
+                                    PostDataType.IMAGE.name!;
+
+                                    notif.updatedAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.createdAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.status = PostStatus.VALIDE.name;
+
+                                    // users.add(pseudo.toJson());
+
+                                    await firestore
+                                        .collection('Notifications')
+                                        .doc(notif.id)
+                                        .set(notif.toJson());
+                                  }
+                                  // postProvider.updateVuePost(post, context);
+
+                                  //userProvider.updateUser(listUsers.first);
+                                  // SnackBar snackBar = SnackBar(
+                                  //   content: Text(
+                                  //     '+2 points.  Voir le classement',
+                                  //     textAlign: TextAlign.center,
+                                  //     style: TextStyle(color: Colors.green),
+                                  //   ),
+                                  // );
+                                  // ScaffoldMessenger.of(context)
+                                  //     .showSnackBar(snackBar);
+                                  postProvider.updatePost(
+                                      post, listUsers.first, context);
+                                  // await authProvider.getAppData();
+                                  // authProvider.appDefaultData.nbr_loves =
+                                  //     authProvider.appDefaultData.nbr_loves! +
+                                  //         2;
+                                  // authProvider.updateAppData(
+                                  //     authProvider.appDefaultData);
+
+
+                                  tapLove = true;
+                                }
+
+                              },);
+                              // if (!isIn(post.users_love_id!,
+                              //     authProvider.loginUserData.id!)) {
+                              //   setState(() {
+                              //     post.loves = post.loves! + 1;
+                              //
+                              //     post.users_love_id!
+                              //         .add(authProvider!.loginUserData.id!);
+                              //     love = post.loves!;
+                              //     //loves.add(idUser);
+                              //   });
+                              //   CollectionReference userCollect =
+                              //   FirebaseFirestore.instance
+                              //       .collection('Users');
+                              //   // Get docs from collection reference
+                              //   QuerySnapshot querySnapshotUser =
+                              //   await userCollect
+                              //       .where("id",
+                              //       isEqualTo: post.user!.id!)
+                              //       .get();
+                              //   // Afficher la liste
+                              //   List<UserData> listUsers = querySnapshotUser
+                              //       .docs
+                              //       .map((doc) => UserData.fromJson(
+                              //       doc.data() as Map<String, dynamic>))
+                              //       .toList();
+                              //   if (listUsers.isNotEmpty) {
+                              //     listUsers.first!.jaimes =
+                              //         listUsers.first!.jaimes! + 1;
+                              //     printVm("user trouver");
+                              //     if (post.user!.oneIgnalUserid != null &&
+                              //         post.user!.oneIgnalUserid!.length > 5) {
+                              //       await authProvider.sendNotification(
+                              //           userIds: [post.user!.oneIgnalUserid!],
+                              //           smallImage:
+                              //           "${authProvider.loginUserData.imageUrl!}",
+                              //           send_user_id:
+                              //           "${authProvider.loginUserData.id!}",
+                              //           recever_user_id: "${post.user!.id!}",
+                              //           message:
+                              //           "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+                              //           type_notif:
+                              //           NotificationType.POST.name,
+                              //           post_id: "${post!.id!}",
+                              //           post_type: PostDataType.IMAGE.name,
+                              //           chat_id: '');
+                              //
+                              //       NotificationData notif =
+                              //       NotificationData();
+                              //       notif.id = firestore
+                              //           .collection('Notifications')
+                              //           .doc()
+                              //           .id;
+                              //       notif.titre = "Nouveau j'aime ❤️";
+                              //       notif.media_url =
+                              //           authProvider.loginUserData.imageUrl;
+                              //       notif.type = NotificationType.POST.name;
+                              //       notif.description =
+                              //       "@${authProvider.loginUserData.pseudo!} a aimé votre look";
+                              //       notif.users_id_view = [];
+                              //       notif.user_id =
+                              //           authProvider.loginUserData.id;
+                              //       notif.receiver_id = post.user!.id!;
+                              //       notif.post_id = post.id!;
+                              //       notif.post_data_type =
+                              //       PostDataType.IMAGE.name!;
+                              //
+                              //       notif.updatedAt =
+                              //           DateTime.now().microsecondsSinceEpoch;
+                              //       notif.createdAt =
+                              //           DateTime.now().microsecondsSinceEpoch;
+                              //       notif.status = PostStatus.VALIDE.name;
+                              //
+                              //       // users.add(pseudo.toJson());
+                              //
+                              //       await firestore
+                              //           .collection('Notifications')
+                              //           .doc(notif.id)
+                              //           .set(notif.toJson());
+                              //     }
+                              //     // postProvider.updateVuePost(post, context);
+                              //
+                              //     //userProvider.updateUser(listUsers.first);
+                              //     SnackBar snackBar = SnackBar(
+                              //       content: Text(
+                              //         '+2 points.  Voir le classement',
+                              //         textAlign: TextAlign.center,
+                              //         style: TextStyle(color: Colors.green),
+                              //       ),
+                              //     );
+                              //     ScaffoldMessenger.of(context)
+                              //         .showSnackBar(snackBar);
+                              //     postProvider.updatePost(
+                              //         post, listUsers.first, context);
+                              //     await authProvider.getAppData();
+                              //     authProvider.appDefaultData.nbr_loves =
+                              //         authProvider.appDefaultData.nbr_loves! +
+                              //             2;
+                              //     authProvider.updateAppData(
+                              //         authProvider.appDefaultData);
+                              //   } else {
+                              //     post.user!.jaimes = post.user!.jaimes! + 1;
+                              //     SnackBar snackBar = SnackBar(
+                              //       content: Text(
+                              //         '+2 points.  Voir le classement',
+                              //         textAlign: TextAlign.center,
+                              //         style: TextStyle(color: Colors.green),
+                              //       ),
+                              //     );
+                              //     ScaffoldMessenger.of(context)
+                              //         .showSnackBar(snackBar);
+                              //     postProvider.updatePost(
+                              //         post, post.user!, context);
+                              //     await authProvider.getAppData();
+                              //     authProvider.appDefaultData.nbr_loves =
+                              //         authProvider.appDefaultData.nbr_loves! +
+                              //             2;
+                              //     authProvider.updateAppData(
+                              //         authProvider.appDefaultData);
+                              //   }
+                              //
+                              //   tapLove = true;
+                              // }
+                              // printVm("jaime");
+                              // // setState(() {
+                              // // });
+                            },
+                            child: Container(
+                              //height: 20,
+                              width: 70,
+                              height: 30,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        isIn(
+                                            post.users_love_id!,
+                                            authProvider
+                                                .loginUserData.id!)
+                                            ? Icons.share
+                                            : Icons.share,
+                                        color: Colors.red,
+                                        size: 20,
+                                        // color: ConstColors.likeColors,
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 1.0, right: 1),
+                                        child: TextCustomerPostDescription(
+                                          titre: "${formatAbonnes(post.partage!)}",
+                                          fontSize: SizeText
+                                              .homeProfileDateTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  /*
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                        child: SizedBox(
+                                          height: 2,
+                                          width: 5,
+                                          child: LinearProgressIndicator(
+                                            color: Colors.red,
+                                            value: love/post.user!.abonnes!+1,
+                                            semanticsLabel: 'Linear progress indicator',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextCustomerPostDescription(
+                                      titre: "${((love/post.user!.abonnes!+1)).toStringAsFixed(2)}%",
                                       fontSize: SizeText.homeProfileDateTextSize,
                                       couleur: ConstColors.textColors,
                                       fontWeight: FontWeight.bold,
