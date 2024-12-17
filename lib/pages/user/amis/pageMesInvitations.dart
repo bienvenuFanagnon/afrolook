@@ -82,8 +82,10 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text("@${userInvitation.inviteUser!.pseudo!}".toLowerCase(), style: TextStyle(fontSize: 16),),
-                          SizedBox(height: 6,),
+                          SizedBox(height: 5,),
                           Text('${formatNumber(userInvitation.inviteUser!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                          SizedBox(height: 5,),
+                          Text('${formatNumber(userInvitation.inviteUser!.userlikes!)} like(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
                         ],
                       ),
                     ),
@@ -103,8 +105,8 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
 
                 await  userProvider.acceptInvitation(userInvitation).then((value) async {
                   if (value) {
-                    authProvider.loginUserData.friendsIds!.add(userInvitation.receiverId!);
-                    userProvider.updateUser(authProvider.loginUserData);
+                    authProvider.loginUserData.friendsIds!.add(userInvitation.inviteUser!.id!);
+                    await userProvider.updateUser(authProvider.loginUserData);
 
                     await authProvider.sendNotification(
                         userIds: [userInvitation.inviteUser!.oneIgnalUserid!],

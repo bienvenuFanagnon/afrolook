@@ -3067,7 +3067,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.12 (12)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.13 (13)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,

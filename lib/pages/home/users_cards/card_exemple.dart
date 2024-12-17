@@ -295,7 +295,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                       fontWeight: FontWeight.w600,
                                     ),)),
                                   )
-                                      :!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,widget.cardUser.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
+                                      :!isInvite(widget.cardUser,authProvider.loginUserData)?
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8.0,bottom:8 ),
                                     child: Container(
@@ -305,7 +305,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                         onPressed:inviteTap?
                                             ()  { }:
                                             ()async{
-                                          if (!isInvite(widget.cardUser.autreInvitationsEnvoyerId!,widget.cardUser.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                                          if (!isInvite(widget.cardUser,authProvider.loginUserData)) {
                                             setState(() {
                                               inviteTap=true;
                                             });

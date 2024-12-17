@@ -131,9 +131,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  bool isMyFriend(List<String> userfriendList, String userIdToCheck) {
-    return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
-  }
+
 
   Future<Chat> getChatsData(UserData amigo) async {
 
@@ -388,7 +386,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                   return Container(
                     //width: w*0.45,
                     height: 50,
-                    child:  isMyFriend(widget.user.friendsIds!,authProvider.loginUserData.id!)?
+                    child:  isMyFriend(widget.user!,authProvider.loginUserData)?
                     Padding(
                       padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: ElevatedButton(
@@ -415,7 +413,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                         fontWeight: FontWeight.w600,
                       ),)),
                     )
-                        :!isInvite(widget.user.autreInvitationsEnvoyerId!,widget.user.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)?
+                        :!isInvite(widget.user,authProvider.loginUserData)?
                     Padding(
                       padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
                       child: Container(
@@ -425,7 +423,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                           onPressed:inviteTap?
                               ()  { }:
                               ()async{
-                            if (!isInvite(widget.user.autreInvitationsEnvoyerId!,widget.user.mesInvitationsEnvoyerId!,authProvider.loginUserData.id!)) {
+                            if (!isInvite(widget.user,authProvider.loginUserData)) {
                               setState(() {
                                 inviteTap=true;
                               });

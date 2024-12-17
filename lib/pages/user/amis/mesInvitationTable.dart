@@ -103,8 +103,8 @@ class _MesInvitationsState extends State<MesInvitations> {
 
                 await  userProvider.acceptInvitation(userInvitation).then((value) async {
                   if (value) {
-                    authProvider.loginUserData.friendsIds!.add(userInvitation.receiverId!);
-                    userProvider.updateUser(authProvider.loginUserData);
+                    authProvider.loginUserData.friendsIds!.add(userInvitation.inviteUser!.id!);
+                    await userProvider.updateUser(authProvider.loginUserData);
 
 
                     await authProvider.sendNotification(
