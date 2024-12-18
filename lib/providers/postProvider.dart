@@ -397,24 +397,70 @@ class PostProvider extends ChangeNotifier {
      listConstposts = [];
     DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
     CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+    int todayTimestamp = DateTime.now().microsecondsSinceEpoch;
 
-    // Effectuer une requête pour récupérer les posts
-    Query query = postCollect
-        .where(
-      Filter.or(
-        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
-        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
-      ),
+// Début de la journée actuelle (minuit)
+    int startOfDay = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    ).microsecondsSinceEpoch;
 
-    )      .where(
-        "status", isNotEqualTo: PostStatus.SUPPRIMER.name
+// Fin de la journée actuelle (23:59:59)
+    int endOfDay = startOfDay + Duration(hours: 23, minutes: 59, seconds: 59).inMicroseconds;
+    // 1. Récupérer les publications de la journée
+    Query queryToday = postCollect
+        .where("created_at", isGreaterThanOrEqualTo: startOfDay)
+        .where("created_at", isLessThanOrEqualTo: endOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        // .orderBy('updated_at', descending: true)
+        .limit(limite);
 
-    )
-
+// 2. Récupérer les publications restantes
+    Query queryOthers = postCollect
+        .where("created_at", isLessThan: startOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
         .orderBy('updated_at', descending: true)
         .limit(limite);
 
-    QuerySnapshot querySnapshotPost = await query.get();
+    // Query query = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    // )
+    //     .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .where("created_at", isGreaterThanOrEqualTo: startOfDay) // Pour les publications de la journée
+    //     .orderBy('updated_at', descending: true)
+    //     .limit(limite);
+
+    // // Effectuer une requête pour récupérer les posts
+    // Query query = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    //
+    // )      .where(
+    //     "status", isNotEqualTo: PostStatus.SUPPRIMER.name
+    //
+    // )
+    //     .where('created_at', isGreaterThanOrEqualTo: DateTime.now().microsecondsSinceEpoch
+    // )
+    //
+    //     .orderBy('updated_at', descending: true)
+    //     .limit(limite);
+
+    // Effectuer les deux requêtes en parallèle
+    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+
+    // Combiner les résultats
+    List<DocumentSnapshot> querySnapshotPosts = [...todayPosts, ...otherPosts];
+
+    // QuerySnapshot querySnapshotPost = await query.get();
 
     // QuerySnapshot querySnapshotPost = await query.get();
 
@@ -426,7 +472,8 @@ class PostProvider extends ChangeNotifier {
     //     post.status != PostStatus.SUPPRIMER.name).toList();
 
     // Traiter les documents progressivement
-    for (var doc in querySnapshotPost.docs) {
+    // for (var doc in querySnapshotPost.docs) {
+    for (var doc in querySnapshotPosts) {
       Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
 
       // Filtrer selon le statut
