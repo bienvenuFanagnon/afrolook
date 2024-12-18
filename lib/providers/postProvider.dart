@@ -413,6 +413,7 @@ class PostProvider extends ChangeNotifier {
         .where("created_at", isGreaterThanOrEqualTo: startOfDay)
         .where("created_at", isLessThanOrEqualTo: endOfDay)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .orderBy('created_at', descending: true)
         // .orderBy('updated_at', descending: true)
         .limit(limite);
 
