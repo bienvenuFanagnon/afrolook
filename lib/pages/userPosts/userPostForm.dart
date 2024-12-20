@@ -15,6 +15,7 @@ import '../../../constant/textCustom.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
+import 'hashtag/textHashTag/hashtaHomeView.dart';
 
 class UserPostForm extends StatefulWidget {
   const UserPostForm({super.key});
@@ -166,6 +167,7 @@ class _UserProfilState extends State<UserPostForm> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: UserPubText(),
+                      // child: HashTagHomeView(),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),

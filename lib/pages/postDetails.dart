@@ -19,6 +19,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:page_transition/page_transition.dart';
@@ -712,12 +713,28 @@ class _DetailsPostState extends State<DetailsPost> {
                         // height: 50,
                         child: Container(
                           alignment: Alignment.centerLeft,
-                          child: TextCustomerPostDescription(
-                            titre:
-                            "${post.description}",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.normal,
+                          child: HashTagText(
+                            text: "${post.description}",
+                            decoratedStyle: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+
+                              color: Colors.green,
+                              fontFamily: 'Nunito', // Définir la police Nunito
+                            ),
+                            basicStyle: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.normal,
+                              fontFamily: 'Nunito', // Définir la police Nunito
+                            ),
+                            textAlign: TextAlign.left, // Centrage du texte
+                            maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                            softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                            // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                            onTap: (text) {
+                              print(text);
+                            },
                           ),
                         ),
                       ),
@@ -756,15 +773,38 @@ class _DetailsPostState extends State<DetailsPost> {
                             ),                          alignment: Alignment.centerLeft,
                             child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child:Text(
-                                  "${post.description}", textAlign: TextAlign.center,                       //overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize:post.description!.length<350?25:16,
-                                    color: Colors.white,
+                                child: HashTagText(
+                                  text: "${post.description}",
+                                  decoratedStyle: TextStyle(
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    //fontStyle: FontStyle.italic
+
+                                    color: Colors.green,
+                                    fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
-                                )
+                                  basicStyle: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.normal,
+                                    fontFamily: 'Nunito', // Définir la police Nunito
+                                  ),
+                                  textAlign: TextAlign.left, // Centrage du texte
+                                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                  onTap: (text) {
+                                    print(text);
+                                  },
+                                ),
+                                // Text(
+                                //   "${post.description}", textAlign: TextAlign.center,                       //overflow: TextOverflow.ellipsis,
+                                //   style: TextStyle(
+                                //     fontSize:post.description!.length<350?25:16,
+                                //     color: Colors.white,
+                                //     fontWeight: FontWeight.w600,
+                                //     //fontStyle: FontStyle.italic
+                                //   ),
+                                // )
                             ),
                           ),
                         ),

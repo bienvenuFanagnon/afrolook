@@ -97,8 +97,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           printVm("current user trouver :${list.first.toJson()}");
 
           list.first.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-          list.first.votre_solde=list.first.votre_solde! + 50.1;
-          list.first.publi_cash=list.first.publi_cash! + 50.1;
+          list.first.votre_solde=list.first.votre_solde! + 2.1;
+          list.first.publi_cash=list.first.publi_cash! + 2.1;
           authProvider.updateUser(list.first).then((value) async {
             if(value){
               await authProvider.sendNotification(
@@ -106,7 +106,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                   smallImage: "${authProvider.registerUser.imageUrl!}",
                   send_user_id: "${authProvider.registerUser.id!}",
                   recever_user_id: "${list.first!.id!}",
-                  message: "🤑 Vous avez gagné 50 PubliCach grâce à un parrainage !",
+                  message: "🤑 Vous avez gagné 2 PubliCach grâce à un parrainage !",
                   type_notif: NotificationType.PARRAINAGE.name,
                   post_id: "",
                   post_type: "",
@@ -121,7 +121,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
               notif.titre="Parrainage 🤑";
               notif.media_url=authProvider.registerUser.imageUrl;
               notif.type=NotificationType.PARRAINAGE.name;
-              notif.description="Vous avez gagné 50 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+              notif.description="Vous avez gagné 2 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
               notif.users_id_view=[];
               notif.user_id=authProvider.registerUser.id;
               notif.receiver_id=list.first.id!;

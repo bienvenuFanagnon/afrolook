@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:path/path.dart' as Path;
 
 import 'package:flutter/material.dart';
@@ -36,6 +37,10 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../hashtag/textHashTag/views/view_models/home_view_model.dart';
+import '../hashtag/textHashTag/views/view_models/search_view_model.dart';
+import '../hashtag/textHashTag/views/widgets/comment_text_field.dart';
+import '../hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 import '../utils/pixel_transparent_painter.dart';
 
 /// A page that displays a preview of the generated image.
@@ -101,7 +106,7 @@ class PostLookImageTab extends StatefulWidget {
 ///
 /// This class manages the logic and display of the preview image and optional
 /// thumbnail, along with any associated generation information.
-class _PostLookImageTabState extends State<PostLookImageTab> {
+class _PostLookImageTabState extends State<PostLookImageTab> with TickerProviderStateMixin {
   final _valueStyle = const TextStyle(fontStyle: FontStyle.italic);
 
   Future<ImageInfos>? _decodedImageInfos;
@@ -122,7 +127,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> {
 
   final TextEditingController _titreController = TextEditingController();
 
-  final TextEditingController _descriptionController = TextEditingController();
+  // final TextEditingController _descriptionController = TextEditingController();
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   late UserAuthProvider authProvider =
@@ -513,13 +518,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> {
   }
 
 
-  @override
-  void initState() {
-    _generationTime = widget.generationTime;
-    _imageBytes = widget.imgBytes;
-    _setContentType();
-    super.initState();
-  }
+
 
   void _setContentType() {
     _contentType = lookupMimeType('', headerBytes: _imageBytes!) ?? 'Unknown';
@@ -533,8 +532,64 @@ class _PostLookImageTabState extends State<PostLookImageTab> {
     return '${size.toStringAsFixed(decimals)} ${suffixes[i]}';
   }
 
+  late AnimationController _animationController;
+  late Animation<Offset> _animation;
+
+  double overlayHeight = 380;
+
+  late final homeViewModel = HomeViewModel();
+  late final _descriptionController = FlutterTaggerController(
+    //Initial text value with tag is formatted internally
+    //following the construction of FlutterTaggerController.
+    //After this controller is constructed, if you
+    //wish to update its text value with raw tag string,
+    //call (_controller.formatTags) after that.
+    text:
+    "",
+  );
+  late final _focusNode = FocusNode();
+
+  void _focusListener() {
+    if (!_focusNode.hasFocus) {
+      _descriptionController.dismissOverlay();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _generationTime = widget.generationTime;
+    _imageBytes = widget.imgBytes;
+    _setContentType();
+    _focusNode.addListener(_focusListener);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+
+    _animation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _focusNode.removeListener(_focusListener);
+    _focusNode.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    var insets = MediaQuery.of(context).viewInsets;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return LayoutBuilder(builder: (context, constraints) {
@@ -632,54 +687,106 @@ class _PostLookImageTabState extends State<PostLookImageTab> {
                       SizedBox(
                         height: 60,
                       ),
-                      StatefulBuilder(
-                          builder: (BuildContext context, StateSetter setState) {
-                          return GestureDetector(
-                              onTap:onTap?(){}: () async {
-                                //_getImages();
-                                setState(() {
-                                  onTap=true;
-                                });
-                                printVm('tap');
-                                if (_formKey.currentState!.validate()) {
-
-                                  save(context);
-                                }else{
-                                  setState(() {
-                                  onTap=false;
-                                });
-
-                                }
-                              },
-                              child:onTap? Center(
-                                child: LoadingAnimationWidget.flickr(
-                                  size: 20,
-                                  leftDotColor: Colors.green,
-                                  rightDotColor: Colors.black,
-                                ),
-                              ): PostsButtons(
-                                text: 'Créer votre look',
-                                hauteur: height*0.07,
-                                largeur: width*0.9,
-                                urlImage: 'assets/images/sender.png',
-                              ));
-                        }
-                      ),
+                      // StatefulBuilder(
+                      //     builder: (BuildContext context, StateSetter setState) {
+                      //     return GestureDetector(
+                      //         onTap:onTap?(){}: () async {
+                      //           //_getImages();
+                      //           setState(() {
+                      //             onTap=true;
+                      //           });
+                      //           printVm('tap');
+                      //           if (_formKey.currentState!.validate()) {
+                      //
+                      //             save(context);
+                      //           }else{
+                      //             setState(() {
+                      //             onTap=false;
+                      //           });
+                      //
+                      //           }
+                      //         },
+                      //         child:onTap? Center(
+                      //           child: LoadingAnimationWidget.flickr(
+                      //             size: 20,
+                      //             leftDotColor: Colors.green,
+                      //             rightDotColor: Colors.black,
+                      //           ),
+                      //         ): PostsButtons(
+                      //           text: 'Créer votre look',
+                      //           hauteur: height*0.07,
+                      //           largeur: width*0.9,
+                      //           urlImage: 'assets/images/sender.png',
+                      //         ));
+                      //   }
+                      // ),
                     ],
                   ),
                 ),
-                if (onTap)
-                  Container(
-                    height: height*0.8,
-                    width: width,
-                    color: Colors.black.withOpacity(0.5),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
+                // if (onTap)
+                  // Container(
+                  //   height: height*0.8,
+                  //   width: width,
+                  //   color: Colors.black.withOpacity(0.5),
+                  //   child: Center(
+                  //     child: CircularProgressIndicator(),
+                  //   ),
+                  // ),
               ],
             ),
           ),
+        ),
+
+        bottomNavigationBar:  FlutterTagger(
+          controller: _descriptionController,
+          animationController: _animationController,
+
+          onSearch: (query, triggerChar) {
+            // if (triggerChar == "@") {
+            //   searchViewModel.searchUser(query);
+            // }
+            if (triggerChar == "#") {
+              searchViewModel.searchHashtag(query);
+            }
+          },
+          triggerCharacterAndStyles: const {
+            // "@": TextStyle(color: Colors.pinkAccent),
+            "#": TextStyle(color: Colors.green),
+          },
+          tagTextFormatter: (id, tag, triggerCharacter) {
+            return "$triggerCharacter$id#$tag#";
+          },
+          overlayHeight: overlayHeight,
+          overlay: SearchResultOverlay(
+            animation: _animation,
+            tagController: _descriptionController,
+          ),
+          builder: (context, containerKey) {
+            return CommentTextField(
+
+              focusNode: _focusNode,
+              containerKey: containerKey,
+              insets: insets,
+              controller: _descriptionController,
+              onSend:  onTap?(){}: () async {
+                printVm("***************send comment;");
+
+
+                //_getImages();
+                String textComment=_descriptionController.text;
+
+                if (_formKey.currentState!.validate()) {
+                  save(context);
+
+
+                }
+
+
+
+                _descriptionController.clear();
+              },
+            );
+          },
         ),
       );
     });

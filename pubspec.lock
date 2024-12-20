@@ -957,6 +957,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttertagger:
+    dependency: "direct main"
+    description:
+      name: fluttertagger
+      sha256: "8d9bc75de385a042b39d51ce38993eaa600c6c6584ad826360c41fbbc4e3784d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.1"
   font_awesome_flutter:
     dependency: "direct main"
     description:
@@ -1093,6 +1101,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.2"
+  hashtagable_v3:
+    dependency: "direct main"
+    description:
+      name: hashtagable_v3
+      sha256: "9d0112e47794a0964234519b02c6ce8c3483870c5c7ce185bb7382d1f7945f63"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   html:
     dependency: "direct main"
     description:
@@ -1962,6 +1978,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.0+3"
+  tap_effect:
+    dependency: "direct main"
+    description:
+      name: tap_effect
+      sha256: "50d4e85f8c8aab22688f4a9416fd790b858a1318dccb5c1735ba56c5e90af3e0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   term_glyph:
     dependency: transitive
     description:
@@ -1978,6 +2002,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.3"
+  tiktok_double_tap_like:
+    dependency: "direct main"
+    description:
+      name: tiktok_double_tap_like
+      sha256: "277d234eb9fa5d3b84a5fd5c9e6fee75d8c38b24957c8cc206346708867cfb2a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5+2"
   timeago:
     dependency: "direct main"
     description:

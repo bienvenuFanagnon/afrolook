@@ -1,6 +1,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:camera/camera.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
 import 'dart:io';
@@ -22,6 +23,10 @@ import '../../constant/sizeButtons.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
+import 'hashtag/textHashTag/views/view_models/home_view_model.dart';
+import 'hashtag/textHashTag/views/view_models/search_view_model.dart';
+import 'hashtag/textHashTag/views/widgets/comment_text_field.dart';
+import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 
 
 
@@ -32,14 +37,14 @@ class UserPubText extends StatefulWidget {
   State<UserPubText> createState() => _UserPubTextState();
 }
 
-class _UserPubTextState extends State<UserPubText> {
+class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin{
   final _formKey = GlobalKey<FormState>();
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _titreController = TextEditingController();
 
-  final TextEditingController _descriptionController = TextEditingController();
+  // final TextEditingController _descriptionController = TextEditingController();
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   late UserAuthProvider authProvider =
@@ -66,8 +71,116 @@ class _UserPubTextState extends State<UserPubText> {
     });
   }
 
+
+  // Liste initiale des hashtags avec popularité
+  Map<String, int> hashtags = {
+    "#Afrolook": 50,
+    "#Entrepreneur": 35,
+    "#Music": 20,
+    "#Lifestyle": 15,
+    "#Travel": 10,
+    "#Fitness": 8,
+    "#Food": 5,
+    "#Technology": 3,
+    "#Education": 2,
+    "#Flutter": 1,
+  };
+
+  List<String> filteredHashtags = [];
+  String currentHashtag = "";
+
+  // Filtre les hashtags en fonction de la saisie
+  void _onTextChanged(String value) {
+    setState(() {
+      final words = value.split(" ");
+      final lastWord = words.isNotEmpty ? words.last : "";
+
+      if (lastWord.startsWith("#")) {
+        currentHashtag = lastWord;
+        filteredHashtags = hashtags.keys
+            .where((tag) =>
+            tag.toLowerCase().contains(currentHashtag.toLowerCase()))
+            .toList();
+        // Trie par popularité décroissante
+        filteredHashtags.sort((a, b) => hashtags[b]!.compareTo(hashtags[a]!));
+      } else {
+        currentHashtag = "";
+        filteredHashtags.clear();
+      }
+    });
+  }
+
+  // Ajoute un hashtag ou augmente sa popularité
+  void _addHashtag(String hashtag) {
+    setState(() {
+      if (!hashtags.containsKey(hashtag)) {
+        hashtags[hashtag] = 1; // Nouveau hashtag avec une popularité initiale
+      } else {
+        hashtags[hashtag] = hashtags[hashtag]! + 1; // Augmente la popularité
+      }
+      // Met à jour le champ de texte
+      _descriptionController.text += " $hashtag ";
+      currentHashtag = "";
+      filteredHashtags.clear();
+    });
+  }
+
+
+  late AnimationController _animationController;
+  late Animation<Offset> _animation;
+
+  double overlayHeight = 380;
+
+  late final homeViewModel = HomeViewModel();
+  late final _descriptionController = FlutterTaggerController(
+    //Initial text value with tag is formatted internally
+    //following the construction of FlutterTaggerController.
+    //After this controller is constructed, if you
+    //wish to update its text value with raw tag string,
+    //call (_controller.formatTags) after that.
+    text:
+    "",
+  );
+  late final _focusNode = FocusNode();
+
+  void _focusListener() {
+    if (!_focusNode.hasFocus) {
+      _descriptionController.dismissOverlay();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_focusListener);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+
+    _animation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _focusNode.removeListener(_focusListener);
+    _focusNode.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    var insets = MediaQuery.of(context).viewInsets;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
@@ -84,8 +197,11 @@ class _UserPubTextState extends State<UserPubText> {
                   children: [
                     TextFormField(
                       controller: _descriptionController,
+                      onChanged: _onTextChanged,
+                      readOnly: true, // Empêche la modification
+
                       decoration: InputDecoration(
-                        hintText: 'Légende',
+                        hintText: 'Écrivez votre Légende avec des hashtags...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10.0), // Add rounded corners
                           borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
@@ -102,20 +218,74 @@ class _UserPubTextState extends State<UserPubText> {
                         return null;
                       },
                     ),
-
+                    // if (currentHashtag.isNotEmpty && filteredHashtags.isNotEmpty)
+                    //   SizedBox(
+                    //     height: height*0.1,
+                    //     width: width,
+                    //     child: ListView.builder(
+                    //       itemCount: filteredHashtags.length,
+                    //       itemBuilder: (context, index) {
+                    //         final tag = filteredHashtags[index];
+                    //         return ListTile(
+                    //           title: Text(tag),
+                    //           onTap: () => _addHashtag(tag),
+                    //         );
+                    //       },
+                    //     ),
+                    //   ),
+                    // if (currentHashtag.isNotEmpty && filteredHashtags.isEmpty)
+                    //   ElevatedButton(
+                    //     onPressed: () => _addHashtag(currentHashtag),
+                    //     child: Text("Ajouter $currentHashtag"),
+                    //   ),
 
 
                     SizedBox(
                       height: 60,
                     ),
-                    GestureDetector(
-                        onTap:onTap?(){}: () async {
-                          //_getImages();
-                          if (_formKey.currentState!.validate()) {
+                    FlutterTagger(
+                      controller: _descriptionController,
+                      animationController: _animationController,
 
-                            setState(() {
-                              onTap=true;
-                            });
+                      onSearch: (query, triggerChar) {
+                        // if (triggerChar == "@") {
+                        //   searchViewModel.searchUser(query);
+                        // }
+                        if (triggerChar == "#") {
+                          searchViewModel.searchHashtag(query);
+                        }
+                      },
+                      triggerCharacterAndStyles: const {
+                        // "@": TextStyle(color: Colors.pinkAccent),
+                        "#": TextStyle(color: Colors.green),
+                      },
+                      tagTextFormatter: (id, tag, triggerCharacter) {
+                        return "$triggerCharacter$id#$tag#";
+                      },
+                      overlayHeight: overlayHeight,
+                      overlay: SearchResultOverlay(
+                        animation: _animation,
+                        tagController: _descriptionController,
+                      ),
+                      builder: (context, containerKey) {
+                        return CommentTextField(
+
+                          focusNode: _focusNode,
+                          containerKey: containerKey,
+                          insets: insets,
+                          controller: _descriptionController,
+                          onSend:  onTap?(){}: () async {
+                            printVm("***************send comment;");
+
+
+                            //_getImages();
+                            String textComment=_descriptionController.text;
+
+                            if (_formKey.currentState!.validate()) {
+
+                              setState(() {
+                                onTap=true;
+                              });
 
                               try {
                                 String postId = FirebaseFirestore.instance
@@ -228,20 +398,150 @@ class _UserPubTextState extends State<UserPubText> {
                                     .showSnackBar(snackBar);
                               }
 
-                          }
-                        },
-                        child:onTap? Center(
-                          child: LoadingAnimationWidget.flickr(
-                            size: 20,
-                            leftDotColor: Colors.green,
-                            rightDotColor: Colors.black,
-                          ),
-                        ): PostsButtons(
-                          text: 'Créer',
-                          hauteur: height*0.07,
-                          largeur: width*0.9,
-                          urlImage: 'assets/images/sender.png',
-                        )),
+                            }
+
+
+
+                            _descriptionController.clear();
+                          },
+                        );
+                      },
+                    ),
+
+                    // GestureDetector(
+                    //     onTap:onTap?(){}: () async {
+                    //       //_getImages();
+                    //       if (_formKey.currentState!.validate()) {
+                    //
+                    //         setState(() {
+                    //           onTap=true;
+                    //         });
+                    //
+                    //           try {
+                    //             String postId = FirebaseFirestore.instance
+                    //                 .collection('Posts')
+                    //                 .doc()
+                    //                 .id;
+                    //             Post post = Post();
+                    //             post.user_id = authProvider.loginUserData.id;
+                    //             post.description = _descriptionController.text;
+                    //             post.updatedAt =
+                    //                 DateTime.now().microsecondsSinceEpoch;
+                    //             post.createdAt =
+                    //                 DateTime.now().microsecondsSinceEpoch;
+                    //             post.status = PostStatus.VALIDE.name;
+                    //
+                    //             post.type = PostType.POST.name;
+                    //             post.comments = 0;
+                    //             post.nombrePersonneParJour = 60;
+                    //             post.dataType = PostDataType.TEXT.name;
+                    //             post.likes = 0;
+                    //             post.loves = 0;
+                    //             post.id = postId;
+                    //             post.images = [];
+                    //
+                    //             await FirebaseFirestore.instance
+                    //                 .collection('Posts')
+                    //                 .doc(postId)
+                    //                 .set(post.toJson());
+                    //             listimages=[];
+                    //             _descriptionController.text='';
+                    //             setState(() {
+                    //               onTap=false;
+                    //             });
+                    //             authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
+                    //             await userProvider.updateUser(authProvider.loginUserData!);
+                    //             postProvider.listConstposts.add(post);
+                    //
+                    //
+                    //
+                    //
+                    //             NotificationData notif=NotificationData();
+                    //             notif.id=firestore
+                    //                 .collection('Notifications')
+                    //                 .doc()
+                    //                 .id;
+                    //             notif.titre="Nouveau post";
+                    //             notif.description="Un nouveau post a été publié !";
+                    //             notif.users_id_view=[];
+                    //             notif.receiver_id="";
+                    //
+                    //             notif.user_id=authProvider.loginUserData.id;
+                    //             notif.updatedAt =
+                    //                 DateTime.now().microsecondsSinceEpoch;
+                    //             notif.createdAt =
+                    //                 DateTime.now().microsecondsSinceEpoch;
+                    //             notif.status = PostStatus.VALIDE.name;
+                    //
+                    //             // users.add(pseudo.toJson());
+                    //
+                    //             await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                    //             print("///////////-- save notification --///////////////");
+                    //             await authProvider
+                    //                 .getAllUsersOneSignaUserId()
+                    //                 .then(
+                    //                   (userIds) async {
+                    //                 if (userIds.isNotEmpty) {
+                    //                   await authProvider.sendNotification(
+                    //                       userIds: userIds,
+                    //                       smallImage: "${authProvider.loginUserData.imageUrl!}",
+                    //                       send_user_id: "${authProvider.loginUserData.id!}",
+                    //                       recever_user_id: "",
+                    //                       message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                    //                       type_notif: NotificationType.POST.name,
+                    //                       post_id: "${post!.id!}",
+                    //                       post_type: PostDataType.IMAGE.name, chat_id: ''
+                    //                   );
+                    //
+                    //                 }
+                    //               },
+                    //             );
+                    //             SnackBar snackBar = SnackBar(
+                    //               content: Text(
+                    //                 'Le post a été validé avec succès !',
+                    //                 textAlign: TextAlign.center,
+                    //                 style: TextStyle(color: Colors.green),
+                    //               ),
+                    //             );
+                    //             ScaffoldMessenger.of(context)
+                    //                 .showSnackBar(snackBar);
+                    //             postProvider.getPostsImages(limitePosts).then((value) {
+                    //               // value.forEach((element) {
+                    //               //   print(element.toJson());
+                    //               // },);
+                    //
+                    //             },);
+                    //
+                    //           } catch (e) {
+                    //             print("erreur ${e}");
+                    //             setState(() {
+                    //               onTap=false;
+                    //             });
+                    //             SnackBar snackBar = SnackBar(
+                    //               content: Text(
+                    //                 'La validation du post a échoué. Veuillez réessayer.',
+                    //                 textAlign: TextAlign.center,
+                    //                 style: TextStyle(color: Colors.red),
+                    //               ),
+                    //             );
+                    //             ScaffoldMessenger.of(context)
+                    //                 .showSnackBar(snackBar);
+                    //           }
+                    //
+                    //       }
+                    //     },
+                    //     child:onTap? Center(
+                    //       child: LoadingAnimationWidget.flickr(
+                    //         size: 20,
+                    //         leftDotColor: Colors.green,
+                    //         rightDotColor: Colors.black,
+                    //       ),
+                    //     ): PostsButtons(
+                    //       text: 'Créer',
+                    //       hauteur: height*0.07,
+                    //       largeur: width*0.9,
+                    //       urlImage: 'assets/images/sender.png',
+                    //     )),
                   ],
                 ),
               ),

@@ -410,6 +410,13 @@ class PostProvider extends ChangeNotifier {
     int endOfDay = startOfDay + Duration(hours: 23, minutes: 59, seconds: 59).inMicroseconds;
     // 1. Récupérer les publications de la journée
     Query queryToday = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+        // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
         .where("created_at", isGreaterThanOrEqualTo: startOfDay)
         .where("created_at", isLessThanOrEqualTo: endOfDay)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
@@ -419,6 +426,13 @@ class PostProvider extends ChangeNotifier {
 
 // 2. Récupérer les publications restantes
     Query queryOthers = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+        // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
         .where("created_at", isLessThan: startOfDay)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
         .orderBy('updated_at', descending: true)
