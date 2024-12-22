@@ -1729,7 +1729,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.15 (15)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.16 (16)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2483,9 +2483,9 @@ class _MyHomePageState extends State<MyHomePage>
         postProvider.getPostsImages2(limitePosts).listen((data) {
           _streamController.add(data);
         });
-        postProvider.getPostsVideos().then((value) {
-
-        },);
+        // postProvider.getPostsVideos().then((value) {
+        //
+        // },);
 
 
         if (token == null || token == '') {

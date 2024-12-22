@@ -156,21 +156,13 @@ class _VideoWidgetState extends State<VideoWidget> {
   }
 
   videoInit() async {
-    videoPlayerController = VideoPlayerController.contentUri(Uri.parse(widget.post.url_media!));
+    videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.post.url_media!));
 
-    // _initializeVideoPlayerFuture = videoPlayerController.initialize().then((_) {
-    //
-    // });
-
-    // final videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(
-    //     'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4'));
-
-    // _initializeVideoPlayerFuture = await videoPlayerController.initialize().then((value) {
-    //   return value;
-    // },);
 
     _initializeVideoPlayerFuture = videoPlayerController.initialize().then((_) {
-      _chewieController.play();
+      // setState(() {
+      //
+      // });
 
     });
 
@@ -180,6 +172,35 @@ class _VideoWidgetState extends State<VideoWidget> {
       looping: true,
 
     );
+    _chewieController.play();
+
+  }
+  Future<void> videoInit2() async {
+    // Initialisation du contrôleur vidéo
+    videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.post.url_media!),
+    );
+
+    try {
+      // Attendez l'initialisation complète du contrôleur vidéo
+      // await videoPlayerController.initialize();
+      _initializeVideoPlayerFuture =  videoPlayerController.initialize();
+      // Configurez le contrôleur Chewie après l'initialisation
+      _chewieController = ChewieController(
+        videoPlayerController: videoPlayerController,
+        autoPlay: true,
+        looping: true,
+      );
+
+      // Facultatif : démarrez la lecture immédiatement
+      _chewieController.play();
+
+      // Appelle `setState` pour refléter les modifications
+      setState(() {});
+    } catch (e) {
+      // Gérer les erreurs d'initialisation
+      debugPrint('Erreur lors de l\'initialisation du lecteur vidéo : $e');
+    }
   }
 
   @override
@@ -202,7 +223,8 @@ class _VideoWidgetState extends State<VideoWidget> {
 
   @override
   void dispose() {
-
+    // videoPlayerController.pause();
+    videoPlayerController.dispose();
     _chewieController.dispose();
     super.dispose();
     // videoPlayerController.pause();

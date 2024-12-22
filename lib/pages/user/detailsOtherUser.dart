@@ -272,576 +272,483 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     double w = MediaQuery.of(context).size.width;
-    return DoubleTapLikeWidget(
+    return SingleChildScrollView(
+      child: SizedBox(
+        // width: widget.w,
+        // height: widget.h,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ClipRRect(
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
+              child: Container(
+                width: widget.w,
+                height: widget.h*0.5,
+                child: CachedNetworkImage(
+                  fit: BoxFit.cover,
 
-      onLike: (likeCount) async {
-        printVm('double tap');
-        if(!isLike){
+                  imageUrl: '${widget.user.imageUrl!}',
+                  progressIndicatorBuilder: (context, url, downloadProgress) =>
+                  //  LinearProgressIndicator(),
 
-          CollectionReference userCollect =
-          FirebaseFirestore.instance.collection('Users');
-          // Get docs from collection reference
-          QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.user!.id!).get();
-          // Afficher la liste
-          List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-              UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-          if (listUsers.isNotEmpty) {
-            setState(() {
-              isLike=true;
-              listUsers.first!.userlikes=listUsers.first!.userlikes!+1;
-              widget.user!.userlikes=listUsers.first!.userlikes;
-            });
-
-
-            printVm("user trouver ${listUsers.first!.toJson()}");
-            await authProvider.updateUser( listUsers.first);
-
-
-            if (widget.user!.oneIgnalUserid!=null&&widget.user!.oneIgnalUserid!.length>5) {
-
-              await authProvider.sendNotification(
-                  userIds: [widget.user!.oneIgnalUserid!],
-                  smallImage: "${authProvider.loginUserData.imageUrl!}",
-                  send_user_id: "${authProvider.loginUserData.id!}",
-                  recever_user_id: "${widget.user!.id!}",
-                  message: "📢 @${authProvider.loginUserData.pseudo!} a liké votre profile",
-                  type_notif: NotificationType.USER.name,
-                  post_id: "",
-                  post_type: "",
-                  chat_id: ''
-              );
-
-              NotificationData notif=NotificationData();
-              notif.id=firestore
-                  .collection('Notifications')
-                  .doc()
-                  .id;
-              notif.titre="@${widget.user!.pseudo} -> 👍🏾";
-              notif.media_url=authProvider.loginUserData.imageUrl;
-              notif.type=NotificationType.USER.name;
-              notif.description="@${authProvider.loginUserData.pseudo!} a liké votre publication";
-              notif.users_id_view=[];
-              notif.user_id=authProvider.loginUserData.id;
-              notif.receiver_id=widget.user!.id!;
-              // notif.post_id=post.id!;
-              // notif.post_data_type=PostDataType.IMAGE.name!;
-
-              notif.updatedAt =
-                  DateTime.now().microsecondsSinceEpoch;
-              notif.createdAt =
-                  DateTime.now().microsecondsSinceEpoch;
-              notif.status = PostStatus.VALIDE.name;
-
-              // users.add(pseudo.toJson());
-
-              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-              //userProvider.updateUser(listUsers.first);
-              // SnackBar snackBar = SnackBar(
-              //   content: Text('+1 points.  Voir le classement',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-              // );
-              // ScaffoldMessenger.of(context).showSnackBar(snackBar);
-              // postProvider.updatePost(post, listUsers.first,context);
-              // await authProvider.getAppData();
-              // authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-              // authProvider.updateAppData(authProvider.appDefaultData);
-
-              // setState(() {
-              //
-              // });
-            }
-
-
-
-
-
-
-          }
-
-        }
-
-
-      },
-      likeWidget: Icon(AntDesign.heart,color: Colors.red,size: 300,),
-      likeWidth: 500,
-      likeHeight: 500,
-      child:    SingleChildScrollView(
-        child: SizedBox(
-          // width: widget.w,
-          // height: widget.h,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ClipRRect(
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
-                child: Container(
-                  width: widget.w,
-                  height: widget.h*0.5,
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-
-                    imageUrl: '${widget.user.imageUrl!}',
-                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                    //  LinearProgressIndicator(),
-
-                    Skeletonizer(
-                        child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                    errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-                  ),
+                  Skeletonizer(
+                      child: SizedBox(width: 120,height: 100, child:  ClipRRect(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                  errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: Text(
-                  "Taper deux fois pour liker",
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
+            ),
+            // Padding(
+            //   padding: const EdgeInsets.all(5.0),
+            //   child: Text(
+            //     "Taper deux fois pour liker",
+            //     style: const TextStyle(
+            //       color: Colors.black,
+            //       fontWeight: FontWeight.bold,
+            //       fontSize: 10,
+            //     ),
+            //   ),
+            // ),
+
+
+
+
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+                    child: SizedBox(
+                      //width: 70,
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: TextCustomerPostDescription(
+                          titre: "@${widget.user.pseudo}",
+                          fontSize: 15,
+                          couleur: ConstColors.textColors,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+                    child: SizedBox(
+                      //width: 70,
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: TextCustomerPostDescription(
+                          titre: "${widget.user.abonnes}",
+                          fontSize: 15,
+                          couleur: ConstColors.textColors,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+                    child: SizedBox(
+                      //width: 70,
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: TextCustomerPostDescription(
+                          titre: "${taux.toStringAsFixed(2)} %",
+                          fontSize: 15,
+                          couleur: ConstColors.textColors,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-
-
-
-
-              Padding(
-                padding: const EdgeInsets.all(8.0),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+              child: SizedBox(
+                //width: 70,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-                      child: SizedBox(
-                        //width: 70,
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: TextCustomerPostDescription(
-                            titre: "@${widget.user.pseudo}",
-                            fontSize: 15,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                    Container(
+                      alignment: Alignment.center,
+                      child: TextCustomerPostDescription(
+                        titre: "${widget.user.userlikes}",
+                        fontSize: 15,
+                        couleur: Colors.green,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-                      child: SizedBox(
-                        //width: 70,
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: TextCustomerPostDescription(
-                            titre: "${widget.user.abonnes}",
-                            fontSize: 15,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-                      child: SizedBox(
-                        //width: 70,
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: TextCustomerPostDescription(
-                            titre: "${taux.toStringAsFixed(2)} %",
-                            fontSize: 15,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                    SizedBox(width: 5,),
+                    Icon(AntDesign.heart,color: Colors.red,),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-                child: SizedBox(
-                  //width: 70,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        alignment: Alignment.center,
-                        child: TextCustomerPostDescription(
-                          titre: "${widget.user.userlikes}",
-                          fontSize: 15,
-                          couleur: Colors.green,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(width: 5,),
-                      Icon(AntDesign.heart,color: Colors.red,),
-                    ],
-                  ),
-                ),
-              ),
+            ),
 
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text("Voir le profil"),
-                  IconButton(onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OtherUserPage(otherUser: widget.user),
-                        ));
-                  }, icon: Icon(Icons.remove_red_eye)),
-                ],
-              ),
-              Visibility(
-                visible:authProvider.loginUserData.id!=widget.user.id ,
-                child: StatefulBuilder(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text("Voir le profil"),
+                IconButton(onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OtherUserPage(otherUser: widget.user),
+                      ));
+                }, icon: Icon(Icons.remove_red_eye)),
+              ],
+            ),
+            Visibility(
+              visible:authProvider.loginUserData.id!=widget.user.id ,
+              child: StatefulBuilder(
 
-                    builder: (BuildContext context, void Function(void Function()) setState) {
+                  builder: (BuildContext context, void Function(void Function()) setState) {
 
-                      return Container(
-                        //width: w*0.45,
-                        height: 50,
-                        child:  isMyFriend(widget.user!,authProvider.loginUserData)?
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
+                    return Container(
+                      //width: w*0.45,
+                      height: 50,
+                      child:  isMyFriend(widget.user!,authProvider.loginUserData)?
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
+                        child: ElevatedButton(
+
+                            onPressed: () async {
+                              getChatsData(widget.user).then((chat) async {
+                                CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
+                                QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                                // Afficher la liste
+                                List<Message> messages = querySnapshotUser.docs.map((doc) =>
+                                    Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                //snapshot.data![index].messages=messages;
+                                userProvider.chat.messages=messages;
+                                //Navigator.of(context).pop();
+                                Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
+
+
+                              },);
+
+                            }, child:  Container(child: TextCustomerUserTitle(
+                          titre: "envoyer un message",
+                          fontSize: SizeText.homeProfileTextSize,
+                          couleur: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),)),
+                      )
+                          :!isInvite(widget.user,authProvider.loginUserData)?
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
+                        child: Container(
+                          //width: 120,
+                          //height: 30,
                           child: ElevatedButton(
-
-                              onPressed: () async {
-                                getChatsData(widget.user).then((chat) async {
-                                  CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                                  QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
-                                  // Afficher la liste
-                                  List<Message> messages = querySnapshotUser.docs.map((doc) =>
-                                      Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                  //snapshot.data![index].messages=messages;
-                                  userProvider.chat.messages=messages;
-                                  //Navigator.of(context).pop();
-                                  Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: MyChat(title: 'mon chat', chat: chat,)));
-
-
-                                },);
-
-                              }, child:  Container(child: TextCustomerUserTitle(
-                            titre: "envoyer un message",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: Colors.black,
-                            fontWeight: FontWeight.w600,
-                          ),)),
-                        )
-                            :!isInvite(widget.user,authProvider.loginUserData)?
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
-                          child: Container(
-                            //width: 120,
-                            //height: 30,
-                            child: ElevatedButton(
-                              onPressed:inviteTap?
-                                  ()  { }:
-                                  ()async{
-                                if (!isInvite(widget.user,authProvider.loginUserData)) {
-                                  setState(() {
-                                    inviteTap=true;
-                                  });
-                                  Invitation invitation = Invitation();
-                                  invitation.senderId=authProvider.loginUserData.id;
-                                  invitation.receiverId=widget.user.id;
-                                  invitation.status=InvitationStatus.ENCOURS.name;
-                                  invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                  invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-
-                                  // invitation.inviteUser=authProvider.loginUserData!;
-                                  await  userProvider.sendInvitation(invitation,context).then((value) async {
-                                    if (value) {
-
-                                      // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                      authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
-                                      await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                      NotificationData notif=NotificationData();
-                                      notif.id=firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre="Nouvelle Invitation";
-                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                      notif.type=NotificationType.INVITATION.name;
-                                      notif.description="Une nouvelle invitation vous a été envoyé !";
-                                      notif.users_id_view=[];
-                                      notif.user_id=authProvider.loginUserData.id;
-                                      notif.receiver_id=widget.user.id;
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                      print("///////////-- save notification --///////////////");
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                      );
-                                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                                      widget.user.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
-                                      authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.user.id!);
-                                      userProvider.updateUser(widget.user);
-                                      userProvider.updateUser(authProvider.loginUserData!);
-
-                                      if (widget.user.oneIgnalUserid!=null&&widget.user.oneIgnalUserid!.length>5) {
-
-                                        await authProvider.sendNotification(
-                                            userIds: [widget.user.oneIgnalUserid!],
-                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                            send_user_id: "${authProvider.loginUserData.id!}",
-                                            recever_user_id: "${widget.user.id!}",
-                                            message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
-                                            type_notif: NotificationType.INVITATION.name,
-                                            post_id: "",
-                                            post_type: "", chat_id: ''
-                                        );
-
-                                      }
-
-
-                                    }  else{
-                                      SnackBar snackBar = SnackBar(
-                                        content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                      );
-                                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-
-                                    }
-                                  },);
-
-
-                                  setState(() {
-                                    inviteTap=false;
-                                  });
-                                }
-                              },
-                              child:inviteTap? Center(
-                                child: LoadingAnimationWidget.flickr(
-                                  size: 20,
-                                  leftDotColor: Colors.green,
-                                  rightDotColor: Colors.black,
-                                ),
-                              ): TextCustomerUserTitle(
-                                titre: "envoyer une invitation",
-                                fontSize: SizeText.homeProfileTextSize,
-                                couleur: Colors.blue,
-                                fontWeight: FontWeight.w600,
-                              ),),
-                          ),
-                        ):
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
-                          child: Container(
-                            //width: 120,
-                            // height: 30,
-                            child: ElevatedButton(
-                              onPressed:
-                                  ()  { },
-                              child:TextCustomerUserTitle(
-                                titre: "invitation déjà envoyée",
-                                fontSize: SizeText.homeProfileTextSize,
-                                couleur: Colors.black38,
-                                fontWeight: FontWeight.w600,
-                              ),),
-                          ),
-                        ),
-                      );
-                    }
-                ),
-              ),
-              SizedBox(height: 5,),
-              Visibility(
-                visible:authProvider.loginUserData.id!=widget.user.id ,
-
-                child: StatefulBuilder(
-
-                    builder: (BuildContext context, void Function(void Function()) setState) {
-                      return Container(
-                        child:    isUserAbonne(widget.user.userAbonnesIds!,authProvider.loginUserData.id!)?
-                        Container(
-                          width: w*0.45,
-                          height: 35,
-                          child: ElevatedButton(
-                            onPressed:
-                                ()  { },
-                            child: TextCustomerUserTitle(
-                              titre: "déjà abonné",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),),
-                        ):
-                        Container(
-                          width: w*0.45,
-                          height: 35,
-
-                          child: ElevatedButton(
-                            onPressed:abonneTap?
+                            onPressed:inviteTap?
                                 ()  { }:
                                 ()async{
-                              if (!isUserAbonne(widget.user.userAbonnesIds!,authProvider.loginUserData.id!)) {
+                              if (!isInvite(widget.user,authProvider.loginUserData)) {
                                 setState(() {
-                                  abonneTap=true;
+                                  inviteTap=true;
                                 });
-                                UserAbonnes userAbonne = UserAbonnes();
-                                userAbonne.compteUserId=authProvider.loginUserData.id;
-                                userAbonne.abonneUserId=widget.user!.id;
+                                Invitation invitation = Invitation();
+                                invitation.senderId=authProvider.loginUserData.id;
+                                invitation.receiverId=widget.user.id;
+                                invitation.status=InvitationStatus.ENCOURS.name;
+                                invitation.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                invitation.updatedAt  = DateTime.now().millisecondsSinceEpoch;
 
-                                userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                await  userProvider.sendAbonnementRequest(userAbonne,widget.user,context).then((value) async {
+                                // invitation.inviteUser=authProvider.loginUserData!;
+                                await  userProvider.sendInvitation(invitation,context).then((value) async {
                                   if (value) {
 
-
                                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                    authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                                    authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
                                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                    NotificationData notif=NotificationData();
+                                    notif.id=firestore
+                                        .collection('Notifications')
+                                        .doc()
+                                        .id;
+                                    notif.titre="Nouvelle Invitation";
+                                    notif.media_url=authProvider.loginUserData.imageUrl;
+                                    notif.type=NotificationType.INVITATION.name;
+                                    notif.description="Une nouvelle invitation vous a été envoyé !";
+                                    notif.users_id_view=[];
+                                    notif.user_id=authProvider.loginUserData.id;
+                                    notif.receiver_id=widget.user.id;
+                                    notif.updatedAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.createdAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.status = PostStatus.VALIDE.name;
+
+                                    // users.add(pseudo.toJson());
+
+                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                    print("///////////-- save notification --///////////////");
+                                    SnackBar snackBar = SnackBar(
+                                      content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                                    widget.user.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
+                                    authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.user.id!);
+                                    userProvider.updateUser(widget.user);
+                                    userProvider.updateUser(authProvider.loginUserData!);
+
                                     if (widget.user.oneIgnalUserid!=null&&widget.user.oneIgnalUserid!.length>5) {
+
                                       await authProvider.sendNotification(
                                           userIds: [widget.user.oneIgnalUserid!],
                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
                                           send_user_id: "${authProvider.loginUserData.id!}",
                                           recever_user_id: "${widget.user.id!}",
-                                          message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
-                                          type_notif: NotificationType.ABONNER.name,
+                                          message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
+                                          type_notif: NotificationType.INVITATION.name,
                                           post_id: "",
                                           post_type: "", chat_id: ''
                                       );
 
-                                      NotificationData notif=NotificationData();
-                                      notif.id=firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre="Nouveau Abonnement ✅";
-                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                      notif.type=NotificationType.ABONNER.name;
-                                      notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                      notif.users_id_view=[];
-                                      notif.user_id=authProvider.loginUserData.id;
-                                      notif.receiver_id="";
-                                      notif.post_id="";
-                                      notif.post_data_type=PostDataType.IMAGE.name!;
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
                                     }
-                                    SnackBar snackBar = SnackBar(
-                                      content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                    );
-                                    widget.user.userAbonnesIds!.add(authProvider.loginUserData.id!);
-                                    userProvider.updateUser(widget.user);
-                                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                    setState(() {
-                                      abonneTap=false;
 
-                                    });
+
                                   }  else{
                                     SnackBar snackBar = SnackBar(
                                       content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
                                     );
                                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                    setState(() {
-                                      abonneTap=false;
-                                    });
+
+
                                   }
                                 },);
 
 
                                 setState(() {
-                                  abonneTap=false;
+                                  inviteTap=false;
                                 });
                               }
                             },
-                            child:abonneTap? Center(
+                            child:inviteTap? Center(
                               child: LoadingAnimationWidget.flickr(
                                 size: 20,
                                 leftDotColor: Colors.green,
                                 rightDotColor: Colors.black,
                               ),
                             ): TextCustomerUserTitle(
-                              titre: "abonnez vous",
+                              titre: "envoyer une invitation",
                               fontSize: SizeText.homeProfileTextSize,
-                              couleur: Colors.red,
+                              couleur: Colors.blue,
                               fontWeight: FontWeight.w600,
                             ),),
                         ),
-                      );
-                    }
-                ),
-              )
+                      ):
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1.0,bottom:8 ),
+                        child: Container(
+                          //width: 120,
+                          // height: 30,
+                          child: ElevatedButton(
+                            onPressed:
+                                ()  { },
+                            child:TextCustomerUserTitle(
+                              titre: "invitation déjà envoyée",
+                              fontSize: SizeText.homeProfileTextSize,
+                              couleur: Colors.black38,
+                              fontWeight: FontWeight.w600,
+                            ),),
+                        ),
+                      ),
+                    );
+                  }
+              ),
+            ),
+            SizedBox(height: 5,),
+            Visibility(
+              visible:authProvider.loginUserData.id!=widget.user.id ,
 
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //
-              //     RatingStars(
-              //       rating: 5*widget.user.popularite!,
-              //       editable: true,
-              //       iconSize: 35,
-              //       color: Colors.green,
-              //     ),
-              //     LikeButton(
-              //
-              //       isLiked: false,
-              //       size: 50,
-              //       circleColor:
-              //       CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-              //       bubblesColor: BubblesColor(
-              //         dotPrimaryColor: Color(0xff3b9ade),
-              //         dotSecondaryColor: Color(0xff027f19),
-              //       ),
-              //       countPostion: CountPostion.bottom,
-              //       likeBuilder: (bool isLiked) {
-              //         return Icon(
-              //           !isLiked ?AntDesign.like1:AntDesign.like1,
-              //           color: !isLiked ? Colors.black38 : Colors.blue,
-              //           size: 35,
-              //         );
-              //       },
-              //      // likeCount: 30,
-              //       countBuilder: (int? count, bool isLiked, String text) {
-              //         var color = isLiked ? Colors.black : Colors.black;
-              //         Widget result;
-              //         if (count == 0) {
-              //           result = Text(
-              //             "0",textAlign: TextAlign.center,
-              //             style: TextStyle(color: color),
-              //           );
-              //         } else
-              //           result = Text(
-              //             text,
-              //             style: TextStyle(color: color),
-              //           );
-              //         return result;
-              //       },
-              //
-              //     ),
-              //
-              //
-              //
-              //   ],
-              // )
+              child: StatefulBuilder(
 
-            ],
-          ),
+                  builder: (BuildContext context, void Function(void Function()) setState) {
+                    return Container(
+                      child:    isUserAbonne(widget.user.userAbonnesIds!,authProvider.loginUserData.id!)?
+                      Container(
+                        width: w*0.45,
+                        height: 35,
+                        child: ElevatedButton(
+                          onPressed:
+                              ()  { },
+                          child: TextCustomerUserTitle(
+                            titre: "déjà abonné",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),),
+                      ):
+                      Container(
+                        width: w*0.45,
+                        height: 35,
+
+                        child: ElevatedButton(
+                          onPressed:abonneTap?
+                              ()  { }:
+                              ()async{
+                            if (!isUserAbonne(widget.user.userAbonnesIds!,authProvider.loginUserData.id!)) {
+                              setState(() {
+                                abonneTap=true;
+                              });
+                              UserAbonnes userAbonne = UserAbonnes();
+                              userAbonne.compteUserId=authProvider.loginUserData.id;
+                              userAbonne.abonneUserId=widget.user!.id;
+
+                              userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                              userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                              await  userProvider.sendAbonnementRequest(userAbonne,widget.user,context).then((value) async {
+                                if (value) {
+
+
+                                  // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                                  authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                                  await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                  if (widget.user.oneIgnalUserid!=null&&widget.user.oneIgnalUserid!.length>5) {
+                                    await authProvider.sendNotification(
+                                        userIds: [widget.user.oneIgnalUserid!],
+                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                        send_user_id: "${authProvider.loginUserData.id!}",
+                                        recever_user_id: "${widget.user.id!}",
+                                        message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+                                        type_notif: NotificationType.ABONNER.name,
+                                        post_id: "",
+                                        post_type: "", chat_id: ''
+                                    );
+
+                                    NotificationData notif=NotificationData();
+                                    notif.id=firestore
+                                        .collection('Notifications')
+                                        .doc()
+                                        .id;
+                                    notif.titre="Nouveau Abonnement ✅";
+                                    notif.media_url=authProvider.loginUserData.imageUrl;
+                                    notif.type=NotificationType.ABONNER.name;
+                                    notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                    notif.users_id_view=[];
+                                    notif.user_id=authProvider.loginUserData.id;
+                                    notif.receiver_id="";
+                                    notif.post_id="";
+                                    notif.post_data_type=PostDataType.IMAGE.name!;
+                                    notif.updatedAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.createdAt =
+                                        DateTime.now().microsecondsSinceEpoch;
+                                    notif.status = PostStatus.VALIDE.name;
+
+                                    // users.add(pseudo.toJson());
+
+                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
+                                  }
+                                  SnackBar snackBar = SnackBar(
+                                    content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                  );
+                                  widget.user.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                  userProvider.updateUser(widget.user);
+                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                  setState(() {
+                                    abonneTap=false;
+
+                                  });
+                                }  else{
+                                  SnackBar snackBar = SnackBar(
+                                    content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                  setState(() {
+                                    abonneTap=false;
+                                  });
+                                }
+                              },);
+
+
+                              setState(() {
+                                abonneTap=false;
+                              });
+                            }
+                          },
+                          child:abonneTap? Center(
+                            child: LoadingAnimationWidget.flickr(
+                              size: 20,
+                              leftDotColor: Colors.green,
+                              rightDotColor: Colors.black,
+                            ),
+                          ): TextCustomerUserTitle(
+                            titre: "abonnez vous",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),),
+                      ),
+                    );
+                  }
+              ),
+            )
+
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //   children: [
+            //
+            //     RatingStars(
+            //       rating: 5*widget.user.popularite!,
+            //       editable: true,
+            //       iconSize: 35,
+            //       color: Colors.green,
+            //     ),
+            //     LikeButton(
+            //
+            //       isLiked: false,
+            //       size: 50,
+            //       circleColor:
+            //       CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+            //       bubblesColor: BubblesColor(
+            //         dotPrimaryColor: Color(0xff3b9ade),
+            //         dotSecondaryColor: Color(0xff027f19),
+            //       ),
+            //       countPostion: CountPostion.bottom,
+            //       likeBuilder: (bool isLiked) {
+            //         return Icon(
+            //           !isLiked ?AntDesign.like1:AntDesign.like1,
+            //           color: !isLiked ? Colors.black38 : Colors.blue,
+            //           size: 35,
+            //         );
+            //       },
+            //      // likeCount: 30,
+            //       countBuilder: (int? count, bool isLiked, String text) {
+            //         var color = isLiked ? Colors.black : Colors.black;
+            //         Widget result;
+            //         if (count == 0) {
+            //           result = Text(
+            //             "0",textAlign: TextAlign.center,
+            //             style: TextStyle(color: color),
+            //           );
+            //         } else
+            //           result = Text(
+            //             text,
+            //             style: TextStyle(color: color),
+            //           );
+            //         return result;
+            //       },
+            //
+            //     ),
+            //
+            //
+            //
+            //   ],
+            // )
+
+          ],
         ),
       ),
     );

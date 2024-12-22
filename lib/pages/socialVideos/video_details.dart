@@ -30,7 +30,9 @@ import '../../providers/userProvider.dart';
 import '../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../chat/entrepriseChat.dart';
 import '../postComments.dart';
+import '../user/detailsOtherUser.dart';
 import 'afrovideos/SimpleVideoView.dart';
+import 'afrovideos/videoWidget.dart';
 
 
 
@@ -551,6 +553,21 @@ class _PostVideosState extends State<OnlyPostVideo> {
 
     return usersChat;
   }
+  void _showUserDetailsModalDialog(UserData user, double w, double h) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+
+          content: DetailsOtherUser(
+            user: user,
+            w: w,
+            h: h,
+          ),
+        );
+      },
+    );
+  }
 
 
   @override
@@ -627,11 +644,11 @@ class _PostVideosState extends State<OnlyPostVideo> {
                             //  height: MediaQuery.of(context).size.height,
                             child: Stack(
                               children: [
-                                // VideoWidget(post: datas[index]!),
-                                Container(
-                                    width: width,
-                                    height: height*0.99,
-                                    child: SimpleVideoPlayerWidget(videoUrl: datas[index].url_media!)),
+                                VideoWidget(post: datas[index]!),
+                                // Container(
+                                //     width: width,
+                                //     height: height*0.99,
+                                //     child: SimpleVideoPlayerWidget(videoUrl: datas[index].url_media!)),
                                 // Container(
                                 //   padding: const EdgeInsets.all(10.0),
                                 //   decoration: BoxDecoration(
@@ -867,31 +884,37 @@ class _PostVideosState extends State<OnlyPostVideo> {
 
                                               ],
                                               crossAxisAlignment: CrossAxisAlignment.start,
-                                            ): Row(
-                                              children: [
-                                                Container(
-                                                  height: 30.0,
-                                                  width: 30.0,
-                                                  decoration: BoxDecoration(
-                                                      border:
-                                                      Border.all(width: 1.0, color: Colors.white),
-                                                      shape: BoxShape.circle,
-                                                      image: DecorationImage(
-                                                          image: NetworkImage( datas[index].user!.imageUrl!),
-                                                          fit: BoxFit.cover)),
-                                                ),
-                                                const SizedBox(
-                                                  width: 5.0,
-                                                ),
-                                                Text(
-                                                  "@${datas[index].user!.pseudo!}",
-                                                  style: const TextStyle(
-                                                    fontSize: 12.0, color: Colors.white,),
-                                                ),
-                                                const SizedBox(
-                                                  width: 5.0,
-                                                )
-                                              ],
+                                            ): TextButton(
+                                              onPressed: () {
+                                                _showUserDetailsModalDialog(datas[index].user!, width, height);
+
+                                              },
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    height: 30.0,
+                                                    width: 30.0,
+                                                    decoration: BoxDecoration(
+                                                        border:
+                                                        Border.all(width: 1.0, color: Colors.white),
+                                                        shape: BoxShape.circle,
+                                                        image: DecorationImage(
+                                                            image: NetworkImage( datas[index].user!.imageUrl!),
+                                                            fit: BoxFit.cover)),
+                                                  ),
+                                                  const SizedBox(
+                                                    width: 5.0,
+                                                  ),
+                                                  Text(
+                                                    "@${datas[index].user!.pseudo!}",
+                                                    style: const TextStyle(
+                                                      fontSize: 12.0, color: Colors.white,),
+                                                  ),
+                                                  const SizedBox(
+                                                    width: 5.0,
+                                                  )
+                                                ],
+                                              ),
                                             ),
                                             const SizedBox(
                                               height: 12.0,
@@ -915,127 +938,127 @@ class _PostVideosState extends State<OnlyPostVideo> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: Column(
                                         children: [
-                                          const SizedBox(
-                                            height: 20.0,
-                                          ),
-                                          StatefulBuilder(
-
-                                              builder: (BuildContext context, void Function(void Function()) setState) {
-                                                return Container(
-                                                  child:    isUserAbonne(datas[index].user!.userAbonnesIds!,
-                                                      authProvider.loginUserData.id!)?
-                                                  Container(
-
-                                                    child: Icon(Icons.check_circle,color:Colors.green),
-                                                    alignment: Alignment.center,
-
-                                                  ):
-                                                  Container(
-
-                                                    child: TextButton(
-                                                      onPressed:abonneTap?
-                                                          ()  { }:
-                                                          ()async{
-                                                        if (!isUserAbonne(datas[index].user!.userAbonnesIds!,
-                                                            authProvider.loginUserData.id!)) {
-                                                          setState(() {
-                                                            abonneTap=true;
-                                                          });
-                                                          UserAbonnes userAbonne = UserAbonnes();
-                                                          userAbonne.compteUserId=authProvider.loginUserData.id;
-                                                          userAbonne.abonneUserId=datas[index].user!.id;
-
-                                                          userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                                          userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                                          await  userProvider.sendAbonnementRequest(userAbonne,datas[index].user!,context).then((value) async {
-                                                            if (value) {
-
-
-                                                              // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                                              authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                                              await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                                              if (datas[index].user!.oneIgnalUserid!=null&&datas[index].user!.oneIgnalUserid!.length>5) {
-                                                                await authProvider.sendNotification(
-                                                                    userIds: [datas[index].user!.oneIgnalUserid!],
-                                                                    smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                                    send_user_id: "${authProvider.loginUserData.id!}",
-                                                                    recever_user_id: "${datas[index].user!.id!}",
-                                                                    message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
-                                                                    type_notif: NotificationType.ABONNER.name,
-                                                                    post_id: "${datas[index]!.id!}",
-                                                                    post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                                );
-                                                                NotificationData notif=NotificationData();
-                                                                notif.id=firestore
-                                                                    .collection('Notifications')
-                                                                    .doc()
-                                                                    .id;
-                                                                notif.titre="Nouveau Abonnement ✅";
-                                                                notif.media_url=authProvider.loginUserData.imageUrl;
-                                                                notif.type=NotificationType.ABONNER.name;
-                                                                notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                                                notif.users_id_view=[];
-                                                                notif.user_id=authProvider.loginUserData.id;
-                                                                notif.receiver_id="${datas[index].user!.id!}";
-                                                                notif.updatedAt =
-                                                                    DateTime.now().microsecondsSinceEpoch;
-                                                                notif.createdAt =
-                                                                    DateTime.now().microsecondsSinceEpoch;
-                                                                notif.status = PostStatus.VALIDE.name;
-
-                                                                // users.add(pseudo.toJson());
-
-                                                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                                                              }
-                                                              SnackBar snackBar = SnackBar(
-                                                                content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                                              );
-                                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                              setState(() {
-                                                                abonneTap=false;
-
-                                                              });
-                                                            }  else{
-                                                              SnackBar snackBar = SnackBar(
-                                                                content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                                              );
-                                                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                              setState(() {
-                                                                abonneTap=false;
-                                                              });
-                                                            }
-                                                          },);
-
-
-                                                          setState(() {
-                                                            abonneTap=false;
-                                                          });
-                                                        }
-                                                      },
-                                                      child:abonneTap? Center(
-                                                        child: LoadingAnimationWidget.flickr(
-                                                          size: 20,
-                                                          leftDotColor: Colors.green,
-                                                          rightDotColor: Colors.black,
-                                                        ),
-                                                      ):
-                                                      Container(
-
-                                                        child: Icon(Icons.add,color:Colors.white,size: 15,),
-                                                        alignment: Alignment.center,
-                                                        width: 40,
-                                                        height: 20,
-                                                        decoration: BoxDecoration(
-                                                            color: Colors.red,
-                                                            borderRadius: BorderRadius.all(Radius.circular(10))
-                                                        ),
-                                                      ),),
-                                                  ),
-                                                );
-                                              }
-                                          ),
+                                          // const SizedBox(
+                                          //   height: 20.0,
+                                          // ),
+                                          // StatefulBuilder(
+                                          //
+                                          //     builder: (BuildContext context, void Function(void Function()) setState) {
+                                          //       return Container(
+                                          //         child:    isUserAbonne(datas[index].user!.userAbonnesIds!,
+                                          //             authProvider.loginUserData.id!)?
+                                          //         Container(
+                                          //
+                                          //           child: Icon(Icons.check_circle,color:Colors.green),
+                                          //           alignment: Alignment.center,
+                                          //
+                                          //         ):
+                                          //         Container(
+                                          //
+                                          //           child: TextButton(
+                                          //             onPressed:abonneTap?
+                                          //                 ()  { }:
+                                          //                 ()async{
+                                          //               if (!isUserAbonne(datas[index].user!.userAbonnesIds!,
+                                          //                   authProvider.loginUserData.id!)) {
+                                          //                 setState(() {
+                                          //                   abonneTap=true;
+                                          //                 });
+                                          //                 UserAbonnes userAbonne = UserAbonnes();
+                                          //                 userAbonne.compteUserId=authProvider.loginUserData.id;
+                                          //                 userAbonne.abonneUserId=datas[index].user!.id;
+                                          //
+                                          //                 userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                          //                 userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                                          //                 await  userProvider.sendAbonnementRequest(userAbonne,datas[index].user!,context).then((value) async {
+                                          //                   if (value) {
+                                          //
+                                          //
+                                          //                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                                          //                     authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                                          //                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                          //                     if (datas[index].user!.oneIgnalUserid!=null&&datas[index].user!.oneIgnalUserid!.length>5) {
+                                          //                       await authProvider.sendNotification(
+                                          //                           userIds: [datas[index].user!.oneIgnalUserid!],
+                                          //                           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                          //                           send_user_id: "${authProvider.loginUserData.id!}",
+                                          //                           recever_user_id: "${datas[index].user!.id!}",
+                                          //                           message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                                          //                           type_notif: NotificationType.ABONNER.name,
+                                          //                           post_id: "${datas[index]!.id!}",
+                                          //                           post_type: PostDataType.VIDEO.name, chat_id: ''
+                                          //                       );
+                                          //                       NotificationData notif=NotificationData();
+                                          //                       notif.id=firestore
+                                          //                           .collection('Notifications')
+                                          //                           .doc()
+                                          //                           .id;
+                                          //                       notif.titre="Nouveau Abonnement ✅";
+                                          //                       notif.media_url=authProvider.loginUserData.imageUrl;
+                                          //                       notif.type=NotificationType.ABONNER.name;
+                                          //                       notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                          //                       notif.users_id_view=[];
+                                          //                       notif.user_id=authProvider.loginUserData.id;
+                                          //                       notif.receiver_id="${datas[index].user!.id!}";
+                                          //                       notif.updatedAt =
+                                          //                           DateTime.now().microsecondsSinceEpoch;
+                                          //                       notif.createdAt =
+                                          //                           DateTime.now().microsecondsSinceEpoch;
+                                          //                       notif.status = PostStatus.VALIDE.name;
+                                          //
+                                          //                       // users.add(pseudo.toJson());
+                                          //
+                                          //                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                          //
+                                          //
+                                          //                     }
+                                          //                     SnackBar snackBar = SnackBar(
+                                          //                       content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                          //                     );
+                                          //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                          //                     setState(() {
+                                          //                       abonneTap=false;
+                                          //
+                                          //                     });
+                                          //                   }  else{
+                                          //                     SnackBar snackBar = SnackBar(
+                                          //                       content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                                          //                     );
+                                          //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                          //                     setState(() {
+                                          //                       abonneTap=false;
+                                          //                     });
+                                          //                   }
+                                          //                 },);
+                                          //
+                                          //
+                                          //                 setState(() {
+                                          //                   abonneTap=false;
+                                          //                 });
+                                          //               }
+                                          //             },
+                                          //             child:abonneTap? Center(
+                                          //               child: LoadingAnimationWidget.flickr(
+                                          //                 size: 20,
+                                          //                 leftDotColor: Colors.green,
+                                          //                 rightDotColor: Colors.black,
+                                          //               ),
+                                          //             ):
+                                          //             Container(
+                                          //
+                                          //               child: Icon(Icons.add,color:Colors.white,size: 15,),
+                                          //               alignment: Alignment.center,
+                                          //               width: 40,
+                                          //               height: 20,
+                                          //               decoration: BoxDecoration(
+                                          //                   color: Colors.red,
+                                          //                   borderRadius: BorderRadius.all(Radius.circular(10))
+                                          //               ),
+                                          //             ),),
+                                          //         ),
+                                          //       );
+                                          //     }
+                                          // ),
                                           const SizedBox(
                                             height: 5.0,
                                           ),

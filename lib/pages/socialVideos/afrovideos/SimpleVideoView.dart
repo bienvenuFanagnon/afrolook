@@ -28,7 +28,7 @@ class _SimpleVideoPlayerWidgetState extends State<SimpleVideoPlayerWidget> {
       cupertinoProgressColors: ChewieProgressColors(backgroundColor: Colors.green,playedColor: Colors.green,handleColor: Colors.green),
       // aspectRatio: 16 / 9, // Réglage de l'aspect ratio de la vidéo
       // autoPlay: true,
-      aspectRatio: _videoPlayerController.value.aspectRatio, // Définir si la vidéo doit démarrer automatiquement
+      // aspectRatio: _videoPlayerController.value.aspectRatio, // Définir si la vidéo doit démarrer automatiquement
       looping: true, // Définir si la vidéo doit être en mode boucle
       allowFullScreen: true,
       autoInitialize: true,
