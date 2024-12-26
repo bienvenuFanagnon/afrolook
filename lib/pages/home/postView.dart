@@ -8,6 +8,8 @@ import 'package:afrotok/pages/user/otherUser/otherUser.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -2494,14 +2496,41 @@ class _PostViewState extends State<PostView>
                       alignment: Alignment.topLeft,
                       child: SizedBox(
                         width: width * 0.8,
-                        height: 50,
+                        height: post.type==PostType.PUB.name?70:50,
                         child: Container(
                           alignment: Alignment.centerLeft,
-                          child: TextCustomerPostDescription(
-                            titre: "${post.description}",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.normal,
+                          child: post.user!.role==UserRole.ADM.name?Linkify(
+                            onOpen: (link) async {
+                              if (!await launchUrl(Uri.parse(link.url))) {
+                                throw Exception('Could not launch ${link.url}');
+                              }
+                            },
+                            text: "${post.description}",
+                            style: TextStyle(color: Colors.white),
+                            linkStyle: TextStyle(color: Colors.green),
+                          ):
+                          HashTagText(
+                            text: "${post.description}",
+                            decoratedStyle: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+
+                              color: Colors.green,
+                              fontFamily: 'Nunito', // Définir la police Nunito
+                            ),
+                            basicStyle: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.normal,
+                              fontFamily: 'Nunito', // Définir la police Nunito
+                            ),
+                            textAlign: TextAlign.left, // Centrage du texte
+                            maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                            softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                            // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                            onTap: (text) {
+                              print(text);
+                            },
                           ),
                         ),
                       ),

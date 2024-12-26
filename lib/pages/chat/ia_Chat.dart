@@ -336,7 +336,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                       SizedBox(
                         //width: 100,
                         child: TextCustomerUserTitle(
-                          titre: "Nombre de Jetons",
+                          titre: "Publicash",
                           fontSize: SizeText.homeProfileTextSize,
                           couleur: ConstColors.textColors,
                           fontWeight: FontWeight.bold,
@@ -761,7 +761,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
             await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
 
 
-            await authProvider.generateText(ancien_messages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte, user: authProvider.loginUserData).then((value) async {
+            await authProvider.generateText(ancienMessages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte, user: authProvider.loginUserData).then((value) async {
 
 
 

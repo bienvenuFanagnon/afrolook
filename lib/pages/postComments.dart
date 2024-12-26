@@ -674,7 +674,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                 child: SizedBox(
                                   width: width * 0.2,
                                   child: TextCustomerPostDescription(
-                                    titre: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message!}",
+                                    titre: "${pcm.status==PostStatus.SUPPRIMER.name?"message supprimé":pcm.message!}",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
                                     fontWeight: FontWeight.w400,
@@ -1556,9 +1556,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   });
 
                   String textComment=_controller.text;
+                  _controller.clear();
                   FocusScope.of(context).unfocus();
 
-                  if (_controller.text.isNotEmpty) {
+                  if (textComment.isNotEmpty) {
                     // _controller.text="";
                     if (replying) {
 
@@ -1774,7 +1775,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
                   });
 
-                  _controller.clear();
+                  // _controller.clear();
                 },
               ),
             ],

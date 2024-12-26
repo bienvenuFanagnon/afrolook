@@ -31,7 +31,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=16;
+  late int app_version_code=18;
   int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {
@@ -60,73 +60,78 @@ class _ChargementState extends State<SplahsChargement> {
         // postProvider.getPostsImages(limitePosts).then((value) {
         //
         // },);
+        try{
+          authProvider.getIsFirst().then((value) {
+            printVm("isfirst: ${value}");
+            if (value==null||value==false) {
+              printVm("is_first");
 
-        authProvider.getIsFirst().then((value) {
-          printVm("isfirst: ${value}");
-          if (value==null||value==false) {
-            printVm("is_first");
-
-            authProvider.storeIsFirst(true);
-            Navigator.pushNamed(context, '/introduction');
-
-
-
-          }else{
-            // authProvider.storeIsFirst(false);
-            printVm("is_not_first");
-
-            authProvider.getToken().then((token) async {
-              printVm("token: ${token}");
-
-              if (token==null||token=='') {
-                printVm("token: existe pas");
-                Navigator.pushNamed(context, '/welcome');
+              authProvider.storeIsFirst(true);
+              Navigator.pushNamed(context, '/introduction');
 
 
 
+            }else{
+              // authProvider.storeIsFirst(false);
+              printVm("is_not_first");
 
-              }else{
-                printVm("token: existe");
-                await    authProvider.getLoginUser(token!).then((value) async {
-                  if (value) {
-                    // await userProvider.getAllAnnonces();
-                    userProvider.changeState(user: authProvider.loginUserData,
-                        state: UserState.ONLINE.name);
+              authProvider.getToken().then((token) async {
+                printVm("token: ${token}");
 
-                    // Navigator.pop(context);
-                    if(widget.postId!=null&&widget.postId.isNotEmpty){
-                      await postProvider.getPostsImagesById(widget.postId!).then((posts) {
-                        if(posts.isNotEmpty){
-                          Navigator.pushNamed(
-                              context,
-                              '/home');
-Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                        }else{
-                          Navigator.pushNamed(
-                              context,
-                              '/home');
-                        }
+                if (token==null||token=='') {
+                  printVm("token: existe pas");
+                  Navigator.pushNamed(context, '/welcome');
 
-                      },);
+
+
+
+                }else{
+                  printVm("token: existe");
+                  await    authProvider.getLoginUser(token!).then((value) async {
+                    if (value) {
+                      // await userProvider.getAllAnnonces();
+                      userProvider.changeState(user: authProvider.loginUserData,
+                          state: UserState.ONLINE.name);
+
+                      // Navigator.pop(context);
+                      if(widget.postId!=null&&widget.postId.isNotEmpty){
+                        await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+                          if(posts.isNotEmpty){
+                            Navigator.pushNamed(
+                                context,
+                                '/home');
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                          }else{
+                            Navigator.pushNamed(
+                                context,
+                                '/home');
+                          }
+
+                        },);
+                      }else{
+                        Navigator.pushNamed(
+                            context,
+                            '/home');
+                      }
+
+                      //  Navigator.pushNamed(context, '/chargement');
+
                     }else{
-                      Navigator.pushNamed(
-                          context,
-                          '/home');
+                      Navigator.pushNamed(context, '/welcome');
+
                     }
 
-                  //  Navigator.pushNamed(context, '/chargement');
+                  },);
+                }
+              },);
 
-                  }else{
-                    Navigator.pushNamed(context, '/welcome');
+            }
+          },);
 
-                  }
+        }catch(e){
+          printVm("erreur chargement: $e");
+        }
 
-                },);
-              }
-            },);
-
-          }
-        },);
 
 
 
@@ -213,7 +218,7 @@ Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post
                     color: ConstColors.chargementColors,
                     repeat: true,
                     //  animationController: animationController,
-                    child: Image.asset('assets/logo/afrolook_noel.png',height: 70,width: 70,),
+                    child: Image.asset('assets/logo/afrolook_logo.png',height: 70,width: 70,),
                   ),
                 ),
                 Text("Connexion...")

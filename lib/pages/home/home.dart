@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
+import 'package:afrotok/pages/ia/gemini/geminibot.dart';
 
 import 'package:afrotok/pages/user/detailsOtherUser.dart';
 import 'package:afrotok/pages/user/otherUser/otherUser.dart';
@@ -58,6 +59,8 @@ import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../ia/gemini/geminiChat.dart';
+import '../ia/gemini/geminiTextChat.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 
@@ -1537,17 +1540,18 @@ class _MyHomePageState extends State<MyHomePage>
                                   setState(() {
                                     onTap = false;
                                   });
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => IaChat(
-                                          chat: chat,
-                                          user: authProvider.loginUserData,
-                                          userIACompte: value.first,
-                                          instruction:
-                                              '${authProvider.appDefaultData.ia_instruction!}',
-                                        ),
-                                      ));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChat(),));
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first,),));
+
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
+                                  //         chat: chat,
+                                  //         user: authProvider.loginUserData,
+                                  //         userIACompte: value.first,
+                                  //         instruction:
+                                  //             '${authProvider.appDefaultData.ia_instruction!}',
+                                  //       ),
+                                  //     ));
                                 });
                               } else {
                                 Navigator.push(
@@ -1609,7 +1613,7 @@ class _MyHomePageState extends State<MyHomePage>
                       width: 20,
                     ),
                     title: TextCustomerMenu(
-                      titre: "Classement",
+                      titre: "TOP 10 Afrolook Stars",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: ConstColors.textColors,
                       fontWeight: FontWeight.w600,
@@ -1729,7 +1733,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.16 (16)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.18 (18)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,

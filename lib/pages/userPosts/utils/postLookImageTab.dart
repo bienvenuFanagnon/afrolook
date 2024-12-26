@@ -211,7 +211,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..updatedAt = DateTime.now().microsecondsSinceEpoch
         ..createdAt = DateTime.now().microsecondsSinceEpoch
         ..status = PostStatus.VALIDE.name
-        ..type = PostType.POST.name
+        ..type =isSwitched? PostType.PUB.name:PostType.POST.name
+        ..urlLink =isSwitched? _linkController.text:""
         ..comments = 0
         ..nombrePersonneParJour = 60
         ..dataType = PostDataType.IMAGE.name
@@ -539,15 +540,13 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
   late final homeViewModel = HomeViewModel();
   late final _descriptionController = FlutterTaggerController(
-    //Initial text value with tag is formatted internally
-    //following the construction of FlutterTaggerController.
-    //After this controller is constructed, if you
-    //wish to update its text value with raw tag string,
-    //call (_controller.formatTags) after that.
     text:
     "",
   );
+  late final _linkController = TextEditingController();
   late final _focusNode = FocusNode();
+
+  bool isSwitched =false;
 
   void _focusListener() {
     if (!_focusNode.hasFocus) {
@@ -667,8 +666,42 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                         },
                       ),
                       SizedBox(
+                        height: 15.0,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Désactivé"),
+                          Switch(
+                            value: isSwitched,
+                            onChanged: (value) {
+                              setState(() {
+                                isSwitched = value;
+                              });
+                            },
+                            activeColor: Colors.green, // Couleur quand activé
+                            inactiveThumbColor: Colors.grey, // Couleur quand désactivé
+                          ),
+                          const Text("Activé"),
+                        ],
+                      ),
+                      SizedBox(
                         height: 25.0,
                       ),
+                      if (isSwitched)
+                      TextFormField(
+                        keyboardType: TextInputType.text,
+
+                        controller: _linkController,
+                        decoration: InputDecoration(
+                          hintText: 'lien',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0), // Add rounded corners
+                            borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
+                          ),
+                        ),
+                      ),
+
 
                       if (!widget.showThumbnail)
                         ClipRRect(

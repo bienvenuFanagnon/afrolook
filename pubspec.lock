@@ -803,6 +803,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.5.0"
+  flutter_gemini_bot:
+    dependency: "direct main"
+    description:
+      name: flutter_gemini_bot
+      sha256: "1e0c46b2477383262110edb67fc51ecd2f1f78eafead7accea5f9917cfbbda55"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   flutter_hooks:
     dependency: transitive
     description:
@@ -981,6 +989,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
+  gemini_ai:
+    dependency: "direct main"
+    description:
+      name: gemini_ai
+      sha256: "3a14f7b68750255fca099e207aa76bae0356179a03d8f26bf6a65b31f42c61be"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  gemini_ai_chat:
+    dependency: "direct main"
+    description:
+      name: gemini_ai_chat
+      sha256: b675a8d8ad263b2076e86c0467f1f2b6e5b452474d2e2d7161eb4d2cf4adbfc2
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   geocoding:
     dependency: "direct main"
     description:

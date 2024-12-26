@@ -105,7 +105,7 @@ class _UserClassementState extends State<UserClassement> {
     return Scaffold(
       appBar: AppBar(
         title: TextCustomerPageTitle(
-          titre: "Classement par points",
+          titre: "TOP 10 Afrolook Stars",
           fontSize: SizeText.homeProfileTextSize,
           couleur: ConstColors.textColors,
           fontWeight: FontWeight.bold,
@@ -127,17 +127,17 @@ class _UserClassementState extends State<UserClassement> {
             Padding(
               padding: EdgeInsets.only(left: 16, right: 16, top: 10),
               child: Text(
-                "Période",
+                "Classement par popularité",
                 style:
-                TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
             Padding(
               padding: EdgeInsets.only(left: 16, right: 16, top: 10),
               child: Text(
-                "1 janvier 2024 - ...",
+                "Période 1 Décembre 2024 - ...",
                 style:
-                TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             ListView.builder(
@@ -162,6 +162,7 @@ class _UserClassementState extends State<UserClassement> {
                     isMessageRead: (index == 0 || index == 3) ? true : false,
                     classe: index + 1,
                     avatarSize: 30,
+                    popularite: userProvider.listAllUsers[index].popularite!*100,
                   ),
                 );
               },
@@ -178,6 +179,8 @@ class ConversationList extends StatefulWidget {
   int classe;
   String name;
   String messageText;
+  double popularite;
+  late double populariteFixed=0.0;
   String imageUrl;
   int points;
   double avatarSize;
@@ -186,6 +189,7 @@ class ConversationList extends StatefulWidget {
       {required this.classe,
       required this.name,
         required this.avatarSize,
+        required this.popularite,
       required this.messageText,
       required this.imageUrl,
       required this.points,
@@ -195,6 +199,12 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends State<ConversationList> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    // widget.populariteFixed=widget.popularite*100;
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -246,15 +256,23 @@ class _ConversationListState extends State<ConversationList> {
                     color: Colors.transparent,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 5,
                       children: <Widget>[
                         Text(
                           widget.name,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600),
                         ),
-                        SizedBox(
-                          height: 6,
+                        Text(
+                          "popularité: ${widget.popularite.toStringAsFixed(2)} %",
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.green.shade600,
+                              fontWeight: widget.isMessageRead
+                                  ? FontWeight.bold
+                                  : FontWeight.normal),
                         ),
+
                         Text(
                           widget.messageText,
                           style: TextStyle(

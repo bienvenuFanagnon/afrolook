@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +18,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../constant/constColors.dart';
 import '../../constant/sizeText.dart';
@@ -344,6 +346,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
   // Limiter la taille de la police à une valeur minimale
   fontSize = fontSize < 15 ? 15 : fontSize;
   int limitePosts = 30;
+  printVm("post.user!.role :${post.type} ${post.user!.role}");
 
 
 
@@ -363,6 +366,8 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                           padding: const EdgeInsets.only(right: 8.0),
                           child: GestureDetector(
                             onTap: () {
+                              // printVm("post.user!.role : ${post.user!.role}");
+
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -647,6 +652,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                              */
                           ],
                         ),
+
                       ],
                     ),
                     IconButton(
@@ -660,6 +666,16 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                         )),
                   ],
                 ),
+                Visibility(
+                    visible: post.type==PostType.PUB.name,
+                    child: Row(
+                      children: [
+                        Icon(Icons.public,color: Colors.green,),
+                        Text(" Publicité",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w900),),
+                      ],
+                    )
+                ),
+
                 SizedBox(
                   height: 5,
                 ),
@@ -670,33 +686,55 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: SizedBox(
-                      width: width * 0.8,
-                      height: 50,
+                      width:post.type==PostType.PUB.name?width*0.82: width * 0.8,
                       child: Container(
                           alignment: Alignment.centerLeft,
-                          child:HashTagText(
-                            text: "${post.description}",
-                            decoratedStyle: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          child:SizedBox(
+                            height:post.type==PostType.PUB.name?70: 60,
 
-                              color: Colors.blue,
-                              fontFamily: 'Nunito', // Définir la police Nunito
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  Visibility(
+                                      visible: post.type==PostType.PUB.name,
+                                      child: TextButton(onPressed: () async {
+                                        if (!await launchUrl(Uri.parse('${post.urlLink}'))) {
+                                          throw Exception('Could not launch ${'${post.urlLink}'}');
+                                        }
+                              
+                                      }, child: Text('${post.urlLink}',style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.normal,
+                                        fontFamily: 'Nunito', // Définir la police Nunito
+                                      ),))),
+                                  HashTagText(
+                                    text: "${post.description}",
+                                    decoratedStyle: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                              
+                                      color: Colors.green,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    basicStyle: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.normal,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    textAlign: TextAlign.left, // Centrage du texte
+                                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                    onTap: (text) {
+                                      print(text);
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                            basicStyle: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.normal,
-                              fontFamily: 'Nunito', // Définir la police Nunito
-                            ),
-                            textAlign: TextAlign.left, // Centrage du texte
-                            maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                            softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                            // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                            onTap: (text) {
-                              print(text);
-                            },
-                          )
+                          ),
                         // TextCustomerPostDescription(
                         //   titre: "${post.description}",
                         //   fontSize: fontSize,
@@ -749,7 +787,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                   text: "${post.description}",
                                   decoratedStyle: TextStyle(
                                     fontSize: fontSize,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w600,
 
                                     color: Colors.green,
                                     fontFamily: 'Nunito', // Définir la police Nunito
@@ -757,10 +795,10 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                   basicStyle: TextStyle(
                                     fontSize: fontSize,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.normal,
                                     fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
-                                  textAlign: TextAlign.center, // Centrage du texte
+                                  textAlign: TextAlign.left, // Centrage du texte
                                   maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
                                   softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
                                   // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse

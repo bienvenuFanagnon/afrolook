@@ -281,7 +281,8 @@ setMessageNonLu(int nbr){
       // Get docs from collection reference
       QuerySnapshot querySnapshotUser = await userCollect
       // .where("id",isNotEqualTo: currentUserId)
-          .orderBy('point_contribution', descending: true)
+      //     .orderBy('point_contribution', descending: true)
+          .orderBy('popularite', descending: true)
           .limit(10)
           .get();
 

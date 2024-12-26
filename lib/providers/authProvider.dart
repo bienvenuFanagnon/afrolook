@@ -323,22 +323,6 @@ updateUser(loginUserData);
     }
   }
 
-  Future<bool> updateNotif(NotificationData notif) async {
-    try{
-
-
-
-      await FirebaseFirestore.instance
-          .collection('Notifications')
-          .doc(notif.id)
-          .update(notif.toJson());
-      //printVm("notif update : ${notif!.toJson()}");
-      return true;
-    }catch(e){
-      printVm("erreur update Invitations : ${e}");
-      return false;
-    }
-  }
 
   Future<List<UserData>> getUserById(String id) async {
     //await getAppData();
@@ -404,6 +388,23 @@ updateUser(loginUserData);
 
     return listOSUserid;
   }
+  Future<bool> updateNotif(NotificationData notif) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Notifications')
+          .doc(notif.id)
+          .update(notif.toJson());
+      //printVm("notif update : ${notif!.toJson()}");
+      return true;
+    }catch(e){
+      printVm("erreur update Invitations : ${e}");
+      return false;
+    }
+  }
+
 
 
   Future<bool> getUserByPhone(String phone) async {
@@ -584,8 +585,66 @@ updateUser(loginUserData);
     notifyListeners();
     return hasData;
   }
+  Future<String?> generateText({
+    required List<Message> ancienMessages,
+    required String message,
+    required String regle,
+    required UserData user,
+    required UserIACompte ia,
+  }) async {
+    final apiKey = "AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
+    List<Content> historique = [];
 
-  Future<String?> generateText({required List<Message> ancien_messages,required String message,required String regle,required UserData user,required UserIACompte ia}) async {
+    // Ajouter les messages historiques avec leur rôle (par exemple, utilisateur ou assistant)
+    // for (Message msg in ancienMessages) {
+    //   historique.add(Content.text(msg.message!));
+    // }
+
+    // Ajouter les 10 derniers messages seulement si l'historique dépasse 10
+    int startIndex = ancienMessages.length > 10 ? ancienMessages.length - 10 : 0;
+    for (int i = startIndex; i < ancienMessages.length; i++) {
+      historique.add(Content.text(ancienMessages[i].message!));
+    }
+
+    try {
+      // Initialisation du modèle avec des instructions adaptées
+      final model = GenerativeModel(
+        model: 'gemini-2.0-flash-exp',
+        apiKey: apiKey,
+        systemInstruction: Content.system(
+          "${regle}. Prenez en compte le genre de la personne avec qui vous discutez : actuellement, vous discutez avec ${user.genre == "Homme" ? 'un homme' : 'une femme'}.",
+        ),
+      );
+
+      // Préparation du message actuel à ajouter à l'historique
+      final prompt = Content.text(message);
+      historique.add(prompt);
+
+      // Initialisation de la conversation avec l'historique complet
+      model.startChat(history: historique);
+
+      // Génération de la réponse
+      final response = await model.generateContent([prompt]);
+      if (response != null) {
+        printVm("Data token: ${response.usageMetadata!.totalTokenCount!}");
+
+        // Mise à jour des jetons restants pour l'utilisateur IA
+        ia.jetons = ia.jetons! - response.usageMetadata!.totalTokenCount!;
+        await firestore.collection('User_Ia_Compte').doc(ia.id!).update(ia.toJson());
+
+        return response.text; // Retourne le texte généré
+      } else {
+        return null; // Si aucune réponse n'est générée
+      }
+    } catch (error) {
+      // Gestion des erreurs
+      printVm("Erreur lors de la génération du texte : $error");
+      return ""; // Ou une autre valeur par défaut
+    }
+  }
+
+
+  Future<String?> generateText2({required List<Message> ancien_messages,required String message,required String regle,required UserData user,required UserIACompte ia}) async {
     final apiKey="AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
     List<Content> contents=[];
     for(Message message in ancien_messages){
@@ -596,7 +655,8 @@ updateUser(loginUserData);
 
     try {
       //final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
-      final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}. vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
+      // final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
+      final model = GenerativeModel(model: 'gemini-2.0-flash-exp', apiKey: apiKey,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
       //final prompt = "pour chaque question voici les regle a respecter "${regle}" voici la question "${message}"";
       final prompt = "${message}";
       final content = [Content.text(prompt)];

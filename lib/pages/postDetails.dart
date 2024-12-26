@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
@@ -517,9 +518,9 @@ class _DetailsPostState extends State<DetailsPost> {
     List<int> likes =[];
     List<int> loves =[];
     int idUser=7;
-    Color _color = _randomColor.randomColor(
-        colorHue: ColorHue.multiple(colorHues: [ColorHue.red, ColorHue.blue,ColorHue.green, ColorHue.orange,ColorHue.yellow, ColorHue.purple])
-    );
+    // Color _color = _randomColor.randomColor(
+    //     colorHue: ColorHue.multiple(colorHues: [ColorHue.red, ColorHue.blue,ColorHue.green, ColorHue.orange,ColorHue.yellow, ColorHue.purple])
+    // );
 
     int limitePosts=30;
 
@@ -688,6 +689,7 @@ class _DetailsPostState extends State<DetailsPost> {
                              */
                             ],
                           ),
+
                         ],
                       ),
                       // IconButton(
@@ -701,6 +703,16 @@ class _DetailsPostState extends State<DetailsPost> {
                       //     )),
                     ],
                   ),
+                  Visibility(
+                      visible: post.type==PostType.PUB.name,
+                      child: Row(
+                        children: [
+                          Icon(Icons.public,color: Colors.green,),
+                          Text("Publicité",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w900),),
+                        ],
+                      )
+                  ),
+
                   SizedBox(
                     height: 5,
                   ),
@@ -713,28 +725,45 @@ class _DetailsPostState extends State<DetailsPost> {
                         // height: 50,
                         child: Container(
                           alignment: Alignment.centerLeft,
-                          child: HashTagText(
-                            text: "${post.description}",
-                            decoratedStyle: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          child: Column(
+                            children: [
+                              Visibility(
+                                  visible: post.type==PostType.PUB.name,
+                                  child: TextButton(onPressed: () async {
+                                    if (!await launchUrl(Uri.parse('${post.urlLink}'))) {
+                                      throw Exception('Could not launch ${'${post.urlLink}'}');
+                                    }
 
-                              color: Colors.green,
-                              fontFamily: 'Nunito', // Définir la police Nunito
-                            ),
-                            basicStyle: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.normal,
-                              fontFamily: 'Nunito', // Définir la police Nunito
-                            ),
-                            textAlign: TextAlign.left, // Centrage du texte
-                            maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                            softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                            // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                            onTap: (text) {
-                              print(text);
-                            },
+                                  }, child: Text('${post.urlLink}',style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.normal,
+                                    fontFamily: 'Nunito', // Définir la police Nunito
+                                  ),))),
+                              HashTagText(
+                                text: "${post.description}",
+                                decoratedStyle: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+
+                                  color: Colors.green,
+                                  fontFamily: 'Nunito', // Définir la police Nunito
+                                ),
+                                basicStyle: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.normal,
+                                  fontFamily: 'Nunito', // Définir la police Nunito
+                                ),
+                                textAlign: TextAlign.left, // Centrage du texte
+                                maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                onTap: (text) {
+                                  print(text);
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -759,7 +788,7 @@ class _DetailsPostState extends State<DetailsPost> {
                     visible: post.dataType==PostDataType.TEXT.name?true:false,
 
                     child: Container(
-                      color: _color,
+                      color: Colors.brown,
                       child: Align(
                         alignment: Alignment.center,
                         child: SizedBox(
@@ -773,18 +802,18 @@ class _DetailsPostState extends State<DetailsPost> {
                             ),                          alignment: Alignment.centerLeft,
                             child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: HashTagText(
+                                child:HashTagText(
                                   text: "${post.description}",
                                   decoratedStyle: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
 
                                     color: Colors.green,
                                     fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
                                   basicStyle: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black87,
+                                    fontSize: 15,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.normal,
                                     fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
@@ -796,15 +825,6 @@ class _DetailsPostState extends State<DetailsPost> {
                                     print(text);
                                   },
                                 ),
-                                // Text(
-                                //   "${post.description}", textAlign: TextAlign.center,                       //overflow: TextOverflow.ellipsis,
-                                //   style: TextStyle(
-                                //     fontSize:post.description!.length<350?25:16,
-                                //     color: Colors.white,
-                                //     fontWeight: FontWeight.w600,
-                                //     //fontStyle: FontStyle.italic
-                                //   ),
-                                // )
                             ),
                           ),
                         ),

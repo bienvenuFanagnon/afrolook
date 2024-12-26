@@ -1127,6 +1127,7 @@ class Post {
   String? entreprise_id;
   String? type;
   String? status;
+  String? urlLink;
   String? dataType;
   String? description;
   String? contact_whatsapp;
@@ -1177,6 +1178,7 @@ class Post {
     this.commentaires,
     this.contact_whatsapp,
     this.description,
+    this.urlLink,
     this.createdAt,
     this.updatedAt,
     this.user,
@@ -1205,6 +1207,7 @@ class Post {
     likes = json['likes'];
     vues = json['vues'] == null ? 0 : json['vues'];
     partage = json['partage'] == null ? 0 : json['partage'];
+    urlLink = json['urlLink'] == null ? "" : json['urlLink'];
     users_like_id = json['users_like_id'] == null
         ? []
         : json['users_like_id'].cast<String>();
@@ -1235,6 +1238,7 @@ class Post {
     data['loves'] = this.loves;
     data['contact_whatsapp'] = this.contact_whatsapp;
     data['dataType'] = this.dataType;
+    data['urlLink'] = this.urlLink;
     data['images'] = this.images;
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;

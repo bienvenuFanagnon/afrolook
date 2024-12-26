@@ -22,7 +22,7 @@ class SignUpScreenTopImage extends StatelessWidget {
             const Spacer(),
             Expanded(
               flex: 8,
-              child: Image.asset('assets/logo/afrolook_noel.png',height: 120,),
+              child: Image.asset('assets/logo/afrolook_logo.png',height: 120,),
             ),
             const Spacer(),
           ],

@@ -16,8 +16,9 @@ class AchatJetonButton extends StatelessWidget {
           alignment: Alignment.center,
           color: ConstColors.buttonsColors,
           width: 100,
+          height: 30,
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(1.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -424,6 +424,20 @@ class PostProvider extends ChangeNotifier {
         // .orderBy('updated_at', descending: true)
         .limit(limite);
 
+
+    Query queryPub = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+    .where("type", isEqualTo: PostType.PUB.name)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .orderBy('created_at', descending: true)
+    // .orderBy('updated_at', descending: true)
+        .limit(limite);
+
 // 2. Récupérer les publications restantes
     Query queryOthers = postCollect
         .where(
@@ -469,11 +483,12 @@ class PostProvider extends ChangeNotifier {
     //     .limit(limite);
 
     // Effectuer les deux requêtes en parallèle
+    List<DocumentSnapshot> pubPosts = (await queryPub.get()).docs;
     List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
     List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
 
     // Combiner les résultats
-    List<DocumentSnapshot> querySnapshotPosts = [...todayPosts, ...otherPosts];
+    List<DocumentSnapshot> querySnapshotPosts = [...pubPosts,...todayPosts, ...otherPosts];
 
     // QuerySnapshot querySnapshotPost = await query.get();
 

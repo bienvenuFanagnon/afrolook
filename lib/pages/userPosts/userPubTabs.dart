@@ -582,6 +582,8 @@ class _UserPubImageState extends State<UserPubImage> {
   late  Uint8List? fileReadAsStringContent;
   int  limitePosts = 30;
 
+  bool isSwitched = false;
+
   Future<void> _getImages() async {
     await picker.pickMultiImage().then((images) {
       // Mettre à jour la liste des images
@@ -656,6 +658,7 @@ class _UserPubImageState extends State<UserPubImage> {
                         return null;
                       },
                     ),
+
                     SizedBox(
                       height: 25.0,
                     ),
