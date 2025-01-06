@@ -44,10 +44,10 @@ import 'otherUser/otherUser.dart';
 
 
 class DetailsOtherUser extends StatefulWidget {
-  final UserData user;
+  late  UserData user;
   final double w;
   final double h;
-  const DetailsOtherUser({super.key, required this.user, required this.w, required this.h});
+   DetailsOtherUser({super.key, required this.user, required this.w, required this.h});
 
   @override
   State<DetailsOtherUser> createState() => _DetailsOtherUserState();
@@ -654,13 +654,31 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                                   SnackBar snackBar = SnackBar(
                                     content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                   );
-                                  widget.user.userAbonnesIds!.add(authProvider.loginUserData.id!);
-                                  userProvider.updateUser(widget.user);
-                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                await  authProvider.getUserById(widget.user.id!).then((users) async {
+                                    if(users.isNotEmpty){
+                                      // users.first.abonnes=users.first.abonnes!+1;
+                                      users.first.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                      // widget.user.userAbonnesIds!.add(authProvider.loginUserData.id!);
+
+                                      widget.user= users.first;
+
+                                      widget.user.abonnes=widget.user.userAbonnesIds!.length;
+                                      // widget.user= users.first;
+
+                                      await userProvider.updateUser(widget.user);
+                                      setState(() {
+                                        abonneTap=false;
+
+                                      });
+                                    }
+                                  },);
+
                                   setState(() {
                                     abonneTap=false;
 
                                   });
+                                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
                                 }  else{
                                   SnackBar snackBar = SnackBar(
                                     content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),

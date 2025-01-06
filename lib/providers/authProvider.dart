@@ -275,8 +275,8 @@ class UserAuthProvider extends ChangeNotifier {
     if (list.isNotEmpty) {
       loginUserData = list.first;
       printVm("OneSignal=====");
-      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
-updateUser(loginUserData);
+//       loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+// updateUser(loginUserData);
 
     //  printVm("OneSignal id : ${OneSignal.User.pushSubscription.id}");
     //  printVm("OneSignal token : ${OneSignal.User.pushSubscription.token}");
@@ -344,12 +344,12 @@ updateUser(loginUserData);
     // Get data from docs and convert map to List
     list = querySnapshot.docs.map((doc) =>
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    for(UserData user in list){
-      user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-      updateUser(user);
-
-
-    }
+    // for(UserData user in list){
+    //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+    //   updateUser(user);
+    //
+    //
+    // }
 
 
 
@@ -377,8 +377,8 @@ updateUser(loginUserData);
         listOSUserid.add(u.oneIgnalUserid!);
         printVm("onesignaluser size : ${listOSUserid.length}");
 
-          u.abonnes=u.userAbonnesIds==null?0:u.userAbonnesIds!.length;
-          updateUser(u);
+          // u.abonnes=u.userAbonnesIds==null?0:u.userAbonnesIds!.length;
+          // updateUser(u);
 
 
 
@@ -430,8 +430,8 @@ updateUser(loginUserData);
 
     if (list.isNotEmpty) {
       for(UserData user in list){
-        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        updateUser(user);
+        // user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+        // updateUser(user);
 
 
       }
@@ -517,7 +517,7 @@ updateUser(loginUserData);
 
     await userService.getUserData(userId: currentUserId).then((value) async {
       loginUserData = value;
-      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+      // loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
 
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +
@@ -557,7 +557,7 @@ updateUser(loginUserData);
     await userService.getUserDataByPhone(phone: phone).then((value) async {
 
       loginUserData = value;
-      loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
+      // loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
 
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +

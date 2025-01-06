@@ -205,12 +205,12 @@ setMessageNonLu(int nbr){
         }
       });
 
-      for(UserData user in listUsers){
-        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        updateUser(user);
-
-
-      }
+      // for(UserData user in listUsers){
+      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+      //   updateUser(user);
+      //
+      //
+      // }
 
       listUserAnnonces=listUsers;
       printVm('list users ${listUsers.length}');
@@ -291,12 +291,12 @@ setMessageNonLu(int nbr){
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
 
-      for(UserData user in listAllUsers){
-        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        updateUser(user);
-
-
-      }
+      // for(UserData user in listAllUsers){
+      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+      //   updateUser(user);
+      //
+      //
+      // }
 
 
    //   printVm('list users ${listAllUsers.length}');
@@ -327,27 +327,42 @@ setMessageNonLu(int nbr){
       CollectionReference userCollect =
       FirebaseFirestore.instance.collection('Users');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-         //.where("id",isNotEqualTo: currentUserId)
-     //  .where("id",isNotEqualTo: currentUserId)
-        //  .orderBy('pseudo').startAt([Random().nextDouble()])
-      .orderBy('createdAt', descending: true)
-        //  .where('id', whereIn: alphabet)
-          .limit(limit)
-          .get();
+     //  QuerySnapshot querySnapshotUser = await userCollect
+     //     //.where("id",isNotEqualTo: currentUserId)
+     // //  .where("id",isNotEqualTo: currentUserId)
+     //    //  .orderBy('pseudo').startAt([Random().nextDouble()])
+     //  .orderBy('createdAt', descending: true)
+     //     .where('id', whereIn: alphabet)
+     //      .limit(limit)
+     //      .get();
+
+      // Générer une valeur aléatoire pour le point de départ
+      // double randomStartPoint = Random().nextDouble();
+      // // Récupérer les utilisateurs de manière aléatoire
+      // QuerySnapshot querySnapshotUser = await userCollect
+      //     // .orderBy('createdAt', descending: true)
+      //     .startAt([randomStartPoint])
+      //     .limit(limit)
+      //     .get();
+
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+      List<DocumentSnapshot> users = querySnapshot.docs;
+      users.shuffle(); // Mélanger la liste pour obtenir des utilisateurs aléatoires
+      List<DocumentSnapshot> usersDocs= users.take(limit).toList();
 
       // Afficher la liste
-      listUsers = querySnapshotUser.docs.map((doc) =>
+      // listUsers = querySnapshotUser.docs.map((doc) =>
+      listUsers = usersDocs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      for(UserData user in listUsers){
-        user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        updateUser(user);
+      // for(UserData user in listUsers){
+      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
+      //   updateUser(user);
+      //
+      //
+      // }
 
 
-      }
-
-
-      listUsers.shuffle();
+      // listUsers.shuffle();
       listUsers.shuffle();
 
 

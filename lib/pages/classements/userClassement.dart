@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:afrotok/models/model_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../auth/authTest/constants.dart';
+import '../user/detailsOtherUser.dart';
 
 class ChatUsers {
   String name;
@@ -162,7 +164,7 @@ class _UserClassementState extends State<UserClassement> {
                     isMessageRead: (index == 0 || index == 3) ? true : false,
                     classe: index + 1,
                     avatarSize: 30,
-                    popularite: userProvider.listAllUsers[index].popularite!*100,
+                    popularite: userProvider.listAllUsers[index].popularite!*100, user: userProvider.listAllUsers[index],
                   ),
                 );
               },
@@ -182,6 +184,7 @@ class ConversationList extends StatefulWidget {
   double popularite;
   late double populariteFixed=0.0;
   String imageUrl;
+  UserData user;
   int points;
   double avatarSize;
   bool isMessageRead;
@@ -192,6 +195,7 @@ class ConversationList extends StatefulWidget {
         required this.popularite,
       required this.messageText,
       required this.imageUrl,
+      required this.user,
       required this.points,
       required this.isMessageRead});
   @override
@@ -199,6 +203,25 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends State<ConversationList> {
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+  late UserProvider userProvider =
+  Provider.of<UserProvider>(context, listen: false);
+  void _showUserDetailsModalDialog(UserData user, double w, double h) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: DetailsOtherUser(
+            user: user,
+            w: w,
+            h: h,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     // TODO: implement initState
@@ -207,6 +230,8 @@ class _ConversationListState extends State<ConversationList> {
   }
   @override
   Widget build(BuildContext context) {
+    double h = MediaQuery.of(context).size.height;
+    double w = MediaQuery.of(context).size.width;
     return Container(
       padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
       child: Row(
@@ -244,9 +269,21 @@ class _ConversationListState extends State<ConversationList> {
                     width: 20,
                   ),
                 ),
-                CircleAvatar(
-                  backgroundImage: NetworkImage(widget.imageUrl),
-                  maxRadius: widget.avatarSize,
+                GestureDetector(
+                  onTap: () async {
+                    await  authProvider.getUserById(widget.user.id!).then((users) async {
+                      if(users.isNotEmpty){
+                        _showUserDetailsModalDialog(users.first, w, h);
+
+                      }
+                    },);
+
+                  },
+                  child: CircleAvatar(
+                    
+                    backgroundImage: NetworkImage(widget.imageUrl),
+                    maxRadius: widget.avatarSize,
+                  ),
                 ),
                 SizedBox(
                   width: 16,

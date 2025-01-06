@@ -668,22 +668,25 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       SizedBox(
                         height: 15.0,
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Désactivé"),
-                          Switch(
-                            value: isSwitched,
-                            onChanged: (value) {
-                              setState(() {
-                                isSwitched = value;
-                              });
-                            },
-                            activeColor: Colors.green, // Couleur quand activé
-                            inactiveThumbColor: Colors.grey, // Couleur quand désactivé
-                          ),
-                          const Text("Activé"),
-                        ],
+                      Visibility(
+                        visible: authProvider.loginUserData.role==UserRole.ADM.name,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Désactivé"),
+                            Switch(
+                              value: isSwitched,
+                              onChanged: (value) {
+                                setState(() {
+                                  isSwitched = value;
+                                });
+                              },
+                              activeColor: Colors.green, // Couleur quand activé
+                              inactiveThumbColor: Colors.grey, // Couleur quand désactivé
+                            ),
+                            const Text("Activé"),
+                          ],
+                        ),
                       ),
                       SizedBox(
                         height: 25.0,

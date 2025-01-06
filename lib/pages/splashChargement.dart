@@ -1,5 +1,7 @@
 
 
+import 'dart:math';
+
 import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -31,7 +33,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=18;
+  late int app_version_code=20;
   int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {
@@ -199,30 +201,47 @@ class _ChargementState extends State<SplahsChargement> {
 
   @override
   Widget build(BuildContext context) {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
+    final random = Random();
+    final imageNumber = random.nextInt(4) + 1; // Génère un nombre entre 1 et 5
     return
      Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.black,
+
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  height: 200,
-                  width: 200,
-                  child:  RippleWave(
-      
-                    childTween: Tween(begin: 0.9, end: 1.0,),
-                    color: ConstColors.chargementColors,
-                    repeat: true,
-                    //  animationController: animationController,
-                    child: Image.asset('assets/logo/afrolook_logo.png',height: 70,width: 70,),
+          child: Container(
+            height: height,
+            width: width,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/splash/${imageNumber}.jpg'), // Chemin de votre image
+                fit: BoxFit.cover, // Pour couvrir tout l'écran
+              ),
+            ),
+
+            child: Padding(
+              padding: const EdgeInsets.only(top: 40.0,bottom: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 100,
+                    width: 100,
+                    child:  RippleWave(
+
+                      childTween: Tween(begin: 0.9, end: 1.0,),
+                      color: ConstColors.chargementColors,
+                      repeat: true,
+                      //  animationController: animationController,
+                      child: Image.asset('assets/logo/afrolook_logo.png',height: 50,width: 50,),
+                    ),
                   ),
-                ),
-                Text("Connexion...")
-              ],
+                  // SizedBox(height: height*0.4,),
+                  Text("Connexion...",style: TextStyle(color: Colors.white,fontWeight: FontWeight.w900,fontSize: 20),)
+                ],
+              ),
             ),
           ),
         ),

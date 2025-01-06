@@ -474,14 +474,36 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                                     authProvider
                                                         .loginUserData!
                                                         .id!);
-                                                post.user!
-                                                    .userAbonnesIds!
-                                                    .add(authProvider
-                                                    .loginUserData
-                                                    .id!);
-                                                userProvider
-                                                    .updateUser(
-                                                    post.user!);
+                                                await  authProvider.getUserById(post.user!.id!).then((users) async {
+                                                  if(users.isNotEmpty){
+                                                    // users.first.abonnes=users.first.abonnes!+1;
+                                                    users.first.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                                                    // widget.user.userAbonnesIds!.add(authProvider.loginUserData.id!);
+
+                                                    post.user!= users.first;
+
+                                                    post.user!.abonnes=post.user!.userAbonnesIds!.length;
+                                                    // widget.user= users.first;
+
+                                                    await userProvider.updateUser(post.user!);
+                                                    // setState(() {
+                                                    //   abonneTap=false;
+                                                    //
+                                                    // });
+                                                  }
+                                                },);
+
+                                                // post.user!
+                                                //     .abonnes= post.user!
+                                                //     .abonnes!+1;
+                                                // post.user!
+                                                //     .userAbonnesIds!
+                                                //     .add(authProvider
+                                                //     .loginUserData
+                                                //     .id!);
+                                                // userProvider
+                                                //     .updateUser(
+                                                //     post.user!);
                                                 if (post.user!
                                                     .oneIgnalUserid !=
                                                     null &&

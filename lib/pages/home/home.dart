@@ -102,6 +102,13 @@ class _MyHomePageState extends State<MyHomePage>
 
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
+
+  Future<void> _launchUrl(Uri url) async {
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
   Future<void> launchWhatsApp(String phone) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
@@ -130,8 +137,8 @@ class _MyHomePageState extends State<MyHomePage>
   Color _color =Colors.blue;
 
   int postLenght = 8;
-  int limitePosts = 40;
-  int limiteUsers = 100;
+  int limitePosts = 100;
+  int limiteUsers = 110;
   bool is_actualised = false;
   late AnimationController _starController;
   late AnimationController _unlikeController;
@@ -906,8 +913,14 @@ class _MyHomePageState extends State<MyHomePage>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () {
-                _showUserDetailsModalDialog(user, w, h);
+              onTap: () async {
+                await  authProvider.getUserById(user.id!).then((users) async {
+                  if(users.isNotEmpty){
+                    _showUserDetailsModalDialog(users.first, w, h);
+
+                  }
+                },);
+
               },
               child: ClipRRect(
                 borderRadius: BorderRadius.all( Radius.circular(10)),
@@ -1733,7 +1746,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.18 (18)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.20 (20)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2793,30 +2806,49 @@ postProvider.getPostsImages2(limitePosts).listen((data) {
                             TextButton(
                                 onPressed: () {},
                                 child: Text("")),
-                            TextButton(
-                                onPressed: () async {
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-                                  await userProvider
-                                      .getProfileUsers(
-                                      authProvider
-                                          .loginUserData!
-                                          .id!,
-                                      context,
-                                      limiteUsers)
-                                      .then(
-                                        (value) {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) =>
-                                                UserCards(),
-                                          ));
-                                    },
-                                  );
-                                },
-                                child: Text(
-                                    "Voir autres profiles")),
+                            // TextButton(
+                            //     onPressed: () async {
+                            //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                            //       await userProvider
+                            //           .getProfileUsers(
+                            //           authProvider
+                            //               .loginUserData!
+                            //               .id!,
+                            //           context,
+                            //           limiteUsers)
+                            //           .then(
+                            //             (value) {
+                            //           Navigator.push(
+                            //               context,
+                            //               MaterialPageRoute(
+                            //                 builder:
+                            //                     (context) =>
+                            //                     UserCards(),
+                            //               ));
+                            //         },
+                            //       );
+                            //     },
+                            //     child: Text(
+                            //         "Voir autres profiles")),
+
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                              ),
+                              onPressed: () {
+                                _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+
+                                  Text('🎁 Faire un don 🙏',
+                                    style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                                ],
+                              ),
+
+                            ),
+
                           ],
                           mainAxisAlignment:
                           MainAxisAlignment
