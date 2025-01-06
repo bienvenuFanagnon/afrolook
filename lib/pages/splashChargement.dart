@@ -46,7 +46,8 @@ class _ChargementState extends State<SplahsChargement> {
     animationController.repeat();
   }
 
-
+  late Random random = Random();
+  late int imageNumber = 1; // Génère un nombre entre 1 et 6
 
   void stop() {
     animationController.stop();
@@ -54,6 +55,8 @@ class _ChargementState extends State<SplahsChargement> {
   @override
   void initState() {
     // TODO: implement initState
+    imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 6
+
     super.initState();
 
     authProvider.getAppData().then((value) {
@@ -203,8 +206,8 @@ class _ChargementState extends State<SplahsChargement> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    final random = Random();
-    final imageNumber = random.nextInt(4) + 1; // Génère un nombre entre 1 et 5
+    // final random = Random();
+    // final imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 5
     return
      Scaffold(
         backgroundColor: Colors.black,

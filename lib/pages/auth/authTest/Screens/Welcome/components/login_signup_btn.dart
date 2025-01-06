@@ -32,7 +32,7 @@ class LoginAndSignupBtn extends StatelessWidget {
             },
             child: Text(
               "Se connecter",
-              style: TextStyle(color: kPrimaryColor),
+              style: TextStyle(color: Colors.green,fontWeight: FontWeight.w900),
             ),
           ),
         ),
@@ -57,7 +57,7 @@ class LoginAndSignupBtn extends StatelessWidget {
             ),
             child: Text(
               "S'inscrire",
-              style: const TextStyle(color: Colors.black),
+              style: const TextStyle(color: Colors.black,fontWeight: FontWeight.w900),
             ),
           ),
         ),

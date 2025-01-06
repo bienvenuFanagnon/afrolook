@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -12,29 +10,33 @@ class WelcomeImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final random = Random();
-    final imageNumber = random.nextInt(4) + 1; // Génère un nombre entre 1 et 5
     return Column(
       children: [
-        const Text(
-          "Bienvenue chez Afrolook",
-          style: TextStyle(fontWeight: FontWeight.w800,fontSize: 20),
-        ),
-        const SizedBox(height: defaultPadding * 2),
-        Row(
-          children: [
-            const Spacer(),
-            Expanded(
-              flex: 8,
-              child:Image.asset('assets/splash/${imageNumber}.jpg') ,
-                /*
-                SvgPicture.asset(
-                  "assets/icons/chat.svg",
-                )*/
+        Container(
+          color: Colors.black54,
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: const Text(
+              "Bienvenue chez Afrolook",
+              style: TextStyle(fontWeight: FontWeight.w900,fontSize: 30,color: Colors.green),
             ),
-            const Spacer(),
-          ],
+          ),
         ),
+        // const SizedBox(height: defaultPadding * 2),
+        // Row(
+        //   children: [
+        //     const Spacer(),
+        //     // Expanded(
+        //     //   flex: 8,
+        //     //   child:Image.asset('assets/images/welcomtof.png') ,
+        //     //     /*
+        //     //     SvgPicture.asset(
+        //     //       "assets/icons/chat.svg",
+        //     //     )*/
+        //     // ),
+        //     // const Spacer(),
+        //   ],
+        // ),
         const SizedBox(height: defaultPadding * 2),
       ],
     );

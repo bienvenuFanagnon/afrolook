@@ -1,4 +1,6 @@
 
+import 'dart:math';
+
 import 'package:afrotok/pages/contact.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -142,7 +144,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
       }
     }
   }
-
+  late Random random = Random();
+  late int imageNumber = 1; // Génère un nombre entre 1 et 6
   bool isValidEmail(String email) {
     final RegExp emailRegExp = RegExp(
         r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
@@ -153,13 +156,16 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
     // TODO: implement initState
     super.initState();
     is_open=false;
-
+    imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 6
   }
+
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         automaticallyImplyLeading: false,
 
@@ -173,25 +179,41 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
           child: Container(
             alignment: Alignment.center,
              height: height,
+            width: width,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/splash/${imageNumber}.jpg'), // Chemin de votre image
+                fit: BoxFit.cover, // Pour couvrir tout l'écran
+              ),
+            ),
             child: ListView(
               children: [
                // SizedBox(height: height*0.1,),
                 Padding(
                   padding:  EdgeInsets.only(top: height*0.08),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/logo/afrolook_logo.png',width: 100,),
-                      // Image.asset('assets/logo/afrolook_noel.png',width: 100,),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Afrolook",style: TextStyle(fontSize: 20,color: Colors.green,fontWeight: FontWeight.w600)),
-                          Text("Votre popularité est à la une",style: TextStyle(fontSize: 18,color: Colors.black54)),
-                        ],
-                      )
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      color: Colors.black54,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Image.asset('assets/logo/afrolook_logo.png',width: 100,),
+                            // Image.asset('assets/logo/afrolook_noel.png',width: 100,),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Afrolook",style: TextStyle(fontSize: 20,color: Colors.green,fontWeight: FontWeight.w900)),
+                                Text("Votre popularité est à la une",style: TextStyle(fontSize: 18,color: Colors.yellow,fontWeight: FontWeight.w900)),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: height*0.06,),
@@ -203,7 +225,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                       alignment: Alignment.center,
                       height: height*0.5,
                       decoration: BoxDecoration(
-                          color: Colors.white70,
+                          color: Colors.black54,
                         border: Border.all(color: Colors.green,width: 5),
                         borderRadius:BorderRadius.all(Radius.circular(10))
                       ),
@@ -252,6 +274,8 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                 keyboardType: TextInputType.text,
                                 textInputAction: TextInputAction.next,
                                 cursorColor: kPrimaryColor,
+                                style: TextStyle(color: Colors.white),
+
                                 validator: (value)  {
                                   if (value!.isEmpty) {
                                     return 'Le champ "Email" est obligatoire.';
@@ -282,6 +306,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                                 textInputAction: TextInputAction.done,
                                 obscureText: !is_open,
                                 cursorColor: kPrimaryColor,
+                                style: TextStyle(color: Colors.white),
                                 decoration:  InputDecoration(
                                   focusColor: kPrimaryColor,
                                   focusedBorder: UnderlineInputBorder(
@@ -300,7 +325,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
 
                                       });
                                     },
-                                    child: is_open? Icon(Entypo.eye,color: Colors.black87,):Icon(Entypo.eye_with_line,color: Colors.black87,),
+                                    child: is_open? Icon(Entypo.eye,color: Colors.green,):Icon(Entypo.eye_with_line,color: Colors.green,),
                                   ),
 
                                 ),
@@ -322,7 +347,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
                               }, child:  Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 // child: Text("Mot de passe oublier? Connecter sans mot de passe",textAlign: TextAlign.center,),
-                                child: Text("Mot de passe oublier? Demander un changement",textAlign: TextAlign.center,style: TextStyle(color: Colors.black87),),
+                                child: Text("Mot de passe oublier? Demander un changement",textAlign: TextAlign.center,style: TextStyle(color: Colors.white),),
                               ),),
 
 
