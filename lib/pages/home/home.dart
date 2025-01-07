@@ -1,42 +1,24 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:afrotok/pages/ia/gemini/geminibot.dart';
-
-import 'package:afrotok/pages/user/detailsOtherUser.dart';
-import 'package:afrotok/pages/user/otherUser/otherUser.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
-import 'package:hashtagable_v3/widgets/hashtag_text.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:afrotok/pages/postComments.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/simpleChargement.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flash/flash.dart';
-import 'package:flash/flash_helper.dart';
-import 'package:flutter/foundation.dart';
 import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/constant/iconGradient.dart';
 import 'package:afrotok/constant/logo.dart';
 import 'package:afrotok/constant/sizeText.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/services/api.dart';
-import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
-import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:marquee/marquee.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:popup_menu_plus/popup_menu_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:random_color/random_color.dart';
@@ -45,6 +27,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
@@ -59,10 +42,6 @@ import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../ia/gemini/geminiChat.dart';
-import '../ia/gemini/geminiTextChat.dart';
-import '../user/amis/addListAmis.dart';
-import '../user/amis/pageMesInvitations.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -752,20 +731,6 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void _showUserDetailsModalDialog(UserData user, double w, double h) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: DetailsOtherUser(
-            user: user,
-            w: w,
-            h: h,
-          ),
-        );
-      },
-    );
-  }
 
   Future<Chat> getChatsData(UserData amigo) async {
     // Définissez la requête
@@ -918,7 +883,7 @@ class _MyHomePageState extends State<MyHomePage>
               onTap: () async {
                 await  authProvider.getUserById(user.id!).then((users) async {
                   if(users.isNotEmpty){
-                    _showUserDetailsModalDialog(users.first, w, h);
+                    showUserDetailsModalDialog(users.first, w, h,context);
 
                   }
                 },);

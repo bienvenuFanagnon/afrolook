@@ -817,7 +817,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                     fontWeight: FontWeight.normal,
                                     fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
-                                  textAlign: TextAlign.left, // Centrage du texte
+                                  textAlign: TextAlign.center, // Centrage du texte
                                   maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
                                   softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
                                   // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse

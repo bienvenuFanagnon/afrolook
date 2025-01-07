@@ -9,6 +9,8 @@ import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/search
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:comment_tree/widgets/comment_tree_widget.dart';
+import 'package:comment_tree/widgets/tree_theme_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flash/flash.dart';
 import 'package:flash/flash_helper.dart';
@@ -26,6 +28,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_list_view/flutter_list_view.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:fluttertagger/fluttertagger.dart';
+import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:popover_gtk/popover_gtk.dart';
@@ -38,6 +41,7 @@ import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
 import 'component/consoleWidget.dart';
+import 'component/showUserDetails.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -607,12 +611,252 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   /// Declare
   FlutterListViewController fluttercontroller = FlutterListViewController();
   // FocusNode _focusNode = FocusNode();
-
   Widget commentAndResponseListWidget(
+      List<PostComment> pcms,
+      double width,
+      double height,
+      ) {
+    return SingleChildScrollView(
+      child: Column(
+        children: pcms.map((pcm) {
+          return CommentTreeWidget<PostComment, ResponsePostComment>(
+            pcm,
+            pcm.responseComments!,
+            treeThemeData: TreeThemeData(
+              lineColor: Colors.green, // Ligne entre parent et enfant
+              lineWidth: 2,
+            ),
+            avatarRoot: (context, data) => PreferredSize(
+              preferredSize: Size.fromRadius(18),
+              child: GestureDetector(
+                onTap: () async {
+                  await  authProvider.getUserById(data.user!.id!).then((users) async {
+                    if(users.isNotEmpty){
+                      showUserDetailsModalDialog(users.first, width, height,context);
+
+                    }
+                  },);
+                },
+                child: CircleAvatar(
+                  radius: 15,
+                  backgroundImage: NetworkImage(data.user!.imageUrl ?? ''),
+                  onBackgroundImageError: (_, __) => AssetImage('assets/images/404.png'),
+                ),
+              ),
+            ),
+            contentRoot: (context, data) => _buildCommentContent(data, width, height),
+            avatarChild: (context, data) => PreferredSize(
+              preferredSize: Size.fromRadius(18),
+              child: GestureDetector(
+                onTap: () async {
+                  await  authProvider.getUserById(data.user_id!).then((users) async {
+                    if(users.isNotEmpty){
+                      showUserDetailsModalDialog(users.first, width, height,context);
+
+                    }
+                  },);
+                },
+                child: CircleAvatar(
+                  radius: 13,
+                  backgroundImage: NetworkImage(data.user_logo_url ?? ''),
+                ),
+              ),
+            ),
+            contentChild: (context, data) => _buildReplyContent(pcm,data, width, height),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// **Widget pour afficher un commentaire principal**
+  Widget _buildCommentContent(PostComment pcm, double width, double height) {
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: HashTagText(
+
+                  text: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message}",
+                  decoratedStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+
+                    color: Colors.green,
+                    fontFamily: 'Nunito', // Définir la police Nunito
+                  ),
+                  basicStyle: TextStyle(
+                    fontSize: SizeText.homeProfileTextSize,
+                    color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                    fontWeight: FontWeight.normal,
+                    fontFamily: 'Nunito', // Définir la police Nunito
+                  ),
+                  textAlign: TextAlign.left, // Centrage du texte
+                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                  onTap: (text) {
+                    _handleTagClick(text,width,height);
+                  },
+                  decorateAtSign: true,
+
+                ),
+              ),
+              // HashTagText(
+              //   text: pcm.status == PostStatus.SUPPRIMER.name ? "Supprimé" : pcm.message!,
+              //   decoratedStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+              //   basicStyle: TextStyle(color: Colors.black),
+              //   onTap: (text) => _handleTagClick(text),
+              // ),
+              Text(
+                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",
+                style: TextStyle(fontSize: 1, color: Colors.grey),
+              ),
+            ],
+          ),
+          IconButton(onPressed: () {
+            setState(() {
+              commentSelectedToReply = PostComment();
+              commentSelectedToReply = pcm;
+              commentRecever=commentSelectedToReply.user!;
+
+              replyUser_id=commentSelectedToReply.user!.id!;
+              replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
+
+              replyingTo = "@${commentSelectedToReply.user!.pseudo}";
+              replying = true;
+            });
+
+
+          }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,)),
+          IconButton(onPressed: () {
+            setState(() {
+
+              _showCommentMenuModalDialog(pcm);
+
+            });
+
+
+          }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 15,)),
+
+        ],
+      ),
+    );
+  }
+
+  /// **Widget pour afficher une réponse à un commentaire**
+  Widget _buildReplyContent(PostComment pcm,ResponsePostComment rpc, double width, double height) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 5.0),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("@${rpc.user_pseudo}", style: TextStyle(fontWeight: FontWeight.bold)),
+              // HashTagText(
+              //   text: rpc.status == PostStatus.SUPPRIMER.name ? "Supprimé" : rpc.message!,
+              //   decoratedStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+              //   basicStyle: TextStyle(color: Colors.black),
+              //   onTap: (text) => _handleTagClick(text),
+              // ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: HashTagText(
+
+                  text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
+                  decoratedStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+
+                    color: Colors.green,
+                    fontFamily: 'Nunito', // Définir la police Nunito
+                  ),
+                  basicStyle: TextStyle(
+                    fontSize: SizeText.homeProfileTextSize,
+                    color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                    fontWeight: FontWeight.normal,
+                    fontFamily: 'Nunito', // Définir la police Nunito
+                  ),
+                  textAlign: TextAlign.left, // Centrage du texte
+                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                  onTap: (text) {
+                    _handleTagClick(text,width,height);
+                  },
+                  decorateAtSign: true,
+
+                ),
+              ),
+              Text(
+                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!))}",
+                style: TextStyle(fontSize: 8, color: Colors.grey),
+              ),
+            ],
+          ),
+          IconButton(onPressed: () {
+            printVm("****** response pcm selected");
+
+            setState(() {
+              // printVm("****** response pcm **** : ${pcm.toJson()}");
+
+              commentSelectedToReply = PostComment();
+              commentSelectedToReply = pcm;
+              commentRecever=pcm.user!;
+
+              printVm('rpc data ${rpc.toJson()}');
+              replyUser_id=rpc.user_id!;
+              replyUser_pseudo=pcm.user!.pseudo!;
+
+              replyingTo = "@${rpc!.user_pseudo}";
+              replying = true;
+            });
+
+
+          }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,)),
+          IconButton(onPressed: () {
+
+            _showResponseCommentMenuModalDialog(pcm,rpc);
+
+
+
+          }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 14,)),
+
+        ],
+      ),
+    );
+  }
+
+  /// **Fonction pour gérer les interactions avec les hashtags et mentions**
+  Future<void> _handleTagClick(String text,double width, height) async {
+    print("Tag cliqué: ${text.replaceFirst('@', '')}");
+if(users.isNotEmpty){
+  var user= users.firstWhere((element) => element.pseudo==text.replaceFirst('@', ''),);
+  if(user!=null){
+    await  authProvider.getUserById(user.id!).then((users) async {
+      if(users.isNotEmpty){
+        showUserDetailsModalDialog(users.first, width, height,context);
+
+      }
+    },);
+  }
+}
+
+    // Recherchez l'utilisateur associé et affichez les détails si nécessaire
+  }
+  Widget commentAndResponseListWidget2(
     List<PostComment> pcms,
     double width,
       double height,
-  ) {
+  )
+  {
     bool isExpandedState=false;
 
     return SingleChildScrollView(
@@ -658,27 +902,44 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
                           child:Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    commentSelectedToReply = PostComment();
-                                    commentSelectedToReply = pcm;
-                                    // commentRecever=pcm.user!;
-                                    replyingTo = "@${pcm.user!.pseudo}";
-                                    // replyUser_id=pcm.user!.id!;
-                                    // replyUser_pseudo=pcm.user!.pseudo!;
-                                    replying = true;
-                                  });
-                                },
+                              SizedBox(
+                                width: width * 0.2,
+                                child: HashTagText(
+                                  decorateAtSign: true,
 
-                                child: SizedBox(
-                                  width: width * 0.2,
-                                  child: TextCustomerPostDescription(
-                                    titre: "${pcm.status==PostStatus.SUPPRIMER.name?"message supprimé":pcm.message!}",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                                    fontWeight: FontWeight.w400,
+                                  text: "${"${pcm.status==PostStatus.SUPPRIMER.name?"supprimé":pcm.message!}"}",
+                                  decoratedStyle: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+
+                                    color: Colors.green,
+                                    fontFamily: 'Nunito', // Définir la police Nunito
                                   ),
+                                  basicStyle: TextStyle(
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                                    fontWeight: FontWeight.normal,
+                                    fontFamily: 'Nunito', // Définir la police Nunito
+                                  ),
+                                  textAlign: TextAlign.left, // Centrage du texte
+                                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                  onTap: (text) async {
+                                    print(text);
+                                    print(text);
+
+
+                                    var user= users.firstWhere((element) => element.pseudo==text,);
+                                    if(user!=null){
+                                      await  authProvider.getUserById(user.id!).then((users) async {
+                                        if(users.isNotEmpty){
+                                          showUserDetailsModalDialog(users.first, width, height,context);
+
+                                        }
+                                      },);
+                                    }
+                                  },
                                 ),
                               ),
                               Row(
@@ -784,12 +1045,45 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                   children: [
                                     SizedBox(
                                       width: width * 0.3,
-                                      child: TextCustomerPostDescription(
-                                        titre: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message!}",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                                      child: HashTagText(
 
-                                        fontWeight: FontWeight.w400,
+                                        text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
+                                        decoratedStyle: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+
+                                          color: Colors.green,
+                                          fontFamily: 'Nunito', // Définir la police Nunito
+                                        ),
+                                        basicStyle: TextStyle(
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                                          fontWeight: FontWeight.normal,
+                                          fontFamily: 'Nunito', // Définir la police Nunito
+                                        ),
+                                        textAlign: TextAlign.left, // Centrage du texte
+                                        maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                        softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                        // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                        onTap: (text) async {
+                                          print(text);
+
+
+                                               var user= users.firstWhere((element) => element.pseudo==text,);
+                                               if(user!=null){
+                                                 await  authProvider.getUserById(user.id!).then((users) async {
+                                                   if(users.isNotEmpty){
+                                                     showUserDetailsModalDialog(users.first, width, height,context);
+
+                                                   }
+                                                 },);
+                                               }
+
+
+
+                                        },
+                                        decorateAtSign: true,
+
                                       ),
                                     ),
 
@@ -856,9 +1150,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       ),
     );
   }
-
+List<UserData> users=[];
   @override
   void initState() {
+    userProvider.getAllUsers().then((users2) {
+      users=users2;
+    },);
     super.initState();
     _focusNode.addListener(_focusListener);
     _animationController = AnimationController(
@@ -1111,372 +1408,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         );
                       }),
               ),
-              // Align(
-              //   alignment: Alignment.bottomCenter,
-              //   child: Container(
-              //     //height: 50,
-              //     child: Column(
-              //       mainAxisAlignment: MainAxisAlignment.end,
-              //       children: [
-              //         replying
-              //             ? Container(
-              //             width: width * 0.8,
-              //             height: 70,
-              //             color: const Color(0xffF4F4F5),
-              //             padding: const EdgeInsets.symmetric(
-              //               vertical: 8,
-              //               horizontal: 16,
-              //             ),
-              //             child: Row(
-              //               children: [
-              //                 Icon(
-              //                   Icons.reply,
-              //                   color: Colors.blue,
-              //                   size: 24,
-              //                 ),
-              //                 Expanded(
-              //                   child: Container(
-              //                     child: Text(
-              //                       'Re : ' + replyingTo,
-              //                       overflow: TextOverflow.ellipsis,
-              //                     ),
-              //                   ),
-              //                 ),
-              //                 InkWell(
-              //                   onTap: () {
-              //                     //onTapCloseReply
-              //                     replyingTo = "";
-              //                     replying = false;
-              //                     setState(() {});
-              //                   },
-              //                   child: Icon(
-              //                     Icons.close,
-              //                     color: Colors.black12,
-              //                     size: 24,
-              //                   ),
-              //                 ),
-              //               ],
-              //             ))
-              //             : Container(),
-              //         replying
-              //             ? Container(
-              //           height: 1,
-              //           color: Colors.grey.shade300,
-              //         )
-              //             : Container(),
-              //         Container(
-              //           width: width * 0.95,
-              //           height: 60,
-              //           color: const Color(0xffF4F4F5),
-              //           padding: const EdgeInsets.symmetric(
-              //             vertical: 8,
-              //             horizontal: 16,
-              //           ),
-              //           child: Row(
-              //             children: <Widget>[
-              //               Expanded(
-              //                 child: Container(
-              //                   child: GestureDetector(
-              //                     onTap: () {
-              //                       // Action à effectuer lorsque le champ de saisie est tapé
-              //                       printVm('TextField tapped');
-              //                     },
-              //                     child: TextFormField(
-              //                       focusNode: _focusNode,
-              //
-              //
-              //                       onTap: () async {
-              //                         // _controller.animateTo(
-              //                         //   _controller.position.maxScrollExtent *
-              //                         //       34,
-              //                         //   duration: Duration(milliseconds: 800),
-              //                         //   curve: Curves.fastOutSlowIn,
-              //                         // );
-              //                         printVm("tap");
-              //                       },
-              //                       controller: _textController,
-              //                       keyboardType: TextInputType.multiline,
-              //                       textCapitalization:
-              //                       TextCapitalization.sentences,
-              //                       minLines: 1,
-              //                       maxLines: 3,
-              //                       onChanged: (value) {
-              //                         //onTextChanged
-              //                       },
-              //                       style: const TextStyle(color: Colors.black),
-              //                       decoration: InputDecoration(
-              //                         hintText: "commentez...",
-              //                         hintMaxLines: 1,
-              //                         contentPadding:
-              //                         const EdgeInsets.symmetric(
-              //                             horizontal: 8.0, vertical: 10),
-              //                         hintStyle: const TextStyle(fontSize: 16),
-              //                         fillColor: Colors.white,
-              //                         filled: true,
-              //                         enabledBorder: OutlineInputBorder(
-              //                           borderRadius:
-              //                           BorderRadius.circular(30.0),
-              //                           borderSide: const BorderSide(
-              //                             color: Colors.white,
-              //                             width: 0.2,
-              //                           ),
-              //                         ),
-              //                         focusedBorder: OutlineInputBorder(
-              //                           borderRadius:
-              //                           BorderRadius.circular(30.0),
-              //                           borderSide: const BorderSide(
-              //                             color: Colors.black26,
-              //                             width: 0.2,
-              //                           ),
-              //                         ),
-              //                       ),
-              //                     ),
-              //                   ),
-              //                 ),
-              //               ),
-              //               Padding(
-              //                 padding: const EdgeInsets.only(left: 16),
-              //                 child: GestureDetector(
-              //                   child: Icon(
-              //                     Icons.send,
-              //                     color: Colors.green,
-              //                     size: 24,
-              //                   ),
-              //                   onTap: sendMessageTap
-              //                       ? () {}
-              //                       : () async {
-              //                     printVm("send tap;");
-              //                     setState(() {
-              //                       sendMessageTap = true;
-              //
-              //                     });
-              //                     String textComment=_textController.text;
-              //
-              //                     if (_textController.text.isNotEmpty) {
-              //                       _textController.text="";
-              //                       if (replying) {
-              //
-              //                         printVm("****** reply ++++response sended user id **** : ${replyUser_id}");
-              //
-              //                         ResponsePostComment comment =
-              //                         ResponsePostComment(user_id: authProvider.loginUserData!.id);
-              //                         comment.user_id =
-              //                             authProvider.loginUserData!.id;
-              //                         comment.user_logo_url =
-              //                             authProvider.loginUserData!.imageUrl;
-              //                         comment.user_pseudo =
-              //                             authProvider.loginUserData!.pseudo;
-              //                         comment.post_comment_id =
-              //                             commentSelectedToReply.id;
-              //                         comment.message =
-              //                             textComment;
-              //                         comment.createdAt = DateTime.now()
-              //                             .microsecondsSinceEpoch;
-              //                         comment.updatedAt = DateTime.now()
-              //                             .microsecondsSinceEpoch;
-              //                         commentSelectedToReply
-              //                             .responseComments!
-              //                             .add(comment);
-              //                         postPro
-              //                             .updateComment(
-              //                             commentSelectedToReply)
-              //                             .then(
-              //                               (value) async {
-              //                             if (value) {
-              //                               // _textController.text = "";
-              //                               printVm("****** response sended user id **** : ${replyUser_id}");
-              //
-              //                               await authProvider.getUserById(replyUser_id).then(
-              //                                     (users) async {
-              //                                   if(users.isNotEmpty){
-              //
-              //                                     UserData receiver = users.first;
-              //                                     printVm("****** response sended user **** : ${receiver.toJson()}");
-              //                                     NotificationData notif=NotificationData();
-              //                                     notif.id=firestore
-              //                                         .collection('Notifications')
-              //                                         .doc()
-              //                                         .id;
-              //                                     notif.titre="Commentaire 💬";
-              //                                     notif.media_url=authProvider.loginUserData.imageUrl;
-              //                                     notif.type=NotificationType.POST.name;
-              //                                     notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬";
-              //                                     notif.users_id_view=[];
-              //                                     notif.user_id=authProvider.loginUserData.id;
-              //                                     notif.receiver_id=receiver!.id!;
-              //                                     notif.post_id=widget.post!.id!;
-              //                                     notif.post_data_type=PostDataType.COMMENT.name!;
-              //
-              //                                     notif.updatedAt =
-              //                                         DateTime.now().microsecondsSinceEpoch;
-              //                                     notif.createdAt =
-              //                                         DateTime.now().microsecondsSinceEpoch;
-              //                                     notif.status = PostStatus.VALIDE.name;
-              //
-              //                                     // users.add(pseudo.toJson());
-              //
-              //                                     await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-              //
-              //                                     await authProvider.sendNotification(
-              //                                         userIds: [receiver!.oneIgnalUserid!],
-              //                                         smallImage: "${authProvider.loginUserData.imageUrl!}",
-              //                                         send_user_id: "${authProvider.loginUserData.id!}",
-              //                                         recever_user_id: "${receiver!.id!}",
-              //                                         message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
-              //                                         type_notif: NotificationType.POST.name,
-              //                                         post_id: "${widget.post!.id!}",
-              //                                         post_type: PostDataType.COMMENT.name, chat_id: ''
-              //                                     );
-              //
-              //
-              //                                   }
-              //                                 },
-              //                               );
-              //
-              //                               sendMessageTap = false;
-              //                               _focusNode.unfocus();
-              //                               _textController.text = "";
-              //
-              //                               setState(() {
-              //                                 replying = false;
-              //                               });
-              //                             } else {
-              //                               printVm(
-              //                                   "erreru sender response");
-              //
-              //                               sendMessageTap = false;
-              //                             }
-              //
-              //                             sendMessageTap = false;
-              //                           },
-              //                         );
-              //                       } else {
-              //                         PostComment comment = PostComment();
-              //                         comment.user_id =
-              //                             authProvider.loginUserData.id;
-              //                         comment.user =
-              //                             authProvider.loginUserData;
-              //                         comment.post_id = widget.post.id;
-              //                         comment.users_like_id = [];
-              //                         comment.responseComments = [];
-              //                         comment.message =
-              //                             textComment;
-              //                         comment.loves = 0;
-              //                         comment.likes = 0;
-              //                         comment.comments = 0;
-              //                         comment.createdAt = DateTime.now()
-              //                             .microsecondsSinceEpoch;
-              //                         comment.updatedAt = DateTime.now()
-              //                             .microsecondsSinceEpoch;
-              //
-              //                         postPro.newComment(comment).then(
-              //                               (value) async {
-              //                             if (value) {
-              //
-              //                               widget.post.comments =
-              //                                   widget.post.comments! + 1;
-              //
-              //
-              //                               CollectionReference userCollect =
-              //                               FirebaseFirestore.instance.collection('Users');
-              //                               // Get docs from collection reference
-              //                               QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
-              //                               // Afficher la liste
-              //                               List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-              //                                   UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-              //                               if (listUsers.isNotEmpty) {
-              //
-              //                                 listUsers.first!.comments=listUsers.first!.comments!+1;
-              //                                 postPro.updatePost(widget.post, listUsers.first!!,context);
-              //                                 await authProvider.getAppData();
-              //                                 authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-              //                                 authProvider.updateAppData(authProvider.appDefaultData);
-              //                               }else{
-              //                                 widget.post.user!.comments=widget.post.user!.comments!+1;
-              //                                 postPro.updatePost(widget.post,widget.post.user!,context);
-              //                                 await authProvider.getAppData();
-              //
-              //                                 authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-              //                                 authProvider.updateAppData(authProvider.appDefaultData);
-              //                               }
-              //
-              //                               await authProvider.sendNotification(
-              //                                   userIds: [widget.post.user!.oneIgnalUserid!],
-              //                                   smallImage: "${authProvider.loginUserData.imageUrl!}",
-              //                                   send_user_id: "${authProvider.loginUserData.id!}",
-              //                                   recever_user_id: "",
-              //                                   message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre look",
-              //                                   type_notif: NotificationType.POST.name,
-              //                                   post_id: "${widget.post!.id!}",
-              //                                   post_type: PostDataType.COMMENT.name, chat_id: ''
-              //                               );
-              //
-              //                               NotificationData notif=NotificationData();
-              //                               notif.id=firestore
-              //                                   .collection('Notifications')
-              //                                   .doc()
-              //                                   .id;
-              //                               notif.titre="Commentaire 💬";
-              //                               notif.media_url=authProvider.loginUserData.imageUrl;
-              //                               notif.type=NotificationType.POST.name;
-              //                               notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre look";
-              //                               notif.users_id_view=[];
-              //                               notif.user_id=authProvider.loginUserData.id;
-              //                               notif.receiver_id=widget.post!.user!.id!;
-              //                               notif.post_id=widget.post!.id!;
-              //                               notif.post_data_type=PostDataType.COMMENT.name!;
-              //
-              //                               notif.updatedAt =
-              //                                   DateTime.now().microsecondsSinceEpoch;
-              //                               notif.createdAt =
-              //                                   DateTime.now().microsecondsSinceEpoch;
-              //                               notif.status = PostStatus.VALIDE.name;
-              //
-              //                               // users.add(pseudo.toJson());
-              //
-              //                               await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-              //
-              //
-              //                               _textController.text = "";
-              //                               printVm("commment envoyer");
-              //                               _focusNode.unfocus();
-              //                               postPro.listConstpostsComment
-              //                                   .add(comment);
-              //
-              //                               postPro.listConstpostsComment
-              //                                   .sort((a, b) => b
-              //                                   .createdAt!
-              //                                   .compareTo(
-              //                                   a.createdAt!));
-              //
-              //                               sendMessageTap = false;
-              //                               _focusNode.unfocus();
-              //
-              //                             } else {
-              //                               printVm("erreru commment");
-              //
-              //                               sendMessageTap = false;
-              //                             }
-              //
-              //                             sendMessageTap = false;
-              //                           },
-              //                         );
-              //                       }
-              //                     }
-              //                     setState(() {
-              //                       sendMessageTap = false;
-              //
-              //                     });
-              //                   },
-              //                 ),
-              //               ),
-              //             ],
-              //           ),
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              // )
             ]),
           );
         }),
@@ -1486,15 +1417,15 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         controller: _controller,
         animationController: _animationController,
         onSearch: (query, triggerChar) {
-          // if (triggerChar == "@") {
-          //   searchViewModel.searchUser(query);
-          // }
+          if (triggerChar == "@") {
+            searchViewModel.searchUser(query,users);
+          }
           if (triggerChar == "#") {
             searchViewModel.searchHashtag(query);
           }
         },
         triggerCharacterAndStyles: const {
-          // "@": TextStyle(color: Colors.pinkAccent),
+          "@": TextStyle(color: Colors.pinkAccent),
           "#": TextStyle(color: Colors.green),
         },
         tagTextFormatter: (id, tag, triggerCharacter) {
@@ -1522,7 +1453,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       const Icon(Icons.reply, color: Colors.blueAccent),
                       const SizedBox(width: 8),
                       Text(
-                        "Réponse à @${replyingTo!}",
+                        "Réponse à ${replyingTo!}",
                         style: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
@@ -1558,6 +1489,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   String textComment=_controller.text;
                   _controller.clear();
                   FocusScope.of(context).unfocus();
+                  List<UserData> userNames=[];
+                  List<String> userOneSignalIds=[];
 
                   if (textComment.isNotEmpty) {
                     // _controller.text="";
@@ -1634,6 +1567,66 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                       post_id: "${widget.post!.id!}",
                                       post_type: PostDataType.COMMENT.name, chat_id: ''
                                   );
+                                  // Expression régulière pour trouver les noms commençant par @
+                                  RegExp regExp = RegExp(r'@\w+');
+
+                                  // Trouver toutes les correspondances
+                                  Iterable<Match> matches = regExp.allMatches(textComment);
+
+                                  // Extraire les noms trouvés
+                                  List<String> usernames = matches.map((match) => match.group(0)!).toList();
+
+
+                                  // Afficher les noms trouvés
+                                  if(usernames.isNotEmpty){
+                                    usernames.forEach((username) {
+                                      print("username @ : ${username}");
+                                      var user= users.firstWhere((element) => element.pseudo==username.replaceFirst('@', ''),);
+                                      userNames.add(user);
+                                      userOneSignalIds.add(user.oneIgnalUserid!);
+                                    });
+
+                                    await authProvider.sendNotification(
+                                        userIds: userOneSignalIds,
+                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                        send_user_id: "${authProvider.loginUserData.id!}",
+                                        recever_user_id: "",
+                                        message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
+                                        type_notif: NotificationType.POST.name,
+                                        post_id: "${widget.post!.id!}",
+                                        post_type: PostDataType.COMMENT.name, chat_id: ''
+                                    );
+                                    userNames.forEach((user) async {
+
+                                      NotificationData notif2=NotificationData();
+                                      notif.id=firestore
+                                          .collection('Notifications')
+                                          .doc()
+                                          .id;
+                                      notif.titre="Tagué 💬";
+                                      notif.media_url=authProvider.loginUserData.imageUrl;
+                                      notif.type=NotificationType.POST.name;
+                                      notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
+                                      notif.users_id_view=[];
+                                      notif.user_id=authProvider.loginUserData.id;
+                                      notif.receiver_id=user!.id!;
+                                      notif.post_id=widget.post!.id!;
+                                      notif.post_data_type=PostDataType.COMMENT.name!;
+
+                                      notif.updatedAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.createdAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.status = PostStatus.VALIDE.name;
+
+                                      // users.add(pseudo.toJson());
+
+                                      await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
+
+
+                                    });
+                                  }
+
 
 
                                 }
@@ -1755,6 +1748,69 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                                 .createdAt!
                                 .compareTo(
                                 a.createdAt!));
+
+                            // Expression régulière pour trouver les noms commençant par @
+                            RegExp regExp = RegExp(r'@\w+');
+
+                            // Trouver toutes les correspondances
+                            Iterable<Match> matches = regExp.allMatches(textComment);
+
+                            // Extraire les noms trouvés
+                            List<String> usernames = matches.map((match) => match.group(0)!).toList();
+
+                            // Afficher les noms trouvés
+                            if(usernames.isNotEmpty){
+                              usernames.forEach((username) {
+                                print("username @ : ${username}");
+                                var user= users.firstWhere((element) => element.pseudo==username.replaceFirst('@', ''),);
+                                userNames.add(user);
+                                userOneSignalIds.add(user.oneIgnalUserid!);
+                              });
+
+                              await authProvider.sendNotification(
+                                  userIds: userOneSignalIds,
+                                  smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                  send_user_id: "${authProvider.loginUserData.id!}",
+                                  recever_user_id: "",
+                                  message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
+                                  type_notif: NotificationType.POST.name,
+                                  post_id: "${widget.post!.id!}",
+                                  post_type: PostDataType.COMMENT.name, chat_id: ''
+                              );
+                              userNames.forEach((user) async {
+
+                                NotificationData notif2=NotificationData();
+                                notif.id=firestore
+                                    .collection('Notifications')
+                                    .doc()
+                                    .id;
+                                notif.titre="Tagué 💬";
+                                notif.media_url=authProvider.loginUserData.imageUrl;
+                                notif.type=NotificationType.POST.name;
+                                notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
+                                notif.users_id_view=[];
+                                notif.user_id=authProvider.loginUserData.id;
+                                notif.receiver_id=user!.id!;
+                                notif.post_id=widget.post!.id!;
+                                notif.post_data_type=PostDataType.COMMENT.name!;
+
+                                notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.status = PostStatus.VALIDE.name;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
+
+
+                              });
+                            }
+
+
+
+
 
                             sendMessageTap = false;
                             _focusNode.unfocus();

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'package:fluttertagger/fluttertagger.dart';
@@ -20,22 +22,37 @@ class CommentTextField extends StatelessWidget {
     required this.controller,
     required this.onSend,
     required this.insets,
-    this.emojis = const [
-      '😍',
-      '😜',
-      '👍',
-      '🤞',
-      '🙌',
-      '😉',
-      '🙏',
+    this.emojis = const  [
+      '😍', '😜', '👍', '🤞', '🙌', '😉', '🙏', // Emojis existants
+      '❤️', '💛', '💚', '💙', '💜', // Cœurs
+      '🥭', '🍍', '🍌', '🍉', '🍇', '🍊', '🍋', '🍈', '🍒', '🍑', // Fruits
+      '🌴', '🌵', '🌿', '🍀', '🌾', '🌳', '🌲', '🌱', '🌺', '🌸' // Plantes
+          '🔨', '⛏️', '🪓', '🔧', '🔩', '🪚', '🪛', '🧱', '🪣', '🧺' // Outils
+          '👩🏿', '👨🏿', '👶🏿', // Femme, homme et enfant africains
+      '👩🏿‍🦱', '👨🏿‍🦱', '👶🏿‍🦱', // Femme, homme et enfant africains avec cheveux bouclés
+      '👩🏿‍🦳', '👨🏿‍🦳', '👶🏿‍🦳' // Femme, homme et enfant africains avec cheveux blancs
+          '💑', '👩‍❤️‍👨', '👩‍❤️‍👩', '👨‍❤️‍👨', // Amoureux et couples
+      '👫', '👬', '👭', // Jeunes couples
+      '👩‍🎓', '👨‍🎓', '🧑‍🎓', // Écoliers
+      '📚', '📖', '✏️', '🖊️', '🖋️', '📝', '📒', '📓', '📔', '📕' // Outils d'école
+
     ],
+
     this.focusNode,
     this.containerKey,
   }) : super(key: key);
 
+  List<String> getShuffledEmojis() {
+    List<String> shuffledEmojis = List.from(emojis);
+    shuffledEmojis.shuffle(Random());
+    return shuffledEmojis;
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    List<String> shuffledEmojis = getShuffledEmojis();
+
     return Container(
       key: containerKey,
       constraints: BoxConstraints(
@@ -51,37 +68,44 @@ class CommentTextField extends StatelessWidget {
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Padding(
+            padding: const EdgeInsets.all(2.0),
             child: SizedBox(
               width: width,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  for (var emoji in emojis)
-                    EmojiIcon(
-                      fontSize: 24,
-                      emoji: emoji,
-                      onTap: (emoji) {
-                        final baseOffset = controller.selection.baseOffset;
-                        final cursorPosition = controller.cursorPosition;
-                        final substring = controller.formattedText
-                            .substring(0, cursorPosition);
-                        final newText = substring +
-                            emoji +
-                            controller.formattedText.substring(cursorPosition);
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
 
-                        controller.text = newText;
-                        controller.formatTags();
+                itemCount: shuffledEmojis.length,
+                itemBuilder: (context, index) {
+                  return SizedBox(
+                    height: 40,
+                    width: 40,
+                    child: Card(
+                      child: Center(
+                        child: EmojiIcon(
+                          fontSize: 20,
+                          emoji: shuffledEmojis[index],
+                          onTap: (emoji) {
+                            final baseOffset = controller.selection.baseOffset;
+                            final cursorPosition = controller.cursorPosition;
+                            final substring = controller.formattedText.substring(0, cursorPosition);
+                            final newText = substring + emoji + controller.formattedText.substring(cursorPosition);
 
-                        controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: baseOffset + emoji.length),
-                        );
-                      },
-                    )
-                ],
+                            controller.text = newText;
+                            controller.formatTags();
+
+                            controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: baseOffset + emoji.length),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
+            )
           ),
           const SizedBox(height: 18),
           Row(

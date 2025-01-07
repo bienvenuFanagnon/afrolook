@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../../../../models/model_data.dart';
+import '../../../../../../providers/authProvider.dart';
 import '../../models/user.dart';
 
 ///Search view model
@@ -27,9 +30,8 @@ class SearchViewModel {
     }
   }
 
-  Future<void> searchUser(String query) async {
+  Future<void> searchUser(String query,List<UserData>? users) async {
     if (query.isEmpty) return;
-
     _activeView.value = SearchResultView.users;
 
     query = query.toLowerCase().trim();
@@ -40,7 +42,16 @@ class SearchViewModel {
 
     await Future.delayed(const Duration(milliseconds: 250));
 
-    final result = User.allUsers
+    // final result =User.allUsers
+    final result =users!
+        .where((userData) => userData.pseudo != null && userData.pseudo!.isNotEmpty)
+        .map((userData) => User(
+      id: userData.id ?? '',
+      userName: userData.pseudo ?? '',
+      fullName: '${userData.prenom ?? ''} ${userData.nom ?? ''}',
+      avatar: userData.imageUrl ?? '',
+    ))
+        .toList()
         .where(
           (user) =>
               user.userName.toLowerCase().contains(query) ||

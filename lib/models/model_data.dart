@@ -463,6 +463,8 @@ class UserData {
 
   String? nom;
   String? prenom;
+  String? imageUrl = "";
+
   String? numeroDeTelephone;
   String? adresse = "";
   String? email = "";
@@ -490,7 +492,6 @@ class UserData {
   double? latitude;
   double? longitude;
   String? apropos;
-  String? imageUrl = "";
   bool? isConnected = false;
   bool? isBlocked = false;
   bool? completeData = false;

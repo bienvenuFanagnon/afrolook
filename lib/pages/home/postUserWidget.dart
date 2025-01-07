@@ -29,6 +29,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
+import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
 import '../user/otherUser/otherUser.dart';
@@ -364,15 +365,15 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              // printVm("post.user!.role : ${post.user!.role}");
+                          child:  GestureDetector(
+                            onTap: () async {
+                              await  authProvider.getUserById(post.user!.id!).then((users) async {
+                                if(users.isNotEmpty){
+                                  showUserDetailsModalDialog(users.first, w, h,context);
 
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => OtherUserPage(otherUser: post.user!),
-                                  ));
+                                }
+                              },);
+
                             },
                             child:
                             CircleAvatar(
@@ -787,48 +788,60 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                   visible: post.dataType == PostDataType.TEXT.name
                       ? true
                       : false,
-                  child: Container(
-                    color: color,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: width * 0.8,
-                        height: height * 0.5,
-                        child: Container(
-                          // height: 200,
-                          constraints: BoxConstraints(
-                            // minHeight: 100.0, // Set your minimum height
-                            maxHeight:
-                            height * 0.6, // Set your maximum height
-                          ),
-                          alignment: Alignment.center,
-                          child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Center(
-                                child: HashTagText(
-                                  text: "${post.description}",
-                                  decoratedStyle: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: FontWeight.w600,
+                  child: GestureDetector(
+                    onTap: () {
+                      // postProvider.updateVuePost(post, context);
 
-                                    color: Colors.green,
-                                    fontFamily: 'Nunito', // Définir la police Nunito
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailsPost(post: post),
+                          ));
+                    },
+                    child: Container(
+                      color: color,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: width * 0.8,
+                          height: height * 0.5,
+                          child: Container(
+                            // height: 200,
+                            constraints: BoxConstraints(
+                              // minHeight: 100.0, // Set your minimum height
+                              maxHeight:
+                              height * 0.6, // Set your maximum height
+                            ),
+                            alignment: Alignment.center,
+                            child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: HashTagText(
+                                    text: "${post.description}",
+                                    decoratedStyle: TextStyle(
+                                      fontSize: fontSize,
+
+                                      fontWeight: FontWeight.w600,
+
+                                      color: Colors.green,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    basicStyle: TextStyle(
+                                      fontSize: fontSize,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.normal,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    textAlign: TextAlign.center, // Centrage du texte
+                                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                    onTap: (text) {
+                                      print(text);
+                                    },
                                   ),
-                                  basicStyle: TextStyle(
-                                    fontSize: fontSize,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.normal,
-                                    fontFamily: 'Nunito', // Définir la police Nunito
-                                  ),
-                                  textAlign: TextAlign.left, // Centrage du texte
-                                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                                  onTap: (text) {
-                                    print(text);
-                                  },
-                                ),
-                              )),
+                                )),
+                          ),
                         ),
                       ),
                     ),

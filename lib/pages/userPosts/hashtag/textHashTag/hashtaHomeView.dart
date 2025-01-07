@@ -88,7 +88,7 @@ class _HashTagHomeViewState extends State<HashTagHomeView> with TickerProviderSt
           animationController: _animationController,
           onSearch: (query, triggerChar) {
             if (triggerChar == "@") {
-              searchViewModel.searchUser(query);
+              // searchViewModel.searchUser(query);
             }
             if (triggerChar == "#") {
               searchViewModel.searchHashtag(query);
@@ -96,7 +96,7 @@ class _HashTagHomeViewState extends State<HashTagHomeView> with TickerProviderSt
           },
           triggerCharacterAndStyles: const {
             "@": TextStyle(color: Colors.pinkAccent),
-            "#": TextStyle(color: Colors.blueAccent),
+            "#": TextStyle(color: Colors.green),
           },
           tagTextFormatter: (id, tag, triggerCharacter) {
             return "$triggerCharacter$id#$tag#";

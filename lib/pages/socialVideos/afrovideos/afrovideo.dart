@@ -500,6 +500,231 @@ class _AfroVideoState extends State<AfroVideo> {
     );
   }
 
+  void _showPostMenuModalDialog(Post post,BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        late UserAuthProvider authProvider =
+        Provider.of<UserAuthProvider>(context, listen: false);
+        late PostProvider postProvider =
+        Provider.of<PostProvider>(context, listen: false);
+        return AlertDialog(
+          title: Text('Menu'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                Visibility(
+                  visible: post.user!.id != authProvider.loginUserData.id,
+                  child: ListTile(
+                    onTap: () async {
+                      post.status = PostStatus.SIGNALER.name;
+                      await postProvider.updateVuePost(post, context).then(
+                            (value) {
+                          if (value) {
+                            SnackBar snackBar = SnackBar(
+                              content: Text(
+                                'Post signalé !',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                          } else {
+                            SnackBar snackBar = SnackBar(
+                              content: Text(
+                                'échec !',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                          }
+                          Navigator.pop(context);
+                        },
+                      );
+                      // setState(() {});
+                    },
+                    leading: Icon(
+                      Icons.flag,
+                      color: Colors.blueGrey,
+                    ),
+                    title: Text(
+                      'Signaler',
+                    ),
+                  ),
+                ),
+                /*
+                ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  leading: Icon(Icons.edit,color: Colors.blue,),
+                  title: Text('Modifier'),
+                ),
+
+                 */
+                Visibility(
+                  visible: authProvider.loginUserData.role == UserRole.ADM.name,
+                  child: ListTile(
+                    onTap: () async {
+                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                        post.status = PostStatus.SUPPRIMER.name;
+                        await postProvider.updateVuePost(post, context).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'Post supprimé !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      } else if (post.type == PostType.POST.name) {
+                        if (post.user!.id == authProvider.loginUserData.id) {
+                          post.status = PostStatus.SUPPRIMER.name;
+                          await postProvider.updateVuePost(post, context).then(
+                                (value) {
+                              if (value) {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'Post supprimé !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              } else {
+                                SnackBar snackBar = SnackBar(
+                                  content: Text(
+                                    'échec !',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(snackBar);
+                              }
+                            },
+                          );
+                        }
+                      }
+                      Navigator.pop(context);
+
+                      //
+                      // setState(() {
+                      //   Navigator.pop(context);
+                      // });
+                    },
+                    leading: Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    title: authProvider.loginUserData.role == UserRole.ADM.name
+                        ? Text('Supprimer')
+                        : Text('Supprimer'),
+                  ),
+                ),
+
+                // Visibility(
+                //   visible: post.user!.id == authProvider.loginUserData.id,
+                //   child: ListTile(
+                //     onTap: () async {
+                //       if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                //         post.status = PostStatus.NONVALIDE.name;
+                //         await postProvider.updateVuePost(post, context).then(
+                //           (value) {
+                //             if (value) {
+                //               SnackBar snackBar = SnackBar(
+                //                 content: Text(
+                //                   'Post bloqué !',
+                //                   textAlign: TextAlign.center,
+                //                   style: TextStyle(color: Colors.green),
+                //                 ),
+                //               );
+                //               ScaffoldMessenger.of(context)
+                //                   .showSnackBar(snackBar);
+                //             } else {
+                //               SnackBar snackBar = SnackBar(
+                //                 content: Text(
+                //                   'échec !',
+                //                   textAlign: TextAlign.center,
+                //                   style: TextStyle(color: Colors.red),
+                //                 ),
+                //               );
+                //               ScaffoldMessenger.of(context)
+                //                   .showSnackBar(snackBar);
+                //             }
+                //           },
+                //         );
+                //       } else if (post.type == PostType.POST.name) {
+                //         if (post.user!.id == authProvider.loginUserData.id) {
+                //           post.status = PostStatus.SUPPRIMER.name;
+                //           await postProvider.updateVuePost(post, context).then(
+                //             (value) {
+                //               if (value) {
+                //                 SnackBar snackBar = SnackBar(
+                //                   content: Text(
+                //                     'Post supprimé !',
+                //                     textAlign: TextAlign.center,
+                //                     style: TextStyle(color: Colors.green),
+                //                   ),
+                //                 );
+                //                 ScaffoldMessenger.of(context)
+                //                     .showSnackBar(snackBar);
+                //               } else {
+                //                 SnackBar snackBar = SnackBar(
+                //                   content: Text(
+                //                     'échec !',
+                //                     textAlign: TextAlign.center,
+                //                     style: TextStyle(color: Colors.red),
+                //                   ),
+                //                 );
+                //                 ScaffoldMessenger.of(context)
+                //                     .showSnackBar(snackBar);
+                //               }
+                //             },
+                //           );
+                //         }
+                //       }
+                //
+                //       setState(() {
+                //         Navigator.pop(context);
+                //       });
+                //     },
+                //     leading: Icon(
+                //       Icons.delete,
+                //       color: Colors.red,
+                //     ),
+                //     title: authProvider.loginUserData.role == UserRole.ADM.name
+                //         ? Text('Bloquer')
+                //         : Text('Supprimer'),
+                //   ),
+                // ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
     return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
   }
@@ -1665,7 +1890,8 @@ class _AfroVideoState extends State<AfroVideo> {
 
                                                 IconButton(
                                                     onPressed: () {
-                                                      _showModalDialog(datas[index]);
+                                                      // _showModalDialog(datas[index]);
+                                                      _showPostMenuModalDialog(datas[index],context);
                                                     },
                                                     icon: Icon(
                                                       Icons.more_horiz,

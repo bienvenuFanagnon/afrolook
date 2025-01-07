@@ -73,15 +73,12 @@ class UserListView extends StatelessWidget {
                             itemBuilder: (_, index) {
                               final user = users[index];
                               return ListTile(
-                                leading: Container(
-                                  height: 50,
-                                  width: 50,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: DecorationImage(
-                                      image: NetworkImage(user.avatar),
-                                    ),
-                                  ),
+                                leading: CircleAvatar(
+                                  backgroundImage: NetworkImage(
+                                      '${user.avatar}'),
+                                  onBackgroundImageError: (exception, stackTrace) =>
+                                      AssetImage(
+                                          "assets/icon/user-removebg-preview.png"),
                                 ),
                                 title: Text(user.fullName),
                                 subtitle: Text("@${user.userName}"),
