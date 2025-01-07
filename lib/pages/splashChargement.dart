@@ -55,151 +55,294 @@ class _ChargementState extends State<SplahsChargement> {
   @override
   void initState() {
     // TODO: implement initState
-    imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 6
+    // imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 6
+    // if(!mounted){
+    //   authProvider.getAppData().then((value) {
+    //     if (app_version_code== authProvider.appDefaultData.app_version_code) {
+    //
+    //       // postProvider.getPostsImages(limitePosts).then((value) {
+    //       //
+    //       // },);
+    //       try{
+    //         authProvider.getIsFirst().then((value) {
+    //           printVm("isfirst: ${value}");
+    //           if (value==null||value==false) {
+    //             printVm("is_first");
+    //
+    //             authProvider.storeIsFirst(true);
+    //             Navigator.pushNamed(context, '/introduction');
+    //
+    //
+    //
+    //           }else{
+    //             // authProvider.storeIsFirst(false);
+    //             printVm("is_not_first");
+    //
+    //             authProvider.getToken().then((token) async {
+    //               printVm("token: ${token}");
+    //
+    //               if (token==null||token=='') {
+    //                 printVm("token: existe pas");
+    //                 Navigator.pushNamed(context, '/welcome');
+    //
+    //
+    //
+    //
+    //               }else{
+    //                 printVm("token: existe");
+    //                 await    authProvider.getLoginUser(token!).then((value) async {
+    //                   if (value) {
+    //                     // await userProvider.getAllAnnonces();
+    //                     userProvider.changeState(user: authProvider.loginUserData,
+    //                         state: UserState.ONLINE.name);
+    //
+    //                     // Navigator.pop(context);
+    //                     if(widget.postId!=null&&widget.postId.isNotEmpty){
+    //                       await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+    //                         if(posts.isNotEmpty){
+    //                           Navigator.pushNamed(
+    //                               context,
+    //                               '/home');
+    //                           Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+    //                         }else{
+    //                           Navigator.pushNamed(
+    //                               context,
+    //                               '/home');
+    //                         }
+    //
+    //                       },);
+    //                     }else{
+    //                       Navigator.pushNamed(
+    //                           context,
+    //                           '/home');
+    //                     }
+    //
+    //                     //  Navigator.pushNamed(context, '/chargement');
+    //
+    //                   }else{
+    //                     Navigator.pushNamed(context, '/welcome');
+    //
+    //                   }
+    //
+    //                 },);
+    //               }
+    //             },);
+    //
+    //           }
+    //         },);
+    //
+    //       }catch(e){
+    //         printVm("erreur chargement: $e");
+    //       }
+    //
+    //
+    //
+    //
+    //     }else{
+    //       showModalBottomSheet(
+    //         context: context,
+    //         builder: (BuildContext context) {
+    //           return Container(
+    //             height: 300,
+    //             child: Center(
+    //               child: Padding(
+    //                 padding: const EdgeInsets.all(20.0),
+    //                 child: Column(
+    //                   mainAxisAlignment: MainAxisAlignment.center,
+    //                   crossAxisAlignment: CrossAxisAlignment.center,
+    //                   children: [
+    //                     Icon(Icons.info,color: Colors.red,),
+    //                     Text(
+    //                       'Nouvelle mise à jour disponible!',
+    //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+    //                     ),
+    //                     SizedBox(height: 10.0),
+    //                     Text(
+    //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+    //                       style: TextStyle(fontSize: 16.0),
+    //                     ),
+    //                     SizedBox(height: 20.0),
+    //                     ElevatedButton(
+    //                       style: ElevatedButton.styleFrom(
+    //                         backgroundColor: Colors.green,
+    //                       ),
+    //                       onPressed: () {
+    //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+    //                       },
+    //                       child: Row(
+    //                         mainAxisAlignment: MainAxisAlignment.center,
+    //                         children: [
+    //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+    //                           SizedBox(width: 5,),
+    //                           Text('Télécharger sur le play store',
+    //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+    //                         ],
+    //                       ),
+    //
+    //                     ),
+    //                   ],
+    //                 ),
+    //               ),
+    //             ),
+    //           );
+    //         },
+    //       );
+    //
+    //     }
+    //
+    //   },);
+    //
+    // }
+
+
+      authProvider.getAppData().then((value) {
+        if (app_version_code== authProvider.appDefaultData.app_version_code) {
+
+          // postProvider.getPostsImages(limitePosts).then((value) {
+          //
+          // },);
+          try{
+            authProvider.getIsFirst().then((value) {
+              printVm("isfirst: ${value}");
+              if (value==null||value==false) {
+                printVm("is_first");
+
+                authProvider.storeIsFirst(true);
+                if (mounted) {
+                  Navigator.pushNamed(context, '/introduction');
+                }
+                // Navigator.pushNamed(context, '/introduction');
+
+
+
+              }else{
+                // authProvider.storeIsFirst(false);
+                printVm("is_not_first");
+
+                authProvider.getToken().then((token) async {
+                  printVm("token: ${token}");
+
+                  if (token==null||token=='') {
+                    printVm("token: existe pas");
+                    Navigator.pushNamed(context, '/welcome');
+
+
+
+
+                  }else{
+                    printVm("token: existe");
+                    await    authProvider.getLoginUser(token!).then((value) async {
+                      if (value) {
+                        // await userProvider.getAllAnnonces();
+                        userProvider.changeState(user: authProvider.loginUserData,
+                            state: UserState.ONLINE.name);
+
+                        // Navigator.pop(context);
+                        if(widget.postId!=null&&widget.postId.isNotEmpty){
+                          await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+                            if(posts.isNotEmpty){
+                              Navigator.pushNamed(
+                                  context,
+                                  '/home');
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                            }else{
+                              Navigator.pushNamed(
+                                  context,
+                                  '/home');
+                            }
+
+                          },);
+                        }else{
+                          Navigator.pushNamed(
+                              context,
+                              '/home');
+                        }
+
+                        //  Navigator.pushNamed(context, '/chargement');
+
+                      }else{
+                        Navigator.pushNamed(context, '/welcome');
+
+                      }
+
+                    },);
+                  }
+                },);
+
+              }
+            },);
+
+          }catch(e){
+            printVm("erreur chargement: $e");
+          }
+
+
+
+
+        }else{
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                height: 300,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.info,color: Colors.red,),
+                        Text(
+                          'Nouvelle mise à jour disponible!',
+                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 10.0),
+                        Text(
+                          'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                        SizedBox(height: 20.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          onPressed: () {
+                            _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+                              SizedBox(width: 5,),
+                              Text('Télécharger sur le play store',
+                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                            ],
+                          ),
+
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+
+        }
+
+      },);
+
+
 
     super.initState();
 
-    authProvider.getAppData().then((value) {
-      if (app_version_code== authProvider.appDefaultData.app_version_code) {
+  }
 
-        // postProvider.getPostsImages(limitePosts).then((value) {
-        //
-        // },);
-        try{
-          authProvider.getIsFirst().then((value) {
-            printVm("isfirst: ${value}");
-            if (value==null||value==false) {
-              printVm("is_first");
-
-              authProvider.storeIsFirst(true);
-              Navigator.pushNamed(context, '/introduction');
-
-
-
-            }else{
-              // authProvider.storeIsFirst(false);
-              printVm("is_not_first");
-
-              authProvider.getToken().then((token) async {
-                printVm("token: ${token}");
-
-                if (token==null||token=='') {
-                  printVm("token: existe pas");
-                  Navigator.pushNamed(context, '/welcome');
-
-
-
-
-                }else{
-                  printVm("token: existe");
-                  await    authProvider.getLoginUser(token!).then((value) async {
-                    if (value) {
-                      // await userProvider.getAllAnnonces();
-                      userProvider.changeState(user: authProvider.loginUserData,
-                          state: UserState.ONLINE.name);
-
-                      // Navigator.pop(context);
-                      if(widget.postId!=null&&widget.postId.isNotEmpty){
-                        await postProvider.getPostsImagesById(widget.postId!).then((posts) {
-                          if(posts.isNotEmpty){
-                            Navigator.pushNamed(
-                                context,
-                                '/home');
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                          }else{
-                            Navigator.pushNamed(
-                                context,
-                                '/home');
-                          }
-
-                        },);
-                      }else{
-                        Navigator.pushNamed(
-                            context,
-                            '/home');
-                      }
-
-                      //  Navigator.pushNamed(context, '/chargement');
-
-                    }else{
-                      Navigator.pushNamed(context, '/welcome');
-
-                    }
-
-                  },);
-                }
-              },);
-
-            }
-          },);
-
-        }catch(e){
-          printVm("erreur chargement: $e");
-        }
-
-
-
-
-      }else{
-        showModalBottomSheet(
-          context: context,
-          builder: (BuildContext context) {
-            return Container(
-              height: 300,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(Icons.info,color: Colors.red,),
-                      Text(
-                        'Nouvelle mise à jour disponible!',
-                        style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10.0),
-                      Text(
-                        'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                        style: TextStyle(fontSize: 16.0),
-                      ),
-                      SizedBox(height: 20.0),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
-                        onPressed: () {
-                          _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
-                            SizedBox(width: 5,),
-                            Text('Télécharger sur le play store',
-                              style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                          ],
-                        ),
-
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-
-      }
-
-    },);
-
-
-
-
-
-
-
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
   }
 
   @override
@@ -218,7 +361,8 @@ class _ChargementState extends State<SplahsChargement> {
             width: width,
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/splash/${imageNumber}.jpg'), // Chemin de votre image
+                // image: AssetImage('assets/splash/${imageNumber}.jpg'), // Chemin de votre image
+                image: AssetImage('assets/splash/spc2.jpg'), // Chemin de votre image
                 fit: BoxFit.cover, // Pour couvrir tout l'écran
               ),
             ),

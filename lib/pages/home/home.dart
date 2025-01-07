@@ -902,6 +902,8 @@ class _MyHomePageState extends State<MyHomePage>
     bool abonneTap = false;
     bool inviteTap = false;
     bool dejaInviter = false;
+    late Random random = Random();
+    late int     imageNumber = random.nextInt(8) + 1; // Génère un nombre entre 1 et 6
 
     return SizedBox(
       // width: w * 0.45,
@@ -987,14 +989,36 @@ class _MyHomePageState extends State<MyHomePage>
                               padding: const EdgeInsets.all(8.0),
                               child: SizedBox(
                                 //width: 70,
-                                child: Container(
-                                  alignment: Alignment.center,
-                                  child: TextCustomerPostDescription(
-                                    titre: "@${user.pseudo}",
-                                    fontSize: 17,
-                                    couleur: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.center,
+                                      child: TextCustomerPostDescription(
+                                        titre: '@${user.pseudo!.startsWith('@') ? user.pseudo!.replaceFirst('@', '') : user.pseudo!}',
+                                        fontSize: 17,
+                                        couleur: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          alignment: Alignment.center,
+                                          child: TextCustomerPostDescription(
+                                            titre: "${user.abonnes} Abonnés  ",
+                                            fontSize: 12,
+                                            couleur: Colors.yellow,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        // SizedBox(width: w*0.01,),
+                                        Image.asset("assets/userEticket/${imageNumber}.png",height: 27,width: 27,),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1002,6 +1026,12 @@ class _MyHomePageState extends State<MyHomePage>
                         ],
                       ),
                     ),
+                    // Positioned(
+                    //   top: 0.0,
+                    //   right: 0.0,
+                    //   // left: 0.0,
+                    //   child: Image.asset("assets/userEticket/2.png",height: 50,width: 50,),
+                    // ),
                   ],
                 ),
               ),
@@ -1746,7 +1776,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.20 (20)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.0.22 (22)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2746,32 +2776,32 @@ class _MyHomePageState extends State<MyHomePage>
               //       // });
               //     },
               //     icon: Icon(FontAwesome.refresh)),
-              IconButton(
-                  onPressed: () async {
-                    if (_scrollController.hasClients) {
+              GestureDetector(
+                onTap: () async {
+                  if (_scrollController.hasClients) {
 
-                      _scrollController.animateTo(
-                        0.0,
-                        duration: Duration(milliseconds: 1000),
-                        curve: Curves.ease,
-                      );
-                      }
-                    setState(() {
-listConstposts.clear();
-postProvider.getPostsImages2(limitePosts).listen((data) {
-  _streamController.add(data);
-});
+                    _scrollController.animateTo(
+                      0.0,
+                      duration: Duration(milliseconds: 1000),
+                      curve: Curves.ease,
+                    );
+                  }
+                  setState(() {
+                    listConstposts.clear();
+                    postProvider.getPostsImages2(limitePosts).listen((data) {
+                      _streamController.add(data);
                     });
+                  });
 
-                    // setState(() {
-                    //   postProvider.getHomePostsImages(limitePosts).then((value) {
-                    //
-                    //   },);
-                    // });
+                  // setState(() {
+                  //   postProvider.getHomePostsImages(limitePosts).then((value) {
+                  //
+                  //   },);
+                  // });
 
-                    //   Restart.restartApp();
+                  //   Restart.restartApp();
 
-                    /*
+                  /*
                 await userProvider.getAllAnnonces();
                 await postProvider.getPostsImages(limitePosts).then((value) {
                   printVm('actualiser');
@@ -2785,8 +2815,52 @@ postProvider.getPostsImages2(limitePosts).listen((data) {
                 },);
 
                  */
-                  },
-                  icon: Icon(Icons.home))
+                },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.asset("assets/icon/cocotier-home.png",height: 30,width: 30,),
+                  )),
+//               IconButton(
+//                   onPressed: () async {
+//                     if (_scrollController.hasClients) {
+//
+//                       _scrollController.animateTo(
+//                         0.0,
+//                         duration: Duration(milliseconds: 1000),
+//                         curve: Curves.ease,
+//                       );
+//                       }
+//                     setState(() {
+// listConstposts.clear();
+// postProvider.getPostsImages2(limitePosts).listen((data) {
+//   _streamController.add(data);
+// });
+//                     });
+//
+//                     // setState(() {
+//                     //   postProvider.getHomePostsImages(limitePosts).then((value) {
+//                     //
+//                     //   },);
+//                     // });
+//
+//                     //   Restart.restartApp();
+//
+//                     /*
+//                 await userProvider.getAllAnnonces();
+//                 await postProvider.getPostsImages(limitePosts).then((value) {
+//                   printVm('actualiser');
+//                   setState(() {
+//                     postLenght=8;
+//                     is_actualised = false;
+//
+//                   });
+//
+//
+//                 },);
+//
+//                  */
+//                   },
+//                   icon: Icon(Icons.home))
             ],
             //title: Text(widget.title),
           ),

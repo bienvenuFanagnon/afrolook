@@ -33,6 +33,7 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
+import 'package:afrotok/pages/splashVideo.dart';
 
 import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/user/amis/addListAmis.dart';
@@ -494,9 +495,9 @@ class _MyAppState extends State<MyApp> {
       print('onLink data: ${dynamicLinkData.link.queryParameters}');
 
       // Extraire les paramètres de l'URL
-      String? userId = dynamicLinkData.link.queryParameters['userId'];
+      // String? userId = dynamicLinkData.link.queryParameters['userId'];
       String? postId = dynamicLinkData.link.queryParameters['postId'];
-      String? postImage = dynamicLinkData.link.queryParameters['postImage'];
+      // String? postImage = dynamicLinkData.link.queryParameters['postImage'];
 
       navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!,),));
 
@@ -688,6 +689,10 @@ class _MyAppState extends State<MyApp> {
                 child: UserClassement(), type: PageTransitionType.fade);
             break;
             case '/splahs_chargement':
+            return PageTransition(
+                child: SplashVideo(), type: PageTransitionType.fade);
+            break;
+          case '/splahs_chargement2':
             return PageTransition(
                 child: SplahsChargement(postId: '',), type: PageTransitionType.fade);
             break;

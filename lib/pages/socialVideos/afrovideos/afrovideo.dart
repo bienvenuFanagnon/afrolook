@@ -734,7 +734,8 @@ class _AfroVideoState extends State<AfroVideo> {
                                   //  height: MediaQuery.of(context).size.height,
                                   child: Stack(
                                     children: [
-                                      VideoWidget(post: datas[index]!),
+                                      SamplePlayer(post: datas[index]!),
+                                      // VideoWidget(post: datas[index]!),
 
                                       // Expanded(
                                       //

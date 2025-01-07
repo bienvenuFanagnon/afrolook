@@ -23,6 +23,7 @@ import '../../../../../models/model_data.dart';
 import '../../../../../providers/authProvider.dart';
 import '../../../../../providers/postProvider.dart';
 import '../../../../../providers/userProvider.dart';
+import '../../../../socialVideos/afrovideos/videoWidget.dart';
 
 
 class ProfileUserEntrepriseVideoTab extends StatefulWidget {
@@ -589,7 +590,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
 
                     child: ClipRRect(
                       borderRadius: BorderRadius.all(Radius.circular(5)),
-                      child: VideoPlayerWidget(videoUrl: '${post!.url_media==null?'':post!.url_media}'),
+                      child: SamplePlayer( post: post,),
                     ),
                   ),
 

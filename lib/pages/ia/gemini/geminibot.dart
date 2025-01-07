@@ -31,7 +31,8 @@ class _GeminiChatBotState extends State<GeminiChatBot> {
     return Scaffold(
       backgroundColor: Colors.white12,
       appBar: AppBar(
-title:   Logo(),
+// title:   Logo(),
+title:  Text('@Xilo',style: TextStyle(fontWeight: FontWeight.w900,color: Colors.green),),
         actions: [
 
           Padding(
