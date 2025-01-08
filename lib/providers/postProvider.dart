@@ -934,7 +934,112 @@ class PostProvider extends ChangeNotifier {
 
   }
 
+  Future<List<ArticleData>>
+  getArticleById(String id) async {
 
+
+    List<ArticleData> posts = [];
+    //listConstposts =[];
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Articles');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+        .where("id",isEqualTo:'${id}')
+
+
+        .get();
+
+    List<ArticleData> postList = querySnapshotPost.docs.map((doc) =>
+        ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (ArticleData p in postList) {
+      //  printVm("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+
+
+      p.user=userList.first;
+      if (p.disponible==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.disponible==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+
+
+
+
+    }
+
+    return posts;
+
+  }
+
+  Future<List<EntrepriseData>>
+  getEntreprise(String userId) async {
+
+
+    List<EntrepriseData> posts = [];
+    //listConstposts =[];
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Entreprises');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+        .where("userId",isEqualTo:'${userId}')
+
+
+        .get();
+
+    List<EntrepriseData> postList = querySnapshotPost.docs.map((doc) =>
+        EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (EntrepriseData p in postList) {
+      //  printVm("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+
+      //
+      // p.user=userList.first;
+      // if (p.disponible==PostStatus.NONVALIDE.name) {
+      //   // posts.add(p);
+      // }else if (p.disponible==PostStatus.SUPPRIMER.name) {
+      //   // posts.add(p);
+      // }   else{
+      //   posts.add(p);
+      // }
+      posts.add(p);
+
+
+
+
+    }
+
+    return posts;
+
+  }
   Future<List<Post>> getPostsVideos2() async {
 
     List<Post> posts = [];

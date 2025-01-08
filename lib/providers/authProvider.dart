@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:deeplynks/services/deeplynks_service.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
@@ -142,6 +143,50 @@ class UserAuthProvider extends ChangeNotifier {
     print('Generated Dynamic Link: $_linkMessage');
     return url.toString();
   }
+  Future<String> createArticleLink(bool short, ArticleData article) async {
+    FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+
+    final String DynamicLink = 'https://afrotok.page.link/post';
+    final String appLogo="https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
+
+    // Paramètres que vous souhaitez ajouter à l'URL du lien dynamique
+    final Uri link = Uri.parse(
+        'https://afrotok.page.link/post?postId=${article.id}&postImage=${article.images!.isEmpty?appLogo:article.images!.first}&postType=${PostType.ARTICLE.name}'
+    );
+
+    final DynamicLinkParameters parameters = DynamicLinkParameters(
+      uriPrefix: 'https://afrotok.page.link',
+      link: link,
+      androidParameters: const AndroidParameters(
+        packageName: 'com.afrotok.afrotok',
+        minimumVersion: 0,
+      ),
+      iosParameters: const IOSParameters(
+        bundleId: 'com.afrotok.afrotok',
+        minimumVersion: '0',
+      ),
+      socialMetaTagParameters: SocialMetaTagParameters(
+        title: 'Marché Afrolook (Afroshop) 🛒',  // Titre de la publication
+        description: article.description,  // Description de la publication
+        imageUrl: Uri.parse(article.images!.isEmpty?appLogo:article.images!.first),  // URL de l'image du post
+      ),
+    );
+
+    Uri url;
+    if (short) {
+      final ShortDynamicLink shortLink =
+      await dynamicLinks.buildShortLink(parameters);
+      url = shortLink.shortUrl;
+    } else {
+      url = await dynamicLinks.buildLink(parameters);
+    }
+
+    _linkMessage = url.toString();
+    _isCreatingLink = false;
+
+    print('Generated Dynamic Link: $_linkMessage');
+    return url.toString();
+  }
 
 
 
@@ -214,6 +259,12 @@ class UserAuthProvider extends ChangeNotifier {
 
     await firestore.collection('AppData').doc(appDefaultData!.id).update(
         appDefaultData!.toJson());
+  }
+  Future<void> updateEntreprise(EntrepriseData data) async {
+    printVm("entreprise  data : ${data!.toJson()}");
+
+    await firestore.collection('Entreprises').doc(data!.id).update(
+        data!.toJson());
   }
 
 

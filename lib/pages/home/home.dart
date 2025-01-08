@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:afrotok/pages/ia/gemini/geminibot.dart';
+import 'package:auto_animated/auto_animated.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -27,6 +30,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -400,7 +404,7 @@ class _MyHomePageState extends State<MyHomePage>
       return "publié depuis ${DateFormat('dd MMMM yyyy').format(dateTime)}";
     }
   }
-
+  List<UserData> userList=[];
   PopupMenu? postmenu;
 
   String formatAbonnes(int nbAbonnes) {
@@ -1490,21 +1494,21 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                    */
-                  // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                  //   leading: Icon(Icons.storefront_outlined, color: Colors.green),
-                  //   title: TextCustomerMenu(
-                  //     titre: "Afroshop MarketPlace",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: ConstColors.textColors,
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   onTap: () async {
-                  //
-                  //
-                  //     Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-                  //   },
-                  // ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.storefront_outlined, color: Colors.green),
+                    title: TextCustomerMenu(
+                      titre: "Afroshop MarketPlace",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+                    },
+                  ),
 
                   ListTile(
                     trailing: TextCustomerMenu(
@@ -2028,7 +2032,7 @@ class _MyHomePageState extends State<MyHomePage>
           children: [
             GestureDetector(
               onTap: () async {
-                await authProviderShop.getUserById(article.user_id!).then(
+                await authProvider.getUserById(article.user_id!).then(
                   (value) async {
                     if (value.isNotEmpty) {
                       article.user = value.first;
@@ -2741,6 +2745,18 @@ class _MyHomePageState extends State<MyHomePage>
               //       // });
               //     },
               //     icon: Icon(FontAwesome.refresh)),
+          AnimateIcon(
+            key: UniqueKey(),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+
+            },
+            iconType: IconType.continueAnimation,
+            height: 70,
+            width: 70,
+            color: Colors.green,
+            animateIcon: AnimateIcons.paid,
+          ),
               GestureDetector(
                 onTap: () async {
                   if (_scrollController.hasClients) {
@@ -2830,214 +2846,168 @@ class _MyHomePageState extends State<MyHomePage>
             //title: Text(widget.title),
           ),
           drawer: menu(context),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(3.0),
-              child: Consumer<PostProvider>(
-                  builder: (context, postListProvider, child) {
-                return ListView(
-                  children: [
+          body: SafeArea(
+            child: CustomScrollView(
 
-                    Column(
-                      children: <Widget>[
-                        Row(
-                          children: [
-                            TextButton(
-                                onPressed: () {},
-                                child: Text("")),
-                            // TextButton(
-                            //     onPressed: () async {
-                            //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-                            //       await userProvider
-                            //           .getProfileUsers(
-                            //           authProvider
-                            //               .loginUserData!
-                            //               .id!,
-                            //           context,
-                            //           limiteUsers)
-                            //           .then(
-                            //             (value) {
-                            //           Navigator.push(
-                            //               context,
-                            //               MaterialPageRoute(
-                            //                 builder:
-                            //                     (context) =>
-                            //                     UserCards(),
-                            //               ));
-                            //         },
-                            //       );
-                            //     },
-                            //     child: Text(
-                            //         "Voir autres profiles")),
+              controller: _scrollController,
+              slivers: <Widget>[
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: SliverToBoxAdapter(
+                    child: Row(
+                      children: [
+                        TextButton(
+                            onPressed: () {},
+                            child: Text("")),
+                        // TextButton(
+                        //     onPressed: () async {
+                        //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
+                        //       await userProvider
+                        //           .getProfileUsers(
+                        //           authProvider
+                        //               .loginUserData!
+                        //               .id!,
+                        //           context,
+                        //           limiteUsers)
+                        //           .then(
+                        //             (value) {
+                        //           Navigator.push(
+                        //               context,
+                        //               MaterialPageRoute(
+                        //                 builder:
+                        //                     (context) =>
+                        //                     UserCards(),
+                        //               ));
+                        //         },
+                        //       );
+                        //     },
+                        //     child: Text(
+                        //         "Voir autres profiles")),
 
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                              ),
-                              onPressed: () {
-                                _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-
-                                  Text('🎁 Faire un don 🙏',
-                                    style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                                ],
-                              ),
-
-                            ),
-
-                          ],
-                          mainAxisAlignment:
-                          MainAxisAlignment
-                              .spaceBetween,
-                        ),
-                        SizedBox(
-                          width: width,
-                          height: height*0.35,
-                          child: FutureBuilder<
-                              List<UserData>>(
-                            future: userProvider
-                                .getProfileUsers(
-                                authProvider
-                                    .loginUserData
-                                    .id!,
-                                context,
-                                limiteUsers),
-                            builder:
-                                (context, snapshot) {
-                              if (snapshot
-                                  .connectionState ==
-                                  ConnectionState
-                                      .waiting) {
-                                return widgetSeke2(width,height);
-                              } else if (snapshot
-                                  .hasError) {
-                                return widgetSeke2(width,height);
-                              } else {
-                                // Get data from docs and convert map to List
-                                List<UserData> list =
-                                snapshot.data!;
-
-                                // Utiliser les données de snapshot.data
-                                return ListView
-                                    .builder(
-                                    scrollDirection:
-                                    Axis
-                                        .horizontal,
-                                    itemCount:
-                                    snapshot
-                                        .data!
-                                        .length, // Nombre d'éléments dans la liste
-                                    itemBuilder:
-                                        (context,
-                                        index) {
-                                      //list[index].userAbonnes=[];
-                                      return homeProfileUsers(
-                                          list[
-                                          index],
-                                          width,
-                                          height);
-                                    });
-                              }
-                            },
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
                           ),
+                          onPressed: () {
+                            _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+
+                              Text('🎁 Faire un don 🙏',
+                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                            ],
+                          ),
+
                         ),
 
-                        Divider(
-                          height: 10,
-                        ),
                       ],
+                      mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
                     ),
-                    StreamBuilder<List<Post>>(
-                      // stream: postProvider.getPostsImages2(limitePosts,),
-                      stream: _streamController.stream,
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<UserData>>(
+                    future: userProvider.getProfileUsers(
+                      authProvider.loginUserData.id!,
+                      context,
+                      limiteUsers,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                              height: height * 0.35,
 
-                      // initialData: postProvider.listConstposts,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
-                        } else if (snapshot.hasError) {
-                          printVm('Error: ${snapshot.error}');
-                          return Center(child: Icon(Icons.error));
-                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(child: Text('No posts found'));
-                        }
-                        // Mettre à jour seulement si de nouvelles données arrivent
-                        if (!isLoading && snapshot.data != listConstposts) {
-
-                            listConstposts = snapshot.data!;
-
-                        }
-
-                         listConstposts = snapshot.data!;
-
-                        return Column(
-                          children: [
-                            SizedBox(
-                              width: width,
-                              height: height * 0.7,
-                              child: ListView.builder(
-                                itemCount: listConstposts.length,
-                                itemBuilder: (BuildContext context,
-                                    int index) {
-
-                                    return SizedBox(
-
-                                      width: width,
-                                      height: height * 0.7,
-                                      child: PageView(
-                                        physics: NeverScrollableScrollPhysics(), // Désactiver le scroll physique
-
-                                        controller: _pageController,
-
-                                        onPageChanged: (index) {
-                                          setState(() {
-                                            _currentIndex = index;
-                                          });
-                                        },
-
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 5.0, bottom: 5),
-                                            child: homePostUsers(
-                                                listConstposts![index],
-                                                Colors.brown,
-                                                // _color,
-                                                height,
-                                                width,context),
-                                          ),                                        // AfroVideo(),
-                                          PostComments(post: listConstposts![index]),
-                                          // _pageController.jumpToPage(index);
-
-                                        ],
-                                      ),
-                                    );
-                                  }
-                               // },
-                              ),
-                            ),
-                            // if (!postProvider.isLoading)
-                            //   ElevatedButton(
-                            //     onPressed: () {
-                            //       setState(() {
-                            //         postProvider.isLoading = true;
-                            //         // lastDocument = listConstposts.last as DocumentSnapshot<Object?>?; // Set the last document for next fetch
-                            //       });
-                            //     },
-                            //     child: Text('Suivant'),
-                            //   ),
-                            // if (postProvider.isLoading) CircularProgressIndicator(),
-                          ],
+                              child: widgetSeke2(width, height)),
                         );
-                      },
-                    ),
-                  ],
-                )
-                ;
-              }),
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                              height: height * 0.35,
+
+                              child: widgetSeke2(width, height)),
+                        );
+                      } else {
+                        List<UserData> list = snapshot.data!;
+                        userList=list;
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: list.length,
+                              itemBuilder: (context, index) {
+                                return homeProfileUsers(list[index], width, height);
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: StreamBuilder<List<Post>>(
+                    stream: _streamController.stream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: Icon(Icons.error)),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: Text('Pas de looks')),
+                        );
+                      }
+                      List<Post> listConstposts = snapshot.data!;
+
+
+                      return LiveSliverList(
+                        controller: _scrollController,
+                        showItemInterval: Duration(milliseconds: 250),
+                        showItemDuration: Duration(milliseconds: 300),
+                        itemCount: listConstposts.length,
+                        itemBuilder: animationItemBuilder(
+                                (index) {
+    if (index % 6 == 5) {
+      return SizedBox(
+        height: height * 0.35,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: userList.length,
+          itemBuilder: (context, index) {
+            return homeProfileUsers(userList[index], width, height);
+          },
+        ),
+      );
+    }
+
+
+    return homePostUsers(
+                                    listConstposts[index],
+                                    Colors.brown,
+                                    height,
+                                    width,
+                                    context,
+                                  );
+                                },
+                            padding: EdgeInsets.symmetric(vertical: 8)),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           bottomNavigationBar: Container(

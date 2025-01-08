@@ -41,6 +41,7 @@ import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
 import 'component/consoleWidget.dart';
+import 'component/showImage.dart';
 import 'component/showUserDetails.dart';
 
 class PostComments extends StatefulWidget {
@@ -681,31 +682,36 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: HashTagText(
-
-                  text: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message}",
-                  decoratedStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-
-                    color: Colors.green,
-                    fontFamily: 'Nunito', // Définir la police Nunito
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: width*0.5, // Définir la largeur maximale souhaitée
                   ),
-                  basicStyle: TextStyle(
-                    fontSize: SizeText.homeProfileTextSize,
-                    color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: 'Nunito', // Définir la police Nunito
-                  ),
-                  textAlign: TextAlign.left, // Centrage du texte
-                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                  onTap: (text) {
-                    _handleTagClick(text,width,height);
-                  },
-                  decorateAtSign: true,
+                  child: HashTagText(
 
+                    text: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message}",
+                    decoratedStyle: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+
+                      color: Colors.green,
+                      fontFamily: 'Nunito', // Définir la police Nunito
+                    ),
+                    basicStyle: TextStyle(
+                      fontSize: SizeText.homeProfileTextSize,
+                      color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                      fontWeight: FontWeight.normal,
+                      fontFamily: 'Nunito', // Définir la police Nunito
+                    ),
+                    textAlign: TextAlign.left, // Centrage du texte
+                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                    onTap: (text) {
+                      _handleTagClick(text,width,height);
+                    },
+                    decorateAtSign: true,
+
+                  ),
                 ),
               ),
               // HashTagText(
@@ -768,31 +774,36 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               // ),
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: HashTagText(
-
-                  text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
-                  decoratedStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-
-                    color: Colors.green,
-                    fontFamily: 'Nunito', // Définir la police Nunito
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: width*0.45, // Définir la largeur maximale souhaitée
                   ),
-                  basicStyle: TextStyle(
-                    fontSize: SizeText.homeProfileTextSize,
-                    color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: 'Nunito', // Définir la police Nunito
-                  ),
-                  textAlign: TextAlign.left, // Centrage du texte
-                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                  onTap: (text) {
-                    _handleTagClick(text,width,height);
-                  },
-                  decorateAtSign: true,
+                  child: HashTagText(
 
+                    text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
+                    decoratedStyle: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+
+                      color: Colors.green,
+                      fontFamily: 'Nunito', // Définir la police Nunito
+                    ),
+                    basicStyle: TextStyle(
+                      fontSize: SizeText.homeProfileTextSize,
+                      color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
+                      fontWeight: FontWeight.normal,
+                      fontFamily: 'Nunito', // Définir la police Nunito
+                    ),
+                    textAlign: TextAlign.left, // Centrage du texte
+                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                    onTap: (text) {
+                      _handleTagClick(text,width,height);
+                    },
+                    decorateAtSign: true,
+
+                  ),
                 ),
               ),
               Text(
@@ -851,305 +862,7 @@ if(users.isNotEmpty){
 
     // Recherchez l'utilisateur associé et affichez les détails si nécessaire
   }
-  Widget commentAndResponseListWidget2(
-    List<PostComment> pcms,
-    double width,
-      double height,
-  )
-  {
-    bool isExpandedState=false;
 
-    return SingleChildScrollView(
-
-      child: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setStatep) {
-            return       Column(
-              children: [
-                for(PostComment pcm in pcms!)
-                ExpansionTile(
-                  trailing: Container(
-                      child: Padding(
-                        padding: const EdgeInsets.all(1.0),
-                        child: Text('${formatNumber(pcm.responseComments!.length)}',style: TextStyle(color: Colors.red),),
-                      )),
-
-                  title: ListTile(
-
-                    leading: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: CircleAvatar(
-                        radius: 12,
-                        backgroundImage:
-                        NetworkImage('${pcm.user!.imageUrl}'),
-                        onBackgroundImageError: (exception, stackTrace) => AssetImage('assets/images/404.png'),
-                      ),
-                    ),
-                    title: SizedBox(
-                      width: 100,
-                      child: TextCustomerUserTitle(
-                        titre: "@${pcm.user!.pseudo!}",
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: ConstColors.textColors,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: width,
-                          //height: 100,
-
-                          child:Row(
-                            children: [
-                              SizedBox(
-                                width: width * 0.2,
-                                child: HashTagText(
-                                  decorateAtSign: true,
-
-                                  text: "${"${pcm.status==PostStatus.SUPPRIMER.name?"supprimé":pcm.message!}"}",
-                                  decoratedStyle: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-
-                                    color: Colors.green,
-                                    fontFamily: 'Nunito', // Définir la police Nunito
-                                  ),
-                                  basicStyle: TextStyle(
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                                    fontWeight: FontWeight.normal,
-                                    fontFamily: 'Nunito', // Définir la police Nunito
-                                  ),
-                                  textAlign: TextAlign.left, // Centrage du texte
-                                  maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                                  softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                                  // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                                  onTap: (text) async {
-                                    print(text);
-                                    print(text);
-
-
-                                    var user= users.firstWhere((element) => element.pseudo==text,);
-                                    if(user!=null){
-                                      await  authProvider.getUserById(user.id!).then((users) async {
-                                        if(users.isNotEmpty){
-                                          showUserDetailsModalDialog(users.first, width, height,context);
-
-                                        }
-                                      },);
-                                    }
-                                  },
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  IconButton(onPressed: () {
-                                    setState(() {
-                                      commentSelectedToReply = PostComment();
-                                      commentSelectedToReply = pcm;
-                                      commentRecever=commentSelectedToReply.user!;
-
-                                      replyUser_id=commentSelectedToReply.user!.id!;
-                                      replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
-
-                                      replyingTo = "@${commentSelectedToReply.user!.pseudo}";
-                                      replying = true;
-                                    });
-
-
-                                  }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,)),
-                                  IconButton(onPressed: () {
-                                    setState(() {
-
-                                      _showCommentMenuModalDialog(pcm);
-
-                                    });
-
-
-                                  }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 15,)),
-
-                                ],
-                              )
-
-                            ],
-                          ),
-                        ),
-                        Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold),),
-                      ],
-                    ),
-                    // trailing: Container(
-                    //     child: Padding(
-                    //       padding: const EdgeInsets.all(1.0),
-                    //       child: Text('${formatNumber(pcm.responseAbonnements!.length)}',style: TextStyle(color: Colors.red),),
-                    //     )),
-                    /*
-                      trailing: Align(
-                        alignment: Alignment.centerRight,
-                        child: TextCustomerPostDescription(
-                          titre:
-                          "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",
-                          fontSize: SizeText.textDatePostSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-
-                       */
-                  ),
-                  children: [
-                    for(ResponsePostComment rpc in pcm.responseComments!)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 30.0),
-                        child: ListTile(
-
-                          leading: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.green),
-                                  borderRadius: BorderRadius.all(Radius.circular(200))
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(3.0),
-                                child: CircleAvatar(
-
-                                  backgroundColor: Colors.green,
-                                  radius: 8,
-                                  backgroundImage:
-                                  NetworkImage('${rpc!.user_logo_url}'),
-                                ),
-                              ),
-                            ),
-                          ),
-                          title: SizedBox(
-                            width: 100,
-                            child: TextCustomerUserTitle(
-                              titre: "@${rpc!.user_pseudo}",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: width * 0.8,
-                                //height: 100,
-
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: width * 0.3,
-                                      child: HashTagText(
-
-                                        text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
-                                        decoratedStyle: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-
-                                          color: Colors.green,
-                                          fontFamily: 'Nunito', // Définir la police Nunito
-                                        ),
-                                        basicStyle: TextStyle(
-                                          fontSize: SizeText.homeProfileTextSize,
-                                          color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                                          fontWeight: FontWeight.normal,
-                                          fontFamily: 'Nunito', // Définir la police Nunito
-                                        ),
-                                        textAlign: TextAlign.left, // Centrage du texte
-                                        maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                                        softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                                        // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                                        onTap: (text) async {
-                                          print(text);
-
-
-                                               var user= users.firstWhere((element) => element.pseudo==text,);
-                                               if(user!=null){
-                                                 await  authProvider.getUserById(user.id!).then((users) async {
-                                                   if(users.isNotEmpty){
-                                                     showUserDetailsModalDialog(users.first, width, height,context);
-
-                                                   }
-                                                 },);
-                                               }
-
-
-
-                                        },
-                                        decorateAtSign: true,
-
-                                      ),
-                                    ),
-
-                                    Row(
-                                      children: [
-                                        IconButton(onPressed: () {
-                                          printVm("****** response pcm selected");
-
-                                          setState(() {
-                                            // printVm("****** response pcm **** : ${pcm.toJson()}");
-
-                                            commentSelectedToReply = PostComment();
-                                            commentSelectedToReply = pcm;
-                                            commentRecever=pcm.user!;
-
-                                            printVm('rpc data ${rpc.toJson()}');
-                                            replyUser_id=rpc.user_id!;
-                                            replyUser_pseudo=pcm.user!.pseudo!;
-
-                                            replyingTo = "@${rpc!.user_pseudo}";
-                                            replying = true;
-                                          });
-
-
-                                        }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,)),
-                                        IconButton(onPressed: () {
-
-                                          _showResponseCommentMenuModalDialog(pcm,rpc);
-
-
-
-                                        }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 14,)),
-                                      ],
-                                    )
-
-                                  ],
-                                ),
-                              ),
-                              Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!))}",style: TextStyle(fontSize: 7,fontWeight: FontWeight.bold),),
-
-                            ],
-                          ),
-                          /*
-                            trailing: Align(
-                              alignment: Alignment.centerRight,
-                              child: TextCustomerPostDescription(
-                                titre:
-                                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.responseAbonnements![index]!.createdAt!))}",
-                                fontSize: SizeText.textDatePostSize,
-                                couleur: ConstColors.textColors,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-
-                             */
-                        ),
-                      ),
-                  ],
-                ),
-
-              ],
-            );
-          }
-      ),
-    );
-  }
 List<UserData> users=[];
   @override
   void initState() {
@@ -1311,69 +1024,59 @@ List<UserData> users=[];
                                 SizedBox(
                                   height: 5,
                                 ),
-                                widget.post!.images == null
+                                widget.post!.images!.isEmpty
                                     ? Container()
                                     : Padding(
                                         padding: const EdgeInsets.all(8.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            for (int i = 0;
-                                                i < widget.post!.images!.length;
-                                                i++)
-                                              TextButton(
-                                                onPressed: () {
-                                                  setStateImages(() {
-                                                    imageIndex = i;
-                                                  });
-                                                },
-                                                child: Container(
-                                                  width: 100,
-                                                  height: 50,
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(10)),
-                                                    child: Container(
-                                                      child: CachedNetworkImage(
-                                                        fit: BoxFit.cover,
-                                                        imageUrl:
-                                                            '${widget.post!.images![i]}',
-                                                        progressIndicatorBuilder: (context,
-                                                                url,
-                                                                downloadProgress) =>
-                                                            //  LinearProgressIndicator(),
-        
-                                                            Skeletonizer(
-                                                                child: SizedBox(
-                                                                    width: 400,
-                                                                    height: 450,
-                                                                    child: ClipRRect(
-                                                                        borderRadius:
-                                                                            BorderRadius.all(Radius.circular(
-                                                                                10)),
-                                                                        child: Image
-                                                                            .asset(
-                                                                                'assets/images/404.png')))),
-                                                        errorWidget: (context,
-                                                                url, error) =>
-                                                            Skeletonizer(
-                                                                child: Container(
-                                                                    width: 400,
-                                                                    height: 450,
-                                                                    child: Image
-                                                                        .asset(
-                                                                      "assets/images/404.png",
-                                                                      fit: BoxFit
-                                                                          .cover,
-                                                                    ))),
-                                                      ),
-                                                    ),
-                                                  ),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            showImageDetailsModalDialog(widget.post!.images!.first!, width, height,context);
+
+                                          },
+                                          child: Container(
+                                            width: 100,
+                                            height: 50,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                              BorderRadius.all(
+                                                  Radius.circular(10)),
+                                              child: Container(
+                                                child: CachedNetworkImage(
+                                                  fit: BoxFit.cover,
+                                                  imageUrl:
+                                                  '${widget.post!.images!.first}',
+                                                  progressIndicatorBuilder: (context,
+                                                      url,
+                                                      downloadProgress) =>
+                                                  //  LinearProgressIndicator(),
+
+                                                  Skeletonizer(
+                                                      child: SizedBox(
+                                                          width: 400,
+                                                          height: 450,
+                                                          child: ClipRRect(
+                                                              borderRadius:
+                                                              BorderRadius.all(Radius.circular(
+                                                                  10)),
+                                                              child: Image
+                                                                  .asset(
+                                                                  'assets/images/404.png')))),
+                                                  errorWidget: (context,
+                                                      url, error) =>
+                                                      Skeletonizer(
+                                                          child: Container(
+                                                              width: 400,
+                                                              height: 450,
+                                                              child: Image
+                                                                  .asset(
+                                                                "assets/images/404.png",
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                              ))),
                                                 ),
-                                              )
-                                          ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                 SizedBox(
@@ -1525,7 +1228,35 @@ List<UserData> users=[];
                           if (value) {
                             // _textController.text = "";
                             printVm("****** response sended user id **** : ${replyUser_id}");
+                            widget.post.comments =
+                                widget.post.comments! + 1;
 
+                            widget.post.comments =
+                                widget.post.comments! + 1;
+
+
+                            CollectionReference userCollect =
+                            FirebaseFirestore.instance.collection('Users');
+                            // Get docs from collection reference
+                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
+                            // Afficher la liste
+                            List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                            if (listUsers.isNotEmpty) {
+
+                              listUsers.first!.comments=listUsers.first!.comments!+1;
+                              postProviders.updatePost(widget.post, listUsers.first!!,context);
+                              await authProvider.getAppData();
+                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                              authProvider.updateAppData(authProvider.appDefaultData);
+                            }else{
+                              widget.post.user!.comments=widget.post.user!.comments!+1;
+                              postProviders.updatePost(widget.post,widget.post.user!,context);
+                              await authProvider.getAppData();
+
+                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                              authProvider.updateAppData(authProvider.appDefaultData);
+                            }
                             await authProvider.getUserById(replyUser_id).then(
                                   (users) async {
                                 if(users.isNotEmpty){

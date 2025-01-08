@@ -173,7 +173,7 @@ class UserShopAuthProvider extends ChangeNotifier {
 
   }
 
-  Future<List<UserShopData>> getUserById(String id) async {
+  Future<List<UserShopData>> getAfroshopUserById(String id) async {
     late List<UserShopData> list= [];
 
 

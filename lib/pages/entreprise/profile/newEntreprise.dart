@@ -61,18 +61,18 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
       try{
 
-
-        UserPseudo pseudo=UserPseudo();
-        pseudo.id=firestore
-            .collection('EntrepriseNames')
-            .doc()
-            .id;
-        pseudo.name=nom;
-
-        // users.add(pseudo.toJson());
-
-        await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
-        print("///////////-- save pseudo --///////////////");
+        //
+        // UserPseudo pseudo=UserPseudo();
+        // pseudo.id=firestore
+        //     .collection('EntrepriseNames')
+        //     .doc()
+        //     .id;
+        // pseudo.name=nom;
+        //
+        // // users.add(pseudo.toJson());
+        //
+        // await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
+        // print("///////////-- save pseudo --///////////////");
         return false;
       } on FirebaseException catch(error){
         return true;
@@ -169,21 +169,28 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                     .collection('Entreprises')
                                     .doc()
                                     .id;
-                                /*
-                                EntrepriseAbonnement abonnement = EntrepriseAbonnement(
-                                  type: "exemple",
-                                  id: "1",
-                                  entrepriseId: id,
-                                  description: "Abonnement de test",
-                                  userId: "${authProvider.loginUserData.id!}",
-                                  createdAt: DateTime.now().millisecondsSinceEpoch,
-                                  updatedAt: DateTime.now().millisecondsSinceEpoch,
-                                  star: DateTime.now().millisecondsSinceEpoch,
-                                  end: DateTime.now().add(Duration(days: 30)).millisecondsSinceEpoch,
-                                  isFinished: false,
-                                );
 
-                                 */
+
+                                EntrepriseAbonnement abonnement = EntrepriseAbonnement()
+                                  ..type = TypeAbonement.GRATUIT.name
+                                  ..id = "idabn"
+                                  ..entrepriseId = id
+                                  ..description = "Abonnement gratuit pour entreprise"
+                                  ..nombre_pub = 10
+                                  ..nombre_image_pub = 1
+                                  ..nbr_jour_pub_afrolook = 0
+                                  ..nbr_jour_pub_annonce_afrolook = 0
+                                  ..userId = authProvider.loginUserData.id
+                                  ..afroshop_user_magasin_id = "magasin456"
+                                  ..createdAt = DateTime.now().millisecondsSinceEpoch
+                                  ..updatedAt = DateTime.now().millisecondsSinceEpoch
+                                  ..star = DateTime.now().millisecondsSinceEpoch
+                                  ..end = DateTime.now().add(Duration(days: 365)).millisecondsSinceEpoch
+                                  ..isFinished = false
+                                  ..dispo_afrolook = false;
+
+
+
                                 EntrepriseData entreprise=EntrepriseData();
                                 entreprise.titre=_titreController.text;
                                 entreprise.type=TypeEntreprise.personnel.name;
@@ -192,10 +199,11 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 entreprise.userId=authProvider.loginUserData.id!;
                                 entreprise.description=_descriptionController.text;
                                 entreprise.abonnements=[];
-                                /*
-                                entreprise.abonnements!.add(abonnement);
+                                // entreprise.abonnements!.add(abonnement);
 
-                                 */
+                                entreprise.abonnement=abonnement;
+
+
                                 Reference storageReference =
                                 FirebaseStorage.instance.ref().child(
                                     'post_media/${Path.basename(File(imageProfile!.path).path)}');
@@ -229,12 +237,25 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
+
+
+                                UserPseudo pseudo=UserPseudo();
+                                pseudo.id=firestore
+                                    .collection('EntrepriseNames')
+                                    .doc()
+                                    .id;
+                                pseudo.name=   _titreController.text;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
+                                print("///////////-- save pseudo --///////////////");
+                               // Navigator.pop(context);
                                 setState(() {
                                   _titreController.text='';
                                   _descriptionController.text='';
                                   imageProfile=null;
                                 });
-                               // Navigator.pop(context);
                               }
                             }catch(e){
                               SnackBar snackBar = SnackBar(
@@ -276,7 +297,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                           leftDotColor: Colors.green,
                           rightDotColor: Colors.black,
                         ),
-                      ): Text('Créer le profil'),
+                      ): Text('Créer votre entreprise'),
                     ),
                   ],
                 ),

@@ -364,13 +364,13 @@ class CategorieProduitProvider extends ChangeNotifier {
 
      }
    },);
-   await authProvider.getUserById(cmd.user_client_id!).then((value) {
+   await authProvider.getAfroshopUserById(cmd.user_client_id!).then((value) {
      if (value.isNotEmpty) {
        cmd.user_client=value.first;
 
      }
    },);
-   await authProvider.getUserById(cmd.user_magasin_id!).then((value) {
+   await authProvider.getAfroshopUserById(cmd.user_magasin_id!).then((value) {
      if (value.isNotEmpty) {
        cmd.user_magasin=value.first;
 
@@ -414,13 +414,13 @@ class CategorieProduitProvider extends ChangeNotifier {
 
         }
       },);
-      await authProvider.getUserById(cmd.user_client_id!).then((value) {
+      await authProvider.getAfroshopUserById(cmd.user_client_id!).then((value) {
         if (value.isNotEmpty) {
           cmd.user_client=value.first;
 
         }
       },);
-      await authProvider.getUserById(cmd.user_magasin_id!).then((value) {
+      await authProvider.getAfroshopUserById(cmd.user_magasin_id!).then((value) {
         if (value.isNotEmpty) {
           cmd.user_magasin=value.first;
 
@@ -465,13 +465,13 @@ class CategorieProduitProvider extends ChangeNotifier {
 
         }
       },);
-      await authProvider.getUserById(cmd.user_client_id!).then((value) {
+      await authProvider.getAfroshopUserById(cmd.user_client_id!).then((value) {
         if (value.isNotEmpty) {
           cmd.user_client=value.first;
 
         }
       },);
-      await authProvider.getUserById(cmd.user_magasin_id!).then((value) {
+      await authProvider.getAfroshopUserById(cmd.user_magasin_id!).then((value) {
         if (value.isNotEmpty) {
           cmd.user_magasin=value.first;
 

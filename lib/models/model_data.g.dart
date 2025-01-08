@@ -8,7 +8,7 @@ part of 'model_data.dart';
 
 UserShopData _$UserShopDataFromJson(Map<String, dynamic> json) => UserShopData()
   ..id = json['id'] as String?
-  ..nombre_pub = json['nombre_pub'] as int?
+  ..nombre_pub = (json['nombre_pub'] as num?)?.toInt()
   ..montant = (json['montant'] as num?)?.toDouble()
   ..nom = json['nom'] as String?
   ..nom_magasin = json['nom_magasin'] as String?
@@ -17,8 +17,9 @@ UserShopData _$UserShopDataFromJson(Map<String, dynamic> json) => UserShopData()
   ..phone = json['phone'] as String?
   ..pwd = json['pwd'] as String?
   ..role = json['role'] as String?
-  ..createdAt = json['createdAt'] as int?
-  ..updatedAt = json['updatedAt'] as int?;
+  ..createdAt = (json['createdAt'] as num?)?.toInt()
+  ..updatedAt = (json['updatedAt'] as num?)?.toInt()
+  ..nbr_aticle_annonce = (json['nbr_aticle_annonce'] as num?)?.toInt();
 
 Map<String, dynamic> _$UserShopDataToJson(UserShopData instance) =>
     <String, dynamic>{
@@ -34,6 +35,7 @@ Map<String, dynamic> _$UserShopDataToJson(UserShopData instance) =>
       'role': instance.role,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
+      'nbr_aticle_annonce': instance.nbr_aticle_annonce,
     };
 
 ArticleData _$ArticleDataFromJson(Map<String, dynamic> json) => ArticleData()
@@ -41,17 +43,19 @@ ArticleData _$ArticleDataFromJson(Map<String, dynamic> json) => ArticleData()
   ..user_id = json['user_id'] as String?
   ..categorie_id = json['categorie_id'] as String?
   ..description = json['description'] as String?
+  ..phone = json['phone'] as String?
   ..titre = json['titre'] as String?
-  ..prix = json['prix'] as int?
-  ..popularite = json['popularite'] as int?
-  ..vues = json['vues'] as int?
+  ..prix = (json['prix'] as num?)?.toInt()
+  ..popularite = (json['popularite'] as num?)?.toInt()
+  ..vues = (json['vues'] as num?)?.toInt()
   ..disponible = json['disponible'] as bool?
-  ..contact = json['contact'] as int?
-  ..jaime = json['jaime'] as int?
-  ..createdAt = json['createdAt'] as int?
-  ..updatedAt = json['updatedAt'] as int?
+  ..contact = (json['contact'] as num?)?.toInt()
+  ..jaime = (json['jaime'] as num?)?.toInt()
+  ..partage = (json['partage'] as num?)?.toInt()
+  ..createdAt = (json['createdAt'] as num?)?.toInt()
+  ..updatedAt = (json['updatedAt'] as num?)?.toInt()
   ..dispo_annonce_afrolook = json['dispo_annonce_afrolook'] as bool?
-  ..annonce_time = json['annonce_time'] as int?
+  ..annonce_time = (json['annonce_time'] as num?)?.toInt()
   ..images =
       (json['images'] as List<dynamic>?)?.map((e) => e as String).toList();
 
@@ -61,6 +65,7 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'user_id': instance.user_id,
       'categorie_id': instance.categorie_id,
       'description': instance.description,
+      'phone': instance.phone,
       'titre': instance.titre,
       'prix': instance.prix,
       'popularite': instance.popularite,
@@ -68,6 +73,7 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'disponible': instance.disponible,
       'contact': instance.contact,
       'jaime': instance.jaime,
+      'partage': instance.partage,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
       'dispo_annonce_afrolook': instance.dispo_annonce_afrolook,
@@ -79,8 +85,8 @@ Categorie _$CategorieFromJson(Map<String, dynamic> json) => Categorie()
   ..id = json['id'] as String?
   ..nom = json['nom'] as String?
   ..logo = json['logo'] as String?
-  ..createdAt = json['createdAt'] as int?
-  ..updatedAt = json['updatedAt'] as int?;
+  ..createdAt = (json['createdAt'] as num?)?.toInt()
+  ..updatedAt = (json['updatedAt'] as num?)?.toInt();
 
 Map<String, dynamic> _$CategorieToJson(Categorie instance) => <String, dynamic>{
       'id': instance.id,
@@ -99,9 +105,9 @@ Commande _$CommandeFromJson(Map<String, dynamic> json) => Commande()
   ..status = json['status'] as String?
   ..user_client_status = json['user_client_status'] as String?
   ..user_magasin_status = json['user_magasin_status'] as String?
-  ..dernierprix = json['dernierprix'] as int?
-  ..createdAt = json['createdAt'] as int?
-  ..updatedAt = json['updatedAt'] as int?;
+  ..dernierprix = (json['dernierprix'] as num?)?.toInt()
+  ..createdAt = (json['createdAt'] as num?)?.toInt()
+  ..updatedAt = (json['updatedAt'] as num?)?.toInt();
 
 Map<String, dynamic> _$CommandeToJson(Commande instance) => <String, dynamic>{
       'id': instance.id,
@@ -130,12 +136,12 @@ Map<String, dynamic> _$CommandeCodeToJson(CommandeCode instance) =>
 UserIACompte _$UserIACompteFromJson(Map<String, dynamic> json) => UserIACompte(
       ia_url_avatar: json['ia_url_avatar'] as String?,
       ia_name: json['ia_name'] as String?,
-      jetons: json['jetons'] as int? ?? 0,
+      jetons: (json['jetons'] as num?)?.toInt() ?? 0,
       userId: json['userId'] as String?,
       id: json['id'] as String?,
     )
-      ..createdAt = json['createdAt'] as int?
-      ..updatedAt = json['updatedAt'] as int?;
+      ..createdAt = (json['createdAt'] as num?)?.toInt()
+      ..updatedAt = (json['updatedAt'] as num?)?.toInt();
 
 Map<String, dynamic> _$UserIACompteToJson(UserIACompte instance) =>
     <String, dynamic>{
@@ -155,17 +161,17 @@ EntrepriseAbonnement _$EntrepriseAbonnementFromJson(
       ..id = json['id'] as String?
       ..entrepriseId = json['entrepriseId'] as String?
       ..description = json['description'] as String?
-      ..nombre_pub = json['nombre_pub'] as int?
-      ..nombre_image_pub = json['nombre_image_pub'] as int?
-      ..nbr_jour_pub_afrolook = json['nbr_jour_pub_afrolook'] as int?
+      ..nombre_pub = (json['nombre_pub'] as num?)?.toInt()
+      ..nombre_image_pub = (json['nombre_image_pub'] as num?)?.toInt()
+      ..nbr_jour_pub_afrolook = (json['nbr_jour_pub_afrolook'] as num?)?.toInt()
       ..nbr_jour_pub_annonce_afrolook =
-          json['nbr_jour_pub_annonce_afrolook'] as int?
+          (json['nbr_jour_pub_annonce_afrolook'] as num?)?.toInt()
       ..userId = json['userId'] as String?
       ..afroshop_user_magasin_id = json['afroshop_user_magasin_id'] as String?
-      ..createdAt = json['createdAt'] as int?
-      ..updatedAt = json['updatedAt'] as int?
-      ..star = json['star'] as int?
-      ..end = json['end'] as int?
+      ..createdAt = (json['createdAt'] as num?)?.toInt()
+      ..updatedAt = (json['updatedAt'] as num?)?.toInt()
+      ..star = (json['star'] as num?)?.toInt()
+      ..end = (json['end'] as num?)?.toInt()
       ..isFinished = json['isFinished'] as bool?
       ..dispo_afrolook = json['dispo_afrolook'] as bool?;
 

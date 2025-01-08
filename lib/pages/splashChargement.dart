@@ -33,7 +33,7 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<PostProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  late int app_version_code=22;
+  late int app_version_code=23;
   int limitePosts=30;
 
   Future<void> _launchUrl(Uri url) async {

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 class CustomConstants  {
   // Colors
-  static const Color kPrimaryColor =  Color(0xFFF0355E);
+  // static const Color kPrimaryColor =  Color(0xFFF0355E);
+  static const Color kPrimaryColor =  Colors.green;
   static const Color kSecondaryColor =  Color(0xFFf68f13);
   static const Color kLightBackgroundColor=  Color(0xFFf4f9fc);
   static const Color kUnselectedIconColor =  Color(0xFFBBBABA);

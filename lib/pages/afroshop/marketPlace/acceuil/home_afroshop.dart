@@ -1,5 +1,6 @@
 
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ import '../../../../constant/logo.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
+import '../../../../providers/authProvider.dart';
+import '../new/add_annonce_step_1.dart';
 
 
 class HomeAfroshopPage extends StatefulWidget {
@@ -26,8 +29,12 @@ class HomeAfroshopPage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomeAfroshopPage> {
-  late UserShopAuthProvider authProvider =
+  late UserShopAuthProvider authShopProvider =
       Provider.of<UserShopAuthProvider>(context, listen: false);
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
   late CategorieProduitProvider categorieProduitProvider =
       Provider.of<CategorieProduitProvider>(context, listen: false);
 
@@ -35,6 +42,56 @@ class _HomePageState extends State<HomeAfroshopPage> {
   late Categorie categorieDataSelected=Categorie();
   bool is_selected = true;
 
+  void _showBottomSheetCompterNonValide(double width) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          width: width,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  "Compte entreprise requis",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Pour mettre en ligne un produit, vous devez avoir un compte entreprise. Veuillez créer un compte entreprise depuis votre profil ou cliquer sur le bouton ci-dessous.",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    // Navigator.pop(context);
+                    Navigator.pushNamed(context, '/home_profile_user');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.business, color: Colors.white),
+                      SizedBox(width: 5),
+                      const Text('Créer un compte entreprise', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
 
 
@@ -47,32 +104,57 @@ class _HomePageState extends State<HomeAfroshopPage> {
           children: [
             GestureDetector(
               onTap: () async {
-                await  authProvider.getUserById(article.user_id!).then(
-                  (value) async {
-                    if (value.isNotEmpty) {
-                      article.user=value.first;
-                  await    categorieProduitProvider.getArticleById(article.id!).then((value) {
-                        if (value.isNotEmpty) {
-                          value.first.vues=value.first.vues!+1;
-                          article.vues=value.first.vues!+1;
-                          categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                            if (value) {
+                // await  authProvider.getAfroshopUserById(article.user_id!).then(
+                //   (value) async {
+                //     if (value.isNotEmpty) {
+                //       article.user=value.first;
+                //   await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
+                //         if (value.isNotEmpty) {
+                //           value.first.vues=value.first.vues!+1;
+                //           article.vues=value.first.vues!+1;
+                //         await  categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                //             if (value) {
+                //
+                //               Navigator.push(
+                //                   context,
+                //                   MaterialPageRoute(
+                //                     builder: (context) =>
+                //                         ProduitDetail(article: article),
+                //                   ));
+                //
+                //             }
+                //           },);
+                //
+                //         }
+                //       },);
+                //     }
+                //   },
+                // );
+
+                await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
+                  if (value.isNotEmpty) {
+                    value.first.vues=value.first.vues!+1;
+                    article.vues=value.first.vues!+1;
+                      categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                      if (value) {
 
 
-                            }
-                          },);
+                      }
+                    },);
+                    await    authProvider.getUserById(article.user_id!).then((users) {
+                      if(users.isNotEmpty){
+                        article.user=users.first;
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProduitDetail(article: article),
+                            ));
+                      }
+                    },);
+                  }
+                },);
 
-                        }
-                      },);
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProduitDetail(article: article),
-                          ));
-                    }
-                  },
-                );
 
               },
               child: ClipRRect(
@@ -331,7 +413,48 @@ class _HomePageState extends State<HomeAfroshopPage> {
             ),
           ),
           actions: [
-            Logo(),
+
+            // Logo(),
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton(
+                onPressed: () {
+                  if (categorieProduitProvider.listCategorie.isNotEmpty) {
+                    // if (authProvider.loginData.phone == null) {
+                    //   _showBottomSheetCompterNonValide(width);
+                    // }
+                    // else{
+                    //   Navigator.push(
+                    //       context,
+                    //       MaterialPageRoute(
+                    //         builder: (context) => AddAnnonceStep1(),
+                    //       ));
+                    // }
+                    postProvider.getEntreprise(authProvider.loginUserData.id!).then((value) {
+                      if(value.isNotEmpty){
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddAnnonceStep1(entrepriseData: value.first,),
+                            ));
+                      }else{
+                        _showBottomSheetCompterNonValide(width);
+                      }
+                    });
+
+                  }
+
+
+                },
+                child: Row(
+                  spacing: 5,
+                  children: [
+                    Text("Publier",style: TextStyle(fontWeight: FontWeight.w600,color: CustomConstants.kPrimaryColor),),
+                    Icon(Icons.add_circle_outline_outlined,color: CustomConstants.kPrimaryColor,),                  ],
+                ),
+              ),
+            )
+
           ],
         ),
         // Définir le contenu du Drawer

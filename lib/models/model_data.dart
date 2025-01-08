@@ -723,6 +723,7 @@ class ArticleData {
   String? user_id;
   String? categorie_id;
   String? description;
+  String? phone;
   String? titre;
   int? prix;
   int? popularite = 1;
@@ -731,10 +732,11 @@ class ArticleData {
   bool? disponible = true;
   int? contact;
   int? jaime;
+  int? partage;
   int? createdAt;
   int? updatedAt;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  UserShopData? user;
+  UserData? user;
   bool? dispo_annonce_afrolook;
   int? annonce_time;
 
@@ -751,6 +753,7 @@ class ArticleData {
 
 class EntrepriseData {
   List<EntrepriseAbonnement>? abonnements = [];
+  EntrepriseAbonnement? abonnement;
   String? titre;
   String? type;
   String? id;
@@ -789,6 +792,9 @@ class EntrepriseData {
         abonnements!.add(new EntrepriseAbonnement.fromJson(v));
       });
     }
+    if (json['abonnement'] != null) {
+      abonnement =  EntrepriseAbonnement.fromJson(json['abonnement']);
+    }
 
     description = json['description'];
     urlImage = json['urlImage'];
@@ -805,6 +811,7 @@ class EntrepriseData {
         'suivi': suivi,
         'type': type,
         'publication': publication,
+        'abonnement': abonnement!.toJson(),
         'abonnements':
             abonnements!.map((abonnement) => abonnement.toJson()).toList(),
         'publicash': publicash,
@@ -879,6 +886,10 @@ class CommandeCode {
 enum RoleUser { ADMIN, USER, SUPERADMIN }
 
 enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
+
+enum TypeAbonement{
+  GRATUIT,STANDARD,PREMIUM
+}
 
 @JsonSerializable()
 class UserIACompte {
@@ -1616,7 +1627,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB }
+enum PostType { POST, PUB,ARTICLE }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
 
@@ -1635,7 +1646,9 @@ enum NotificationType {
   ACCEPTINVITATION,
   ABONNER,
   PARRAINAGE,
+  ARTICLE,
   USER
 }
 
 enum TypeEntreprise { personnel, partenaire }
+enum TypeAbonnement { GRATUIT, STANDART,PREMIUM }

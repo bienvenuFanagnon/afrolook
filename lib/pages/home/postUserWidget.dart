@@ -5,6 +5,7 @@
 import 'dart:math';
 
 import 'package:afrotok/providers/postProvider.dart';
+import 'package:animated_icon/animated_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -1082,6 +1083,16 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                               children: [
                                 Row(
                                   children: [
+                                    // AnimateIcon(
+                                    //   key: UniqueKey(),
+                                    //   onTap: () {},
+                                    //   iconType: IconType.continueAnimation,
+                                    //   height: 20,
+                                    //   width: 20,
+                                    //   color: Colors.red,
+                                    //   animateIcon: AnimateIcons.heart,
+                                    // ),
+
                                     Icon(
                                       isIn(
                                           post.users_love_id!,
@@ -1652,6 +1663,18 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                               children: [
                                 Row(
                                   children: [
+                                    // AnimateIcon(
+                                    //
+                                    //   key: UniqueKey(),
+                                    //   onTap: () {},
+                                    //   iconType: IconType.continueAnimation,
+                                    //   height: 20,
+                                    //   width: 20,
+                                    //   color: Colors.red,
+                                    //   animateIcon: AnimateIcons.share,
+                                    //
+                                    // ),
+
                                     Icon(
                                       isIn(
                                           post.users_love_id!,

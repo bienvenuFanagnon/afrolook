@@ -23,6 +23,7 @@ import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
+import '../../../component/consoleWidget.dart';
 
 class ProduitDetail extends StatefulWidget {
   final ArticleData article;
@@ -34,8 +35,8 @@ class ProduitDetail extends StatefulWidget {
 
 class _ProduitDetailState extends State<ProduitDetail> {
 
-  late UserShopAuthProvider authshopProvider =
-  Provider.of<UserShopAuthProvider>(context, listen: false);
+  late UserAuthProvider authshopProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
   String _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
   int _length = 100; // Remplacez par la longueur souhaitée
   bool onSaveTap=false;
@@ -45,6 +46,11 @@ class _ProduitDetailState extends State<ProduitDetail> {
   Provider.of<CategorieProduitProvider>(context, listen: false);
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
+  late UserShopAuthProvider authShopProvider =
+  Provider.of<UserShopAuthProvider>(context, listen: false);
+
+
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 
 
@@ -56,10 +62,10 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
 
 
-  Future<void> launchWhatsApp(String phone,ArticleData articleData,String code) async {
+  Future<void> launchWhatsApp(String phone,ArticleData articleData,String urlArticle) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Nom du compte*: *@${authProvider.loginUserData!.nom!.toUpperCase()} Depuis Afrolook*,\n\n je vous contacte via *${"Afroshop".toUpperCase()}* à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Code de la commande*: *${code}*";
+    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n j'ai vu votre produit sur *${"Afroshop".toUpperCase()}*\n à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Voir l'article* ${urlArticle}";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
@@ -231,120 +237,112 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
         child: TextButton(
           onPressed: () async {
-            await authshopProvider.getUserById(widget.article.user_id!).then((users) async {
-              if (users.isNotEmpty) {
-                setState(() {
-                  onSaveTap=true;
-                });
-                await categorieProduitProvider.getCommandeById(users.first.id!,widget.article.id!).then((value) async {
-                  if (value.isNotEmpty) {
-                    launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
-                    setState(() {
-                      onSaveTap=false;
-                    });
-                  }  else{
-                    var codeCommande = Random().nextInt(1000000);
-                    CommandeCode cmdCode =CommandeCode();
-                    cmdCode.id=FirebaseFirestore.instance
-                        .collection('CommandeCodes')
-                        .doc()
-                        .id;
-                    cmdCode.code=codeCommande.toString();
+            await authProvider.createArticleLink(true,widget.article).then((url) async {
 
+printVm("widget.article : ${widget.article.toJson()}");
+              setState(() {
+                widget.article.contact = widget.article.contact! + 1;
+                launchWhatsApp(widget.article.phone!, widget!.article!,url);
 
-                    await  categorieProduitProvider.getCodeCommande(cmdCode.code!, cmdCode).then((value) async {
-                      if (value==false) {
+                // post.users_love_id!
+                //     .add(authProvider!.loginUserData.id!);
+                // love = post.loves!;
+                // //loves.add(idUser);
+              });
+              CollectionReference userCollect =
+              FirebaseFirestore.instance
+                  .collection('Users');
+              // Get docs from collection reference
+              QuerySnapshot querySnapshotUser =
+              await userCollect
+                  .where("id",
+                  isEqualTo: widget.article.user!.id!)
+                  .get();
+              // Afficher la liste
+              List<UserData> listUsers = querySnapshotUser
+                  .docs
+                  .map((doc) => UserData.fromJson(
+                  doc.data() as Map<String, dynamic>))
+                  .toList();
+              if (listUsers.isNotEmpty) {
+                // listUsers.first!.partage =
+                //     listUsers.first!.partage! + 1;
+                printVm("user trouver");
+                if (widget.article.user!.oneIgnalUserid != null &&
+                    widget.article.user!.oneIgnalUserid!.length > 5) {
+                  await authProvider.sendNotification(
+                      userIds: [widget.article.user!.oneIgnalUserid!],
+                      smallImage:
+                      "${authProvider.loginUserData.imageUrl!}",
+                      send_user_id:
+                      "${authProvider.loginUserData.id!}",
+                      recever_user_id: "${widget.article.user!.id!}",
+                      message:
+                      "📢 🛒 @${authProvider.loginUserData.pseudo!} veut votre produit 🛒",
+                      type_notif:
+                      NotificationType.ARTICLE.name,
+                      post_id: "${widget.article!.id!}",
+                      post_type: PostDataType.IMAGE.name,
+                      chat_id: '');
 
-                        Commande annonceRegisterData =Commande();
-                        annonceRegisterData.id=FirebaseFirestore.instance
-                            .collection('Commandes')
-                            .doc()
-                            .id;
-                        annonceRegisterData.code=cmdCode.code!;
-                        annonceRegisterData.article=widget.article;
-                        annonceRegisterData.status=UserCmdStatus.ENCOURS.name;
-                        annonceRegisterData.article_id=widget.article.id!;
-                        annonceRegisterData.dernierprix=widget.article.prix;
-                       // annonceRegisterData.user_client_id=users.first.id;
-                        annonceRegisterData.user_client_status=UserCmdStatus.ENCOURS.name;
-                        annonceRegisterData.user_magasin_id=widget.article.user_id;
-                        annonceRegisterData.user_magasin_status=UserCmdStatus.ENCOURS.name;
-                        annonceRegisterData.updatedAt =
-                            DateTime.now().microsecondsSinceEpoch;
-                        annonceRegisterData.createdAt =
-                            DateTime.now().microsecondsSinceEpoch;
+                  NotificationData notif =
+                  NotificationData();
+                  notif.id = firestore
+                      .collection('Notifications')
+                      .doc()
+                      .id;
+                  notif.titre = " 🛒Boutique 🛒";
+                  notif.media_url =
+                      authProvider.loginUserData.imageUrl;
+                  notif.type = NotificationType.ARTICLE.name;
+                  notif.description =
+                  "@${authProvider.loginUserData.pseudo!} veut votre produit 🛒";
+                  notif.users_id_view = [];
+                  notif.user_id =
+                      authProvider.loginUserData.id;
+                  notif.receiver_id = widget.article.user!.id!;
+                  notif.post_id = widget.article.id!;
+                  notif.post_data_type =
+                  PostDataType.IMAGE.name!;
 
-                        await categorieProduitProvider.createCommande(annonceRegisterData).then((value) async {
-                          if (value) {
-                            await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                              if (value.isNotEmpty) {
-                                value.first.contact=value.first.contact!+1;
-                                widget.article.contact=value.first.contact!+1;
-                                categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                                  if (value) {
+                  notif.updatedAt =
+                      DateTime.now().microsecondsSinceEpoch;
+                  notif.createdAt =
+                      DateTime.now().microsecondsSinceEpoch;
+                  notif.status = PostStatus.VALIDE.name;
 
+                  // users.add(pseudo.toJson());
 
-                                  }
-                                },);
+                  await firestore
+                      .collection('Notifications')
+                      .doc(notif.id)
+                      .set(notif.toJson());
+                }
+                // postProvider.updateVuePost(post, context);
 
-                              }
-                            },);
-                            setState(() {
-                              onSaveTap=false;
-                            });
+                //userProvider.updateUser(listUsers.first);
+                // SnackBar snackBar = SnackBar(
+                //   content: Text(
+                //     '+2 points.  Voir le classement',
+                //     textAlign: TextAlign.center,
+                //     style: TextStyle(color: Colors.green),
+                //   ),
+                // );
+                // ScaffoldMessenger.of(context)
+                //     .showSnackBar(snackBar);
+                categorieProduitProvider.updateArticle(
+                    widget.article, context);
+                // await authProvider.getAppData();
+                // authProvider.appDefaultData.nbr_loves =
+                //     authProvider.appDefaultData.nbr_loves! +
+                //         2;
+                // authProvider.updateAppData(
+                //     authProvider.appDefaultData);
 
-                            launchWhatsApp(widget.article.user!.phone!, annonceRegisterData!.article!,annonceRegisterData.code!);
-                          }else{
-                            setState(() {
-                              onSaveTap=false;
-                            });
-                          }
-                        },);
-                        setState(() {
-                          onSaveTap=false;
-                        });
-                      }else{
-                        await categorieProduitProvider.getCommandeByCode(cmdCode.code!).then((value) {
-                          if (value.isNotEmpty) {
-                            launchWhatsApp(widget.article.user!.phone!, widget!.article!,value.first.code!);
-                            setState(() {
-                              onSaveTap=false;
-                            });
-
-                          }
-                        },);
-
-                      }
-                    },);
-                    setState(() {
-                      onSaveTap=false;
-                    });
-                  }
-                },);
-
-              }  else{
-                setState(() {
-                  onSaveTap=false;
-                });
-               // _showBottomSheetCompterNonValide(width);
 
               }
+
             },);
-
-
-
-
-
-
-
-
-
-
-
-
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => AddAnnonceStep4(annonceRegisterData: annonceRegisterData),));
-
-
 
 
 
@@ -356,7 +354,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
               child: CircularProgressIndicator()): Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  color: CustomConstants.kPrimaryColor,
+                  color: Colors.brown,
                   borderRadius: BorderRadius.all(Radius.circular(5))
               ),
               height: 40,
@@ -365,7 +363,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('Discuter de la commande par',style: TextStyle(color: Colors.white),),
+                  Text('Contacter le vendeur',style: TextStyle(color: Colors.white),),
                   IconButton(
                     icon: Icon(FontAwesome.whatsapp,color: Colors.green,size: 30,),
                     onPressed: () async {
