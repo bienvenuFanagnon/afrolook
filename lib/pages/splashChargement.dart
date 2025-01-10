@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -15,11 +16,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
+import 'afroshop/marketPlace/acceuil/home_afroshop.dart';
+import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'component/consoleWidget.dart';
 
 class SplahsChargement extends StatefulWidget {
   final String postId;
-  const SplahsChargement({super.key, required this.postId});
+  final String postType;
+  const SplahsChargement({super.key, required this.postId, required this.postType});
 
   @override
   State<SplahsChargement> createState() => _ChargementState();
@@ -31,6 +35,8 @@ class _ChargementState extends State<SplahsChargement> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
+  late CategorieProduitProvider categorieProduitProvider =
+  Provider.of<CategorieProduitProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
   late int app_version_code=23;
@@ -238,20 +244,74 @@ class _ChargementState extends State<SplahsChargement> {
                             state: UserState.ONLINE.name);
 
                         // Navigator.pop(context);
-                        if(widget.postId!=null&&widget.postId.isNotEmpty){
-                          await postProvider.getPostsImagesById(widget.postId!).then((posts) {
-                            if(posts.isNotEmpty){
-                              Navigator.pushNamed(
-                                  context,
-                                  '/home');
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                            }else{
-                              Navigator.pushNamed(
-                                  context,
-                                  '/home');
-                            }
 
-                          },);
+
+                        if(widget.postId!=null&&widget.postId.isNotEmpty){
+
+                          switch (widget.postType) {
+                            case "POST":
+                              await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+                                if(posts.isNotEmpty){
+                                  Navigator.pushNamed(
+                                      context,
+                                      '/home');
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                                }else{
+                                  Navigator.pushNamed(
+                                      context,
+                                      '/home');
+                                }
+
+                              },);
+                              break;
+                            case "ARTICLE":
+
+                              await    postProvider.getArticleById(widget.postId!).then((value) async {
+                                if (value.isNotEmpty) {
+                                  value.first.vues=value.first.vues!+1;
+                                  // article.vues=value.first.vues!+1;
+                                  categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                    if (value) {
+
+
+                                    }
+                                  },);
+                                  await    authProvider.getUserById(value.first.user_id!).then((users) async {
+                                    if(users.isNotEmpty){
+                                      value.first.user=users.first;
+                                      await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
+                                        if(entreprises.isNotEmpty){
+                                          entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
+                                          // setState(() {
+                                          //   _isLoading=false;
+                                          // });
+                                          Navigator.pushNamed(
+                                              context,
+                                              '/home');
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    HomeAfroshopPage(title: ""),
+                                              ));
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
+                                              ));
+                                        }
+                                      },);
+                                    }
+                                  },);
+                                }
+                              },);
+
+                              break;
+                            default:
+                              Navigator.pushNamed(
+                                  context,
+                                  '/home');                          }
                         }else{
                           Navigator.pushNamed(
                               context,

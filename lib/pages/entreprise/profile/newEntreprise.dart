@@ -176,7 +176,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                   ..id = "idabn"
                                   ..entrepriseId = id
                                   ..description = "Abonnement gratuit pour entreprise"
-                                  ..nombre_pub = 10
+                                  ..nombre_pub = 5
                                   ..nombre_image_pub = 1
                                   ..nbr_jour_pub_afrolook = 0
                                   ..nbr_jour_pub_annonce_afrolook = 0

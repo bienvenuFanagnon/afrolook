@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/auth/authTest/constants.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
@@ -6,6 +7,7 @@ import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'package:afrotok/pages/user/retrait.dart';
+import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +16,7 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'component/consoleWidget.dart';
 
 class MesNotification extends StatefulWidget {
@@ -33,6 +36,8 @@ class _MesNotificationState extends State<MesNotification> {
   final List<String> noms = ['Alice', 'Bob', 'Charlie'];
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
+  late CategorieProduitProvider categorieProduitProvider =
+  Provider.of<CategorieProduitProvider>(context, listen: false);
   TextEditingController commentController =TextEditingController();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String formaterDateTime(DateTime dateTime) {
@@ -61,7 +66,7 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
 
-  void handleNotification(NotificationData notification) {
+  Future<void> handleNotification(NotificationData notification) async {
 
     if(onTap==false){
       setState(() {
@@ -123,13 +128,59 @@ class _MesNotificationState extends State<MesNotification> {
         });
         Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
 
-      }else if (notification.type == NotificationType.ACCEPTINVITATION.name) {
+      }
+      else if (notification.type == NotificationType.ARTICLE.name) {
+
+        await    postProvider.getArticleById(notification.post_id!).then((value) async {
+          if (value.isNotEmpty) {
+            value.first.vues=value.first.vues!+1;
+            // article.vues=value.first.vues!+1;
+            categorieProduitProvider.updateArticle(value.first,context).then((value) {
+              if (value) {
+
+
+              }
+            },);
+            await    authProvider.getUserById(value.first.user_id!).then((users) async {
+              if(users.isNotEmpty){
+                value.first.user=users.first;
+                await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
+                  if(entreprises.isNotEmpty){
+                    entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
+                    // setState(() {
+                    //   _isLoading=false;
+                    // });
+                    setState(() {
+                      onTap=false;
+                    });
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              HomeAfroshopPage(title: ""),
+                        ));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
+                        ));
+                  }
+                },);
+              }
+            },);
+          }
+        },);
+
+      }
+      else if (notification.type == NotificationType.ACCEPTINVITATION.name) {
         setState(() {
           onTap=false;
         });
         Navigator.push(context, MaterialPageRoute(builder: (context) => MesAmis(context: context),));
 
-      }else if (notification.type == NotificationType.PARRAINAGE.name) {
+      }
+      else if (notification.type == NotificationType.PARRAINAGE.name) {
         setState(() {
           onTap=false;
         });

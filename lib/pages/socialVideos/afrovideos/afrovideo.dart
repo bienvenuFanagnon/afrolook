@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:intl/intl.dart';
 import 'package:like_button/like_button.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:page_transition/page_transition.dart';
@@ -22,11 +24,13 @@ import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
-import '../../afroshop/marketPlace/acceuil/produit_details.dart';
+import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
+import '../../afroshop/marketPlace/component.dart';
+import '../../afroshop/marketPlace/modalView/ArticleBottomSheet.dart';
 import '../../chat/entrepriseChat.dart';
 import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../user/detailsOtherUser.dart';
 import 'SimpleVideoView.dart';
 
@@ -100,174 +104,6 @@ class _AfroVideoState extends State<AfroVideo> {
     );
   }
 
-  void _showUserDetailsAnnonceDialog(String url) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: ClipRRect(
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
-            child: Container(
-
-              child: CachedNetworkImage(
-                fit: BoxFit.cover,
-
-                imageUrl: '${url}',
-                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                //  LinearProgressIndicator(),
-
-                Skeletonizer(
-                    child: SizedBox(width: 120,height: 100, child:  ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                errorWidget: (context, url, error) =>  Container(width: 120,height: 100,child: Image.asset("assets/icon/user-removebg-preview.png",fit: BoxFit.cover,)),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-  void _showModalDialog(Post post) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Visibility(
-                  visible: post.user!.id != authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      post.status = PostStatus.SIGNALER.name;
-                      await postProvider.updateVuePost(post, context).then(
-                            (value) {
-                          if (value) {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'Post signalé !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          } else {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'échec !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          }
-                          Navigator.pop(context);
-                        },
-                      );
-                      setState(() {});
-                    },
-                    leading: Icon(
-                      Icons.flag,
-                      color: Colors.blueGrey,
-                    ),
-                    title: Text(
-                      'Signaler',
-                    ),
-                  ),
-                ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                Visibility(
-                  visible: post.user!.id == authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        post.status = PostStatus.NONVALIDE.name;
-                        await postProvider.updateVuePost(post, context).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'Post bloqué !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else if (post.type == PostType.POST.name) {
-                        if (post.user!.id == authProvider.loginUserData.id) {
-                          post.status = PostStatus.SUPPRIMER.name;
-                          await postProvider.updateVuePost(post, context).then(
-                                (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'Post supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
-                      }
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                        ? Text('Bloquer')
-                        : Text('Supprimer'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _showPostMenuModalDialog(Post post,BuildContext context) {
     showDialog(
@@ -614,10 +450,39 @@ class _AfroVideoState extends State<AfroVideo> {
 
     return usersChat;
   }
+  Future<bool> hasShownDialogToday() async {
+    printVm("====hasShownDialogToday====");
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String lastShownDateKey = 'lastShownDialogDate2';
+    DateTime now = DateTime.now();
+    String nowDate = DateFormat('dd, MMMM, yyyy').format(now);
+    if (prefs.getString(lastShownDateKey) == null &&
+        prefs.getString(lastShownDateKey) != "${nowDate}") {
+      prefs.setString(lastShownDateKey, nowDate);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 
   @override
   void initState() {
     // TODO: implement initState
+    hasShownDialogToday().then(
+          (value) async {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            child: ArticleBottomSheet(),
+          ),
+        );
+      },
+    );
     postProvider.getPostsVideos(limitePosts).listen((data) {
       _streamController.add(data);
     });
@@ -696,31 +561,106 @@ class _AfroVideoState extends State<AfroVideo> {
                               itemCount: datas.length,
 
                               itemBuilder: (context, index) {
-                                // printVm("index : ${index}");
-                                // if (datas[index].type==PostType.PUB.name) {
-                                //   if (!isIn(datas[index].users_vue_id!,authProvider.loginUserData.id!)) {
-                                //
-                                //
-                                //   }else{
-                                //
-                                //     datas[index].users_vue_id!.add(authProvider!.loginUserData.id!);
-                                //   }
-                                //
-                                //   datas[index].vues=datas[index].vues!+1;
-                                //   // vue=post.vues!;
-                                //
-                                //
-                                //   postProvider.updateVuePost(datas[index],context);
-                                //   printVm("update......");
-                                //   //loves.add(idUser);
-                                //
-                                //
-                                //
-                                //   // }
-                                // }
+                                if (index % 5 == 4) {
+                                  return FutureBuilder<List<ArticleData>>(
+                                    future: categorieProduitProvider.getArticleBooster(),
+                                    builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                      if (snapshot.hasData) {
+                                        List<ArticleData> articles = snapshot.data;
+                                        if (articles.isEmpty) {
+                                          return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
+                                        }
+                                        return SizedBox(
+                                          height: h * 0.35,
+                                          child: Column(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.all(8.0),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          'Produits Boostés',
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.green),
+                                                        ),
+                                                        SizedBox(width: 8),
+                                                        Icon(
+                                                          Icons.local_fire_department,
+                                                          color: Colors.red,
+                                                        ),
+                                                      ],
+                                                      mainAxisAlignment: MainAxisAlignment.start,
+                                                    ),
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) => HomeAfroshopPage(title: ''),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: Row(
+                                                        children: [
+                                                          Text(
+                                                            'Boutiques',
+                                                            style: TextStyle(
+                                                                fontSize: 18,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: Colors.green),
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Icon(
+                                                            Icons.storefront,
+                                                            color: Colors.red,
+                                                          ),
+                                                        ],
+                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                child: CarouselSlider(
+                                                  items: articles.map((article) {
+                                                    return Builder(
+                                                      builder: (BuildContext context) {
+                                                        return ArticleTileBooster(
+                                                            article: article, w: w, h: h, isOtherPage: true);
+                                                      },
+                                                    );
+                                                  }).toList(),
+                                                  options: CarouselOptions(
+                                                    height: h*0.4,
+                                                    autoPlay: true,
+                                                    enlargeCenterPage: true,
+                                                    viewportFraction: 0.6,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      } else if (snapshot.hasError) {
+                                        return Icon(Icons.error_outline);
+                                      } else {
+                                        return Center(
+                                          child: SizedBox(
+                                            height: 30,
+                                              width: 30,
 
-                                //  datas.shuffle();
-                                // datas.shuffle();
+                                              child: CircularProgressIndicator()),
+                                        );
+                                      }
+                                    },
+                                  );
+                                }
 
 
                                 return   Container(

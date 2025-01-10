@@ -9,7 +9,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:like_button/like_button.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,10 +26,12 @@ import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../component/consoleWidget.dart';
+import '../../../entreprise/produit/component.dart';
 
 class ProduitDetail extends StatefulWidget {
   final ArticleData article;
-  const ProduitDetail({super.key, required this.article});
+  final EntrepriseData entrepriseData;
+  const ProduitDetail({super.key, required this.article, required this.entrepriseData});
 
   @override
   State<ProduitDetail> createState() => _ProduitDetailState();
@@ -80,6 +84,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    double iconSize = 20;
     return Scaffold(
         appBar: AppBar(
           title: Text('Details'),
@@ -107,15 +112,81 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 borderRadius: BorderRadius.all(Radius.circular(10)),
                 child: Column(
                   children: [
-                    SizedBox(
+                    entrepriseSimpleHeader(widget.entrepriseData,context),
 
-                      child: InstaImageViewer(
-                        child: Image(
-                          image: Image.network('${widget.article.images![imageIndex]}')
-                              .image,
+                    Stack(
+                      children: [
+                        SizedBox(
+
+                          child: InstaImageViewer(
+                            child: Image(
+                              image: Image.network('${widget.article.images![imageIndex]}')
+                                  .image,
+                            ),
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+
+                          child:onSupTap?Container(
+                              height: 20,
+                              width: 20,
+
+                              child: CircularProgressIndicator()):
+                          Visibility(
+                            visible:authProvider.loginUserData.id==widget.article.user_id||authProvider.loginUserData.role==UserRole.ADM.name?true:false,
+
+                            child: IconButton(onPressed: () async {
+                              widget.article.disponible=false;
+                              setState(() {
+                                onSupTap=true;
+                              });
+                              await categorieProduitProvider.updateArticle(widget.article, context).then(
+                                    (value) {
+                                  if (value) {
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+
+                                      SnackBar(
+                                        backgroundColor: Colors.green,
+                                        content: Text('L\'article a été supprimé avec succès'),
+                                      ),
+                                    );
+                                    setState(() {
+                                      onSupTap=false;
+                                    });
+                                    Navigator.pop(context);
+                                  }  else{
+                                    setState(() {
+                                      onSupTap=false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+
+                                      SnackBar(
+                                        backgroundColor: Colors.red,
+                                        content: Text('Erreur de suppression'),
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+
+                            }, icon: Icon(Icons.delete,color: Colors.red,size: 40,)),
+                          ),
+                        )
+                      ],
                     ),
+
+                    // SizedBox(
+                    //
+                    //   child: InstaImageViewer(
+                    //     child: Image(
+                    //       image: Image.network('${widget.article.images![imageIndex]}')
+                    //           .image,
+                    //     ),
+                    //   ),
+                    // ),
 
                     /*
                     Container(
@@ -179,29 +250,360 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 },
                           ),
               ),
-              SizedBox(height: 20,),
-/*
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.call,size: 30,),
-                        onPressed: () {
-                          // Fonction pour lancer un appel
-                        },
+              // SizedBox(height: 20,),
+              Divider(height: 20,indent: 20,endIndent: 20,),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 2.0,right: 2,top: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+
+                  children: [
+                    LikeButton(
+                      isLiked: false,
+                      size: iconSize,
+                      circleColor:
+                      CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                      bubblesColor: BubblesColor(
+                        dotPrimaryColor: Color(0xff3b9ade),
+                        dotSecondaryColor: Color(0xff027f19),
                       ),
-                      Text("${widget.article.user!.phone}"),
-                    ],
-                  ),
+                      countPostion: CountPostion.bottom,
+                      likeBuilder: (bool isLiked) {
+                        return Icon(
+                          FontAwesome.eye,
+                          color: isLiked ? Colors.black : Colors.brown,
+                          size: iconSize,
+                        );
+                      },
+                      likeCount:  widget.article.vues,
+                      countBuilder: (int? count, bool isLiked, String text) {
+                        var color = isLiked ? Colors.black : Colors.black;
+                        Widget result;
+                        if (count == 0) {
+                          result = Text(
+                            "0",textAlign: TextAlign.center,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        } else
+                          result = Text(
+                            text,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        return result;
+                      },
 
-                ],
+                    ),
+                    LikeButton(
+                      isLiked: false,
+                      size: iconSize,
+                      circleColor:
+                      CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                      bubblesColor: BubblesColor(
+                        dotPrimaryColor: Color(0xff3b9ade),
+                        dotSecondaryColor: Color(0xff027f19),
+                      ),
+                      countPostion: CountPostion.bottom,
+                      likeBuilder: (bool isLiked) {
+                        return Icon(
+                          FontAwesome.whatsapp,
+                          color: isLiked ? Colors.green : Colors.green,
+                          size: iconSize,
+                        );
+                      },
+                      likeCount:  widget.article.contact,
+                      countBuilder: (int? count, bool isLiked, String text) {
+                        var color = isLiked ? Colors.black : Colors.black;
+                        Widget result;
+                        if (count == 0) {
+                          result = Text(
+                            "0",textAlign: TextAlign.center,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        } else
+                          result = Text(
+                            text,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        return result;
+                      },
+
+                    ),
+                    LikeButton(
+                      onTap: (isLiked) async {
+                        await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
+                          if (value.isNotEmpty) {
+                            value.first.jaime=value.first.jaime!+1;
+                            widget.article.jaime=value.first.jaime!+1;
+                            categorieProduitProvider.updateArticle(value.first,context).then((value) async {
+                              if (value) {
+                                await authProvider.sendNotification(
+                                    userIds: [widget.article.user!.oneIgnalUserid!],
+                                    smallImage:
+                                    "${widget.article.images!.first}",
+                                    send_user_id:
+                                    "${authProvider.loginUserData.id!}",
+                                    recever_user_id: "${widget.article.user!.id!}",
+                                    message:
+                                    "📢 🛒 Un afrolookeur aime ❤️ votre produit 🛒",
+                                    type_notif:
+                                    NotificationType.ARTICLE.name,
+                                    post_id: "${widget.article!.id!}",
+                                    post_type: PostDataType.IMAGE.name,
+                                    chat_id: '');
+
+                                NotificationData notif =
+                                NotificationData();
+                                notif.id = firestore
+                                    .collection('Notifications')
+                                    .doc()
+                                    .id;
+                                notif.titre = " 🛒Boutique 🛒";
+                                notif.media_url =
+                                    authProvider.loginUserData.imageUrl;
+                                notif.type = NotificationType.ARTICLE.name;
+                                notif.description =
+                                "Un afrolookeur aime ❤️ votre produit 🛒";
+                                notif.users_id_view = [];
+                                notif.user_id =
+                                    authProvider.loginUserData.id;
+                                notif.receiver_id = widget.article.user!.id!;
+                                notif.post_id = widget.article.id!;
+                                notif.post_data_type =
+                                PostDataType.IMAGE.name!;
+
+                                notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.status = PostStatus.VALIDE.name;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore
+                                    .collection('Notifications')
+                                    .doc(notif.id)
+                                    .set(notif.toJson());
+
+                              }
+                            },);
+
+                          }
+                        },);
+
+                        return Future.value(true);
+
+                      },
+                      isLiked: false,
+                      size: iconSize,
+                      circleColor:
+                      CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                      bubblesColor: BubblesColor(
+                        dotPrimaryColor: Color(0xff3b9ade),
+                        dotSecondaryColor: Color(0xff027f19),
+                      ),
+                      countPostion: CountPostion.bottom,
+                      likeBuilder: (bool isLiked) {
+                        return Icon(
+                          FontAwesome.heart,
+                          color: isLiked ? Colors.red : Colors.redAccent,
+                          size: iconSize,
+                        );
+                      },
+                      likeCount:   widget.article.jaime,
+                      countBuilder: (int? count, bool isLiked, String text) {
+                        var color = isLiked ? Colors.black : Colors.black;
+                        Widget result;
+                        if (count == 0) {
+                          result = Text(
+                            "0",textAlign: TextAlign.center,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        } else
+                          result = Text(
+                            text,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        return result;
+                      },
+
+                    ),
+                    LikeButton(
+                      onTap: (isLiked) async {
+
+                        await authProvider.createArticleLink(true,widget.article).then((url) async {
+                          final box = context.findRenderObject() as RenderBox?;
+
+                          await Share.shareUri(
+                            Uri.parse(
+                                '${url}'),
+                            sharePositionOrigin:
+                            box!.localToGlobal(Offset.zero) & box.size,
+                          );
+
+                          // printVm("article : ${article.toJson()}");
+                          setState(() {
+                           widget.article.partage = widget.article.partage! + 1;
+                            // post.users_love_id!
+                            //     .add(authProvider!.loginUserData.id!);
+                            // love = post.loves!;
+                            // //loves.add(idUser);
+                          });
+                          CollectionReference userCollect =
+                          FirebaseFirestore.instance
+                              .collection('Users');
+                          // Get docs from collection reference
+                          QuerySnapshot querySnapshotUser =
+                          await userCollect
+                              .where("id",
+                              isEqualTo: widget.article.user!.id!)
+                              .get();
+                          // Afficher la liste
+                          List<UserData> listUsers = querySnapshotUser
+                              .docs
+                              .map((doc) => UserData.fromJson(
+                              doc.data() as Map<String, dynamic>))
+                              .toList();
+                          if (listUsers.isNotEmpty) {
+                            // listUsers.first!.partage =
+                            //     listUsers.first!.partage! + 1;
+                            printVm("user trouver");
+                            if (widget.article.user!.oneIgnalUserid != null &&
+                                widget.article.user!.oneIgnalUserid!.length > 5) {
+                              await authProvider.sendNotification(
+                                  userIds: [widget.article.user!.oneIgnalUserid!],
+                                  smallImage:
+                                  "${widget.article.images!.first}",
+                                  // "${authProvider.loginUserData.imageUrl!}",
+                                  send_user_id:
+                                  "${authProvider.loginUserData.id!}",
+                                  recever_user_id: "${widget.article.user!.id!}",
+                                  message:
+                                  "📢 🛒 Un afrolookeur a partagé votre produit 🛒",
+                                  type_notif:
+                                  NotificationType.ARTICLE.name,
+                                  post_id: "${widget.article!.id!}",
+                                  post_type: PostDataType.IMAGE.name,
+                                  chat_id: '');
+
+                              NotificationData notif =
+                              NotificationData();
+                              notif.id = firestore
+                                  .collection('Notifications')
+                                  .doc()
+                                  .id;
+                              notif.titre = " 🛒Boutique 🛒";
+                              notif.media_url =
+                              "${widget.article.images!.first}";
+                              notif.type = NotificationType.ARTICLE.name;
+                              notif.description =
+                              "Un afrolookeur a partagé votre produit 🛒";
+                              notif.users_id_view = [];
+                              notif.user_id =
+                                  authProvider.loginUserData.id;
+                              notif.receiver_id = widget.article.user!.id!;
+                              notif.post_id = widget.article.id!;
+                              notif.post_data_type =
+                              PostDataType.IMAGE.name!;
+
+                              notif.updatedAt =
+                                  DateTime.now().microsecondsSinceEpoch;
+                              notif.createdAt =
+                                  DateTime.now().microsecondsSinceEpoch;
+                              notif.status = PostStatus.VALIDE.name;
+
+                              // users.add(pseudo.toJson());
+
+                              await firestore
+                                  .collection('Notifications')
+                                  .doc(notif.id)
+                                  .set(notif.toJson());
+                            }
+                            // postProvider.updateVuePost(post, context);
+
+                            //userProvider.updateUser(listUsers.first);
+                            // SnackBar snackBar = SnackBar(
+                            //   content: Text(
+                            //     '+2 points.  Voir le classement',
+                            //     textAlign: TextAlign.center,
+                            //     style: TextStyle(color: Colors.green),
+                            //   ),
+                            // );
+                            // ScaffoldMessenger.of(context)
+                            //     .showSnackBar(snackBar);
+                            categorieProduitProvider.updateArticle(
+                                widget.article, context);
+                            // await authProvider.getAppData();
+                            // authProvider.appDefaultData.nbr_loves =
+                            //     authProvider.appDefaultData.nbr_loves! +
+                            //         2;
+                            // authProvider.updateAppData(
+                            //     authProvider.appDefaultData);
+
+
+                          }
+                          await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
+                            if (value.isNotEmpty) {
+                              value.first.partage=value.first.partage!+1;
+                              // widget.article.partage=value.first.partage!+1;
+                              categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                if (value) {
+                                  setState(() {
+
+                                  });
+
+                                }
+                              },);
+
+                            }
+                          },);
+
+                        },);
+
+
+                        return Future.value(true);
+
+                      },
+                      isLiked: false,
+                      size: iconSize,
+                      circleColor:
+                      CircleColor(start: Color(0xffffc400), end: Color(
+                          0xffcc7a00)),
+                      bubblesColor: BubblesColor(
+                        dotPrimaryColor: Color(0xffffc400),
+                        dotSecondaryColor: Color(0xff07f629),
+                      ),
+                      countPostion: CountPostion.bottom,
+                      likeBuilder: (bool isLiked) {
+                        return Icon(
+                          Entypo.share,
+                          color: isLiked ? Colors.blue : Colors.blueAccent,
+                          size: iconSize,
+                        );
+                      },
+                      likeCount:   widget.article.partage,
+                      countBuilder: (int? count, bool isLiked, String text) {
+                        var color = isLiked ? Colors.black : Colors.black;
+                        Widget result;
+                        if (count == 0) {
+                          result = Text(
+                            "0",textAlign: TextAlign.center,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        } else
+                          result = Text(
+                            text,
+                            style: TextStyle(color: color,fontSize: 8),
+                          );
+                        return result;
+                      },
+
+                    ),
+
+                  ],
+                ),
               ),
-
-
- */
               Divider(height: 20,indent: 20,endIndent: 20,),
 
               Padding(
@@ -239,7 +641,8 @@ class _ProduitDetailState extends State<ProduitDetail> {
           onPressed: () async {
             await authProvider.createArticleLink(true,widget.article).then((url) async {
 
-printVm("widget.article : ${widget.article.toJson()}");
+// printVm("widget.article : ${widget.article.toJson()}");
+
               setState(() {
                 widget.article.contact = widget.article.contact! + 1;
                 launchWhatsApp(widget.article.phone!, widget!.article!,url);

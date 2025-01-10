@@ -47,6 +47,7 @@ ArticleData _$ArticleDataFromJson(Map<String, dynamic> json) => ArticleData()
   ..titre = json['titre'] as String?
   ..prix = (json['prix'] as num?)?.toInt()
   ..popularite = (json['popularite'] as num?)?.toInt()
+  ..booster = (json['booster'] as num?)?.toInt()
   ..vues = (json['vues'] as num?)?.toInt()
   ..disponible = json['disponible'] as bool?
   ..contact = (json['contact'] as num?)?.toInt()
@@ -69,6 +70,7 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'titre': instance.titre,
       'prix': instance.prix,
       'popularite': instance.popularite,
+      'booster': instance.booster,
       'vues': instance.vues,
       'disponible': instance.disponible,
       'contact': instance.contact,
@@ -173,7 +175,10 @@ EntrepriseAbonnement _$EntrepriseAbonnementFromJson(
       ..star = (json['star'] as num?)?.toInt()
       ..end = (json['end'] as num?)?.toInt()
       ..isFinished = json['isFinished'] as bool?
-      ..dispo_afrolook = json['dispo_afrolook'] as bool?;
+      ..dispo_afrolook = json['dispo_afrolook'] as bool?
+      ..produistIdBoosted = (json['produistIdBoosted'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList();
 
 Map<String, dynamic> _$EntrepriseAbonnementToJson(
         EntrepriseAbonnement instance) =>
@@ -194,4 +199,52 @@ Map<String, dynamic> _$EntrepriseAbonnementToJson(
       'end': instance.end,
       'isFinished': instance.isFinished,
       'dispo_afrolook': instance.dispo_afrolook,
+      'produistIdBoosted': instance.produistIdBoosted,
+    };
+
+UserServiceData _$UserServiceDataFromJson(Map<String, dynamic> json) =>
+    UserServiceData()
+      ..id = json['id'] as String?
+      ..userId = json['userId'] as String?
+      ..titre = json['titre'] as String?
+      ..description = json['description'] as String?
+      ..disponible = json['disponible'] as bool?
+      ..contact = json['contact'] as String?
+      ..imageCourverture = json['imageCourverture'] as String?
+      ..vues = (json['vues'] as num?)?.toInt()
+      ..like = (json['like'] as num?)?.toInt()
+      ..partage = (json['partage'] as num?)?.toInt()
+      ..usersViewId = (json['usersViewId'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList()
+      ..usersLikeId = (json['usersLikeId'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList()
+      ..usersPartageId = (json['usersPartageId'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList()
+      ..usersContactId = (json['usersContactId'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList()
+      ..createdAt = (json['createdAt'] as num?)?.toInt()
+      ..updatedAt = (json['updatedAt'] as num?)?.toInt();
+
+Map<String, dynamic> _$UserServiceDataToJson(UserServiceData instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'userId': instance.userId,
+      'titre': instance.titre,
+      'description': instance.description,
+      'disponible': instance.disponible,
+      'contact': instance.contact,
+      'imageCourverture': instance.imageCourverture,
+      'vues': instance.vues,
+      'like': instance.like,
+      'partage': instance.partage,
+      'usersViewId': instance.usersViewId,
+      'usersLikeId': instance.usersLikeId,
+      'usersPartageId': instance.usersPartageId,
+      'usersContactId': instance.usersContactId,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
     };

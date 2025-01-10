@@ -987,6 +987,122 @@ class PostProvider extends ChangeNotifier {
 
   }
 
+  Future<List<UserServiceData>>
+  getUserServiceById(String id) async {
+
+
+    List<UserServiceData> posts = [];
+    //listConstposts =[];
+
+    CollectionReference postCollect = await FirebaseFirestore.instance.collection('UserServices');
+    QuerySnapshot querySnapshotPost = await postCollect
+
+        .where("id",isEqualTo:'${id}')
+        .where("disponible",isEqualTo:true)
+
+
+        .get();
+
+    List<UserServiceData> postList = querySnapshotPost.docs.map((doc) =>
+        UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    //  UserData userData=UserData();
+
+
+    for (UserServiceData p in postList) {
+      //  printVm("post : ${jsonDecode(post.toString())}");
+
+
+
+      //get user
+      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+//get entreprise
+
+
+      p.user=userList.first;
+      if (p.disponible==PostStatus.NONVALIDE.name) {
+        // posts.add(p);
+      }else if (p.disponible==PostStatus.SUPPRIMER.name) {
+        // posts.add(p);
+      }   else{
+        posts.add(p);
+      }
+
+
+
+
+    }
+
+    return posts;
+
+  }
+  Future<List<UserServiceData>> getAllUserService() async {
+
+    List<UserServiceData>  listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('UserServices');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+          .where("disponible",isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .limit(150)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      for (var article in listArticles) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        printVm(' UserServices user ${user.toJson()}');
+
+        article.user = user;
+      }
+      listArticles.shuffle();
+
+
+
+      print('list UserServices ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
+
+  Future<bool> updateUserService(UserServiceData data,BuildContext context) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('UserServices')
+          .doc(data.id)
+          .update(data.toJson());
+
+      return true;
+    }catch(e){
+      print("erreur update  : ${e}");
+      return false;
+    }
+  }
+
+
   Future<List<EntrepriseData>>
   getEntreprise(String userId) async {
 

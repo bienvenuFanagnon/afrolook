@@ -1,14 +1,29 @@
 import 'package:anim_search_bar/anim_search_bar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:like_button/like_button.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../constant/buttons.dart';
 import '../../../constant/constColors.dart';
+import '../../../constant/custom_theme.dart';
 import '../../../constant/iconGradient.dart';
 import '../../../constant/listItemsCarousel.dart';
 import '../../../constant/logo.dart';
 import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
+import '../../../models/model_data.dart';
+import '../../../providers/afroshop/authAfroshopProvider.dart';
+import '../../../providers/afroshop/categorie_produits_provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../../providers/postProvider.dart';
+import '../../afroshop/marketPlace/acceuil/produit_details.dart';
+import '../../component/consoleWidget.dart';
 
 
 class EntrepriseProduitView extends StatefulWidget {
@@ -22,495 +37,469 @@ class _EntreprisePublicationViewState extends State<EntrepriseProduitView> {
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  Widget homeProfileUsers() {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Column(
-        children: [
-          CircleAvatar(
-            backgroundImage: AssetImage(
-                'assets/images/green-business-logo-template-design-9820098082a4fc0a9e1f9179e347f35a_screen.jpg'),
+  late UserShopAuthProvider authShopProvider =
+  Provider.of<UserShopAuthProvider>(context, listen: false);
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
+  late CategorieProduitProvider categorieProduitProvider =
+  Provider.of<CategorieProduitProvider>(context, listen: false);
+
+  int item_selected = -1;
+  late Categorie categorieDataSelected=Categorie();
+  bool is_selected = true;
+  bool is_search=false;
+  bool _isLoading=false;
+  // final _formKey = GlobalKey<FormState>();
+  final _controller = TextEditingController();
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  Widget CategoryItem(
+      {required Categorie category, required int is_selected}) {
+    return SizedBox(
+      //height: 20,
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+            color: item_selected == is_selected
+                ? CustomConstants.kPrimaryColor
+                : Colors.black38),
+        margin: EdgeInsets.all(2.0),
+        //  width: 120,
+        //height: 10,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            "${category.nom}",
+            style: TextStyle(
+                fontSize: 12.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.white),
           ),
-          SizedBox(
-            height: 2,
-          ),
-          SizedBox(
-            width: 70,
-            child: TextCustomerUserTitle(
-              titre: "lucien lucien",
-              fontSize: SizeText.homeProfileTextSize,
-              couleur: ConstColors.textColors,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget formCommentMesage(double height, double width) {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundImage: AssetImage(
-                'assets/images/handsome-man-smiling-happy-face-portrait-close-up.jpg'),
-          ),
-          SizedBox(
-            width: 20,
-          ),
-          Form(
-            key: _formKey,
-            child: Row(
-              children: <Widget>[
-                SizedBox(
-                  width: width * 0.6,
-                  height: 80,
-                  child: TextFormField(
-                    maxLines: 2,
-                    // Configuration du champ de texte
-                    decoration: InputDecoration(
-                      hintText: 'Commentaire',
-                      hintStyle: TextStyle(
-                        fontSize: 10,
-                        //color: Colors.white,
-                        fontWeight: FontWeight.normal,
-                        //fontStyle: FontStyle.italic
+  Widget ArticleTile(ArticleData article,double w,double h) {
+    print('article ${article.titre}');
+    return Card(
+      child: Container(
+        child: Stack(
+          children: [
+            Column(
+
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    setState(() {
+                      _isLoading=true;
+                    });
+
+                    await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
+                      if (value.isNotEmpty) {
+                        value.first.vues=value.first.vues!+1;
+                        article.vues=value.first.vues!+1;
+                        categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                          if (value) {
+
+
+                          }
+                        },);
+                        await    authProvider.getUserById(article.user_id!).then((users) async {
+                          if(users.isNotEmpty){
+                            article.user=users.first;
+                            await    postProvider.getEntreprise(article.user_id!).then((entreprises) {
+                              if(entreprises.isNotEmpty){
+                                entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
+                                setState(() {
+                                  _isLoading=false;
+                                });
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ProduitDetail(article: article, entrepriseData: entreprises.first,),
+                                    ));
+                              }
+                            },);
+                          }
+                        },);
+                      }
+                    },);
+
+
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(5)),
+                    child: Container(
+                      width: w*0.5,
+                      height: h*0.22,
+                      child: CachedNetworkImage(
+                        fit: BoxFit.cover,
+
+                        imageUrl: '${article.images!.first}',
+                        progressIndicatorBuilder: (context, url, downloadProgress) =>
+                        //  LinearProgressIndicator(),
+
+                        Skeletonizer(
+                            child: SizedBox(    width: w*0.2,
+                                height: h*0.2, child:  ClipRRect(
+                                    borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.network('${article.images!.first}')))),
+                        errorWidget: (context, url, error) =>  Container(    width: w*0.2,
+                            height: h*0.2,child: Image.network('${article.images!.first}',fit: BoxFit.cover,)),
                       ),
                     ),
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Veuillez entrer votre commentaire.';
-                      }
-                      return null;
-                    },
                   ),
                 ),
-                SizedBox(
-                  width: 10,
+                SizedBox(height: 10,),
+
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0,right: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      Text("${article!.titre}",overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,fontWeight: FontWeight.w500),),
+                      // Text(article.description),
+                      SizedBox(height: 5,),
+                      Container(
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.all(Radius.circular(5)),
+                              color:  CustomConstants.kPrimaryColor
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text('Prix: ${article.prix} Fcfa',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w600,fontSize: 12),),
+                          )),
+                    ],
+                  ),
                 ),
-                GestureDetector(
-                    onTap: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Traitez les données du formulaire ici
-                        // Par exemple, envoyez les commentaires à un serveur
-                      }
-                    },
-                    child: Container(
-                        child: Image.asset(
-                          "assets/images/sender.png",
-                          width: 30,
-                          height: 30,
-                        ))),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0,right: 8,top: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+
+                    children: [
+                      LikeButton(
+                        isLiked: false,
+                        size: 15,
+                        circleColor:
+                        CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                        bubblesColor: BubblesColor(
+                          dotPrimaryColor: Color(0xff3b9ade),
+                          dotSecondaryColor: Color(0xff027f19),
+                        ),
+                        countPostion: CountPostion.bottom,
+                        likeBuilder: (bool isLiked) {
+                          return Icon(
+                            FontAwesome.eye,
+                            color: isLiked ? Colors.black : Colors.brown,
+                            size: 15,
+                          );
+                        },
+                        likeCount:  article.vues,
+                        countBuilder: (int? count, bool isLiked, String text) {
+                          var color = isLiked ? Colors.black : Colors.black;
+                          Widget result;
+                          if (count == 0) {
+                            result = Text(
+                              "0",textAlign: TextAlign.center,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          } else
+                            result = Text(
+                              text,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          return result;
+                        },
+
+                      ),
+                      LikeButton(
+                        isLiked: false,
+                        size: 15,
+                        circleColor:
+                        CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                        bubblesColor: BubblesColor(
+                          dotPrimaryColor: Color(0xff3b9ade),
+                          dotSecondaryColor: Color(0xff027f19),
+                        ),
+                        countPostion: CountPostion.bottom,
+                        likeBuilder: (bool isLiked) {
+                          return Icon(
+                            FontAwesome.whatsapp,
+                            color: isLiked ? Colors.green : Colors.green,
+                            size: 15,
+                          );
+                        },
+                        likeCount:   article.contact,
+                        countBuilder: (int? count, bool isLiked, String text) {
+                          var color = isLiked ? Colors.black : Colors.black;
+                          Widget result;
+                          if (count == 0) {
+                            result = Text(
+                              "0",textAlign: TextAlign.center,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          } else
+                            result = Text(
+                              text,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          return result;
+                        },
+
+                      ),
+                      LikeButton(
+                        onTap: (isLiked) async {
+                          await    categorieProduitProvider.getArticleById(article.id!).then((value) {
+                            if (value.isNotEmpty) {
+                              value.first.jaime=value.first.jaime!+1;
+                              article.jaime=value.first.jaime!+1;
+                              categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                if (value) {
+
+
+                                }
+                              },);
+
+                            }
+                          },);
+
+                          return Future.value(true);
+
+                        },
+                        isLiked: false,
+                        size: 15,
+                        circleColor:
+                        CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                        bubblesColor: BubblesColor(
+                          dotPrimaryColor: Color(0xff3b9ade),
+                          dotSecondaryColor: Color(0xff027f19),
+                        ),
+                        countPostion: CountPostion.bottom,
+                        likeBuilder: (bool isLiked) {
+                          return Icon(
+                            FontAwesome.heart,
+                            color: isLiked ? Colors.red : Colors.redAccent,
+                            size: 15,
+                          );
+                        },
+                        likeCount:   article.jaime,
+                        countBuilder: (int? count, bool isLiked, String text) {
+                          var color = isLiked ? Colors.black : Colors.black;
+                          Widget result;
+                          if (count == 0) {
+                            result = Text(
+                              "0",textAlign: TextAlign.center,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          } else
+                            result = Text(
+                              text,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          return result;
+                        },
+
+                      ),
+                      LikeButton(
+                        onTap: (isLiked) async {
+
+                          await authProvider.createArticleLink(true,article).then((url) async {
+                            final box = context.findRenderObject() as RenderBox?;
+
+                            await Share.shareUri(
+                              Uri.parse(
+                                  '${url}'),
+                              sharePositionOrigin:
+                              box!.localToGlobal(Offset.zero) & box.size,
+                            );
+
+                            // printVm("article : ${article.toJson()}");
+                            setState(() {
+                              article.partage = article.partage! + 1;
+                              // post.users_love_id!
+                              //     .add(authProvider!.loginUserData.id!);
+                              // love = post.loves!;
+                              // //loves.add(idUser);
+                            });
+
+                            await    categorieProduitProvider.getArticleById(article.id!).then((value) {
+                              if (value.isNotEmpty) {
+                                value.first.partage=value.first.partage!+1;
+                                // article.partage=value.first.partage!+1;
+                                categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                  if (value) {
+                                    setState(() {
+
+                                    });
+
+                                  }
+                                },);
+
+                              }
+                            },);
+
+                            CollectionReference userCollect =
+                            FirebaseFirestore.instance
+                                .collection('Users');
+                            // Get docs from collection reference
+                            QuerySnapshot querySnapshotUser =
+                            await userCollect
+                                .where("id",
+                                isEqualTo: article.user!.id!)
+                                .get();
+                            // Afficher la liste
+                            List<UserData> listUsers = querySnapshotUser
+                                .docs
+                                .map((doc) => UserData.fromJson(
+                                doc.data() as Map<String, dynamic>))
+                                .toList();
+                            if (listUsers.isNotEmpty) {
+                              // listUsers.first!.partage =
+                              //     listUsers.first!.partage! + 1;
+                              printVm("user trouver");
+                              if (article.user!.oneIgnalUserid != null &&
+                                  article.user!.oneIgnalUserid!.length > 5) {
+                                await authProvider.sendNotification(
+                                    userIds: [article.user!.oneIgnalUserid!],
+                                    smallImage:
+                                    "${authProvider.loginUserData.imageUrl!}",
+                                    send_user_id:
+                                    "${authProvider.loginUserData.id!}",
+                                    recever_user_id: "${article.user!.id!}",
+                                    message:
+                                    "📢 🛒 @${authProvider.loginUserData.pseudo!} a partagé votre produit 🛒",
+                                    type_notif:
+                                    NotificationType.ARTICLE.name,
+                                    post_id: "${article!.id!}",
+                                    post_type: PostDataType.IMAGE.name,
+                                    chat_id: '');
+
+                                NotificationData notif =
+                                NotificationData();
+                                notif.id = firestore
+                                    .collection('Notifications')
+                                    .doc()
+                                    .id;
+                                notif.titre = " 🛒Boutique 🛒";
+                                notif.media_url =
+                                    authProvider.loginUserData.imageUrl;
+                                notif.type = NotificationType.ARTICLE.name;
+                                notif.description =
+                                "@${authProvider.loginUserData.pseudo!} a partagé votre produit 🛒";
+                                notif.users_id_view = [];
+                                notif.user_id =
+                                    authProvider.loginUserData.id;
+                                notif.receiver_id = article.user!.id!;
+                                notif.post_id = article.id!;
+                                notif.post_data_type =
+                                PostDataType.IMAGE.name!;
+
+                                notif.updatedAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.createdAt =
+                                    DateTime.now().microsecondsSinceEpoch;
+                                notif.status = PostStatus.VALIDE.name;
+
+                                // users.add(pseudo.toJson());
+
+                                await firestore
+                                    .collection('Notifications')
+                                    .doc(notif.id)
+                                    .set(notif.toJson());
+                              }
+                              // postProvider.updateVuePost(post, context);
+
+                              //userProvider.updateUser(listUsers.first);
+                              // SnackBar snackBar = SnackBar(
+                              //   content: Text(
+                              //     '+2 points.  Voir le classement',
+                              //     textAlign: TextAlign.center,
+                              //     style: TextStyle(color: Colors.green),
+                              //   ),
+                              // );
+                              // ScaffoldMessenger.of(context)
+                              //     .showSnackBar(snackBar);
+                              // categorieProduitProvider.updateArticle(
+                              //     article, context);
+                              // await authProvider.getAppData();
+                              // authProvider.appDefaultData.nbr_loves =
+                              //     authProvider.appDefaultData.nbr_loves! +
+                              //         2;
+                              // authProvider.updateAppData(
+                              //     authProvider.appDefaultData);
+
+
+                            }
+
+                          },);
+
+
+                          return Future.value(true);
+
+                        },
+                        isLiked: false,
+                        size: 15,
+                        circleColor:
+                        CircleColor(start: Color(0xffffc400), end: Color(
+                            0xffcc7a00)),
+                        bubblesColor: BubblesColor(
+                          dotPrimaryColor: Color(0xffffc400),
+                          dotSecondaryColor: Color(0xff07f629),
+                        ),
+                        countPostion: CountPostion.bottom,
+                        likeBuilder: (bool isLiked) {
+                          return Icon(
+                            Entypo.share,
+                            color: isLiked ? Colors.blue : Colors.blueAccent,
+                            size: 15,
+                          );
+                        },
+                        likeCount:   article.partage,
+                        countBuilder: (int? count, bool isLiked, String text) {
+                          var color = isLiked ? Colors.black : Colors.black;
+                          Widget result;
+                          if (count == 0) {
+                            result = Text(
+                              "0",textAlign: TextAlign.center,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          } else
+                            result = Text(
+                              text,
+                              style: TextStyle(color: color,fontSize: 8),
+                            );
+                          return result;
+                        },
+
+                      ),
+
+                    ],
+                  ),
+                )
+
+
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  sheetComments(double height, double width,BuildContext context) {
-    return showModalBottomSheet<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return ClipRRect(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-            child: Container(
-              height: height * 0.9,
-              width: width,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0, right: 8),
-                child: Center(
-                  child: ListView(
-                    //mainAxisAlignment: MainAxisAlignment.center,
-                    //mainAxisSize: MainAxisSize.max,
-                    children: <Widget>[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextCustomerUserTitle(
-                            titre: "Commentaires",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: Icon(
-                                  Icons.cancel,
-                                  size: 15,
-                                  color: ConstColors.blackIconColors,
-                                )),
-                          ),
-                        ],
-                      ),
-                      formCommentMesage(height, width),
-                      Divider(),
-                      SingleChildScrollView(
-                        child: SizedBox(
-                          height: height * 0.4,
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: ListView.builder(
-                                scrollDirection: Axis.vertical,
-                                itemCount:
-                                10, // Nombre d'éléments dans la liste
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding:
-                                    const EdgeInsets.only(bottom: 10.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 8.0),
-                                              child: CircleAvatar(
-                                                radius: 15,
-                                                backgroundImage: AssetImage(
-                                                    'assets/images/confident-african-businesswoman-smiling-closeup-portrait-jobs-career-campaign.jpg'),
-                                              ),
-                                            ),
-                                            //SizedBox(height: 2,),
-                                            Row(
-                                              children: [
-                                                Column(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                      children: [
-                                                        SizedBox(
-                                                          //width: 100,
-                                                          child:
-                                                          TextCustomerUserTitle(
-                                                            titre:
-                                                            "lucien lucien",
-                                                            fontSize: SizeText
-                                                                .homeProfileTextSize,
-                                                            couleur: ConstColors
-                                                                .textColors,
-                                                            fontWeight:
-                                                            FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        SizedBox(
-                                                          width: 20,
-                                                        ),
-                                                        Align(
-                                                          alignment: Alignment
-                                                              .centerRight,
-                                                          child:
-                                                          TextCustomerPostDescription(
-                                                            titre:
-                                                            "Il y a 2 minutes ",
-                                                            fontSize: SizeText
-                                                                .textDatePostSize,
-                                                            couleur: ConstColors
-                                                                .textColors,
-                                                            fontWeight:
-                                                            FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      children: [
-                                                        SizedBox(
-                                                          width: width * 0.6,
-                                                          child:
-                                                          TextCustomerPostDescription(
-                                                            titre:
-                                                            "Mon premier commentaire pour cette pub Mon premier commentaire ",
-                                                            fontSize: SizeText
-                                                                .homeProfileTextSize,
-                                                            couleur: ConstColors
-                                                                .textColors,
-                                                            fontWeight:
-                                                            FontWeight.w400,
-                                                          ),
-                                                        ),
-                                                        SizedBox(
-                                                          //height: 30,
-                                                          child: Row(
-                                                            mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceAround,
-                                                            children: [
-                                                              IconButton(
-                                                                onPressed:
-                                                                    () {},
-                                                                icon: IconPersonaliser(
-                                                                    icone: Icons
-                                                                        .favorite,
-                                                                    size: 20),
-                                                              ),
-                                                              TextCustomerPostDescription(
-                                                                titre: "21",
-                                                                fontSize: SizeText
-                                                                    .homeProfileTextSize,
-                                                                couleur: ConstColors
-                                                                    .textColors,
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .w400,
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            if (_isLoading)
+              ModalBarrier(
+                color: Colors.black.withOpacity(0.5),
+                dismissible: false,
               ),
-            ),
-          );
-        });
-  }
-
-  Widget homePostUsers(double height, double width,BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: CircleAvatar(
-                      backgroundImage: AssetImage(
-                          'assets/images/green-business-logo-template-design-9820098082a4fc0a9e1f9179e347f35a_screen.jpg'),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 2,
-                  ),
-                  Row(
-                    children: [
-                      Column(
-                        children: [
-                          SizedBox(
-                            //width: 100,
-                            child: Row(
-                              children: [
-                                TextCustomerUserTitle(
-                                  titre: "afrolook",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                Image.asset("assets/icon/iconEntrepise.png",height: 20,width: 20,)
-                              ],
-                            ),
-                          ),
-                          TextCustomerUserTitle(
-                            titre: "1.5 m suivi(e)s",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ],
-                      ),
-
-                    ],
-                  ),
-                ],
+            if (_isLoading)
+              Center(
+                child: CircularProgressIndicator(),
               ),
-              IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.more_horiz,
-                    size: 30,
-                    color: ConstColors.blackIconColors,
-                  )),
-            ],
-          ),
-          SizedBox(
-            height: 6,
-          ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 300,
-              //height: 50,
-              child: Container(
-                alignment: Alignment.centerLeft,
-                child: TextCustomerPostDescription(
-                  titre:
-                  "Produits de beauté",
-                  fontSize: SizeText.titlepostEntrepriseTextSize,
-                  couleur: ConstColors.textColors,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 6,
-          ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 300,
-              //height: 50,
-              child: Container(
-                alignment: Alignment.centerLeft,
-                child: TextCustomerPostDescription(
-                  titre:
-                  "Catégorie : beauté",
-                  fontSize: SizeText.titlepostEntrepriseTextSize,
-                  couleur: ConstColors.textColors,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 6,
-          ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 300,
-              //height: 50,
-              child: Container(
-                alignment: Alignment.centerLeft,
-                child: TextCustomerPostDescription(
-                  titre:
-                  "Un coucher de soleil sur la plage, c'est toujours un moment de magie. Les couleurs sont si belles et les émotions sont si fortes...Afficher plus",
-                  fontSize: SizeText.homeProfileTextSize,
-                  couleur: ConstColors.textColors,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 5,
-          ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: TextCustomerPostDescription(
-              titre: "IL Y A 5 MIN",
-              fontSize: SizeText.homeProfileDateTextSize,
-              couleur: ConstColors.textColors,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(
-            height: 2,
-          ),
-          ListItemSlider(
-            sliders: [
-              ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset(
-                    "assets/images/produits-cosmetiques-naturels-img.jpg",
-                    height: 300,
-                  )),
-              ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset(
-                    "assets/images/confident-business-woman-portrait-smiling-face.jpg",
-                    height: 300,
-                  ))
-            ],
-          ),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 10.0),
-                child: Row(
-                  children: [
-                    Row(
-                      children: [
-                        IconPersonaliser(icone: Icons.favorite, size: 20),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        TextCustomerPostDescription(
-                          titre: "300",
-                          fontSize: SizeText.homeProfileDateTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                            onPressed: () {},
-                            icon: Icon(
-                              Icons.thumb_up,
-                              size: 20,
-                              color: ConstColors.likeColors,
-                            )),
-                        TextCustomerPostDescription(
-                          titre: "300",
-                          fontSize: SizeText.homeProfileDateTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                            onPressed: () {
-                              sheetComments(height, width,context);
-                            },
-                            icon: Icon(
-                              Icons.comment,
-                              size: 20,
-                              color: ConstColors.blackIconColors,
-                            )),
-                        TextCustomerPostDescription(
-                          titre: "300",
-                          fontSize: SizeText.homeProfileDateTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -519,54 +508,220 @@ class _EntreprisePublicationViewState extends State<EntrepriseProduitView> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    return  Column(
+    return  SingleChildScrollView(
+      child: Column(
+        //crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Container(
+            // height: 40,
+            // width: width*0.8,
+            alignment: Alignment.center,
+            color: Colors.black12,
 
-      children: [
-        Align(
-         // alignment: Alignment.centerRight,
-          child: Container(
-            width: width,
-            height: 50,
-            child: AnimSearchBar(
-              width: 400,
-              helpText: 'rechercher un produit',
-              textController: textController,
-              onSuffixTap: () {
+            child:GestureDetector(
+              onTap: () {
                 setState(() {
-                  textController.clear();
+                  is_search=true;
                 });
               },
-              onSubmitted: (String ) {  },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child:is_search?Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Form(
+                    key: _formKey,
+                    child: TextFormField(
+                      controller: _controller,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Veuillez entrer un nom de l'article";
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Entrer le nom article',
+                        prefixIcon: IconButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              // Lancer la recherche avec le nom d'utilisateur saisi
+                              print('Recherche de l\'utilisateur ${_controller.text}');
+                              setState(() {
+                                is_search=false;
+                                item_selected-1;
+
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.arrow_back_outlined),
+                        ),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              // Lancer la recherche avec le nom d'utilisateur saisi
+                              print('Recherche de l\'utilisateur ${_controller.text}');
+                              setState(() {
+
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.search),
+                        ),
+                      ),
+                    ),
+                  ),
+                ): Container(
+                  alignment: Alignment.center,
+                  height: 40,
+                  width: width * 0.8,
+                  decoration: BoxDecoration(
+                      color: CustomConstants.kPrimaryColor,
+                      borderRadius: BorderRadius.all(Radius.circular(200))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search,
+                        color: Colors.white,
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        "Rechercher un article",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-        SizedBox(height: 6,),
-        GestureDetector(
-          onTap: () {
-            //Navigator.pushNamed(context, '/add_produit');
-          },
-          child: Align(
-              alignment: Alignment.centerLeft,
-              child: AddProduitButton()),
-        ),
-        SizedBox(height: 6,),
-        Container()
-        /*
-        SizedBox(
-          width: width,
-          height: height*0.7,
-          child: ListView(
-            children: [
-              homePostUsers(height, width,context),
-              homePostUsers(height, width,context),
-              homePostUsers(height, width,context),
-              homePostUsers(height, width,context),
-            ],
+          SizedBox(
+            height: 10,
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              height: height * 0.05,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        is_selected = true;
+                        item_selected = -1;
+                        //  articles.shuffle();
+                      });
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                          color: is_selected
+                              ? CustomConstants.kPrimaryColor
+                              : Colors.black38),
+                      margin: EdgeInsets.all(2.0),
+                      //  width: 120,
+                      //height: 10,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "Tous",
+                          style: TextStyle(
+                              fontSize: 12.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 5,
+                  ),
+                  Expanded(
+                    child: FutureBuilder<List<Categorie>>(
+                        future: categorieProduitProvider.getCategories(),
+                        builder:
+                            (BuildContext context, AsyncSnapshot snapshot) {
+                          if (snapshot.hasData) {
+                            return ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: snapshot.data.length,
+                              itemBuilder: (context, index) {
+                                return SizedBox(
+                                  // height: 50,
+                                    child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            categorieDataSelected=snapshot.data[index];
+                                            is_selected = false;
 
-         */
-      ],
+                                            item_selected = index;
+                                            //  articles.shuffle();
+                                          });
+                                        },
+                                        child: CategoryItem(
+                                            category: snapshot.data[index],
+                                            is_selected: index)));
+                              },
+                            );
+                          } else if (snapshot.hasError) {
+                            return Icon(Icons.error_outline);
+                          } else {
+                            return Container(
+                                height: 20,
+                                width: 20,
+                                alignment: Alignment.center,
+                                child: CircularProgressIndicator());
+                          }
+                        }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 2,
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: FutureBuilder<List<ArticleData>>(
+                future:is_search?categorieProduitProvider.getSearhArticlesByEntreprise("${_controller.text}",item_selected, categorieDataSelected.id!,authProvider.loginUserData.id!):item_selected==-1?  categorieProduitProvider.getAllArticles():categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if (snapshot.hasData) {
+                    List<ArticleData> articles=snapshot.data;
+                    return SingleChildScrollView(
+                      child: Container(
+                        height: height * 0.7,
+                        width: width,
+                        child: GridView.builder(
+                          itemCount: articles.length,
+
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            childAspectRatio: MediaQuery.of(context).size.width /
+                                (MediaQuery.of(context).size.height/1.4 ),
+                            crossAxisCount: 2, // Nombre de colonnes dans la grille
+                            crossAxisSpacing:
+                            10.0, // Espacement horizontal entre les éléments
+                            mainAxisSpacing:
+                            10.0, // Espacement vertical entre les éléments
+                          ),
+                          itemBuilder: (context, index) {
+                            return ArticleTile( articles[index],width,height);
+                          },
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Icon(Icons.error_outline);
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                }),
+          ),
+        ],
+      ),
     );
   }
 }

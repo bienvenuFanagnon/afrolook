@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 #version: 1.0.0+1
-version: 1.0.23+23
+version: 1.1.0+24
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -34,8 +34,9 @@ dependencies:
     sdk: flutter
   badges: ^3.1.2
   numberpicker: ^2.1.2
-  flutter_carousel_widget: ^2.2.0
   flutter_inner_drawer: ^1.0.0+1
+  phone_form_field: ^10.0.3
+  flutter_svg: ^2.0.17
   page_transition: ^2.1.0
   rxdart: ^0.27.2
   eva_icons_flutter: ^3.0.2
@@ -83,7 +84,6 @@ dependencies:
 #  native_video_view: ^1.0.5
   simple_tags: ^0.0.6
   dropdown_search: ^5.0.6
-  flutter_svg: ^1.1.0
   stories_for_flutter: ^1.2.1
   flutter_launcher_icons: ^0.13.1
   provider: ^6.1.1
@@ -128,6 +128,7 @@ dependencies:
   flutter_chat_bubble: ^2.0.2
   chat_bubbles: ^1.6.0
   audioplayers: ^5.2.1
+  flutter_carousel_widget: ^3.1.0
 
   intl: ^0.19.0
   flutter_popup_menu_button: ^0.0.1+5

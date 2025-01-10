@@ -189,15 +189,15 @@ class _AidePageState extends State<ContactPage> {
 
                     color: Colors.black12,
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 12.0,right: 12,top: 8,bottom: 8),
+                      padding: const EdgeInsets.only(top: 8,bottom: 8),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           const Icon(Icons.email,color: Colors.black,),
 
                           Text(
-                            'Contact pour des infos annonce',
-                            style: TextStyle(fontSize: 16.0,color: Colors.black),
+                            'Contact Afrolook Ads',
+                            style: TextStyle(fontSize: 16.0,color: Colors.green,fontWeight: FontWeight.w900),
                           ),
 
 

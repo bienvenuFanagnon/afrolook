@@ -2,12 +2,16 @@
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:like_button/like_button.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../constant/custom_theme.dart';
@@ -16,7 +20,10 @@ import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
-import '../new/add_annonce_step_1.dart';
+import '../../../component/consoleWidget.dart';
+import '../../../home/slive/utils.dart';
+import '../component.dart';
+import '../new/addProduit.dart';
 
 
 class HomeAfroshopPage extends StatefulWidget {
@@ -41,7 +48,10 @@ class _HomePageState extends State<HomeAfroshopPage> {
   int item_selected = -1;
   late Categorie categorieDataSelected=Categorie();
   bool is_selected = true;
-
+  bool is_search=false;
+  bool  _isLoading =false;
+  final _formKey = GlobalKey<FormState>();
+  final _controller = TextEditingController();
   void _showBottomSheetCompterNonValide(double width) {
     showModalBottomSheet(
       context: context,
@@ -92,262 +102,10 @@ class _HomePageState extends State<HomeAfroshopPage> {
       },
     );
   }
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 
 
-  Widget ArticleTile(ArticleData article,double w,double h) {
-    print('article ${article.titre}');
-    return Card(
-      child: Container(
-        child: Column(
-
-          children: [
-            GestureDetector(
-              onTap: () async {
-                // await  authProvider.getAfroshopUserById(article.user_id!).then(
-                //   (value) async {
-                //     if (value.isNotEmpty) {
-                //       article.user=value.first;
-                //   await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
-                //         if (value.isNotEmpty) {
-                //           value.first.vues=value.first.vues!+1;
-                //           article.vues=value.first.vues!+1;
-                //         await  categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                //             if (value) {
-                //
-                //               Navigator.push(
-                //                   context,
-                //                   MaterialPageRoute(
-                //                     builder: (context) =>
-                //                         ProduitDetail(article: article),
-                //                   ));
-                //
-                //             }
-                //           },);
-                //
-                //         }
-                //       },);
-                //     }
-                //   },
-                // );
-
-                await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
-                  if (value.isNotEmpty) {
-                    value.first.vues=value.first.vues!+1;
-                    article.vues=value.first.vues!+1;
-                      categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                      if (value) {
-
-
-                      }
-                    },);
-                    await    authProvider.getUserById(article.user_id!).then((users) {
-                      if(users.isNotEmpty){
-                        article.user=users.first;
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ProduitDetail(article: article),
-                            ));
-                      }
-                    },);
-                  }
-                },);
-
-
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(5)),
-                child: Container(
-                  width: w*0.5,
-                  height: h*0.22,
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-
-                    imageUrl: '${article.images!.first}',
-                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                    //  LinearProgressIndicator(),
-
-                    Skeletonizer(
-                        child: SizedBox(    width: w*0.2,
-                            height: h*0.2, child:  ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.network('${article.images!.first}')))),
-                    errorWidget: (context, url, error) =>  Container(    width: w*0.2,
-                        height: h*0.2,child: Image.network('${article.images!.first}',fit: BoxFit.cover,)),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 10,),
-
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0,right: 4),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    Text("${article!.titre}",overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,fontWeight: FontWeight.w500),),
-                   // Text(article.description),
-                    SizedBox(height: 5,),
-                    Container(
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(5)),
-                            color:  CustomConstants.kPrimaryColor
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text('Prix: ${article.prix} Fcfa',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w600,fontSize: 12),),
-                        )),
-                  ],
-                ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0,right: 8,top: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-
-                children: [
-                  LikeButton(
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.eye,
-                        color: isLiked ? Colors.black : Colors.brown,
-                        size: 15,
-                      );
-                    },
-                    likeCount:  article.vues,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-                  LikeButton(
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.whatsapp,
-                        color: isLiked ? Colors.green : Colors.green,
-                        size: 15,
-                      );
-                    },
-                    likeCount:   article.contact,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-                  LikeButton(
-                    onTap: (isLiked) async {
-                      await    categorieProduitProvider.getArticleById(article.id!).then((value) {
-                        if (value.isNotEmpty) {
-                          value.first.jaime=value.first.jaime!+1;
-                          article.jaime=value.first.jaime!+1;
-                          categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                            if (value) {
-
-
-                            }
-                          },);
-
-                        }
-                      },);
-
-                      return Future.value(true);
-
-                    },
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.heart,
-                        color: isLiked ? Colors.red : Colors.redAccent,
-                        size: 15,
-                      );
-                    },
-                    likeCount:   article.jaime,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-
-                ],
-              ),
-            )
-
-
-          ],
-        ),
-      ),
-    );
-  }
-  bool is_search=false;
-  final _formKey = GlobalKey<FormState>();
-  final _controller = TextEditingController();
 
   @override
   void initState() {
@@ -619,11 +377,9 @@ class _HomePageState extends State<HomeAfroshopPage> {
                               } else if (snapshot.hasError) {
                                 return Icon(Icons.error_outline);
                               } else {
-                                return Container(
-                                    height: 20,
-                                    width: 20,
-                                    alignment: Alignment.center,
-                                    child: CircularProgressIndicator());
+                                return SizedBox(
+                                    height: 30,
+                                    width: 30,child: Center(child: CircularProgressIndicator()));
                               }
                             }),
                       ),
@@ -635,42 +391,183 @@ class _HomePageState extends State<HomeAfroshopPage> {
                 height: 2,
               ),
 
-              Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: FutureBuilder<List<ArticleData>>(
-                    future:is_search?categorieProduitProvider.getSearhArticles("${_controller.text}",item_selected, categorieDataSelected.id!):item_selected==-1?  categorieProduitProvider.getAllArticles():categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
-                    builder: (BuildContext context, AsyncSnapshot snapshot) {
-                      if (snapshot.hasData) {
-                        List<ArticleData> articles=snapshot.data;
-                        return SingleChildScrollView(
-                          child: Container(
-                            height: height * 0.7,
-                            width: width,
-                            child: GridView.builder(
-                              itemCount: articles.length,
+              SizedBox(
+                              height: height * 0.7,
+                              width: width,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      sliver: SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Produits Boostés',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                    color: Colors.green
 
+                                ),
+                              ),
+
+                              SizedBox(width: 8),
+                              Icon(
+                                Icons.local_fire_department,
+                                color: Colors.red,
+                              ),
+
+                            ],
+                            mainAxisAlignment:
+                            MainAxisAlignment
+                                .start,
+                          ),
+                        ),
+                      ),
+                    ),
+
+            SliverToBoxAdapter(
+              child: FutureBuilder<List<ArticleData>>(
+                future: categorieProduitProvider.getArticleBooster(),
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if (snapshot.hasData) {
+                    List<ArticleData> articles = snapshot.data;
+                    if (articles.isEmpty) {
+                      return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
+                    }
+                    return Container(
+                      child: CarouselSlider(
+                        items: articles.map((article) {
+                          return Builder(
+                            builder: (BuildContext context) {
+                              return ArticleTileBooster(article: article, w: width, h: height, isOtherPage: false);
+                            },
+                          );
+                        }).toList(),
+                        options: CarouselOptions(
+                          height: 250,
+                          autoPlay: true,
+                          enlargeCenterPage: true,
+                          viewportFraction: 0.6, // Ajustez cette valeur pour afficher plus d'éléments
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Icon(Icons.error_outline);
+                  } else {
+                    return SizedBox(
+                        height: 30,
+                        width: 30,child: Center(child: CircularProgressIndicator()));
+                  }
+                },
+              ),
+            ),                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      sliver: SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Produits par catégorie',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black
+                                ),
+                              ),
+
+                              SizedBox(width: 8),
+                              Icon(
+                                Icons.category,
+                                color: Colors.green,
+                              ),
+
+                            ],
+                            mainAxisAlignment:
+                            MainAxisAlignment
+                                .start,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SliverToBoxAdapter(
+                      child: FutureBuilder<List<ArticleData>>(
+                        future: item_selected == -1
+                            ? categorieProduitProvider.getAllArticles()
+                            : categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
+                        builder: (BuildContext context, AsyncSnapshot snapshot) {
+                          if (snapshot.hasData) {
+                            List<ArticleData> articles = snapshot.data;
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: articles.length,
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                childAspectRatio: MediaQuery.of(context).size.width /
-                                    (MediaQuery.of(context).size.height/1.4 ),
                                 crossAxisCount: 2, // Nombre de colonnes dans la grille
-                                crossAxisSpacing:
-                                10.0, // Espacement horizontal entre les éléments
-                                mainAxisSpacing:
-                                10.0, // Espacement vertical entre les éléments
+                                crossAxisSpacing: 10.0, // Espacement horizontal entre les éléments
+                                mainAxisSpacing: 10.0, // Espacement vertical entre les éléments
+                                childAspectRatio: MediaQuery.of(context).size.width /
+                                    (MediaQuery.of(context).size.height / 1.4),
                               ),
                               itemBuilder: (context, index) {
-                                return ArticleTile( articles[index],width,height);
+                                return ArticleTile( article: articles[index], w: width, h: height,);
+
+                                // return ArticleTile(articles[index], width, height);
                               },
-                            ),
-                          ),
-                        );
-                      } else if (snapshot.hasError) {
-                        return Icon(Icons.error_outline);
-                      } else {
-                        return CircularProgressIndicator();
-                      }
-                    }),
-              ),
+                            );
+                          } else if (snapshot.hasError) {
+                            return Icon(Icons.error_outline);
+                          } else {
+                            return SizedBox(
+                                height: 30,
+                                width: 30,child: Center(child: CircularProgressIndicator()));
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              // Padding(
+              //   padding: const EdgeInsets.all(4.0),
+              //   child: FutureBuilder<List<ArticleData>>(
+              //       future:is_search?categorieProduitProvider.getSearhArticles("${_controller.text}",item_selected, categorieDataSelected.id!):item_selected==-1?  categorieProduitProvider.getAllArticles():categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
+              //       builder: (BuildContext context, AsyncSnapshot snapshot) {
+              //         if (snapshot.hasData) {
+              //           List<ArticleData> articles=snapshot.data;
+              //           return SingleChildScrollView(
+              //             child: Container(
+              //               height: height * 0.7,
+              //               width: width,
+              //               child: GridView.builder(
+              //                 itemCount: articles.length,
+              //
+              //                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              //                   childAspectRatio: MediaQuery.of(context).size.width /
+              //                       (MediaQuery.of(context).size.height/1.4 ),
+              //                   crossAxisCount: 2, // Nombre de colonnes dans la grille
+              //                   crossAxisSpacing:
+              //                   10.0, // Espacement horizontal entre les éléments
+              //                   mainAxisSpacing:
+              //                   10.0, // Espacement vertical entre les éléments
+              //                 ),
+              //                 itemBuilder: (context, index) {
+              //                   return ArticleTile( articles[index],width,height);
+              //                 },
+              //               ),
+              //             ),
+              //           );
+              //         } else if (snapshot.hasError) {
+              //           return Icon(Icons.error_outline);
+              //         } else {
+              //           return CircularProgressIndicator();
+              //         }
+              //       }),
+              // ),
             ],
           ),
         ),

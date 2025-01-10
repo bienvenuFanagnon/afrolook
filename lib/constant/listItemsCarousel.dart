@@ -12,7 +12,7 @@ class ListItemSlider extends StatelessWidget {
           builder: (context) {
             final height = MediaQuery.of(context).size.height;
             return FlutterCarousel(
-              options: CarouselOptions(
+              options: FlutterCarouselOptions(
                 height: 300,
                 viewportFraction: 1.0,
                 enlargeCenterPage: false,

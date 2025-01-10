@@ -6,6 +6,7 @@ import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:afrotok/pages/ia/gemini/geminibot.dart';
 import 'package:auto_animated/auto_animated.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -30,17 +31,18 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../UserServices/listUserService.dart';
+import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
+import '../afroshop/marketPlace/component.dart';
+import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
-import '../afroshop/marketPlace/acceuil/produit_details.dart';
-import '../chat/entrepriseChat.dart';
-import '../chat/ia_Chat.dart';
-import '../chat/myChat.dart';
+
 import '../component/consoleWidget.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
 
@@ -984,7 +986,7 @@ class _MyHomePageState extends State<MyHomePage>
                                           ),
                                         ),
                                         // SizedBox(width: w*0.01,),
-                                        Image.asset("assets/userEticket/${imageNumber}.png",height: 27,width: 27,),
+                                        // Image.asset("assets/userEticket/${imageNumber}.png",height: 27,width: 27,),
                                       ],
                                     ),
                                   ],
@@ -1511,6 +1513,37 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+
+                    leading: Icon(
+                      MaterialIcons.work,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Services",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    subtitle: TextCustomerMenu(
+                      titre: "Chercher des gens pour bosser",
+                      fontSize: 9,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // setState(() {
+                      //   onTap = true;
+                      // });
+
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+
+
+                      // Navigator.pushNamed(context, '/intro_ia_compagnon');
+                    },
+                  ),
+                  ListTile(
                     trailing: TextCustomerMenu(
                       titre: "Discuter",
                       fontSize: SizeText.homeProfileTextSize,
@@ -1745,7 +1778,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.0.22 (22)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.0 (24)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2024,256 +2057,6 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  Widget ArticleTile(ArticleData article, double w, double h) {
-    // printVm('article ${article.titre}');
-    return Card(
-      child: Container(
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: () async {
-                await authProvider.getUserById(article.user_id!).then(
-                  (value) async {
-                    if (value.isNotEmpty) {
-                      article.user = value.first;
-                      await categorieProduitProvider
-                          .getArticleById(article.id!)
-                          .then(
-                        (value) {
-                          if (value.isNotEmpty) {
-                            value.first.vues = value.first.vues! + 1;
-                            article.vues = value.first.vues! + 1;
-                            categorieProduitProvider
-                                .updateArticle(value.first, context)
-                                .then(
-                              (value) {
-                                if (value) {}
-                              },
-                            );
-                          }
-                        },
-                      );
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProduitDetail(article: article),
-                          ));
-                    }
-                  },
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10), topRight: Radius.circular(5)),
-                child: Container(
-                  width: w * 0.45,
-                  height: h * 0.16,
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    imageUrl: '${article.images!.first}',
-                    progressIndicatorBuilder: (context, url,
-                            downloadProgress) =>
-                        //  LinearProgressIndicator(),
-
-                        Skeletonizer(
-                            child: SizedBox(
-                                width: w * 0.2,
-                                height: h * 0.2,
-                                child: ClipRRect(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(10)),
-                                    child: Image.network(
-                                        '${article.images!.first}')))),
-                    errorWidget: (context, url, error) => Container(
-                        width: w * 0.2,
-                        height: h * 0.2,
-                        child: Image.network(
-                          '${article.images!.first}',
-                          fit: BoxFit.cover,
-                        )),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              height: 5,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0, right: 4),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${article!.titre}".toUpperCase(),
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
-                  ),
-                  // Text(article.description),
-                  SizedBox(
-                    height: 5,
-                  ),
-                  Container(
-                      alignment: Alignment.centerLeft,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                          color: CustomConstants.kPrimaryColor),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Text(
-                          '${article.prix} Fcfa',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 9),
-                        ),
-                      )),
-                ],
-              ),
-            ),
-            /*
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0,right: 8,top: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-
-                children: [
-                  LikeButton(
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.eye,
-                        color: isLiked ? Colors.black : Colors.brown,
-                        size: 15,
-                      );
-                    },
-                    likeCount:  article.vues,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-                  LikeButton(
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.whatsapp,
-                        color: isLiked ? Colors.green : Colors.green,
-                        size: 15,
-                      );
-                    },
-                    likeCount:   article.contact,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-                  LikeButton(
-                    onTap: (isLiked) async {
-                      await    categorieProduitProvider.getArticleById(article.id!).then((value) {
-                        if (value.isNotEmpty) {
-                          value.first.jaime=value.first.jaime!+1;
-                          article.jaime=value.first.jaime!+1;
-                          categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                            if (value) {
-
-
-                            }
-                          },);
-
-                        }
-                      },);
-
-                      return Future.value(true);
-
-                    },
-                    isLiked: false,
-                    size: 15,
-                    circleColor:
-                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                    bubblesColor: BubblesColor(
-                      dotPrimaryColor: Color(0xff3b9ade),
-                      dotSecondaryColor: Color(0xff027f19),
-                    ),
-                    countPostion: CountPostion.bottom,
-                    likeBuilder: (bool isLiked) {
-                      return Icon(
-                        FontAwesome.heart,
-                        color: isLiked ? Colors.red : Colors.redAccent,
-                        size: 15,
-                      );
-                    },
-                    likeCount:   article.jaime,
-                    countBuilder: (int? count, bool isLiked, String text) {
-                      var color = isLiked ? Colors.black : Colors.black;
-                      Widget result;
-                      if (count == 0) {
-                        result = Text(
-                          "0",textAlign: TextAlign.center,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      } else
-                        result = Text(
-                          text,
-                          style: TextStyle(color: color,fontSize: 8),
-                        );
-                      return result;
-                    },
-
-                  ),
-
-                ],
-              ),
-            )
-
-             */
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget widgetSeke2(double w,h) {
     // printVm('article ${article.titre}');
@@ -2455,18 +2238,33 @@ class _MyHomePageState extends State<MyHomePage>
                         Text(
                           'Vous avez la possibilité de',
                         ),
-                        Text(' gagner 50 PubliCash',
+                        Text('gagner 50 PubliCash',
                             style: TextStyle(color: Colors.green)),
                         Text(
-                          ' chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage qui se situe dans votre profil. Vous pouvez vérifier votre solde dans la page monétisation.',
+                          'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage qui se situe dans votre profil. Vous pouvez vérifier votre solde dans la page monétisation.',
                           textAlign: TextAlign.center,
                         ),
                         Divider(),
-
                         Text('Nouvelle fonctionnalité',
                             style: TextStyle(color: Colors.green)),
                         Text(
-                          "Afrolook a intégré un éditeur de look",
+                          "Afrolook a intégré plusieurs nouvelles fonctionnalités :",
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "- Ajout de produits en ligne après la création d'une entreprise",
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "- Mise en ligne de vos services, métiers, savoir-faire",
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "- Invitez d'autres utilisateurs pour gagner des PubliCash",
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "- Boostez vos produits pour toucher plus de clients",
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -2488,6 +2286,13 @@ class _MyHomePageState extends State<MyHomePage>
             },
           );
         }
+
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            child: ArticleBottomSheet(),
+          ),
+        );
       },
     );
 
@@ -2748,6 +2553,18 @@ class _MyHomePageState extends State<MyHomePage>
           AnimateIcon(
             key: UniqueKey(),
             onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+
+            },
+            iconType: IconType.continueAnimation,
+            height: 70,
+            width: 70,
+            color: Colors.green,
+            animateIcon: AnimateIcons.settings,
+          ),
+          AnimateIcon(
+            key: UniqueKey(),
+            onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
 
             },
@@ -2990,6 +2807,100 @@ class _MyHomePageState extends State<MyHomePage>
             return homeProfileUsers(userList[index], width, height);
           },
         ),
+      );
+    }
+    if (index % 5 == 4) {
+      return FutureBuilder<List<ArticleData>>(
+        future: categorieProduitProvider.getArticleBooster(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (snapshot.hasData) {
+            List<ArticleData> articles = snapshot.data;
+            if (articles.isEmpty) {
+              return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
+            }
+            return SizedBox(
+              height: height * 0.35,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Produits Boostés',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              Icons.local_fire_department,
+                              color: Colors.red,
+                            ),
+                          ],
+                          mainAxisAlignment: MainAxisAlignment.start,
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HomeAfroshopPage(title: ''),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                'Boutiques',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(
+                                Icons.storefront,
+                                color: Colors.red,
+                              ),
+                            ],
+                            mainAxisAlignment: MainAxisAlignment.start,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    child: CarouselSlider(
+                      items: articles.map((article) {
+                        return Builder(
+                          builder: (BuildContext context) {
+                            return ArticleTileBooster(
+                                article: article, w: width, h: height, isOtherPage: true);
+                          },
+                        );
+                      }).toList(),
+                      options: CarouselOptions(
+                        height: 250,
+                        autoPlay: true,
+                        enlargeCenterPage: true,
+                        viewportFraction: 0.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Icon(Icons.error_outline);
+          } else {
+            return CircularProgressIndicator();
+          }
+        },
       );
     }
 

@@ -107,7 +107,7 @@ class UserAuthProvider extends ChangeNotifier {
 
     // Paramètres que vous souhaitez ajouter à l'URL du lien dynamique
     final Uri link = Uri.parse(
-        'https://afrotok.page.link/post?postId=${post.id}&postImage=${post.images!.isEmpty?appLogo:post.images!.first}'
+        'https://afrotok.page.link/post?postId=${post.id}&postImage=${post.images!.isEmpty?appLogo:post.images!.first}&postType=${PostType.POST.name}'
     );
 
     final DynamicLinkParameters parameters = DynamicLinkParameters(
@@ -167,7 +167,7 @@ class UserAuthProvider extends ChangeNotifier {
       ),
       socialMetaTagParameters: SocialMetaTagParameters(
         title: 'Marché Afrolook (Afroshop) 🛒',  // Titre de la publication
-        description: article.description,  // Description de la publication
+        description: "${article.titre}:\n ${article.description}",  // Description de la publication
         imageUrl: Uri.parse(article.images!.isEmpty?appLogo:article.images!.first),  // URL de l'image du post
       ),
     );

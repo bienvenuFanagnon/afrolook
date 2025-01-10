@@ -482,6 +482,8 @@ setMessageNonLu(int nbr){
        EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
     if (listEntreprise.isNotEmpty) {
+      listEntreprise.first.suivi=listEntreprise.first.usersSuiviId!.length;
+
       entrepriseData=listEntreprise.first;
       haveData=true;
     }

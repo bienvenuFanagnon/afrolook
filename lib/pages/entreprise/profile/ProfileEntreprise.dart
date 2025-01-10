@@ -1,4 +1,7 @@
+import 'package:afrotok/pages/admin/new_category.dart';
+import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
 import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
+import 'package:afrotok/pages/entreprise/produit/component.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
@@ -62,82 +65,84 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
           child: Column(
 
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 15.0),
-                          child: CircleAvatar(
-                            radius: 30,
-                            backgroundImage: NetworkImage(
-                                '${userProvider.entrepriseData.urlImage}'),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 2,
-                        ),
-                        Row(
-                          children: [
-                            Column(
-                              children: [
-                                SizedBox(
-                                  //width: 100,
-                                  child: TextCustomerUserTitle(
-                                    titre: "#${userProvider.entrepriseData.titre}",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                TextCustomerUserTitle(
-                                  titre: "${userProvider.entrepriseData.suivi} suivi(e)s",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ],
-                            ),
+              // Padding(
+              //   padding: const EdgeInsets.only(bottom: 8.0),
+              //   child: Row(
+              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //     children: [
+              //       Row(
+              //         children: [
+              //           Padding(
+              //             padding: const EdgeInsets.only(right: 15.0),
+              //             child: CircleAvatar(
+              //               radius: 30,
+              //               backgroundImage: NetworkImage(
+              //                   '${userProvider.entrepriseData.urlImage}'),
+              //             ),
+              //           ),
+              //           SizedBox(
+              //             height: 2,
+              //           ),
+              //           Row(
+              //             children: [
+              //               Column(
+              //                 children: [
+              //                   SizedBox(
+              //                     //width: 100,
+              //                     child: TextCustomerUserTitle(
+              //                       titre: "#${userProvider.entrepriseData.titre}",
+              //                       fontSize: SizeText.homeProfileTextSize,
+              //                       couleur: ConstColors.textColors,
+              //                       fontWeight: FontWeight.bold,
+              //                     ),
+              //                   ),
+              //                   TextCustomerUserTitle(
+              //                     titre: "${userProvider.entrepriseData.suivi} suivi(e)s",
+              //                     fontSize: SizeText.homeProfileTextSize,
+              //                     couleur: ConstColors.textColors,
+              //                     fontWeight: FontWeight.w400,
+              //                   ),
+              //                 ],
+              //               ),
+              //
+              //             ],
+              //           ),
+              //         ],
+              //       ),
+              //       Padding(
+              //         padding: const EdgeInsets.only(right: 12.0),
+              //         child: Column(
+              //           children: [
+              //             SizedBox(
+              //               //width: 100,
+              //               child: TextCustomerUserTitle(
+              //                 titre: "PubliCash",
+              //                 fontSize: SizeText.homeProfileTextSize,
+              //                 couleur: ConstColors.textColors,
+              //                 fontWeight: FontWeight.bold,
+              //               ),
+              //             ),
+              //             TextCustomerUserTitle(
+              //               titre: "${userProvider.entrepriseData.publicash!.toStringAsFixed(2)}",
+              //               fontSize: SizeText.homeProfileTextSize,
+              //               couleur: ConstColors.textColors,
+              //               fontWeight: FontWeight.w400,
+              //             ),
+              //             SizedBox(height: 5,),
+              //             GestureDetector(
+              //               onTap: () {
+              //                 Navigator.push(context, MaterialPageRoute(builder: (context) => DepotPage(),));
+              //               },
+              //                 child: AchatPubliCachButton()),
+              //
+              //           ],
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
-                          ],
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12.0),
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            //width: 100,
-                            child: TextCustomerUserTitle(
-                              titre: "PubliCash",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextCustomerUserTitle(
-                            titre: "${userProvider.entrepriseData.publicash!.toStringAsFixed(2)}",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          SizedBox(height: 5,),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => DepotPage(),));
-                            },
-                              child: AchatPubliCachButton()),
-
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              entrepriseHeader(userProvider.entrepriseData),
               SizedBox(
                 height: 10,
 
@@ -234,34 +239,39 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                           SizedBox(height: 10,),
                           ClipRRect(
                             borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-                            child: Container(
-                              color: ConstColors.buttonsColors,
-                              // alignment: Alignment.centerLeft,
-                              width: 180,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 5.0),
-                                      child: Container(
-                                        child: Image.asset(
-                                          'assets/icon/entreprise.png',
-                                          height: 20,
-                                          width: 20,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentSubscriptionPage(abonnement: userProvider.entrepriseData.abonnement!,),));
+                              },
+                              child: Container(
+                                color: ConstColors.buttonsColors,
+                                // alignment: Alignment.centerLeft,
+                                width: 180,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 5.0),
+                                        child: Container(
+                                          child: Image.asset(
+                                            'assets/icon/entreprise.png',
+                                            height: 20,
+                                            width: 20,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Container(
-                                      child: TextCustomerMenu(
-                                        titre: "Nos Abonnements",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    )
-                                  ],
+                                      Container(
+                                        child: TextCustomerMenu(
+                                          titre: "Mon Abonnement",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    ],
 
+                                  ),
                                 ),
                               ),
                             ),
@@ -296,6 +306,49 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                                       Container(
                                         child: TextCustomerMenu(
                                           titre: "Annonce",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    ],
+
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          authProvider.loginUserData.role!=UserRole.ADM.name?Container():       SizedBox(height: 10,),
+
+                          authProvider.loginUserData.role!=UserRole.ADM.name?Container():
+                          GestureDetector(
+                            onTap: () async {
+                              await userProvider.getGratuitInfos().then((value) {
+
+
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => AddCategorie(),));
+
+                              },);
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                              child: Container(
+                                color: ConstColors.buttonsColors,
+                                // alignment: Alignment.centerLeft,
+                                width: 180,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 5.0),
+                                        child: Container(
+                                          child: Icon(Icons.category,color: Colors.green,),
+                                        ),
+                                      ),
+                                      Container(
+                                        child: TextCustomerMenu(
+                                          titre: "Catégorie",
                                           fontSize: SizeText.homeProfileTextSize,
                                           couleur: ConstColors.textColors,
                                           fontWeight: FontWeight.w600,
@@ -380,15 +433,16 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                   tabs: [
                     Container(
                       child: TextCustomerMenu(
-                        titre: "Nos Pubs",
+                        titre: "Nos Produits",
                         fontSize: SizeText.homeProfileTextSize,
                         couleur: ConstColors.textColors,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+
                     Container(
                       child: TextCustomerMenu(
-                        titre: "Nos Produits",
+                        titre: "Nos Pubs",
                         fontSize: SizeText.homeProfileTextSize,
                         couleur: ConstColors.textColors,
                         fontWeight: FontWeight.w600,
@@ -403,13 +457,14 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                     unselectedLabelColor: Colors.grey[400],
                   ),
                   views: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: EntreprisePubView(),
-                    ),
+
                     Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: EntrepriseProduitView()
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: EntreprisePubView(),
                     ),
                   ],
                   onChange: (index) => print(index),

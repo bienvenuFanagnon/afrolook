@@ -317,6 +317,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
   double w = MediaQuery.of(context).size.width;
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
+
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   late CategorieProduitProvider categorieProduitProvider =
@@ -1527,131 +1528,6 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                               }
 
                             },);
-                            // if (!isIn(post.users_love_id!,
-                            //     authProvider.loginUserData.id!)) {
-                            //   setState(() {
-                            //     post.loves = post.loves! + 1;
-                            //
-                            //     post.users_love_id!
-                            //         .add(authProvider!.loginUserData.id!);
-                            //     love = post.loves!;
-                            //     //loves.add(idUser);
-                            //   });
-                            //   CollectionReference userCollect =
-                            //   FirebaseFirestore.instance
-                            //       .collection('Users');
-                            //   // Get docs from collection reference
-                            //   QuerySnapshot querySnapshotUser =
-                            //   await userCollect
-                            //       .where("id",
-                            //       isEqualTo: post.user!.id!)
-                            //       .get();
-                            //   // Afficher la liste
-                            //   List<UserData> listUsers = querySnapshotUser
-                            //       .docs
-                            //       .map((doc) => UserData.fromJson(
-                            //       doc.data() as Map<String, dynamic>))
-                            //       .toList();
-                            //   if (listUsers.isNotEmpty) {
-                            //     listUsers.first!.jaimes =
-                            //         listUsers.first!.jaimes! + 1;
-                            //     printVm("user trouver");
-                            //     if (post.user!.oneIgnalUserid != null &&
-                            //         post.user!.oneIgnalUserid!.length > 5) {
-                            //       await authProvider.sendNotification(
-                            //           userIds: [post.user!.oneIgnalUserid!],
-                            //           smallImage:
-                            //           "${authProvider.loginUserData.imageUrl!}",
-                            //           send_user_id:
-                            //           "${authProvider.loginUserData.id!}",
-                            //           recever_user_id: "${post.user!.id!}",
-                            //           message:
-                            //           "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                            //           type_notif:
-                            //           NotificationType.POST.name,
-                            //           post_id: "${post!.id!}",
-                            //           post_type: PostDataType.IMAGE.name,
-                            //           chat_id: '');
-                            //
-                            //       NotificationData notif =
-                            //       NotificationData();
-                            //       notif.id = firestore
-                            //           .collection('Notifications')
-                            //           .doc()
-                            //           .id;
-                            //       notif.titre = "Nouveau j'aime ❤️";
-                            //       notif.media_url =
-                            //           authProvider.loginUserData.imageUrl;
-                            //       notif.type = NotificationType.POST.name;
-                            //       notif.description =
-                            //       "@${authProvider.loginUserData.pseudo!} a aimé votre look";
-                            //       notif.users_id_view = [];
-                            //       notif.user_id =
-                            //           authProvider.loginUserData.id;
-                            //       notif.receiver_id = post.user!.id!;
-                            //       notif.post_id = post.id!;
-                            //       notif.post_data_type =
-                            //       PostDataType.IMAGE.name!;
-                            //
-                            //       notif.updatedAt =
-                            //           DateTime.now().microsecondsSinceEpoch;
-                            //       notif.createdAt =
-                            //           DateTime.now().microsecondsSinceEpoch;
-                            //       notif.status = PostStatus.VALIDE.name;
-                            //
-                            //       // users.add(pseudo.toJson());
-                            //
-                            //       await firestore
-                            //           .collection('Notifications')
-                            //           .doc(notif.id)
-                            //           .set(notif.toJson());
-                            //     }
-                            //     // postProvider.updateVuePost(post, context);
-                            //
-                            //     //userProvider.updateUser(listUsers.first);
-                            //     SnackBar snackBar = SnackBar(
-                            //       content: Text(
-                            //         '+2 points.  Voir le classement',
-                            //         textAlign: TextAlign.center,
-                            //         style: TextStyle(color: Colors.green),
-                            //       ),
-                            //     );
-                            //     ScaffoldMessenger.of(context)
-                            //         .showSnackBar(snackBar);
-                            //     postProvider.updatePost(
-                            //         post, listUsers.first, context);
-                            //     await authProvider.getAppData();
-                            //     authProvider.appDefaultData.nbr_loves =
-                            //         authProvider.appDefaultData.nbr_loves! +
-                            //             2;
-                            //     authProvider.updateAppData(
-                            //         authProvider.appDefaultData);
-                            //   } else {
-                            //     post.user!.jaimes = post.user!.jaimes! + 1;
-                            //     SnackBar snackBar = SnackBar(
-                            //       content: Text(
-                            //         '+2 points.  Voir le classement',
-                            //         textAlign: TextAlign.center,
-                            //         style: TextStyle(color: Colors.green),
-                            //       ),
-                            //     );
-                            //     ScaffoldMessenger.of(context)
-                            //         .showSnackBar(snackBar);
-                            //     postProvider.updatePost(
-                            //         post, post.user!, context);
-                            //     await authProvider.getAppData();
-                            //     authProvider.appDefaultData.nbr_loves =
-                            //         authProvider.appDefaultData.nbr_loves! +
-                            //             2;
-                            //     authProvider.updateAppData(
-                            //         authProvider.appDefaultData);
-                            //   }
-                            //
-                            //   tapLove = true;
-                            // }
-                            // printVm("jaime");
-                            // // setState(() {
-                            // // });
                           },
                           child: Container(
                             //height: 20,

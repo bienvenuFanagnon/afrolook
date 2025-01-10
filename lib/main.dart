@@ -325,7 +325,15 @@ class _MyAppState extends State<MyApp> {
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),)); // Assuming your route name is '/specific_page'
 
 
-        }else if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
+        }
+        else if (event.notification.additionalData!['type_notif']==NotificationType.ARTICLE.name) {
+          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
+
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
+
+
+        }
+        else if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
           navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
 
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),)); // Assuming your route name is '/specific_page'
@@ -379,7 +387,8 @@ class _MyAppState extends State<MyApp> {
 
           Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
 
-        }else {
+        }
+        else {
           navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
 
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
@@ -497,9 +506,10 @@ class _MyAppState extends State<MyApp> {
       // Extraire les paramètres de l'URL
       // String? userId = dynamicLinkData.link.queryParameters['userId'];
       String? postId = dynamicLinkData.link.queryParameters['postId'];
+      String? postType = dynamicLinkData.link.queryParameters['postType'];
       // String? postImage = dynamicLinkData.link.queryParameters['postImage'];
 
-      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!,),));
+      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!, postType: postType!,),));
 
 
 
@@ -694,7 +704,7 @@ class _MyAppState extends State<MyApp> {
             break;
           case '/splahs_chargement2':
             return PageTransition(
-                child: SplahsChargement(postId: '',), type: PageTransitionType.fade);
+                child: SplahsChargement(postId: '', postType: '',), type: PageTransitionType.fade);
             break;
           case '/chargement':
             return PageTransition(

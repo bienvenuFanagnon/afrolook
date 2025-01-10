@@ -727,6 +727,7 @@ class ArticleData {
   String? titre;
   int? prix;
   int? popularite = 1;
+  int? booster = 0;
 
   int? vues;
   bool? disponible = true;
@@ -753,6 +754,9 @@ class ArticleData {
 
 class EntrepriseData {
   List<EntrepriseAbonnement>? abonnements = [];
+  List<String>? produitsIds = [];
+
+  List<String>? usersSuiviId = [];
   EntrepriseAbonnement? abonnement;
   String? titre;
   String? type;
@@ -773,6 +777,7 @@ class EntrepriseData {
     this.description,
     this.urlImage,
     this.abonnements,
+    this.usersSuiviId,
     this.userId,
     this.suivi = 0,
     this.publicash = 0.0,
@@ -790,6 +795,18 @@ class EntrepriseData {
       abonnements = <EntrepriseAbonnement>[];
       json['abonnements'].forEach((v) {
         abonnements!.add(new EntrepriseAbonnement.fromJson(v));
+      });
+    }
+    if (json['usersSuiviId'] != null) {
+      usersSuiviId = <String>[];
+      json['usersSuiviId'].forEach((v) {
+        usersSuiviId!.add(v);
+      });
+    }
+    if (json['produitsIds'] != null) {
+      produitsIds = <String>[];
+      json['produitsIds'].forEach((v) {
+        produitsIds!.add(v);
       });
     }
     if (json['abonnement'] != null) {
@@ -814,6 +831,10 @@ class EntrepriseData {
         'abonnement': abonnement!.toJson(),
         'abonnements':
             abonnements!.map((abonnement) => abonnement.toJson()).toList(),
+    'usersSuiviId':
+    usersSuiviId!.map((userSuiviId) => userSuiviId).toList(),
+    'produitsIds':
+    produitsIds!.map((produitsId) => produitsId).toList(),
         'publicash': publicash,
         'id': id,
       };
@@ -941,6 +962,8 @@ class EntrepriseAbonnement {
   int? end;
   bool? isFinished;
   bool? dispo_afrolook;
+  List<String>? produistIdBoosted = [];
+
 
   EntrepriseAbonnement();
 
@@ -950,6 +973,38 @@ class EntrepriseAbonnement {
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$EntrepriseAbonnementToJson(this);
 }
+
+@JsonSerializable()
+class UserServiceData {
+  String? id;
+  String? userId;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  UserData? user;
+  String? titre;
+  String? description;
+  bool? disponible=true;
+  String? contact;
+  String? imageCourverture;
+  int? vues=0;
+  int? like=0;
+  int? partage=0;
+  List<String>? usersViewId = [];
+  List<String>? usersLikeId = [];
+  List<String>? usersPartageId = [];
+  List<String>? usersContactId = [];
+  int? createdAt;
+  int? updatedAt;
+
+
+  UserServiceData();
+
+  factory UserServiceData.fromJson(Map<String, dynamic> json) =>
+      _$UserServiceDataFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$UserServiceDataToJson(this);
+}
+
 
 class UserGlobalTag {
   int? id;

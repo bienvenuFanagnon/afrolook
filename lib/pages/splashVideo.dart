@@ -28,7 +28,7 @@ class _SplashVideoState extends State<SplashVideo> {
           PageTransition(
             type: PageTransitionType.fade,
             duration: Duration(milliseconds: 2000), // Ajuste la durée selon tes besoins
-            child: SplahsChargement(postId: ""),
+            child: SplahsChargement(postId: "", postType: '',),
           ),
         );
         // Navigator.of(context).pushReplacement(
