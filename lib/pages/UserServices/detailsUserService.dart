@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
+import '../component/showUserDetails.dart';
 
 class DetailUserServicePage extends StatefulWidget {
    UserServiceData data;
@@ -26,18 +27,49 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     return users_id.any((item) => item == userIdToCheck);
   }
 
-  Future<void> launchWhatsApp(String phone,UserServiceData articleData) async {
+  Future<void> launchWhatsApp(String phone,UserServiceData data) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Description*: *${articleData.description}*";
+    String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}*";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
       // Afficher le SnackBar en bas de la page
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       throw Exception('Impossible d\'ouvrir WhatsApp');
+    }else{
+      await    postProvider.getUserServiceById(data.id!).then((value) async {
+        if (value.isNotEmpty) {
+          data=value.first;
+          if(data.contactWhatsapp==null){
+            data.contactWhatsapp=1;
+          }else{
+            if(value.first.contactWhatsapp==null){
+              data.contactWhatsapp=1;
+            }else{
+              data.contactWhatsapp=value.first.contactWhatsapp!+1;
+
+            }
+
+          }
+          if(!isIn(data.usersContactId!, authProvider.loginUserData!.id!)){
+            data.usersContactId!.add(authProvider.loginUserData!.id!) ;
+
+          }
+          postProvider.updateUserService(data,context).then((value) {
+            if (value) {
+setState(() {
+
+});
+
+            }
+          },);
+        }
+      },);
+
     }
   }
+
 
 
   @override
@@ -55,32 +87,42 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  // mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(widget.data.user!.imageUrl ?? ''),
-                      radius: 30,
-                    ),
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                GestureDetector(
+                  onTap: () async {
+                    await  authProvider.getUserById(widget.data.userId!).then((users) async {
+                      if(users.isNotEmpty){
+                        showUserDetailsModalDialog(users.first, width, height,context);
 
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            '@${widget.data.user!.pseudo ?? 'Pseudo'}',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                          Text(
-                            '${widget.data.user!.abonnes ?? '0'} abonné(s)',
-                            style: TextStyle(fontSize: 11, color: Colors.green),
-                          ),
-                        ],
+                      }
+                    },);
+                  },
+                  child: Row(
+                    // mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(widget.data.user!.imageUrl ?? ''),
+                        radius: 30,
                       ),
-                    ),
-                  ],
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              '@${widget.data.user!.pseudo ?? 'Pseudo'}',
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                            Text(
+                              '${widget.data.user!.abonnes ?? '0'} abonné(s)',
+                              style: TextStyle(fontSize: 11, color: Colors.green),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -156,7 +198,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
                             size: 15,
                           );
                         },
-                        likeCount:    widget.data.usersContactId!.length,
+                        likeCount:    widget.data.contactWhatsapp,
                         countBuilder: (int? count, bool isLiked, String text) {
                           var color = isLiked ? Colors.black : Colors.black;
                           Widget result;
@@ -509,11 +551,71 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
                     ),
                   ],
                 ),
+                Visibility(
+                  visible: authProvider.loginUserData!.id==widget.data!.userId||authProvider.loginUserData!.role==UserRole.ADM.name,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+
+                        child: TextButton(
+                          onPressed: () async {
+                            widget.data.disponible=false;
+
+                            await      postProvider.updateUserService( widget.data,context).then((value) {
+                              if (value) {
+
+                  setState(() {
+                    SnackBar snackBar = SnackBar(
+                      content: Text(
+                        "le service supprimé avec success !",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.green),
+                      ),
+                    );
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(snackBar);
+                    Navigator.pop(context);
+                  });
+                              }
+                            },);
+
+
+
+                          },
+                          child: Center(
+                            child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.all(Radius.circular(5))
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 8.0,right: 8),
+                                  child: Row(
+                                    children: [
+                                      Text('Supprimer',style: TextStyle(color: Colors.white),),
+                                      IconButton(
+                                        icon: Icon(FontAwesome.remove,color: Colors.green,size: 30,),
+                                        onPressed: () async {
+
+                                          // Fonction pour ouvrir WhatsApp
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 Text(
                   widget.data.description ?? 'Description',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  // maxLines: 2,
+                  overflow: TextOverflow.fade,
                 ),
               ],
             ),

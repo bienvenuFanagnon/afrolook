@@ -6,17 +6,19 @@ import 'package:like_button/like_button.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../models/model_data.dart';
-import '../../providers/postProvider.dart';
-import '../component/showUserDetails.dart';
-import 'newUserService.dart';
+import '../../../../models/model_data.dart';
+import '../../../../providers/postProvider.dart';
+import '../../../UserServices/newUserService.dart';
+import '../../../component/showUserDetails.dart';
 
-class UserServiceListPage extends StatefulWidget {
+
+
+class OnlyUserServiceListPage extends StatefulWidget {
   @override
-  State<UserServiceListPage> createState() => _UserServiceListPageState();
+  State<OnlyUserServiceListPage> createState() => _OnlyUserServiceListPageState();
 }
 
-class _UserServiceListPageState extends State<UserServiceListPage> {
+class _OnlyUserServiceListPageState extends State<OnlyUserServiceListPage> {
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   late UserAuthProvider authProvider =
@@ -27,46 +29,16 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  Future<void> launchWhatsApp(String phone,UserServiceData data) async {
+  Future<void> launchWhatsApp(String phone,UserServiceData articleData) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}*";
+    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Description*: *${articleData.description}*";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
       // Afficher le SnackBar en bas de la page
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       throw Exception('Impossible d\'ouvrir WhatsApp');
-    }else{
-      await    postProvider.getUserServiceById(data.id!).then((value) async {
-        if (value.isNotEmpty) {
-          data=value.first;
-          if(data.contactWhatsapp==null){
-            data.contactWhatsapp=1;
-          }else{
-            if(value.first.contactWhatsapp==null){
-              data.contactWhatsapp=1;
-            }else{
-              data.contactWhatsapp=value.first.contactWhatsapp!+1;
-
-            }
-
-          }
-          if(!isIn(data.usersContactId!, authProvider.loginUserData!.id!)){
-            data.usersContactId!.add(authProvider.loginUserData!.id!) ;
-
-          }
-          postProvider.updateUserService(data,context).then((value) {
-            if (value) {
-
-setState(() {
-
-});
-            }
-          },);
-        }
-      },);
-
     }
   }
 
@@ -77,8 +49,12 @@ setState(() {
     double width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 0,
-        title: Text('Trouver des services',style: TextStyle(color: Colors.white,fontSize: 18),),
+        automaticallyImplyLeading: false,
+        titleSpacing: 1,
+        title: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Text('Trouver une personne pour votre service',style: TextStyle(color: Colors.white,fontSize: 14),),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -118,12 +94,12 @@ setState(() {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: TextFormField(
+                padding: const EdgeInsets.only(left: 20.0),
+                child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une personne pour un job',
+                    hintText: 'Rechercher...',
                     hintStyle: TextStyle(color: Colors.black),
-                    // border: InputBorder.,
+                    border: InputBorder.none,
                   ),
                   style: TextStyle(color: Colors.black),
                   onChanged: (query) {
@@ -132,8 +108,9 @@ setState(() {
                     });
                   },
                 ),
-              ),              FutureBuilder<List<UserServiceData>>(
-                future:postProvider.getAllUserService(),
+              ),
+              FutureBuilder<List<UserServiceData>>(
+                future:postProvider.getAllOnlyUserService(authProvider.loginUserData.id!),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
@@ -218,7 +195,7 @@ setState(() {
                                       children: [
                                         SizedBox(
 
-                                            child: Image.network(data.imageCourverture ?? '',fit: BoxFit.cover,),
+                                          child: Image.network(data.imageCourverture ?? '',fit: BoxFit.cover,),
                                           height: height*0.3,
                                           width: width,
                                         ),
@@ -238,7 +215,7 @@ setState(() {
 
                                                 },
                                                 child: Center(
-                                                      child: Container(
+                                                  child: Container(
                                                       alignment: Alignment.center,
                                                       decoration: BoxDecoration(
                                                           color: Colors.brown,
@@ -259,7 +236,7 @@ setState(() {
                                                           ],
                                                         ),
                                                       )),
-                                                    ),
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -329,7 +306,7 @@ setState(() {
                                                     size: 15,
                                                   );
                                                 },
-                                                likeCount:   data.contactWhatsapp,
+                                                likeCount:   data.usersContactId!.length,
                                                 countBuilder: (int? count, bool isLiked, String text) {
                                                   var color = isLiked ? Colors.black : Colors.black;
                                                   Widget result;
@@ -354,15 +331,13 @@ setState(() {
                                                       data=value.first;
                                                       data.like=value.first.like!+1;
 
-                                                      if(!isIn(data.usersLikeId!, authProvider.loginUserData!.id!)){
+                                                      if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
                                                         data.usersLikeId!.add(authProvider.loginUserData!.id!) ;
 
                                                       }
                                                       postProvider.updateUserService(data,context).then((value) {
                                                         if (value) {
-setState(() {
 
-});
 
                                                         }
                                                       },);
@@ -447,7 +422,7 @@ setState(() {
                                                     size: 15,
                                                   );
                                                 },
-                                                likeCount:   data.like,
+                                                likeCount:   data.usersLikeId!.length,
                                                 countBuilder: (int? count, bool isLiked, String text) {
                                                   var color = isLiked ? Colors.black : Colors.black;
                                                   Widget result;

@@ -213,6 +213,7 @@ UserServiceData _$UserServiceDataFromJson(Map<String, dynamic> json) =>
       ..imageCourverture = json['imageCourverture'] as String?
       ..vues = (json['vues'] as num?)?.toInt()
       ..like = (json['like'] as num?)?.toInt()
+      ..contactWhatsapp = (json['contactWhatsapp'] as num?)?.toInt()
       ..partage = (json['partage'] as num?)?.toInt()
       ..usersViewId = (json['usersViewId'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -240,6 +241,7 @@ Map<String, dynamic> _$UserServiceDataToJson(UserServiceData instance) =>
       'imageCourverture': instance.imageCourverture,
       'vues': instance.vues,
       'like': instance.like,
+      'contactWhatsapp': instance.contactWhatsapp,
       'partage': instance.partage,
       'usersViewId': instance.usersViewId,
       'usersLikeId': instance.usersLikeId,

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -20,18 +21,22 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:insta_image_viewer/insta_image_viewer.dart';
 
+import '../../../../constant/constColors.dart';
 import '../../../../constant/custom_theme.dart';
+import '../../../../constant/sizeText.dart';
+import '../../../../constant/textCustom.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
+import '../../../../providers/postProvider.dart';
 import '../../../component/consoleWidget.dart';
 import '../../../entreprise/produit/component.dart';
 
 class ProduitDetail extends StatefulWidget {
   final ArticleData article;
-  final EntrepriseData entrepriseData;
-  const ProduitDetail({super.key, required this.article, required this.entrepriseData});
+    EntrepriseData entrepriseData;
+   ProduitDetail({super.key, required this.article, required this.entrepriseData});
 
   @override
   State<ProduitDetail> createState() => _ProduitDetailState();
@@ -64,7 +69,12 @@ class _ProduitDetailState extends State<ProduitDetail> {
     return String.fromCharCodes(Iterable.generate(_length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
   }
 
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+  }
 
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
 
   Future<void> launchWhatsApp(String phone,ArticleData articleData,String urlArticle) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
@@ -80,6 +90,8 @@ class _ProduitDetailState extends State<ProduitDetail> {
   }
 
   int imageIndex=0;
+
+  bool abonneTap=false;
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
@@ -87,7 +99,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     double iconSize = 20;
     return Scaffold(
         appBar: AppBar(
-          title: Text('Details'),
+          title: Text('Details produit'),
           actions: [
             Container(
               // color: Colors.black12,
@@ -112,8 +124,436 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 borderRadius: BorderRadius.all(Radius.circular(10)),
                 child: Column(
                   children: [
-                    entrepriseSimpleHeader(widget.entrepriseData,context),
+                    // entrepriseSimpleHeader(widget.entrepriseData,context),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 15.0),
+                                child: CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(
+                                      '${widget.entrepriseData.urlImage}'),
+                                ),
+                              ),
+                              SizedBox(
+                                height: 2,
+                              ),
+                              Row(
+                                children: [
+                                  Column(
+                                    children: [
+                                      SizedBox(
+                                        //width: 100,
+                                        child: TextCustomerUserTitle(
+                                          titre: "#${widget.entrepriseData.titre}",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextCustomerUserTitle(
+                                        titre: "${widget.entrepriseData.suivi} suivi(e)s",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ],
+                                  ),
 
+                                ],
+                              ),
+                            ],
+                          ),
+                          Visibility(
+                            visible:!isUserAbonne(
+                                widget.entrepriseData.usersSuiviId!,
+                                authProvider.loginUserData.id!),
+
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green, // Couleur de fond du bouton
+                                ),
+                                onPressed: abonneTap
+                                    ? () {}
+                                    : () async {
+                                  if (!isUserAbonne(
+                                      widget.entrepriseData.usersSuiviId!,
+                                      authProvider
+                                          .loginUserData
+                                          .id!))
+                                  {
+                                    setState(() {
+                                      abonneTap = true;
+                                    });
+                                    await    postProvider.getEntreprise(widget.entrepriseData.userId!).then((entreprises) {
+                                      if(entreprises.isNotEmpty){
+                                        widget.entrepriseData= entreprises.first;
+                                        widget.entrepriseData.usersSuiviId!.add(authProvider.loginUserData!.id!);
+                                        widget.entrepriseData.suivi=entreprises.first.usersSuiviId!.length;
+                                        setState(() {
+                                          // abonneTap = true;
+                                        });
+                                        // entreprise=entreprises.first;
+                                        authProvider.updateEntreprise(entreprises.first);
+                                      }
+                                    },);
+
+
+
+                                    if (widget.entrepriseData .user!
+                                        .oneIgnalUserid !=
+                                        null &&
+                                        widget.entrepriseData
+                                            .user!
+                                            .oneIgnalUserid!
+                                            .length >
+                                            5) {
+                                      await authProvider.sendNotification(
+                                          userIds: [
+                                            widget.entrepriseData.user!
+                                                .oneIgnalUserid!
+                                          ],
+                                          smallImage:
+                                          "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id:
+                                          "${authProvider.loginUserData.id!}",
+                                          recever_user_id:
+                                          "${widget.entrepriseData.user!.id!}",
+                                          message:
+                                          "🔔👀 @${authProvider.loginUserData.pseudo!} suit 👀 votre entreprise 🏢",
+                                          type_notif:
+                                          NotificationType
+                                              .ABONNER
+                                              .name,
+                                          post_id:
+                                          "",
+                                          post_type:
+                                          PostDataType
+                                              .IMAGE
+                                              .name,
+                                          chat_id: '');
+                                      NotificationData
+                                      notif =
+                                      NotificationData();
+                                      notif.id = firestore
+                                          .collection(
+                                          'Notifications')
+                                          .doc()
+                                          .id;
+                                      notif.titre =
+                                      "Nouveau Abonnement ✅";
+                                      notif.media_url =
+                                          authProvider
+                                              .loginUserData
+                                              .imageUrl;
+                                      notif.type =
+                                          NotificationType
+                                              .ABONNER
+                                              .name;
+                                      notif.description =
+                                      "🔔👀 @${authProvider.loginUserData.pseudo!} suit 👀 votre entreprise 🏢";
+                                      notif.users_id_view =
+                                      [];
+                                      notif.user_id =
+                                          authProvider
+                                              .loginUserData
+                                              .id;
+                                      notif.receiver_id =
+                                      widget.entrepriseData.user!
+                                          .id!;
+                                      notif.post_id =
+                                      widget.entrepriseData.id!;
+                                      notif.post_data_type =
+                                      PostDataType
+                                          .IMAGE
+                                          .name!;
+                                      notif.updatedAt =
+                                          DateTime.now()
+                                              .microsecondsSinceEpoch;
+                                      notif.createdAt =
+                                          DateTime.now()
+                                              .microsecondsSinceEpoch;
+                                      notif.status =
+                                          PostStatus
+                                              .VALIDE
+                                              .name;
+
+                                      // users.add(pseudo.toJson());
+
+                                      await firestore
+                                          .collection(
+                                          'Notifications')
+                                          .doc(notif.id)
+                                          .set(notif
+                                          .toJson());
+                                    }
+                                    SnackBar snackBar =
+                                    SnackBar(
+                                      content: Text(
+                                        'suivi, Bravo ! Vous avez gagné 2 points.',
+                                        textAlign:
+                                        TextAlign
+                                            .center,
+                                        style: TextStyle(
+                                            color: Colors
+                                                .green),
+                                      ),
+                                    );
+                                    ScaffoldMessenger
+                                        .of(context)
+                                        .showSnackBar(
+                                        snackBar);
+                                    setState(() {
+                                      abonneTap = false;
+                                    });
+                                  } else {
+                                    SnackBar snackBar =
+                                    SnackBar(
+                                      content: Text(
+                                        'une erreur',
+                                        textAlign:
+                                        TextAlign
+                                            .center,
+                                        style: TextStyle(
+                                            color: Colors
+                                                .red),
+                                      ),
+                                    );
+                                    ScaffoldMessenger
+                                        .of(context)
+                                        .showSnackBar(
+                                        snackBar);
+                                    setState(() {
+                                      abonneTap = false;
+                                    });
+
+                                    // setState(() {
+                                    //   abonneTap = false;
+                                    // });
+                                  }
+                                },
+                                child: abonneTap
+                                    ? Center(
+                                  child:
+                                  LoadingAnimationWidget
+                                      .flickr(
+                                    size: 20,
+                                    leftDotColor:
+                                    Colors.green,
+                                    rightDotColor:
+                                    Colors.black,
+                                  ),
+                                )
+                                    : Text(
+                                  "Suivre",
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight:
+                                      FontWeight.w900,
+                                      color: Colors.white),
+                                )),
+                          )
+
+                          // StatefulBuilder(builder: (BuildContext context,
+                          //       void Function(void Function()) setState) {
+                          //     return Visibility(
+                          //     visible:!isUserAbonne(
+                          //     entreprise.usersSuiviId!,
+                          //     authProvider.loginUserData.id!),
+                          //
+                          //       child: ElevatedButton(
+                          //           style: ElevatedButton.styleFrom(
+                          //             backgroundColor: Colors.green, // Couleur de fond du bouton
+                          //           ),
+                          //           onPressed: abonneTap
+                          //               ? () {}
+                          //               : () async {
+                          //             if (!isUserAbonne(
+                          //                 entreprise.usersSuiviId!,
+                          //                 authProvider
+                          //                     .loginUserData
+                          //                     .id!))
+                          //             {
+                          //               setState(() {
+                          //                 abonneTap = true;
+                          //               });
+                          //               await    postProvider.getEntreprise(entreprise.userId!).then((entreprises) {
+                          //                 if(entreprises.isNotEmpty){
+                          //                   entreprises.first.usersSuiviId!.add(authProvider.loginUserData!.id!);
+                          //                   entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
+                          //                   entreprise.usersSuiviId!.add(authProvider.loginUserData!.id!);
+                          //                   setState(() {
+                          //                     // abonneTap = true;
+                          //                   });
+                          //                   // entreprise=entreprises.first;
+                          //                   authProvider.updateEntreprise(entreprises.first);
+                          //                 }
+                          //               },);
+                          //
+                          //
+                          //
+                          //               if (entreprise .user!
+                          //                   .oneIgnalUserid !=
+                          //                   null &&
+                          //                   entreprise
+                          //                       .user!
+                          //                       .oneIgnalUserid!
+                          //                       .length >
+                          //                       5) {
+                          //                 await authProvider.sendNotification(
+                          //                     userIds: [
+                          //                       entreprise.user!
+                          //                           .oneIgnalUserid!
+                          //                     ],
+                          //                     smallImage:
+                          //                     "${authProvider.loginUserData.imageUrl!}",
+                          //                     send_user_id:
+                          //                     "${authProvider.loginUserData.id!}",
+                          //                     recever_user_id:
+                          //                     "${entreprise.user!.id!}",
+                          //                     message:
+                          //                     "🔔👀 @${authProvider.loginUserData.pseudo!} suit 👀 votre entreprise 🏢",
+                          //                     type_notif:
+                          //                     NotificationType
+                          //                         .ABONNER
+                          //                         .name,
+                          //                     post_id:
+                          //                     "",
+                          //                     post_type:
+                          //                     PostDataType
+                          //                         .IMAGE
+                          //                         .name,
+                          //                     chat_id: '');
+                          //                 NotificationData
+                          //                 notif =
+                          //                 NotificationData();
+                          //                 notif.id = firestore
+                          //                     .collection(
+                          //                     'Notifications')
+                          //                     .doc()
+                          //                     .id;
+                          //                 notif.titre =
+                          //                 "Nouveau Abonnement ✅";
+                          //                 notif.media_url =
+                          //                     authProvider
+                          //                         .loginUserData
+                          //                         .imageUrl;
+                          //                 notif.type =
+                          //                     NotificationType
+                          //                         .ABONNER
+                          //                         .name;
+                          //                 notif.description =
+                          //                 "🔔👀 @${authProvider.loginUserData.pseudo!} suit 👀 votre entreprise 🏢";
+                          //                 notif.users_id_view =
+                          //                 [];
+                          //                 notif.user_id =
+                          //                     authProvider
+                          //                         .loginUserData
+                          //                         .id;
+                          //                 notif.receiver_id =
+                          //                 entreprise.user!
+                          //                     .id!;
+                          //                 notif.post_id =
+                          //                 entreprise.id!;
+                          //                 notif.post_data_type =
+                          //                 PostDataType
+                          //                     .IMAGE
+                          //                     .name!;
+                          //                 notif.updatedAt =
+                          //                     DateTime.now()
+                          //                         .microsecondsSinceEpoch;
+                          //                 notif.createdAt =
+                          //                     DateTime.now()
+                          //                         .microsecondsSinceEpoch;
+                          //                 notif.status =
+                          //                     PostStatus
+                          //                         .VALIDE
+                          //                         .name;
+                          //
+                          //                 // users.add(pseudo.toJson());
+                          //
+                          //                 await firestore
+                          //                     .collection(
+                          //                     'Notifications')
+                          //                     .doc(notif.id)
+                          //                     .set(notif
+                          //                     .toJson());
+                          //               }
+                          //               SnackBar snackBar =
+                          //               SnackBar(
+                          //                 content: Text(
+                          //                   'suivi, Bravo ! Vous avez gagné 2 points.',
+                          //                   textAlign:
+                          //                   TextAlign
+                          //                       .center,
+                          //                   style: TextStyle(
+                          //                       color: Colors
+                          //                           .green),
+                          //                 ),
+                          //               );
+                          //               ScaffoldMessenger
+                          //                   .of(context)
+                          //                   .showSnackBar(
+                          //                   snackBar);
+                          //               setState(() {
+                          //                 abonneTap = false;
+                          //               });
+                          //             } else {
+                          //               SnackBar snackBar =
+                          //               SnackBar(
+                          //                 content: Text(
+                          //                   'une erreur',
+                          //                   textAlign:
+                          //                   TextAlign
+                          //                       .center,
+                          //                   style: TextStyle(
+                          //                       color: Colors
+                          //                           .red),
+                          //                 ),
+                          //               );
+                          //               ScaffoldMessenger
+                          //                   .of(context)
+                          //                   .showSnackBar(
+                          //                   snackBar);
+                          //               setState(() {
+                          //                 abonneTap = false;
+                          //               });
+                          //
+                          //               // setState(() {
+                          //               //   abonneTap = false;
+                          //               // });
+                          //             }
+                          //           },
+                          //           child: abonneTap
+                          //               ? Center(
+                          //             child:
+                          //             LoadingAnimationWidget
+                          //                 .flickr(
+                          //               size: 20,
+                          //               leftDotColor:
+                          //               Colors.green,
+                          //               rightDotColor:
+                          //               Colors.black,
+                          //             ),
+                          //           )
+                          //               : Text(
+                          //             "Suivre",
+                          //             style: TextStyle(
+                          //                 fontSize: 12,
+                          //                 fontWeight:
+                          //                 FontWeight.w900,
+                          //                 color: Colors.white),
+                          //           )),
+                          //     );
+                          //   }),
+                        ],
+                      ),
+                    ),
                     Stack(
                       children: [
                         SizedBox(

@@ -737,6 +737,55 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
+  void _showDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Mettez en ligne vos services'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 10,
+            children: [
+              AnimateIcon(
+                key: UniqueKey(),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+
+                },
+                iconType: IconType.continueAnimation,
+                height: 70,
+                width: 70,
+                color: Colors.green,
+                animateIcon: AnimateIcons.settings,
+              ),
+
+              Text(
+                  'Il est désormais temps de mettre en ligne vos services et savoir-faire sur Afrolook afin qu\'une personne proposant un job puisse vous contacter.'),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Aller à la liste de services',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green, // Couleur du bouton
+              ),
+              onPressed: () {
+                // Naviguer vers la page de liste de services
+                Navigator.pop(context);
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => UserServiceListPage()));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   Future<Chat> getChatsData(UserData amigo) async {
     // Définissez la requête
@@ -934,7 +983,7 @@ class _MyHomePageState extends State<MyHomePage>
                       child: Stack(
                         children: [
                           Container(
-                            height: 100,
+                            height: 110,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -987,6 +1036,24 @@ class _MyHomePageState extends State<MyHomePage>
                                         ),
                                         // SizedBox(width: w*0.01,),
                                         // Image.asset("assets/userEticket/${imageNumber}.png",height: 27,width: 27,),
+                                      ],
+                                    ),
+
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      spacing: 2,
+                                      children: [
+                                        Icon(Icons.group,size: 13,color: Colors.blue,),
+                                        Container(
+                                          alignment: Alignment.center,
+                                          child: TextCustomerPostDescription(
+                                            titre: "${user.usersParrainer!.length} parrainages  ",
+                                            fontSize: 11,
+                                            couleur: Colors.yellow,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+
                                       ],
                                     ),
                                   ],
@@ -1515,10 +1582,17 @@ class _MyHomePageState extends State<MyHomePage>
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
 
-                    leading: Icon(
-                      MaterialIcons.work,
+                    leading:           AnimateIcon(
+                      key: UniqueKey(),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+
+                      },
+                      iconType: IconType.continueAnimation,
+                      height: 30,
+                      width: 30,
                       color: Colors.green,
-                      size: 20,
+                      animateIcon: AnimateIcons.settings,
                     ),
                     title: TextCustomerMenu(
                       titre: "Services",
@@ -2202,13 +2276,34 @@ class _MyHomePageState extends State<MyHomePage>
       listChats = [];
     }
   }
+  Future<void> _checkAndShowDialog() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String lastShownDate = prefs.getString('lastShownDate') ?? '';
 
+    String todayDate = DateTime.now().toIso8601String().split('T')[0];
+
+    if (lastShownDate != todayDate) {
+      // Show the dialog
+      Timer(Duration(seconds: 20), () {
+        _showDialog();
+      });
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          child: ArticleBottomSheet(),
+        ),
+      );
+      // Update the last shown date
+      await prefs.setString('lastShownDate', todayDate);
+    }
+  }
   @override
   void initState() {
 
     hasShownDialogToday().then(
       (value) async {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
+        // Démarrer le timer pour afficher le dialog après 20 secondes
 
         if (value) {
           showDialog(
@@ -2286,13 +2381,8 @@ class _MyHomePageState extends State<MyHomePage>
             },
           );
         }
+        _checkAndShowDialog();
 
-        showDialog(
-          context: context,
-          builder: (context) => Dialog(
-            child: ArticleBottomSheet(),
-          ),
-        );
       },
     );
 
@@ -2752,6 +2842,8 @@ class _MyHomePageState extends State<MyHomePage>
                       } else {
                         List<UserData> list = snapshot.data!;
                         userList=list;
+                        userList.shuffle();
+
                         return SliverToBoxAdapter(
                           child: SizedBox(
                             height: height * 0.35,
@@ -2797,7 +2889,7 @@ class _MyHomePageState extends State<MyHomePage>
                         itemCount: listConstposts.length,
                         itemBuilder: animationItemBuilder(
                                 (index) {
-    if (index % 6 == 5) {
+    if (index % 7 == 6) {
       return SizedBox(
         height: height * 0.35,
         child: ListView.builder(
@@ -2809,7 +2901,7 @@ class _MyHomePageState extends State<MyHomePage>
         ),
       );
     }
-    if (index % 5 == 4) {
+    if (index % 8 == 7) {
       return FutureBuilder<List<ArticleData>>(
         future: categorieProduitProvider.getArticleBooster(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
@@ -2898,7 +2990,7 @@ class _MyHomePageState extends State<MyHomePage>
           } else if (snapshot.hasError) {
             return Icon(Icons.error_outline);
           } else {
-            return CircularProgressIndicator();
+            return Center(child: SizedBox(height: 50,width: 50, child: CircularProgressIndicator()));
           }
         },
       );

@@ -176,7 +176,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                   ..id = "idabn"
                                   ..entrepriseId = id
                                   ..description = "Abonnement gratuit pour entreprise"
-                                  ..nombre_pub = 5
+                                  ..nombre_pub = 10
                                   ..nombre_image_pub = 1
                                   ..nbr_jour_pub_afrolook = 0
                                   ..nbr_jour_pub_annonce_afrolook = 0
@@ -199,6 +199,8 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 entreprise.userId=authProvider.loginUserData.id!;
                                 entreprise.description=_descriptionController.text;
                                 entreprise.abonnements=[];
+                                entreprise.usersSuiviId=[];
+                                entreprise.produitsIds=[];
                                 // entreprise.abonnements!.add(abonnement);
 
                                 entreprise.abonnement=abonnement;
@@ -215,11 +217,12 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                       .getDownloadURL()
                                       .then((fileURL) {
                                     print("url media");
-                                    //  print(fileURL);
+                                     print(fileURL);
 
                                     entreprise.urlImage= fileURL;
                                   });
                                 });
+                                print(entreprise.toJson());
 
                                 await FirebaseFirestore.instance
                                     .collection('Entreprises')

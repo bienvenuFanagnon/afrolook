@@ -388,6 +388,23 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                 ),
               ),
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 2,
+              children: [
+                Icon(Icons.group,color: Colors.blue,),
+                Container(
+                  alignment: Alignment.center,
+                  child: TextCustomerPostDescription(
+                    titre: "${widget. user.usersParrainer!.length} parrainages  ",
+                    fontSize: 15,
+                    couleur: Colors.black,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+
+              ],
+            ),
 
 
             Row(

@@ -1084,6 +1084,52 @@ class PostProvider extends ChangeNotifier {
     }
 
   }
+  Future<List<UserServiceData>> getAllOnlyUserService(String userId) async {
+
+    List<UserServiceData>  listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('UserServices');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+          .where("disponible",isEqualTo: true)
+          .where("userId",isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(150)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      for (var article in listArticles) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        printVm(' UserServices user ${user.toJson()}');
+
+        article.user = user;
+      }
+      listArticles.shuffle();
+
+
+
+      print('list UserServices ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
+
 
   Future<bool> updateUserService(UserServiceData data,BuildContext context) async {
     try{

@@ -505,6 +505,7 @@ class UserData {
   List<int>? userGlobalTags;
   List<UserAbonnes>? userAbonnes = [];
   List<String>? userAbonnesIds = [];
+  List<String>? usersParrainer = [];
   List<String>? friendsIds = [];
   List<Friends>? friends = [];
 
@@ -577,6 +578,11 @@ class UserData {
       mesInvitationsEnvoyerId = <String>[];
       json['mesInvitationsEnvoyerId'].forEach((v) {
         mesInvitationsEnvoyerId!.add(v);
+      });
+    }  if (json['usersParrainer'] != null) {
+      usersParrainer = <String>[];
+      json['usersParrainer'].forEach((v) {
+        usersParrainer!.add(v);
       });
     }
     if (json['autreInvitationsEnvoyerId'] != null) {
@@ -987,6 +993,7 @@ class UserServiceData {
   String? imageCourverture;
   int? vues=0;
   int? like=0;
+  int? contactWhatsapp=0;
   int? partage=0;
   List<String>? usersViewId = [];
   List<String>? usersLikeId = [];

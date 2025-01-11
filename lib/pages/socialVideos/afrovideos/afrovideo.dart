@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
+import 'package:animated_icon/animated_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,6 +25,7 @@ import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../UserServices/listUserService.dart';
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../afroshop/marketPlace/modalView/ArticleBottomSheet.dart';
@@ -465,22 +467,83 @@ class _AfroVideoState extends State<AfroVideo> {
       return false;
     }
   }
+  void _showDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Mettez en ligne vos services'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 10,
+            children: [
+              AnimateIcon(
+                key: UniqueKey(),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
 
+                },
+                iconType: IconType.continueAnimation,
+                height: 70,
+                width: 70,
+                color: Colors.green,
+                animateIcon: AnimateIcons.settings,
+              ),
+
+              Text(
+                  'Il est désormais temps de mettre en ligne vos services et savoir-faire sur Afrolook afin qu\'une personne proposant un job puisse vous contacter.'),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Aller à la liste de services',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green, // Couleur du bouton
+              ),
+              onPressed: () {
+                // Naviguer vers la page de liste de services
+                Navigator.pop(context);
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => UserServiceListPage()));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _checkAndShowDialog() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String lastShownDate = prefs.getString('lastShownDateVideo') ?? '';
+
+    String todayDate = DateTime.now().toIso8601String().split('T')[0];
+
+    if (lastShownDate != todayDate) {
+      // Show the dialog
+      Timer(Duration(seconds: 20), () {
+        _showDialog();
+      });
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          child: ArticleBottomSheet(),
+        ),
+      );
+      // Update the last shown date
+      await prefs.setString('lastShownDateVideo', todayDate);
+    }
+  }
 
   @override
   void initState() {
     // TODO: implement initState
     hasShownDialogToday().then(
           (value) async {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-
-        showDialog(
-          context: context,
-          builder: (context) => Dialog(
-            child: ArticleBottomSheet(),
-          ),
-        );
+            _checkAndShowDialog();
       },
     );
     postProvider.getPostsVideos(limitePosts).listen((data) {
@@ -561,7 +624,7 @@ class _AfroVideoState extends State<AfroVideo> {
                               itemCount: datas.length,
 
                               itemBuilder: (context, index) {
-                                if (index % 5 == 4) {
+                                if (index % 8 == 7) {
                                   return FutureBuilder<List<ArticleData>>(
                                     future: categorieProduitProvider.getArticleBooster(),
                                     builder: (BuildContext context, AsyncSnapshot snapshot) {

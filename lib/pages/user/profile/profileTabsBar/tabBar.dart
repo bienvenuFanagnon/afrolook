@@ -2,6 +2,7 @@
 import 'dart:math';
 
 import 'package:afrotok/pages/user/profile/profileTabsBar/profileImageTab.dart';
+import 'package:afrotok/pages/user/profile/profileTabsBar/profileServices.dart';
 import 'package:afrotok/pages/user/profile/profileTabsBar/profileVideosTab.dart';
 import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -414,6 +415,14 @@ class _UserPublicationViewState extends State<UserPublicationView> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              Container(
+                child: TextCustomerMenu(
+                  titre: "Services",
+                  fontSize: SizeText.homeProfileTextSize,
+                  couleur: ConstColors.textColors,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
             tabBarProperties: TabBarProperties(
               height: 32.0,
@@ -425,6 +434,7 @@ class _UserPublicationViewState extends State<UserPublicationView> {
             views: [
               ProfileImageTab(),
               ProfileVideoTab(),
+              OnlyUserServiceListPage(),
             ],
             onChange: (index) => print(index),
           ),

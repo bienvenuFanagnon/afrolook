@@ -133,7 +133,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' article user ${user.toJson()}');
+        // printVm(' article user ${user.toJson()}');
 
         article.user = user;
       }

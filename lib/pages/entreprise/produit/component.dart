@@ -149,14 +149,14 @@ Widget entrepriseSimpleHeader(EntrepriseData entreprise,BuildContext context){
             ),
           ],
         ),
-        Visibility(
-          visible:!isUserAbonne(
-              entreprise.usersSuiviId!,
-              authProvider.loginUserData.id!),
 
-          child: StatefulBuilder(builder: (BuildContext context,
+
+        StatefulBuilder(builder: (BuildContext context,
               void Function(void Function()) setState) {
-            return Container(
+            return Visibility(
+            visible:!isUserAbonne(
+            entreprise.usersSuiviId!,
+            authProvider.loginUserData.id!),
 
               child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -343,7 +343,6 @@ Widget entrepriseSimpleHeader(EntrepriseData entreprise,BuildContext context){
                   )),
             );
           }),
-        ),
       ],
     ),
   );

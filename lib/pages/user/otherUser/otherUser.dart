@@ -181,6 +181,23 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 ],
               ),
               const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 2,
+                children: [
+                  Icon(Icons.group,color: Colors.blue,),
+                  Container(
+                    alignment: Alignment.center,
+                    child: TextCustomerPostDescription(
+                      titre: "${widget. otherUser.usersParrainer!.length} parrainages  ",
+                      fontSize: 15,
+                      couleur: Colors.black,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+
+                ],
+              ),
 
               NumbersWidget(followers: widget.otherUser!.abonnes!, taux: widget.otherUser!.popularite!*100, points: widget.otherUser.pointContribution!,),
               const SizedBox(height: 10),
