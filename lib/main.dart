@@ -333,6 +333,7 @@ class _MyAppState extends State<MyApp> {
 
 
         }
+
         else if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
           navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
 

@@ -1,5 +1,6 @@
 import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
@@ -8,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/postProvider.dart';
+import '../component/consoleWidget.dart';
 import '../component/showUserDetails.dart';
 import 'newUserService.dart';
 
@@ -22,15 +24,25 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   String searchQuery = '';
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   bool onSaveTap=false;
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  Future<void> launchWhatsApp(String phone,UserServiceData data) async {
+  Future<void> launchWhatsApp(String phone,UserServiceData data,String urlService) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}*";
+    String url = "whatsapp://send?phone=" + phone + "&text="
+        + "Bonjour *${data.user!.nom!}*,\n\n"
+        + "Je m'appelle *@${authProvider.loginUserData!.pseudo!.toUpperCase()}* et je suis sur Afrolook.\n"
+        + "Je vous contacte concernant votre service :\n\n"
+        + "*Titre* : *${data.titre!.toUpperCase()}*\n"
+        + "*Description* : *${data.description}*\n\n"
+        + "Je suis très intéressé(e) par ce que vous proposez et j'aimerais en savoir plus.\n"
+        + "Vous pouvez voir le service ici : ${urlService}\n\n"
+        + "Merci et à bientôt !";
+    // String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}* \n *Voir le service* ${urlService}";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
@@ -70,6 +82,20 @@ setState(() {
     }
   }
 
+  // Future<void> launchWhatsApp(String phone,ArticleData articleData,String urlArticle) async {
+  //   //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
+  //   // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+  //   String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n j'ai vu votre service sur *${"Afroshop".toUpperCase()}*\n à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Voir l'article* ${urlArticle}";
+  //   if (!await launchUrl(Uri.parse(url))) {
+  //     final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
+  //
+  //     // Afficher le SnackBar en bas de la page
+  //     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  //     throw Exception('Impossible d\'ouvrir WhatsApp');
+  //   }
+  // }
+
+
   @override
   Widget build(BuildContext context) {
 
@@ -78,7 +104,7 @@ setState(() {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Text('Trouver des services',style: TextStyle(color: Colors.white,fontSize: 18),),
+        title: Text('Trouver des services 🛠️ ou jobs 💼',style: TextStyle(color: Colors.white,fontSize: 18),),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -121,7 +147,7 @@ setState(() {
                 padding: const EdgeInsets.all(10.0),
                 child: TextFormField(
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une personne pour un job',
+                    hintText: 'Rechercher un service 🛠️ ou un job 💼',
                     hintStyle: TextStyle(color: Colors.black),
                     // border: InputBorder.,
                   ),
@@ -232,7 +258,98 @@ setState(() {
                                               child: TextButton(
                                                 onPressed: () async {
 
-                                                  launchWhatsApp(data .contact!, data!);
+                                                  await authProvider.createServiceLink(true,data).then((url) async {
+
+// printVm("data : ${data.toJson()}");
+
+                                                    setState(() {
+                                                      launchWhatsApp(data .contact!, data!,url);
+
+                                             
+
+                                                      // post.users_love_id!
+                                                      //     .add(authProvider!.loginUserData.id!);
+                                                      // love = post.loves!;
+                                                      // //loves.add(idUser);
+                                                    });
+                                                    CollectionReference userCollect =
+                                                    FirebaseFirestore.instance
+                                                        .collection('Users');
+                                                    // Get docs from collection reference
+                                                    QuerySnapshot querySnapshotUser =
+                                                    await userCollect
+                                                        .where("id",
+                                                        isEqualTo: data.user!.id!)
+                                                        .get();
+                                                    // Afficher la liste
+                                                    List<UserData> listUsers = querySnapshotUser
+                                                        .docs
+                                                        .map((doc) => UserData.fromJson(
+                                                        doc.data() as Map<String, dynamic>))
+                                                        .toList();
+                                                    if (listUsers.isNotEmpty) {
+                                                      // listUsers.first!.partage =
+                                                      //     listUsers.first!.partage! + 1;
+                                                      printVm("user trouver");
+                                                      if (data.user!.oneIgnalUserid != null &&
+                                                          data.user!.oneIgnalUserid!.length > 5) {
+
+
+                                                        NotificationData notif =
+                                                        NotificationData();
+                                                        notif.id = firestore
+                                                            .collection('Notifications')
+                                                            .doc()
+                                                            .id;
+                                                        notif.titre = " 🛠️Services && Jobs 💼";
+                                                        notif.media_url =
+                                                            authProvider.loginUserData.imageUrl;
+                                                        notif.type = NotificationType.SERVICE.name;
+                                                        notif.description =
+                                                        "@${authProvider.loginUserData.pseudo!} veut votre service ou jobs 💼";
+                                                        notif.users_id_view = [];
+                                                        notif.user_id =
+                                                            authProvider.loginUserData.id;
+                                                        notif.receiver_id = data.user!.id!;
+                                                        notif.post_id = data.id!;
+                                                        notif.post_data_type =
+                                                        PostDataType.IMAGE.name!;
+
+                                                        notif.updatedAt =
+                                                            DateTime.now().microsecondsSinceEpoch;
+                                                        notif.createdAt =
+                                                            DateTime.now().microsecondsSinceEpoch;
+                                                        notif.status = PostStatus.VALIDE.name;
+
+                                                        // users.add(pseudo.toJson());
+
+                                                        await firestore
+                                                            .collection('Notifications')
+                                                            .doc(notif.id)
+                                                            .set(notif.toJson());
+
+                                                        await authProvider.sendNotification(
+                                                            userIds: [data.user!.oneIgnalUserid!],
+                                                            smallImage:
+                                                            "${authProvider.loginUserData.imageUrl!}",
+                                                            send_user_id:
+                                                            "${authProvider.loginUserData.id!}",
+                                                            recever_user_id: "${data.user!.id!}",
+                                                            message:
+                                                            "📢 💼 @${authProvider.loginUserData.pseudo!} est intéressé(e) par votre service 💼",
+                                                            type_notif:
+                                                            NotificationType.SERVICE.name,
+                                                            post_id: "${data!.id!}",
+                                                            post_type: PostDataType.IMAGE.name,
+                                                            chat_id: '');
+                                                      }
+
+
+                                                    }
+
+                                                  },);
+
+
 
 
 
@@ -368,65 +485,6 @@ setState(() {
                                                       },);
                                                     }
                                                   },);
-                                                  // await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                                                  //   if (value.isNotEmpty) {
-                                                  //     value.first.jaime=value.first.jaime!+1;
-                                                  //     widget.article.jaime=value.first.jaime!+1;
-                                                  //     categorieProduitProvider.updateArticle(value.first,context).then((value) async {
-                                                  //       if (value) {
-                                                  //         await authProvider.sendNotification(
-                                                  //             userIds: [widget.article.user!.oneIgnalUserid!],
-                                                  //             smallImage:
-                                                  //             "${widget.article.images!.first}",
-                                                  //             send_user_id:
-                                                  //             "${authProvider.loginUserData.id!}",
-                                                  //             recever_user_id: "${widget.article.user!.id!}",
-                                                  //             message:
-                                                  //             "📢 🛒 Un afrolookeur aime ❤️ votre produit 🛒",
-                                                  //             type_notif:
-                                                  //             NotificationType.ARTICLE.name,
-                                                  //             post_id: "${widget.article!.id!}",
-                                                  //             post_type: PostDataType.IMAGE.name,
-                                                  //             chat_id: '');
-                                                  //
-                                                  //         NotificationData notif =
-                                                  //         NotificationData();
-                                                  //         notif.id = firestore
-                                                  //             .collection('Notifications')
-                                                  //             .doc()
-                                                  //             .id;
-                                                  //         notif.titre = " 🛒Boutique 🛒";
-                                                  //         notif.media_url =
-                                                  //         "${widget.article.images!.first}";
-                                                  //         notif.type = NotificationType.ARTICLE.name;
-                                                  //         notif.description =
-                                                  //         "Un afrolookeur aime ❤️ votre produit 🛒";
-                                                  //         notif.users_id_view = [];
-                                                  //         notif.user_id =
-                                                  //             authProvider.loginUserData.id;
-                                                  //         notif.receiver_id = widget.article.user!.id!;
-                                                  //         notif.post_id = widget.article.id!;
-                                                  //         notif.post_data_type =
-                                                  //         PostDataType.IMAGE.name!;
-                                                  //
-                                                  //         notif.updatedAt =
-                                                  //             DateTime.now().microsecondsSinceEpoch;
-                                                  //         notif.createdAt =
-                                                  //             DateTime.now().microsecondsSinceEpoch;
-                                                  //         notif.status = PostStatus.VALIDE.name;
-                                                  //
-                                                  //         // users.add(pseudo.toJson());
-                                                  //
-                                                  //         await firestore
-                                                  //             .collection('Notifications')
-                                                  //             .doc(notif.id)
-                                                  //             .set(notif.toJson());
-                                                  //
-                                                  //       }
-                                                  //     },);
-                                                  //
-                                                  //   }
-                                                  // },);
 
                                                   return Future.value(true);
 
@@ -468,136 +526,6 @@ setState(() {
                                               LikeButton(
                                                 onTap: (isLiked) async {
 
-                                                  // await authProvider.createArticleLink(true,widget.article).then((url) async {
-                                                  //   final box = context.findRenderObject() as RenderBox?;
-                                                  //
-                                                  //   await Share.shareUri(
-                                                  //     Uri.parse(
-                                                  //         '${url}'),
-                                                  //     sharePositionOrigin:
-                                                  //     box!.localToGlobal(Offset.zero) & box.size,
-                                                  //   );
-                                                  //
-                                                  //   // printVm("widget.article : ${widget.article.toJson()}");
-                                                  //   setState(() {
-                                                  //     widget.article.partage = widget.article.partage! + 1;
-                                                  //     // post.users_love_id!
-                                                  //     //     .add(authProvider!.loginUserData.id!);
-                                                  //     // love = post.loves!;
-                                                  //     // //loves.add(idUser);
-                                                  //   });
-                                                  //
-                                                  //   await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                                                  //     if (value.isNotEmpty) {
-                                                  //       value.first.partage=value.first.partage!+1;
-                                                  //       // widget.article.partage=value.first.partage!+1;
-                                                  //       categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                                                  //         if (value) {
-                                                  //           setState(() {
-                                                  //
-                                                  //           });
-                                                  //
-                                                  //         }
-                                                  //       },);
-                                                  //
-                                                  //     }
-                                                  //   },);
-                                                  //
-                                                  //   CollectionReference userCollect =
-                                                  //   FirebaseFirestore.instance
-                                                  //       .collection('Users');
-                                                  //   // Get docs from collection reference
-                                                  //   QuerySnapshot querySnapshotUser =
-                                                  //   await userCollect
-                                                  //       .where("id",
-                                                  //       isEqualTo: widget.article.user!.id!)
-                                                  //       .get();
-                                                  //   // Afficher la liste
-                                                  //   List<UserData> listUsers = querySnapshotUser
-                                                  //       .docs
-                                                  //       .map((doc) => UserData.fromJson(
-                                                  //       doc.data() as Map<String, dynamic>))
-                                                  //       .toList();
-                                                  //   if (listUsers.isNotEmpty) {
-                                                  //     // listUsers.first!.partage =
-                                                  //     //     listUsers.first!.partage! + 1;
-                                                  //     printVm("user trouver");
-                                                  //     if (widget.article.user!.oneIgnalUserid != null &&
-                                                  //         widget.article.user!.oneIgnalUserid!.length > 5) {
-                                                  //       await authProvider.sendNotification(
-                                                  //           userIds: [widget.article.user!.oneIgnalUserid!],
-                                                  //           smallImage:
-                                                  //           "${widget.article.images!.first}",
-                                                  //           send_user_id:
-                                                  //           "${authProvider.loginUserData.id!}",
-                                                  //           recever_user_id: "${widget.article.user!.id!}",
-                                                  //           message:
-                                                  //           "📢 🛒 Un afrolookeur a partagé votre produit 🛒",
-                                                  //           type_notif:
-                                                  //           NotificationType.ARTICLE.name,
-                                                  //           post_id: "${widget.article!.id!}",
-                                                  //           post_type: PostDataType.IMAGE.name,
-                                                  //           chat_id: '');
-                                                  //
-                                                  //       NotificationData notif =
-                                                  //       NotificationData();
-                                                  //       notif.id = firestore
-                                                  //           .collection('Notifications')
-                                                  //           .doc()
-                                                  //           .id;
-                                                  //       notif.titre = " 🛒Boutique 🛒";
-                                                  //       notif.media_url =
-                                                  //       "${widget.article.images!.first}"
-                                                  //       ;
-                                                  //       notif.type = NotificationType.ARTICLE.name;
-                                                  //       notif.description =
-                                                  //       "Un afrolookeur a partagé votre produit 🛒";
-                                                  //       notif.users_id_view = [];
-                                                  //       notif.user_id =
-                                                  //           authProvider.loginUserData.id;
-                                                  //       notif.receiver_id = widget.article.user!.id!;
-                                                  //       notif.post_id = widget.article.id!;
-                                                  //       notif.post_data_type =
-                                                  //       PostDataType.IMAGE.name!;
-                                                  //
-                                                  //       notif.updatedAt =
-                                                  //           DateTime.now().microsecondsSinceEpoch;
-                                                  //       notif.createdAt =
-                                                  //           DateTime.now().microsecondsSinceEpoch;
-                                                  //       notif.status = PostStatus.VALIDE.name;
-                                                  //
-                                                  //       // users.add(pseudo.toJson());
-                                                  //
-                                                  //       await firestore
-                                                  //           .collection('Notifications')
-                                                  //           .doc(notif.id)
-                                                  //           .set(notif.toJson());
-                                                  //     }
-                                                  //     // postProvider.updateVuePost(post, context);
-                                                  //
-                                                  //     //userProvider.updateUser(listUsers.first);
-                                                  //     // SnackBar snackBar = SnackBar(
-                                                  //     //   content: Text(
-                                                  //     //     '+2 points.  Voir le classement',
-                                                  //     //     textAlign: TextAlign.center,
-                                                  //     //     style: TextStyle(color: Colors.green),
-                                                  //     //   ),
-                                                  //     // );
-                                                  //     // ScaffoldMessenger.of(context)
-                                                  //     //     .showSnackBar(snackBar);
-                                                  //     // categorieProduitProvider.updateArticle(
-                                                  //     //     widget.article, context);
-                                                  //     // await authProvider.getAppData();
-                                                  //     // authProvider.appDefaultData.nbr_loves =
-                                                  //     //     authProvider.appDefaultData.nbr_loves! +
-                                                  //     //         2;
-                                                  //     // authProvider.updateAppData(
-                                                  //     //     authProvider.appDefaultData);
-                                                  //
-                                                  //
-                                                  //   }
-                                                  //
-                                                  // },);
 
 
                                                   return Future.value(true);
@@ -642,17 +570,6 @@ setState(() {
                                             ],
                                           ),
                                         ),
-                                        //
-                                        // Row(
-                                        //   children: [
-                                        //     IconText(icon: Icons.visibility, text: '${data.vues}'),
-                                        //     SizedBox(width: 8),
-                                        //     IconText(icon: Icons.thumb_up, text: '${data.like}'),
-                                        //     SizedBox(width: 8),
-                                        //     IconText(icon: Icons.share, text: '${data.partage}'),
-                                        //     SizedBox(width: 8),
-                                        //   ],
-                                        // ),
                                       ],
                                     ),
                                   ),
@@ -690,7 +607,7 @@ class IconText extends StatelessWidget {
       children: [
         Icon(icon, size: 16),
         SizedBox(width: 4),
-        Text(text),
+        // Text(text),
       ],
     );
   }

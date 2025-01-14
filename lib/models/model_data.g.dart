@@ -48,6 +48,9 @@ ArticleData _$ArticleDataFromJson(Map<String, dynamic> json) => ArticleData()
   ..prix = (json['prix'] as num?)?.toInt()
   ..popularite = (json['popularite'] as num?)?.toInt()
   ..booster = (json['booster'] as num?)?.toInt()
+  ..countryData = (json['countryData'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as String),
+  )
   ..vues = (json['vues'] as num?)?.toInt()
   ..disponible = json['disponible'] as bool?
   ..contact = (json['contact'] as num?)?.toInt()
@@ -71,6 +74,7 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'prix': instance.prix,
       'popularite': instance.popularite,
       'booster': instance.booster,
+      'countryData': instance.countryData,
       'vues': instance.vues,
       'disponible': instance.disponible,
       'contact': instance.contact,

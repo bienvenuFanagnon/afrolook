@@ -279,6 +279,9 @@ class UserPays {
   String? subAdministrativeArea;
   String? createdAt;
   String? updatedAt;
+  // "country": countryValue,
+  // "state": stateValue,
+  // "city": cityValue,
 
   UserPays(
       {this.id,
@@ -514,6 +517,8 @@ class UserData {
   List<String>? mesInvitationsEnvoyerId = [];
   List<String>? autreInvitationsEnvoyerId = [];
   DocumentReference? reference;
+  Map<String, String>? countryData;
+
   UserData(
       {this.reference,
       this.pseudo,
@@ -551,7 +556,9 @@ class UserData {
       this.apropos,
       this.password = "",
       this.codeParrain,
+      this.countryData,
       this.state = "OFFLINE",
+
       //this.genreId,
       this.role,
       this.userGlobalTags});
@@ -634,6 +641,9 @@ class UserData {
     // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
+    countryData = json['countryData'] != null
+        ? Map<String, String>.from(json['countryData'])
+        : {};
   }
 
   Map<String, dynamic> toJson() {
@@ -650,6 +660,9 @@ class UserData {
     data['mesPubs'] = this.mesPubs;
     data['code_parrainage'] = this.codeParrainage;
     data['code_parrain'] = this.codeParrain;
+    // autres données
+      data['countryData'] = this.countryData;
+
 
     if (this.userPays != null) {
       data['user_pays'] = this.userPays!.toJson();
@@ -734,7 +747,7 @@ class ArticleData {
   int? prix;
   int? popularite = 1;
   int? booster = 0;
-
+  Map<String, String>? countryData;
   int? vues;
   bool? disponible = true;
   int? contact;
@@ -1689,7 +1702,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB,ARTICLE }
+enum PostType { POST, PUB,ARTICLE,SERVICE }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
 
@@ -1709,6 +1722,7 @@ enum NotificationType {
   ABONNER,
   PARRAINAGE,
   ARTICLE,
+  SERVICE,
   USER
 }
 

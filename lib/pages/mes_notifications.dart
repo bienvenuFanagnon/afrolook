@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
+import 'UserServices/detailsUserService.dart';
+import 'UserServices/listUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'component/consoleWidget.dart';
 
@@ -173,6 +175,36 @@ class _MesNotificationState extends State<MesNotification> {
         },);
 
       }
+      else if (notification.type == NotificationType.SERVICE.name) {
+
+        await    postProvider.getUserServiceById(notification.post_id!).then((value) async {
+          if (value.isNotEmpty) {
+            UserServiceData  data=value.first;
+            data.vues=value.first.vues!+1;
+
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      UserServiceListPage(),
+                ));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
+
+            if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
+              data.usersViewId!.add(authProvider.loginUserData!.id!) ;
+
+            }
+            postProvider.updateUserService(data,context).then((value) {
+              if (value) {
+
+
+              }
+            },);
+          }
+        },);
+
+      }
+
       else if (notification.type == NotificationType.ACCEPTINVITATION.name) {
         setState(() {
           onTap=false;

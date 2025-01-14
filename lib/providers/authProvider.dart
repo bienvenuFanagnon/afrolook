@@ -2,7 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/models/chatmodels/message.dart';
-import 'package:deeplynks/services/deeplynks_service.dart';
+import 'package:deeplynks/deeplynks_service.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:http/http.dart' as http;
 
@@ -44,6 +44,15 @@ class UserAuthProvider extends ChangeNotifier {
 
   initializeData() {
     registerUser = UserData();
+  }
+
+  bool _isLoading = false;
+
+  bool get isLoading => _isLoading;
+
+  void setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
   }
   String? _linkMessage;
   bool _isCreatingLink = false;
@@ -188,6 +197,50 @@ class UserAuthProvider extends ChangeNotifier {
     return url.toString();
   }
 
+  Future<String> createServiceLink(bool short, UserServiceData article) async {
+    FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
+
+    final String DynamicLink = 'https://afrotok.page.link/post';
+    final String appLogo="https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
+
+    // Paramètres que vous souhaitez ajouter à l'URL du lien dynamique
+    final Uri link = Uri.parse(
+        'https://afrotok.page.link/post?postId=${article.id}&postImage=${article.imageCourverture==null?appLogo:article.imageCourverture}&postType=${PostType.SERVICE.name}'
+    );
+
+    final DynamicLinkParameters parameters = DynamicLinkParameters(
+      uriPrefix: 'https://afrotok.page.link',
+      link: link,
+      androidParameters: const AndroidParameters(
+        packageName: 'com.afrotok.afrotok',
+        minimumVersion: 0,
+      ),
+      iosParameters: const IOSParameters(
+        bundleId: 'com.afrotok.afrotok',
+        minimumVersion: '0',
+      ),
+      socialMetaTagParameters: SocialMetaTagParameters(
+        title: 'Marché Afrolook (Afroshop) 🛒',  // Titre de la publication
+        description: "${article.titre}:\n ${article.description}",  // Description de la publication
+        imageUrl: Uri.parse(article.imageCourverture==null?appLogo:article.imageCourverture!),  // URL de l'image du post
+      ),
+    );
+
+    Uri url;
+    if (short) {
+      final ShortDynamicLink shortLink =
+      await dynamicLinks.buildShortLink(parameters);
+      url = shortLink.shortUrl;
+    } else {
+      url = await dynamicLinks.buildLink(parameters);
+    }
+
+    _linkMessage = url.toString();
+    _isCreatingLink = false;
+
+    print('Generated Dynamic Link: $_linkMessage');
+    return url.toString();
+  }
 
 
   Future<void> createLink2(Post post) async {

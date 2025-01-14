@@ -32,6 +32,7 @@ import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../component/consoleWidget.dart';
 import '../../../entreprise/produit/component.dart';
+import '../../../user/conponent.dart';
 
 class ProduitDetail extends StatefulWidget {
   final ArticleData article;
@@ -79,7 +80,16 @@ class _ProduitDetailState extends State<ProduitDetail> {
   Future<void> launchWhatsApp(String phone,ArticleData articleData,String urlArticle) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
     // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n j'ai vu votre produit sur *${"Afroshop".toUpperCase()}*\n à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Voir l'article* ${urlArticle}";
+    String url = "whatsapp://send?phone=" + phone + "&text="
+        + "Bonjour *${articleData.user!.nom!}*,\n\n"
+        + "Je m'appelle *@${authProvider.loginUserData!.pseudo!.toUpperCase()}* et je suis sur Afrolook.\n"
+        + "J'ai vu votre produit sur *${"Afroshop d 'afrolook".toUpperCase()}* et je suis très intéressé(e).\n"
+        + "Voici les détails de l'article :\n\n"
+        + "*Titre* : *${articleData.titre!.toUpperCase()}*\n"
+        + "*Prix* : *${articleData.prix}* FCFA\n\n"
+        + "Vous pouvez voir l'article ici : ${urlArticle}\n\n"
+        + "Merci et à bientôt !";
+    // String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n j'ai vu votre produit sur *${"Afroshop".toUpperCase()}*\n à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Voir l'article* ${urlArticle}";
     if (!await launchUrl(Uri.parse(url))) {
       final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
 
@@ -692,6 +702,21 @@ class _ProduitDetailState extends State<ProduitDetail> {
               ),
               // SizedBox(height: 20,),
               Divider(height: 20,indent: 20,endIndent: 20,),
+              Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Center(
+                  child: Row(
+                    spacing: 5,
+                    children: [
+                      countryFlag(widget.article.user!.countryData!['countryCode']??"TG"!, size: 30),
+                      Text(widget.article.user!.countryData!['country']??"Togo"!,overflow: TextOverflow.ellipsis,style: TextStyle(fontWeight: FontWeight.w600,fontSize: 15),),
+
+                    ],
+                  ),
+                ),
+              ),
+
+              Divider(height: 20,indent: 20,endIndent: 20,),
 
               Padding(
                 padding: const EdgeInsets.only(left: 2.0,right: 2,top: 8),
@@ -1113,20 +1138,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 printVm("user trouver");
                 if (widget.article.user!.oneIgnalUserid != null &&
                     widget.article.user!.oneIgnalUserid!.length > 5) {
-                  await authProvider.sendNotification(
-                      userIds: [widget.article.user!.oneIgnalUserid!],
-                      smallImage:
-                      "${authProvider.loginUserData.imageUrl!}",
-                      send_user_id:
-                      "${authProvider.loginUserData.id!}",
-                      recever_user_id: "${widget.article.user!.id!}",
-                      message:
-                      "📢 🛒 @${authProvider.loginUserData.pseudo!} veut votre produit 🛒",
-                      type_notif:
-                      NotificationType.ARTICLE.name,
-                      post_id: "${widget.article!.id!}",
-                      post_type: PostDataType.IMAGE.name,
-                      chat_id: '');
+
 
                   NotificationData notif =
                   NotificationData();
@@ -1160,6 +1172,21 @@ class _ProduitDetailState extends State<ProduitDetail> {
                       .collection('Notifications')
                       .doc(notif.id)
                       .set(notif.toJson());
+
+                  await authProvider.sendNotification(
+                      userIds: [widget.article.user!.oneIgnalUserid!],
+                      smallImage:
+                      "${authProvider.loginUserData.imageUrl!}",
+                      send_user_id:
+                      "${authProvider.loginUserData.id!}",
+                      recever_user_id: "${widget.article.user!.id!}",
+                      message:
+                      "📢 🛒 @${authProvider.loginUserData.pseudo!} veut votre produit 🛒",
+                      type_notif:
+                      NotificationType.ARTICLE.name,
+                      post_id: "${widget.article!.id!}",
+                      post_type: PostDataType.IMAGE.name,
+                      chat_id: '');
                 }
                 // postProvider.updateVuePost(post, context);
 

@@ -63,7 +63,7 @@ class _StoriesFormState extends State<StoriesForm> {
                           child: CircleAvatar(
                             radius: 30,
                             backgroundImage: AssetImage(
-                                'assets/images/confident-african-businesswoman-smiling-closeup-portrait-jobs-career-campaign.jpg'),
+                                'assets/images/frame1.jpg'),
                           ),
                         ),
                         SizedBox(

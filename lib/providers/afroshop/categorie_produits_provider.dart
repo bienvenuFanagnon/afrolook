@@ -113,6 +113,53 @@ class CategorieProduitProvider extends ChangeNotifier {
 
   }
 
+  Future<List<ArticleData>> getAllArticlesByUser(String user_id) async {
+
+    listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('Articles');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+          .where("disponible",isEqualTo: true)
+          .where("user_id",isEqualTo: user_id)
+          .orderBy('createdAt', descending: true)
+          .limit(100)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      for (var article in listArticles) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        printVm(' article user ${user.toJson()}');
+
+        article.user = user;
+      }
+      listArticles.shuffle();
+
+
+
+      print('list article ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
+
+
   Future<List<ArticleData>> getArticleBooster() async {
 
     listArticles = [];
@@ -284,8 +331,8 @@ class CategorieProduitProvider extends ChangeNotifier {
       // Get docs from collection reference
       if (item_selected==-1) {
         querySnapshotUser = await userCollect
-            .where("disponible",isEqualTo: true)
             .where("user_id",isEqualTo: user_id)
+            .where("disponible",isEqualTo: true)
 
         // .where("titre",isNotEqualTo: currentUserId)
             .orderBy('createdAt', descending: true)
@@ -384,6 +431,51 @@ class CategorieProduitProvider extends ChangeNotifier {
     }
 
   }
+
+  Future<List<ArticleData>> getArticlesByCategorieByUser(String categorie_id,String user_id) async {
+
+    listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('Articles');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+          .where("disponible",isEqualTo: true)
+          .where("user_id",isEqualTo: user_id)
+
+          .where("categorie_id",isEqualTo: categorie_id)
+          .orderBy('createdAt', descending: true)
+      //   .limit(10)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+      print('list article ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+      for (var article in listArticles) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        printVm(' article user ${user.toJson()}');
+
+        article.user = user;
+      }
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
+
 
   Future<bool> updateArticle(ArticleData data,BuildContext context) async {
     try{

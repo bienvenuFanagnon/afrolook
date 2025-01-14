@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:afrotok/pages/entreprise/abonnement/Subscription.dart';
+import 'package:afrotok/pages/user/conponent.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:country_code_picker/country_code_picker.dart';
+import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +42,9 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
   String _adresse = '';
   String _type = '';
   bool onSaveTap =false;
+  String countryValue = "";
+  String stateValue = "";
+  String cityValue = "";
 
 
   Categorie categorieSelected = Categorie();
@@ -48,6 +54,18 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
   Provider.of<CategorieProduitProvider>(context, listen: false);
   final ImagePicker picker = ImagePicker();
   List<XFile>? _mediaFileList = [];
+
+  String selectedCountryCode = ""; // Code par défaut (Togo)
+  String selectedCountryName = ""; // Code par défaut (Togo)
+
+  // Liste des codes ISO des pays africains
+  final List<String> africanCountries = [
+    'TG', 'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM',
+    'CD', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW',
+    'CI', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ',
+    'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD',
+    'TZ', 'TG', 'TN', 'UG', 'ZM', 'ZW'
+  ];
   void pickImages() async {
     //List<ImageSource> selectedImages = await ImagePicker.pickMultipleImages();
     await picker.pickMultiImage(limit: 5).then((images) {
@@ -68,6 +86,7 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
       });
     });
   }
+
 
   Widget _buildDetailTile(IconData icon, String title, String value) {
     return Card(
@@ -497,6 +516,133 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
                   _description = value!;
                 },
               ),
+              SizedBox(height: 10,),
+              Row(
+                children: [
+                  Text(
+                    "Choisir le Pays :",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  CountryCodePicker(
+                    onChanged: (country) {
+                      setState(() {
+                        selectedCountryCode = country.code!;
+                        selectedCountryName = country.name!;
+                      });
+                    },
+                    initialSelection: 'TG', // Met Togo en tête
+                    favorite: ['TG'], // Togo en favori
+                    countryFilter: africanCountries, // Filtrer uniquement les pays africains
+                    showCountryOnly: false,
+                    showOnlyCountryWhenClosed: false,
+                    alignLeft: false,
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Row(
+                spacing: 5,
+                children: [
+                  Text(
+                    "Pays sélectionné :",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    "$selectedCountryName",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  countryFlag(selectedCountryCode, size: 20),
+                ],
+              ),
+              // CSCPickerPlus(
+              //
+              //   showStates: true,
+              //   showCities: false,
+              //   // countryStateLanguage: CountryStateLanguage.,
+              //   defaultCountry:  CscCountry.Togo,
+              //
+              //   flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
+              //   dropdownDecoration: BoxDecoration(
+              //     borderRadius: BorderRadius.all(Radius.circular(10)),
+              //     color: Colors.white,
+              //     border: Border.all(color: Colors.grey.shade300, width: 1),
+              //   ),
+              //   disabledDropdownDecoration: BoxDecoration(
+              //     borderRadius: BorderRadius.all(Radius.circular(10)),
+              //     color: Colors.grey.shade300,
+              //     border: Border.all(color: Colors.grey.shade300, width: 1),
+              //   ),
+              //   countrySearchPlaceholder: "Pays",
+              //   stateSearchPlaceholder: "Région",
+              //   citySearchPlaceholder: "Ville",
+              //   countryDropdownLabel: "Sélectionnez un pays",
+              //   stateDropdownLabel: "Sélectionnez une région",
+              //   cityDropdownLabel: "Sélectionnez une ville",
+              //   countryFilter: const [
+              //     // Pays africains
+              //     CscCountry.Togo,
+              //     CscCountry.Algeria, CscCountry.Angola, CscCountry.Benin, CscCountry.Botswana,
+              //     CscCountry.Burkina_Faso, CscCountry.Burundi, CscCountry.Cameroon, CscCountry.Chad,
+              //     CscCountry.Comoros, CscCountry.Congo, CscCountry.Djibouti, CscCountry.Egypt,
+              //     CscCountry.Eritrea, CscCountry.Ethiopia, CscCountry.Gabon, CscCountry.Gambia_The,
+              //     CscCountry.Ghana, CscCountry.Guinea, CscCountry.Kenya, CscCountry.Lesotho,
+              //     CscCountry.Liberia, CscCountry.Libya, CscCountry.Madagascar, CscCountry.Malawi,
+              //     CscCountry.Mali, CscCountry.Mauritania, CscCountry.Mauritius, CscCountry.Morocco,
+              //     CscCountry.Mozambique, CscCountry.Namibia, CscCountry.Niger, CscCountry.Nigeria,
+              //     CscCountry.Rwanda, CscCountry.Senegal, CscCountry.Seychelles, CscCountry.Sierra_Leone,
+              //     CscCountry.Somalia, CscCountry.South_Africa, CscCountry.Sudan, CscCountry.Tanzania,
+              //     CscCountry.Tunisia, CscCountry.Uganda, CscCountry.Zambia,
+              //     CscCountry.Zimbabwe,
+              //
+              //     // Pays européens
+              //     CscCountry.France, CscCountry.Germany, CscCountry.Italy, CscCountry.Spain,
+              //     CscCountry.Portugal, CscCountry.Netherlands_The, CscCountry.Belgium, CscCountry.Sweden,
+              //     CscCountry.Switzerland, CscCountry.Norway,
+              //
+              //     // Pays américains
+              //     CscCountry.United_States, CscCountry.Canada, CscCountry.Brazil, CscCountry.Argentina,
+              //     CscCountry.Mexico, CscCountry.Chile, CscCountry.Colombia, CscCountry.Peru,
+              //     CscCountry.Venezuela, CscCountry.Uruguay,
+              //
+              //     // Pays asiatiques
+              //     CscCountry.China, CscCountry.Japan, CscCountry.India,
+              //     CscCountry.Thailand, CscCountry.Vietnam, CscCountry.Malaysia, CscCountry.Singapore,
+              //     CscCountry.Philippines, CscCountry.Indonesia
+              //   ],                  selectedItemStyle: TextStyle(
+              //   color: Colors.black,
+              //   fontSize: 14,
+              // ),
+              //   dropdownHeadingStyle: TextStyle(
+              //     color: Colors.black,
+              //     fontSize: 17,
+              //     fontWeight: FontWeight.bold,
+              //   ),
+              //   dropdownItemStyle: TextStyle(
+              //     color: Colors.black,
+              //     fontSize: 14,
+              //   ),
+              //   dropdownDialogRadius: 10.0,
+              //   searchBarRadius: 10.0,
+              //   // currentCountry: "Togo",
+              //
+              //   onCountryChanged: (value) {
+              //
+              //     setState(() {
+              //       countryValue = value;
+              //     });
+              //   },
+              //   onStateChanged: (value) {
+              //     setState(() {
+              //       stateValue = value ?? "";
+              //     });
+              //   },
+              //   onCityChanged: (value) {
+              //     setState(() {
+              //       cityValue = value ?? "";
+              //     });
+              //   },
+              // ),
+
               TextFormField(
                 decoration: InputDecoration(labelText: 'Prix'),
                 keyboardType: TextInputType.number,
@@ -548,334 +694,350 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               _formKey.currentState!.save();
+              if (selectedCountryCode .isNotEmpty) {
+                // Les valeurs de pays et de ville ont été sélectionnées
+                print("Pays: $countryValue, Ville: $cityValue");
 
+                ArticleData annonceRegisterData =ArticleData();
+                annonceRegisterData.images=[];
+                annonceRegisterData.titre=_titre;
+                annonceRegisterData.dispo_annonce_afrolook=false;
+                annonceRegisterData.description=_description;
+                annonceRegisterData.phone=_numero;
+                annonceRegisterData.vues=0;
+                annonceRegisterData.popularite=1;
+                annonceRegisterData.jaime=0;
+                annonceRegisterData.contact=0;
+                annonceRegisterData.partage=0;
+                annonceRegisterData.prix=_prix;
+                annonceRegisterData.user_id=authProvider.loginUserData.id!;
+                annonceRegisterData.categorie_id=categorieSelected.id;
+                Map<String, String> countryData = {
+                  "country": selectedCountryName,
+                  "state": "",
+                  "city": '',
+                  "countryCode": selectedCountryCode!,
+                };
+                annonceRegisterData.countryData=countryData;
+                if(widget.entrepriseData.abonnement!=null){
+
+                  if(widget.entrepriseData.abonnement!.type==TypeAbonement.GRATUIT.name){
+                    if(widget.entrepriseData.abonnement!.nombre_pub!>0){
+
+
+                      //  print('sous categorie id: $sousCategorieSelected.id');
+
+
+
+
+                      if (_mediaFileList!.isNotEmpty) {
+                        setState(() {
+                          onSaveTap = true;
+                        });
+                        // List<ProduitImages> listImages = [];
+
+                        // print("produit final : ${produit.toJson()}");
+                        //print("user token : ${authProvider.loginData.token!}");
+                        annonceRegisterData.updatedAt =
+                            DateTime.now().microsecondsSinceEpoch;
+                        annonceRegisterData.createdAt =
+                            DateTime.now().microsecondsSinceEpoch;
+
+
+
+                        for (XFile _image in _mediaFileList!) {
+                          Reference storageReference =
+                          FirebaseStorage.instance.ref().child(
+                              'images_article/${Path.basename(File(_image.path).path)}');
+
+                          UploadTask uploadTask = storageReference
+                              .putFile(File(_image.path)!);
+                          await uploadTask.whenComplete(() async {
+                            await storageReference
+                                .getDownloadURL()
+                                .then((fileURL) {
+                              print("url media");
+                              //  print(fileURL);
+
+                              annonceRegisterData.images!.add(fileURL);
+                            });
+                          });
+                        }
+
+
+                        String postId = FirebaseFirestore.instance
+                            .collection('Articles')
+                            .doc()
+                            .id;
+                        annonceRegisterData.id=postId;
+
+
+/*
+                  setState(() {
+                    onTap=false;
+                  });
+
+ */
+                        await categorieProduitProvider.createArticle(
+                            annonceRegisterData
+                        )
+                            .then((value) async {
+                          if (value) {
+                            widget.entrepriseData.produitsIds!.add(postId);
+                            widget.entrepriseData.abonnement!.nombre_pub=widget.entrepriseData.abonnement!.nombre_pub!-1;
+                            authProvider.updateEntreprise( widget.entrepriseData);
+                            final snackBar = SnackBar(
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 1),
+                                content: Text("Article ajouté",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Colors.white),));
+
+                            // Afficher le SnackBar en bas de la page
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+
+                            authProvider
+                                .getAllUsersOneSignaUserId()
+                                .then(
+                                  (userIds) async {
+                                if (userIds.isNotEmpty) {
+                                  await authProvider.sendNotification(
+                                      userIds: [annonceRegisterData.user!.oneIgnalUserid!],
+                                      smallImage:
+                                      "${authProvider.loginUserData.imageUrl!}",
+                                      send_user_id:
+                                      "${authProvider.loginUserData.id!}",
+                                      recever_user_id: "${annonceRegisterData.user!.id!}",
+                                      message:
+                                      "📢 🛒 @${authProvider.loginUserData.pseudo!} a posté un nouveau produit ! Découvrez-le maintenant ! 🛒",
+                                      type_notif:
+                                      NotificationType.ARTICLE.name,
+                                      post_id: "${annonceRegisterData!.id!}",
+                                      post_type: PostDataType.IMAGE.name,
+                                      chat_id: '');
+                                }
+                              },
+                            );
+
+
+
+                            _titre='';
+                            _description='';
+                            _prix=0;
+                            _mediaFileList = [];
+                            _formKey.currentState!.reset();
+
+                            setState(() {
+                              onSaveTap = false;
+                            });
+                            //categorieProduitProvider.getCategories();
+/*
+                      Navigator.pushReplacementNamed(
+                          context, "/home");
+
+ */
+                          } else {
+                            final snackBar = SnackBar(
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 1),
+                                content: Text(
+                                  "Erreur d'ajout du produit",
+                                  style: TextStyle(
+                                      color: Colors.white),));
+                            // Afficher le SnackBar en bas de la page
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+                            setState(() {
+                              onSaveTap = false;
+                            });
+                          }
+                        });
+                      }
+                      else {
+                        setState(() {
+                          onSaveTap = false;
+                        });
+                        final snackBar = SnackBar(
+                            duration: Duration(seconds: 2),
+                            content: Text(
+                              "Veillez ajouter les images",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.red),));
+
+                        // Afficher le SnackBar en bas de la page
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            snackBar);
+                      }
+
+
+                    }else{
+                      _showBottomSheetCompterNonValide(width,false);
+                    }
+                  }else{
+                    if(!checkIfFinished(widget.entrepriseData.abonnement!.end!) ){
+
+
+
+
+                      //  print('sous categorie id: $sousCategorieSelected.id');
+
+
+
+
+                      if (_mediaFileList!.isNotEmpty) {
+                        setState(() {
+                          onSaveTap = true;
+                        });
+                        // List<ProduitImages> listImages = [];
+
+                        // print("produit final : ${produit.toJson()}");
+                        //print("user token : ${authProvider.loginData.token!}");
+                        annonceRegisterData.updatedAt =
+                            DateTime.now().microsecondsSinceEpoch;
+                        annonceRegisterData.createdAt =
+                            DateTime.now().microsecondsSinceEpoch;
+
+
+
+                        for (XFile _image in _mediaFileList!) {
+                          Reference storageReference =
+                          FirebaseStorage.instance.ref().child(
+                              'images_article/${Path.basename(File(_image.path).path)}');
+
+                          UploadTask uploadTask = storageReference
+                              .putFile(File(_image.path)!);
+                          await uploadTask.whenComplete(() async {
+                            await storageReference
+                                .getDownloadURL()
+                                .then((fileURL) {
+                              print("url media");
+                              //  print(fileURL);
+
+                              annonceRegisterData.images!.add(fileURL);
+                            });
+                          });
+                        }
+
+
+                        String postId = FirebaseFirestore.instance
+                            .collection('Articles')
+                            .doc()
+                            .id;
+                        annonceRegisterData.id=postId;
+
+
+/*
+                  setState(() {
+                    onTap=false;
+                  });
+
+ */
+                        await categorieProduitProvider.createArticle(
+                            annonceRegisterData
+                        )
+                            .then((value) {
+                          if (value) {
+                            widget.entrepriseData.produitsIds!.add(postId);
+                            widget.entrepriseData.abonnement!.nombre_pub=widget.entrepriseData.abonnement!.nombre_pub!-1;
+                            authProvider.updateEntreprise( widget.entrepriseData);
+                            final snackBar = SnackBar(
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 1),
+                                content: Text("Article ajouté",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Colors.white),));
+
+                            // Afficher le SnackBar en bas de la page
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+
+
+
+                            _titre='';
+                            _description='';
+                            _prix=0;
+                            _mediaFileList = [];
+                            _formKey.currentState!.reset();
+
+                            setState(() {
+                              onSaveTap = false;
+                            });
+                            //categorieProduitProvider.getCategories();
+/*
+                      Navigator.pushReplacementNamed(
+                          context, "/home");
+
+ */
+                          } else {
+                            final snackBar = SnackBar(
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 1),
+                                content: Text(
+                                  "Erreur d'ajout du produit",
+                                  style: TextStyle(
+                                      color: Colors.white),));
+                            // Afficher le SnackBar en bas de la page
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+                            setState(() {
+                              onSaveTap = false;
+                            });
+                          }
+                        });
+                      }
+                      else {
+                        setState(() {
+                          onSaveTap = false;
+                        });
+                        final snackBar = SnackBar(
+                            duration: Duration(seconds: 2),
+                            content: Text(
+                              "Veillez ajouter les images",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.red),));
+
+                        // Afficher le SnackBar en bas de la page
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            snackBar);
+                      }
+
+
+                    }else{
+                      _showBottomSheetCompterNonValide(width,true);
+
+                    }
+                  }
+
+
+
+                }
+
+              } else {
+              // Afficher un message d'erreur
+              print("Veuillez sélectionner un pays");
+              final snackBar = SnackBar(
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 1),
+                  content: Text(
+                    "Veuillez sélectionner un pays",
+                    style: TextStyle(
+                        color: Colors.white),));
+              // Afficher le SnackBar en bas de la page
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(snackBar);
+              setState(() {
+                onSaveTap = false;
+              });
+            }
               print('Titre: $_titre');
               print('Description: $_description');
               print('Prix: $_prix');
               print('Phone:');
               print('Phone: $_numero');
 
-                  if(widget.entrepriseData.abonnement!=null){
-
-    if(widget.entrepriseData.abonnement!.type==TypeAbonement.GRATUIT.name){
-      if(widget.entrepriseData.abonnement!.nombre_pub!>0){
-        ArticleData annonceRegisterData =ArticleData();
-        annonceRegisterData.images=[];
-        annonceRegisterData.titre=_titre;
-        annonceRegisterData.dispo_annonce_afrolook=false;
-        annonceRegisterData.description=_description;
-        annonceRegisterData.phone=_numero;
-        annonceRegisterData.vues=0;
-        annonceRegisterData.popularite=1;
-        annonceRegisterData.jaime=0;
-        annonceRegisterData.contact=0;
-        annonceRegisterData.partage=0;
-        annonceRegisterData.prix=_prix;
-        annonceRegisterData.user_id=authProvider.loginUserData.id!;
-        annonceRegisterData.categorie_id=categorieSelected.id;
-
-
-        //  print('sous categorie id: $sousCategorieSelected.id');
-
-
-
-
-        if (_mediaFileList!.isNotEmpty) {
-          setState(() {
-            onSaveTap = true;
-          });
-          // List<ProduitImages> listImages = [];
-
-          // print("produit final : ${produit.toJson()}");
-          //print("user token : ${authProvider.loginData.token!}");
-          annonceRegisterData.updatedAt =
-              DateTime.now().microsecondsSinceEpoch;
-          annonceRegisterData.createdAt =
-              DateTime.now().microsecondsSinceEpoch;
-
-
-
-          for (XFile _image in _mediaFileList!) {
-            Reference storageReference =
-            FirebaseStorage.instance.ref().child(
-                'images_article/${Path.basename(File(_image.path).path)}');
-
-            UploadTask uploadTask = storageReference
-                .putFile(File(_image.path)!);
-            await uploadTask.whenComplete(() async {
-              await storageReference
-                  .getDownloadURL()
-                  .then((fileURL) {
-                print("url media");
-                //  print(fileURL);
-
-                annonceRegisterData.images!.add(fileURL);
-              });
-            });
-          }
-
-
-          String postId = FirebaseFirestore.instance
-              .collection('Articles')
-              .doc()
-              .id;
-          annonceRegisterData.id=postId;
-
-
-/*
-                  setState(() {
-                    onTap=false;
-                  });
-
- */
-          await categorieProduitProvider.createArticle(
-              annonceRegisterData
-          )
-              .then((value) async {
-            if (value) {
-              widget.entrepriseData.produitsIds!.add(postId);
-              widget.entrepriseData.abonnement!.nombre_pub=widget.entrepriseData.abonnement!.nombre_pub!-1;
-              authProvider.updateEntreprise( widget.entrepriseData);
-              final snackBar = SnackBar(
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 1),
-                  content: Text("Article ajouté",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white),));
-
-              // Afficher le SnackBar en bas de la page
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(snackBar);
-
-               authProvider
-                  .getAllUsersOneSignaUserId()
-                  .then(
-                    (userIds) async {
-                  if (userIds.isNotEmpty) {
-                    await authProvider.sendNotification(
-                        userIds: [annonceRegisterData.user!.oneIgnalUserid!],
-                        smallImage:
-                        "${authProvider.loginUserData.imageUrl!}",
-                        send_user_id:
-                        "${authProvider.loginUserData.id!}",
-                        recever_user_id: "${annonceRegisterData.user!.id!}",
-                        message:
-                        "📢 🛒 @${authProvider.loginUserData.pseudo!} a posté un nouveau produit ! Découvrez-le maintenant ! 🛒",
-                        type_notif:
-                        NotificationType.ARTICLE.name,
-                        post_id: "${annonceRegisterData!.id!}",
-                        post_type: PostDataType.IMAGE.name,
-                        chat_id: '');
-                  }
-                },
-              );
-
-
-
-              _titre='';
-              _description='';
-              _prix=0;
-              _mediaFileList = [];
-              _formKey.currentState!.reset();
-
-              setState(() {
-                onSaveTap = false;
-              });
-              //categorieProduitProvider.getCategories();
-/*
-                      Navigator.pushReplacementNamed(
-                          context, "/home");
-
- */
-            } else {
-              final snackBar = SnackBar(
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 1),
-                  content: Text(
-                    "Erreur d'ajout du produit",
-                    style: TextStyle(
-                        color: Colors.white),));
-              // Afficher le SnackBar en bas de la page
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(snackBar);
-              setState(() {
-                onSaveTap = false;
-              });
-            }
-          });
-        }
-        else {
-          setState(() {
-            onSaveTap = false;
-          });
-          final snackBar = SnackBar(
-              duration: Duration(seconds: 2),
-              content: Text(
-                "Veillez ajouter les images",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),));
-
-          // Afficher le SnackBar en bas de la page
-          ScaffoldMessenger.of(context).showSnackBar(
-              snackBar);
-        }
-
-
-      }else{
-        _showBottomSheetCompterNonValide(width,false);
-      }
-      }else{
-      if(!checkIfFinished(widget.entrepriseData.abonnement!.end!) ){
-        ArticleData annonceRegisterData =ArticleData();
-        annonceRegisterData.images=[];
-        annonceRegisterData.titre=_titre;
-        annonceRegisterData.dispo_annonce_afrolook=false;
-        annonceRegisterData.description=_description;
-        annonceRegisterData.phone=_numero;
-        annonceRegisterData.vues=0;
-        annonceRegisterData.popularite=1;
-        annonceRegisterData.jaime=0;
-        annonceRegisterData.contact=0;
-        annonceRegisterData.partage=0;
-        annonceRegisterData.prix=_prix;
-        annonceRegisterData.user_id=authProvider.loginUserData.id!;
-        annonceRegisterData.categorie_id=categorieSelected.id;
-
-
-        //  print('sous categorie id: $sousCategorieSelected.id');
-
-
-
-
-        if (_mediaFileList!.isNotEmpty) {
-          setState(() {
-            onSaveTap = true;
-          });
-          // List<ProduitImages> listImages = [];
-
-          // print("produit final : ${produit.toJson()}");
-          //print("user token : ${authProvider.loginData.token!}");
-          annonceRegisterData.updatedAt =
-              DateTime.now().microsecondsSinceEpoch;
-          annonceRegisterData.createdAt =
-              DateTime.now().microsecondsSinceEpoch;
-
-
-
-          for (XFile _image in _mediaFileList!) {
-            Reference storageReference =
-            FirebaseStorage.instance.ref().child(
-                'images_article/${Path.basename(File(_image.path).path)}');
-
-            UploadTask uploadTask = storageReference
-                .putFile(File(_image.path)!);
-            await uploadTask.whenComplete(() async {
-              await storageReference
-                  .getDownloadURL()
-                  .then((fileURL) {
-                print("url media");
-                //  print(fileURL);
-
-                annonceRegisterData.images!.add(fileURL);
-              });
-            });
-          }
-
-
-          String postId = FirebaseFirestore.instance
-              .collection('Articles')
-              .doc()
-              .id;
-          annonceRegisterData.id=postId;
-
-
-/*
-                  setState(() {
-                    onTap=false;
-                  });
-
- */
-          await categorieProduitProvider.createArticle(
-              annonceRegisterData
-          )
-              .then((value) {
-            if (value) {
-              widget.entrepriseData.produitsIds!.add(postId);
-              widget.entrepriseData.abonnement!.nombre_pub=widget.entrepriseData.abonnement!.nombre_pub!-1;
-              authProvider.updateEntreprise( widget.entrepriseData);
-              final snackBar = SnackBar(
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 1),
-                  content: Text("Article ajouté",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white),));
-
-              // Afficher le SnackBar en bas de la page
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(snackBar);
-
-
-
-              _titre='';
-              _description='';
-              _prix=0;
-              _mediaFileList = [];
-              _formKey.currentState!.reset();
-
-              setState(() {
-                onSaveTap = false;
-              });
-              //categorieProduitProvider.getCategories();
-/*
-                      Navigator.pushReplacementNamed(
-                          context, "/home");
-
- */
-            } else {
-              final snackBar = SnackBar(
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 1),
-                  content: Text(
-                    "Erreur d'ajout du produit",
-                    style: TextStyle(
-                        color: Colors.white),));
-              // Afficher le SnackBar en bas de la page
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(snackBar);
-              setState(() {
-                onSaveTap = false;
-              });
-            }
-          });
-        }
-        else {
-          setState(() {
-            onSaveTap = false;
-          });
-          final snackBar = SnackBar(
-              duration: Duration(seconds: 2),
-              content: Text(
-                "Veillez ajouter les images",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),));
-
-          // Afficher le SnackBar en bas de la page
-          ScaffoldMessenger.of(context).showSnackBar(
-              snackBar);
-        }
-
-
-      }else{
-        _showBottomSheetCompterNonValide(width,true);
-
-      }
-    }
-
-
-
-                }
                // Navigator.push(context, MaterialPageRoute(builder: (context) => AddAnnonceStep4(annonceRegisterData: annonceRegisterData),));
 
 

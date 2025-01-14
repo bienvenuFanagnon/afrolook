@@ -7,6 +7,7 @@ import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:afrotok/pages/ia/gemini/geminibot.dart';
 import 'package:auto_animated/auto_animated.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -31,6 +32,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
 import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
@@ -48,6 +50,8 @@ import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../user/conponent.dart';
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -64,6 +68,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool dejaVuPub = true;
   bool contact_whatsapp = false;
   bool contact_afrolook = false;
+  late int app_version_code=33;
 
   GlobalKey btnKey = GlobalKey();
   GlobalKey btnKey2 = GlobalKey();
@@ -84,6 +89,8 @@ class _MyHomePageState extends State<MyHomePage>
       Provider.of<PostProvider>(context, listen: false);
   TextEditingController commentController = TextEditingController();
   List<Post> listConstposts=[];
+  List<ArticleData> articles=[];
+  List<UserServiceData> userServices=[];
 
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
@@ -984,6 +991,7 @@ class _MyHomePageState extends State<MyHomePage>
                         children: [
                           Container(
                             height: 110,
+                            // width: w,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -1007,57 +1015,67 @@ class _MyHomePageState extends State<MyHomePage>
                             // right: 0.0,
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: SizedBox(
-                                //width: 70,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      alignment: Alignment.center,
-                                      child: TextCustomerPostDescription(
-                                        titre: '@${user.pseudo!.startsWith('@') ? user.pseudo!.replaceFirst('@', '') : user.pseudo!}',
-                                        fontSize: 17,
-                                        couleur: Colors.white,
-                                        fontWeight: FontWeight.w900,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              
+                                    children: [
+                                      Container(
+                                        alignment: Alignment.center,
+                                        child: TextCustomerPostDescription(
+                                          titre: '@${user.pseudo!.startsWith('@') ? user.pseudo!.replaceFirst('@', '') : user.pseudo!}',
+                                          fontSize: 17,
+                                          couleur: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                        ),
                                       ),
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          alignment: Alignment.center,
-                                          child: TextCustomerPostDescription(
-                                            titre: "${user.abonnes} Abonnés  ",
-                                            fontSize: 12,
-                                            couleur: Colors.yellow,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        // SizedBox(width: w*0.01,),
-                                        // Image.asset("assets/userEticket/${imageNumber}.png",height: 27,width: 27,),
-                                      ],
-                                    ),
+                                      Row(
+                                        children: [
+                                          Column(
+                                            children: [
+                                              Container(
+                                                alignment: Alignment.center,
+                                                child: TextCustomerPostDescription(
+                                                  titre: "${user.abonnes} Abonnés  ",
+                                                  fontSize: 11,
+                                                  couleur: Colors.yellow,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                spacing: 2,
+                                                children: [
+                                                  Icon(Icons.group,size: 13,color: Colors.blue,),
+                                                  Container(
+                                                    alignment: Alignment.center,
+                                                    child: TextCustomerPostDescription(
+                                                      titre: "${user.usersParrainer!.length} parrainages  ",
+                                                      fontSize: 11,
+                                                      couleur: Colors.yellow,
+                                                      fontWeight: FontWeight.w900,
+                                                    ),
+                                                  ),
 
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      spacing: 2,
-                                      children: [
-                                        Icon(Icons.group,size: 13,color: Colors.blue,),
-                                        Container(
-                                          alignment: Alignment.center,
-                                          child: TextCustomerPostDescription(
-                                            titre: "${user.usersParrainer!.length} parrainages  ",
-                                            fontSize: 11,
-                                            couleur: Colors.yellow,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
+                                                ],
+                                              ),
 
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                            ],
+                                          ),
+
+                                          countryFlag(user.countryData!['countryCode']??"TG"!, size: 20),
+
+                                        ],
+                                      ),
+
+                                    ],
+                                  ),
+                                  SizedBox(width: 10,),
+
+                              
+                                ],
                               ),
                             ),
                           ),
@@ -1595,7 +1613,7 @@ class _MyHomePageState extends State<MyHomePage>
                       animateIcon: AnimateIcons.settings,
                     ),
                     title: TextCustomerMenu(
-                      titre: "Services",
+                      titre: "🛠️Services & Jobs 💼",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: ConstColors.textColors,
                       fontWeight: FontWeight.w600,
@@ -1852,7 +1870,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.0 (24)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.4 (29)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2297,199 +2315,174 @@ class _MyHomePageState extends State<MyHomePage>
       await prefs.setString('lastShownDate', todayDate);
     }
   }
+
   @override
   void initState() {
+    super.initState();
 
-    hasShownDialogToday().then(
-      (value) async {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        // Démarrer le timer pour afficher le dialog après 20 secondes
+    hasShownDialogToday().then((value) async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      categorieProduitProvider.getArticleBooster().then((value) {
+        articles = value;
+        setState(() {});
+      });
 
-        if (value) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Nouvelle offre sur Afrolook'),
-                content: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          "assets/images/bonus_afrolook.jpg",
-                          fit: BoxFit.cover,
-                        ),
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Icon(FontAwesome.money, size: 50, color: Colors.green),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Text(
-                          'Vous avez la possibilité de',
-                        ),
-                        Text('gagner 50 PubliCash',
-                            style: TextStyle(color: Colors.green)),
-                        Text(
-                          'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage qui se situe dans votre profil. Vous pouvez vérifier votre solde dans la page monétisation.',
-                          textAlign: TextAlign.center,
-                        ),
-                        Divider(),
-                        Text('Nouvelle fonctionnalité',
-                            style: TextStyle(color: Colors.green)),
-                        Text(
-                          "Afrolook a intégré plusieurs nouvelles fonctionnalités :",
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          "- Ajout de produits en ligne après la création d'une entreprise",
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          "- Mise en ligne de vos services, métiers, savoir-faire",
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          "- Invitez d'autres utilisateurs pour gagner des PubliCash",
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          "- Boostez vos produits pour toucher plus de clients",
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+      postProvider.getAllUserServiceHome().then((value) {
+        userServices = value;
+        userServices.shuffle();
+        setState(() {});
+      });
+
+      if (value && mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Nouvelle offre sur Afrolook'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
+                    SizedBox(height: 5),
+                    Icon(FontAwesome.money, size: 50, color: Colors.green),
+                    SizedBox(height: 10),
+                    Text('Vous avez la possibilité de'),
+                    Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
+                    Text(
+                      'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
+                      textAlign: TextAlign.center,
                     ),
-                  ),
+                  ],
                 ),
-                actions: <Widget>[
-                  TextButton(
-                    child: Text('OK'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Update the last shown date
-                      prefs.setString(
-                          'lastShownDateKey', DateTime.now().toString());
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        }
-        _checkAndShowDialog();
+              ),
+              actions: [
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    prefs.setString('lastShownDateKey', DateTime.now().toString());
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+      _checkAndShowDialog();
+    });
 
-      },
-    );
-
-
-    authProvider.getToken().then(
-      (token) async {
-        printVm("token: ${token}");
-        // Vous pouvez ajouter des données dans le StreamController à partir d'une source
-        postProvider.getPostsImages2(limitePosts).listen((data) {
+    authProvider.getToken().then((token) async {
+      printVm("token: ${token}");
+      postProvider.getPostsImages2(limitePosts).listen((data) {
+        if (!_streamController.isClosed) {
           _streamController.add(data);
-        });
-        // postProvider.getPostsVideos().then((value) {
-        //
-        // },);
+        }
+      });
 
-
-        if (token == null || token == '') {
-          printVm("token: existe pas");
-          Navigator.pushNamed(context, '/welcome');
-        } else {}
-      },
-    );
+      if (token == null || token == '') {
+        printVm("token: existe pas");
+        Navigator.pushNamed(context, '/welcome');
+      }
+    });
 
     WidgetsBinding.instance.addObserver(this);
 
-    // TODO: implement initState
-    super.initState();
-    dejaVuPub = true;
+    SystemChannels.lifecycle.setMessageHandler((message) {
+      printVm('stategb:  --- ${message}');
 
-    // authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-
-    //abonneTap =false;
-    //userProvider.getUsers(authProvider.loginUserData!.id!);
-    SystemChannels.lifecycle.setMessageHandler(
-      (message) {
-        printVm('stategb:  --- ${message}');
-
-        if (message!.contains('resume')) {
-          //online
-          printVm('state en ligne:  --- ${message}');
+      if (message!.contains('resume')) {
+        printVm('state en ligne:  --- ${message}');
+        if (authProvider.loginUserData != null) {
           authProvider.loginUserData!.isConnected = true;
-          userProvider.changeState(
-              user: authProvider.loginUserData, state: UserState.ONLINE.name);
-        } else {
-          printVm('state hors ligne :  --- ${message}');
-          authProvider.loginUserData!.isConnected = false;
-          userProvider.changeState(
-              user: authProvider.loginUserData, state: UserState.OFFLINE.name);
-          //offline
-          getAndUpdateChatsData();
+          userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
         }
-        return Future.value(message);
-      },
-    );
-    // authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+      } else {
+        printVm('state hors ligne :  --- ${message}');
+        if (authProvider.loginUserData != null) {
+          authProvider.loginUserData!.isConnected = false;
+          userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE.name);
+        }
+        getAndUpdateChatsData();
+      }
+      return Future.value(message);
+    });
   }
 
   @override
   void dispose() {
-    // Unregister your State class as a binding observer
     _streamController.close();
-
     WidgetsBinding.instance.removeObserver(this);
-
     super.dispose();
   }
 
-  // listen to the app lifecycle state changes
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
     switch (state) {
       case AppLifecycleState.detached:
-        _onDetached();
+        // _onDetached();
+        _onPaused();
         break;
       case AppLifecycleState.resumed:
-        _onResumed();
+        _onPaused();
+        // _onResumed();
         break;
       case AppLifecycleState.inactive:
-        _onInactive();
+        // _onInactive();
+        _onPaused();
         break;
-      // case AppLifecycleState.hidden:
-      //   _onHidden();
-      //   break;
       case AppLifecycleState.paused:
         _onPaused();
-      case AppLifecycleState.hidden:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        break;
+      default:
+        if (authProvider.loginUserData != null) {
+          authProvider.loginUserData!.isConnected = true;
+          userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE .name);
+        }
+        break;
     }
   }
 
-  void _onDetached() => printVm('detached');
 
-  void _onResumed() => printVm('resumed');
+  void _onDetached() {
+    // Logique pour l'état detached
+    if (authProvider.loginUserData != null) {
+      authProvider.loginUserData!.isConnected = false;
+      userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE .name);
+    }
+  }
 
-  void _onInactive() => printVm('inactive');
+  void _onResumed() {
+    // Logique pour l'état resumed
+    if (authProvider.loginUserData != null) {
+      authProvider.loginUserData!.isConnected = true;
+      userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
+    }
+  }
 
-  void _onHidden() => printVm('hidden');
+  void _onInactive() {
+    // Logique pour l'état inactive
+    if (authProvider.loginUserData != null) {
+      authProvider.loginUserData!.isConnected = false;
+      userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE .name);
+    }
+  }
 
-  void _onPaused() => printVm('paused');
+  void _onPaused() {
+    if (authProvider.loginUserData != null) {
+      authProvider.loginUserData!.isConnected = false;
+      userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE .name);
+    }  }
+
+
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
+    // app_version_code=32;
     _color=  _randomColor.randomColor(
         colorHue: ColorHue.multiple(colorHues: [
           ColorHue.red,
@@ -2762,34 +2755,30 @@ class _MyHomePageState extends State<MyHomePage>
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: SliverToBoxAdapter(
                     child: Row(
+
                       children: [
-                        TextButton(
-                            onPressed: () {},
-                            child: Text("")),
-                        // TextButton(
-                        //     onPressed: () async {
-                        //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AddListAmis(),));
-                        //       await userProvider
-                        //           .getProfileUsers(
-                        //           authProvider
-                        //               .loginUserData!
-                        //               .id!,
-                        //           context,
-                        //           limiteUsers)
-                        //           .then(
-                        //             (value) {
-                        //           Navigator.push(
-                        //               context,
-                        //               MaterialPageRoute(
-                        //                 builder:
-                        //                     (context) =>
-                        //                     UserCards(),
-                        //               ));
-                        //         },
-                        //       );
-                        //     },
-                        //     child: Text(
-                        //         "Voir autres profiles")),
+                        app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+    authProvider.getAppData().then((value) {
+
+      _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+
+    });
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+
+                              Text('Faire la mise à jour',
+                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                            ],
+                          ),
+
+                        ),
+
 
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -2883,11 +2872,13 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                       return LiveSliverList(
+
                         controller: _scrollController,
-                        showItemInterval: Duration(milliseconds: 250),
-                        showItemDuration: Duration(milliseconds: 300),
+                        showItemInterval: Duration(milliseconds: 10),
+                        showItemDuration: Duration(milliseconds: 30),
                         itemCount: listConstposts.length,
                         itemBuilder: animationItemBuilder(
+
                                 (index) {
     if (index % 7 == 6) {
       return SizedBox(
@@ -2901,98 +2892,145 @@ class _MyHomePageState extends State<MyHomePage>
         ),
       );
     }
-    if (index % 8 == 7) {
-      return FutureBuilder<List<ArticleData>>(
-        future: categorieProduitProvider.getArticleBooster(),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (snapshot.hasData) {
-            List<ArticleData> articles = snapshot.data;
-            if (articles.isEmpty) {
-              return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
-            }
-            return SizedBox(
+    if (index % 9 == 8) {
+      return articles.isEmpty?SizedBox.shrink(): SizedBox(
               height: height * 0.35,
               child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Produits Boostés',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(
-                              Icons.local_fire_department,
-                              color: Colors.red,
-                            ),
-                          ],
-                          mainAxisAlignment: MainAxisAlignment.start,
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => HomeAfroshopPage(title: ''),
-                              ),
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              Text(
-                                'Boutiques',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(
-                                Icons.storefront,
-                                color: Colors.red,
-                              ),
-                            ],
-                            mainAxisAlignment: MainAxisAlignment.start,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    child: CarouselSlider(
-                      items: articles.map((article) {
-                        return Builder(
-                          builder: (BuildContext context) {
-                            return ArticleTileBooster(
-                                article: article, w: width, h: height, isOtherPage: true);
-                          },
-                        );
-                      }).toList(),
-                      options: CarouselOptions(
-                        height: 250,
-                        autoPlay: true,
-                        enlargeCenterPage: true,
-                        viewportFraction: 0.6,
-                      ),
-                    ),
-                  ),
-                ],
+       children: [
+         Padding(
+           padding: const EdgeInsets.all(8.0),
+           child: Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Row(
+                 children: [
+                   Text(
+                     'Produits Boostés',
+                     style: TextStyle(
+                         fontSize: 15,
+                         fontWeight: FontWeight.bold,
+                         color: Colors.green),
+                   ),
+                   SizedBox(width: 8),
+                   Icon(
+                     Icons.local_fire_department,
+                     color: Colors.red,
+                   ),
+                 ],
+                 mainAxisAlignment: MainAxisAlignment.start,
+               ),
+               GestureDetector(
+                 onTap: () {
+                   Navigator.push(
+                     context,
+                     MaterialPageRoute(
+                       builder: (context) => HomeAfroshopPage(title: ''),
+                     ),
+                   );
+                 },
+                 child: Row(
+                   children: [
+                     Text(
+                       'Boutiques',
+                       style: TextStyle(
+                           fontSize: 15,
+                           fontWeight: FontWeight.bold,
+                           color: Colors.green),
+                     ),
+                     SizedBox(width: 8),
+                     Icon(
+                       Icons.storefront,
+                       color: Colors.red,
+                     ),
+                   ],
+                   mainAxisAlignment: MainAxisAlignment.start,
+                 ),
+               ),
+             ],
+           ),
+         ),
+         Container(
+           child: CarouselSlider(
+             items: articles.map((article) {
+               return Builder(
+                 builder: (BuildContext context) {
+                   return ArticleTileBooster(
+                       article: article, w: width, h: height, isOtherPage: true);
+                 },
+               );
+             }).toList(),
+             options: CarouselOptions(
+               height: 250,
+               autoPlay: true,
+               enlargeCenterPage: true,
+               viewportFraction: 0.6,
+             ),
+           ),
+         ),
+       ],
               ),
             );
-          } else if (snapshot.hasError) {
-            return Icon(Icons.error_outline);
-          } else {
-            return Center(child: SizedBox(height: 50,width: 50, child: CircularProgressIndicator()));
-          }
-        },
+    }
+
+    if (index % 6 == 5) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '🛠️Services & Jobs 💼',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green),
+                    ),
+
+                  ],
+                  mainAxisAlignment: MainAxisAlignment.start,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserServiceListPage(),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        'Voir plus 🛠️ 💼',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green),
+                      ),
+
+                    ],
+                    mainAxisAlignment: MainAxisAlignment.start,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(
+            height: height * 0.3,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: userServices.length,
+              itemBuilder: (context, index) {
+                return userServiceWidget(userServices[index], width, height,context);
+              },
+            ),
+          ),
+        ],
       );
     }
 

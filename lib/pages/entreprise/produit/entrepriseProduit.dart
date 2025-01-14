@@ -687,7 +687,7 @@ class _EntreprisePublicationViewState extends State<EntrepriseProduitView> {
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: FutureBuilder<List<ArticleData>>(
-                future:is_search?categorieProduitProvider.getSearhArticlesByEntreprise("${_controller.text}",item_selected, categorieDataSelected.id!,authProvider.loginUserData.id!):item_selected==-1?  categorieProduitProvider.getAllArticles():categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
+                future:is_search?categorieProduitProvider.getSearhArticlesByEntreprise("${_controller.text}",item_selected, categorieDataSelected.id!,authProvider.loginUserData.id!):item_selected==-1?  categorieProduitProvider.getAllArticlesByUser(authProvider.loginUserData.id!):categorieProduitProvider.getArticlesByCategorieByUser(categorieDataSelected!.id!,authProvider.loginUserData.id!),
                 builder: (BuildContext context, AsyncSnapshot snapshot) {
                   if (snapshot.hasData) {
                     List<ArticleData> articles=snapshot.data;

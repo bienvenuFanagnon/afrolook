@@ -8,6 +8,7 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:country_flags/country_flags.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
@@ -33,6 +34,7 @@ import '../component/consoleWidget.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
+import '../user/conponent.dart';
 import '../user/otherUser/otherUser.dart';
 String formatNumber(int number) {
   if (number >= 1000) {
@@ -402,19 +404,31 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                TextCustomerUserTitle(
-                                  titre:
-                                  "${formatNumber(post.user!.abonnes!)} abonné(s)",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                TextCustomerUserTitle(
-                                  titre:
-                                  "${formatNumber(post.user!.userlikes!)} like(s)",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: Colors.green,
-                                  fontWeight: FontWeight.w700,
+                                Row(
+                                  children: [
+                                    Column(
+                                      children: [
+                                        TextCustomerUserTitle(
+                                          titre:
+                                          "${formatNumber(post.user!.userlikes!)} like(s)",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: Colors.green,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+
+                                        TextCustomerUserTitle(
+                                          titre:
+                                          "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+
+                                      ],
+                                    ),
+                                    countryFlag(post.user!.countryData!['countryCode']??"Tg"!, size: 15),
+
+                                  ],
                                 ),
                               ],
                             ),
@@ -677,6 +691,9 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                              */
                           ],
                         ),
+                        SizedBox(width: 10,),
+
+
 
                       ],
                     ),
@@ -875,7 +892,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                           child: ImageSlideshow(
 
                             width: w * 0.9,
-                            height: h * 0.4,
+                            height: h * 0.5,
 
                             /// The page to show when first creating the [ImageSlideshow].
                             initialPage: 0,
@@ -979,20 +996,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                 printVm("user trouver");
                                 if (post.user!.oneIgnalUserid != null &&
                                     post.user!.oneIgnalUserid!.length > 5) {
-                                  await authProvider.sendNotification(
-                                      userIds: [post.user!.oneIgnalUserid!],
-                                      smallImage:
-                                      "${authProvider.loginUserData.imageUrl!}",
-                                      send_user_id:
-                                      "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
-                                      message:
-                                      "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                                      type_notif:
-                                      NotificationType.POST.name,
-                                      post_id: "${post!.id!}",
-                                      post_type: PostDataType.IMAGE.name,
-                                      chat_id: '');
+
 
                                   NotificationData notif =
                                   NotificationData();
@@ -1026,6 +1030,20 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                       .collection('Notifications')
                                       .doc(notif.id)
                                       .set(notif.toJson());
+                                  await authProvider.sendNotification(
+                                      userIds: [post.user!.oneIgnalUserid!],
+                                      smallImage:
+                                      "${authProvider.loginUserData.imageUrl!}",
+                                      send_user_id:
+                                      "${authProvider.loginUserData.id!}",
+                                      recever_user_id: "${post.user!.id!}",
+                                      message:
+                                      "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+                                      type_notif:
+                                      NotificationType.POST.name,
+                                      post_id: "${post!.id!}",
+                                      post_type: PostDataType.IMAGE.name,
+                                      chat_id: '');
                                 }
                                 // postProvider.updateVuePost(post, context);
 
@@ -1454,20 +1472,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                 printVm("user trouver");
                                 if (post.user!.oneIgnalUserid != null &&
                                     post.user!.oneIgnalUserid!.length > 5) {
-                                  await authProvider.sendNotification(
-                                      userIds: [post.user!.oneIgnalUserid!],
-                                      smallImage:
-                                      "${authProvider.loginUserData.imageUrl!}",
-                                      send_user_id:
-                                      "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
-                                      message:
-                                      "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
-                                      type_notif:
-                                      NotificationType.POST.name,
-                                      post_id: "${post!.id!}",
-                                      post_type: PostDataType.IMAGE.name,
-                                      chat_id: '');
+
 
                                   NotificationData notif =
                                   NotificationData();
@@ -1501,6 +1506,20 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                       .collection('Notifications')
                                       .doc(notif.id)
                                       .set(notif.toJson());
+                                  await authProvider.sendNotification(
+                                      userIds: [post.user!.oneIgnalUserid!],
+                                      smallImage:
+                                      "${authProvider.loginUserData.imageUrl!}",
+                                      send_user_id:
+                                      "${authProvider.loginUserData.id!}",
+                                      recever_user_id: "${post.user!.id!}",
+                                      message:
+                                      "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
+                                      type_notif:
+                                      NotificationType.POST.name,
+                                      post_id: "${post!.id!}",
+                                      post_type: PostDataType.IMAGE.name,
+                                      chat_id: '');
                                 }
                                 // postProvider.updateVuePost(post, context);
 

@@ -15,6 +15,7 @@ import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../component/consoleWidget.dart';
+import '../../user/conponent.dart';
 import 'acceuil/home_afroshop.dart';
 import 'acceuil/produit_details.dart';
 
@@ -139,11 +140,22 @@ class _ArticleTileState extends State<ArticleTile> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.only(left: 8.0),
-                            child: Text('Prix: ${widget.article.prix} Fcfa',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w600,fontSize: 12),),
+                            child: Row(
+                              spacing: 5,
+                              children: [
+                                Text('Prix: ${widget.article.prix} Fcfa',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w600,fontSize: 12),),
+                                Padding(
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: countryFlag(widget.article.countryData==null?'TG':widget.article.countryData!['countryCode']??"TG"!, size: 20),
+                                ),
+                              ],
+                            ),
                           )),
                     ],
                   ),
                 ),
+
+
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0,right: 8,top: 8),
                   child: Row(
@@ -635,6 +647,8 @@ class _ArticleTileBoosterState extends State<ArticleTileBooster> {
                       'Prix: ${widget.article.prix} Fcfa',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
                     ),
+                    countryFlag(widget.article.countryData==null?"TG":widget.article.countryData!['countryCode']??"TG"!, size: 20),
+
                     Text(
                       'Vues: ${widget.article.vues}',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),

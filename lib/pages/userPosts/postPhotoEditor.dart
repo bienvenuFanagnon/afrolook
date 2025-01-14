@@ -1,8 +1,11 @@
 // Dart imports:
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 // Flutter imports:
+import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/userPosts/uniqueDesign.dart';
 import 'package:afrotok/pages/userPosts/utils/example_helper.dart';
 import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,8 +13,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_watermark/image_watermark.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
+import 'package:image/image.dart' as img;
 
 // Package imports:
 import 'package:image_picker/image_picker.dart';
@@ -21,6 +27,7 @@ import '../../constant/constColors.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
+import 'materialEditor.dart';
 
 // Project imports:
 
@@ -73,39 +80,194 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
     });
   }
 
-  void _openPicker(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: source);
+// Fonction pour ajouter un cadre, le nom "Afrolook" sur chaque côté et le pseudo utilisateur
+//   Future<Uint8List?> addCustomWatermark(Uint8List imgBytes, String userPseudo) async {
+//     // Décoder l'image en Uint8List
+//     img.Image image = img.decodeImage(Uint8List.fromList(imgBytes))!;
+//     int imageWidth = image.width;
+//     int imageHeight = image.height;
+//
+//     // Définir les couleurs
+//     final Color frameColor = Color(0xFF000000); // Noir pour le cadre
+//     final Color textColor = Color(0xFF00FF00); // Vert pour le texte
+//     final double textSize = 20.0; // Taille du texte
+//
+//     // Créer une image vide pour y dessiner le cadre et les textes
+//     img.Image watermarkedImage = img.Image(imageWidth, imageHeight);
+//
+//     // Remplir l'image d'origine avec la nouvelle image
+//     img.copyCrop(watermarkedImage, x: null, y: null, width: null, height: null);
+//
+//     // Dessiner un cadre autour de l'image
+//     img.drawRect(watermarkedImage, img.Rect(0, 0, imageWidth - 1, imageHeight - 1), img.getColor(0, 0, 0), x1: null, y1: null, x2: null, y2: null, color: null);
+//
+//     // Ajouter le nom "Afrolook" sur chaque côté du cadre
+//     String appName = "Afrolook";
+//
+//     // Calculer la position du texte sur chaque côté
+//     img.drawRect(
+//       watermarkedImage,
+//       img.arial_48, // Utiliser une police standard ici (vous pouvez en ajouter une custom)
+//       (imageWidth - (appName.length * textSize)) ~/ 2,
+//       10,
+//       appName,
+//       color: img.ColorFloat16.rgb(0, 255, 0), x1: null, y1: null, x2: null, y2: null, // Texte vert
+//     );
+//
+//     img.drawRect(
+//       watermarkedImage,
+//       img.arial_48, // Vous pouvez également utiliser votre propre police
+//       (imageWidth - (appName.length * textSize)) ~/ 2,
+//       imageHeight - 30,
+//       appName,
+//       color: img.ColorFloat16.rgb(0, 255, 0), x1: null, y1: null, x2: null, y2: null, // Texte vert
+//     );
+//
+//     // Ajouter le pseudo de l'utilisateur dans le coin inférieur droit
+//     img.drawRect(
+//       watermarkedImage,
+//       img.arial_48, // Vous pouvez remplacer par votre propre police
+//       imageWidth - 100,
+//       imageHeight - 50,
+//       userPseudo,
+//       color: img.ColorFloat16.rgb(0, 255, 0), x1: null, y1: null, x2: null, y2: null, // Texte vert
+//     );
+//
+//     // Convertir l'image modifiée en Uint8List
+//     return Uint8List.fromList(img.encodePng(watermarkedImage));
+//   }
 
-    if (image == null) return;
 
-    String? path;
-    Uint8List? bytes;
+  Future<Uint8List?> addWatermark(Uint8List imgBytes) async {
+    printVm("addWatermark start");
 
-    if (kIsWeb) {
-      bytes = await image.readAsBytes();
+    // Décoder l'image pour obtenir ses dimensions
+    final image = await decodeImageFromList(imgBytes);
+    final imageWidth = image.width;
+    final imageHeight = image.height;
 
-      if (!mounted) return;
-      await precacheImage(MemoryImage(bytes), context);
-    } else {
-      path = image.path;
-      if (!mounted) return;
-      await precacheImage(FileImage(File(path)), context);
-    }
+    // Calcul de la largeur et de la hauteur approximatives du texte
+    final watermarkText = '@Afrolook';
+    final textWidth = watermarkText.length*8;  // Largeur approximative du texte
+    final textHeight = 10;  // Hauteur approximative du texte
 
-    if (!mounted) return;
-    if (kIsWeb ||
-        (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS)) {
-      Navigator.pop(context);
-    }
+    // Calcul des positions pour afficher le texte en bas à droite
+    final dstX = imageWidth - textWidth - 180;  // 10 pixels de marge à droite
+    final dstY = imageHeight - textHeight - 50;  // 10 pixels de marge en bas
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => _buildEditor(path: path, bytes: bytes),
-      ),
+    // Ajouter le texte en bas à droite
+    Uint8List? finalImage = await ImageWatermark.addTextWatermark(
+      imgBytes: imgBytes,
+      color: Colors.green,
+
+      dstX: dstX.toInt(),
+      dstY: dstY.toInt(),
+      watermarkText: watermarkText,
     );
+
+    if (finalImage == null) {
+      return null;
+    }
+
+    printVm("addWatermark saved");
+
+    return finalImage;
   }
+
+  Future<Uint8List?> applyWatermarkAndNavigate(Uint8List imgBytes) async {
+    printVm("applyWatermarkAndNavigate... start");
+
+    // Charger l'image de fond (frame)
+    ByteData data = await rootBundle.load('assets/images/frame1.jpg');
+    Uint8List logoBytes = data.buffer.asUint8List();
+
+    // Décoder les images
+    img.Image? image = img.decodeImage(Uint8List.fromList(imgBytes));
+    img.Image? logoImage = img.decodeImage(Uint8List.fromList(logoBytes));
+    if (image == null || logoImage == null) {
+      printVm("Erreur de décodage des images.");
+      return null;
+    }
+
+    int logoWidth = logoImage.width;
+    int logoHeight = logoImage.height;
+
+    // Ajuster la taille de l'image sélectionnée pour qu'elle couvre bien l'espace prévu
+    int selectedImageWidth = (logoWidth * 0.8).toInt();  // 90% pour un meilleur ajustement
+    int selectedImageHeight = (logoHeight * 0.8).toInt();
+    //
+    // int selectedImageWidth = 500;  // 90% pour un meilleur ajustement
+    // int selectedImageHeight = 400;
+
+    // Redimensionner l'image sélectionnée
+    img.Image resizedImage = img.copyResize(image, width: selectedImageWidth, height: selectedImageHeight);
+
+    // Vérifier les nouvelles dimensions
+    printVm("Logo: $logoWidth x $logoHeight, Resized: $selectedImageWidth x $selectedImageHeight");
+
+    // Ajuster l'alignement pour éviter les zones noires
+    int dstX = (logoWidth - selectedImageWidth) ~/ 2;
+    int dstY = (logoHeight - selectedImageHeight) ~/ 2;
+    // int dstX = 0;
+    // int dstY = 0;
+    // S'assurer que l'image sélectionnée reste bien dans les limites
+    dstX = dstX.clamp(0, logoWidth - selectedImageWidth);
+    dstY = dstY.clamp(0, logoHeight - selectedImageHeight);
+
+    // Fusionner les images
+    Uint8List? watermarkedImgBytes = await ImageWatermark.addImageWatermark(
+      originalImageBytes: logoBytes,
+      waterkmarkImageBytes: Uint8List.fromList(img.encodePng(resizedImage)),
+      // imgWidth: logoWidth,
+      // imgHeight: logoHeight
+      imgWidth: selectedImageWidth,
+      imgHeight: selectedImageHeight,
+      dstX: dstX,
+      dstY: dstY,
+    );
+
+    printVm("applyWatermarkAndNavigate... finished");
+    return watermarkedImgBytes;
+  }
+
+  void _openPicker(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: source);
+      if (image == null) return;
+      String? path;
+      Uint8List? bytes;
+      bytes = await image.readAsBytes();
+      if (bytes != null) {
+        // Appliquer le filigrane sur l'image sélectionnée
+        Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Uniquedesign(initialImage:bytes! ),
+          ),
+        );
+        // Uint8List? watermarkedBytes = await addWatermark(bytes);
+        // if (watermarkedBytes != null) {
+        //   if (!mounted) return;
+        //   // Précacher l'image avec filigrane
+        //   await precacheImage(MemoryImage(watermarkedBytes), context);
+        //   printVm("Navigation vers l'éditeur...");
+        //   // Naviguer vers l'éditeur d'image avec l'image modifiée
+        //   await Navigator.push(
+        //     context,
+        //     MaterialPageRoute(
+        //       builder: (context) => UniqueAfrolookDesign(initialImage:watermarkedBytes! ),
+        //     ),
+        //   );
+        // }
+      }
+    } catch (e) {
+      printVm('erreur image: $e');
+    }
+  }
+
 
   void _chooseCameraOrGallery() async {
     /// Open directly the gallery if the camera is not supported
@@ -257,240 +419,10 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
                       ),
                     ),
                   ),
-                  // GestureDetector(
-                  //     onTap: () {
-                  //       _getImages();
-                  //     },
-                  //     child: PostsButtons(
-                  //       text: 'Sélectionner des images(2)',
-                  //       hauteur: SizeButtons.hauteur,
-                  //       largeur: SizeButtons.largeur,
-                  //       urlImage: '',
-                  //     )),
-                  // listimages.isNotEmpty
-                  //     ? Padding(
-                  //   padding: const EdgeInsets.all(8.0),
-                  //   child: Wrap(
-                  //     children: listimages
-                  //         .map(
-                  //           (image) => Padding(
-                  //         padding: const EdgeInsets.only(right: 8.0),
-                  //         child: ClipRRect(
-                  //
-                  //           borderRadius:
-                  //           BorderRadius.all(Radius.circular(20)),
-                  //           child: Container(
-                  //             width: 100.0,
-                  //             height: 100.0,
-                  //             child:Column(
-                  //               children: [
-                  //             //   PreviewImgPage(
-                  //             //   imgBytes: editedBytes!,
-                  //             //   generationTime: _generationTime,
-                  //             //   showThumbnail: showThumbnail,
-                  //             //   rawOriginalImage: rawOriginalImage,
-                  //             //   generationConfigs: generationConfigs,
-                  //             // ),
-                  //                 Image.memory(
-                  //                   editedBytes!,
-                  //                   fit: BoxFit.cover,
-                  //                 ),
-                  //               ],
-                  //             )
-                  //           ),
-                  //         ),
-                  //       ),
-                  //     )
-                  //         .toList(),
-                  //   ),
-                  // )
-                  //     : Container(),
-                  //
-                  // SizedBox(
-                  //   height: 60,
-                  // ),
-                  // GestureDetector(
-                  //     onTap:onTap?(){}: () async {
-                  //       //_getImages();
-                  //       if (_formKey.currentState!.validate()) {
-                  //
-                  //         setState(() {
-                  //           onTap=true;
-                  //         });
-                  //         if (listimages.isEmpty) {
-                  //           SnackBar snackBar = SnackBar(
-                  //             content: Text(
-                  //               'Veuillez choisir une image.',
-                  //               textAlign: TextAlign.center,
-                  //               style: TextStyle(color: Colors.red),
-                  //             ),
-                  //           );
-                  //           ScaffoldMessenger.of(context)
-                  //               .showSnackBar(snackBar);
-                  //         } else {
-                  //           try {
-                  //             String postId = FirebaseFirestore.instance
-                  //                 .collection('Posts')
-                  //                 .doc()
-                  //                 .id;
-                  //             Post post = Post();
-                  //             post.user_id = authProvider.loginUserData.id;
-                  //             post.description = _descriptionController.text;
-                  //             post.updatedAt =
-                  //                 DateTime.now().microsecondsSinceEpoch;
-                  //             post.createdAt =
-                  //                 DateTime.now().microsecondsSinceEpoch;
-                  //             post.status = PostStatus.VALIDE.name;
-                  //
-                  //             post.type = PostType.POST.name;
-                  //             post.comments = 0;
-                  //             post.nombrePersonneParJour = 60;
-                  //             post.dataType = PostDataType.IMAGE.name;
-                  //             post.likes = 0;
-                  //             post.loves = 0;
-                  //             post.id = postId;
-                  //             post.images = [];
-                  //             for (XFile _image in listimages) {
-                  //               Reference storageReference =
-                  //               FirebaseStorage.instance.ref().child(
-                  //                   'post_media/${Path.basename(File(_image.path).path)}');
-                  //
-                  //               UploadTask uploadTask = storageReference
-                  //                   .putFile(File(_image.path)!);
-                  //               await uploadTask.whenComplete(() async {
-                  //                 await storageReference
-                  //                     .getDownloadURL()
-                  //                     .then((fileURL) {
-                  //                   print("url media");
-                  //                   //  print(fileURL);
-                  //
-                  //                   post.images!.add(fileURL);
-                  //                 });
-                  //               });
-                  //             }
-                  //             print("images: ${post.images!.length}");
-                  //             await FirebaseFirestore.instance
-                  //                 .collection('Posts')
-                  //                 .doc(postId)
-                  //                 .set(post.toJson());
-                  //             listimages=[];
-                  //             _descriptionController.text='';
-                  //             setState(() {
-                  //               onTap=false;
-                  //             });
-                  //             authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
-                  //             await userProvider.updateUser(authProvider.loginUserData!);
-                  //             postProvider.listConstposts.add(post);
-                  //
-                  //
-                  //
-                  //             NotificationData notif=NotificationData();
-                  //             notif.id=firestore
-                  //                 .collection('Notifications')
-                  //                 .doc()
-                  //                 .id;
-                  //             notif.titre="Nouveau post";
-                  //             notif.description="Un nouveau post a été publié !";
-                  //             notif.users_id_view=[];
-                  //             notif.receiver_id="";
-                  //
-                  //             notif.user_id=authProvider.loginUserData.id;
-                  //             notif.updatedAt =
-                  //                 DateTime.now().microsecondsSinceEpoch;
-                  //             notif.createdAt =
-                  //                 DateTime.now().microsecondsSinceEpoch;
-                  //             notif.status = PostStatus.VALIDE.name;
-                  //
-                  //             // users.add(pseudo.toJson());
-                  //
-                  //             await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                  //             print("///////////-- save notification --///////////////");
-                  //
-                  //             await authProvider
-                  //                 .getAllUsersOneSignaUserId()
-                  //                 .then(
-                  //                   (userIds) async {
-                  //                 if (userIds.isNotEmpty) {
-                  //
-                  //                   await authProvider.sendNotification(
-                  //                       userIds: userIds,
-                  //                       smallImage: "${authProvider.loginUserData.imageUrl!}",
-                  //                       send_user_id: "${authProvider.loginUserData.id!}",
-                  //                       recever_user_id: "",
-                  //                       message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
-                  //                       type_notif: NotificationType.POST.name,
-                  //                       post_id: "${post!.id!}",
-                  //                       post_type: PostDataType.IMAGE.name, chat_id: ''
-                  //                   );
-                  //
-                  //                 }
-                  //               },
-                  //             );
-                  //             SnackBar snackBar = SnackBar(
-                  //               content: Text(
-                  //                 'Le post a été validé avec succès !',
-                  //                 textAlign: TextAlign.center,
-                  //                 style: TextStyle(color: Colors.green),
-                  //               ),
-                  //             );
-                  //             ScaffoldMessenger.of(context)
-                  //                 .showSnackBar(snackBar);
-                  //             postProvider.getPostsImages(limitePosts).then((value) {
-                  //               // value.forEach((element) {
-                  //               //   print(element.toJson());
-                  //               // },);
-                  //
-                  //             },);
-                  //
-                  //           } catch (e) {
-                  //
-                  //             print("erreur ${e}");
-                  //             setState(() {
-                  //               onTap=false;
-                  //             });
-                  //             /*
-                  //
-                  //               SnackBar snackBar = SnackBar(
-                  //                 content: Text(
-                  //                   'La validation du post a échoué. Veuillez réessayer.',
-                  //                   textAlign: TextAlign.center,
-                  //                   style: TextStyle(color: Colors.red),
-                  //                 ),
-                  //               );
-                  //               ScaffoldMessenger.of(context)
-                  //                   .showSnackBar(snackBar);
-                  //
-                  //                */
-                  //           }
-                  //         }
-                  //       }
-                  //     },
-                  //     child:onTap? Center(
-                  //       child: LoadingAnimationWidget.flickr(
-                  //         size: 20,
-                  //         leftDotColor: Colors.green,
-                  //         rightDotColor: Colors.black,
-                  //       ),
-                  //     ): PostsButtons(
-                  //       text: 'Créer',
-                  //       hauteur: SizeButtons.creerButtonshauteur,
-                  //       largeur: SizeButtons.creerButtonslargeur,
-                  //       urlImage: 'assets/images/sender.png',
-                  //     )),
                 ],
               ),
             ),
           ),
-          // ListTile(
-          //   onTap: _chooseCameraOrGallery,
-          //   leading: const Icon(Icons.attachment_outlined),
-          //   title: const Text('Pick from Gallery or Camera'),
-          //   subtitle: !kIsWeb &&
-          //       (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-          //       ? const Text('The camera is not supported on this platform.')
-          //       : null,
-          //   trailing: const Icon(Icons.chevron_right),
-          // ),
         ],
       ),
     );
@@ -523,128 +455,4 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
       );
     }
   }
-}
-
-/// A stateless widget that displays a material-styled icon button with a custom
-/// circular background, half of which is a secondary color. Below the icon,
-/// a label text is displayed.
-///
-/// The [MaterialIconActionButton] widget requires a primary color, secondary
-/// color, icon, text, and a callback function to handle taps.
-///
-/// Example usage:
-/// ```dart
-/// MaterialIconActionButton(
-///   primaryColor: Colors.blue,
-///   secondaryColor: Colors.green,
-///   icon: Icons.camera,
-///   text: 'Camera',
-///   onTap: () {
-///     // Handle tap action
-///   },
-/// );
-/// ```
-class MaterialIconActionButton extends StatelessWidget {
-  /// Creates a new [MaterialIconActionButton] widget.
-  ///
-  /// The [primaryColor] is the color of the circular background, while the
-  /// [secondaryColor] is used for the half-circle overlay. The [icon] is the
-  /// icon to display in the center, and [text] is the label displayed below
-  /// the icon. The [onTap] callback is triggered when the button is tapped.
-  const MaterialIconActionButton({
-    super.key,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.icon,
-    required this.text,
-    required this.onTap,
-  });
-
-  /// The primary color for the button's background.
-  final Color primaryColor;
-
-  /// The secondary color for the half-circle overlay.
-  final Color secondaryColor;
-
-  /// The icon to display in the center of the button.
-  final IconData icon;
-
-  /// The label displayed below the icon.
-  final String text;
-
-  /// The callback function triggered when the button is tapped.
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 65,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(60),
-            onTap: onTap,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-                CustomPaint(
-                  painter: CircleHalf(secondaryColor),
-                  size: const Size(60, 60),
-                ),
-                Icon(icon, color: Colors.white),
-              ],
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            text,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A custom painter class that paints a half-circle.
-///
-/// The [CircleHalf] class takes a [color] parameter and paints half of a circle
-/// on a canvas, typically used as an overlay for the
-/// [MaterialIconActionButton].
-class CircleHalf extends CustomPainter {
-  /// Creates a new [CircleHalf] painter with the given [color].
-  CircleHalf(this.color);
-
-  /// The color to use for painting the half-circle.
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..color = color;
-    canvas.drawArc(
-      Rect.fromCenter(
-        center: Offset(size.height / 2, size.width / 2),
-        height: size.height,
-        width: size.width,
-      ),
-      pi,
-      pi,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

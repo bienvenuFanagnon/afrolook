@@ -1,6 +1,7 @@
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -39,6 +40,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../chat/myChat.dart';
 import '../component/consoleWidget.dart';
+import 'conponent.dart';
 import 'operation.dart';
 import 'otherUser/otherUser.dart';
 
@@ -407,19 +409,28 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
             ),
 
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text("Voir le profil"),
-                IconButton(onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OtherUserPage(otherUser: widget.user),
-                      ));
-                }, icon: Icon(Icons.remove_red_eye)),
-              ],
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OtherUserPage(otherUser: widget.user),
+                    ));
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                spacing: 5,
+                children: [
+                  SizedBox(width: 10,),
+                  countryFlag(widget.user!.countryData!['countryCode']??"", size: 20),
+
+                  Text("Voir le profil"),
+                  IconButton(onPressed: () {
+
+                  }, icon: Icon(Icons.remove_red_eye)),
+                ],
+              ),
             ),
             Visibility(
               visible:authProvider.loginUserData.id!=widget.user.id ,
