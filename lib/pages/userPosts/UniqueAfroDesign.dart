@@ -6,6 +6,8 @@ import 'dart:ui' as ui;
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/pages/userPosts/utils/example_helper.dart';
+import 'package:afrotok/pages/userPosts/utils/example_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_watermark/image_watermark.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:provider/provider.dart';
 
 class UniqueAfrolookDesign extends StatefulWidget {
@@ -24,84 +27,21 @@ class UniqueAfrolookDesign extends StatefulWidget {
   _UniqueAfrolookDesignState createState() => _UniqueAfrolookDesignState();
 }
 
-class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign> {
+class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign>  with ExampleHelperState<UniqueAfrolookDesign>{
   List<Uint8List> images = [];
   late Uint8List selectedImage;
   bool isLoading=false;
   Uint8List? overlayImage;
+  Uint8List? initialImage;
   final StreamController<bool> _loadingController = StreamController<bool>();
-  Future<bool> _saveImage2(Uint8List? image) async {
-    try{
-      if (image == null) return false;
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
 
-      // Demander les permissions
-      final status = await Permission.storage.request();
-      if (status.isGranted) {
-      // Enregistrer l'image dans la galerie
-      final result = await ImageGallerySaverPlus.saveImage(image);
-      print(result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image enregistrée dans la galerie',style: TextStyle(color: Colors.white),),backgroundColor: Colors.green,),
-      );
-      return true;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur d'enregistrement dans la galerie Permission refusée",style: TextStyle(color: Colors.white),),backgroundColor: Colors.red,));
-        return false;
-
-      }
-    }catch(e){
-      printVm('erreur: ${e}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur d'enregistrement dans la galerie ${e}",style: TextStyle(color: Colors.white),),backgroundColor: Colors.red,),
-      );
-      return false;
-
-    }
-
-  }
-
-  Future<bool> _saveImage(Uint8List? image) async {
-    try {
-      if (image == null) return false;
-
-      // Demander les permissions
-      if (await Permission.storage.request().isGranted ||
-          await Permission.photos.request().isGranted) {
-        // Enregistrer l'image dans la galerie
-        final result = await ImageGallerySaverPlus.saveImage(image);
-        print(result);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Image enregistrée dans la galerie', style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.green,
-          ),
-        );
-        return true;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erreur d'enregistrement dans la galerie : Permission refusée", style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
-    } catch (e) {
-      print('erreur: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Erreur d'enregistrement dans la galerie : $e", style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-  }
   @override
   void initState() {
     super.initState();
     overlayImage = widget.initialImage;
+    initialImage = widget.initialImage;
     loadImages();
   }
 
@@ -110,17 +50,39 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign> {
     _loadingController.close();
     super.dispose();
   }
+  Widget _buildEditor({String? path, Uint8List? bytes}) {
+    if (path != null) {
+      return ProImageEditor.file(
+        File(path),
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: onCloseEditor,
+        ),
+        configs: ProImageEditorConfigs(
+          designMode: platformDesignMode,
+        ),
+      );
+    } else {
+      return ProImageEditor.memory(
+        bytes!,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: onCloseEditor,
+        ),
+        configs: ProImageEditorConfigs(
+          designMode: platformDesignMode,
+        ),
+      );
+    }
+  }
 
   Future<void> loadImages() async {
     _loadingController.add(true);
 
     List<String> assetPaths = [
-      'assets/frames/1.png',
-      'assets/frames/2.png',
-      'assets/frames/3.png',
-      'assets/frames/4.png',
-      'assets/frames/5.png',
-      'assets/frames/6.png',
+
       'assets/frames/7.png',
       'assets/frames/8.png',
       'assets/frames/9.png',
@@ -128,14 +90,6 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign> {
       'assets/frames/11.png',
       'assets/frames/12.png',
       'assets/frames/13.png',
-      'assets/frames/14.png',
-      'assets/frames/15.png',
-      'assets/frames/16.png',
-      'assets/frames/17.png',
-      'assets/frames/18.png',
-      'assets/frames/19.png',
-      'assets/frames/20.png',
-      'assets/frames/21.png',
       'assets/frames/23.png',
       'assets/frames/24.png',
       'assets/frames/25.png',
@@ -163,7 +117,7 @@ isLoading=true;
     });
     await Future.delayed(Duration(seconds: 1));
 
-    await   _openPicker(overlayImage);
+    // await   _openPickerText(overlayImage);
     setState(() {
       isLoading=false;
 
@@ -175,11 +129,11 @@ isLoading=true;
     });
 
   }
-
   Future<void> _openPicker(Uint8List? bytes) async {
 
     if (bytes != null) {
       Uint8List? watermarkedBytes = await applyWatermarkAndNavigate(bytes);
+      // Uint8List? watermarkedBytes = await applyWatermark(bytes);
       if (watermarkedBytes != null) {
         if (!mounted) return;
         await precacheImage(MemoryImage(watermarkedBytes), context);
@@ -192,6 +146,7 @@ isLoading=true;
       }
     }
   }
+
   Future<Uint8List?> applyWatermarkAndNavigate2(Uint8List imgBytes) async {
     Uint8List logoBytes = selectedImage;
     img.Image? image = img.decodeImage(Uint8List.fromList(imgBytes));
@@ -263,15 +218,16 @@ isLoading=true;
     int width = image.width;
     int selectedImageHeight = height;
     int selectedImageWidth = width;
+    int logoWidth = width +300;
+    int logoHeight = height+350;
 
     // int selectedImageWidth = 1080;
     // int selectedImageHeight = 1080+height;
-
+    //
     // int logoWidth = logoImage.width + (selectedImageWidth * 0.1).toInt();
     // int logoHeight = logoImage.height + (selectedImageHeight * 0.1).toInt() + height+20;
 
-    int logoWidth = width +300;
-    int logoHeight = height+350;
+
 
     img.Image resizedImageUser = img.copyResize(image, width: selectedImageWidth, height: selectedImageHeight);
     img.Image resizedImage = img.copyResize(logoImage, width: logoWidth, height: logoHeight);
@@ -310,54 +266,101 @@ isLoading=true;
 
     return watermarkedImgBytes;
   }
+  String  imgname = "image not selected";
+  bool isLenovoFont = false;
+  Uint8List? watermarkedImgBytes;
+  Uint8List? file;
+
 
   @override
   Widget build(BuildContext context) {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
     return Scaffold(
       body:             Column(
         children: [
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () async{
-                    selectedImage = images[index];
-                    print('debut de supperposition');
-
-                    // Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
-
-                    setState(() {
-                      isLoading=true;
-                      //  isLoading=false;
-
-                    });
-                    await Future.delayed(Duration(seconds: 1));
-
-                    await _openPicker(widget.initialImage);
-                    print('fin de supperposition');
-                    // Provider.of<UserAuthProvider>(context, listen: false).setLoading(false);
-
-                    setState(() {
-                      isLoading=false;
-                      //  isLoading=false;
-
-                    });
-                  },
-                  child: Container(
-                    margin: EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: selectedImage == images[index] ? Colors.yellow : Colors.transparent,
-                        width: 3,
+          SingleChildScrollView(
+            child: SizedBox(
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        // width: 80,
+                        // height: 80,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green, // Couleur de fond verte
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(0), // Forme carrée
+                            ),
+                          ),
+                          onPressed: () {
+                            // Action à effectuer lors du clic sur le bouton
+                            setState(() {
+                              overlayImage = initialImage;
+                            });
+                          },
+                          child: Text(
+                            'Effacer',
+                            style: TextStyle(
+                              color: Colors.white, // Couleur du texte blanc
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    child: Image.memory(images[index], width: 80, height: 80),
                   ),
-                );
-              },
+                  SizedBox(
+                    height: 100,
+                    width: width*0.7,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: images.length,
+                      itemBuilder: (context, index) {
+
+                        return GestureDetector(
+                          onTap: () async{
+                            selectedImage = images[index];
+                            print('debut de supperposition');
+
+                            // Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
+
+                            setState(() {
+                              isLoading=true;
+                              //  isLoading=false;
+
+                            });
+                            await Future.delayed(Duration(seconds: 1));
+
+                            await _openPicker(widget.initialImage);
+                            print('fin de supperposition');
+                            // Provider.of<UserAuthProvider>(context, listen: false).setLoading(false);
+
+                            setState(() {
+                              isLoading=false;
+                              //  isLoading=false;
+
+                            });
+                          },
+                          child: Container(
+                            margin: EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: selectedImage == images[index] ? Colors.yellow : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                            child: Image.memory(images[index], width: 80, height: 80),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -366,7 +369,7 @@ isLoading=true;
                   ? Text("Chargement... \nVeuillez patienter un moment",style: TextStyle(color: Colors.green,fontSize: 15,fontWeight: FontWeight.w900),)
                   : Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Image.memory(overlayImage!),
+                child:overlayImage!=null? Image.memory(overlayImage!):Container(),
               ),
             ),
           ),
@@ -380,30 +383,51 @@ isLoading=true;
                     setState(() {
                       isLoading=true;
                     });
-
-                   await _saveImage(overlayImage).then((value) async {
-                     if(value){
-                       await Navigator.push(
-                         context,
-                         MaterialPageRoute(
-                           builder: (context) {
-                             return PostLookImageTab(
-                               imgBytes: overlayImage!,
-                               // generationTime: _generationTime,
-                               // showThumbnail: showThumbnail,
-                               // rawOriginalImage: rawOriginalImage,
-                               // generationConfigs: generationConfigs,
-                             );
-                           },
-                         ),
-                       ).whenComplete(() {
-
-                       });
-                     }
-                   },);
-                    setState(() {
-                      isLoading=false;
-                    });
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              // return PostLookImageTab(
+                              return _buildEditor(
+                                bytes: overlayImage,
+                                // imgBytes: overlayImage!,
+                                // generationTime: _generationTime,
+                                // showThumbnail: showThumbnail,
+                                // rawOriginalImage: rawOriginalImage,
+                                // generationConfigs: generationConfigs,
+                              );
+                            },
+                          ),
+                        ).whenComplete(() {
+                          setState(() {
+                            isLoading=false;
+                          });
+                        });
+                   // await _saveImage(overlayImage).then((value) async {
+                   //   if(value){
+                   //     await Navigator.push(
+                   //       context,
+                   //       MaterialPageRoute(
+                   //         builder: (context) {
+                   //           // return PostLookImageTab(
+                   //           return _buildEditor(
+                   //             bytes: overlayImage,
+                   //             // imgBytes: overlayImage!,
+                   //             // generationTime: _generationTime,
+                   //             // showThumbnail: showThumbnail,
+                   //             // rawOriginalImage: rawOriginalImage,
+                   //             // generationConfigs: generationConfigs,
+                   //           );
+                   //         },
+                   //       ),
+                   //     ).whenComplete(() {
+                   //
+                   //     });
+                   //   }
+                   // },);
+                   //  setState(() {
+                   //    isLoading=false;
+                   //  });
 
                     // Logique de validation
                   },
@@ -421,4 +445,5 @@ isLoading=true;
       ),
     );
   }
+
 }

@@ -68,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool dejaVuPub = true;
   bool contact_whatsapp = false;
   bool contact_afrolook = false;
-  late int app_version_code=33;
+  late int app_version_code=0;
 
   GlobalKey btnKey = GlobalKey();
   GlobalKey btnKey2 = GlobalKey();
@@ -1065,7 +1065,7 @@ class _MyHomePageState extends State<MyHomePage>
                                             ],
                                           ),
 
-                                          countryFlag(user.countryData!['countryCode']??"TG"!, size: 20),
+                                          countryFlag(user.countryData!['countryCode']??""!, size: 20),
 
                                         ],
                                       ),
@@ -1757,9 +1757,28 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                     onTap: () async {
                       // Add your navigation logic here
-                      await userProvider.getAllUsers().then(
+
+                    },
+                  ),
+                  ListTile(
+                    trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Image.asset(
+                      'assets/menu/6.png',
+                      height: 20,
+                      width: 20,
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Challenge",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+                      await userProvider.getGratuitInfos().then(
                         (value) {
-                          Navigator.pushNamed(context, '/classemnent');
+                          Navigator.pushNamed(context, '/gagner_point_infos');
                         },
                       );
                     },
@@ -1870,7 +1889,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.4 (29)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.11 (37)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2322,15 +2341,18 @@ class _MyHomePageState extends State<MyHomePage>
 
     hasShownDialogToday().then((value) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
+      authProvider.getAppData().then((value) {
+        // setState(() {});
+      });
       categorieProduitProvider.getArticleBooster().then((value) {
         articles = value;
-        setState(() {});
+        // setState(() {});
       });
 
       postProvider.getAllUserServiceHome().then((value) {
         userServices = value;
         userServices.shuffle();
-        setState(() {});
+        // setState(() {});
       });
 
       if (value && mounted) {
@@ -2477,12 +2499,14 @@ class _MyHomePageState extends State<MyHomePage>
     }  }
 
 
+
+
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
-    // app_version_code=32;
+    app_version_code=36;
     _color=  _randomColor.randomColor(
         colorHue: ColorHue.multiple(colorHues: [
           ColorHue.red,
@@ -2849,6 +2873,100 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                 ),
+                SliverPadding
+                  (
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<Challenge>>(
+                    future: postProvider.getCurrentChallenges(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else {
+                        List<Challenge> list = snapshot.data!;
+                        list;
+                        // userList.shuffle();
+                        if(list.isEmpty){
+                          return SizedBox.shrink();
+                        }else{
+                          return SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Challenges Disponibles 🔥🎁',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.orange, // Couleur du texte pour attirer l'attention
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.local_fire_department, // Icône de feu pour illustrer l'excitation
+                                        color: Colors.red, // Couleur du feu
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Gagnez un Prix 🏆',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green, // Couleur du texte pour un appel à l'action positif
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.card_giftcard, // Icône de cadeau pour symboliser la récompense
+                                        color: Colors.green, // Couleur du cadeau
+                                      ),
+                                    ],
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                  )
+                              ,
+                                  SizedBox(
+                                    height: height * 0.58,
+                                    // width: width * 0.8,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: list.length,
+                                      itemBuilder: (context, index) {
+                                        return homeChallenge(
+                                          list[index]!,
+                                          Colors.brown,
+                                          height,
+                                          width,
+                                          context,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+
+                        }
+
+                      }
+                    },
+                  ),
+                ),
+                // SliverPadding(
+                //   padding: EdgeInsets.symmetric(horizontal: 1, vertical: 0),
+                //   sliver:  Divider(),
+                // ),
+
 
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),

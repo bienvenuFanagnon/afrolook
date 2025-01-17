@@ -701,6 +701,7 @@ class UserData {
     data['friendsIds'] = this.friendsIds;
     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
     data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
+    data['usersParrainer'] = this.usersParrainer;
     // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;
@@ -769,6 +770,49 @@ class ArticleData {
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$ArticleDataToJson(this);
+}
+
+@JsonSerializable()
+class Challenge {
+  String? id;
+  String? user_id;
+  String? postChallengeId;
+  String? titre;
+  String? statut;
+  String? description;
+  String? typeCadeaux;
+  String? descriptionCadeaux;
+  int? prix;
+  Map<String, String>? countryData;
+  int? vues;
+  bool? disponible = true;
+  bool? isAprouved = true;
+  int? jaime;
+  int? partage;
+
+  int? createdAt;
+  int? updatedAt;
+  int? startAt;
+  int? finishedAt;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  UserData? user;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  Post? postWinner;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  Post? postChallenge;
+
+  List<String>? postsWinnerIds = [];
+  List<String>? postsIds = [];
+  List<String>? usersInscritsIds = [];
+  Challenge();
+
+  // Add a factory constructor that creates a new instance from a JSON map
+  factory Challenge.fromJson(Map<String, dynamic> json) =>
+      _$ChallengeFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$ChallengeToJson(this);
 }
 
 class EntrepriseData {
@@ -1702,7 +1746,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB,ARTICLE,SERVICE }
+enum PostType { POST, PUB,ARTICLE,CHALLENGE,SERVICE }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
 
@@ -1722,9 +1766,11 @@ enum NotificationType {
   ABONNER,
   PARRAINAGE,
   ARTICLE,
+  CHALLENGE,
   SERVICE,
   USER
 }
 
 enum TypeEntreprise { personnel, partenaire }
 enum TypeAbonnement { GRATUIT, STANDART,PREMIUM }
+enum StatutData { ENCOURS, TERMINER,ANNULER,ATTENTE }

@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:ripple_wave/ripple_wave.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
@@ -61,12 +62,211 @@ class _ChargementState extends State<SplahsChargement> {
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
+  late VideoPlayerController _controller;
+  late bool isFinished=false;
 
   void stop() {
     animationController.stop();
   }
   @override
   void initState() {
+    setState(() {
+      isFinished=false;
+    });
+    authProvider.getAppData().then(
+          (appdata) async {
+        printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
+        // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+        authProvider.getIsFirst().then((value) {
+          printVm("isfirst: ${value}");
+          if (value==null||value==false) {
+            printVm("is_first");
+
+            authProvider.storeIsFirst(true);
+            if (mounted) {
+              Navigator.pushNamed(context, '/introduction');
+            }
+            // Navigator.pushNamed(context, '/introduction');
+
+
+
+          }else{
+            // authProvider.storeIsFirst(false);
+            printVm("is_not_first");
+
+            authProvider.getToken().then((token) async {
+              printVm("token: ${token}");
+
+              if (token==null||token=='') {
+                printVm("token: existe pas");
+                Navigator.pushNamed(context, '/welcome');
+
+
+
+
+              }else{
+                printVm("token: existe");
+                await    authProvider.getLoginUser(token!).then((value) async {
+                  if (value) {
+                    if(authProvider.loginUserData.countryData!["countryCode"]!=null){
+                      printVm("*****************countryData************ : ${jsonEncode(authProvider.loginUserData.countryData!)}");
+                      // await userProvider.getAllAnnonces();
+                      userProvider.changeState(user: authProvider.loginUserData,
+                          state: UserState.ONLINE.name);
+
+                      // Navigator.pop(context);
+
+
+                      if(widget.postId!=null&&widget.postId.isNotEmpty){
+
+                        switch (widget.postType) {
+                          case "POST":
+                            await postProvider.getPostsImagesById(widget.postId!).then((posts) {
+                              if(posts.isNotEmpty){
+                                Navigator.pushNamed(
+                                    context,
+                                    '/home');
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                              }else{
+                                Navigator.pushNamed(
+                                    context,
+                                    '/home');
+                              }
+
+                            },);
+                            break;
+                          case "ARTICLE":
+
+                            await    postProvider.getArticleById(widget.postId!).then((value) async {
+                              if (value.isNotEmpty) {
+                                value.first.vues=value.first.vues!+1;
+                                // article.vues=value.first.vues!+1;
+                                categorieProduitProvider.updateArticle(value.first,context).then((value) {
+                                  if (value) {
+
+
+                                  }
+                                },);
+                                await    authProvider.getUserById(value.first.user_id!).then((users) async {
+                                  if(users.isNotEmpty){
+                                    value.first.user=users.first;
+                                    await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
+                                      if(entreprises.isNotEmpty){
+                                        entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
+                                        // setState(() {
+                                        //   _isLoading=false;
+                                        // });
+                                        Navigator.pushNamed(
+                                            context,
+                                            '/home');
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  HomeAfroshopPage(title: ""),
+                                            ));
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
+                                            ));
+                                      }
+                                    },);
+                                  }
+                                },);
+                              }
+                            },);
+
+                            break;
+
+                          case "SERVICE":
+
+                            await    postProvider.getUserServiceById(widget.postId!).then((value) async {
+                              if (value.isNotEmpty) {
+                                UserServiceData  data=value.first;
+                                data.vues=value.first.vues!+1;
+                                Navigator.pushNamed(
+                                    context,
+                                    '/home');
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          UserServiceListPage(),
+                                    ));
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
+
+                                if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
+                                  data.usersViewId!.add(authProvider.loginUserData!.id!) ;
+
+                                }
+                                postProvider.updateUserService(data,context).then((value) {
+                                  if (value) {
+
+
+                                  }
+                                },);
+                              }
+                            },);
+
+                            break;
+                          default:
+                            Navigator.pushNamed(
+                                context,
+                                '/home');                          }
+                      }else{
+                        Navigator.pushNamed(
+                            context,
+                            '/home');
+                      }
+
+                      //  Navigator.pushNamed(context, '/chargement');
+                    }else{
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),));
+                    }
+
+
+                  }else{
+                    Navigator.pushNamed(context, '/welcome');
+
+                  }
+
+                },);
+              }
+            },);
+
+          }
+        },);
+
+
+      },
+    );
+    _controller = VideoPlayerController.asset('assets/videos/intro_video.mp4')
+      ..initialize().then((_) {
+        setState(() {});
+        _controller.setVolume(0.0); // Couper le son
+        _controller.play();
+      });
+
+    _controller.addListener(() {
+      if (_controller.value.position == _controller.value.duration) {
+        setState(() {
+          isFinished=true;
+        });
+        // Navigator.of(context).pushReplacement(
+        // Navigator.of(context).pushReplacement(
+        //   PageTransition(
+        //     type: PageTransitionType.fade,
+        //     duration: Duration(milliseconds: 2000), // Ajuste la durée selon tes besoins
+        //     child: SplahsChargement(postId: "", postType: '',),
+        //   ),
+        // );
+        // Navigator.of(context).pushReplacement(
+        //   MaterialPageRoute(builder: (context) => SplahsChargement(postId: "")),
+        // );
+      }
+    });
     // TODO: implement initState
     // imageNumber = random.nextInt(6) + 1; // Génère un nombre entre 1 et 6
     // if(!mounted){
@@ -215,175 +415,7 @@ class _ChargementState extends State<SplahsChargement> {
       //     //
       //     // },);
       //     try{
-     authProvider.getAppData().then(
-          (appdata) async {
-            printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-        // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-            authProvider.getIsFirst().then((value) {
-              printVm("isfirst: ${value}");
-              if (value==null||value==false) {
-                printVm("is_first");
 
-                authProvider.storeIsFirst(true);
-                if (mounted) {
-                  Navigator.pushNamed(context, '/introduction');
-                }
-                // Navigator.pushNamed(context, '/introduction');
-
-
-
-              }else{
-                // authProvider.storeIsFirst(false);
-                printVm("is_not_first");
-
-                authProvider.getToken().then((token) async {
-                  printVm("token: ${token}");
-
-                  if (token==null||token=='') {
-                    printVm("token: existe pas");
-                    Navigator.pushNamed(context, '/welcome');
-
-
-
-
-                  }else{
-                    printVm("token: existe");
-                    await    authProvider.getLoginUser(token!).then((value) async {
-                      if (value) {
-                        if(authProvider.loginUserData.countryData!.isNotEmpty){
-                          printVm("*****************countryData************ : ${jsonEncode(authProvider.loginUserData.countryData!)}");
-                          // await userProvider.getAllAnnonces();
-                          userProvider.changeState(user: authProvider.loginUserData,
-                              state: UserState.ONLINE.name);
-
-                          // Navigator.pop(context);
-
-
-                          if(widget.postId!=null&&widget.postId.isNotEmpty){
-
-                            switch (widget.postType) {
-                              case "POST":
-                                await postProvider.getPostsImagesById(widget.postId!).then((posts) {
-                                  if(posts.isNotEmpty){
-                                    Navigator.pushNamed(
-                                        context,
-                                        '/home');
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                                  }else{
-                                    Navigator.pushNamed(
-                                        context,
-                                        '/home');
-                                  }
-
-                                },);
-                                break;
-                              case "ARTICLE":
-
-                                await    postProvider.getArticleById(widget.postId!).then((value) async {
-                                  if (value.isNotEmpty) {
-                                    value.first.vues=value.first.vues!+1;
-                                    // article.vues=value.first.vues!+1;
-                                    categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                                      if (value) {
-
-
-                                      }
-                                    },);
-                                    await    authProvider.getUserById(value.first.user_id!).then((users) async {
-                                      if(users.isNotEmpty){
-                                        value.first.user=users.first;
-                                        await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
-                                          if(entreprises.isNotEmpty){
-                                            entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
-                                            // setState(() {
-                                            //   _isLoading=false;
-                                            // });
-                                            Navigator.pushNamed(
-                                                context,
-                                                '/home');
-                                            Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      HomeAfroshopPage(title: ""),
-                                                ));
-                                            Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
-                                                ));
-                                          }
-                                        },);
-                                      }
-                                    },);
-                                  }
-                                },);
-
-                                break;
-
-                              case "SERVICE":
-
-                                await    postProvider.getUserServiceById(widget.postId!).then((value) async {
-                                  if (value.isNotEmpty) {
-                                    UserServiceData  data=value.first;
-                                    data.vues=value.first.vues!+1;
-                                    Navigator.pushNamed(
-                                        context,
-                                        '/home');
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              UserServiceListPage(),
-                                        ));
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
-
-                                    if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
-                                      data.usersViewId!.add(authProvider.loginUserData!.id!) ;
-
-                                    }
-                                    postProvider.updateUserService(data,context).then((value) {
-                                      if (value) {
-
-
-                                      }
-                                    },);
-                                  }
-                                },);
-
-                                break;
-                              default:
-                                Navigator.pushNamed(
-                                    context,
-                                    '/home');                          }
-                          }else{
-                            Navigator.pushNamed(
-                                context,
-                                '/home');
-                          }
-
-                          //  Navigator.pushNamed(context, '/chargement');
-                        }else{
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),));
-                        }
-
-
-                      }else{
-                        Navigator.pushNamed(context, '/welcome');
-
-                      }
-
-                    },);
-                  }
-                },);
-
-              }
-            },);
-
-
-      },
-    );
 
       //     }catch(e){
       //       printVm("erreur chargement: $e");
@@ -469,7 +501,18 @@ class _ChargementState extends State<SplahsChargement> {
         backgroundColor: Colors.black,
 
         body: Center(
-          child: Container(
+          child:!isFinished?_controller.value.isInitialized
+              ? SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
+              ),
+            ),
+          )
+              : Center(child: CircularProgressIndicator()): Container(
             height: height,
             width: width,
             decoration: BoxDecoration(

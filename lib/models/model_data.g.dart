@@ -87,6 +87,62 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
       'images': instance.images,
     };
 
+Challenge _$ChallengeFromJson(Map<String, dynamic> json) => Challenge()
+  ..id = json['id'] as String?
+  ..user_id = json['user_id'] as String?
+  ..postChallengeId = json['postChallengeId'] as String?
+  ..titre = json['titre'] as String?
+  ..statut = json['statut'] as String?
+  ..description = json['description'] as String?
+  ..typeCadeaux = json['typeCadeaux'] as String?
+  ..descriptionCadeaux = json['descriptionCadeaux'] as String?
+  ..prix = (json['prix'] as num?)?.toInt()
+  ..countryData = (json['countryData'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as String),
+  )
+  ..vues = (json['vues'] as num?)?.toInt()
+  ..disponible = json['disponible'] as bool?
+  ..isAprouved = json['isAprouved'] as bool?
+  ..jaime = (json['jaime'] as num?)?.toInt()
+  ..partage = (json['partage'] as num?)?.toInt()
+  ..createdAt = (json['createdAt'] as num?)?.toInt()
+  ..updatedAt = (json['updatedAt'] as num?)?.toInt()
+  ..startAt = (json['startAt'] as num?)?.toInt()
+  ..finishedAt = (json['finishedAt'] as num?)?.toInt()
+  ..postsWinnerIds = (json['postsWinnerIds'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList()
+  ..postsIds =
+      (json['postsIds'] as List<dynamic>?)?.map((e) => e as String).toList()
+  ..usersInscritsIds = (json['usersInscritsIds'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList();
+
+Map<String, dynamic> _$ChallengeToJson(Challenge instance) => <String, dynamic>{
+      'id': instance.id,
+      'user_id': instance.user_id,
+      'postChallengeId': instance.postChallengeId,
+      'titre': instance.titre,
+      'statut': instance.statut,
+      'description': instance.description,
+      'typeCadeaux': instance.typeCadeaux,
+      'descriptionCadeaux': instance.descriptionCadeaux,
+      'prix': instance.prix,
+      'countryData': instance.countryData,
+      'vues': instance.vues,
+      'disponible': instance.disponible,
+      'isAprouved': instance.isAprouved,
+      'jaime': instance.jaime,
+      'partage': instance.partage,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
+      'startAt': instance.startAt,
+      'finishedAt': instance.finishedAt,
+      'postsWinnerIds': instance.postsWinnerIds,
+      'postsIds': instance.postsIds,
+      'usersInscritsIds': instance.usersInscritsIds,
+    };
+
 Categorie _$CategorieFromJson(Map<String, dynamic> json) => Categorie()
   ..id = json['id'] as String?
   ..nom = json['nom'] as String?

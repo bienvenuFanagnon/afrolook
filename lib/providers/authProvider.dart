@@ -2,8 +2,10 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/models/chatmodels/message.dart';
+import 'package:afrotok/providers/userProvider.dart';
 import 'package:deeplynks/deeplynks_service.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
@@ -14,6 +16,7 @@ import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -426,6 +429,10 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
+  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+  }
+
 
 
   Future<List<UserData>> getUserById(String id) async {
@@ -508,6 +515,115 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
+  Future<bool> abonner(UserData updateUserData,BuildContext context) async {
+    try{
+      late UserProvider userProvider =
+      Provider.of<UserProvider>(context, listen: false);
+      await getUserById(updateUserData.id!).then(
+              (users) async {
+            if(users.isNotEmpty)
+              updateUserData=users.first;
+            if (!isUserAbonne(updateUserData.userAbonnesIds!,loginUserData.id!)) {
+
+              UserAbonnes userAbonne = UserAbonnes();
+              userAbonne.compteUserId=loginUserData.id;
+              userAbonne.abonneUserId=updateUserData.id;
+
+              userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+              userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+              await  userProvider.sendAbonnementRequest(userAbonne,updateUserData,context).then((value) async {
+                if (value) {
+
+
+                  // await userProvider.getUsers(loginUserData!.id!);
+                  loginUserData.userAbonnes!.add(userAbonne);
+                  await getCurrentUser(loginUserData!.id!);
+
+                  // users.first.abonnes=users.first.abonnes!+1;
+                  updateUserData.userAbonnesIds!.add(loginUserData.id!);
+                  // updateUserData.userAbonnesIds!.add(loginUserData.id!);
+
+                  // updateUserData= users.first;
+
+                  updateUserData.abonnes=updateUserData.userAbonnesIds!.length;
+                  // updateUserData.abonnes= updateUserData.abonnes!+1;
+                  // updateUserData= users.first;
+
+                  await updateUser(updateUserData).then((value) async {
+                    if (updateUserData.oneIgnalUserid!=null&&updateUserData.oneIgnalUserid!.length>5) {
+                      await sendNotification(
+                      userIds: [updateUserData.oneIgnalUserid!],
+                      smallImage: "${loginUserData.imageUrl!}",
+                      send_user_id: "${loginUserData.id!}",
+                      recever_user_id: "${updateUserData.id!}",
+                      message: "📢 @${loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+                      type_notif: NotificationType.ABONNER.name,
+                      post_id: "",
+                      post_type: "", chat_id: ''
+                      );
+
+                      NotificationData notif=NotificationData();
+                      notif.id=firestore
+                          .collection('Notifications')
+                          .doc()
+                          .id;
+                      notif.titre="Nouveau Abonnement ✅";
+                      notif.media_url=loginUserData.imageUrl;
+                      notif.type=NotificationType.ABONNER.name;
+                      notif.description="@${loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                      notif.users_id_view=[];
+                      notif.user_id=loginUserData.id;
+                      notif.receiver_id="";
+                      notif.post_id="";
+                      notif.post_data_type=PostDataType.IMAGE.name!;
+                      notif.updatedAt =
+                          DateTime.now().microsecondsSinceEpoch;
+                      notif.createdAt =
+                          DateTime.now().microsecondsSinceEpoch;
+                      notif.status = PostStatus.VALIDE.name;
+
+                      // users.add(pseudo.toJson());
+
+                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+
+                    }
+                    SnackBar snackBar = SnackBar(
+                      content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                  },);
+
+
+                }  else{
+                  SnackBar snackBar = SnackBar(
+                    content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                }
+              },);
+
+
+     
+            }else{
+              SnackBar snackBar = SnackBar(
+                content: Text('Vous êtes déjà abonné.',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+              );
+              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+            }
+
+          }
+
+
+      );
+      return true;
+    }catch(e){
+      printVm("erreur update Invitations : ${e}");
+      return false;
+    }
+  }
 
 
 
@@ -535,7 +651,7 @@ class UserAuthProvider extends ChangeNotifier {
     if (list.isNotEmpty) {
       for(UserData user in list){
         // user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        // updateUser(user);
+        // updateUserData(user);
 
 
       }

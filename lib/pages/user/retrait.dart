@@ -71,9 +71,9 @@ class _RetraitPageState extends State<RetraitPage> {
           SizedBox(height: 10),
           Text('Votre Solde', style: TextStyle(fontSize: 18, color: Colors.white)),
           SizedBox(height: 5),
-          Text('$publiCash PubliCash (PC)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.yellow)),
+          Text('${publiCash.toStringAsFixed(2)} PubliCash (PC)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.yellow)),
           SizedBox(height: 5),
-          Text('$montantFcfa FCFA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text('${montantFcfa.toStringAsFixed(2)} FCFA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
         ],
       ),
     );

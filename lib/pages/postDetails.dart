@@ -21,6 +21,7 @@ import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
+import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:page_transition/page_transition.dart';
@@ -932,25 +933,27 @@ class _DetailsPostState extends State<DetailsPost> {
 
                               /// The widgets to display in the [ImageSlideshow].
                               /// Add the sample image file into the images folder
-                              children: post!.images!.map((e) =>     CachedNetworkImage(
+                              children: post!.images!.map((e) =>     InstaImageViewer(
+                                child:CachedNetworkImage(
 
-                                fit: BoxFit.contain,
+                                  fit: BoxFit.contain,
 
-                                imageUrl: '$e',
-                                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                //  LinearProgressIndicator(),
+                                  imageUrl: '$e',
+                                  progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                  //  LinearProgressIndicator(),
 
-                                Skeletonizer(
-                                    child: SizedBox(
+                                  Skeletonizer(
+                                      child: SizedBox(
 
-                                        width: w * 0.9,
-                                        height: h * 0.4,
-                                        child:  ClipRRect(
-                                        borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
-                                errorWidget: (context, url, error) =>  Skeletonizer(child: Container(
-                                    width: w * 0.9,
-                                    height: h * 0.4,
-                                    child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
+                                          width: w * 0.9,
+                                          height: h * 0.4,
+                                          child:  ClipRRect(
+                                              borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                  errorWidget: (context, url, error) =>  Skeletonizer(child: Container(
+                                      width: w * 0.9,
+                                      height: h * 0.4,
+                                      child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
+                                ),
                               ),).toList(),
                             ),
                           ),

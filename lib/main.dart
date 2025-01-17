@@ -699,11 +699,11 @@ class _MyAppState extends State<MyApp> {
             return PageTransition(
                 child: UserClassement(), type: PageTransitionType.fade);
             break;
-            case '/splahs_chargement':
+            case '/splahs_chargement2':
             return PageTransition(
                 child: SplashVideo(), type: PageTransitionType.fade);
             break;
-          case '/splahs_chargement2':
+          case '/splahs_chargement':
             return PageTransition(
                 child: SplahsChargement(postId: '', postType: '',), type: PageTransitionType.fade);
             break;

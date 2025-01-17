@@ -123,7 +123,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
   final _formKey = GlobalKey<FormState>();
 
-  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  // GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final TextEditingController _titreController = TextEditingController();
 
@@ -154,6 +154,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       });
     }
   }
+
   // Convert Uint8List to File
   Future<File> _convertUint8ListToFile(Uint8List uint8List, String fileName) async {
     // final Directory tempDir = await getTemporaryDirectory();
@@ -211,7 +212,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..updatedAt = DateTime.now().microsecondsSinceEpoch
         ..createdAt = DateTime.now().microsecondsSinceEpoch
         ..status = PostStatus.VALIDE.name
-        ..type =isSwitched? PostType.PUB.name:PostType.POST.name
+        ..type =isChallenge? PostType.CHALLENGE.name:isSwitched? PostType.PUB.name:PostType.POST.name
         ..urlLink =isSwitched? _linkController.text:""
         ..comments = 0
         ..nombrePersonneParJour = 60
@@ -235,16 +236,44 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
 
-          _descriptionController.clear();
           authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
           await userProvider.updateUser(authProvider.loginUserData!);
           postProvider.listConstposts.add(post);
+          final startTime = startDate.millisecondsSinceEpoch;
+          final endTime = endDate.millisecondsSinceEpoch;
+          final giftType = selectedGiftType;
+          final amount = int.parse(amountController.text);
+          final description = descriptionController.text;
+          final descriptionCadeaux = descriptionCadeauxController.text;
+
+          if(isChallenge){
+            String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;
+
+            // Créer un objet Challenge
+            Challenge challenge = Challenge()
+              ..id = challengeId  // Ajoutez un titre au challenge
+              ..titre = _titreController.text  // Ajoutez un titre au challenge
+              ..description = description
+              ..typeCadeaux = giftType
+              ..postChallengeId = postId
+              ..descriptionCadeaux = descriptionCadeaux
+              ..statut = StatutData.ATTENTE.name
+              ..prix = amount
+              ..startAt = startTime
+              ..finishedAt = endTime
+              ..createdAt = DateTime.now().millisecondsSinceEpoch
+              ..updatedAt = DateTime.now().millisecondsSinceEpoch;
+
+
+            await FirebaseFirestore.instance.collection('Challenges').doc(challengeId).set(challenge.toJson());
+          }
+          _descriptionController.clear();
 
           // Notification logic
           NotificationData notif = NotificationData()
             ..id = firestore.collection('Notifications').doc().id
-            ..titre = "Nouveau post"
-            ..description = "Un nouveau post a été publié !"
+            ..titre = isChallenge?"Nouveau Challenge":"Nouveau post"
+            ..description = isChallenge?"🎉 Nouveau challenge en ligne ! 🎉":"Un nouveau post a été publié !"
             ..users_id_view = []
             ..receiver_id = ""
             ..user_id = authProvider.loginUserData.id
@@ -265,8 +294,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                                 smallImage: "${authProvider.loginUserData.imageUrl!}",
                                 send_user_id: "${authProvider.loginUserData.id!}",
                                 recever_user_id: "",
-                                message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
-                                type_notif: NotificationType.POST.name,
+                                message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                                type_notif: NotificationType.CHALLENGE.name,
                                 post_id: "${post!.id!}",
                                 post_type: PostDataType.IMAGE.name, chat_id: ''
                             );
@@ -275,7 +304,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                         },
                       );
 
-          // postProvider.getPostsImages(limitePosts);
+          postProvider.getPostsImages(limitePosts);
           _imageBytes!=null;
 
           Navigator.pop(context); // Fermer le dialog de chargement
@@ -314,178 +343,6 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   }
 
 
-  // save(){
-  //   if (_imageBytes!==null) {
-  //     setState(() {
-  //       onTap=false;
-  //     });
-  //     SnackBar snackBar = SnackBar(
-  //       content: Text(
-  //         'Veuillez choisir une image.',
-  //         textAlign: TextAlign.center,
-  //         style: TextStyle(color: Colors.red),
-  //       ),
-  //     );
-  //     ScaffoldMessenger.of(context)
-  //         .showSnackBar(snackBar);
-  //   }
-  //   else {
-  //     try {
-  //
-  //
-  //       String postId = FirebaseFirestore.instance
-  //           .collection('Posts')
-  //           .doc()
-  //           .id;
-  //       Post post = Post();
-  //       post.user_id = authProvider.loginUserData.id;
-  //       post.description = _descriptionController.text;
-  //       post.updatedAt =
-  //           DateTime.now().microsecondsSinceEpoch;
-  //       post.createdAt =
-  //           DateTime.now().microsecondsSinceEpoch;
-  //       post.status = PostStatus.VALIDE.name;
-  //
-  //       post.type = PostType.POST.name;
-  //       post.comments = 0;
-  //       post.nombrePersonneParJour = 60;
-  //       post.dataType = PostDataType.IMAGE.name;
-  //       post.likes = 0;
-  //       post.loves = 0;
-  //       post.id = postId;
-  //       post.images = [];
-  //       // for (XFile _image in listimages) {
-  //       //
-  //       // }
-  //       _convertUint8ListToFile(_imageBytes!, '${Path.basename(File.fromRawPath(_imageBytes!).path)}').then((file) async {
-  //         Reference storageReference =
-  //         FirebaseStorage.instance.ref().child(
-  //             'post_media/${file.path}');
-  //
-  //         UploadTask uploadTask = storageReference
-  //             .putFile(file);
-  //         await uploadTask.whenComplete(() async {
-  //           await storageReference
-  //               .getDownloadURL()
-  //               .then((fileURL) async {
-  //             printVm("url media");
-  //             printVm(fileURL);
-  //
-  //             post.images!.add(fileURL);
-  //
-  //             printVm("images: ${post.images!.length}");
-  //             await FirebaseFirestore.instance
-  //                 .collection('Posts')
-  //                 .doc(postId)
-  //                 .set(post.toJson());
-  //
-  //             _descriptionController.text='';
-  //             // setState(() {
-  //             //   onTap=false;
-  //             // });
-  //             authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
-  //             await userProvider.updateUser(authProvider.loginUserData!);
-  //             postProvider.listConstposts.add(post);
-  //
-  //
-  //
-  //             NotificationData notif=NotificationData();
-  //             notif.id=firestore
-  //                 .collection('Notifications')
-  //                 .doc()
-  //                 .id;
-  //             notif.titre="Nouveau post";
-  //             notif.description="Un nouveau post a été publié !";
-  //             notif.users_id_view=[];
-  //             notif.receiver_id="";
-  //
-  //             notif.user_id=authProvider.loginUserData.id;
-  //             notif.updatedAt =
-  //                 DateTime.now().microsecondsSinceEpoch;
-  //             notif.createdAt =
-  //                 DateTime.now().microsecondsSinceEpoch;
-  //             notif.status = PostStatus.VALIDE.name;
-  //
-  //             // users.add(pseudo.toJson());
-  //
-  //             await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-  //             printVm("///////////-- save notification --///////////////");
-  //
-  //             await authProvider
-  //                 .getAllUsersOneSignaUserId()
-  //                 .then(
-  //                   (userIds) async {
-  //                 if (userIds.isNotEmpty) {
-  //
-  //                   // await authProvider.sendNotification(
-  //                   //     userIds: userIds,
-  //                   //     smallImage: "${authProvider.loginUserData.imageUrl!}",
-  //                   //     send_user_id: "${authProvider.loginUserData.id!}",
-  //                   //     recever_user_id: "",
-  //                   //     message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
-  //                   //     type_notif: NotificationType.POST.name,
-  //                   //     post_id: "${post!.id!}",
-  //                   //     post_type: PostDataType.IMAGE.name, chat_id: ''
-  //                   // );
-  //
-  //                 }
-  //               },
-  //             );
-  //             printVm("///////////-- poste saved  ${post.toJson()} --///////////////");
-  //
-  //             SnackBar snackBar = SnackBar(
-  //               content: Text(
-  //                 'Le post a été validé avec succès !',
-  //                 textAlign: TextAlign.center,
-  //                 style: TextStyle(color: Colors.green),
-  //               ),
-  //             );
-  //             ScaffoldMessenger.of(context)
-  //                 .showSnackBar(snackBar);
-  //             postProvider.getPostsImages(limitePosts).then((value) {
-  //               // value.forEach((element) {
-  //               //   print(element.toJson());
-  //               // },);
-  //
-  //             },);
-  //
-  //             Navigator.pop(context);
-  //           });
-  //         });
-  //
-  //       },);
-  //
-  //
-  //
-  //
-  //       setState(() {
-  //         onTap=false;
-  //       });
-  //     } catch (e) {
-  //
-  //       print("erreur ${e}");
-  //       setState(() {
-  //         onTap=false;
-  //       });
-  //
-  //
-  //       SnackBar snackBar = SnackBar(
-  //         content: Text(
-  //           'La validation du post a échoué. Veuillez réessayer.',
-  //           textAlign: TextAlign.center,
-  //           style: TextStyle(color: Colors.red),
-  //         ),
-  //       );
-  //       ScaffoldMessenger.of(context)
-  //           .showSnackBar(snackBar);
-  //
-  //
-  //     }
-  //   }
-  // }
-
-
-  // Upload file to Firebase Storage
   Future<void> _uploadToFirebase(File file) async {
     try {
       final String fileName = 'uploads/${DateTime.now().millisecondsSinceEpoch}_${file.uri.pathSegments.last}';
@@ -547,11 +404,41 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   late final _focusNode = FocusNode();
 
   bool isSwitched =false;
+  bool isChallenge =false;
 
   void _focusListener() {
     if (!_focusNode.hasFocus) {
       _descriptionController.dismissOverlay();
     }
+  }
+
+  // final _formKey = GlobalKey<FormState>();
+
+  // Variables pour stocker les informations du formulaire
+  TextEditingController descriptionController = TextEditingController();
+  TextEditingController descriptionCadeauxController = TextEditingController();
+  TextEditingController amountController = TextEditingController();
+  String selectedGiftType = "virtuel";
+  DateTime startDate = DateTime.now();
+  DateTime endDate = DateTime.now();
+  bool showForm = false;
+
+  // Méthode pour afficher le DatePicker
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate ? startDate : endDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    ) ?? DateTime.now();
+
+    setState(() {
+      if (isStartDate) {
+        startDate = picked;
+      } else {
+        endDate = picked;
+      }
+    });
   }
 
   @override
@@ -673,7 +560,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("Désactivé"),
+                            const Text("Pub"),
                             Switch(
                               value: isSwitched,
                               onChanged: (value) {
@@ -688,21 +575,105 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                           ],
                         ),
                       ),
+                      Visibility(
+                        visible: authProvider.loginUserData.role==UserRole.ADM.name,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Challenge"),
+                            Switch(
+                              value: isChallenge,
+                              onChanged: (value) {
+                                setState(() {
+                                  isChallenge = value;
+                                });
+                              },
+                              activeColor: Colors.green, // Couleur quand activé
+                              inactiveThumbColor: Colors.grey, // Couleur quand désactivé
+                            ),
+                            const Text("Activé"),
+                          ],
+                        ),
+                      ),
                       SizedBox(
                         height: 25.0,
                       ),
-                      if (isSwitched)
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-
-                        controller: _linkController,
-                        decoration: InputDecoration(
-                          hintText: 'lien',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10.0), // Add rounded corners
-                            borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
+                      if (isChallenge)
+                      Column(
+                        children: [
+                          // Champ pour la description du cadeau
+                          TextFormField(
+                            controller: descriptionController,
+                            decoration: InputDecoration(labelText: 'Description du cadeau'),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer une description';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
+                          SizedBox(height: 16),
+
+                          // Sélection du type de cadeau (physique ou virtuel)
+                          DropdownButtonFormField<String>(
+                            value: selectedGiftType,
+                            decoration: InputDecoration(labelText: 'Type de cadeau'),
+                            items: [
+                              DropdownMenuItem(child: Text('Physique'), value: 'physique'),
+                              DropdownMenuItem(child: Text('Virtuel'), value: 'virtuel'),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedGiftType = value!;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez choisir un type de cadeau';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+
+                          // Champ pour le montant à gagner
+                          TextFormField(
+                            controller: amountController,
+                            decoration: InputDecoration(labelText: 'Montant à gagner'),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer un montant';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+
+                          // Sélection de la date de début
+                          Row(
+                            children: [
+                              Text("Date de début: ${DateFormat('dd/MM/yyyy').format(startDate)}"),
+                              IconButton(
+                                icon: Icon(Icons.calendar_today),
+                                onPressed: () => _selectDate(context, true),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+
+                          // Sélection de la date de fin
+                          Row(
+                            children: [
+                              Text("Date de fin: ${DateFormat('dd/MM/yyyy').format(endDate)}"),
+                              IconButton(
+                                icon: Icon(Icons.calendar_today),
+                                onPressed: () => _selectDate(context, false),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+                        ],
                       ),
 
 
