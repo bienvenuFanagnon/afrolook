@@ -724,6 +724,8 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                 children: [
                                   ElevatedButton(
                                     onPressed: () {
+
+
                                       postProvider.getChallengeById(widget.challenge!.id!).then((value) {
                                         if(value.isNotEmpty){
                                           widget.challenge=value.first;
