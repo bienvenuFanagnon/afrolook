@@ -53,6 +53,7 @@ import '../ia/compagnon/introIaCompagnon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../user/conponent.dart';
+import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 
 
 class MyHomePage extends StatefulWidget {
@@ -1469,7 +1470,7 @@ class _MyHomePageState extends State<MyHomePage>
                               ),
                               TextCustomerUserTitle(
                                 titre:
-                                    "${formatNumber(authProvider.loginUserData.abonnes!)} abonné(s)",
+                                    "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
                                 fontSize: SizeText.homeProfileTextSize,
                                 couleur: ConstColors.textColors,
                                 fontWeight: FontWeight.w400,
@@ -1756,6 +1757,26 @@ class _MyHomePageState extends State<MyHomePage>
 
                     },
                   ),
+                  ListTile(
+                    trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Image.asset(
+                      'assets/menu/6.png',
+                      height: 20,
+                      width: 20,
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Mes Looks Challenges 🔥🎁🏆",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MesLookChallengeListPage(),));
+
+                    },
+                  ),
                   // ListTile(
                   //   trailing:
                   //       Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -1862,7 +1883,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.11 (37)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.13 (39)',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2479,7 +2500,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    app_version_code=36;
+    app_version_code=39;
     _color=  _randomColor.randomColor(
         colorHue: ColorHue.multiple(colorHues: [
           ColorHue.red,
@@ -2865,7 +2886,7 @@ class _MyHomePageState extends State<MyHomePage>
                         list;
                         // userList.shuffle();
                         if(list.isEmpty){
-                          return SizedBox.shrink();
+                          return SliverToBoxAdapter(child: SizedBox.shrink());
                         }else{
                           return SliverToBoxAdapter(
                             child: Padding(

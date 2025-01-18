@@ -361,6 +361,10 @@ class _HomePageState extends State<HomeAfroshopPage> {
                                         // height: 50,
                                         child: GestureDetector(
                                             onTap: () {
+                                              // categorieDataSelected=snapshot.data[index];
+                                              // is_selected = false;
+                                              //
+                                              // item_selected = index;
                                               setState(() {
                                                 categorieDataSelected=snapshot.data[index];
                                                 is_selected = false;

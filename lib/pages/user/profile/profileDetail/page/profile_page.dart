@@ -296,7 +296,7 @@ bool change_profil_loading= false;
                 ],
               ),
               const SizedBox(height: 10),
-              NumbersWidget(followers: authProvider.loginUserData!.abonnes!, taux: authProvider.loginUserData!.popularite!*100, points: authProvider.loginUserData!.pointContribution!,),
+              NumbersWidget(followers: authProvider.loginUserData!.userAbonnesIds!.length!, taux: authProvider.loginUserData!.popularite!*100, points: authProvider.loginUserData!.pointContribution!,),
               const SizedBox(height: 10),
               TextCustomerUserTitle(
                 titre:

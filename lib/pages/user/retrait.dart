@@ -21,7 +21,8 @@ class _RetraitPageState extends State<RetraitPage> {
     double width = MediaQuery.of(context).size.width;
 
     double publiCash = authProvider.loginUserData.publi_cash ?? 0;
-    double montantFcfa = publiCash * 50;
+    double montantFcfa = publiCash * 25;
+    double montantValable = montantFcfa*authProvider.loginUserData.popularite!;
 
     return Scaffold(
       appBar: AppBar(
@@ -33,22 +34,30 @@ class _RetraitPageState extends State<RetraitPage> {
         padding: EdgeInsets.all(15.0),
         child: Column(
           children: [
-            _buildSoldeCard(publiCash, montantFcfa),
+            _buildSoldeCard(publiCash, montantFcfa,montantValable),
             SizedBox(height: 20),
             Text(
               'Parrainez plus de personnes pour gagner plus de PubliCash !',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
             ),
+
             SizedBox(height: 30),
             _buildRetraitButton(publiCash),
+
+            SizedBox(height: 20),
+            Text(
+              "💰 Votre solde disponible correspond au montant que vous pouvez retirer, calculé en fonction de votre popularité 🌟. Augmentez votre popularité 🚀 pour augmenter votre solde disponible 💵.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSoldeCard(double publiCash, double montantFcfa) {
+  Widget _buildSoldeCard(double publiCash, double montantFcfa,double montantValable) {
     return Container(
       padding: EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -63,8 +72,15 @@ class _RetraitPageState extends State<RetraitPage> {
             children: [
               Icon(Icons.money, color: Colors.white, size: 40),
               IconButton(
-                onPressed: () => setState(() => authProvider.getLoginUser(authProvider.loginUserData.id!)),
                 icon: Icon(Icons.refresh, color: Colors.white, size: 30),
+                onPressed: () async {
+                   await authProvider.getLoginUser(authProvider.loginUserData.id!);
+
+
+                  setState(() {
+
+                  });
+                },
               ),
             ],
           ),
@@ -73,14 +89,27 @@ class _RetraitPageState extends State<RetraitPage> {
           SizedBox(height: 5),
           Text('${publiCash.toStringAsFixed(2)} PubliCash (PC)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.yellow)),
           SizedBox(height: 5),
-          Text('${montantFcfa.toStringAsFixed(2)} FCFA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Row(
+            children: [
+              Text('Conversion :   ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+
+              Text('${montantFcfa.toStringAsFixed(2)} FCFA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
+          SizedBox(height: 5),
+          Row(
+            children: [
+              Text('Solde valable :   ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('${montantValable.toStringAsFixed(2)} FCFA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildRetraitButton(double publiCash) {
-    bool canWithdraw = publiCash > 600;
+    bool canWithdraw = publiCash > 5000;
     return ElevatedButton(
       onPressed: () => _showRetraitDialog(canWithdraw),
       style: ElevatedButton.styleFrom(
@@ -106,7 +135,7 @@ class _RetraitPageState extends State<RetraitPage> {
             Text(
               canWithdraw
                   ? 'Félicitations ! Vous pouvez maintenant effectuer un retrait.'
-                  : 'Vous devez avoir au moins 600 PC pour effectuer un retrait.',
+                  : 'Vous devez avoir au moins 5000 PC pour effectuer un retrait.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
             ),

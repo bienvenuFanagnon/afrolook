@@ -199,7 +199,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 ],
               ),
 
-              NumbersWidget(followers: widget.otherUser!.abonnes!, taux: widget.otherUser!.popularite!*100, points: widget.otherUser.pointContribution!,),
+              NumbersWidget(followers: widget.otherUser!.userAbonnesIds!.length!, taux: widget.otherUser!.popularite!*100, points: widget.otherUser.pointContribution!,),
               const SizedBox(height: 10),
               TextCustomerUserTitle(
                 titre:

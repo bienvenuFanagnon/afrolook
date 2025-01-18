@@ -19,8 +19,8 @@ class CustomTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      keyboardType: TextInputType.multiline,
-      maxLines: null,
+      // keyboardType: TextInputType.multiline,
+      // maxLines: null,
       style: const TextStyle(
         color: Colors.black,
         fontWeight: FontWeight.w400,

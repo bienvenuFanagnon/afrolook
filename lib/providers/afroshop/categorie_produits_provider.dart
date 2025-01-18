@@ -52,7 +52,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
       print('list categorie ${listCategorie.length}');
       hasData=true;
-      listCategorie.shuffle();
+      // listCategorie.shuffle();
 
       List<List<Categorie>> matchs = [];
 

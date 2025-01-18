@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:afrotok/pages/home/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/userPosts/challenge/lookChallenge/listLookChallenge.dart';
 import 'package:afrotok/pages/userPosts/challenge/userPostToChallenge.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -105,7 +106,7 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                       isLoading=true;
                     });
                     challenge.usersInscritsIds!.add(authProvider.loginUserData.id!);
-                    await postProvider.updateChallenge(challenge, context).then((value) {
+                    await postProvider.updateChallenge(challenge).then((value) {
                       if(value){
 
                         Navigator.pop(context);
@@ -129,7 +130,24 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
       },
     );
   }
-
+  void showChallengeUnavailableDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Défi terminé ❌"),
+          content: Text(
+              "Malheureusement, ce défi n'est plus disponible.\n\nRestez à l'affût des prochains challenges !"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("OK", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
   void showSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -782,11 +800,15 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                       await postProvider.getChallengeById(widget.challenge!.id!).then((value) {
                                         if(value.isNotEmpty){
                                           widget.challenge=value.first;
-                                          // Logique à exécuter lorsque l'utilisateur appuie sur le bouton
-                                          print("L'utilisateur a décidé de participer !");
-                                          if(!isIn(widget.challenge.usersInscritsIds!, authProvider.loginUserData.id!)){
-                                            showConfirmationDialog(widget.challenge,context);
+                                          if(widget.challenge.statut!=StatutData.TERMINER.name&&widget.challenge.statut!=StatutData.ANNULER.name){
+                                            // Logique à exécuter lorsque l'utilisateur appuie sur le bouton
+                                            print("L'utilisateur a décidé de participer !");
+                                            if(!isIn(widget.challenge.usersInscritsIds!, authProvider.loginUserData.id!)){
+                                              showConfirmationDialog(widget.challenge,context);
 
+                                            }
+                                          }else{
+                                            showChallengeUnavailableDialog(context);
                                           }
                                         }
                                       },);
@@ -888,7 +910,29 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                       ),
                                     )
                                   ),
-                                 Container()
+                                  ElevatedButton(
+                                    onPressed: () async {
+
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => LookChallengeListPage(challenge: challenge),));
+
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade500, // Couleur de fond verte
+                                      // onPrimary: Colors.white, // Couleur du texte (blanc)
+                                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15), // Padding pour le bouton
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10), // Coins arrondis
+                                      ),
+                                    ),
+                                    child:Text(
+                                      'Voir les looks challenges', // Texte du bouton
+                                      style: TextStyle(
+                                        fontSize: 12, //
+                                        color: Colors.white,// Taille du texte
+                                        fontWeight: FontWeight.bold, // Texte en gras
+                                      ),
+                                    )
+                                  ),
                                 ],
                               ),
                               Container(

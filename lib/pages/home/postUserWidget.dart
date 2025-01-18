@@ -16,6 +16,7 @@ import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
+import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -372,7 +373,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                           padding: const EdgeInsets.only(right: 8.0),
                           child:  GestureDetector(
                             onTap: () async {
-                              await  authProvider.getUserById(post.user!.id!).then((users) async {
+                              await  authProvider.getUserById(post.user_id!).then((users) async {
                                 if(users.isNotEmpty){
                                   showUserDetailsModalDialog(users.first, w, h,context);
 
@@ -502,7 +503,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                         //             authProvider
                                         //                 .loginUserData!
                                         //                 .id!);
-                                        //         await  authProvider.getUserById(post.user!.id!).then((users) async {
+                                        //         await  authProvider.getUserById(post.user_id!).then((users) async {
                                         //           if(users.isNotEmpty){
                                         //             // users.first.abonnes=users.first.abonnes!+1;
                                         //             users.first.userAbonnesIds!.add(authProvider.loginUserData.id!);
@@ -550,7 +551,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                         //               send_user_id:
                                         //               "${authProvider.loginUserData.id!}",
                                         //               recever_user_id:
-                                        //               "${post.user!.id!}",
+                                        //               "${post.user_id!}",
                                         //               message:
                                         //               "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
                                         //               type_notif:
@@ -993,7 +994,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -1024,7 +1025,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -1047,7 +1048,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
                                       type_notif:
@@ -1197,7 +1198,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                       //         QuerySnapshot querySnapshotUser =
                       //             await userCollect
                       //                 .where("id",
-                      //                     isEqualTo: post.user!.id!)
+                      //                     isEqualTo: post.user_id!)
                       //                 .get();
                       //         // Afficher la liste
                       //         List<UserData> listUsers = querySnapshotUser
@@ -1214,7 +1215,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                       //                   "${authProvider.loginUserData.imageUrl!}",
                       //               send_user_id:
                       //                   "${authProvider.loginUserData.id!}",
-                      //               recever_user_id: "${post.user!.id!}",
+                      //               recever_user_id: "${post.user_id!}",
                       //               message:
                       //                   "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
                       //               type_notif: NotificationType.POST.name,
@@ -1236,7 +1237,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                       //           notif.users_id_view = [];
                       //           notif.user_id =
                       //               authProvider.loginUserData.id;
-                      //           notif.receiver_id = post.user!.id!;
+                      //           notif.receiver_id = post.user_id!;
                       //           notif.post_id = post.id!;
                       //           notif.post_data_type =
                       //               PostDataType.IMAGE.name!;
@@ -1469,7 +1470,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -1500,7 +1501,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -1523,7 +1524,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
                                       type_notif:
@@ -1674,8 +1675,15 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
    // Créer un objet Challenge
    LookChallenge lookchallenge = LookChallenge()
      ..id = challengeId  // Ajoutez un titre au challenge
-     ..user_id = post.id!
+     ..user_id = authProvider.loginUserData.id!
+     ..challenge_id = challenge.id!
      ..postChallengeId = post.id!
+     ..jaime = 0
+     ..partage = 0
+     ..vues = 0
+     ..usersPartagesIds = []
+     ..usersLovesIds = []
+     ..usersVuesIds = []
      ..statut = StatutData.ATTENTE.name
      ..createdAt = DateTime.now().millisecondsSinceEpoch
      ..updatedAt = DateTime.now().millisecondsSinceEpoch;
@@ -1693,7 +1701,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
            if(!challenge.usersChallengersIds!.any((element) => element==authProvider.loginUserData.id!,)){
              challenge.usersChallengersIds!.add(authProvider.loginUserData.id!);
            }
-           await postProvider.updateChallenge(challenge, context);
+           await postProvider.updateChallenge(challenge);
 
            showDialog(
              context: context,
@@ -1766,7 +1774,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                           padding: const EdgeInsets.only(right: 8.0),
                           child:  GestureDetector(
                             onTap: () async {
-                              await  authProvider.getUserById(post.user!.id!).then((users) async {
+                              await  authProvider.getUserById(post.user_id!).then((users) async {
                                 if(users.isNotEmpty){
                                   showUserDetailsModalDialog(users.first, w, h,context);
 
@@ -2260,7 +2268,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -2291,7 +2299,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -2314,7 +2322,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
                                       type_notif:
@@ -2464,7 +2472,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                       //         QuerySnapshot querySnapshotUser =
                       //             await userCollect
                       //                 .where("id",
-                      //                     isEqualTo: post.user!.id!)
+                      //                     isEqualTo: post.user_id!)
                       //                 .get();
                       //         // Afficher la liste
                       //         List<UserData> listUsers = querySnapshotUser
@@ -2481,7 +2489,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                       //                   "${authProvider.loginUserData.imageUrl!}",
                       //               send_user_id:
                       //                   "${authProvider.loginUserData.id!}",
-                      //               recever_user_id: "${post.user!.id!}",
+                      //               recever_user_id: "${post.user_id!}",
                       //               message:
                       //                   "📢 @${authProvider.loginUserData.pseudo!} a liké votre look",
                       //               type_notif: NotificationType.POST.name,
@@ -2503,7 +2511,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                       //           notif.users_id_view = [];
                       //           notif.user_id =
                       //               authProvider.loginUserData.id;
-                      //           notif.receiver_id = post.user!.id!;
+                      //           notif.receiver_id = post.user_id!;
                       //           notif.post_id = post.id!;
                       //           notif.post_data_type =
                       //               PostDataType.IMAGE.name!;
@@ -2736,7 +2744,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -2767,7 +2775,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -2790,7 +2798,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
                                       type_notif:
@@ -3012,7 +3020,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                 //           padding: const EdgeInsets.only(right: 8.0),
                 //           child:  GestureDetector(
                 //             onTap: () async {
-                //               await  authProvider.getUserById(post.user!.id!).then((users) async {
+                //               await  authProvider.getUserById(post.user_id!).then((users) async {
                 //                 if(users.isNotEmpty){
                 //                   showUserDetailsModalDialog(users.first, w, h,context);
                 //
@@ -3142,7 +3150,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                 //                         //             authProvider
                 //                         //                 .loginUserData!
                 //                         //                 .id!);
-                //                         //         await  authProvider.getUserById(post.user!.id!).then((users) async {
+                //                         //         await  authProvider.getUserById(post.user_id!).then((users) async {
                 //                         //           if(users.isNotEmpty){
                 //                         //             // users.first.abonnes=users.first.abonnes!+1;
                 //                         //             users.first.userAbonnesIds!.add(authProvider.loginUserData.id!);
@@ -3190,7 +3198,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                 //                         //               send_user_id:
                 //                         //               "${authProvider.loginUserData.id!}",
                 //                         //               recever_user_id:
-                //                         //               "${post.user!.id!}",
+                //                         //               "${post.user_id!}",
                 //                         //               message:
                 //                         //               "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
                 //                         //               type_notif:
@@ -3729,7 +3737,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -3760,7 +3768,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -3783,7 +3791,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a aimé votre Challenges 🔥🎁",
                                       type_notif:
@@ -4082,7 +4090,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                               QuerySnapshot querySnapshotUser =
                               await userCollect
                                   .where("id",
-                                  isEqualTo: post.user!.id!)
+                                  isEqualTo: post.user_id!)
                                   .get();
                               // Afficher la liste
                               List<UserData> listUsers = querySnapshotUser
@@ -4113,7 +4121,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                                   notif.users_id_view = [];
                                   notif.user_id =
                                       authProvider.loginUserData.id;
-                                  notif.receiver_id = post.user!.id!;
+                                  notif.receiver_id = post.user_id!;
                                   notif.post_id = post.id!;
                                   notif.post_data_type =
                                   PostDataType.IMAGE.name!;
@@ -4136,7 +4144,7 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                                       "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id:
                                       "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${post.user!.id!}",
+                                      recever_user_id: "${post.user_id!}",
                                       message:
                                       "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look",
                                       type_notif:
@@ -4254,6 +4262,1216 @@ Widget homeChallenge(Challenge challenge,Color color, double height, double widt
                 ),
               ],
             ),
+
+                // Divider(
+                //   height: 3,
+                // )
+              ],
+            ),
+          );
+        }),
+  );
+}
+
+Widget lookChallengeWidget(LookChallenge lookchallenge,Color color, double height, double width,BuildContext context) {
+  double h = MediaQuery.of(context).size.height;
+  double w = MediaQuery.of(context).size.width;
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
+  late CategorieProduitProvider categorieProduitProvider =
+  Provider.of<CategorieProduitProvider>(context, listen: false);
+  late UserProvider userProvider =
+  Provider.of<UserProvider>(context, listen: false);
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Post post=lookchallenge!.post!;
+
+
+  Random random = Random();
+  bool abonneTap = false;
+  int like = post!.likes!;
+  int imageIndex = 0;
+  int love = lookchallenge!.jaime!;
+  int vue = lookchallenge!.vues!;
+  int comments = post!.comments!;
+  bool tapLove = isIn(post.users_love_id!, authProvider.loginUserData.id!);
+  bool tapLike = isIn(post.users_like_id!, authProvider.loginUserData.id!);
+  List<int> likes = [];
+  List<int> loves = [];
+  int idUser = 7;
+  // Calculer la taille du texte en fonction de la longueur de la description
+  double baseFontSize = 20.0;
+  double scale = post.description!.length / 1000;  // Ajustez ce facteur selon vos besoins
+  double fontSize = baseFontSize - scale;
+
+  // Limiter la taille de la police à une valeur minimale
+  fontSize = fontSize < 15 ? 15 : fontSize;
+  int limitePosts = 30;
+
+
+  return Container(
+    child: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setStateImages) {
+          return Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     Row(
+                //       children: [
+                //         Padding(
+                //           padding: const EdgeInsets.only(right: 8.0),
+                //           child:  GestureDetector(
+                //             onTap: () async {
+                //               await  authProvider.getUserById(post.user_id!).then((users) async {
+                //                 if(users.isNotEmpty){
+                //                   showUserDetailsModalDialog(users.first, w, h,context);
+                //
+                //                 }
+                //               },);
+                //
+                //             },
+                //             child:
+                //             CircleAvatar(
+                //
+                //               backgroundImage:
+                //               NetworkImage('${post.user!.imageUrl!}'),
+                //             ),
+                //           ),
+                //         ),
+                //         SizedBox(
+                //           height: 2,
+                //         ),
+                //         Row(
+                //           children: [
+                //             Column(
+                //               crossAxisAlignment: CrossAxisAlignment.start,
+                //               children: [
+                //                 SizedBox(
+                //                   //width: 100,
+                //                   child: TextCustomerUserTitle(
+                //                     titre: "@${post.user!.pseudo!}",
+                //                     fontSize: SizeText.homeProfileTextSize,
+                //                     couleur: ConstColors.textColors,
+                //                     fontWeight: FontWeight.bold,
+                //                   ),
+                //                 ),
+                //                 Row(
+                //                   children: [
+                //                     Column(
+                //                       children: [
+                //                         TextCustomerUserTitle(
+                //                           titre:
+                //                           "${formatNumber(post.user!.userlikes!)} like(s)",
+                //                           fontSize: SizeText.homeProfileTextSize,
+                //                           couleur: Colors.green,
+                //                           fontWeight: FontWeight.w700,
+                //                         ),
+                //
+                //                         TextCustomerUserTitle(
+                //                           titre:
+                //                           "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                //                           fontSize: SizeText.homeProfileTextSize,
+                //                           couleur: ConstColors.textColors,
+                //                           fontWeight: FontWeight.w400,
+                //                         ),
+                //
+                //                       ],
+                //                     ),
+                //                     // countryFlag(post.user!.countryData!['countryCode']??"Tg"!, size: 15),
+                //
+                //                   ],
+                //                 ),
+                //               ],
+                //             ),
+                //             Visibility(
+                //               visible:authProvider.loginUserData.id!=post.user!.id ,
+                //
+                //               child: StatefulBuilder(builder: (BuildContext context,
+                //                   void Function(void Function()) setState) {
+                //                 return Container(
+                //                   child: isUserAbonne(
+                //                       post.user!.userAbonnesIds!,
+                //                       authProvider.loginUserData.id!)
+                //                       ? Container()
+                //                       : TextButton(
+                //                       onPressed: abonneTap
+                //                           ? () {}
+                //                           : () async {
+                //                         setState(() {
+                //                           abonneTap=true;
+                //                         });
+                //                         await authProvider.abonner(post.user!,context).then((value) {
+                //
+                //                         },);
+                //                         setState(() {
+                //                           abonneTap=false;
+                //                         });
+                //                         //
+                //                         // if (!isUserAbonne(
+                //                         //     post.user!
+                //                         //         .userAbonnesIds!,
+                //                         //     authProvider
+                //                         //         .loginUserData
+                //                         //         .id!))
+                //                         // {
+                //                         //   setState(() {
+                //                         //     abonneTap = true;
+                //                         //   });
+                //                         //   UserAbonnes userAbonne =
+                //                         //   UserAbonnes();
+                //                         //   userAbonne.compteUserId =
+                //                         //       authProvider
+                //                         //           .loginUserData.id;
+                //                         //   userAbonne.abonneUserId =
+                //                         //       post.user!.id;
+                //                         //
+                //                         //   userAbonne
+                //                         //       .createdAt = DateTime
+                //                         //       .now()
+                //                         //       .millisecondsSinceEpoch;
+                //                         //   userAbonne
+                //                         //       .updatedAt = DateTime
+                //                         //       .now()
+                //                         //       .millisecondsSinceEpoch;
+                //                         //   await userProvider
+                //                         //       .sendAbonnementRequest(
+                //                         //       userAbonne,
+                //                         //       post.user!,
+                //                         //       context)
+                //                         //       .then(
+                //                         //         (value) async {
+                //                         //       if (value) {
+                //                         //         authProvider
+                //                         //             .loginUserData
+                //                         //             .userAbonnes!
+                //                         //             .add(
+                //                         //             userAbonne);
+                //                         //         // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                //                         //         await authProvider
+                //                         //             .getCurrentUser(
+                //                         //             authProvider
+                //                         //                 .loginUserData!
+                //                         //                 .id!);
+                //                         //         await  authProvider.getUserById(post.user_id!).then((users) async {
+                //                         //           if(users.isNotEmpty){
+                //                         //             // users.first.abonnes=users.first.abonnes!+1;
+                //                         //             users.first.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                //                         //             // post.user!.userAbonnesIds!.add(authProvider.loginUserData.id!);
+                //                         //
+                //                         //             post.user!= users.first;
+                //                         //
+                //                         //             post.user!.abonnes=post.user!.userAbonnesIds!.length;
+                //                         //             // post.user!= users.first;
+                //                         //
+                //                         //             await userProvider.updateUser(post.user!);
+                //                         //             // setState(() {
+                //                         //             //   abonneTap=false;
+                //                         //             //
+                //                         //             // });
+                //                         //           }
+                //                         //         },);
+                //                         //
+                //                         //         // post.user!
+                //                         //         //     .abonnes= post.user!
+                //                         //         //     .abonnes!+1;
+                //                         //         // post.user!
+                //                         //         //     .userAbonnesIds!
+                //                         //         //     .add(authProvider
+                //                         //         //     .loginUserData
+                //                         //         //     .id!);
+                //                         //         // userProvider
+                //                         //         //     .updateUser(
+                //                         //         //     post.user!);
+                //                         //         if (post.user!
+                //                         //             .oneIgnalUserid !=
+                //                         //             null &&
+                //                         //             post
+                //                         //                 .user!
+                //                         //                 .oneIgnalUserid!
+                //                         //                 .length >
+                //                         //                 5) {
+                //                         //           await authProvider.sendNotification(
+                //                         //               userIds: [
+                //                         //                 post.user!
+                //                         //                     .oneIgnalUserid!
+                //                         //               ],
+                //                         //               smallImage:
+                //                         //               "${authProvider.loginUserData.imageUrl!}",
+                //                         //               send_user_id:
+                //                         //               "${authProvider.loginUserData.id!}",
+                //                         //               recever_user_id:
+                //                         //               "${post.user_id!}",
+                //                         //               message:
+                //                         //               "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                //                         //               type_notif:
+                //                         //               NotificationType
+                //                         //                   .ABONNER
+                //                         //                   .name,
+                //                         //               post_id:
+                //                         //               "${post!.id!}",
+                //                         //               post_type:
+                //                         //               PostDataType
+                //                         //                   .IMAGE
+                //                         //                   .name,
+                //                         //               chat_id: '');
+                //                         //           NotificationData
+                //                         //           notif =
+                //                         //           NotificationData();
+                //                         //           notif.id = firestore
+                //                         //               .collection(
+                //                         //               'Notifications')
+                //                         //               .doc()
+                //                         //               .id;
+                //                         //           notif.titre =
+                //                         //           "Nouveau Abonnement ✅";
+                //                         //           notif.media_url =
+                //                         //               authProvider
+                //                         //                   .loginUserData
+                //                         //                   .imageUrl;
+                //                         //           notif.type =
+                //                         //               NotificationType
+                //                         //                   .ABONNER
+                //                         //                   .name;
+                //                         //           notif.description =
+                //                         //           "@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                //                         //           notif.users_id_view =
+                //                         //           [];
+                //                         //           notif.user_id =
+                //                         //               authProvider
+                //                         //                   .loginUserData
+                //                         //                   .id;
+                //                         //           notif.receiver_id =
+                //                         //           post.user!
+                //                         //               .id!;
+                //                         //           notif.post_id =
+                //                         //           post.id!;
+                //                         //           notif.post_data_type =
+                //                         //           PostDataType
+                //                         //               .IMAGE
+                //                         //               .name!;
+                //                         //           notif.updatedAt =
+                //                         //               DateTime.now()
+                //                         //                   .microsecondsSinceEpoch;
+                //                         //           notif.createdAt =
+                //                         //               DateTime.now()
+                //                         //                   .microsecondsSinceEpoch;
+                //                         //           notif.status =
+                //                         //               PostStatus
+                //                         //                   .VALIDE
+                //                         //                   .name;
+                //                         //
+                //                         //           // users.add(pseudo.toJson());
+                //                         //
+                //                         //           await firestore
+                //                         //               .collection(
+                //                         //               'Notifications')
+                //                         //               .doc(notif.id)
+                //                         //               .set(notif
+                //                         //               .toJson());
+                //                         //         }
+                //                         //         SnackBar snackBar =
+                //                         //         SnackBar(
+                //                         //           content: Text(
+                //                         //             'abonné, Bravo ! Vous avez gagné 4 points.',
+                //                         //             textAlign:
+                //                         //             TextAlign
+                //                         //                 .center,
+                //                         //             style: TextStyle(
+                //                         //                 color: Colors
+                //                         //                     .green),
+                //                         //           ),
+                //                         //         );
+                //                         //         ScaffoldMessenger
+                //                         //             .of(context)
+                //                         //             .showSnackBar(
+                //                         //             snackBar);
+                //                         //         setState(() {
+                //                         //           abonneTap = false;
+                //                         //         });
+                //                         //       } else {
+                //                         //         SnackBar snackBar =
+                //                         //         SnackBar(
+                //                         //           content: Text(
+                //                         //             'une erreur',
+                //                         //             textAlign:
+                //                         //             TextAlign
+                //                         //                 .center,
+                //                         //             style: TextStyle(
+                //                         //                 color: Colors
+                //                         //                     .red),
+                //                         //           ),
+                //                         //         );
+                //                         //         ScaffoldMessenger
+                //                         //             .of(context)
+                //                         //             .showSnackBar(
+                //                         //             snackBar);
+                //                         //         setState(() {
+                //                         //           abonneTap = false;
+                //                         //         });
+                //                         //       }
+                //                         //     },
+                //                         //   );
+                //                         //
+                //                         //   setState(() {
+                //                         //     abonneTap = false;
+                //                         //   });
+                //                         // }
+                //                       },
+                //                       child: abonneTap
+                //                           ? Center(
+                //                         child:
+                //                         LoadingAnimationWidget
+                //                             .flickr(
+                //                           size: 20,
+                //                           leftDotColor:
+                //                           Colors.green,
+                //                           rightDotColor:
+                //                           Colors.black,
+                //                         ),
+                //                       )
+                //                           : Text(
+                //                         "S'abonner",
+                //                         style: TextStyle(
+                //                             fontSize: 12,
+                //                             fontWeight:
+                //                             FontWeight.normal,
+                //                             color: Colors.blue),
+                //                       )),
+                //                 );
+                //               }),
+                //             ),
+                //             /*
+                //             IconButton(
+                //                 onPressed: () {},
+                //                 icon: Icon(
+                //                   Icons.add_circle_outlined,
+                //                   size: 20,
+                //                   color: ConstColors.regIconColors,
+                //                 )),
+                //
+                //              */
+                //           ],
+                //         ),
+                //         SizedBox(width: 10,),
+                //
+                //
+                //
+                //       ],
+                //     ),
+                //     IconButton(
+                //         onPressed: () {
+                //           _showPostMenuModalDialog(post,context);
+                //         },
+                //         icon: Icon(
+                //           Icons.more_horiz,
+                //           size: 30,
+                //           color: ConstColors.blackIconColors,
+                //         )),
+                //   ],
+                // ),
+                Visibility(
+                    visible: post.type==PostType.PUB.name,
+                    child: Row(
+                      children: [
+                        Icon(Icons.public,color: Colors.green,),
+                        Text(" Publicité",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w900),),
+                      ],
+                    )
+                ),
+
+                SizedBox(
+                  height: 5,
+                ),
+                // Padding(
+                //   padding: const EdgeInsets.all(4.0),
+                //   child: HashTagText(
+                //     text: "${post.description}",
+                //     decoratedStyle: TextStyle(
+                //       fontSize: 13,
+                //       fontWeight: FontWeight.w600,
+                //
+                //       color: Colors.green,
+                //       fontFamily: 'Nunito', // Définir la police Nunito
+                //     ),
+                //     basicStyle: TextStyle(
+                //       fontSize: 12,
+                //       color: Colors.black87,
+                //       fontWeight: FontWeight.normal,
+                //       fontFamily: 'Nunito', // Définir la police Nunito
+                //     ),
+                //     textAlign: TextAlign.left, // Centrage du texte
+                //     maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                //     softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                //     // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                //     onTap: (text) {
+                //       print(text);
+                //     },
+                //   ),
+                // ),
+                SizedBox(
+                  height: 50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: SizedBox(
+                      height: 2,
+                      child: HashTagText(
+                        text: "${lookchallenge.post!.description}",
+                        decoratedStyle: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+
+                          color: Colors.green,
+                          fontFamily: 'Nunito', // Définir la police Nunito
+                        ),
+                        basicStyle: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.normal,
+                          fontFamily: 'Nunito', // Définir la police Nunito
+                        ),
+                        textAlign: TextAlign.left, // Centrage du texte
+                        maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                        softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                        // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                        onTap: (text) {
+                          print(text);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextCustomerPostDescription(
+                      titre:
+                      "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!))}",
+                      fontSize: SizeText.homeProfileDateTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Visibility(
+                  visible: post.dataType == PostDataType.TEXT.name
+                      ? true
+                      : false,
+                  child: GestureDetector(
+                    onTap: () {
+                      // postProvider.updateVuePost(post, context);
+
+                      // Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (context) => DetailsPost(post: post),
+                      //     ));
+                    },
+                    child: Container(
+                      color: color,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          // width: width * 0.8,
+                          // height: height * 0.5,
+                          child: Container(
+                            // height: 200,
+                            // constraints: BoxConstraints(
+                            //   // minHeight: 100.0, // Set your minimum height
+                            //   maxHeight:
+                            //   height * 0.6, // Set your maximum height
+                            // ),
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: HashTagText(
+                                    text: "${post.description}",
+                                    decoratedStyle: TextStyle(
+                                      fontSize: fontSize,
+
+                                      fontWeight: FontWeight.w600,
+
+                                      color: Colors.green,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    basicStyle: TextStyle(
+                                      fontSize: fontSize,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.normal,
+                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                    ),
+                                    textAlign: TextAlign.center, // Centrage du texte
+                                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
+                                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
+                                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
+                                    onTap: (text) {
+                                      print(text);
+                                    },
+                                  ),
+                                )),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 5,
+                ),
+
+
+
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Visibility(
+                      visible: post.dataType != PostDataType.TEXT.name
+                          ? true
+                          : false,
+                      child: GestureDetector(
+                        onTap: () {
+                          // postProvider.updateVuePost(post, context);
+
+
+
+
+
+
+                        },
+                        child: Container(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.all(Radius.circular(5)),
+                            child: Container(
+                                child: InstaImageViewer(
+                                  child:CachedNetworkImage(
+
+                                    fit: BoxFit.contain,
+
+                                    imageUrl: '${post.images!.first}',
+                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                    //  LinearProgressIndicator(),
+
+                                    Skeletonizer(
+                                        child: SizedBox(
+
+                                            width: w * 0.9,
+                                            height: h * 0.4,
+                                            child:  ClipRRect(
+                                                borderRadius: BorderRadius.all(Radius.circular(10)),child: Image.asset('assets/images/404.png')))),
+                                    errorWidget: (context, url, error) =>  Skeletonizer(child: Container(
+                                        width: w * 0.9,
+                                        height: h * 0.4,
+                                        child: Image.asset("assets/images/404.png",fit: BoxFit.cover,))),
+                                  ),
+                                )
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+
+                    Container(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          StatefulBuilder(builder:
+                              (BuildContext context, StateSetter setState) {
+                            return GestureDetector(
+                              onTap: () async {
+                                if (!isIn(lookchallenge.usersLovesIds!,
+                                    authProvider.loginUserData.id!)) {
+                                  setState(() {
+
+                                    postProvider.getLookChallengeById(lookchallenge.id!).then(
+                                          (value) {
+                                        if(value.isNotEmpty){
+                                          lookchallenge=value.first!;
+                                          lookchallenge.jaime = lookchallenge.jaime! + 1;
+                                          lookchallenge.usersLovesIds!.add(authProvider.loginUserData.id!);
+
+                                          love = lookchallenge.jaime!;
+                                          postProvider.updateLookChallenge(lookchallenge);
+
+                                          // setStateImages(() {
+                                          //
+                                          // });
+                                        }
+                                      },
+                                    );
+                                    // post.loves = post.loves! + 1;
+                                    //
+                                    // post.users_love_id!
+                                    //     .add(authProvider!.loginUserData.id!);
+                                    // love = post.loves!;
+                                    //loves.add(idUser);
+                                  });
+                                  CollectionReference userCollect =
+                                  FirebaseFirestore.instance
+                                      .collection('Users');
+                                  // Get docs from collection reference
+                                  QuerySnapshot querySnapshotUser =
+                                  await userCollect
+                                      .where("id",
+                                      isEqualTo: post.user_id!)
+                                      .get();
+                                  // Afficher la liste
+                                  List<UserData> listUsers = querySnapshotUser
+                                      .docs
+                                      .map((doc) => UserData.fromJson(
+                                      doc.data() as Map<String, dynamic>))
+                                      .toList();
+                                  if (listUsers.isNotEmpty) {
+                                    listUsers.first!.jaimes =
+                                        listUsers.first!.jaimes! + 1;
+                                    printVm("user trouver");
+                                    if (post.user!.oneIgnalUserid != null &&
+                                        post.user!.oneIgnalUserid!.length > 5) {
+
+
+                                      NotificationData notif =
+                                      NotificationData();
+                                      notif.id = firestore
+                                          .collection('Notifications')
+                                          .doc()
+                                          .id;
+                                      notif.titre = "❤️ Challenges 🔥🎁 j'aime ❤️";
+                                      notif.media_url =
+                                          authProvider.loginUserData.imageUrl;
+                                      notif.type = NotificationType.CHALLENGE.name;
+                                      notif.description =
+                                      "@${authProvider.loginUserData.pseudo!} a aimé votre Look Challenges 🔥🎁";
+                                      notif.users_id_view = [];
+                                      notif.user_id =
+                                          authProvider.loginUserData.id;
+                                      notif.receiver_id = post.user_id!;
+                                      notif.post_id = lookchallenge.id!;
+                                      notif.post_data_type =
+                                      PostDataType.IMAGE.name!;
+
+                                      notif.updatedAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.createdAt =
+                                          DateTime.now().microsecondsSinceEpoch;
+                                      notif.status = PostStatus.VALIDE.name;
+
+                                      // users.add(pseudo.toJson());
+
+                                      await firestore
+                                          .collection('Notifications')
+                                          .doc(notif.id)
+                                          .set(notif.toJson());
+                                      await authProvider.sendNotification(
+                                          userIds: [post.user!.oneIgnalUserid!],
+                                          smallImage:
+                                          "${authProvider.loginUserData.imageUrl!}",
+                                          send_user_id:
+                                          "${authProvider.loginUserData.id!}",
+                                          recever_user_id: "${post.user_id!}",
+                                          message:
+                                          "📢 @${authProvider.loginUserData.pseudo!} a aimé votre Look Challenges 🔥🎁",
+                                          type_notif:
+                                          NotificationType.CHALLENGE.name,
+                                          post_id: "${lookchallenge!.id!}",
+                                          post_type: PostDataType.IMAGE.name,
+                                          chat_id: '');
+                                    }
+                                    // postProvider.updateVuePost(post, context);
+
+                                    //userProvider.updateUser(listUsers.first);
+                                    SnackBar snackBar = SnackBar(
+                                      content: Text(
+                                        '+2 points.  Voir le classement',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.green),
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(snackBar);
+                                    postProvider.updatePost(
+                                        post, listUsers.first, context);
+                                    await authProvider.getAppData();
+                                    authProvider.appDefaultData.nbr_loves =
+                                        authProvider.appDefaultData.nbr_loves! +
+                                            2;
+                                    authProvider.updateAppData(
+                                        authProvider.appDefaultData);
+                                  } else {
+                                    post.user!.jaimes = post.user!.jaimes! + 1;
+                                    SnackBar snackBar = SnackBar(
+                                      content: Text(
+                                        '+2 points.  Voir le classement',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.green),
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(snackBar);
+                                    postProvider.updatePost(
+                                        post, post.user!, context);
+                                    await authProvider.getAppData();
+                                    authProvider.appDefaultData.nbr_loves =
+                                        authProvider.appDefaultData.nbr_loves! +
+                                            2;
+                                    authProvider.updateAppData(
+                                        authProvider.appDefaultData);
+                                  }
+
+                                  tapLove = true;
+                                }
+                                printVm("jaime");
+                                // setState(() {
+                                // });
+                              },
+                              child: Container(
+                                //height: 20,
+                                width: 70,
+                                height: 30,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        // AnimateIcon(
+                                        //   key: UniqueKey(),
+                                        //   onTap: () {},
+                                        //   iconType: IconType.continueAnimation,
+                                        //   height: 20,
+                                        //   width: 20,
+                                        //   color: Colors.red,
+                                        //   animateIcon: AnimateIcons.heart,
+                                        // ),
+
+                                        Icon(
+                                          isIn(
+                                              lookchallenge.usersLovesIds!,
+                                              authProvider
+                                                  .loginUserData.id!)
+                                              ? Ionicons.heart
+                                              : Ionicons.md_heart_outline,
+                                          color: Colors.red,
+                                          size: 20,
+                                          // color: ConstColors.likeColors,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 1.0, right: 1),
+                                          child: TextCustomerPostDescription(
+                                            titre: "${formatAbonnes(love)}",
+                                            fontSize: SizeText
+                                                .homeProfileDateTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    /*
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                        child: SizedBox(
+                                          height: 2,
+                                          width: 5,
+                                          child: LinearProgressIndicator(
+                                            color: Colors.red,
+                                            value: love/post.user!.abonnes!+1,
+                                            semanticsLabel: 'Linear progress indicator',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextCustomerPostDescription(
+                                      titre: "${((love/post.user!.abonnes!+1)).toStringAsFixed(2)}%",
+                                      fontSize: SizeText.homeProfileDateTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+
+                                     */
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                          // StatefulBuilder(builder:
+                          //     (BuildContext context, StateSetter setState) {
+                          //   return GestureDetector(
+                          //     onTap: () async {
+                          //     },
+                          //     child: Container(
+                          //       width: 70,
+                          //       height: 30,
+                          //       child: Row(
+                          //         crossAxisAlignment: CrossAxisAlignment.center,
+                          //         // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          //         children: [
+                          //           Row(
+                          //             children: [
+                          //               Icon(
+                          //                 isIn(
+                          //                     post.users_like_id!,
+                          //                     authProvider
+                          //                         .loginUserData.id!)
+                          //                     ? MaterialCommunityIcons.eye
+                          //                     : MaterialCommunityIcons
+                          //                     .eye,
+                          //                 size: 20,
+                          //                 color: isIn(
+                          //                     post.users_like_id!,
+                          //                     authProvider
+                          //                         .loginUserData.id!)
+                          //                     ? Colors.blue
+                          //                     : Colors.black,
+                          //               ),
+                          //               Padding(
+                          //                 padding: const EdgeInsets.only(
+                          //                     left: 1.0, right: 1),
+                          //                 child: TextCustomerPostDescription(
+                          //                   titre: "${formatAbonnes(vue)}",
+                          //                   fontSize: SizeText
+                          //                       .homeProfileDateTextSize,
+                          //                   couleur: ConstColors.textColors,
+                          //                   fontWeight: FontWeight.bold,
+                          //                 ),
+                          //               ),
+                          //             ],
+                          //           ),
+                          //           /*
+                          //       Expanded(
+                          //         child: Padding(
+                          //           padding: const EdgeInsets.only(left: 1.0,right: 1),
+                          //           child: SizedBox(
+                          //             height: 2,
+                          //             // width: width*0.75,
+                          //             child: LinearProgressIndicator(
+                          //               color: Colors.blue,
+                          //               value: like/post.user!.abonnes!+1,
+                          //               semanticsLabel: 'Linear progress indicator',
+                          //             ),
+                          //           ),
+                          //         ),
+                          //       ),
+                          //       TextCustomerPostDescription(
+                          //         titre: "${(like/post.user!.abonnes!+1).toStringAsFixed(2)}%",
+                          //         fontSize: SizeText.homeProfileDateTextSize,
+                          //         couleur: ConstColors.textColors,
+                          //         fontWeight: FontWeight.bold,
+                          //       ),
+                          //
+                          //        */
+                          //         ],
+                          //       ),
+                          //     ),
+                          //   );
+                          // }),
+                          StatefulBuilder(builder:
+                              (BuildContext context, StateSetter setState) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          PostComments(post: post),
+                                    ));
+
+                                //sheetComments(height*0.7,width,post);
+                              },
+                              child: Container(
+                                width: 70,
+                                height: 30,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          FontAwesome.comments,
+                                          size: 20,
+                                          color: Colors.green,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 1.0, right: 1),
+                                          child: TextCustomerPostDescription(
+                                            titre: "${formatAbonnes(comments)}",
+                                            fontSize: SizeText
+                                                .homeProfileDateTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    /*
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                        child: SizedBox(
+                                          height: 2,
+                                          //width: width*0.75,
+                                          child: LinearProgressIndicator(
+                                            color: Colors.blueGrey,
+                                            value: comments/post.user!.abonnes!+1,
+                                            semanticsLabel: 'Linear progress indicator',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextCustomerPostDescription(
+                                      titre: "${(comments/post.user!.abonnes!+1).toStringAsFixed(2)}%",
+                                      fontSize: SizeText.homeProfileDateTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+
+                                     */
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+
+                          StatefulBuilder(builder:
+                              (BuildContext context, StateSetter setState) {
+                            return GestureDetector(
+                              onTap: () async {
+                                // await authProvider.createLink(post).then((value) {
+                                final box = context.findRenderObject() as RenderBox?;
+
+                                await authProvider.createChallengeLink(true,lookchallenge).then((url) async {
+                                  await Share.shareUri(
+                                    Uri.parse(
+                                        '${url}'),
+                                    sharePositionOrigin:
+                                    box!.localToGlobal(Offset.zero) & box.size,
+                                  );
+
+                                  // if (!isIn(lookchallenge.usersPartagesIds!,
+                                  //     authProvider.loginUserData.id!)) {
+                                    setState(() {
+                                      // post.partage = post.partage! + 1;
+                                      postProvider.getLookChallengeById(lookchallenge.id!).then(
+                                            (value) {
+                                          if(value.isNotEmpty){
+                                            lookchallenge=value.first!;
+                                            lookchallenge.partage = lookchallenge.partage! + 1;
+                                            lookchallenge.usersPartagesIds!.add(authProvider.loginUserData.id!);
+
+                                            // lookchallenge.partage!;
+                                            postProvider.updateLookChallenge(lookchallenge);
+
+                                            // setStateImages(() {
+                                            //
+                                            // });
+                                          }
+                                        },
+                                      );
+                                      // post.users_love_id!
+                                      //     .add(authProvider!.loginUserData.id!);
+                                      // love = post.loves!;
+                                      // //loves.add(idUser);
+                                    });
+                                    CollectionReference userCollect =
+                                    FirebaseFirestore.instance
+                                        .collection('Users');
+                                    // Get docs from collection reference
+                                    QuerySnapshot querySnapshotUser =
+                                    await userCollect
+                                        .where("id",
+                                        isEqualTo: post.user_id!)
+                                        .get();
+                                    // Afficher la liste
+                                    List<UserData> listUsers = querySnapshotUser
+                                        .docs
+                                        .map((doc) => UserData.fromJson(
+                                        doc.data() as Map<String, dynamic>))
+                                        .toList();
+                                    if (listUsers.isNotEmpty) {
+                                      listUsers.first!.partage =
+                                          listUsers.first!.partage! + 1;
+                                      printVm("user trouver");
+                                      // if (post.user!.oneIgnalUserid != null &&
+                                      //     post.user!.oneIgnalUserid!.length > 5) {
+
+
+                                        NotificationData notif =
+                                        NotificationData();
+                                        notif.id = firestore
+                                            .collection('Notifications')
+                                            .doc()
+                                            .id;
+                                        notif.titre = "Challenges 🔥🎁 partage 📲";
+                                        notif.media_url =
+                                            authProvider.loginUserData.imageUrl;
+                                        notif.type = NotificationType.POST.name;
+                                        notif.description =
+                                        "@${authProvider.loginUserData.pseudo!} a partagé votre look Challenges 🔥🎁";
+                                        notif.users_id_view = [];
+                                        notif.user_id =
+                                            authProvider.loginUserData.id;
+                                        notif.receiver_id = post.user_id!;
+                                        notif.post_id = post.id!;
+                                        notif.post_data_type =
+                                        PostDataType.IMAGE.name!;
+
+                                        notif.updatedAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.createdAt =
+                                            DateTime.now().microsecondsSinceEpoch;
+                                        notif.status = PostStatus.VALIDE.name;
+
+                                        // users.add(pseudo.toJson());
+
+                                        await firestore
+                                            .collection('Notifications')
+                                            .doc(notif.id)
+                                            .set(notif.toJson());
+                                        await authProvider.sendNotification(
+                                            userIds: [post.user!.oneIgnalUserid!],
+                                            smallImage:
+                                            "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id:
+                                            "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "${post.user_id!}",
+                                            message:
+                                            "📢 @${authProvider.loginUserData.pseudo!} a partagé votre look Challenges 🔥🎁",
+                                            type_notif:
+                                            NotificationType.CHALLENGE.name,
+                                            post_id: "${lookchallenge!.id!}",
+                                            post_type: PostDataType.IMAGE.name,
+                                            chat_id: '');
+
+                                      // postProvider.updateVuePost(post, context);
+
+                                      //userProvider.updateUser(listUsers.first);
+                                      // SnackBar snackBar = SnackBar(
+                                      //   content: Text(
+                                      //     '+2 points.  Voir le classement',
+                                      //     textAlign: TextAlign.center,
+                                      //     style: TextStyle(color: Colors.green),
+                                      //   ),
+                                      // );
+                                      // ScaffoldMessenger.of(context)
+                                      //     .showSnackBar(snackBar);
+                                      postProvider.updatePost(
+                                          post, listUsers.first, context);
+                                      // await authProvider.getAppData();
+                                      // authProvider.appDefaultData.nbr_loves =
+                                      //     authProvider.appDefaultData.nbr_loves! +
+                                      //         2;
+                                      // authProvider.updateAppData(
+                                      //     authProvider.appDefaultData);
+
+
+                                      tapLove = true;
+                                    }
+                                 // }
+
+
+
+
+                                },);
+                              },
+                              child: Container(
+                                //height: 20,
+                                width: 70,
+                                height: 30,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        // AnimateIcon(
+                                        //
+                                        //   key: UniqueKey(),
+                                        //   onTap: () {},
+                                        //   iconType: IconType.continueAnimation,
+                                        //   height: 20,
+                                        //   width: 20,
+                                        //   color: Colors.red,
+                                        //   animateIcon: AnimateIcons.share,
+                                        //
+                                        // ),
+
+                                        Icon(
+                                          isIn(
+                                              lookchallenge.usersPartagesIds!,
+                                              authProvider
+                                                  .loginUserData.id!)
+                                              ? Icons.share
+                                              : Icons.share,
+                                          color: Colors.red,
+                                          size: 20,
+                                          // color: ConstColors.likeColors,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 1.0, right: 1),
+                                          child: TextCustomerPostDescription(
+                                            titre: "${formatAbonnes(lookchallenge.partage!)}",
+                                            fontSize: SizeText
+                                                .homeProfileDateTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    /*
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                        child: SizedBox(
+                                          height: 2,
+                                          width: 5,
+                                          child: LinearProgressIndicator(
+                                            color: Colors.red,
+                                            value: love/post.user!.abonnes!+1,
+                                            semanticsLabel: 'Linear progress indicator',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextCustomerPostDescription(
+                                      titre: "${((love/post.user!.abonnes!+1)).toStringAsFixed(2)}%",
+                                      fontSize: SizeText.homeProfileDateTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+
+                                     */
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                  ],
+                ),
 
                 // Divider(
                 //   height: 3,

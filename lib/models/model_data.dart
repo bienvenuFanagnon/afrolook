@@ -357,6 +357,7 @@ class AppDefaultData {
   List<String>? users_id = [];
   int? nbr_abonnes = 0;
   int? app_version_code = 0;
+  int? app_version_code_officiel = 0;
   int? nbr_likes = 0;
   int? nbr_comments = 0;
   String? ia_instruction = "";
@@ -382,6 +383,7 @@ class AppDefaultData {
       this.ia_instruction = "",
       this.app_link,
       this.app_version_code = 0,
+      this.app_version_code_officiel = 0,
       this.tarifPubliCash_to_xof = 250.0,
       this.tarifPubliCash = 2.5,
       this.tarifjour = 0.5,
@@ -402,6 +404,8 @@ class AppDefaultData {
     app_link = json['app_link'] == null ? "" : json['app_link'];
     ia_instruction =
         json['ia_instruction'] == null ? "" : json['ia_instruction'];
+    app_version_code_officiel =
+        json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
     app_version_code =
         json['app_version_code'] == null ? 0 : json['app_version_code'];
     nbr_loves = json['nbr_loves'];
@@ -442,6 +446,7 @@ class AppDefaultData {
     data['tarifVideo'] = this.tarifVideo;
     data['app_link'] = this.app_link;
     data['tarifjour'] = this.tarifjour;
+    data['app_version_code_officiel'] = this.app_version_code_officiel;
     data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
     data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
 
@@ -820,9 +825,11 @@ class Challenge {
 class LookChallenge {
   String? id;
   String? user_id;
+  String? challenge_id;
   String? postChallengeId;
   String? titre;
   String? statut;
+  double? popularite;
   int? prix;
   int? vues;
   bool? disponible = true;
@@ -840,7 +847,9 @@ class LookChallenge {
 
   // List<String>? postsWinnerIds = [];
   // List<String>? postsIds = [];
-  // List<String>? usersInscritsIds = [];
+  List<String>? usersLovesIds = [];
+  List<String>? usersVuesIds = [];
+  List<String>? usersPartagesIds = [];
   // List<String>? usersChallengersIds = [];
   LookChallenge();
 

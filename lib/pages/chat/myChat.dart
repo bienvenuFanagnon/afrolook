@@ -1361,7 +1361,10 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                             : Expanded(
                                 child: Container(
                                   child: TextFormField(
-                                    focusNode: _focusNode,
+                                    keyboardType: TextInputType.multiline,
+                                  maxLength: null,
+
+                                  focusNode: _focusNode,
                                     onChanged: (text) async {
                                       Chat streamChat=widget.chat!;
                                       if (text.isNotEmpty) {
@@ -1445,11 +1448,9 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                       printVm("tap");
                                     },
                                     controller: _textController,
-                                    keyboardType: TextInputType.multiline,
+                                    // keyboardType: TextInputType.multiline,
                                     textCapitalization:
                                         TextCapitalization.sentences,
-                                    minLines: 1,
-                                    maxLines: 3,
                                     style: const TextStyle(color: Colors.black),
                                     decoration: InputDecoration(
                                       hintText: "message...",
