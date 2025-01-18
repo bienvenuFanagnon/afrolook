@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:afrotok/pages/home/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/userPosts/challenge/userPostToChallenge.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -33,14 +34,14 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:stories_for_flutter/stories_for_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../constant/listItemsCarousel.dart';
-import '../../constant/textCustom.dart';
-import '../../models/chatmodels/message.dart';
-import '../../providers/afroshop/categorie_produits_provider.dart';
-import '../../providers/authProvider.dart';
-import '../component/consoleWidget.dart';
-import '../component/showUserDetails.dart';
-import 'dataWidgte.dart';
+import '../../../constant/listItemsCarousel.dart';
+import '../../../constant/textCustom.dart';
+import '../../../models/chatmodels/message.dart';
+import '../../../providers/afroshop/categorie_produits_provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../component/consoleWidget.dart';
+import '../../component/showUserDetails.dart';
+import '../dataWidgte.dart';
 
 
 class ChallengeDetails extends StatefulWidget {
@@ -242,6 +243,58 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
     }
   }
   PopupMenu? postmenu;
+
+  Future<void> checkChallengeStatus(BuildContext context, Challenge? challenge) async {
+    switch (challenge!.statut) {
+      case 'TERMINER':
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Challenge 🔥🎁 Terminé'),
+            content: Text('Ce challenge est terminé. Merci d’avoir participé !'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+        break;
+
+      case 'ATTENTE':
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Challenge 🔥🎁 en Attente'),
+            content: Text('Le challenge n’a pas encore commencé. Revenez plus tard pour le suivre en direct.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+        break;
+
+      case 'ENCOURS':
+      // Aucun message modal, ou autre logique pour un challenge en cours
+        print('Le challenge est en cours.');
+        await postProvider.getChallengeById(widget.challenge!.id!).then((value) {
+          if(value.isNotEmpty){
+            widget.challenge=value.first;
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeUserChosePost(otherUser: authProvider.loginUserData, challenge: widget.challenge,),));
+
+          }
+        },);
+        break;
+
+      default:
+        print('Statut inconnu.');
+        break;
+    }
+  }
 
   String formatAbonnes(int nbAbonnes) {
     if (nbAbonnes >= 1000) {
@@ -723,10 +776,10 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   ElevatedButton(
-                                    onPressed: () {
+                                    onPressed: () async {
 
 
-                                      postProvider.getChallengeById(widget.challenge!.id!).then((value) {
+                                      await postProvider.getChallengeById(widget.challenge!.id!).then((value) {
                                         if(value.isNotEmpty){
                                           widget.challenge=value.first;
                                           // Logique à exécuter lorsque l'utilisateur appuie sur le bouton
@@ -752,7 +805,7 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                       'Vous participé déja au challenge', // Texte du bouton
                                       style: TextStyle(
                                         fontSize: 12, //
-                                        color: Colors.black,// Taille du texte
+                                        color: Colors.white,// Taille du texte
                                         fontWeight: FontWeight.bold, // Texte en gras
                                       ),
                                     ): Text(
@@ -778,6 +831,64 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                       ),
                                     ],
                                   ),
+                                ],
+                              ),
+                              SizedBox(height: 5,),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: () async {
+
+
+                                      await postProvider.getChallengeById(widget.challenge!.id!).then((value) {
+                                        if(value.isNotEmpty){
+                                          widget.challenge=value.first;
+                                          // Logique à exécuter lorsque l'utilisateur appuie sur le bouton
+
+                                            if(isIn(widget.challenge.usersInscritsIds!, authProvider.loginUserData.id!)){
+                                              checkChallengeStatus(context,widget.challenge,);
+
+                                            }else{
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: Text('Challenge 🔥🎁'),
+                                                  content: Text('Vous ne faites pas partie des participants de ce challenge.Participer ou Veuillez attendre le prochain événement.'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.of(context).pop(),
+                                                      child: Text('OK'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );                                            }
+
+
+
+                                        }
+                                      },);
+
+
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green, // Couleur de fond verte
+                                      // onPrimary: Colors.white, // Couleur du texte (blanc)
+                                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15), // Padding pour le bouton
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10), // Coins arrondis
+                                      ),
+                                    ),
+                                    child:Text(
+                                      'Poster votre look challenge', // Texte du bouton
+                                      style: TextStyle(
+                                        fontSize: 12, //
+                                        color: Colors.white,// Taille du texte
+                                        fontWeight: FontWeight.bold, // Texte en gras
+                                      ),
+                                    )
+                                  ),
+                                 Container()
                                 ],
                               ),
                               Container(
@@ -989,6 +1100,78 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
                                         ),
                                       );
                                     }),
+                                    StatefulBuilder(builder:
+                                        (BuildContext context, StateSetter setState) {
+                                      return GestureDetector(
+                                        onTap: () async {
+                                        },
+                                        child: Container(
+                                          width: 70,
+                                          height: 30,
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    isIn(
+                                                        post.users_like_id!,
+                                                        authProvider
+                                                            .loginUserData.id!)
+                                                        ? MaterialCommunityIcons.eye
+                                                        : MaterialCommunityIcons
+                                                        .eye,
+                                                    size: 20,
+                                                    color: isIn(
+                                                        post.users_like_id!,
+                                                        authProvider
+                                                            .loginUserData.id!)
+                                                        ? Colors.blue
+                                                        : Colors.black,
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(
+                                                        left: 1.0, right: 1),
+                                                    child: TextCustomerPostDescription(
+                                                      titre: "${formatAbonnes(vue)}",
+                                                      fontSize: SizeText
+                                                          .homeProfileDateTextSize,
+                                                      couleur: ConstColors.textColors,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              /*
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 1.0,right: 1),
+                                    child: SizedBox(
+                                      height: 2,
+                                      // width: width*0.75,
+                                      child: LinearProgressIndicator(
+                                        color: Colors.blue,
+                                        value: like/post.user!.abonnes!+1,
+                                        semanticsLabel: 'Linear progress indicator',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TextCustomerPostDescription(
+                                  titre: "${(like/post.user!.abonnes!+1).toStringAsFixed(2)}%",
+                                  fontSize: SizeText.homeProfileDateTextSize,
+                                  couleur: ConstColors.textColors,
+                                  fontWeight: FontWeight.bold,
+                                ),
+
+                                 */
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+
                                     StatefulBuilder(builder:
                                         (BuildContext context, StateSetter setState) {
                                       return GestureDetector(
@@ -1281,6 +1464,9 @@ class _ChallengeDetailsState extends State<ChallengeDetails> {
     double width = MediaQuery.of(context).size.width;
     return  Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
+        title: Text('Challenges 🔥🎁🏆',style: TextStyle(color: Colors.green,fontSize: 18),),
+
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),

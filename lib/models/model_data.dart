@@ -805,6 +805,7 @@ class Challenge {
   List<String>? postsWinnerIds = [];
   List<String>? postsIds = [];
   List<String>? usersInscritsIds = [];
+  List<String>? usersChallengersIds = [];
   Challenge();
 
   // Add a factory constructor that creates a new instance from a JSON map
@@ -813,6 +814,42 @@ class Challenge {
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$ChallengeToJson(this);
+}
+
+@JsonSerializable()
+class LookChallenge {
+  String? id;
+  String? user_id;
+  String? postChallengeId;
+  String? titre;
+  String? statut;
+  int? prix;
+  int? vues;
+  bool? disponible = true;
+  bool? isAprouved = true;
+  int? jaime;
+  int? partage;
+
+  int? createdAt;
+  int? updatedAt;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  UserData? user;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  Post? post;
+
+  // List<String>? postsWinnerIds = [];
+  // List<String>? postsIds = [];
+  // List<String>? usersInscritsIds = [];
+  // List<String>? usersChallengersIds = [];
+  LookChallenge();
+
+  // Add a factory constructor that creates a new instance from a JSON map
+  factory LookChallenge.fromJson(Map<String, dynamic> json) =>
+      _$LookChallengeFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$LookChallengeToJson(this);
 }
 
 class EntrepriseData {
@@ -1255,6 +1292,7 @@ class Chat {
 class Post {
   String? id;
   String? user_id;
+  String? challenge_id;
   String? entreprise_id;
   String? type;
   String? status;
@@ -1304,6 +1342,7 @@ class Post {
     this.loves,
     this.partage=0,
     this.users_vue_id,
+    this.challenge_id,
     this.vues,
     this.likes,
     this.commentaires,
@@ -1333,6 +1372,8 @@ class Post {
     url_media = json['url_media'];
     contact_whatsapp =
         json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
+    challenge_id =
+        json['challenge_id'] == null ? "" : json['challenge_id'];
     loves = json['loves'];
     images = json['images'] == null ? [] : json['images'].cast<String>();
     likes = json['likes'];
@@ -1368,6 +1409,7 @@ class Post {
 
     data['loves'] = this.loves;
     data['contact_whatsapp'] = this.contact_whatsapp;
+    data['challenge_id'] = this.challenge_id;
     data['dataType'] = this.dataType;
     data['urlLink'] = this.urlLink;
     data['images'] = this.images;

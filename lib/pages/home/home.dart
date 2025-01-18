@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
@@ -1709,38 +1711,6 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
 
-                  /*
-                  ListTile(
-                    trailing: TextCustomerMenu(
-                      titre: "Tester",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.blue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    leading: Image.asset(
-                      'assets/menu/5.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "IA Recherche Produits",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    subtitle: TextCustomerMenu(
-                      titre: "10.3 m abonnés",
-                      fontSize: 9,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      // Add your navigation logic here
-                      Navigator.pop(context);
-                    },
-                  ),
-
-                   */
                   ListTile(
                     trailing:
                         Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -1758,6 +1728,12 @@ class _MyHomePageState extends State<MyHomePage>
                     onTap: () async {
                       // Add your navigation logic here
 
+                      await userProvider.getAllUsers().then(
+                            (value) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
+                        },
+                      );
+
                     },
                   ),
                   ListTile(
@@ -1769,43 +1745,40 @@ class _MyHomePageState extends State<MyHomePage>
                       width: 20,
                     ),
                     title: TextCustomerMenu(
-                      titre: "Challenge",
+                      titre: "Challenges Disponibles 🔥🎁  Gagnez un Prix 🏆",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: ConstColors.textColors,
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
                       // Add your navigation logic here
-                      await userProvider.getGratuitInfos().then(
-                        (value) {
-                          Navigator.pushNamed(context, '/gagner_point_infos');
-                        },
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeListPage(),));
+
                     },
                   ),
-                  ListTile(
-                    trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/6.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Gagner points Gratuitement",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      // Add your navigation logic here
-                      await userProvider.getGratuitInfos().then(
-                        (value) {
-                          Navigator.pushNamed(context, '/gagner_point_infos');
-                        },
-                      );
-                    },
-                  ),
+                  // ListTile(
+                  //   trailing:
+                  //       Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   leading: Image.asset(
+                  //     'assets/menu/6.png',
+                  //     height: 20,
+                  //     width: 20,
+                  //   ),
+                  //   title: TextCustomerMenu(
+                  //     titre: "Gagner points Gratuitement",
+                  //     fontSize: SizeText.homeProfileTextSize,
+                  //     couleur: ConstColors.textColors,
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   onTap: () async {
+                  //     // Add your navigation logic here
+                  //     await userProvider.getGratuitInfos().then(
+                  //       (value) {
+                  //         Navigator.pushNamed(context, '/gagner_point_infos');
+                  //       },
+                  //     );
+                  //   },
+                  // ),
                   ListTile(
                     trailing:
                         Icon(Icons.arrow_right_outlined, color: Colors.green),

@@ -75,6 +75,45 @@ class PostProvider extends ChangeNotifier {
       yield listConstposts;
     }
   }
+
+  Stream<List<Post>> getChallengePostsImagesByUser(String userId) async* {
+    var postStream = FirebaseFirestore.instance.collection('Posts')
+        .where("user_id",isEqualTo:'${userId}')
+        .where("type",isEqualTo:'${PostType.POST.name}')
+    // .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
+        .where(
+        "dataType",isEqualTo:'${PostDataType.IMAGE.name}'
+
+    )
+
+        .orderBy('created_at', descending: true)
+
+        .snapshots();
+    List<Post> posts = [];
+    //listConstposts =[];
+    //  UserData userData=UserData();
+    await for (var snapshot in postStream) {
+
+      for (var post in snapshot.docs) {
+        //  printVm("post : ${jsonDecode(post.toString())}");
+        Post p=Post.fromJson(post.data());
+        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        // Afficher la liste
+
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
+            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        p.user=userList.first;
+        posts.add(p);
+        listConstposts=posts;
+
+
+      }
+      yield listConstposts;
+    }
+  }
+
   Stream<List<Post>> getEntreprisePostsImagesByUser(String userId) async* {
     var postStream = FirebaseFirestore.instance.collection('Posts')
         .where("user_id",isEqualTo:'${userId}')
@@ -1063,7 +1102,7 @@ class PostProvider extends ChangeNotifier {
     CollectionReference postCollect = FirebaseFirestore.instance.collection('Challenges');
     QuerySnapshot querySnapshotPost = await postCollect
         .where("disponible", isEqualTo: true)
-        // .where("statut", isNotEqualTo: StatutData.TERMINER.name)
+        .where("statut", isNotEqualTo: StatutData.TERMINER.name)
         .orderBy('createdAt', descending: true)
         .limit(30)
         .get();
@@ -1133,6 +1172,83 @@ class PostProvider extends ChangeNotifier {
 
     return challenges;
   }
+
+  Future<List<Challenge>> getAllChallenges() async {
+    List<Challenge> challenges = [];
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Challenges');
+    QuerySnapshot querySnapshotPost = await postCollect
+        .where("disponible", isEqualTo: true)
+    // .where("statut", isNotEqualTo: StatutData.TERMINER.name)
+        .orderBy('createdAt', descending: true)
+        .limit(10)
+        .get();
+
+    List<Challenge> challengesList = querySnapshotPost.docs
+        .map((doc) => Challenge.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    // int currentTime = DateTime.now().millisecondsSinceEpoch;
+    //
+    // for (Challenge p in challengesList) {
+    //   if (p.finishedAt! <= currentTime) {
+    //     // Si la date de fin est dépassée
+    //     p.statut = StatutData.TERMINER.name;
+    //     await postCollect.doc(p.id).update({'statut': StatutData.TERMINER.name});
+    //   } else if (p.startAt! <= currentTime && p.finishedAt! > currentTime) {
+    //     // Si la date actuelle est entre dateDebut et dateFin
+    //     p.statut = StatutData.ENCOURS.name;
+    //     await postCollect.doc(p.id).update({'statut': StatutData.ENCOURS.name});
+    //   }
+
+    int currentTime = DateTime.now().millisecondsSinceEpoch;
+
+    for (Challenge p in challengesList) {
+      // Récupération du post lié
+      CollectionReference postRef = FirebaseFirestore.instance.collection('Posts');
+      QuerySnapshot postSnapshot = await postRef.where("id", isEqualTo: p.postChallengeId).get();
+      List<Post> posts = postSnapshot.docs.map((doc) => Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      if (posts.isNotEmpty) {
+        if (p.finishedAt! < currentTime) {
+          // Si la date de fin est dépassée (le lendemain de finishedAt)
+          p.statut = StatutData.TERMINER.name;
+          await postCollect.doc(p.id).update({'statut': StatutData.TERMINER.name});
+        } else if (p.startAt! <= currentTime && p.finishedAt! >= currentTime) {
+          // Si la date actuelle est entre startAt et finishedAt
+          p.statut = StatutData.ENCOURS.name;
+          await postCollect.doc(p.id).update({'statut': StatutData.ENCOURS.name});
+        } else if (p.startAt! > currentTime) {
+          // Si la date de début n'est pas encore atteinte
+          p.statut = StatutData.ATTENTE.name;
+          await postCollect.doc(p.id).update({'statut': StatutData.ATTENTE.name});
+        }
+
+
+        Post post = posts.first;
+
+        // Récupération de l'utilisateur lié au post
+        CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot userSnapshot = await userRef.where("id", isEqualTo: post.user_id).get();
+        List<UserData> userList = userSnapshot.docs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+        if (userList.isNotEmpty) {
+          post.user = userList.first;
+          p.user = userList.first;
+        }
+
+        p.postChallenge = post;
+        challenges.add(p);
+
+      }
+
+    }
+
+
+
+
+
+    return challenges;
+  }
+
 
   Future<List<Challenge>> getChallengeById(String id) async {
     List<Challenge> challenges = [];
@@ -1733,7 +1849,6 @@ class PostProvider extends ChangeNotifier {
 
   Future<bool> updateVuePost(Post post,BuildContext context) async {
     try{
-
 
       post.updatedAt=DateTime.now().microsecondsSinceEpoch;
 

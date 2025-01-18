@@ -416,6 +416,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                     MaterialPageRoute(
                       builder: (context) => OtherUserPage(otherUser: widget.user),
                     ));
+
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
