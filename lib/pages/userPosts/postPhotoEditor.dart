@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:path/path.dart' as path;
 
 // Flutter imports:
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -14,6 +15,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_watermark/image_watermark.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
@@ -229,6 +231,66 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
     printVm("applyWatermarkAndNavigate... finished");
     return watermarkedImgBytes;
   }
+  Future<XFile> compressImageFile2(File file, String targetPath) async {
+    var result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 90, // Ajustez la qualité selon vos besoins (0-100)
+      minWidth: 1920, // Largeur minimale de l'image compressée
+      minHeight: 1080, // Hauteur minimale de l'image compressée
+    );
+
+    print('Taille originale: ${file.lengthSync()} bytes');
+    print('Taille compressée: ${result!.length()} bytes');
+
+    return result;
+  }
+  Future<XFile> compressImageFile(
+      {
+        required File imageFile,
+        int quality = 80,
+        CompressFormat format = CompressFormat.jpeg
+      })
+  async {
+
+    DateTime time = DateTime.now();
+    final String targetPath = path.join(
+        Directory.systemTemp.path, 'imagetemp-${format.name}-$quality-${time.second}.${format.name}'
+    );
+    printVm('debut compression *******************');
+
+    final XFile? compressedImageFile = await FlutterImageCompress.compressAndGetFile(
+        imageFile.path,
+        targetPath,
+        quality: quality,
+        format: format
+    );
+
+
+    printVm('fin compression *******************');
+
+    if (compressedImageFile == null){
+      throw ("Image compression failed! Please try again.");
+    }
+    debugPrint("Compressed image saved to: ${compressedImageFile.path}");
+    return compressedImageFile;
+  }
+
+  Future<Uint8List> testComporessList(Uint8List list) async {
+    var result = await FlutterImageCompress.compressWithList(
+      list,
+      minHeight: 1920,
+      minWidth: 1080,
+      quality: 50,
+      rotate: 0,
+    );
+
+    print('Taille originale: ${list.length} bytes');
+    print('Taille compressée: ${result!.length} bytes');
+    print(list.length);
+    print(result.length);
+    return result;
+  }
 
   void _openPicker(ImageSource source) async {
     try {
@@ -237,10 +299,27 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
       if (image == null) return;
       String? path;
       Uint8List? bytes;
-      bytes = await image.readAsBytes();
+      // bytes = await image.readAsBytes();
+      // String targetPath =_generateRandomFileName(File.fromRawPath(bytes));
+      // compressImageFile(
+      //     imageFile: File.fromRawPath(await image.readAsBytes())!,
+      //     quality: 10
+      // );
+      bytes = await    testComporessList(
+     await image.readAsBytes()!,
+      );
+      // bytes =await imageCompress.readAsBytes();
+      // bytes = await testCompressFile(File.fromRawPath(await image.readAsBytes()));
+      final random = Random();
+      final randomString = String.fromCharCodes(List.generate(10, (index) => random.nextInt(33) + 89));
+
+
+      // XFile compressedFile = await compressImageFile(File.fromRawPath(bytes), targetPath);
+      // bytes =await compressedFile.readAsBytes();
+      printVm("bytes: **** :  ${bytes}");
       if (bytes != null) {
         // Appliquer le filigrane sur l'image sélectionnée
-        Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
+        // Provider.of<UserAuthProvider>(context, listen: false).setLoading(true);
 
         await Navigator.push(
           context,

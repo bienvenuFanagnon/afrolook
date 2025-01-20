@@ -5,6 +5,7 @@ import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:deeplynks/deeplynks_service.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -31,6 +32,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
   late int? userId = 0;
+  late int app_version_code = 39;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -402,6 +404,175 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  String timeAgo(int timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(DateTime.fromMillisecondsSinceEpoch(timestamp));
+
+    if (difference.inMinutes < 1) {
+      return "à l'instant";
+    } else if (difference.inMinutes == 1) {
+      return "il y a 1 minute";
+    } else if (difference.inMinutes < 60) {
+      return "il y a ${difference.inMinutes} minutes";
+    } else if (difference.inHours == 1) {
+      return "il y a 1 heure";
+    } else if (difference.inHours < 24) {
+      return "il y a ${difference.inHours} heures";
+    } else if (difference.inDays == 1) {
+      return "il y a 1 jour";
+    } else {
+      return "il y a ${difference.inDays} jours";
+    }
+  }
+
+  List<Map<String, dynamic>> getStoriesWithTimeAgo(List<Map<String, dynamic>> stories) {
+    return stories.map((story) {
+      story['when'] = timeAgo(story['createdAt']);
+      return story;
+    }).toList();
+  }
+  Future<List<UserData>> getUsersStorie(int limit) async {
+    List<UserData> listUsers = [];
+
+
+    try {
+      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshot = await userCollect.where('stories', isNotEqualTo: []).get();
+      List<DocumentSnapshot> users = querySnapshot.docs;
+      users.shuffle(); // Mélanger la liste pour obtenir des utilisateurs aléatoires
+      List<DocumentSnapshot> usersDocs = users.take(limit).toList();
+
+      listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
+
+      for(var user in usersRestants){
+        print('debut suppression');
+        List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
+user.stories=storiesWithTimeAgo;
+      }
+      listUsers.shuffle();
+
+      print('list users ${listUsers.length}');
+    } catch (e) {
+      print("erreur $e");
+    }
+
+    return listUsers;
+  }
+
+
+  void ajouterStory(UserData user, Map<String, dynamic> story) {
+    user.stories ??= [];
+    user.stories!.add(story);
+  }
+  Future<bool> deleteFileFromUrl(String fileUrl) async {
+    try {
+      // Obtenez une instance de FirebaseStorage
+      final FirebaseStorage storage = FirebaseStorage.instance;
+
+      // Vérifiez et extrayez le chemin du fichier de l'URL
+      final Uri uri = Uri.parse(fileUrl);
+      final String filePath = Uri.decodeComponent(uri.pathSegments.last); // Extraire le nom du fichier
+
+      // Référence au fichier
+      final Reference ref = storage.ref().child(filePath);
+
+      // Supprimez le fichier
+      await ref.delete();
+      print('Fichier supprimé avec succès.');
+
+      return true;
+    } catch (e) {
+      print('Erreur lors de la suppression du fichier : $e');
+      return false;
+    }
+  }
+
+
+  Future<bool> deleteFileFromUrl2(String fileUrl) async {
+    try {
+      // Obtenez une instance de FirebaseStorage
+      final FirebaseStorage storage = FirebaseStorage.instance;
+
+      // Extrayez le chemin du fichier à partir de l'URL
+      final Uri uri = Uri.parse(fileUrl);
+      final String filePath = uri.pathSegments.skip(1).join('/'); // Ignore 'v0/b/<bucket>'
+
+      // Référence au fichier
+      final Reference ref = storage.ref(filePath);
+
+      // Supprimez le fichier
+      await ref.delete();
+      print('Fichier supprimé avec succès.');
+
+      return true;
+    } catch (e) {
+      print('Erreur lors de la suppression du fichier : $e');
+
+      return false;
+
+    }
+  }
+  Future<List<UserData>> verifierEtSupprimerStories(List<UserData> users) async {
+    int maintenant = DateTime.now().millisecondsSinceEpoch;
+    List<UserData> usersRestants = [];
+
+    for (UserData user in users) {
+      user.stories?.removeWhere((story) {
+        bool estExpiree = (maintenant - story['createdAt']) > 120000; // 2 minutes en millisecondes
+        if (estExpiree && story['media'] != null && story['media'].isNotEmpty) {
+          deleteFileFromUrl(story['media']).then((value) async {
+            if (value) {
+              await updateUser(user);
+            }
+          });
+        }
+        return estExpiree;
+      });
+
+      if (user.stories != null && user.stories!.isNotEmpty) {
+        usersRestants.add(user);
+      }
+    }
+
+    return usersRestants;
+  }
+  // void verifierEtSupprimerStories(UserData user) {
+  //   int maintenant = DateTime.now().millisecondsSinceEpoch;
+  //   user.stories?.removeWhere((story) {
+  //     bool estExpiree = (maintenant - story['createdAt']) > 86400000; // 24 heures en millisecondes
+  //     // bool estExpiree = (maintenant - story['createdAt']) > 120000; // 24 heures en millisecondes
+  //     if (estExpiree && story['media'] != null && story['media'].isNotEmpty) {
+  //       deleteFileFromUrl(story['media']).then((value) async {
+  //         if(value){
+  //           await updateUser(user);
+  //         }
+  //
+  //       },);
+  //       // Supprimer le fichier média associé
+  //       // Vous pouvez ajouter ici le code pour supprimer le fichier média
+  //     }
+  //     return estExpiree;
+  //   });
+  // }
+
+  void supprimerStories(UserData user,int index) {
+    int maintenant = DateTime.now().millisecondsSinceEpoch;
+
+    if (index >= 0 && index < user.stories!.length) {
+      var map=user.stories?.elementAt(index);
+      user.stories?.removeAt(index); // Supprime l'élément à l'index donné
+      deleteFileFromUrl(map!['media']).then((value) async {
+        if(value){
+          await updateUser(user);
+        }
+
+      },);
+      print('Élément supprimé à l\'index $index');
+    } else {
+      print('Index invalide');
+    }
+  }
 
 
   Future<bool> getLoginUser(String id) async {

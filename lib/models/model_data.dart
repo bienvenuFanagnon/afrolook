@@ -359,6 +359,7 @@ class AppDefaultData {
   int? app_version_code = 0;
   int? app_version_code_officiel = 0;
   int? nbr_likes = 0;
+  bool? googleVerification = false;
   int? nbr_comments = 0;
   String? ia_instruction = "";
   late String app_logo = "";
@@ -382,6 +383,7 @@ class AppDefaultData {
       this.nbr_abonnes = 0,
       this.ia_instruction = "",
       this.app_link,
+      this.googleVerification,
       this.app_version_code = 0,
       this.app_version_code_officiel = 0,
       this.tarifPubliCash_to_xof = 250.0,
@@ -408,6 +410,8 @@ class AppDefaultData {
         json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
     app_version_code =
         json['app_version_code'] == null ? 0 : json['app_version_code'];
+    googleVerification =
+        json['googleVerification'] == null ? false : json['googleVerification'];
     nbr_loves = json['nbr_loves'];
     nbr_abonnes = json['nbr_abonnes'];
     tarifPubliCash = json['tarifPubliCash'];
@@ -442,6 +446,7 @@ class AppDefaultData {
     data['ia_instruction'] = this.ia_instruction;
 
     data['tarifPubliCash'] = this.tarifPubliCash;
+    data['googleVerification'] = this.googleVerification;
     data['tarifImage'] = this.tarifImage;
     data['tarifVideo'] = this.tarifVideo;
     data['app_link'] = this.app_link;
@@ -523,6 +528,8 @@ class UserData {
   List<String>? autreInvitationsEnvoyerId = [];
   DocumentReference? reference;
   Map<String, String>? countryData;
+  List<Map<String, dynamic>>? stories = [];
+
 
   UserData(
       {this.reference,
@@ -562,6 +569,7 @@ class UserData {
       this.password = "",
       this.codeParrain,
       this.countryData,
+      this.stories,
       this.state = "OFFLINE",
 
       //this.genreId,
@@ -586,6 +594,14 @@ class UserData {
         friendsIds!.add(v);
       });
     }
+
+    if (json['stories'] != null) {
+      stories = [];
+      json['stories'].forEach((v) {
+        stories!.add(Map<String, dynamic>.from(v));
+      });
+    }
+
     if (json['mesInvitationsEnvoyerId'] != null) {
       mesInvitationsEnvoyerId = <String>[];
       json['mesInvitationsEnvoyerId'].forEach((v) {
@@ -667,6 +683,7 @@ class UserData {
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
+      data['stories'] = this.stories;
 
 
     if (this.userPays != null) {
@@ -1818,6 +1835,7 @@ enum NotificationType {
   PARRAINAGE,
   ARTICLE,
   CHALLENGE,
+  CHRONIQUE,
   SERVICE,
   USER
 }

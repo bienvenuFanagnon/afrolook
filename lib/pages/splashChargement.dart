@@ -76,7 +76,7 @@ class _ChargementState extends State<SplahsChargement> {
     authProvider.getAppData().then(
           (appdata) async {
         printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-        if (app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
+        // if (app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
           authProvider.getIsFirst().then((value) {
             printVm("isfirst: ${value}");
             if (value==null||value==false) {
@@ -240,57 +240,58 @@ class _ChargementState extends State<SplahsChargement> {
           },);
 
 
-        }        else{
-          showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return Container(
-                height: 300,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(Icons.info,color: Colors.red,),
-                        Text(
-                          'Nouvelle mise à jour disponible!',
-                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 10.0),
-                        Text(
-                          'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                          style: TextStyle(fontSize: 16.0),
-                        ),
-                        SizedBox(height: 20.0),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                          ),
-                          onPressed: () {
-                            _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
-                              SizedBox(width: 5,),
-                              Text('Télécharger sur le play store',
-                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                            ],
-                          ),
-
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-
-        }
+        // }
+        // else{
+        //   showModalBottomSheet(
+        //     context: context,
+        //     builder: (BuildContext context) {
+        //       return Container(
+        //         height: 300,
+        //         child: Center(
+        //           child: Padding(
+        //             padding: const EdgeInsets.all(20.0),
+        //             child: Column(
+        //               mainAxisAlignment: MainAxisAlignment.center,
+        //               crossAxisAlignment: CrossAxisAlignment.center,
+        //               children: [
+        //                 Icon(Icons.info,color: Colors.red,),
+        //                 Text(
+        //                   'Nouvelle mise à jour disponible!',
+        //                   style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+        //                 ),
+        //                 SizedBox(height: 10.0),
+        //                 Text(
+        //                   'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+        //                   style: TextStyle(fontSize: 16.0),
+        //                 ),
+        //                 SizedBox(height: 20.0),
+        //                 ElevatedButton(
+        //                   style: ElevatedButton.styleFrom(
+        //                     backgroundColor: Colors.green,
+        //                   ),
+        //                   onPressed: () {
+        //                     _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+        //                   },
+        //                   child: Row(
+        //                     mainAxisAlignment: MainAxisAlignment.center,
+        //                     children: [
+        //                       Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+        //                       SizedBox(width: 5,),
+        //                       Text('Télécharger sur le play store',
+        //                         style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+        //                     ],
+        //                   ),
+        //
+        //                 ),
+        //               ],
+        //             ),
+        //           ),
+        //         ),
+        //       );
+        //     },
+        //   );
+        //
+        // }
 
         // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
 

@@ -57,7 +57,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
     }
   }
   Uint8List? watermarkedImgBytes;
-  Future<Uint8List?> applyWatermark(Uint8List imgBytes) async {
+  Future<Uint8List?> applyWatermark2(Uint8List imgBytes) async {
     // String watermarkText = "@Afrolook @${authProvider.loginUserData.pseudo}";
     String watermarkText = "@Afrolook";
     final assetFont = await rootBundle.load('assets/fonts/file.zip');
@@ -92,6 +92,33 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
 
     return watermarkedImgBytes;
   }
+
+  Future<Uint8List?> applyWatermark(Uint8List imgBytes) async {
+    // String watermarkText = "@Afrolook @${authProvider.loginUserData.pseudo}";
+    String watermarkText = "@Afrolook";
+    final assetFont = await rootBundle.load('assets/fonts/file.zip');
+    Uint8List file = assetFont.buffer.asUint8List(assetFont.offsetInBytes, assetFont.lengthInBytes);
+
+    // Obtenir la taille de l'image
+    img.Image? image = img.decodeImage(Uint8List.fromList(imgBytes));
+    final imgWidth = image!.width;
+    final imgHeight = image!.height;
+
+    // Ajustement des coordonnées (marge de 20 pixels)
+    final dstX = 20;  // Décale vers la gauche
+    final dstY = imgHeight - 60;  // Décale vers le bas
+
+    Uint8List? watermarkedImgBytes = await ImageWatermark.addTextWatermark(
+      imgBytes: imgBytes,
+      color: Colors.green,
+      watermarkText: watermarkText,
+      dstX: dstX,
+      dstY: dstY,
+    );
+
+    return watermarkedImgBytes;
+  }
+
 
   Future<bool> _saveImage(Uint8List? image) async {
     try {

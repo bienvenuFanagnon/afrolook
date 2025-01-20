@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as Path;
@@ -15,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_tags/simple_tags.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
@@ -583,6 +587,20 @@ class _UserPubImageState extends State<UserPubImage> {
   int  limitePosts = 30;
 
   bool isSwitched = false;
+  Future<XFile> compressImageFile(File file, String targetPath) async {
+    var result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 90, // Ajustez la qualité selon vos besoins (0-100)
+      minWidth: 1920, // Largeur minimale de l'image compressée
+      minHeight: 1080, // Hauteur minimale de l'image compressée
+    );
+
+    print('Taille originale: ${file.lengthSync()} bytes');
+    print('Taille compressée: ${result!.length()} bytes');
+
+    return result;
+  }
 
   Future<void> _getImages() async {
     await picker.pickMultiImage().then((images) {
@@ -590,8 +608,13 @@ class _UserPubImageState extends State<UserPubImage> {
       setState(() async {
         listimages =
             images.where((image) => images.indexOf(image) < 2).toList();
-       images.first.readAsBytes().then((value) {
-         fileReadAsStringContent =value;
+       images.first.readAsBytes().then((value) async {
+         final random = Random();
+         final randomString = String.fromCharCodes(List.generate(10, (index) => random.nextInt(33) + 89));
+         String targetPath = '${File.fromRawPath(value).path}/compressed_${randomString}';
+
+         XFile compressedFile = await compressImageFile(File.fromRawPath(value), targetPath);
+         fileReadAsStringContent =await compressedFile.readAsBytes();
         },);
 
       });
@@ -904,6 +927,7 @@ bool onTap=false;
   double _uploadProgress =0;
   late List<XFile> listimages = [];
 
+  late XFile originalvideoFile;
   late XFile videoFile;
   //late   XFile? galleryVideo;
   bool isVideo = false;
@@ -913,6 +937,8 @@ bool onTap=false;
 
   final ImagePicker picker = ImagePicker();
 
+
+
   Future<void> _getImages() async {
     await picker.pickVideo(source: ImageSource.gallery).then((video) async {
       late VideoPlayerController controller;
@@ -921,13 +947,65 @@ bool onTap=false;
         videoFile=video;
         _controller = controller;
       }else{
+        final thumbnailFile = await VideoCompress.getFileThumbnail(
+            video!.path,
+            quality: 50, // default(100)
+            position: -1 // default(-1)
+        );
+        videoFile=video!;
+        // originalvideoFile=video!;
+        // videoFile=XFile(thumbnailFile.path)!;
+        // originalvideoFile.length()
+        // print('Vidéo originale: ${originalvideoFile.length} bytes');
+        // print('Vidéo compressée: ${videoFile.length()} bytes');
         controller = VideoPlayerController.file(File(video!.path));
-        videoFile=video;
         _controller = controller;
       }
 
 
 
+      Future<void> getVideo() async {
+        await picker.pickVideo(source: ImageSource.gallery).then((video) async {
+          late VideoPlayerController controller;
+          if(kIsWeb){
+            controller = VideoPlayerController.networkUrl(Uri.parse(video!.path));
+            videoFile=video;
+            _controller = controller;
+          }else{
+            final thumbnailFile = await VideoCompress.getFileThumbnail(
+                video!.path,
+                quality: 80, // default(100)
+                position: -1 // default(-1)
+            );
+            originalvideoFile=video!;
+            videoFile=XFile(thumbnailFile.path)!;
+            originalvideoFile.length().then((value) {
+              print('Vidéo originale: ${value} bytes');
+
+            },);
+            videoFile.length().then((value) {
+              print('Vidéo compressée: ${value} bytes');
+
+            },);
+            // controller = VideoPlayerController.file(File(video!.path));
+            controller = VideoPlayerController.file(File(videoFile!.path));
+            _controller = controller;
+          }
+
+
+
+
+
+
+
+          const double volume = kIsWeb ? 0.0 : 1.0;
+          await controller.setVolume(volume);
+          await controller.initialize();
+          await controller.setLooping(true);
+          await controller.play();
+          setState(() {});
+        });
+      }
 
 
 

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
+import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/postUserWidget.dart';
@@ -52,6 +54,10 @@ import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../story/afroStory/gnews.dart';
+import '../story/afroStory/storie/storyView.dart';
+import '../story/afroStory/storyItem.dart';
+import '../story/afroStory/whatsapp.dart';
 import '../user/conponent.dart';
 import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 
@@ -71,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool dejaVuPub = true;
   bool contact_whatsapp = false;
   bool contact_afrolook = false;
-  late int app_version_code=0;
+  // late int app_version_code=0;
 
   GlobalKey btnKey = GlobalKey();
   GlobalKey btnKey2 = GlobalKey();
@@ -81,6 +87,7 @@ class _MyHomePageState extends State<MyHomePage>
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late UserAuthProvider authProvider =
       Provider.of<UserAuthProvider>(context, listen: false);
+
   late UserShopAuthProvider authProviderShop =
       Provider.of<UserShopAuthProvider>(context, listen: false);
   late CategorieProduitProvider categorieProduitProvider =
@@ -103,6 +110,75 @@ class _MyHomePageState extends State<MyHomePage>
       throw Exception('Could not launch $url');
     }
   }
+
+
+
+  Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
+    await authProvider.getAppData().then((appdata) async {
+      print("code app data *** : ${authProvider.appDefaultData.app_version_code}");
+      if (!authProvider.appDefaultData.googleVerification!) {
+        if (authProvider.app_version_code == authProvider.appDefaultData.app_version_code) {
+          onSuccess();
+        } else {
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                height: 300,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.info, color: Colors.red),
+                        Text(
+                          'Nouvelle mise à jour disponible!',
+                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 10.0),
+                        Text(
+                          'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                        SizedBox(height: 20.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          onPressed: () {
+                            _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Ionicons.ios_logo_google_playstore, color: Colors.white),
+                              SizedBox(width: 5),
+                              Text(
+                                'Télécharger sur le play store',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+      }else{
+        onSuccess();
+
+      }
+
+    });
+  }
+
 
   Future<void> launchWhatsApp(String phone) async {
     //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
@@ -1883,7 +1959,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.13 (39)',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.13 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2500,7 +2576,6 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    app_version_code=39;
     _color=  _randomColor.randomColor(
         colorHue: ColorHue.multiple(colorHues: [
           ColorHue.red,
@@ -2580,14 +2655,19 @@ class _MyHomePageState extends State<MyHomePage>
           backgroundColor: ConstColors.backgroundColor,
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            leadingWidth: 150,
-            leading: Logo(),
+
+            titleSpacing: 0,
+            title: Logo(),
 
             //backgroundColor: Colors.blue,
             actions: [
+
               GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, "/mes_notifications");
+                onTap: () async {
+                  checkAppVersionAndProceed(context, () {
+                    Navigator.pushNamed(context, "/mes_notifications");
+                  });
+
                 },
                 child: StreamBuilder<List<NotificationData>>(
                   stream: authProvider
@@ -2653,8 +2733,11 @@ class _MyHomePageState extends State<MyHomePage>
               //     icon: Icon(FontAwesome.refresh)),
           AnimateIcon(
             key: UniqueKey(),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+            onTap: () async {
+              checkAppVersionAndProceed(context, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+              });
+
 
             },
             iconType: IconType.continueAnimation,
@@ -2665,8 +2748,10 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           AnimateIcon(
             key: UniqueKey(),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+            onTap: () async {
+              checkAppVersionAndProceed(context, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+              });
 
             },
             iconType: IconType.continueAnimation,
@@ -2769,13 +2854,92 @@ class _MyHomePageState extends State<MyHomePage>
 
               controller: _scrollController,
               slivers: <Widget>[
+                // SliverPadding(
+                //   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                //   sliver: SliverList(
+                //     delegate: SliverChildListDelegate(
+                //       [
+                //         Padding(
+                //           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                //           child: Column(
+                //             children: <Widget>[
+                //               Center(
+                //                 child: Text(
+                //                   "Story View Demos",
+                //                   style: TextStyle(
+                //                     fontSize: 24,
+                //                     fontWeight: FontWeight.bold,
+                //                   ),
+                //                 ),
+                //               ),
+                //               SizedBox(height: 16),
+                //               Center(
+                //                 child: Text(
+                //                   "An exhibit on the capabilities of the story_view library for Flutter. Enjoy!",
+                //                   textAlign: TextAlign.center,
+                //                   style: TextStyle(
+                //                     fontSize: 16,
+                //                     color: Colors.grey,
+                //                   ),
+                //                 ),
+                //               ),
+                //               SizedBox(height: 24),
+                //               NavigationItem(
+                //                 title: "Google News Example",
+                //                 description: "A look at inline stories just like Google News highlights",
+                //                 icon: Image.asset("assets/images/gnews.png"),
+                //                 onTap: () {
+                //                   Navigator.of(context).push(
+                //                     MaterialPageRoute(builder: (context) => GnewsView()),
+                //                   );
+                //                 },
+                //               ),
+                //               SizedBox(height: 16),
+                //               NavigationItem(
+                //                 title: "Whatsapp Custom Story",
+                //                 description: "Demo on full page stories with customizations",
+                //                 icon: Image.asset("assets/images/whatsapp.png"),
+                //                 onTap: () {
+                //                   Navigator.of(context).push(
+                //                     MaterialPageRoute(builder: (context) => Whatsapp()),
+                //                   );
+                //                 },
+                //               ),
+                //               // Expanded(child: SizedBox()),
+                //               // Flexible(
+                //               //     fit: FlexFit.loose,
+                //               //     child: SizedBox()),
+                //               Column(
+                //                 children: <Widget>[
+                //                   Text(
+                //                     "Powered by",
+                //                     style: TextStyle(
+                //                       color: Colors.grey,
+                //                     ),
+                //                   ),
+                //                   Text(
+                //                     "github/blackmann",
+                //                     style: TextStyle(
+                //                       fontWeight: FontWeight.bold,
+                //                       fontSize: 18,
+                //                     ),
+                //                   ),
+                //                 ],
+                //               ),
+                //             ],
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: SliverToBoxAdapter(
                     child: Row(
 
                       children: [
-                        app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
+                        authProvider.app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                           ),
@@ -2826,6 +2990,123 @@ class _MyHomePageState extends State<MyHomePage>
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: FutureBuilder<List<UserData>>(
+                    future: authProvider.getUsersStorie(
+                      limiteUsers,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: widgetSeke2(width, height),
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: widgetSeke2(width, height),
+                          ),
+                        );
+                      } else {
+                        List<UserData> list = snapshot.data!;
+                        // list.shuffle();
+
+                        return SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4.0,bottom: 4),
+                                child: Text(
+                                  'Afro Chronique',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                height: height * 0.2,
+
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: GestureDetector(
+                                        onTap: () async {
+
+                                          checkAppVersionAndProceed(context, () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => StoryChoicePage(),));
+                                          });
+
+
+                                        },
+                                        child: Container(
+
+                                          width: width * 0.2,
+                                          height: height * 0.2,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(10),
+                                            color: Colors.grey[300],
+                                          ),
+                                          child: Center(
+                                            child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
+                                          ),
+                                        ),
+
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: list.length,
+                                        itemBuilder: (context, index) {
+                                          return list[index].stories != null &&
+                                              list[index].stories!.isNotEmpty
+                                              ? Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: StoryPreview(
+                                              user: list[index],
+                                              h: height * 0.2,
+                                              w: width * 0.3,
+                                            ),
+                                          )
+                                              : Container();
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // SizedBox(
+                              //   height: height * 0.35,
+                              //   child: ListView.builder(
+                              //     scrollDirection: Axis.horizontal,
+                              //     itemCount: list.length,
+                              //     itemBuilder: (context, index) {
+                              //       return list[index].stories != null &&
+                              //           list[index].stories!.isNotEmpty
+                              //           ? Padding(
+                              //         padding: const EdgeInsets.all(8.0),
+                              //         child: StoryPreview(user: list[index], h: height * 0.34, w: width * 0.4,),
+                              //       )
+                              //           : Container();
+                              //     },
+                              //   ),
+                              // ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<UserData>>(
                     future: userProvider.getProfileUsers(
                       authProvider.loginUserData.id!,
                       context,
@@ -2867,6 +3148,7 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                 ),
+
                 SliverPadding
                   (
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
@@ -3321,7 +3603,75 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/user_posts_form');
+                        checkAppVersionAndProceed(context, () {
+                          Navigator.pushNamed(context, '/user_posts_form');
+                        });
+
+                        // authProvider.getAppData().then(
+                        //       (appdata) async {
+                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
+                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
+                        //       Navigator.pushNamed(context, '/user_posts_form');
+                        //
+                        //
+                        //
+                        //     }        else{
+                        //       showModalBottomSheet(
+                        //         context: context,
+                        //         builder: (BuildContext context) {
+                        //           return Container(
+                        //             height: 300,
+                        //             child: Center(
+                        //               child: Padding(
+                        //                 padding: const EdgeInsets.all(20.0),
+                        //                 child: Column(
+                        //                   mainAxisAlignment: MainAxisAlignment.center,
+                        //                   crossAxisAlignment: CrossAxisAlignment.center,
+                        //                   children: [
+                        //                     Icon(Icons.info,color: Colors.red,),
+                        //                     Text(
+                        //                       'Nouvelle mise à jour disponible!',
+                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        //                     ),
+                        //                     SizedBox(height: 10.0),
+                        //                     Text(
+                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                        //                       style: TextStyle(fontSize: 16.0),
+                        //                     ),
+                        //                     SizedBox(height: 20.0),
+                        //                     ElevatedButton(
+                        //                       style: ElevatedButton.styleFrom(
+                        //                         backgroundColor: Colors.green,
+                        //                       ),
+                        //                       onPressed: () {
+                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                        //                       },
+                        //                       child: Row(
+                        //                         mainAxisAlignment: MainAxisAlignment.center,
+                        //                         children: [
+                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+                        //                           SizedBox(width: 5,),
+                        //                           Text('Télécharger sur le play store',
+                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        //                         ],
+                        //                       ),
+                        //
+                        //                     ),
+                        //                   ],
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //           );
+                        //         },
+                        //       );
+                        //
+                        //     }
+                        //
+                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+                        //
+                        //
+                        //   },
+                        // );
                       },
                       child: IconPersonaliser(icone: Icons.add_box, size: 40)),
                   IconButton(
@@ -3343,9 +3693,12 @@ class _MyHomePageState extends State<MyHomePage>
                         color: ConstColors.blackIconColors,
                       )),
                   IconButton(
-                      onPressed: () {
+                      onPressed: () async {
                         printVm('tap');
-                        _scaffoldKey.currentState!.openDrawer();
+                        checkAppVersionAndProceed(context, () {
+                          _scaffoldKey.currentState!.openDrawer();
+                        });
+
                         // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
                       },
                       icon: Icon(

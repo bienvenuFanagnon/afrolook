@@ -343,6 +343,7 @@ setMessageNonLu(int nbr){
 
     return listUsers;
   }
+
   Future<List<UserData>> getProfileUsers(String currentUserId,BuildContext context,int limit) async {
     late UserAuthProvider authProvider =
     Provider.of<UserAuthProvider>(context, listen: false);
@@ -351,7 +352,7 @@ setMessageNonLu(int nbr){
 
 
     alphabet.shuffle();
-   // alphabet = alphabet.sublist(0,alphabet.length>5?6:alphabet.length>2?3:alphabet.length>10?11: alphabet.length>15?16: alphabet.length>20?20: alphabet.length>25?26:alphabet.length>30?30: alphabet.length>35?36: alphabet.length>40?41:alphabet.length>50?50: alphabet.length>60?61:alphabet.length>70?70: alphabet.length>80?81: alphabet.length>90?91:alphabet.length>100?100:1);
+    // alphabet = alphabet.sublist(0,alphabet.length>5?6:alphabet.length>2?3:alphabet.length>10?11: alphabet.length>15?16: alphabet.length>20?20: alphabet.length>25?26:alphabet.length>30?30: alphabet.length>35?36: alphabet.length>40?41:alphabet.length>50?50: alphabet.length>60?61:alphabet.length>70?70: alphabet.length>80?81: alphabet.length>90?91:alphabet.length>100?100:1);
     alphabet = alphabet.length<100?alphabet.sublist(0,alphabet.length-1):alphabet.sublist(0,100);
 
     bool hasData=false;
@@ -359,14 +360,14 @@ setMessageNonLu(int nbr){
       CollectionReference userCollect =
       FirebaseFirestore.instance.collection('Users');
       // Get docs from collection reference
-     //  QuerySnapshot querySnapshotUser = await userCollect
-     //     //.where("id",isNotEqualTo: currentUserId)
-     // //  .where("id",isNotEqualTo: currentUserId)
-     //    //  .orderBy('pseudo').startAt([Random().nextDouble()])
-     //  .orderBy('createdAt', descending: true)
-     //     .where('id', whereIn: alphabet)
-     //      .limit(limit)
-     //      .get();
+      //  QuerySnapshot querySnapshotUser = await userCollect
+      //     //.where("id",isNotEqualTo: currentUserId)
+      // //  .where("id",isNotEqualTo: currentUserId)
+      //    //  .orderBy('pseudo').startAt([Random().nextDouble()])
+      //  .orderBy('createdAt', descending: true)
+      //     .where('id', whereIn: alphabet)
+      //      .limit(limit)
+      //      .get();
 
       // Générer une valeur aléatoire pour le point de départ
       // double randomStartPoint = Random().nextDouble();
@@ -412,6 +413,7 @@ setMessageNonLu(int nbr){
     //notifyListeners();
     return listUsers;
   }
+
   Future<List<UserData>> getUsersFilter(String filter,userId) async {
     //listUsers=[];
     final users = FirebaseFirestore.instance.collection('Users')
