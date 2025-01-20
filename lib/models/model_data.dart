@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
 
+import '../pages/story/afroStory/repository.dart';
 import 'chatmodels/message.dart';
 part 'model_data.g.dart'; // Generated file name based on the class name
 /* flutter pub run build_runner build */
@@ -528,7 +529,8 @@ class UserData {
   List<String>? autreInvitationsEnvoyerId = [];
   DocumentReference? reference;
   Map<String, String>? countryData;
-  List<Map<String, dynamic>>? stories = [];
+  // List<Map<String, dynamic>>? stories = [];
+  List<WhatsappStory>? stories = [];
 
 
   UserData(
@@ -598,7 +600,7 @@ class UserData {
     if (json['stories'] != null) {
       stories = [];
       json['stories'].forEach((v) {
-        stories!.add(Map<String, dynamic>.from(v));
+        stories!.add(WhatsappStory.fromJson(v));
       });
     }
 
@@ -683,7 +685,7 @@ class UserData {
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
-      data['stories'] = this.stories;
+      data['stories'] = stories!.map((story) => story.toJson()).toList();
 
 
     if (this.userPays != null) {

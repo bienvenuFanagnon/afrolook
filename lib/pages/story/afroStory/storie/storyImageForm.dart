@@ -1,4 +1,5 @@
 
+import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -77,20 +78,20 @@ class _AddImageStoryPageState extends State<AddImageStoryPage> with ExampleHelpe
       await uploadTask.whenComplete(() async {
         final imageUrl = await storageRef.getDownloadURL();
 
-        Map<String, dynamic> story = {
-          "mediaType": "image",
-          "media": imageUrl,
-          "duration": "4.0",
-          "caption": _captionController.text,
-          "when": "2 hours ago",
-          "color": "",
-          "createdAt": DateTime.now().millisecondsSinceEpoch,
-          "updatedAt": DateTime.now().millisecondsSinceEpoch,
-          "nbrVues": 0,
-          "vues": [],
-          "nbrJaimes": 0,
-          "jaimes": []
-        };
+        var story = WhatsappStory(
+          mediaType: MediaType.image, // Assurez-vous que MediaType.image est défini dans votre code
+          media: imageUrl,
+          duration: 5.1,
+          caption: _captionController.text,
+          when: "à l'instant",
+          color: "",
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          nbrVues: 0,
+          vues: [],
+          nbrJaimes: 0,
+          jaimes: [],
+        );
 
         authProvider.loginUserData.stories!.add(story);
         await authProvider.updateUser(authProvider.loginUserData).then((value) {

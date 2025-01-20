@@ -3,7 +3,10 @@ import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/util.dart';
 import 'package:afrotok/pages/story/afroStory/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:story_view/story_view.dart';
+
+import '../../../providers/authProvider.dart';
 
 
 class Whatsapp extends StatefulWidget {
@@ -14,6 +17,9 @@ class Whatsapp extends StatefulWidget {
 }
 
 class _WhatsappState extends State<Whatsapp> {
+
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +62,8 @@ class StoryViewDelegate extends StatefulWidget {
 class _StoryViewDelegateState extends State<StoryViewDelegate> {
   final StoryController controller = StoryController();
   List<StoryItem> storyItems = [];
-
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
   String? when = "";
 
   @override
@@ -64,6 +71,8 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
     super.initState();
     widget.stories!.forEach((story) {
       if (story.mediaType == MediaType.text) {
+        // story.incrementViews(widget.userData.id!)
+        // _incrementViews(story, widget.userData);
         storyItems.add(
           StoryItem.text(
             title: story.caption!,
@@ -137,6 +146,31 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
     );
   }
 
+  void _incrementViews(WhatsappStory story,UserData user) {
+    setState(() {
+     // var indexOf= user.stories!.indexOf(story);
+      story.nbrVues += 1;
+     //  var userData=user;
+     // userData.stories![indexOf]=story;
+     // authProvider.updateUser(userData);
+
+    });
+  }
+
+  void _toggleLike(UserData user,UserData userLike,int index) {
+    var story= user.stories!.elementAt(index);
+    setState(() {
+      if (story.jaimes.contains(userLike.id)) {
+        story.jaimes.remove(userLike.id);
+      } else {
+        story.jaimes.add(userLike.id!);
+      }
+      story.nbrJaimes = story.jaimes.length;
+      user.stories![index]=story;
+
+    });
+  }
+
   @override
   void dispose() {
     controller.dispose();
@@ -148,8 +182,10 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
     return Stack(
       children: <Widget>[
         StoryView(
+          indicatorColor: Colors.green,
           storyItems: storyItems,
           controller: controller,
+          
           onComplete: () {
             Navigator.of(context).pop();
           },
@@ -158,22 +194,10 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
               Navigator.pop(context);
             }
           },
-onStoryShow: (storyItem, index) {
-
-    int pos = storyItems.indexOf(storyItem);
-
-    // the reason for doing setState only after the first
-    // position is becuase by the first iteration, the layout
-    // hasn't been laid yet, thus raising some exception
-    // (each child need to be laid exactly once)
-    if (pos > 0) {
-      setState(() {
-        // when = widget.stories![pos].when;
-        when = widget.stories![index].when;
-      });
-    }
-
-},
+          onStoryShow: (storyItem, index) {
+           // var storieMap= widget.userData.stories!.elementAt(index);
+           //  _incrementViews(widget.userData,index);
+          },
         ),
         Container(
           padding: EdgeInsets.only(
@@ -195,6 +219,42 @@ onStoryShow: (storyItem, index) {
             ),
           ),
         ),
+        // Positioned(
+        //   bottom: 16,
+        //   left: 16,
+        //   child: Row(
+        //     children: [
+        //       Icon(Icons.remove_red_eye, color: Colors.white),
+        //       SizedBox(width: 4),
+        //       Text(
+        //         '${widget.story['nbrVues']} vues',
+        //         style: TextStyle(color: Colors.white),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        // Positioned(
+        //   bottom: 16,
+        //   right: 16,
+        //   child: Row(
+        //     children: [
+        //       IconButton(
+        //         icon: Icon(
+        //           widget.story['jaimes'].contains('currentUserId')
+        //               ? Icons.favorite
+        //               : Icons.favorite_border,
+        //           color: Colors.red,
+        //         ),
+        //         onPressed: _toggleLike,
+        //       ),
+        //       SizedBox(width: 4),
+        //       Text(
+        //         '${widget.story['nbrJaimes']} j\'aime',
+        //         style: TextStyle(color: Colors.white),
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ],
     );
   }

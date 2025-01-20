@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pages/component/consoleWidget.dart';
+import '../pages/story/afroStory/repository.dart';
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -425,9 +426,9 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
-  List<Map<String, dynamic>> getStoriesWithTimeAgo(List<Map<String, dynamic>> stories) {
+  List<WhatsappStory> getStoriesWithTimeAgo(List<WhatsappStory> stories) {
     return stories.map((story) {
-      story['when'] = timeAgo(story['createdAt']);
+      story.when = timeAgo(story.createdAt);
       return story;
     }).toList();
   }
@@ -445,23 +446,27 @@ class UserAuthProvider extends ChangeNotifier {
       listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
 
-      for(var user in usersRestants){
-        print('debut suppression');
-        List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
-user.stories=storiesWithTimeAgo;
-      }
-      listUsers.shuffle();
+//       for(var user in usersRestants){
+//         print('debut suppression');
+//         List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
+// user.stories=storiesWithTimeAgo;
+      listUsers=usersRestants;
+//       }
 
-      print('list users ${listUsers.length}');
+      print('list users stories ${listUsers.length}');
+      return listUsers;
+
     } catch (e) {
       print("erreur $e");
+      return [];
+
     }
 
-    return listUsers;
+    // return listUsers;
   }
 
 
-  void ajouterStory(UserData user, Map<String, dynamic> story) {
+  void ajouterStory(UserData user, WhatsappStory story) {
     user.stories ??= [];
     user.stories!.add(story);
   }
@@ -519,9 +524,10 @@ user.stories=storiesWithTimeAgo;
 
     for (UserData user in users) {
       user.stories?.removeWhere((story) {
-        bool estExpiree = (maintenant - story['createdAt']) > 120000; // 2 minutes en millisecondes
-        if (estExpiree && story['media'] != null && story['media'].isNotEmpty) {
-          deleteFileFromUrl(story['media']).then((value) async {
+        // bool estExpiree = (maintenant - story['createdAt']) > 120000; // 2 minutes en millisecondes
+        bool estExpiree = (maintenant - story.createdAt) > 86400000; // 24 heurs en millisecondes
+        if (estExpiree && story.media != null && story.media!.isNotEmpty) {
+          deleteFileFromUrl(story.media!).then((value) async {
             if (value) {
               await updateUser(user);
             }
@@ -562,7 +568,7 @@ user.stories=storiesWithTimeAgo;
     if (index >= 0 && index < user.stories!.length) {
       var map=user.stories?.elementAt(index);
       user.stories?.removeAt(index); // Supprime l'élément à l'index donné
-      deleteFileFromUrl(map!['media']).then((value) async {
+      deleteFileFromUrl(map!.media!).then((value) async {
         if(value){
           await updateUser(user);
         }

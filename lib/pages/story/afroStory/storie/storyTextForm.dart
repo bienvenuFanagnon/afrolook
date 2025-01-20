@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
+import '../repository.dart';
 
 class AddTextStoryPage extends StatefulWidget {
   @override
@@ -17,7 +18,7 @@ class _AddTextStoryPageState extends State<AddTextStoryPage> {
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
   final TextEditingController _captionController = TextEditingController();
-  Color _backgroundColor = Colors.white;
+  Color _backgroundColor = Colors.brown;
 
   @override
   Widget build(BuildContext context) {
@@ -96,20 +97,34 @@ class _AddTextStoryPageState extends State<AddTextStoryPage> {
               ElevatedButton(
                 onPressed: () async {
                   if (_captionController.text.isNotEmpty) {
-                    Map<String, dynamic> story = {
-                      "mediaType": "text",
-                      "media": "",
-                      "duration": "4.0",
-                      "caption": _captionController.text,
-                      "when": "2 hours ago",
-                      "color": "${_backgroundColor.value.toRadixString(16)}",
-                      "createdAt": DateTime.now().millisecondsSinceEpoch,
-                      "updatedAt": DateTime.now().millisecondsSinceEpoch,
-                      "nbrVues": 0,
-                      "vues": [],
-                      "nbrJaimes": 0,
-                      "jaimes": []
-                    };
+                    var story = WhatsappStory(
+                      mediaType: MediaType.text!, // Assurez-vous que MediaType.image est défini dans votre code
+                      media: "",
+                      duration: 4.1,
+                      caption: _captionController.text,
+                      when: "2 hours ago",
+                      color: "${_backgroundColor.value.toRadixString(16)}",
+                      createdAt: DateTime.now().millisecondsSinceEpoch,
+                      updatedAt: DateTime.now().millisecondsSinceEpoch,
+                      nbrVues: 0,
+                      vues: [],
+                      nbrJaimes: 0,
+                      jaimes: [],
+                    );
+                    // Map<String, dynamic> story = {
+                    //   "mediaType": "text",
+                    //   "media": "",
+                    //   "duration": "4.0",
+                    //   "caption": _captionController.text,
+                    //   "when": "2 hours ago",
+                    //   "color": "${_backgroundColor.value.toRadixString(16)}",
+                    //   "createdAt": DateTime.now().millisecondsSinceEpoch,
+                    //   "updatedAt": DateTime.now().millisecondsSinceEpoch,
+                    //   "nbrVues": 0,
+                    //   "vues": [],
+                    //   "nbrJaimes": 0,
+                    //   "jaimes": []
+                    // };
                     authProvider.loginUserData.stories!.add(story);
                     await authProvider.updateUser(authProvider.loginUserData).then((value) async {
                       if (value) {

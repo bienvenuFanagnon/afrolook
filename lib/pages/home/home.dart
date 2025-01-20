@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
 import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
@@ -209,7 +210,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   int postLenght = 8;
   int limitePosts = 100;
-  int limiteUsers = 110;
+  int limiteUsers = 200;
   bool is_actualised = false;
   late AnimationController _starController;
   late AnimationController _unlikeController;
@@ -2933,60 +2934,60 @@ class _MyHomePageState extends State<MyHomePage>
                 //     ),
                 //   ),
                 // ),
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-
-                      children: [
-                        authProvider.app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () {
-    authProvider.getAppData().then((value) {
-
-      _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-
-    });
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-
-                              Text('Faire la mise à jour',
-                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                            ],
-                          ),
-
-                        ),
-
-
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                          ),
-                          onPressed: () {
-                            _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-
-                              Text('🎁 Faire un don 🙏',
-                                style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                            ],
-                          ),
-
-                        ),
-
-                      ],
-                      mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
-                    ),
-                  ),
-                ),
+    //             SliverPadding(
+    //               padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+    //               sliver: SliverToBoxAdapter(
+    //                 child: Row(
+    //
+    //                   children: [
+    //                     authProvider.app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
+    //                       style: ElevatedButton.styleFrom(
+    //                         backgroundColor: Colors.red,
+    //                       ),
+    //                       onPressed: () {
+    // authProvider.getAppData().then((value) {
+    //
+    //   _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+    //
+    // });
+    //                       },
+    //                       child: Row(
+    //                         mainAxisAlignment: MainAxisAlignment.center,
+    //                         children: [
+    //
+    //                           Text('Faire la mise à jour',
+    //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+    //                         ],
+    //                       ),
+    //
+    //                     ),
+    //
+    //
+    //                     ElevatedButton(
+    //                       style: ElevatedButton.styleFrom(
+    //                         backgroundColor: Colors.green,
+    //                       ),
+    //                       onPressed: () {
+    //                         _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
+    //                       },
+    //                       child: Row(
+    //                         mainAxisAlignment: MainAxisAlignment.center,
+    //                         children: [
+    //
+    //                           Text('🎁 Faire un don 🙏',
+    //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+    //                         ],
+    //                       ),
+    //
+    //                     ),
+    //
+    //                   ],
+    //                   mainAxisAlignment:
+    //                   MainAxisAlignment
+    //                       .spaceBetween,
+    //                 ),
+    //               ),
+    //             ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: FutureBuilder<List<UserData>>(
@@ -3017,19 +3018,20 @@ class _MyHomePageState extends State<MyHomePage>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(left: 4.0,bottom: 4),
+                                padding: const EdgeInsets.only(left: 8.0,bottom: 4),
                                 child: Text(
-                                  'Afro Chronique',
+                                  // 'Afro Chronique',
+                                  'Chronique',
                                   style: TextStyle(
                                     fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w900,
                                     color: Colors.green,
                                     letterSpacing: 1.5,
                                   ),
                                 ),
                               ),
                               SizedBox(
-                                height: height * 0.2,
+                                height: height * 0.25,
 
                                 child: Row(
                                   children: [
@@ -3047,7 +3049,7 @@ class _MyHomePageState extends State<MyHomePage>
                                         child: Container(
 
                                           width: width * 0.2,
-                                          height: height * 0.2,
+                                          height: height * 0.25,
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(10),
                                             color: Colors.grey[300],
@@ -3064,13 +3066,16 @@ class _MyHomePageState extends State<MyHomePage>
                                         scrollDirection: Axis.horizontal,
                                         itemCount: list.length,
                                         itemBuilder: (context, index) {
-                                          return list[index].stories != null &&
+                                          List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
+                                          list[index].stories=storiesWithTimeAgo;
+                                          printVm('user index : ${index} stories ${list[index].stories!.length}');
+                                          return
                                               list[index].stories!.isNotEmpty
                                               ? Padding(
                                             padding: const EdgeInsets.all(8.0),
                                             child: StoryPreview(
                                               user: list[index],
-                                              h: height * 0.2,
+                                              h: height * 0.25,
                                               w: width * 0.3,
                                             ),
                                           )
