@@ -415,7 +415,7 @@ packages:
     source: hosted
     version: "4.10.1"
   collection:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: collection
       sha256: a1ace0a119f20aabc852d165077c036cd864315bd99b7eaa10a60100341941bf
@@ -844,7 +844,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_cache_manager:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_cache_manager
       sha256: "400b6592f16a4409a7f2bb929a9a7e38c72cceb8ffb99ee57bbf2cb2cecf8386"
@@ -2223,14 +2223,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
-  story_view:
-    dependency: "direct main"
-    description:
-      name: story_view
-      sha256: ab64063569178e405b643ab11bdc28d6e85333191e3c8b5556e864fe6c5b2a5a
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.16.5"
   stream_channel:
     dependency: transitive
     description:

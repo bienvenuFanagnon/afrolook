@@ -1,10 +1,14 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
+import 'package:afrotok/pages/story/afroStory/storyPackage/controller/story_controller.dart';
+import 'package:afrotok/pages/story/afroStory/storyPackage/utils.dart';
+import 'package:afrotok/pages/story/afroStory/storyPackage/widgets/story_view.dart';
 import 'package:afrotok/pages/story/afroStory/util.dart';
 import 'package:afrotok/pages/story/afroStory/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:story_view/story_view.dart';
+// import 'package:story_view/story_view.dart';
 
 import '../../../providers/authProvider.dart';
 
@@ -72,26 +76,29 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
     widget.stories!.forEach((story) {
       if (story.mediaType == MediaType.text) {
         // story.incrementViews(widget.userData.id!)
-        // _incrementViews(story, widget.userData);
+        _incrementViews(story, widget.userData);
         storyItems.add(
           StoryItem.text(
             title: story.caption!,
             backgroundColor: HexColor(story.color!),
             duration: Duration(
               milliseconds: (story.duration! * 1000).toInt(),
-            ),
+            ), vues: '${story.nbrVues}', context: context,
           ),
         );
       }
 
       if (story.mediaType == MediaType.image) {
+        _incrementViews(story, widget.userData);
+
         storyItems.add(StoryItem.pageImage(
+
           url: story.media!,
           controller: controller,
-          caption: Text(story.caption!),
+          caption: Text(story.caption!,style: TextStyle(color: Colors.white),),
           duration: Duration(
             milliseconds: (story.duration! * 1000).toInt(),
-          ),
+          ), vues: '${story.nbrVues}', context: context,
         ));
       }
 
@@ -146,26 +153,27 @@ class _StoryViewDelegateState extends State<StoryViewDelegate> {
     );
   }
 
-  void _incrementViews(WhatsappStory story,UserData user) {
+  void _incrementViews(WhatsappStory story, UserData user) {
     setState(() {
-     // var indexOf= user.stories!.indexOf(story);
-      story.nbrVues += 1;
-     //  var userData=user;
-     // userData.stories![indexOf]=story;
-     // authProvider.updateUser(userData);
-
+      int indexOfStory = widget.stories!.indexOf(story);
+      if (indexOfStory != -1) {
+        story.nbrVues =story.nbrVues!+ 1;
+        widget.stories![indexOfStory] = story;
+        printVm("story : ${story.toJson()}");
+        user.stories = widget.stories!;
+        authProvider.updateUser(user);
+      }
     });
   }
-
   void _toggleLike(UserData user,UserData userLike,int index) {
     var story= user.stories!.elementAt(index);
     setState(() {
-      if (story.jaimes.contains(userLike.id)) {
-        story.jaimes.remove(userLike.id);
+      if (story.jaimes!.contains(userLike.id)) {
+        story.jaimes!.remove(userLike.id);
       } else {
-        story.jaimes.add(userLike.id!);
+        story.jaimes!.add(userLike.id!);
       }
-      story.nbrJaimes = story.jaimes.length;
+      story.nbrJaimes = story.jaimes!.length;
       user.stories![index]=story;
 
     });

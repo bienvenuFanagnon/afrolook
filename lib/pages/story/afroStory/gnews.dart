@@ -1,7 +1,9 @@
 import 'package:afrotok/pages/story/afroStory/repository.dart';
+import 'package:afrotok/pages/story/afroStory/storyPackage/controller/story_controller.dart';
+import 'package:afrotok/pages/story/afroStory/storyPackage/widgets/story_view.dart';
 import 'package:afrotok/pages/story/afroStory/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:story_view/story_view.dart';
+// import 'package:story_view/story_view.dart';
 
 class GnewsView extends StatelessWidget {
   final StoryController controller = StoryController();

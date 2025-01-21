@@ -33,6 +33,7 @@ class _StoryPreviewState extends State<StoryPreview> {
 
     final story = widget.user.stories!.last;
     Widget mediaWidget;
+    printVm("story data last : ${widget.user.stories!.first.toJson()}");
     printVm("story data : ${story.toJson()}");
 
     if (story.mediaType!.name == 'image') {

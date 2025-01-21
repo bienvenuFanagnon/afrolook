@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
+import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
 import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
@@ -1816,6 +1817,24 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green,),
+                    leading: Icon(Icons.history_toggle_off_sharp,size: 30,),
+                    title: TextCustomerMenu(
+                      titre: "Mes chroniques",
+                      fontSize: SizeText.homeProfileTextSize+3,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyStoriesPage(stories: authProvider.loginUserData.stories!, user: authProvider.loginUserData),));
+
+
+                    },
+                  ),
+                  ListTile(
+                    trailing:
                         Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/6.png',
@@ -3069,6 +3088,9 @@ class _MyHomePageState extends State<MyHomePage>
                                           List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
                                           list[index].stories=storiesWithTimeAgo;
                                           printVm('user index : ${index} stories ${list[index].stories!.length}');
+
+                                          printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
+
                                           return
                                               list[index].stories!.isNotEmpty
                                               ? Padding(

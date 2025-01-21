@@ -428,7 +428,7 @@ class UserAuthProvider extends ChangeNotifier {
 
   List<WhatsappStory> getStoriesWithTimeAgo(List<WhatsappStory> stories) {
     return stories.map((story) {
-      story.when = timeAgo(story.createdAt);
+      story.when = timeAgo(story.createdAt!);
       return story;
     }).toList();
   }
@@ -446,7 +446,10 @@ class UserAuthProvider extends ChangeNotifier {
       listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
 
-//       for(var user in usersRestants){
+      for(var user in usersRestants){
+        print('user auth stories ${user.stories!.first.toJson()}');
+
+      }
 //         print('debut suppression');
 //         List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
 // user.stories=storiesWithTimeAgo;
@@ -525,7 +528,7 @@ class UserAuthProvider extends ChangeNotifier {
     for (UserData user in users) {
       user.stories?.removeWhere((story) {
         // bool estExpiree = (maintenant - story['createdAt']) > 120000; // 2 minutes en millisecondes
-        bool estExpiree = (maintenant - story.createdAt) > 86400000; // 24 heurs en millisecondes
+        bool estExpiree = (maintenant - story.createdAt!) > 86400000; // 24 heurs en millisecondes
         if (estExpiree && story.media != null && story.media!.isNotEmpty) {
           deleteFileFromUrl(story.media!).then((value) async {
             if (value) {
@@ -562,20 +565,30 @@ class UserAuthProvider extends ChangeNotifier {
   //   });
   // }
 
-  void supprimerStories(UserData user,int index) {
+  Future<bool> supprimerStories(UserData user,int index) async {
     int maintenant = DateTime.now().millisecondsSinceEpoch;
 
     if (index >= 0 && index < user.stories!.length) {
       var map=user.stories?.elementAt(index);
-      user.stories?.removeAt(index); // Supprime l'élément à l'index donné
-      deleteFileFromUrl(map!.media!).then((value) async {
-        if(value){
-          await updateUser(user);
-        }
+      if(map!.media!.length>5){
+        await deleteFileFromUrl(map!.media!).then((value) async {
+          if(value){
+            user.stories?.removeAt(index);
+            await updateUser(user);
+          // Supprime l'élément à l'index donné
 
-      },);
+          }
+
+        },);
+
+      }else{
+        user.stories?.removeAt(index);
+        await updateUser(user);
+      }
       print('Élément supprimé à l\'index $index');
+      return true;
     } else {
+      return false;
       print('Index invalide');
     }
   }
