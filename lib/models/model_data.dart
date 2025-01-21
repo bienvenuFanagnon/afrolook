@@ -355,6 +355,7 @@ class UserPseudo {
 class AppDefaultData {
   String? id;
   String? app_link;
+  String? geminiapiKey;
   List<String>? users_id = [];
   int? nbr_abonnes = 0;
   int? app_version_code = 0;
@@ -383,6 +384,7 @@ class AppDefaultData {
       this.users_id,
       this.nbr_abonnes = 0,
       this.ia_instruction = "",
+      this.geminiapiKey = "",
       this.app_link,
       this.googleVerification,
       this.app_version_code = 0,
@@ -405,6 +407,7 @@ class AppDefaultData {
     nbr_likes = json['nbr_likes'];
     nbr_comments = json['nbr_comments'];
     app_link = json['app_link'] == null ? "" : json['app_link'];
+    geminiapiKey = json['geminiapiKey'] == null ? "" : json['geminiapiKey'];
     ia_instruction =
         json['ia_instruction'] == null ? "" : json['ia_instruction'];
     app_version_code_officiel =
@@ -445,6 +448,7 @@ class AppDefaultData {
     data['nbr_abonnes'] = this.nbr_abonnes;
     data['app_version_code'] = this.app_version_code;
     data['ia_instruction'] = this.ia_instruction;
+    data['geminiapiKey'] = this.geminiapiKey;
 
     data['tarifPubliCash'] = this.tarifPubliCash;
     data['googleVerification'] = this.googleVerification;

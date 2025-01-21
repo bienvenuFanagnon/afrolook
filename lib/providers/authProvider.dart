@@ -1048,7 +1048,6 @@ class UserAuthProvider extends ChangeNotifier {
     required UserData user,
     required UserIACompte ia,
   }) async {
-    final apiKey = "AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
     List<Content> historique = [];
 
     // Ajouter les messages historiques avec leur rôle (par exemple, utilisateur ou assistant)
@@ -1066,7 +1065,7 @@ class UserAuthProvider extends ChangeNotifier {
       // Initialisation du modèle avec des instructions adaptées
       final model = GenerativeModel(
         model: 'gemini-2.0-flash-exp',
-        apiKey: apiKey,
+        apiKey: appDefaultData.geminiapiKey!,
         systemInstruction: Content.system(
           "${regle}. Prenez en compte le genre de la personne avec qui vous discutez : actuellement, vous discutez avec ${user.genre == "Homme" ? 'un homme' : 'une femme'}.",
         ),
@@ -1101,7 +1100,6 @@ class UserAuthProvider extends ChangeNotifier {
 
 
   Future<String?> generateText2({required List<Message> ancien_messages,required String message,required String regle,required UserData user,required UserIACompte ia}) async {
-    final apiKey="AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
     List<Content> contents=[];
     for(Message message in ancien_messages){
       contents.add(Content.text(message.message!));
@@ -1112,7 +1110,7 @@ class UserAuthProvider extends ChangeNotifier {
     try {
       //final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
       // final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
-      final model = GenerativeModel(model: 'gemini-2.0-flash-exp', apiKey: apiKey,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
+      final model = GenerativeModel(model: 'gemini-2.0-flash-exp', apiKey: appDefaultData.geminiapiKey!,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
       //final prompt = "pour chaque question voici les regle a respecter "${regle}" voici la question "${message}"";
       final prompt = "${message}";
       final content = [Content.text(prompt)];
