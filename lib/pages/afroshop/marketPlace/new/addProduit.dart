@@ -68,7 +68,7 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
   ];
   void pickImages() async {
     //List<ImageSource> selectedImages = await ImagePicker.pickMultipleImages();
-    await picker.pickMultiImage(limit: 5).then((images) {
+    await picker.pickMultiImage().then((images) {
       setState(() {
         if (images != null && images.isNotEmpty) {
           if(widget.entrepriseData.abonnement!.type==TypeAbonement.GRATUIT.name){

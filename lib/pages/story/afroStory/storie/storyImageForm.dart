@@ -46,8 +46,8 @@ class _AddImageStoryPageState extends State<AddImageStoryPage> with ExampleHelpe
   }
   Uint8List? bytes;
 
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+  Future<void> pickImage(bool isCamera) async {
+    final pickedFile = await ImagePicker().pickImage(source:isCamera?ImageSource.camera: ImageSource.gallery);
     if (pickedFile != null) {
 
 
@@ -96,26 +96,26 @@ class _AddImageStoryPageState extends State<AddImageStoryPage> with ExampleHelpe
         authProvider.loginUserData.stories!.add(story);
         await authProvider.updateUser(authProvider.loginUserData).then((value) {
           if (value) {
-          //    authProvider
-          //       .getAllUsersOneSignaUserId()
-          //       .then(
-          //         (userIds) async {
-          //       if (userIds.isNotEmpty) {
-          //
-          //         await authProvider.sendNotification(
-          //             userIds: userIds,
-          //             smallImage: "${authProvider.loginUserData.imageUrl!}",
-          //             send_user_id: "${authProvider.loginUserData.id!}",
-          //             recever_user_id: "",
-          //             message: "📢 @${authProvider.loginUserData.pseudo!} vient de partager une chronique 🎥✨ ! Découvrez-la dès maintenant 👀.",
-          //             type_notif: NotificationType.CHRONIQUE.name,
-          //             post_id: "id",
-          //             post_type: PostDataType.TEXT.name, chat_id: ''
-          //         );
-          //
-          //       }
-          //     },
-          //   );
+             authProvider
+                .getAllUsersOneSignaUserId()
+                .then(
+                  (userIds) async {
+                if (userIds.isNotEmpty) {
+
+                  await authProvider.sendNotification(
+                      userIds: userIds,
+                      smallImage: "${authProvider.loginUserData.imageUrl!}",
+                      send_user_id: "${authProvider.loginUserData.id!}",
+                      recever_user_id: "",
+                      message: "📢 @${authProvider.loginUserData.pseudo!} vient de partager une chronique 🎥✨ ! Découvrez-la dès maintenant 👀.",
+                      type_notif: NotificationType.CHRONIQUE.name,
+                      post_id: "id",
+                      post_type: PostDataType.TEXT.name, chat_id: ''
+                  );
+
+                }
+              },
+            );
             SnackBar snackBar = SnackBar(
               backgroundColor: Colors.green,
               content: Text(
@@ -165,10 +165,21 @@ class _AddImageStoryPageState extends State<AddImageStoryPage> with ExampleHelpe
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _pickImage,
-                child: Text('Choisir une Image', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  pickImage(false);
+                },
+                child: Text('Choisir depuis la galerie', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
+              //
+              // SizedBox(height: 20),
+              // ElevatedButton(
+              //   onPressed: () {
+              //     pickImage(true);
+              //   },
+              //   child: Text('Prendre une photo', style: TextStyle(color: Colors.white)),
+              //   style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              // ),
               SizedBox(height: 20),
               bytes != null ? Image.memory(bytes!) : Container(),
               SizedBox(height: 20),

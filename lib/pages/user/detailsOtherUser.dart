@@ -368,28 +368,37 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-              child: SizedBox(
-                //width: 70,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      alignment: Alignment.center,
-                      child: TextCustomerPostDescription(
-                        titre: "${widget.user.userlikes}",
-                        fontSize: 15,
-                        couleur: Colors.green,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: 5,),
-                    Icon(AntDesign.heart,color: Colors.red,),
-                  ],
-                ),
+            Visibility(
+              visible: widget.user!.isVerify!,
+              child: const Icon(
+                Icons.verified,
+                color: Colors.green,
+                size: 30,
               ),
             ),
+
+            // Padding(
+            //   padding: const EdgeInsets.only(top: 4.0,bottom: 4),
+            //   child: SizedBox(
+            //     //width: 70,
+            //     child: Row(
+            //       mainAxisAlignment: MainAxisAlignment.center,
+            //       children: [
+            //         Container(
+            //           alignment: Alignment.center,
+            //           child: TextCustomerPostDescription(
+            //             titre: "${widget.user.userlikes}",
+            //             fontSize: 15,
+            //             couleur: Colors.green,
+            //             fontWeight: FontWeight.w700,
+            //           ),
+            //         ),
+            //         SizedBox(width: 5,),
+            //         Icon(AntDesign.heart,color: Colors.red,),
+            //       ],
+            //     ),
+            //   ),
+            // ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: 2,

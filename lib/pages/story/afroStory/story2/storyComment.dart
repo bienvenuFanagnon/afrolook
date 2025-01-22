@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/pages/home/postMenu.dart';
+import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/home_view_model.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/search_view_model.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/comment_text_field.dart';
@@ -30,29 +31,28 @@ import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:popover_gtk/popover_gtk.dart';
-import 'package:popup_menu_plus/popup_menu_plus.dart';
+
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:stories_for_flutter/stories_for_flutter.dart';
-import '../../constant/listItemsCarousel.dart';
-import '../../constant/textCustom.dart';
-import '../../models/chatmodels/message.dart';
-import '../../providers/authProvider.dart';
-import 'component/consoleWidget.dart';
-import 'component/showImage.dart';
-import 'component/showUserDetails.dart';
+import 'package:flutter_story_presenter/flutter_story_presenter.dart';
 
-class PostComments extends StatefulWidget {
-  final Post post;
-  const PostComments({super.key, required this.post});
+import '../../../../constant/textCustom.dart';
+import '../../../../providers/authProvider.dart';
+import '../../../component/consoleWidget.dart';
+import '../../../component/showImage.dart';
+import '../../../component/showUserDetails.dart';
+
+
+class StoryComments extends StatefulWidget {
+  final StoryItem story;
+  final UserData userStory;
+  const StoryComments({super.key, required this.story, required this.userStory});
 
   @override
-  State<PostComments> createState() => _PostCommentsState();
+  State<StoryComments> createState() => _StoryCommentsState();
 }
 
-class _PostCommentsState extends State<PostComments> with TickerProviderStateMixin{
+class _StoryCommentsState extends State<StoryComments> with TickerProviderStateMixin{
   String token = '';
   bool dejaVuPub = true;
 
@@ -63,13 +63,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   final _formKey = GlobalKey<FormState>();
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late UserAuthProvider authProvider =
-      Provider.of<UserAuthProvider>(context, listen: false);
+  Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
-      Provider.of<UserProvider>(context, listen: false);
+  Provider.of<UserProvider>(context, listen: false);
   int imageIndex = 0;
   PostComment commentSelectedToReply = PostComment();
   late PostProvider postProviders =
-      Provider.of<PostProvider>(context, listen: false);
+  Provider.of<PostProvider>(context, listen: false);
   TextEditingController commentController = TextEditingController();
   String formaterDateTime2(DateTime dateTime) {
     DateTime now = DateTime.now();
@@ -83,6 +83,11 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       // Sinon, afficher la date complète
       return DateFormat.yMd().add_Hms().format(dateTime);
     }
+  }
+  String? extractName(String text) {
+    final regex = RegExp(r'@([A-Za-z0-9 ]+)');
+    final match = regex.firstMatch(text);
+    return match?.group(1);
   }
 
   String formaterDateTime(DateTime dateTime) {
@@ -110,7 +115,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     }
   }
 
-   _showPostMenuModalDialog(Post post) {
+  _showPostMenuModalDialog(Post post) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -120,7 +125,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             child: Column(
               children: <Widget>[
                 Visibility(
-                  visible: post.user!.id != authProvider.loginUserData.id,
+                  visible: widget.userStory.id != authProvider.loginUserData.id,
                   child: ListTile(
                     onTap: () async {
                       post.status = PostStatus.SIGNALER.name;
@@ -170,7 +175,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
                  */
                 Visibility(
-                  visible: post.user!.id == authProvider.loginUserData.id,
+                  visible: widget.userStory.id == authProvider.loginUserData.id,
                   child: ListTile(
                     onTap: () async {
                       if (authProvider.loginUserData.role == UserRole.ADM.name) {
@@ -201,7 +206,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           },
                         );
                       } else if (post.type == PostType.POST.name) {
-                        if (post.user!.id == authProvider.loginUserData.id) {
+                        if (widget.userStory.id == authProvider.loginUserData.id) {
                           post.status = PostStatus.SUPPRIMER.name;
                           await postProviders.updateVuePost(post, context).then(
                                 (value) {
@@ -346,37 +351,37 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           },
                         );
                       } else
-                        if (postComment.user!.id == authProvider.loginUserData.id) {
-                          postComment.status = PostStatus.SUPPRIMER.name;
-                          await postProviders.updateComment(postComment).then(
-                                (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'commentaire supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                                setState(() {
+                      if (postComment.user!.id == authProvider.loginUserData.id) {
+                        postComment.status = PostStatus.SUPPRIMER.name;
+                        await postProviders.updateComment(postComment).then(
+                              (value) {
+                            if (value) {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'commentaire supprimé !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                              setState(() {
 
-                                });
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
+                              });
+                            } else {
+                              SnackBar snackBar = SnackBar(
+                                content: Text(
+                                  'échec !',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            }
+                          },
+                        );
+                      }
 
 
                       setState(() {
@@ -388,7 +393,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       color: Colors.red,
                     ),
                     title: authProvider.loginUserData.role == UserRole.ADM.name
-                        // ? Text('Bloquer')
+                    // ? Text('Bloquer')
                         ? Text('Supprimer')
                         : Text('Supprimer'),
                   ),
@@ -466,7 +471,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     onTap: () async {
                       if (authProvider.loginUserData.role == UserRole.ADM.name) {
                         response.status = PostStatus.SUPPRIMER.name;
-                     int indexResponse=   postComment.responseComments!.indexOf(response);
+                        int indexResponse=   postComment.responseComments!.indexOf(response);
                         postComment.responseComments!.elementAt(indexResponse).status= PostStatus.SUPPRIMER.name;
 
 
@@ -848,22 +853,22 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   /// **Fonction pour gérer les interactions avec les hashtags et mentions**
   Future<void> _handleTagClick(String text,double width, height) async {
     print("Tag cliqué: ${text.replaceFirst('@', '')}");
-if(users.isNotEmpty){
-  var user= users.firstWhere((element) => element.pseudo==text.replaceFirst('@', ''),);
-  if(user!=null){
-    await  authProvider.getUserById(user.id!).then((users) async {
-      if(users.isNotEmpty){
-        showUserDetailsModalDialog(users.first, width, height,context);
+    if(users.isNotEmpty){
+      var user= users.firstWhere((element) => element.pseudo==text.replaceFirst('@', ''),);
+      if(user!=null){
+        await  authProvider.getUserById(user.id!).then((users) async {
+          if(users.isNotEmpty){
+            showUserDetailsModalDialog(users.first, width, height,context);
 
+          }
+        },);
       }
-    },);
-  }
-}
+    }
 
     // Recherchez l'utilisateur associé et affichez les détails si nécessaire
   }
 
-List<UserData> users=[];
+  List<UserData> users=[];
   @override
   void initState() {
     userProvider.getAllUsers().then((users2) {
@@ -911,207 +916,201 @@ List<UserData> users=[];
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
 
-              Container(
-                child: StatefulBuilder(builder:
+                  Container(
+                    child: StatefulBuilder(builder:
                         (BuildContext context, StateSetter setStateImages) {
-                        return Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Align(
-                                    //   alignment: Alignment.centerLeft,
-                                    //   child: IconButton(onPressed: () {
-                                    //
-                                    //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
-                                    // ),
-                                    Row(
-                                      children: [
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8.0),
-                                          child: CircleAvatar(
-                                            backgroundImage: NetworkImage(
-                                                '${widget.post.user!.imageUrl!}'),
-                                          ),
+                      return Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Align(
+                                  //   alignment: Alignment.centerLeft,
+                                  //   child: IconButton(onPressed: () {
+                                  //
+                                  //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
+                                  // ),
+                                  Row(
+                                    children: [
+                                      Padding(
+                                        padding:
+                                        const EdgeInsets.only(right: 8.0),
+                                        child: CircleAvatar(
+                                          backgroundImage: NetworkImage(
+                                              '${widget.userStory.imageUrl!}'),
                                         ),
-                                        SizedBox(
-                                          height: 2,
-                                        ),
-                                        Row(
-                                          children: [
-                                            Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-        
-                                              children: [
-                                                SizedBox(
-                                                  //width: 100,
-                                                  child: TextCustomerUserTitle(
-                                                    titre:
-                                                        "@${widget.post.user!.pseudo!}",
-                                                    fontSize: SizeText
-                                                        .homeProfileTextSize,
-                                                    couleur:
-                                                        ConstColors.textColors,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                TextCustomerUserTitle(
+                                      ),
+                                      SizedBox(
+                                        height: 2,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                                            children: [
+                                              SizedBox(
+                                                //width: 100,
+                                                child: TextCustomerUserTitle(
                                                   titre:
-                                                      "${widget.post.user!.abonnes!} abonné(s)",
+                                                  "@${widget.userStory.pseudo!}",
                                                   fontSize: SizeText
                                                       .homeProfileTextSize,
-                                                  couleur: ConstColors.textColors,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                    IconButton(
-                                        onPressed: () {
-                                          _showPostMenuModalDialog(widget.post);
-                                        },
-                                        icon: Icon(
-                                          Icons.more_horiz,
-                                          size: 30,
-                                          color: ConstColors.blackIconColors,
-                                        )),
-                                  ],
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: SizedBox(
-                                    width: width * 0.9,
-                                    height: 80,
-                                    child: Container(
-                                      alignment: Alignment.centerLeft,
-                                      child: TextCustomerPostDescription(
-                                        titre: "${widget.post.description}",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: TextCustomerPostDescription(
-                                    titre:
-                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
-                                    fontSize: SizeText.homeProfileDateTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                widget.post!.images!.isEmpty
-                                    ? Container()
-                                    : Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            showImageDetailsModalDialog(widget.post!.images!.first!, width, height,context);
-
-                                          },
-                                          child: Container(
-                                            width: 100,
-                                            height: 50,
-                                            child: ClipRRect(
-                                              borderRadius:
-                                              BorderRadius.all(
-                                                  Radius.circular(10)),
-                                              child: Container(
-                                                child: CachedNetworkImage(
-                                                  fit: BoxFit.cover,
-                                                  imageUrl:
-                                                  '${widget.post!.images!.first}',
-                                                  progressIndicatorBuilder: (context,
-                                                      url,
-                                                      downloadProgress) =>
-                                                  //  LinearProgressIndicator(),
-
-                                                  Skeletonizer(
-                                                      child: SizedBox(
-                                                          width: 400,
-                                                          height: 450,
-                                                          child: ClipRRect(
-                                                              borderRadius:
-                                                              BorderRadius.all(Radius.circular(
-                                                                  10)),
-                                                              child: Image
-                                                                  .asset(
-                                                                  'assets/images/404.png')))),
-                                                  errorWidget: (context,
-                                                      url, error) =>
-                                                      Skeletonizer(
-                                                          child: Container(
-                                                              width: 400,
-                                                              height: 450,
-                                                              child: Image
-                                                                  .asset(
-                                                                "assets/images/404.png",
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ))),
+                                                  couleur:
+                                                  ConstColors.textColors,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                            ),
+                                              TextCustomerUserTitle(
+                                                titre:
+                                                "${widget.userStory.abonnes!} abonné(s)",
+                                                fontSize: SizeText
+                                                    .homeProfileTextSize,
+                                                couleur: ConstColors.textColors,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ],
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Provider<PostProvider>(
-                                  create: (context) => PostProvider(),
-                                  child: SizedBox(
-                                    height:widget.post!.images != null? height * 0.44:height * 0.45,
-                                    width: width,
-                                    child: FutureBuilder<List<PostComment>>(
-                                        future: postProviders
-                                            .getPostCommentsNoStream(
-                                            widget.post),
-                                        builder: (BuildContext context,
-                                            AsyncSnapshot snapshot) {
-                                          if (snapshot.hasData) {
-                                            return commentAndResponseListWidget(
-                                                snapshot.data!,
-                                                width,height);
-                                          } else if (snapshot.hasError) {
-                                            return Icon(Icons.error_outline);
-                                          } else {
-                                            return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
-                                          }
-                                        }),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
+                                  IconButton(
+                                      onPressed: () {
+                                        // _showPostMenuModalDialog(widget.post);
+                                      },
+                                      icon: Icon(
+                                        Icons.more_horiz,
+                                        size: 30,
+                                        color: ConstColors.blackIconColors,
+                                      )),
+                                ],
+                              ),
+                              SizedBox(
+                                height: 5,
+                              ),
+                              // Align(
+                              //   alignment: Alignment.topLeft,
+                              //   child: SizedBox(
+                              //     width: width * 0.9,
+                              //     height: 80,
+                              //     child: Container(
+                              //       alignment: Alignment.centerLeft,
+                              //       child: TextCustomerPostDescription(
+                              //         titre: "${widget.post.}",
+                              //         fontSize: SizeText.homeProfileTextSize,
+                              //         couleur: ConstColors.textColors,
+                              //         fontWeight: FontWeight.normal,
+                              //       ),
+                              //     ),
+                              //   ),
+                              // ),
+                              // SizedBox(
+                              //   height: 5,
+                              // ),
+                              // Align(
+                              //   alignment: Alignment.topLeft,
+                              //   child: TextCustomerPostDescription(
+                              //     titre:
+                              //     "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
+                              //     fontSize: SizeText.homeProfileDateTextSize,
+                              //     couleur: ConstColors.textColors,
+                              //     fontWeight: FontWeight.bold,
+                              //   ),
+                              // ),
+                              // SizedBox(
+                              //   height: 5,
+                              // ),
+                              // widget.post!.images!.isEmpty
+                              //     ? Container()
+                              //     : Padding(
+                              //   padding: const EdgeInsets.all(8.0),
+                              //   child: GestureDetector(
+                              //     onTap: () {
+                              //       showImageDetailsModalDialog(widget.post!.images!.first!, width, height,context);
+                              //
+                              //     },
+                              //     child: Container(
+                              //       width: 100,
+                              //       height: 50,
+                              //       child: ClipRRect(
+                              //         borderRadius:
+                              //         BorderRadius.all(
+                              //             Radius.circular(10)),
+                              //         child: Container(
+                              //           child: CachedNetworkImage(
+                              //             fit: BoxFit.cover,
+                              //             imageUrl:
+                              //             '${widget.post!.images!.first}',
+                              //             progressIndicatorBuilder: (context,
+                              //                 url,
+                              //                 downloadProgress) =>
+                              //             //  LinearProgressIndicator(),
+                              //
+                              //             Skeletonizer(
+                              //                 child: SizedBox(
+                              //                     width: 400,
+                              //                     height: 450,
+                              //                     child: ClipRRect(
+                              //                         borderRadius:
+                              //                         BorderRadius.all(Radius.circular(
+                              //                             10)),
+                              //                         child: Image
+                              //                             .asset(
+                              //                             'assets/images/404.png')))),
+                              //             errorWidget: (context,
+                              //                 url, error) =>
+                              //                 Skeletonizer(
+                              //                     child: Container(
+                              //                         width: 400,
+                              //                         height: 450,
+                              //                         child: Image
+                              //                             .asset(
+                              //                           "assets/images/404.png",
+                              //                           fit: BoxFit
+                              //                               .cover,
+                              //                         ))),
+                              //           ),
+                              //         ),
+                              //       ),
+                              //     ),
+                              //   ),
+                              // ),
+                              // SizedBox(
+                              //   height: 10,
+                              // ),
+                              FutureBuilder<List<PostComment>>(
+                                  future: postProviders
+                                      .getStoryCommentsNoStream(
+                                      widget.story),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot snapshot) {
+                                    if (snapshot.hasData) {
+
+                                      return commentAndResponseListWidget(
+                                          snapshot.data!,
+                                          width,height);
+                                    } else if (snapshot.hasError) {
+                                      return Icon(Icons.error_outline);
+                                    } else {
+                                      return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
+                                    }
+                                  })
+                            ],
                           ),
-                        );
-                      }),
-              ),
-            ]),
+                        ),
+                      );
+                    }),
+                  ),
+                ]),
           );
         }),
       ),
@@ -1228,32 +1227,42 @@ List<UserData> users=[];
                           if (value) {
                             // _textController.text = "";
                             printVm("****** response sended user id **** : ${replyUser_id}");
-                            widget.post.comments =
-                                widget.post.comments! + 1;
+                            widget.story.comment =
+                            widget.story.comment==null?0: widget.story.comment! + 1;
+                          for(var story in  widget.userStory.stories!){
+                            if(story.createdAt==widget.story.createdAt){
+                             int index= widget.userStory.stories!.indexOf(story);
+                             story.nbrComment= widget.story.comment;
+                             widget.userStory.stories![index]=story;
+                             authProvider.updateUser(widget.userStory);
+
+                            }
+
+                          }
 
 
                             CollectionReference userCollect =
                             FirebaseFirestore.instance.collection('Users');
                             // Get docs from collection reference
-                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
+                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.userStory.id!).get();
                             // Afficher la liste
                             List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                 UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                            if (listUsers.isNotEmpty) {
-
-                              listUsers.first!.comments=listUsers.first!.comments!+1;
-                              postProviders.updatePost(widget.post, listUsers.first!!,context);
-                              await authProvider.getAppData();
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }else{
-                              widget.post.user!.comments=widget.post.user!.comments!+1;
-                              postProviders.updatePost(widget.post,widget.post.user!,context);
-                              await authProvider.getAppData();
-
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }
+                            // if (listUsers.isNotEmpty) {
+                            //
+                            //   listUsers.first!.comments=listUsers.first!.comments!+1;
+                            //   postProviders.updatePost(widget.story, listUsers.first!!,context);
+                            //   await authProvider.getAppData();
+                            //   authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                            //   authProvider.updateAppData(authProvider.appDefaultData);
+                            // }else{
+                            //   widget.userStory.comments=widget.userStory.comments!+1;
+                            //   postProviders.updatePost(widget.story,widget.userStory,context);
+                            //   await authProvider.getAppData();
+                            //
+                            //   authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                            //   authProvider.updateAppData(authProvider.appDefaultData);
+                            // }
                             await authProvider.getUserById(replyUser_id).then(
                                   (users) async {
                                 if(users.isNotEmpty){
@@ -1265,14 +1274,14 @@ List<UserData> users=[];
                                       .collection('Notifications')
                                       .doc()
                                       .id;
-                                  notif.titre="Commentaire 💬";
+                                  notif.titre="Commentaire chronique💬";
                                   notif.media_url=authProvider.loginUserData.imageUrl;
                                   notif.type=NotificationType.POST.name;
-                                  notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬";
+                                  notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire chronique💬";
                                   notif.users_id_view=[];
                                   notif.user_id=authProvider.loginUserData.id;
                                   notif.receiver_id=receiver!.id!;
-                                  notif.post_id=widget.post!.id!;
+                                  notif.post_id=widget.story!.createdAt!.toString();
                                   notif.post_data_type=PostDataType.COMMENT.name!;
 
                                   notif.updatedAt =
@@ -1290,9 +1299,9 @@ List<UserData> users=[];
                                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                                       send_user_id: "${authProvider.loginUserData.id!}",
                                       recever_user_id: "${receiver!.id!}",
-                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
+                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire chronique💬",
                                       type_notif: NotificationType.POST.name,
-                                      post_id: "${widget.post!.id!}",
+                                      post_id: "${widget.story!.createdAt!}",
                                       post_type: PostDataType.COMMENT.name, chat_id: ''
                                   );
                                   // Expression régulière pour trouver les noms commençant par @
@@ -1309,9 +1318,12 @@ List<UserData> users=[];
                                   if(usernames.isNotEmpty){
                                     usernames.forEach((username) {
                                       print("username @ : ${username}");
-                                      var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', '')),);
-                                      userNames.add(user);
-                                      userOneSignalIds.add(user.oneIgnalUserid!);
+                                      var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', ''),));
+                                     if(user!=null){
+                                       userNames.add(user);
+                                       userOneSignalIds.add(user.oneIgnalUserid!);
+                                     }
+
                                     });
 
                                     await authProvider.sendNotification(
@@ -1319,40 +1331,43 @@ List<UserData> users=[];
                                         smallImage: "${authProvider.loginUserData.imageUrl!}",
                                         send_user_id: "${authProvider.loginUserData.id!}",
                                         recever_user_id: "",
-                                        message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
+                                        message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un chronique ! !💬",
                                         type_notif: NotificationType.POST.name,
-                                        post_id: "${widget.post!.id!}",
+                                        post_id: "${widget.story!.createdAt!}",
                                         post_type: PostDataType.COMMENT.name, chat_id: ''
                                     );
-                                    userNames.forEach((user) async {
+                                    if(userNames.isNotEmpty){
+                                      // for(var user in userNames){
+                                      //   NotificationData notif2=NotificationData();
+                                      //   notif.id=firestore
+                                      //       .collection('Notifications')
+                                      //       .doc()
+                                      //       .id;
+                                      //   notif.titre="Tagué 💬";
+                                      //   notif.media_url=authProvider.loginUserData.imageUrl;
+                                      //   notif.type=NotificationType.POST.name;
+                                      //   notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un chronique !💬";
+                                      //   notif.users_id_view=[];
+                                      //   notif.user_id=authProvider.loginUserData.id;
+                                      //   notif.receiver_id=user!.id!;
+                                      //   notif.post_id=widget.story!.createdAt!.toString();
+                                      //   notif.post_data_type=PostDataType.COMMENT.name!;
+                                      //
+                                      //   notif.updatedAt =
+                                      //       DateTime.now().microsecondsSinceEpoch;
+                                      //   notif.createdAt =
+                                      //       DateTime.now().microsecondsSinceEpoch;
+                                      //   notif.status = PostStatus.VALIDE.name;
+                                      //
+                                      //   // users.add(pseudo.toJson());
+                                      //
+                                      //   await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
+                                      //
+                                      //
+                                      // }
 
-                                      NotificationData notif2=NotificationData();
-                                      notif.id=firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre="Tagué 💬";
-                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                      notif.type=NotificationType.POST.name;
-                                      notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
-                                      notif.users_id_view=[];
-                                      notif.user_id=authProvider.loginUserData.id;
-                                      notif.receiver_id=user!.id!;
-                                      notif.post_id=widget.post!.id!;
-                                      notif.post_data_type=PostDataType.COMMENT.name!;
 
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
-
-
-                                    });
+                                    }
                                   }
 
 
@@ -1384,7 +1399,7 @@ List<UserData> users=[];
                           authProvider.loginUserData.id;
                       comment.user =
                           authProvider.loginUserData;
-                      comment.post_id = widget.post.id;
+                      comment.post_id = widget.story.createdAt.toString();
                       comment.users_like_id = [];
                       comment.responseComments = [];
                       comment.message =
@@ -1397,45 +1412,55 @@ List<UserData> users=[];
                       comment.updatedAt = DateTime.now()
                           .microsecondsSinceEpoch;
 
-                   await   postProviders.newComment(comment).then(
+                      await   postProviders.newComment(comment).then(
                             (value) async {
                           if (value) {
 
-                            widget.post.comments =
-                                widget.post.comments! + 1;
+                            widget.story.comment =
+                                widget.story.comment! + 1;
 
+                            for(var story in  widget.userStory.stories!){
+                              if(story.createdAt==widget.story.createdAt){
+                                int index= widget.userStory.stories!.indexOf(story);
+                                story.nbrComment= widget.story.comment;
+                                widget.userStory.stories![index]=story;
+                                authProvider.updateUser(widget.userStory);
+
+                              }
+
+                            }
 
                             CollectionReference userCollect =
                             FirebaseFirestore.instance.collection('Users');
                             // Get docs from collection reference
-                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
+                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.userStory.id!).get();
                             // Afficher la liste
                             List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                 UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                            if (listUsers.isNotEmpty) {
-
-                              listUsers.first!.comments=listUsers.first!.comments!+1;
-                              postProviders.updatePost(widget.post, listUsers.first!!,context);
-                              await authProvider.getAppData();
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }else{
-                              widget.post.user!.comments=widget.post.user!.comments!+1;
-                              postProviders.updatePost(widget.post,widget.post.user!,context);
-                              await authProvider.getAppData();
-
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }
+                            // if (listUsers.isNotEmpty) {
+                            //
+                            //   listUsers.first!.comments=listUsers.first!.comments!+1;
+                            //   postProviders.updatePost(widget.story, listUsers.first!!,context);
+                            //   await authProvider.getAppData();
+                            //   authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                            //   authProvider.updateAppData(authProvider.appDefaultData);
+                            // }else{
+                            //   widget.userStory.comments=widget.userStory.comments!+1;
+                            //   postProviders.updatePost(widget.story,widget.userStory,context);
+                            //   await authProvider.getAppData();
+                            //
+                            //   authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
+                            //   authProvider.updateAppData(authProvider.appDefaultData);
+                            // }
 
                             await authProvider.sendNotification(
-                                userIds: [widget.post.user!.oneIgnalUserid!],
+                                userIds: [widget.userStory.oneIgnalUserid!],
                                 smallImage: "${authProvider.loginUserData.imageUrl!}",
                                 send_user_id: "${authProvider.loginUserData.id!}",
                                 recever_user_id: "",
-                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre look",
+                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre chronique",
                                 type_notif: NotificationType.POST.name,
-                                post_id: "${widget.post!.id!}",
+                                post_id: "${widget.story!.createdAt!}",
                                 post_type: PostDataType.COMMENT.name, chat_id: ''
                             );
 
@@ -1450,8 +1475,8 @@ List<UserData> users=[];
                             notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre look";
                             notif.users_id_view=[];
                             notif.user_id=authProvider.loginUserData.id;
-                            notif.receiver_id=widget.post!.user!.id!;
-                            notif.post_id=widget.post!.id!;
+                            notif.receiver_id=widget!.userStory!.id!;
+                            notif.post_id=widget.story!.createdAt!.toString();
                             notif.post_data_type=PostDataType.COMMENT.name!;
 
                             notif.updatedAt =
@@ -1485,14 +1510,16 @@ List<UserData> users=[];
 
                             // Extraire les noms trouvés
                             List<String> usernames = matches.map((match) => match.group(0)!).toList();
-
-                            // Afficher les noms trouvés
+                            String? extractedName = extractName(textComment);
+                            // bool nameExists = extractedName != null && users.contains(extractedName);
                             if(usernames.isNotEmpty){
                               usernames.forEach((username) {
                                 print("username @ : ${username}");
-                                var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', '')),);
-                                userNames.add(user);
-                                userOneSignalIds.add(user.oneIgnalUserid!);
+                                var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', ''),));
+                                if(user!=null){
+                                  userNames.add(user);
+                                  userOneSignalIds.add(user.oneIgnalUserid!);
+                                }
                               });
 
                               await authProvider.sendNotification(
@@ -1500,40 +1527,43 @@ List<UserData> users=[];
                                   smallImage: "${authProvider.loginUserData.imageUrl!}",
                                   send_user_id: "${authProvider.loginUserData.id!}",
                                   recever_user_id: "",
-                                  message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
+                                  message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un chronique !💬",
                                   type_notif: NotificationType.POST.name,
-                                  post_id: "${widget.post!.id!}",
+                                  post_id: "${widget.story!.createdAt!}",
                                   post_type: PostDataType.COMMENT.name, chat_id: ''
                               );
-                              userNames.forEach((user) async {
+                              if(userNames.isNotEmpty){
+                                // for(var user in userNames){
+                                //   NotificationData notif2=NotificationData();
+                                //   notif.id=firestore
+                                //       .collection('Notifications')
+                                //       .doc()
+                                //       .id;
+                                //   notif.titre="Tagué 💬";
+                                //   notif.media_url=authProvider.loginUserData.imageUrl;
+                                //   notif.type=NotificationType.POST.name;
+                                //   notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un chronique !💬";
+                                //   notif.users_id_view=[];
+                                //   notif.user_id=authProvider.loginUserData.id;
+                                //   notif.receiver_id=user!.id!;
+                                //   notif.post_id=widget.story!.createdAt!.toString();
+                                //   notif.post_data_type=PostDataType.COMMENT.name!;
+                                //
+                                //   notif.updatedAt =
+                                //       DateTime.now().microsecondsSinceEpoch;
+                                //   notif.createdAt =
+                                //       DateTime.now().microsecondsSinceEpoch;
+                                //   notif.status = PostStatus.VALIDE.name;
+                                //
+                                //   // users.add(pseudo.toJson());
+                                //
+                                //   await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
+                                //
+                                //
+                                // }
 
-                                NotificationData notif2=NotificationData();
-                                notif.id=firestore
-                                    .collection('Notifications')
-                                    .doc()
-                                    .id;
-                                notif.titre="Tagué 💬";
-                                notif.media_url=authProvider.loginUserData.imageUrl;
-                                notif.type=NotificationType.POST.name;
-                                notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
-                                notif.users_id_view=[];
-                                notif.user_id=authProvider.loginUserData.id;
-                                notif.receiver_id=user!.id!;
-                                notif.post_id=widget.post!.id!;
-                                notif.post_data_type=PostDataType.COMMENT.name!;
 
-                                notif.updatedAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.createdAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.status = PostStatus.VALIDE.name;
-
-                                // users.add(pseudo.toJson());
-
-                                await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
-
-
-                              });
+                              }
                             }
 
 

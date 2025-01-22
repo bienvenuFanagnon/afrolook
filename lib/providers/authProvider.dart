@@ -33,7 +33,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
   late int? userId = 0;
-  late int app_version_code = 41;
+  late int app_version_code = 43;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -446,10 +446,10 @@ class UserAuthProvider extends ChangeNotifier {
       listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
 
-      for(var user in usersRestants){
-        print('user auth stories ${user.stories!.first.toJson()}');
-
-      }
+      // for(var user in usersRestants){
+      //   print('user auth stories ${user.stories!.first.toJson()}');
+      //
+      // }
 //         print('debut suppression');
 //         List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
 // user.stories=storiesWithTimeAgo;

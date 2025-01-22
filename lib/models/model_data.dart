@@ -514,6 +514,7 @@ class UserData {
   bool? isBlocked = false;
   bool? completeData = false;
   bool? hasEntreprise = false;
+  bool? isVerify = false;
   File? image;
   String? password;
   //int? genreId;
@@ -568,6 +569,7 @@ class UserData {
       this.latitude = 0.0,
       this.longitude = 0.0,
       this.isBlocked = false,
+      this.isVerify = false,
       this.isConnected = false,
       this.completeData = false,
       this.hasEntreprise = false,
@@ -613,7 +615,8 @@ class UserData {
       json['mesInvitationsEnvoyerId'].forEach((v) {
         mesInvitationsEnvoyerId!.add(v);
       });
-    }  if (json['usersParrainer'] != null) {
+    }
+    if (json['usersParrainer'] != null) {
       usersParrainer = <String>[];
       json['usersParrainer'].forEach((v) {
         usersParrainer!.add(v);
@@ -660,6 +663,7 @@ class UserData {
     // longitude = json['longitude'];
     apropos = json['apropos'];
     password = json['password'] == null ? "" : json['password'];
+    isVerify = json['isVerify'] == null ? false : json['isVerify'];
     email = json['email'] == null ? "" : json['email'];
     genre = json['genre'] == null ? "" : json['genre'];
     userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
@@ -683,6 +687,7 @@ class UserData {
     data['imageUrl'] = this.imageUrl;
     data['numero_de_telephone'] = this.numeroDeTelephone;
     data['adresse'] = this.adresse;
+    data['isVerify'] = this.isVerify;
     data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
     data['code_parrainage'] = this.codeParrainage;

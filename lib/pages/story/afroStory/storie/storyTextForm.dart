@@ -128,26 +128,26 @@ class _AddTextStoryPageState extends State<AddTextStoryPage> {
                     authProvider.loginUserData.stories!.add(story);
                     await authProvider.updateUser(authProvider.loginUserData).then((value) async {
                       if (value) {
-                        //  authProvider
-                        //     .getAllUsersOneSignaUserId()
-                        //     .then(
-                        //       (userIds) async {
-                        //     if (userIds.isNotEmpty) {
-                        //
-                        //       await authProvider.sendNotification(
-                        //           userIds: userIds,
-                        //           smallImage: "${authProvider.loginUserData.imageUrl!}",
-                        //           send_user_id: "${authProvider.loginUserData.id!}",
-                        //           recever_user_id: "",
-                        //           message: "📢 @${authProvider.loginUserData.pseudo!} vient de partager une chronique 🎥✨ ! Découvrez-la dès maintenant 👀.",
-                        //           type_notif: NotificationType.CHRONIQUE.name,
-                        //           post_id: "id",
-                        //           post_type: PostDataType.TEXT.name, chat_id: ''
-                        //       );
-                        //
-                        //     }
-                        //   },
-                        // );
+                         authProvider
+                            .getAllUsersOneSignaUserId()
+                            .then(
+                              (userIds) async {
+                            if (userIds.isNotEmpty) {
+
+                              await authProvider.sendNotification(
+                                  userIds: userIds,
+                                  smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                  send_user_id: "${authProvider.loginUserData.id!}",
+                                  recever_user_id: "",
+                                  message: "📢 @${authProvider.loginUserData.pseudo!} vient de partager une chronique 🎥✨ ! Découvrez-la dès maintenant 👀.",
+                                  type_notif: NotificationType.CHRONIQUE.name,
+                                  post_id: "id",
+                                  post_type: PostDataType.TEXT.name, chat_id: ''
+                              );
+
+                            }
+                          },
+                        );
                         SnackBar snackBar = SnackBar(
                           backgroundColor: Colors.green,
                           content: Text(

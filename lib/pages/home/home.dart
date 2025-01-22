@@ -1071,13 +1071,13 @@ class _MyHomePageState extends State<MyHomePage>
                       child: Stack(
                         children: [
                           Container(
-                            height: 110,
+                            height: 90,
                             // width: w,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   // ConstColors.buttonColors,
-                                  Colors.green.shade300,
+                                  Colors.black87,
 
                                   // ConstColors.secondaryColor,
 
@@ -1145,6 +1145,16 @@ class _MyHomePageState extends State<MyHomePage>
 
                                             ],
                                           ),
+                                          Visibility(
+                                            visible: user!.isVerify!,
+                                            child: const Icon(
+                                              Icons.verified,
+                                              color: Colors.green,
+                                              size: 20,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5,),
+
 
                                           countryFlag(user.countryData!['countryCode']??""!, size: 20),
 
@@ -1533,32 +1543,46 @@ class _MyHomePageState extends State<MyHomePage>
                           SizedBox(
                             height: 2,
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              SizedBox(
-                                //width: 100,
-                                child: TextCustomerUserTitle(
-                                  titre:
-                                      "@${authProvider.loginUserData.pseudo}",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.bold,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    //width: 100,
+                                    child: TextCustomerUserTitle(
+                                      titre:
+                                          "@${authProvider.loginUserData.pseudo}",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextCustomerUserTitle(
+                                    titre:
+                                        "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    couleur: ConstColors.textColors,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  TextCustomerUserTitle(
+                                    titre:
+                                    "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                                    fontSize: SizeText.homeProfileTextSize,
+                                    couleur: Colors.green,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+
+                                ],
+                              ),
+                              SizedBox(width: 5,),
+                              Visibility(
+                                visible: authProvider.loginUserData!.isVerify!,
+                                child: const Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                  size: 20,
                                 ),
-                              ),
-                              TextCustomerUserTitle(
-                                titre:
-                                    "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
-                                fontSize: SizeText.homeProfileTextSize,
-                                couleur: ConstColors.textColors,
-                                fontWeight: FontWeight.w400,
-                              ),
-                              TextCustomerUserTitle(
-                                titre:
-                                "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
-                                fontSize: SizeText.homeProfileTextSize,
-                                couleur: Colors.green,
-                                fontWeight: FontWeight.w700,
                               ),
 
                             ],
@@ -3040,7 +3064,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 padding: const EdgeInsets.only(left: 8.0,bottom: 4),
                                 child: Text(
                                   // 'Afro Chronique',
-                                  'Chronique',
+                                  'Chroniques',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
@@ -3087,9 +3111,9 @@ class _MyHomePageState extends State<MyHomePage>
                                         itemBuilder: (context, index) {
                                           List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
                                           list[index].stories=storiesWithTimeAgo;
-                                          printVm('user index : ${index} stories ${list[index].stories!.length}');
-
-                                          printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
+                                          // printVm('user index : ${index} stories ${list[index].stories!.length}');
+                                          //
+                                          // printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
 
                                           return
                                               list[index].stories!.isNotEmpty

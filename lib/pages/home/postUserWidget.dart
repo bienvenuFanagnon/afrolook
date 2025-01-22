@@ -393,6 +393,7 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                           height: 2,
                         ),
                         Row(
+                          spacing: 5,
                           children: [
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,6 +435,15 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                 ),
                               ],
                             ),
+
+                             Visibility(
+                               visible: post.user!.isVerify!,
+                               child: const Icon(
+                                Icons.verified,
+                                color: Colors.green,
+                                size: 20,
+                                                           ),
+                             ),
                             Visibility(
                               visible:authProvider.loginUserData.id!=post.user!.id ,
 
@@ -1835,6 +1845,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                 ),
                               ],
                             ),
+
                             /*
                             IconButton(
                                 onPressed: () {},

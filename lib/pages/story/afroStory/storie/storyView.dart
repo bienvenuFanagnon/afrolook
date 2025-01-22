@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/story/afroStory/story2/story2.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,8 +40,10 @@ class _StoryPreviewState extends State<StoryPreview> {
     if (story.mediaType!.name == 'image') {
       mediaWidget = GestureDetector(
         onTap: () {
+          // Navigator.of(context).push(
+          //     MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
           Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
+              MaterialPageRoute(builder: (context) => Story2(userData: widget.user,)));
         },
         child: Container(
           width: widget.w,
@@ -57,8 +60,10 @@ class _StoryPreviewState extends State<StoryPreview> {
     } else if (story.mediaType!.name! == 'text') {
       mediaWidget = GestureDetector(
         onTap: () {
+          // Navigator.of(context).push(
+          //     MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
           Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
+              MaterialPageRoute(builder: (context) => Story2(userData: widget.user,)));
         },
         child: Container(
           width: widget.w,

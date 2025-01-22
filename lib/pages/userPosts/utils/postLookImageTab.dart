@@ -239,16 +239,16 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
           await userProvider.updateUser(authProvider.loginUserData!);
           postProvider.listConstposts.add(post);
-          final startTime = startDate.millisecondsSinceEpoch;
-          final endTime = endDate.millisecondsSinceEpoch;
-          final giftType = selectedGiftType;
-          final amount = int.parse(amountController.text);
-          final description = descriptionController.text;
-          final descriptionCadeaux = descriptionCadeauxController.text;
+
 
           if(isChallenge){
             String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;
-
+            final startTime = startDate.millisecondsSinceEpoch;
+            final endTime = endDate.millisecondsSinceEpoch;
+            final giftType = selectedGiftType;
+            final amount = int.parse(amountController.text);
+            final description = descriptionController.text;
+            final descriptionCadeaux = descriptionCadeauxController.text;
             // Créer un objet Challenge
             Challenge challenge = Challenge()
               ..id = challengeId  // Ajoutez un titre au challenge
@@ -304,8 +304,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                         },
                       );
 
-          postProvider.getPostsImages(limitePosts);
-          _imageBytes!=null;
+          // postProvider.getPostsImages(limitePosts);
+          _imageBytes==null;
 
           Navigator.pop(context); // Fermer le dialog de chargement
           Navigator.pop(pagecontext); // Fermer la page

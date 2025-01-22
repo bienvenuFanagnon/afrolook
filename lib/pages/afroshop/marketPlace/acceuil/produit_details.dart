@@ -708,8 +708,8 @@ class _ProduitDetailState extends State<ProduitDetail> {
                   child: Row(
                     spacing: 5,
                     children: [
-                      countryFlag(widget.article.user!.countryData!['countryCode']??"TG"!, size: 30),
-                      Text(widget.article.user!.countryData!['country']??"Togo"!,overflow: TextOverflow.ellipsis,style: TextStyle(fontWeight: FontWeight.w600,fontSize: 15),),
+                      countryFlag(widget.article.countryData!['countryCode']??"TG"!, size: 30),
+                      Text(widget.article.countryData!['country']??"Togo"!,overflow: TextOverflow.ellipsis,style: TextStyle(fontWeight: FontWeight.w600,fontSize: 15),),
 
                     ],
                   ),
