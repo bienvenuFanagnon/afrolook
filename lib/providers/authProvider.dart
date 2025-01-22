@@ -33,7 +33,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
   late int? userId = 0;
-  late int app_version_code = 43;
+  late int app_version_code = 44;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();

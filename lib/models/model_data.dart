@@ -694,8 +694,11 @@ class UserData {
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
+    if (stories != null) {
       data['stories'] = stories!.map((story) => story.toJson()).toList();
-
+    } else {
+      data['stories'] = [];
+    }
 
     if (this.userPays != null) {
       data['user_pays'] = this.userPays!.toJson();
