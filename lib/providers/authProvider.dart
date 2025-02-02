@@ -33,7 +33,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
   late int? userId = 0;
-  late int app_version_code = 44;
+  late int app_version_code = 46;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -432,7 +432,7 @@ class UserAuthProvider extends ChangeNotifier {
       return story;
     }).toList();
   }
-  Future<List<UserData>> getUsersStorie(int limit) async {
+  Future<List<UserData>> getUsersStorie2(int limit) async {
     List<UserData> listUsers = [];
 
 
@@ -468,6 +468,46 @@ class UserAuthProvider extends ChangeNotifier {
     // return listUsers;
   }
 
+  Future<List<UserData>> getUsersStorie(String currentUserId, int limit) async {
+    List<UserData> listUsers = [];
+
+    try {
+      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+      QuerySnapshot querySnapshot = await userCollect.where('stories', isNotEqualTo: []).get();
+      List<DocumentSnapshot> users = querySnapshot.docs;
+
+      // Séparer l'utilisateur courant des autres utilisateurs
+      DocumentSnapshot? currentUserDoc;
+      users.removeWhere((doc) {
+        if (doc.id == currentUserId) {
+          currentUserDoc = doc;
+          return true;
+        }
+        return false;
+      });
+
+      // Mélanger la liste des autres utilisateurs
+      users.shuffle();
+      List<DocumentSnapshot> usersDocs = users.take(limit).toList();
+
+      // Ajouter l'utilisateur courant au début de la liste
+      if (currentUserDoc != null) {
+        usersDocs.insert(0, currentUserDoc!);
+      }
+
+      listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
+
+      listUsers = usersRestants;
+
+      print('list users stories ${listUsers.length}');
+      return listUsers;
+
+    } catch (e) {
+      print("erreur $e");
+      return [];
+    }
+  }
 
   void ajouterStory(UserData user, WhatsappStory story) {
     user.stories ??= [];

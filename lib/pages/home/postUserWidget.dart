@@ -5,6 +5,7 @@
 import 'dart:math';
 
 import 'package:afrotok/pages/userPosts/challenge/challengeDetails.dart';
+import 'package:afrotok/pages/userPosts/textBullePensee.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -438,11 +439,13 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
 
                              Visibility(
                                visible: post.user!.isVerify!,
-                               child: const Icon(
-                                Icons.verified,
-                                color: Colors.green,
-                                size: 20,
-                                                           ),
+                               child: Card(
+                                 child: const Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                  size: 20,
+                                                             ),
+                               ),
                              ),
                             Visibility(
                               visible:authProvider.loginUserData.id!=post.user!.id ,
@@ -825,70 +828,142 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                     ),
                   ),
                 ),
-                Visibility(
-                  visible: post.dataType == PostDataType.TEXT.name
-                      ? true
-                      : false,
-                  child: GestureDetector(
-                    onTap: () {
-                      // postProvider.updateVuePost(post, context);
-
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailsPost(post: post),
-                          ));
-                    },
-                    child: Container(
-                      color: color,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: SizedBox(
-                          width: width * 0.8,
-                          height: height * 0.5,
-                          child: Container(
-                            // height: 200,
-                            constraints: BoxConstraints(
-                              // minHeight: 100.0, // Set your minimum height
-                              maxHeight:
-                              height * 0.6, // Set your maximum height
-                            ),
-                            alignment: Alignment.center,
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: HashTagText(
-                                    text: "${post.description}",
-                                    decoratedStyle: TextStyle(
-                                      fontSize: fontSize,
-
-                                      fontWeight: FontWeight.w600,
-
-                                      color: Colors.green,
-                                      fontFamily: 'Nunito', // Définir la police Nunito
-                                    ),
-                                    basicStyle: TextStyle(
-                                      fontSize: fontSize,
+              if (post.dataType == PostDataType.TEXT.name)
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailsPost(post: post),
+                ),
+              );
+            },
+            child: Container(
+              color: color,
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: IntrinsicWidth(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Ajuste la hauteur au contenu
+                    children: [
+                      Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          // Ajout d'un espace par défaut pour l'icône et les bulles
+                          SizedBox(
+                            height: 180, // Assure un minimum d'espace
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Grande bulle de pensée
+                                Card(
+                                  child: Container(
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.normal,
-                                      fontFamily: 'Nunito', // Définir la police Nunito
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 10,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center, // Centrage du texte
-                                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                                    onTap: (text) {
-                                      print(text);
-                                    },
+                                    child: HashTagText(
+                                      text: post.description ?? "",
+                                      decoratedStyle: TextStyle(
+                                        fontSize: fontSize,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.green,
+                                        fontFamily: 'Nunito',
+                                      ),
+                                      basicStyle: TextStyle(
+                                        fontSize: fontSize,
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.normal,
+                                        fontFamily: 'Nunito',
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: null,
+                                      softWrap: true,
+                                    ),
                                   ),
-                                )),
+                                ),
+                                SizedBox(height: 10), // Espace pour éviter que l'icône touche la bulle
+                              ],
+                            ),
                           ),
-                        ),
+                          // Petites bulles de pensée
+                          // Positioned(bottom: 70, left: 60, child: CircleAvatar(radius: 15, backgroundColor: Colors.white)),
+                          Positioned(bottom: 50, left: 50, child: CircleAvatar(radius: 10, backgroundColor: Colors.white)),
+                          Positioned(bottom: 40, left: 40, child: CircleAvatar(radius: 5, backgroundColor: Colors.white)),
+                          // Icône de personne qui pense
+                          Positioned(bottom: 0, left: 2, child:
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child:  GestureDetector(
+                              onTap: () async {
+                                await  authProvider.getUserById(post.user_id!).then((users) async {
+                                  if(users.isNotEmpty){
+                                    showUserDetailsModalDialog(users.first, w, h,context);
+
+                                  }
+                                },);
+
+                              },
+                              child:
+                              Row(
+                                spacing: 10,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+
+                                    backgroundImage:
+                                    NetworkImage('${post.user!.imageUrl!}'),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 10,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Text(
+                                    "Mes pensées",
+                                  style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.black87,
+                                        fontFamily: 'Nunito',
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: null,
+                                      softWrap: true,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                SizedBox(
+              ),
+            ),
+          ),
+
+          SizedBox(
                   height: 5,
                 ),
 

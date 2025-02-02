@@ -392,6 +392,8 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
                                   NetworkImage("${snapshot.data!.imageUrl!}"),
                               //maxRadius: 30,
                             ),
+                    
+
                             Positioned(
                               bottom: 0,
                               right: 2,
@@ -439,78 +441,93 @@ class _MyHomePageState extends State<MyChat> with WidgetsBindingObserver,TickerP
             SizedBox(
               height: 2,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
+              spacing: 10,
               children: [
-                SizedBox(
-                  //width: 100,
-                  child: TextCustomerUserTitle(
-                    titre: "@${widget.chat.receiver!.pseudo}",
-                    fontSize: SizeText.homeProfileTextSize,
-                    couleur: ConstColors.textColors,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      //width: 100,
+                      child: TextCustomerUserTitle(
+                        titre: "@${widget.chat.receiver!.pseudo}",
+                        fontSize: SizeText.homeProfileTextSize,
+                        couleur: ConstColors.textColors,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    StreamBuilder<Chat>(
+                        stream: userProvider.getStreamChat(widget.chat.id!),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            Chat chat=snapshot!.data!;
+                           // printVm("update chat: ${chat.toJson()}");
+
+                            if (authProvider.loginUserData.id ==
+                                chat!.senderId) {
+                              return chat!.receiver_sending==IsSendMessage.SENDING.name
+                                  ? TextCustomerUserTitle(
+                                      titre: "écrit...",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: Colors.green,
+                                      fontWeight: FontWeight.w400,
+                                    )
+                                  : TextCustomerUserTitle(
+                                      titre:
+                                          "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.w400,
+                                    );
+                            } else  if (authProvider.loginUserData.id ==
+                                chat!.receiverId) {
+                              return chat!.send_sending==IsSendMessage.SENDING.name
+                                  ? TextCustomerUserTitle(
+                                      titre: "écrit...",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: Colors.green,
+                                      fontWeight: FontWeight.w400,
+                                    )
+                                  : TextCustomerUserTitle(
+                                      titre:
+                                          "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.w400,
+                                    );
+                            }else{
+                              return TextCustomerUserTitle(
+                                titre:
+                                "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
+                                fontSize: SizeText.homeProfileTextSize,
+                                couleur: ConstColors.textColors,
+                                fontWeight: FontWeight.w400,
+                              );
+
+                            }
+                          }else{
+                            return TextCustomerUserTitle(
+                              titre:
+                              "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
+                              fontSize: SizeText.homeProfileTextSize,
+                              couleur: ConstColors.textColors,
+                              fontWeight: FontWeight.w400,
+                            );
+
+                          }
+                        }),
+                  ],
                 ),
-                StreamBuilder<Chat>(
-                    stream: userProvider.getStreamChat(widget.chat.id!),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        Chat chat=snapshot!.data!;
-                       // printVm("update chat: ${chat.toJson()}");
-
-                        if (authProvider.loginUserData.id ==
-                            chat!.senderId) {
-                          return chat!.receiver_sending==IsSendMessage.SENDING.name
-                              ? TextCustomerUserTitle(
-                                  titre: "écrit...",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: Colors.green,
-                                  fontWeight: FontWeight.w400,
-                                )
-                              : TextCustomerUserTitle(
-                                  titre:
-                                      "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.w400,
-                                );
-                        } else  if (authProvider.loginUserData.id ==
-                            chat!.receiverId) {
-                          return chat!.send_sending==IsSendMessage.SENDING.name
-                              ? TextCustomerUserTitle(
-                                  titre: "écrit...",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: Colors.green,
-                                  fontWeight: FontWeight.w400,
-                                )
-                              : TextCustomerUserTitle(
-                                  titre:
-                                      "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: ConstColors.textColors,
-                                  fontWeight: FontWeight.w400,
-                                );
-                        }else{
-                          return TextCustomerUserTitle(
-                            titre:
-                            "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w400,
-                          );
-
-                        }
-                      }else{
-                        return TextCustomerUserTitle(
-                          titre:
-                          "${formatNumber(widget.chat.receiver!.abonnes!)} abonné(s)",
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.w400,
-                        );
-
-                      }
-                    }),
+                Visibility(
+                  visible: widget.chat.receiver!.isVerify!,
+                  child: Card(
+                    child: const Icon(
+                      Icons.verified,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                  ),
+                )
               ],
             ),
           ],

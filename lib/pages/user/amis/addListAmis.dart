@@ -166,9 +166,26 @@ class _ListUserChatsState extends State<AddListAmis> {
               },
               child: Row(
                 children: <Widget>[
-                  CircleAvatar(
-                    backgroundImage: NetworkImage("${user!.imageUrl!}"),
-                    maxRadius: isSearch ? 20 : 30,
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: NetworkImage("${user!.imageUrl!}"),
+                        maxRadius: isSearch ? 20 : 30,
+                      ),
+                      Positioned(
+                        bottom: -5, left: -5,
+                        child: Visibility(
+                          visible: user!.isVerify!,
+                          child: Card(
+                            child: const Icon(
+                              Icons.verified,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(
                     width: 16,

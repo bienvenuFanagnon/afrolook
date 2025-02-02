@@ -30,6 +30,7 @@ class PostProvider extends ChangeNotifier {
 
 
   List<Post> videos = [];
+  List<Post> listvideos = [];
   List<PostComment> listConstpostsComment = [];
 
   List<Message> usermessageList =[];
@@ -281,7 +282,39 @@ class PostProvider extends ChangeNotifier {
       yield listConstposts;
     }
   }
-  Stream<List<NotificationData>> getListNotificatio(String user_id) async* {
+  Stream<NotificationData> getListNotification(String user_id) async* {
+    var postStream = FirebaseFirestore.instance
+        .collection('Notifications')
+        .where("receiver_id", isEqualTo: user_id)
+        .orderBy('created_at', descending: true)
+        .limit(100)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      for (var post in snapshot.docs) {
+        NotificationData notification = NotificationData.fromJson(post.data());
+
+        // Récupérer les infos de l'utilisateur associé
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: notification.user_id)
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          notification.userData = userList.first;
+        }
+
+        // Émettre chaque notification dès qu'elle est prête
+        yield notification;
+      }
+    }
+  }
+
+  Stream<List<NotificationData>> getListNotification2(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
         .where("receiver_id",isEqualTo:'${user_id}')
 
@@ -299,6 +332,18 @@ class PostProvider extends ChangeNotifier {
       for (var post in snapshot.docs) {
         //  printVm("post : ${jsonDecode(post.toString())}");
         NotificationData notification=NotificationData.fromJson(post.data());
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: '${notification.user_id}')
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          notification.userData = userList.first;
+        }
         notifications.add(notification);
       // listConstposts=posts;
 
@@ -1918,6 +1963,72 @@ class PostProvider extends ChangeNotifier {
       yield posts;
       //}
     }
+  }
+
+  Future<List<Post>> getPostsVideos3(int limite) async {
+    List<Post> posts = [];
+    listConstposts = [];
+    DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+    int todayTimestamp = DateTime.now().microsecondsSinceEpoch;
+
+    // Début de la journée actuelle (minuit)
+    int startOfDay = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    ).microsecondsSinceEpoch;
+
+    // Fin de la journée actuelle (23:59:59)
+    int endOfDay = startOfDay + Duration(hours: 23, minutes: 59, seconds: 59).inMicroseconds;
+
+    // 1. Récupérer les publications de la journée
+    Query queryToday = postCollect
+        .where("dataType", isEqualTo: '${PostDataType.VIDEO.name}')
+        .where("created_at", isGreaterThanOrEqualTo: startOfDay)
+        .where("created_at", isLessThanOrEqualTo: endOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .orderBy('created_at', descending: true)
+        .limit(limite);
+
+    // 2. Récupérer les publications restantes
+    Query queryOthers = postCollect
+        .where("dataType", isEqualTo: '${PostDataType.VIDEO.name}')
+        .where("created_at", isLessThan: startOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .orderBy('updated_at', descending: true)
+        .limit(limite);
+
+    // Effectuer les deux requêtes en parallèle
+    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+
+    // Combiner les résultats
+    List<DocumentSnapshot> querySnapshotPosts = [...todayPosts, ...otherPosts];
+
+    for (var doc in querySnapshotPosts) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+
+      // Ajouter le post à la liste
+      posts.add(post);
+      listConstposts.add(post);
+    }
+
+    return posts;
   }
 
 

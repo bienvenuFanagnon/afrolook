@@ -1615,6 +1615,7 @@ class NotificationData {
   String? type;
   String? titre;
   String? status;
+  UserData? userData;
   bool? is_open;
   String? description;
   List<String>? users_id_view = [];

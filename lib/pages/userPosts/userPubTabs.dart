@@ -205,14 +205,14 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                       readOnly: true, // Empêche la modification
 
                       decoration: InputDecoration(
-                        hintText: 'Écrivez votre Légende avec des hashtags...',
+                        hintText: 'Exprimez votre pensée',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10.0), // Add rounded corners
                           borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
                         ),
                       ),
                       maxLines: 5,
-                      maxLength: 500,
+                      maxLength: 300,
 
                       validator: (value) {
                         if (value!.isEmpty) {

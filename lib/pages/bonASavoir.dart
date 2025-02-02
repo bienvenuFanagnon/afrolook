@@ -49,7 +49,7 @@ class _BonASavoirState extends State<BonASavoir> {
                   SizedBox(height: 16.0),
 
                   Text(
-                    "Gagnez 50 PubliCash par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 50 PubliCash pour chaque nouvel utilisateur !.\n Vérifiez la page Monétisation pour voir votre solde",
+                    "Gagnez 5 PubliCash par filleul avec votre code de parrainage !\n Invitez vos amis à utiliser notre application avec votre code de parrainage et gagnez 5 PubliCash pour chaque nouvel utilisateur !.\n Vérifiez la page Monétisation pour voir votre solde",
                     textAlign: TextAlign.justify,
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),

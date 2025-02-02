@@ -112,9 +112,27 @@ class _StoryPreviewState extends State<StoryPreview> {
                   width: 4.0, // Épaisseur du contour
                 ),
               ),
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(widget.user.imageUrl ?? ''),
-                radius: 20,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(widget.user.imageUrl ?? ''),
+                    radius: 20,
+                  ),
+                  Positioned(
+                    bottom: -5, right: -5,
+                    child: Visibility(
+                      visible: widget.user!.isVerify!,
+                      child: Card(
+                        child: const Icon(
+                          Icons.verified,
+                          color: Colors.green,
+                          size: 17,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                ],
               ),
             ),
           )

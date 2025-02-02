@@ -40,7 +40,7 @@ class _UserProfilState extends State<UserPostForm> {
       backgroundColor: ConstColors.backgroundColor,
       appBar: AppBar(
         title: TextCustomerPageTitle(
-          titre: "Posts",
+          titre: "Poster votre look",
           fontSize: SizeText.homeProfileTextSize,
           couleur: ConstColors.textColors,
           fontWeight: FontWeight.bold,
@@ -132,7 +132,7 @@ class _UserProfilState extends State<UserPostForm> {
                   tabs: [
                     Container(
                       child: TextCustomerMenu(
-                        titre: "Text",
+                        titre: "Pensée",
                         fontSize: SizeText.homeProfileTextSize,
                         couleur: ConstColors.textColors,
                         fontWeight: FontWeight.w600,

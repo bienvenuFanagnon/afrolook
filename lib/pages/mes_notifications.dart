@@ -21,6 +21,7 @@ import 'UserServices/detailsUserService.dart';
 import 'UserServices/listUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'component/consoleWidget.dart';
+import 'component/showUserDetails.dart';
 
 class MesNotification extends StatefulWidget {
   const MesNotification({super.key});
@@ -236,6 +237,7 @@ class _MesNotificationState extends State<MesNotification> {
 
   }
 
+  List<NotificationData> notifications = []; // Liste locale pour stocker les notifications
 
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
@@ -274,90 +276,109 @@ class _MesNotificationState extends State<MesNotification> {
                           child: CircularProgressIndicator(backgroundColor: kPrimaryColor,))),
                     )),
                 Container(
-
                   child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: StreamBuilder<List<NotificationData>>(
-
-                      stream: postProvider.getListNotificatio(authProvider.loginUserData.id!),
+                    child: StreamBuilder<NotificationData>(
+                      stream: postProvider.getListNotification(authProvider.loginUserData.id!),
                       builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting && notifications.isEmpty) {
+                          return Center(child: CircularProgressIndicator());
+                        }
 
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.hasError) {
+                          return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
+                        }
 
-                          return
-                            Center(child: Container(width:50 , height:50,child: CircularProgressIndicator()));
-                        }else if (snapshot.hasError) {
-                          return
-                            Center(child: Container(width:50 , height:50,child: CircularProgressIndicator()));
-                        }else{
-                          return Container(
-                            width: width,
-                            height: height*0.86,
-                            child: ListView.builder(
-                              //reverse: true,
+                        // Ajouter la nouvelle notification à la liste locale
+                        if (snapshot.hasData && !notifications.contains(snapshot.data!)) {
+                          // setState(() {
+                            notifications.add(snapshot.data!);
+                          // });
+                        }
 
-                                itemCount: snapshot!.data!.length, // Nombre d'éléments dans la liste
-                                itemBuilder: (context, index) {
-                                  List<NotificationData> list=snapshot!.data!;
+                        return Container(
+                          width: width,
+                          height: height * 0.86,
+                          child: ListView.builder(
+                            itemCount: notifications.length,
+                            itemBuilder: (context, index) {
+                              NotificationData notif = notifications[index];
 
-                                  if (!isIn(list[index].users_id_view!,authProvider.loginUserData.id!)) {
-                                   // list.remove(n);
-                                    list[index].users_id_view!.add(authProvider.loginUserData.id!);
-                                     firestore.collection('Notifications').doc( list[index]!.id).update( list[index]!.toJson());
+                              if (!isIn(notif.users_id_view!, authProvider.loginUserData.id!)) {
+                                notif.users_id_view!.add(authProvider.loginUserData.id!);
+                                firestore.collection('Notifications').doc(notif.id).update(notif.toJson());
+                              }
 
-                                  }
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      list[index].is_open=true;
-                                      printVm("notif data : ${list[index].toJson()}");
-                                      authProvider.updateNotif(list[index]);
-                                      // if(list[index].type==NotificationType.ABONNER.name)
-                                      handleNotification(list[index]);
-
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                                          color:list[index].is_open!? Colors.black12:Colors.green.shade100,
-
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(2.0),
-                                          child: ListTile(
-
-
-                                            title: Text('${list[index].titre}',style: TextStyle(color: Colors.blue),),
-                                            subtitle: Text('${list[index].description}'),
-                                            leading:Container(
-                                                height: 40,
-                                                width: 40,
-                                                decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular((10)))),
-                                                child: Image.network('${list[index].media_url}',fit: BoxFit.cover,)),
-                                            /*
-                                      leading: Icon(
-                                        Icons.notifications,
-                                        color:isIn(list[index].users_id_view!,authProvider.loginUserData.id!)? Colors.black87:Colors.red,
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.all(Radius.circular(5)),
+                                    color: notif.is_open! ? Colors.black12 : Colors.green.shade100,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2.0),
+                                    child: ListTile(
+                                      title: Text('${notif.titre}', style: TextStyle(color: Colors.blue)),
+                                      subtitle: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            notif.is_open = true;
+                                          });
+                                          authProvider.updateNotif(notif);
+                                          handleNotification(notif);
+                                        },
+                                        child: Text('${notif.description}'),
                                       ),
+                                      leading: Container(
+                                        height: 40,
+                                        width: 40,
+                                        decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(10))),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            showUserDetailsModalDialog(notif.userData!, width, height, context);
+                                          },
+                                          child: Stack(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 20,
 
-                                           */
-                                            trailing: Text("${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(list[index].createdAt!))}",style: TextStyle(fontSize: 8,color: Colors.black87),),),
+                                                backgroundImage:
+                                                NetworkImage('${notif.media_url}'),
+                                              ),
+                                              Positioned(
+                                                bottom: 0, right: -5,
+                                                child: Visibility(
+                                                  visible: notif.userData!.isVerify!,
+                                                  child: Card(
+                                                    child: const Icon(
+                                                      Icons.verified,
+                                                      color: Colors.green,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                            ],
+                                          ),
                                         ),
+                                      ),
+                                      trailing: Text(
+                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(notif.createdAt!))}",
+                                        style: TextStyle(fontSize: 8, color: Colors.black87),
                                       ),
                                     ),
-                                  );
-
-                                }),
-                          );
-
-                        }
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
                       },
                     ),
                   ),
-                ),
-              ],
+                )              ],
             ),
           ),
         ));

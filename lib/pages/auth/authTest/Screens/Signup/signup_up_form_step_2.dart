@@ -71,7 +71,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late bool tap= false;
   final _auth = FirebaseAuth.instance;
-  Future<void> verifierParrain(String codeParrain) async {
+  Future<bool> verifierParrain(String codeParrain) async {
 
 
     // Récupérer la liste des utilisateurs
@@ -148,10 +148,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
        
 
-
+return true;
 
     }else{
       printVm("user non trouver^^^^^^^^^^^^^^^^^^^^");
+      return false;
 
     }
   }
@@ -287,25 +288,29 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         // });
       } on FirebaseAuthException catch (error) {
         switch (error.code) {
+
           case "invalid-email":
-            errorMessage = "Votre numero semble être malformée.";
+            errorMessage = "Votre email semble être malformé.";
             break;
           case "wrong-password":
             errorMessage = "Votre mot de passe est erroné.";
             break;
+          case "email-already-in-use":
+            errorMessage = "L'email est déjà utilisé par un autre compte.";
+            break;
           case "user-not-found":
-            errorMessage = "L'utilisateur avec cet numero n'existe pas.";
+            errorMessage = "L'utilisateur avec cet email n'existe pas.";
             break;
           case "user-disabled":
-            errorMessage = "L'utilisateur avec cet numero a été désactivé.";
+            errorMessage = "L'utilisateur avec cet email a été désactivé.";
             break;
           case "too-many-requests":
-            errorMessage = "Trop de demandes";
+            errorMessage = "Trop de demandes.";
             break;
           case "operation-not-allowed":
-            errorMessage =
-            "La connexion avec le numero et un mot de passe n'est pas activée.";
+            errorMessage = "La connexion avec l'email et un mot de passe n'est pas activée.";
             break;
+
           default:
             errorMessage = "Une erreur indéfinie s'est produite.";
         }
@@ -314,7 +319,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-        printVm(error.code);
+        printVm("error code : ${error.code}");
         setState(() {
           tap= false;
         });
@@ -332,40 +337,87 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         DateTime.now().microsecondsSinceEpoch;
     authProvider.registerUser.createdAt =
         DateTime.now().microsecondsSinceEpoch;
+    authProvider.registerUser.id =id;
+
     try{
+      if(authProvider.registerUser.codeParrain!.isNotEmpty){
+        await verifierParrain(authProvider.registerUser.codeParrain!).then((value) async {
+          if(value){
+            await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
 
-      authProvider.registerUser.id =id;
-      await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
+            authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1;
+            if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
+              authProvider.appDefaultData.users_id!.add(id);
+            }
+            UserPseudo pseudo=UserPseudo();
+            pseudo.id=firestore
+                .collection('Pseudo')
+                .doc()
+                .id;
+            pseudo.name=authProvider.registerUser.pseudo;
 
-      authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1;
-      if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
-        authProvider.appDefaultData.users_id!.add(id);
+            // users.add(pseudo.toJson());
+
+            await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
+            printVm("///////////-- save pseudo --///////////////");
+            await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
+
+            SnackBar snackBar = SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
+            );
+
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+            Navigator.pop(context);
+            setState(() {
+              tap= false;
+            });
+            Navigator.pushNamed(context, '/bon_a_savoir');
+          }else{
+
+            SnackBar snackBar = SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('Le code de parrainage est erroné !',style: TextStyle(color: Colors.white),),
+            );
+
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          }
+        },);
+
+      }else{
+        authProvider.registerUser.id =id;
+        await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
+
+        authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1;
+        if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
+          authProvider.appDefaultData.users_id!.add(id);
+        }
+        UserPseudo pseudo=UserPseudo();
+        pseudo.id=firestore
+            .collection('Pseudo')
+            .doc()
+            .id;
+        pseudo.name=authProvider.registerUser.pseudo;
+
+        // users.add(pseudo.toJson());
+
+        await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
+        printVm("///////////-- save pseudo --///////////////");
+        await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
+
+        SnackBar snackBar = SnackBar(
+          backgroundColor: Colors.green,
+          content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        Navigator.pop(context);
+        setState(() {
+          tap= false;
+        });
+        Navigator.pushNamed(context, '/bon_a_savoir');
       }
-      UserPseudo pseudo=UserPseudo();
-      pseudo.id=firestore
-          .collection('Pseudo')
-          .doc()
-          .id;
-      pseudo.name=authProvider.registerUser.pseudo;
 
-      // users.add(pseudo.toJson());
-
-      await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
-      printVm("///////////-- save pseudo --///////////////");
-      await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
-
-      SnackBar snackBar = SnackBar(
-        backgroundColor: Colors.green,
-        content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
-      );
-      await verifierParrain(authProvider.registerUser.codeParrain!);
-
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      Navigator.pop(context);
-      setState(() {
-        tap= false;
-      });
-      Navigator.pushNamed(context, '/bon_a_savoir');
 
 
 
@@ -549,14 +601,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                                 child: ElevatedButton(
                                   onPressed: () {
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) {
-                                          return SignUpScreen();
-                                        },
-                                      ),
-                                    );
+                                    Navigator.pop(context);
 
 
                                   },

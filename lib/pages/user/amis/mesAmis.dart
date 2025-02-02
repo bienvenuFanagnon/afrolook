@@ -154,12 +154,27 @@ class _MesAmisState extends State<MesAmis> {
                     },
                     child: Container(
                       color: Colors.transparent,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16),),
-                          SizedBox(height: 6,),
-                          Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                      child: Row(
+                        spacing: 10,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16),),
+                              SizedBox(height: 6,),
+                              Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                            ],
+                          ),
+                          Visibility(
+                            visible: amigo.friend!.isVerify!,
+                            child: Card(
+                              child: const Icon(
+                                Icons.verified,
+                                color: Colors.green,
+                                size: 17,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

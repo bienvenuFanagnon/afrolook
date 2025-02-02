@@ -103,10 +103,22 @@ class _MyHomePageState extends State<MyHomePage>
   List<Post> listConstposts=[];
   List<ArticleData> articles=[];
   List<UserServiceData> userServices=[];
+  Color _color =Colors.blue;
 
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
-
+  void _changeColor() {
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.brown,
+      Colors.blueAccent,
+      Colors.red,
+      Colors.yellow,
+    ];
+    final random = Random();
+    _color = colors[random.nextInt(colors.length)];
+  }
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
       throw Exception('Could not launch $url');
@@ -207,7 +219,6 @@ class _MyHomePageState extends State<MyHomePage>
   RandomColor _randomColor = RandomColor();
 
   final ScrollController _scrollController = ScrollController();
-  Color _color =Colors.blue;
 
   int postLenght = 8;
   int limitePosts = 100;
@@ -2449,8 +2460,11 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
+  List<Post> listVideos=[];
+
   @override
   void initState() {
+    // _changeColor();
     super.initState();
 
     hasShownDialogToday().then((value) async {
@@ -2543,6 +2557,10 @@ class _MyHomePageState extends State<MyHomePage>
       }
       return Future.value(message);
     });
+    // postProvider.getPostsVideos3(limitePosts).then((value) {
+    //   postProvider.listvideos=value;
+    //   printVm('listVideos *****************************: ${postProvider.listvideos.length}');
+    // },);
   }
 
   @override
@@ -2620,15 +2638,17 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    _color=  _randomColor.randomColor(
-        colorHue: ColorHue.multiple(colorHues: [
-          ColorHue.red,
-          // ColorHue.blue,
-          // ColorHue.green,
-          ColorHue.orange,
-          ColorHue.yellow,
-          ColorHue.purple
-        ]));
+    _changeColor();
+
+    // _color=  _randomColor.randomColor(
+    //     colorHue: ColorHue.multiple(colorHues: [
+    //       ColorHue.red,
+    //       // ColorHue.blue,
+    //       // ColorHue.green,
+    //       ColorHue.orange,
+    //       ColorHue.yellow,
+    //       ColorHue.purple
+    //     ]));
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     //userProvider.getUsers(authProvider.loginUserData!.id!);
@@ -2700,8 +2720,17 @@ class _MyHomePageState extends State<MyHomePage>
           appBar: AppBar(
             automaticallyImplyLeading: false,
 
-            titleSpacing: 0,
-            title: Logo(),
+            titleSpacing: 10,
+            title: Text(
+              // 'Afro Chronique',
+              'Afrolook',
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+                color: Colors.green,
+                letterSpacing: 1.5,
+              ),
+            ),
 
             //backgroundColor: Colors.blue,
             actions: [
@@ -3034,7 +3063,7 @@ class _MyHomePageState extends State<MyHomePage>
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: FutureBuilder<List<UserData>>(
-                    future: authProvider.getUsersStorie(
+                    future: authProvider.getUsersStorie(authProvider.loginUserData.id!,
                       limiteUsers,
                     ),
                     builder: (context, snapshot) {
@@ -3482,7 +3511,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     return homePostUsers(
                                     listConstposts[index],
-                                    Colors.brown,
+      _color,
                                     height,
                                     width,
                                     context,

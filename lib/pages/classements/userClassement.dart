@@ -279,10 +279,28 @@ class _ConversationListState extends State<ConversationList> {
                     },);
 
                   },
-                  child: CircleAvatar(
-                    
-                    backgroundImage: NetworkImage(widget.imageUrl),
-                    maxRadius: widget.avatarSize,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+
+                        backgroundImage: NetworkImage(widget.imageUrl),
+                        maxRadius: widget.avatarSize,
+                      ),
+                      Positioned(
+                        bottom: 0, right: -5,
+                        child: Visibility(
+                          visible: widget.user!.isVerify!,
+                          child: Card(
+                            child: const Icon(
+                              Icons.verified,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    ],
                   ),
                 ),
                 SizedBox(

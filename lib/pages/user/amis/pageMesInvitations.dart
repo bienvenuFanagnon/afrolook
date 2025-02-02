@@ -78,14 +78,31 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
                   Expanded(
                     child: Container(
                       color: Colors.transparent,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text("@${userInvitation.inviteUser!.pseudo!}".toLowerCase(), style: TextStyle(fontSize: 16),),
-                          SizedBox(height: 5,),
-                          Text('${formatNumber(userInvitation.inviteUser!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
-                          SizedBox(height: 5,),
-                          Text('${formatNumber(userInvitation.inviteUser!.userlikes!)} like(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text("@${userInvitation.inviteUser!.pseudo!}".toLowerCase(), style: TextStyle(fontSize: 16),),
+                              SizedBox(height: 5,),
+                              Text('${formatNumber(userInvitation.inviteUser!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                              SizedBox(height: 5,),
+                              Text('${formatNumber(userInvitation.inviteUser!.userlikes!)} like(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
+                            ],
+                          ),
+                          Positioned(
+                            bottom: -5, left: -5,
+                            child: Visibility(
+                              visible: userInvitation.inviteUser!.isVerify!,
+                              child: Card(
+                                child: const Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                  size: 17,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

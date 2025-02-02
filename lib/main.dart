@@ -30,7 +30,9 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/socialVideos/afrovibes/afroVibes.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
+import 'package:afrotok/pages/socialVideos/afrovideos/videoHorizontal.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/splashVideo.dart';
@@ -594,10 +596,12 @@ class _MyAppState extends State<MyApp> {
             return PageTransition(
                 child: IntroIaCompagnon(instruction: '',), type: PageTransitionType.fade);
             break;
-          case '/videos':
+          case '/videos':                // child: VideoCarousel(), type: PageTransitionType.fade);
+
             return PageTransition(
                 // child: MainScreen(), type: PageTransitionType.fade);
                 child: AfroVideo(), type: PageTransitionType.fade);
+                // child: AfroVibesPage(), type: PageTransitionType.fade);
             break;
 
           case '/home_profile_user':
