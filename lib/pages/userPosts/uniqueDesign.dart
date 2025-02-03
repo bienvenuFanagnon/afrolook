@@ -4,10 +4,13 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/model_data.dart';
+
 class Uniquedesign extends StatefulWidget {
   final Uint8List initialImage;
+  final Canal canal;
 
-  const Uniquedesign({super.key, required this.initialImage});
+  const Uniquedesign({super.key, required this.initialImage, required this.canal});
 
   @override
   State<Uniquedesign> createState() => _UniquedesignState();
@@ -33,7 +36,7 @@ class _UniquedesignState extends State<Uniquedesign> {
         child: Container(
           child: Consumer<UserAuthProvider>(
             builder: (context, userProvider, child) {
-              return                   UniqueAfrolookDesign(initialImage: widget.initialImage);
+              return                   UniqueAfrolookDesign(initialImage: widget.initialImage, canal: widget.canal,);
 
             },
           ),

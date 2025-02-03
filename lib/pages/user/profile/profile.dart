@@ -1,7 +1,9 @@
+import 'package:afrotok/pages/canaux/newCanal.dart';
 import 'package:afrotok/pages/user/profile/profileTabsBar/tabBar.dart';
 import 'package:afrotok/pages/user/retrait.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constant/buttons.dart';
@@ -13,6 +15,8 @@ import '../../../constant/textCustom.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
+import '../../canaux/listCanal.dart';
+import '../../canaux/listCanauxByUser.dart';
 
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
@@ -371,6 +375,42 @@ class _UserProfilState extends State<UserProfil> {
                                         )
                                       ],
                               
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10,),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser(isUserCanals: true,),));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                child: Container(
+                                  color: ConstColors.buttonsColors,
+                                  // alignment: Alignment.centerLeft,
+                                  width: 180,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Container(
+                                            child: Icon(FontAwesome.forumbee,size: 20,color: Colors.green,),
+                                          ),
+                                        ),
+                                        Container(
+                                          child: TextCustomerMenu(
+                                            titre: "Mes Canaux",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      ],
+
                                     ),
                                   ),
                                 ),

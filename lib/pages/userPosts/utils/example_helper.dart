@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 // Flutter imports:
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -191,6 +192,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
   /// generating the image.
   ///
   void onCloseEditor({
+    required Canal canal,
     bool showThumbnail = false,
     ui.Image? rawOriginalImage,
     final ImageGenerationConfigs? generationConfigs,
@@ -214,7 +216,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
                 generationTime: _generationTime,
                 showThumbnail: showThumbnail,
                 rawOriginalImage: rawOriginalImage,
-                generationConfigs: generationConfigs,
+                generationConfigs: generationConfigs, canal: canal,
               );
             },
           ),

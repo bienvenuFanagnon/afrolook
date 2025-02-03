@@ -177,7 +177,7 @@ class _ListUserChatsState extends State<Amis> {
 
                   MesAmis(context: context,),
 
-                  MesInvitations(context: context,),
+                  MesInvitations(),
                   
                 ],
                 onChange: (index) => printVm(index),

@@ -1,3 +1,4 @@
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/userPubTabs.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,17 +16,16 @@ import '../../../constant/textCustom.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
-import 'hashtag/textHashTag/hashtaHomeView.dart';
 
-class UserPostForm extends StatefulWidget {
-
-  const UserPostForm({super.key});
+class CanalPostForm extends StatefulWidget {
+  Canal? canal;
+  CanalPostForm({super.key, required this.canal});
 
   @override
-  State<UserPostForm> createState() => _UserProfilState();
+  State<CanalPostForm> createState() => _UserProfilState();
 }
 
-class _UserProfilState extends State<UserPostForm> {
+class _UserProfilState extends State<CanalPostForm> {
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
 
@@ -41,7 +41,7 @@ class _UserProfilState extends State<UserPostForm> {
       backgroundColor: ConstColors.backgroundColor,
       appBar: AppBar(
         title: TextCustomerPageTitle(
-          titre: "Poster votre look",
+          titre: "Poster des infos",
           fontSize: SizeText.homeProfileTextSize,
           couleur: ConstColors.textColors,
           fontWeight: FontWeight.bold,
@@ -76,7 +76,7 @@ class _UserProfilState extends State<UserPostForm> {
                           child: CircleAvatar(
                             radius: 30,
                             backgroundImage: NetworkImage(
-                                '${authProvider.loginUserData!.imageUrl}'),
+                                '${widget.canal!.urlImage}'),
                           ),
                         ),
                         SizedBox(
@@ -90,14 +90,14 @@ class _UserProfilState extends State<UserPostForm> {
                                 SizedBox(
                                   //width: 100,
                                   child: TextCustomerUserTitle(
-                                    titre: "@${authProvider.loginUserData!.pseudo}",
+                                    titre: "#${widget.canal!.titre!}",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 TextCustomerUserTitle(
-                                  titre: "${authProvider.loginUserData!.abonnes} abonné(s)",
+                                  titre: "${widget.canal!.usersSuiviId!.length!} abonné(s)",
                                   fontSize: SizeText.homeProfileTextSize,
                                   couleur: ConstColors.textColors,
                                   fontWeight: FontWeight.w400,
@@ -147,14 +147,14 @@ class _UserProfilState extends State<UserPostForm> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Container(
-                      child: TextCustomerMenu(
-                        titre: "Vidéo",
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: ConstColors.textColors,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    // Container(
+                    //   child: TextCustomerMenu(
+                    //     titre: "Vidéo",
+                    //     fontSize: SizeText.homeProfileTextSize,
+                    //     couleur: ConstColors.textColors,
+                    //     fontWeight: FontWeight.w600,
+                    //   ),
+                    // ),
                   ],
                   tabBarProperties: TabBarProperties(
                     height: 32.0,
@@ -167,17 +167,17 @@ class _UserProfilState extends State<UserPostForm> {
 
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: UserPubText(canal: null,),
+                      child: UserPubText(canal: widget.canal,),
                       // child: HashTagHomeView(),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       // child: UserPubImage(),
-                      child: PostPhotoEditor(canal: null,),
+                      child: PostPhotoEditor(canal: widget.canal,),
                     ),
-                    Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: UserPubVideo()),
+                    // Padding(
+                    //     padding: const EdgeInsets.only(top: 8.0),
+                    //     child: UserPubVideo()),
                   ],
                   onChange: (index) => printVm(index),
                 ),

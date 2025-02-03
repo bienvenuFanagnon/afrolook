@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
@@ -103,6 +104,7 @@ class _MyHomePageState extends State<MyHomePage>
   List<Post> listConstposts=[];
   List<ArticleData> articles=[];
   List<UserServiceData> userServices=[];
+  List<Canal> canaux=[];
   Color _color =Colors.blue;
 
   DocumentSnapshot? lastDocument;
@@ -1697,6 +1699,68 @@ class _MyHomePageState extends State<MyHomePage>
 
 
                    */
+
+
+                  ListTile(
+                    trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(FontAwesome.forumbee,size: 30,color: Colors.green,),
+                    title: TextCustomerMenu(
+                      titre: "Canaux",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false),));
+
+
+                    },
+                  ),
+                  ListTile(
+                    trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Image.asset(
+                      'assets/images/trophee.png',
+                      height: 20,
+                      width: 20,
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "TOP 10 Afrolook Stars",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+
+                      await userProvider.getAllUsers().then(
+                            (value) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
+                        },
+                      );
+
+                    },
+                  ),
+                  ListTile(
+                    trailing:
+                        Icon(Icons.arrow_right_outlined, color: Colors.green,),
+                    leading: Icon(Icons.history_toggle_off_sharp,size: 30,),
+                    title: TextCustomerMenu(
+                      titre: "Mes chroniques",
+                      fontSize: SizeText.homeProfileTextSize+3,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    onTap: () async {
+                      // Add your navigation logic here
+
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyStoriesPage(stories: authProvider.loginUserData.stories!, user: authProvider.loginUserData),));
+
+
+                    },
+                  ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.storefront_outlined, color: Colors.green),
@@ -1781,13 +1845,13 @@ class _MyHomePageState extends State<MyHomePage>
                       });
 
                       await authProvider.getAppData().then(
-                        (appdata) async {
+                            (appdata) async {
                           // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
 
                           await authProvider
                               .getUserIa(authProvider.loginUserData.id!)
                               .then(
-                            (value) async {
+                                (value) async {
                               if (value.isNotEmpty) {
                                 await getIAChatsData(value.first).then((chat) {
                                   setState(() {
@@ -1822,50 +1886,6 @@ class _MyHomePageState extends State<MyHomePage>
                       );
 
                       // Navigator.pushNamed(context, '/intro_ia_compagnon');
-                    },
-                  ),
-
-                  ListTile(
-                    trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/images/trophee.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "TOP 10 Afrolook Stars",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      // Add your navigation logic here
-
-                      await userProvider.getAllUsers().then(
-                            (value) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
-                        },
-                      );
-
-                    },
-                  ),
-                  ListTile(
-                    trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green,),
-                    leading: Icon(Icons.history_toggle_off_sharp,size: 30,),
-                    title: TextCustomerMenu(
-                      titre: "Mes chroniques",
-                      fontSize: SizeText.homeProfileTextSize+3,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w900,
-                    ),
-                    onTap: () async {
-                      // Add your navigation logic here
-
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyStoriesPage(stories: authProvider.loginUserData.stories!, user: authProvider.loginUserData),));
-
-
                     },
                   ),
                   ListTile(
@@ -2482,6 +2502,11 @@ class _MyHomePageState extends State<MyHomePage>
         userServices.shuffle();
         // setState(() {});
       });
+      postProvider.getCanauxHome().then((value) {
+        canaux = value;
+        canaux.shuffle();
+        // setState(() {});
+      });
 
       if (value && mounted) {
         showDialog(
@@ -2747,15 +2772,9 @@ class _MyHomePageState extends State<MyHomePage>
                       .getListNotificationAuth(authProvider.loginUserData.id!),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Icon(
-                        Icons.notifications,
-                        color: ConstColors.blackIconColors,
-                      );
+                      return Image.asset("assets/icons/icons8-bell-188.png",width: 40,height: 40,);
                     } else if (snapshot.hasError) {
-                      return Icon(
-                        Icons.notifications,
-                        color: ConstColors.blackIconColors,
-                      );
+                      return Image.asset("assets/icons/icons8-bell-188.png",width: 40,height: 40,);
                     } else {
                       List<NotificationData> list = snapshot!.data!;
 
@@ -2774,10 +2793,8 @@ class _MyHomePageState extends State<MyHomePage>
                                   style: TextStyle(
                                       fontSize: 10, color: Colors.white),
                                 ),
-                          child: Icon(
-                            Icons.notifications,
-                            color: ConstColors.blackIconColors,
-                          ),
+                          child: Image.asset("assets/icons/icons8-bell-188.png",width: 30,height: 30,)
+                        ,
                         ),
                       );
                     }
@@ -3324,204 +3341,266 @@ class _MyHomePageState extends State<MyHomePage>
                 // ),
 
 
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  sliver: StreamBuilder<List<Post>>(
-                    stream: _streamController.stream,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SliverToBoxAdapter(
-                          child: Center(child: CircularProgressIndicator()),
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+            sliver: StreamBuilder<List<Post>>(
+              stream: _streamController.stream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                } else if (snapshot.hasError) {
+                  return SliverToBoxAdapter(
+                    child: Center(child: Icon(Icons.error)),
+                  );
+                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  List<Post> listConstposts = snapshot.data!;
+
+                  return LiveSliverList(
+                    controller: _scrollController,
+                    showItemInterval: Duration(milliseconds: 10),
+                    showItemDuration: Duration(milliseconds: 30),
+                    itemCount: listConstposts.length,
+                    itemBuilder: animationItemBuilder(
+                          (index) {
+                            printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
+                        // if (index % 7 == 6) {
+                        //   return SizedBox(
+                        //     height: height * 0.35,
+                        //     child: ListView.builder(
+                        //       scrollDirection: Axis.horizontal,
+                        //       itemCount: userList.length,
+                        //       itemBuilder: (context, index) {
+                        //         return homeProfileUsers(userList[index], width, height);
+                        //       },
+                        //     ),
+                        //   );
+                        // }
+                        if (index % 9 == 8) {
+                          return articles.isEmpty
+                              ? SizedBox.shrink()
+                              : SizedBox(
+                            height: height * 0.35,
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Produits Boostés',
+                                            style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Icon(
+                                            Icons.local_fire_department,
+                                            color: Colors.red,
+                                          ),
+                                        ],
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  HomeAfroshopPage(title: ''),
+                                            ),
+                                          );
+                                        },
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              'Boutiques',
+                                              style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Icon(
+                                              Icons.storefront,
+                                              color: Colors.red,
+                                            ),
+                                          ],
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  child: CarouselSlider(
+                                    items: articles.map((article) {
+                                      return Builder(
+                                        builder: (BuildContext context) {
+                                          return ArticleTileBooster(
+                                              article: article,
+                                              w: width,
+                                              h: height,
+                                              isOtherPage: true);
+                                        },
+                                      );
+                                    }).toList(),
+                                    options: CarouselOptions(
+                                      height: 250,
+                                      autoPlay: true,
+                                      enlargeCenterPage: true,
+                                      viewportFraction: 0.6,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                            if (index % 7 == 6) {
+                              return canaux.isEmpty?SizedBox.shrink():Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '📺 Afrolook Canal',
+                                              style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green),
+                                            ),
+                                          ],
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CanalListPage(isUserCanals: false),
+                                              ),
+                                            );
+                                          },
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                'Voir plus 📺',
+                                                style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green),
+                                              ),
+                                            ],
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: height * 0.33,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: canaux.length,
+                                      itemBuilder: (context, index) {
+                                        return channelWidget(
+                                            canaux[index], width, height, context);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
+                        if (index % 6 == 5) {
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '🛠️Services & Jobs 💼',
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green),
+                                        ),
+                                      ],
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => UserServiceListPage(),
+                                          ),
+                                        );
+                                      },
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            'Voir plus 🛠️ 💼',
+                                            style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green),
+                                          ),
+                                        ],
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(
+                                height: height * 0.3,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: userServices.length,
+                                  itemBuilder: (context, index) {
+                                    return userServiceWidget(
+                                        userServices[index], width, height, context);
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return homePostUsers(
+                          listConstposts[index],
+                          _color,
+                          height,
+                          width,
+                          context,
                         );
-                      } else if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: Center(child: Icon(Icons.error)),
-                        );
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Center(child: Text('Pas de looks')),
-                        );
-                      }
-                      List<Post> listConstposts = snapshot.data!;
-
-
-                      return LiveSliverList(
-
-                        controller: _scrollController,
-                        showItemInterval: Duration(milliseconds: 10),
-                        showItemDuration: Duration(milliseconds: 30),
-                        itemCount: listConstposts.length,
-                        itemBuilder: animationItemBuilder(
-
-                                (index) {
-    if (index % 7 == 6) {
-      return SizedBox(
-        height: height * 0.35,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: userList.length,
-          itemBuilder: (context, index) {
-            return homeProfileUsers(userList[index], width, height);
-          },
-        ),
-      );
-    }
-    if (index % 9 == 8) {
-      return articles.isEmpty?SizedBox.shrink(): SizedBox(
-              height: height * 0.35,
-              child: Column(
-       children: [
-         Padding(
-           padding: const EdgeInsets.all(8.0),
-           child: Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               Row(
-                 children: [
-                   Text(
-                     'Produits Boostés',
-                     style: TextStyle(
-                         fontSize: 15,
-                         fontWeight: FontWeight.bold,
-                         color: Colors.green),
-                   ),
-                   SizedBox(width: 8),
-                   Icon(
-                     Icons.local_fire_department,
-                     color: Colors.red,
-                   ),
-                 ],
-                 mainAxisAlignment: MainAxisAlignment.start,
-               ),
-               GestureDetector(
-                 onTap: () {
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (context) => HomeAfroshopPage(title: ''),
-                     ),
-                   );
-                 },
-                 child: Row(
-                   children: [
-                     Text(
-                       'Boutiques',
-                       style: TextStyle(
-                           fontSize: 15,
-                           fontWeight: FontWeight.bold,
-                           color: Colors.green),
-                     ),
-                     SizedBox(width: 8),
-                     Icon(
-                       Icons.storefront,
-                       color: Colors.red,
-                     ),
-                   ],
-                   mainAxisAlignment: MainAxisAlignment.start,
-                 ),
-               ),
-             ],
-           ),
-         ),
-         Container(
-           child: CarouselSlider(
-             items: articles.map((article) {
-               return Builder(
-                 builder: (BuildContext context) {
-                   return ArticleTileBooster(
-                       article: article, w: width, h: height, isOtherPage: true);
-                 },
-               );
-             }).toList(),
-             options: CarouselOptions(
-               height: 250,
-               autoPlay: true,
-               enlargeCenterPage: true,
-               viewportFraction: 0.6,
-             ),
-           ),
-         ),
-       ],
-              ),
-            );
-    }
-
-    if (index % 6 == 5) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '🛠️Services & Jobs 💼',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green),
+                      },
                     ),
+                  );
 
-                  ],
-                  mainAxisAlignment: MainAxisAlignment.start,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserServiceListPage(),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        'Voir plus 🛠️ 💼',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green),
-                      ),
-
-                    ],
-                    mainAxisAlignment: MainAxisAlignment.start,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(
-            height: height * 0.3,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: userServices.length,
-              itemBuilder: (context, index) {
-                return userServiceWidget(userServices[index], width, height,context);
+                }
+                return SliverToBoxAdapter(
+                  child: Center(child: Text('Pas de looks')),
+                );
               },
             ),
-          ),
-        ],
-      );
-    }
-
-
-    return homePostUsers(
-                                    listConstposts[index],
-      _color,
-                                    height,
-                                    width,
-                                    context,
-                                  );
-                                },
-                            padding: EdgeInsets.symmetric(vertical: 8)),
-                      );
-                    },
-                  ),
-                ),
+          )
               ],
             ),
           ),
@@ -3558,12 +3637,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Icon(
-                                Entypo.message,
-                                //AntDesign.message1,
-                                size: 30,
-                                color: ConstColors.blackIconColors,
-                              ),
+                              child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,)
                             );
                           } else if (snapshot.hasData) {
                             if (snapshot.data! > 0) {
@@ -3579,23 +3653,13 @@ class _MyHomePageState extends State<MyHomePage>
                                         style: TextStyle(
                                             fontSize: 10, color: Colors.white),
                                       ),
-                                child: Icon(
-                                  MaterialCommunityIcons.account_group,
-                                  //AntDesign.message1,
-                                  color: ConstColors.blackIconColors,
-                                ),
+                                child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,)
                               );
                             } else {
                               return badges.Badge(
                                 badgeContent: Text('1'),
                                 showBadge: false,
-                                child: Icon(
-                                  MaterialCommunityIcons.account_group,
-                                  //AntDesign.message1,
-                                  size: 30,
-
-                                  color: ConstColors.blackIconColors,
-                                ),
+                                child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,),
                               );
                             }
                           } else {
@@ -3603,12 +3667,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Icon(
-                                MaterialCommunityIcons.account_group,
-                                //AntDesign.message1,
-                                size: 30,
-                                color: ConstColors.blackIconColors,
-                              ),
+                              child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,),
                             );
                           }
                         }),
@@ -3626,12 +3685,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Icon(
-                                Entypo.message,
-                                //AntDesign.message1,
-                                size: 30,
-                                color: ConstColors.blackIconColors,
-                              ),
+                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
                             );
                           } else if (snapshot.hasData) {
                             if (snapshot.data! > 0) {
@@ -3647,23 +3701,13 @@ class _MyHomePageState extends State<MyHomePage>
                                         style: TextStyle(
                                             fontSize: 10, color: Colors.white),
                                       ),
-                                child: Icon(
-                                  Entypo.message,
-                                  //AntDesign.message1,
-                                  color: ConstColors.blackIconColors,
-                                ),
+                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
                               );
                             } else {
                               return badges.Badge(
                                 badgeContent: Text('1'),
                                 showBadge: false,
-                                child: Icon(
-                                  Entypo.message,
-                                  //AntDesign.message1,
-                                  size: 30,
-
-                                  color: ConstColors.blackIconColors,
-                                ),
+                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
                               );
                             }
                           } else {
@@ -3671,12 +3715,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Icon(
-                                Entypo.message,
-                                //AntDesign.message1,
-                                size: 30,
-                                color: ConstColors.blackIconColors,
-                              ),
+                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
                             );
                           }
                         }),
@@ -3753,39 +3792,192 @@ class _MyHomePageState extends State<MyHomePage>
                         //   },
                         // );
                       },
-                      child: IconPersonaliser(icone: Icons.add_box, size: 40)),
-                  IconButton(
-                      onPressed: () {
-                        /*
-                        postProvider.getPostsVideos().then((value) {
-                          if (value.length>0) {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCards(),));
-                          }
-                        },);
-
-                         */
-
+                      child: Image.asset('assets/icons/icons8-plus-188.png',width: 50,height: 50,)),
+                  GestureDetector(
+                      onTap: () {
                         Navigator.pushNamed(context, '/videos');
+
+                        // checkAppVersionAndProceed(context, () {
+                        //   Navigator.pushNamed(context, '/videos');
+                        // });
+
+                        // authProvider.getAppData().then(
+                        //       (appdata) async {
+                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
+                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
+                        //       Navigator.pushNamed(context, '/user_posts_form');
+                        //
+                        //
+                        //
+                        //     }        else{
+                        //       showModalBottomSheet(
+                        //         context: context,
+                        //         builder: (BuildContext context) {
+                        //           return Container(
+                        //             height: 300,
+                        //             child: Center(
+                        //               child: Padding(
+                        //                 padding: const EdgeInsets.all(20.0),
+                        //                 child: Column(
+                        //                   mainAxisAlignment: MainAxisAlignment.center,
+                        //                   crossAxisAlignment: CrossAxisAlignment.center,
+                        //                   children: [
+                        //                     Icon(Icons.info,color: Colors.red,),
+                        //                     Text(
+                        //                       'Nouvelle mise à jour disponible!',
+                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        //                     ),
+                        //                     SizedBox(height: 10.0),
+                        //                     Text(
+                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                        //                       style: TextStyle(fontSize: 16.0),
+                        //                     ),
+                        //                     SizedBox(height: 20.0),
+                        //                     ElevatedButton(
+                        //                       style: ElevatedButton.styleFrom(
+                        //                         backgroundColor: Colors.green,
+                        //                       ),
+                        //                       onPressed: () {
+                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                        //                       },
+                        //                       child: Row(
+                        //                         mainAxisAlignment: MainAxisAlignment.center,
+                        //                         children: [
+                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+                        //                           SizedBox(width: 5,),
+                        //                           Text('Télécharger sur le play store',
+                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        //                         ],
+                        //                       ),
+                        //
+                        //                     ),
+                        //                   ],
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //           );
+                        //         },
+                        //       );
+                        //
+                        //     }
+                        //
+                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+                        //
+                        //
+                        //   },
+                        // );
                       },
-                      icon: Icon(
-                        Icons.video_library_rounded,
-                        size: 30,
-                        color: ConstColors.blackIconColors,
-                      )),
-                  IconButton(
-                      onPressed: () async {
-                        printVm('tap');
+                      child: Image.asset('assets/icons/icons8-video-gallery-188.png',width: 35,height: 35,)),
+                  GestureDetector(
+                      onTap: () {
                         checkAppVersionAndProceed(context, () {
                           _scaffoldKey.currentState!.openDrawer();
                         });
+                        // checkAppVersionAndProceed(context, () {
+                        //   Navigator.pushNamed(context, '/videos');
+                        // });
 
-                        // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
+                        // authProvider.getAppData().then(
+                        //       (appdata) async {
+                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
+                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
+                        //       Navigator.pushNamed(context, '/user_posts_form');
+                        //
+                        //
+                        //
+                        //     }        else{
+                        //       showModalBottomSheet(
+                        //         context: context,
+                        //         builder: (BuildContext context) {
+                        //           return Container(
+                        //             height: 300,
+                        //             child: Center(
+                        //               child: Padding(
+                        //                 padding: const EdgeInsets.all(20.0),
+                        //                 child: Column(
+                        //                   mainAxisAlignment: MainAxisAlignment.center,
+                        //                   crossAxisAlignment: CrossAxisAlignment.center,
+                        //                   children: [
+                        //                     Icon(Icons.info,color: Colors.red,),
+                        //                     Text(
+                        //                       'Nouvelle mise à jour disponible!',
+                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        //                     ),
+                        //                     SizedBox(height: 10.0),
+                        //                     Text(
+                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                        //                       style: TextStyle(fontSize: 16.0),
+                        //                     ),
+                        //                     SizedBox(height: 20.0),
+                        //                     ElevatedButton(
+                        //                       style: ElevatedButton.styleFrom(
+                        //                         backgroundColor: Colors.green,
+                        //                       ),
+                        //                       onPressed: () {
+                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
+                        //                       },
+                        //                       child: Row(
+                        //                         mainAxisAlignment: MainAxisAlignment.center,
+                        //                         children: [
+                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
+                        //                           SizedBox(width: 5,),
+                        //                           Text('Télécharger sur le play store',
+                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        //                         ],
+                        //                       ),
+                        //
+                        //                     ),
+                        //                   ],
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //           );
+                        //         },
+                        //       );
+                        //
+                        //     }
+                        //
+                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+                        //
+                        //
+                        //   },
+                        // );
                       },
-                      icon: Icon(
-                        Icons.menu,
-                        size: 30,
-                        color: ConstColors.blackIconColors,
-                      )),
+                      child: Image.asset('assets/icons/icons8-menu-188.png',width: 35,height: 35,)),
+
+                  //
+                  // IconButton(
+                  //     onPressed: () {
+                  //       /*
+                  //       postProvider.getPostsVideos().then((value) {
+                  //         if (value.length>0) {
+                  //           Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCards(),));
+                  //         }
+                  //       },);
+                  //
+                  //        */
+                  //
+                  //       Navigator.pushNamed(context, '/videos');
+                  //     },
+                  //     icon: Icon(
+                  //       Icons.video_library_rounded,
+                  //       size: 30,
+                  //       color: ConstColors.blackIconColors,
+                  //     )),
+                  // IconButton(
+                  //     onPressed: () async {
+                  //       printVm('tap');
+                  //       checkAppVersionAndProceed(context, () {
+                  //         _scaffoldKey.currentState!.openDrawer();
+                  //       });
+                  //
+                  //       // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
+                  //     },
+                  //     icon: Icon(
+                  //       Icons.menu,
+                  //       size: 30,
+                  //       color: ConstColors.blackIconColors,
+                  //     )),
                 ],
               ),
             ),

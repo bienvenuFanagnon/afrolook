@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:afrotok/models/model_data.dart';
 import 'package:path/path.dart' as path;
 
 // Flutter imports:
@@ -36,7 +37,8 @@ import 'materialEditor.dart';
 /// The example how to pick images from the gallery or with the camera.
 class PostPhotoEditor extends StatefulWidget {
   /// Creates a new [PostPhotoEditor] widget.
-  const PostPhotoEditor({super.key});
+  final Canal? canal;
+  const PostPhotoEditor({super.key, required this.canal});
 
   @override
   State<PostPhotoEditor> createState() => _PostPhotoEditorState();
@@ -324,7 +326,7 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Uniquedesign(initialImage:bytes! ),
+            builder: (context) => Uniquedesign(initialImage:bytes!, canal: widget.canal!, ),
           ),
         );
         // Uint8List? watermarkedBytes = await addWatermark(bytes);
@@ -451,6 +453,10 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
               key: _formKey,
               child: Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text("Type post: ${widget.canal==null?"Look":"Canal"}"),
+                  ),
                   // TextFormField(
                   //   controller: _descriptionController,
                   //   decoration: InputDecoration(
@@ -514,7 +520,9 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
           onImageEditingComplete: onImageEditingComplete,
-          onCloseEditor: onCloseEditor,
+          onCloseEditor: () {
+            onCloseEditor(canal: widget.canal!);
+          },
         ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
@@ -526,8 +534,9 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
           onImageEditingComplete: onImageEditingComplete,
-          onCloseEditor: onCloseEditor,
-        ),
+          onCloseEditor: () {
+            onCloseEditor(canal: widget.canal!);
+          },        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),

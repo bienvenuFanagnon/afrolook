@@ -74,6 +74,7 @@ class PostLookImageTab extends StatefulWidget {
   const PostLookImageTab({
     super.key,
     required this.imgBytes,
+    required this.canal,
     this.generationTime,
     this.rawOriginalImage,
     this.generationConfigs,
@@ -85,6 +86,7 @@ class PostLookImageTab extends StatefulWidget {
 
   /// The image data in bytes to be displayed.
    final Uint8List imgBytes;
+   final Canal canal;
 
   /// The time taken to generate the image, in milliseconds.
   final double? generationTime;
@@ -221,6 +223,10 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..loves = 0
         ..id = postId
         ..images = [];
+      if(widget.canal!=null){
+        post.canal_id=widget.canal!.id;
+        post.categorie="CANAL";
+      }
 
       _convertUint8ListToFile(
         _imageBytes!,
@@ -270,39 +276,66 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           _descriptionController.clear();
 
           // Notification logic
-          NotificationData notif = NotificationData()
-            ..id = firestore.collection('Notifications').doc().id
-            ..titre = isChallenge?"Nouveau Challenge":"Nouveau post"
-            ..description = isChallenge?"🎉 Nouveau challenge en ligne ! 🎉":"Un nouveau post a été publié !"
-            ..users_id_view = []
-            ..receiver_id = ""
-            ..user_id = authProvider.loginUserData.id
-            ..updatedAt = DateTime.now().microsecondsSinceEpoch
-            ..createdAt = DateTime.now().microsecondsSinceEpoch
-            ..status = PostStatus.VALIDE.name;
+          // NotificationData notif = NotificationData()
+          //   ..id = firestore.collection('Notifications').doc().id
+          //   ..titre = isChallenge?"Nouveau Challenge":"Nouveau post"
+          //   ..description = isChallenge?"🎉 Nouveau challenge en ligne ! 🎉":"Un nouveau post a été publié !"
+          //   ..users_id_view = []
+          //   ..receiver_id = ""
+          //   ..user_id = authProvider.loginUserData.id
+          //   ..updatedAt = DateTime.now().microsecondsSinceEpoch
+          //   ..createdAt = DateTime.now().microsecondsSinceEpoch
+          //   ..status = PostStatus.VALIDE.name;
+          //
+          // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+          if(widget.canal!=null){
+            await authProvider
+                .getAllUsersOneSignaUserId()
+                .then(
+                  (userIds) async {
+                if (userIds.isNotEmpty) {
+                  await authProvider.sendNotification(
+                      userIds: userIds,
+                      smallImage: "${widget.canal!.urlImage}",
+                      send_user_id: "${authProvider.loginUserData.id!}",
+                      recever_user_id: "",
+                      message: "📢 Canal ${widget.canal!.titre} a posté un look infos ✨",
+                      type_notif: NotificationType.POST.name,
+                      post_id: "${post!.id!}",
+                      post_type: PostDataType.IMAGE.name, chat_id: ''
+                  );
 
-                      await authProvider
-                          .getAllUsersOneSignaUserId()
-                          .then(
-                            (userIds) async {
-                          if (userIds.isNotEmpty) {
+                }
+              },
+            );
+            widget.canal!.updatedAt =
+                DateTime.now().microsecondsSinceEpoch;
+            postProvider.updateCanal( widget.canal!, context);
+          }else{
+            await authProvider
+                .getAllUsersOneSignaUserId()
+                .then(
+                  (userIds) async {
+                if (userIds.isNotEmpty) {
 
-                            await authProvider.sendNotification(
-                                userIds: userIds,
-                                smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                send_user_id: "${authProvider.loginUserData.id!}",
-                                recever_user_id: "",
-                                message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} a posté un look ✨",
-                                type_notif: NotificationType.CHALLENGE.name,
-                                post_id: "${post!.id!}",
-                                post_type: PostDataType.IMAGE.name, chat_id: ''
-                            );
+                  await authProvider.sendNotification(
+                      userIds: userIds,
+                      smallImage: "${authProvider.loginUserData.imageUrl!}",
+                      send_user_id: "${authProvider.loginUserData.id!}",
+                      recever_user_id: "",
+                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                      type_notif: NotificationType.CHALLENGE.name,
+                      post_id: "${post!.id!}",
+                      post_type: PostDataType.IMAGE.name, chat_id: ''
+                  );
 
-                          }
-                        },
-                      );
+                }
+              },
+            );
+          }
+
+
 
           // postProvider.getPostsImages(limitePosts);
           _imageBytes==null;
@@ -529,6 +562,10 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             padding: const EdgeInsets.all(16.0),
             child: Stack(
               children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text("Type post: ${widget.canal==null?"Look":"Canal"}"),
+                ),
                 Form(
                   key: _formKey,
                   child: Column(

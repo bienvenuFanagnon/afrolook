@@ -37,6 +37,8 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 
 
 class UserPubText extends StatefulWidget {
+   final Canal? canal;
+  UserPubText({super.key, required this.canal});
   @override
   State<UserPubText> createState() => _UserPubTextState();
 }
@@ -194,6 +196,10 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
         child: ListView(
           children: [
             Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("Type post: ${widget.canal==null?"Look":"Canal"}"),
+            ),
+            Padding(
               padding: const EdgeInsets.all(16.0),
               child: Form(
                 key: _formKey,
@@ -313,6 +319,10 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 post.loves = 0;
                                 post.id = postId;
                                 post.images = [];
+                                if(widget.canal!=null){
+                                  post.canal_id=widget.canal!.id;
+                                  post.categorie="CANAL";
+                                }
 
                                 await FirebaseFirestore.instance
                                     .collection('Posts')
@@ -327,49 +337,75 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 await userProvider.updateUser(authProvider.loginUserData!);
                                 postProvider.listConstposts.add(post);
 
+                                if(widget.canal!=null){
+                                  await authProvider
+                                      .getAllUsersOneSignaUserId()
+                                      .then(
+                                        (userIds) async {
+                                      if (userIds.isNotEmpty) {
+                                        await authProvider.sendNotification(
+                                            userIds: userIds,
+                                            smallImage: "${widget.canal!.urlImage}",
+                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "",
+                                            message: "📢 Canal ${widget.canal!.titre} a posté un look infos ✨",
+                                            type_notif: NotificationType.POST.name,
+                                            post_id: "${post!.id!}",
+                                            post_type: PostDataType.IMAGE.name, chat_id: ''
+                                        );
+
+                                      }
+                                    },
+                                  );
+                                  widget.canal!.updatedAt =
+                                      DateTime.now().microsecondsSinceEpoch;
+                                  postProvider.updateCanal( widget.canal!, context);
+                                }else{
+                                  await authProvider
+                                      .getAllUsersOneSignaUserId()
+                                      .then(
+                                        (userIds) async {
+                                      if (userIds.isNotEmpty) {
+                                        await authProvider.sendNotification(
+                                            userIds: userIds,
+                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                            recever_user_id: "",
+                                            message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                                            type_notif: NotificationType.POST.name,
+                                            post_id: "${post!.id!}",
+                                            post_type: PostDataType.IMAGE.name, chat_id: ''
+                                        );
+
+                                      }
+                                    },
+                                  );
+                                }
 
 
 
-                                NotificationData notif=NotificationData();
-                                notif.id=firestore
-                                    .collection('Notifications')
-                                    .doc()
-                                    .id;
-                                notif.titre="Nouveau post";
-                                notif.description="Un nouveau post a été publié !";
-                                notif.users_id_view=[];
-                                notif.receiver_id="";
-
-                                notif.user_id=authProvider.loginUserData.id;
-                                notif.updatedAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.createdAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.status = PostStatus.VALIDE.name;
+                                // NotificationData notif=NotificationData();
+                                // notif.id=firestore
+                                //     .collection('Notifications')
+                                //     .doc()
+                                //     .id;
+                                // notif.titre="Nouveau post";
+                                // notif.description="Un nouveau look a été publié !";
+                                // notif.users_id_view=[];
+                                // notif.receiver_id="";
+                                //
+                                // notif.user_id=authProvider.loginUserData.id;
+                                // notif.updatedAt =
+                                //     DateTime.now().microsecondsSinceEpoch;
+                                // notif.createdAt =
+                                //     DateTime.now().microsecondsSinceEpoch;
+                                // notif.status = PostStatus.VALIDE.name;
 
                                 // users.add(pseudo.toJson());
 
-                                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                                 print("///////////-- save notification --///////////////");
-                                await authProvider
-                                    .getAllUsersOneSignaUserId()
-                                    .then(
-                                      (userIds) async {
-                                    if (userIds.isNotEmpty) {
-                                      await authProvider.sendNotification(
-                                          userIds: userIds,
-                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id: "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "",
-                                          message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
-                                          type_notif: NotificationType.POST.name,
-                                          post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name, chat_id: ''
-                                      );
 
-                                    }
-                                  },
-                                );
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'Le post a été validé avec succès !',

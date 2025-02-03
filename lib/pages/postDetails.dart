@@ -37,6 +37,8 @@ import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
+import 'canaux/detailsCanal.dart';
+import 'canaux/listCanal.dart';
 import 'chat/entrepriseChat.dart';
 import 'component/consoleWidget.dart';
 
@@ -263,6 +265,23 @@ class _DetailsPostState extends State<DetailsPost> {
   bool isInvite(List<Invitation> invitationList, String userIdToCheck) {
     return invitationList.any((inv) => inv.receiverId == userIdToCheck);
   }
+  Future<void> suivreCanal(Canal canal) async {
+      canal.usersSuiviId!.add(authProvider.loginUserData.id!);
+      await firestore.collection('Canaux').doc(canal.id).update({
+        'usersSuiviId': canal.usersSuiviId,
+      });
+      setState(() {
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Vous suivez maintenant ce canal.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+      );
+    }
 
 
   void onShow() {
@@ -535,7 +554,212 @@ class _DetailsPostState extends State<DetailsPost> {
               padding: const EdgeInsets.all(5.0),
               child: Column(
                 children: [
-                  Row(
+                  post.canal!=null?GestureDetector(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: post.canal!),));
+
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: CircleAvatar(
+                                backgroundImage: NetworkImage(
+                                    '${post.canal!.urlImage!}'),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 2,
+                            ),
+                            Row(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      //width: 100,
+                                      child: TextCustomerUserTitle(
+                                        titre: "#${post.canal!.titre!}",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    TextCustomerUserTitle(
+                                      titre: "${formatNumber(post.canal!.usersSuiviId!.length)} abonné(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    // TextCustomerUserTitle(
+                                    //   titre: "${formatNumber(post.user!.userlikes!)} like(s)",
+                                    //   fontSize: SizeText.homeProfileTextSize,
+                                    //   couleur: Colors.green,
+                                    //   fontWeight: FontWeight.w700,
+                                    // ),
+
+                                  ],
+                                ),
+                                // StatefulBuilder(
+                                //
+                                //     builder: (BuildContext context, void Function(void Function()) setState) {
+                                //       return Container(
+                                //         child: isUserAbonne(post.user!.userAbonnesIds!,
+                                //             authProvider.loginUserData.id!)?Container(): TextButton(
+                                //
+                                //             onPressed:abonneTap?
+                                //                 ()  { }:
+                                //                 ()async{
+                                //               if (!isUserAbonne(post.user!.userAbonnesIds!,
+                                //                   authProvider.loginUserData.id!)) {
+                                //                 setState(() {
+                                //                   abonneTap=true;
+                                //                 });
+                                //                 UserAbonnes userAbonne = UserAbonnes();
+                                //                 userAbonne.compteUserId=authProvider.loginUserData.id;
+                                //                 userAbonne.abonneUserId=post.user!.id;
+                                //
+                                //                 userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
+                                //                 userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
+                                //                 await  userProvider.sendAbonnementRequest(userAbonne,post.user!,context).then((value) async {
+                                //                   if (value) {
+                                //                     authProvider.loginUserData.userAbonnes!.add(userAbonne);
+                                //                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
+                                //                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
+                                //                     if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
+                                //                       await authProvider.sendNotification(
+                                //                           userIds: [post.user!.oneIgnalUserid!],
+                                //                           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                //                           send_user_id: "${authProvider.loginUserData.id!}",
+                                //                           recever_user_id: "${post.user!.id!}",
+                                //                           message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
+                                //                           type_notif: NotificationType.ABONNER.name,
+                                //                           post_id: "${post!.id!}",
+                                //                           post_type: PostDataType.IMAGE.name, chat_id: ''
+                                //                       );
+                                //                       NotificationData notif=NotificationData();
+                                //                       notif.id=firestore
+                                //                           .collection('Notifications')
+                                //                           .doc()
+                                //                           .id;
+                                //                       notif.titre="Nouveau Abonnement ✅";
+                                //                       notif.media_url=authProvider.loginUserData.imageUrl;
+                                //                       notif.type=NotificationType.ABONNER.name;
+                                //                       notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
+                                //                       notif.users_id_view=[];
+                                //                       notif.user_id=authProvider.loginUserData.id;
+                                //                       notif.receiver_id=post.user!.id!;
+                                //                       notif.post_id=post.id!;
+                                //                       notif.post_data_type=PostDataType.IMAGE.name!;
+                                //                       notif.updatedAt =
+                                //                           DateTime.now().microsecondsSinceEpoch;
+                                //                       notif.createdAt =
+                                //                           DateTime.now().microsecondsSinceEpoch;
+                                //                       notif.status = PostStatus.VALIDE.name;
+                                //
+                                //                       // users.add(pseudo.toJson());
+                                //
+                                //                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                //
+                                //
+                                //                     }
+                                //                     SnackBar snackBar = SnackBar(
+                                //                       content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
+                                //                     );
+                                //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                //                     setState(() {
+                                //                       abonneTap=false;
+                                //                     });
+                                //                   }  else{
+                                //                     SnackBar snackBar = SnackBar(
+                                //                       content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
+                                //                     );
+                                //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                //                     setState(() {
+                                //                       abonneTap=false;
+                                //                     });
+                                //                   }
+                                //                 },);
+                                //
+                                //
+                                //                 setState(() {
+                                //                   abonneTap=false;
+                                //                 });
+                                //               }
+                                //
+                                //             },
+                                //             child:abonneTap? Center(
+                                //               child: LoadingAnimationWidget.flickr(
+                                //                 size: 20,
+                                //                 leftDotColor: Colors.green,
+                                //                 rightDotColor: Colors.black,
+                                //               ),
+                                //             ): Text("S'abonner",style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.blue),)
+                                //         ),
+                                //       );
+                                //     }
+                                // ),
+                                /*
+                              IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(
+                                    Icons.add_circle_outlined,
+                                    size: 20,
+                                    color: ConstColors.regIconColors,
+                                  )),
+
+                               */
+                              ],
+                            ),
+
+                          ],
+                        ),
+                        Visibility(
+                          visible: post.canal!.isVerify!,
+                          child: Card(
+                            child: const Icon(
+                              Icons.verified,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          child: post.canal!.usersSuiviId!.contains(authProvider.loginUserData.id)
+                              ? null
+                              : TextButton(
+                            onPressed: () {
+                              suivreCanal(post.canal!);
+                            },
+                            style: ElevatedButton.styleFrom(
+
+                              backgroundColor: Colors.green, // Background color
+                              // onPrimary: Colors.white, // Text color
+                            ),
+                            child: Text('Suivre', style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                        ElevatedButton(onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
+                          // Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: post.canal!),));
+
+                        }, child: Text('Voir plus',style: TextStyle(color: Colors.green),))
+                        // IconButton(
+                        //     onPressed: () {
+                        //       _showModalDialog(post);
+                        //     },
+                        //     icon: Icon(
+                        //       Icons.more_horiz,
+                        //       size: 30,
+                        //       color: ConstColors.blackIconColors,
+                        //     )),
+                      ],
+                    ),
+                  ): Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
@@ -800,7 +1024,7 @@ class _DetailsPostState extends State<DetailsPost> {
                             constraints: BoxConstraints(
                               // minHeight: 100.0, // Set your minimum height
                               maxHeight: height*0.6, // Set your maximum height
-                            ),                          alignment: Alignment.centerLeft,
+                            ),                          alignment: Alignment.center,
                             child: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child:HashTagText(

@@ -999,6 +999,87 @@ class Categorie {
 }
 
 @JsonSerializable()
+class Canal {
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<UserData>? usersSuivi = [];
+
+  List<String>? usersSuiviId = [];
+  String? titre;
+  String? type;
+  String? id;
+  String? description;
+  int? suivi = 0;
+  int? publication = 0;
+  double? publicash = 0;
+  String? urlImage;
+  String? urlCouverture;
+  bool? isVerify;
+  String? userId;
+  int? createdAt;
+  int? updatedAt;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+
+  UserData? user;
+
+  Canal({
+    this.user,
+    this.titre,
+    this.type,
+    this.description,
+    this.urlImage,
+    this.usersSuiviId,
+    this.userId,
+    this.suivi = 0,
+    this.publicash = 0.0,
+    this.publication = 0,
+    this.id,
+  });
+
+  // Add a factory constructor that creates a new instance from a JSON map
+  factory Canal.fromJson(Map<String, dynamic> json) =>
+      _$CanalFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$CanalToJson(this);
+  //
+  // Canal.fromJson(Map<String, dynamic> json) {
+  //   titre = json['titre'];
+  //   type = json['type'];
+  //   id = json['id'];
+  //   publicash = json['publicash'];
+  //   publication = json['publication'];
+  //
+  //   if (json['usersSuiviId'] != null) {
+  //     usersSuiviId = <String>[];
+  //     json['usersSuiviId'].forEach((v) {
+  //       usersSuiviId!.add(v);
+  //     });
+  //   }
+  //
+  //
+  //   description = json['description'];
+  //   urlImage = json['urlImage'];
+  //   suivi = json['suivi'];
+  //   userId = json['userId'];
+  //   user = UserData();
+  // }
+  //
+  // Map<String, dynamic> toJson() => {
+  //   'titre': titre,
+  //   'description': description,
+  //   'urlImage': urlImage,
+  //   'userId': userId,
+  //   'suivi': suivi,
+  //   'type': type,
+  //   'publication': publication,
+  //
+  //   'publicash': publicash,
+  //   'id': id,
+  // };
+}
+
+
+@JsonSerializable()
 class Commande {
   String? id;
   String? user_client_id;
@@ -1334,7 +1415,9 @@ class Post {
   String? user_id;
   String? challenge_id;
   String? entreprise_id;
+  String? canal_id;
   String? type;
+  String? categorie;
   String? status;
   String? urlLink;
   String? dataType;
@@ -1355,6 +1438,7 @@ class Post {
   int? likes = 0;
   UserData? user;
   EntrepriseData? entrepriseData;
+  Canal? canal;
 
   List<PostComment>? commentaires = [];
   List<String>? images = [];
@@ -1414,8 +1498,11 @@ class Post {
         json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
     challenge_id =
         json['challenge_id'] == null ? "" : json['challenge_id'];
+    categorie =
+        json['categorie'] == null ? "LOOK" : json['categorie'];
     loves = json['loves'];
     images = json['images'] == null ? [] : json['images'].cast<String>();
+    canal_id = json['canal_id'] == null ? "" : json['canal_id'];
     likes = json['likes'];
     vues = json['vues'] == null ? 0 : json['vues'];
     partage = json['partage'] == null ? 0 : json['partage'];
@@ -1451,6 +1538,7 @@ class Post {
     data['contact_whatsapp'] = this.contact_whatsapp;
     data['challenge_id'] = this.challenge_id;
     data['dataType'] = this.dataType;
+    data['categorie'] = this.categorie==null?'LOOK':"CANAL";
     data['urlLink'] = this.urlLink;
     data['images'] = this.images;
     data['users_like_id'] = this.users_like_id;
@@ -1459,6 +1547,7 @@ class Post {
     data['partage'] = this.partage;
     data['users_vue_id'] = this.users_vue_id;
     data['vues'] = this.vues;
+    data['canal_id'] = this.canal_id;
     data['nombreCollaborateur'] = this.nombreCollaborateur;
     data['publiCashTotal'] = this.publiCashTotal;
     data['nombreImage'] = this.nombreImage;
@@ -1638,6 +1727,7 @@ class NotificationData {
     this.receiver_id = '',
     this.createdAt = 0,
     this.updatedAt = 0,
+    this.users_id_view,
   });
 
   NotificationData.fromJson(Map<String, dynamic> json) {

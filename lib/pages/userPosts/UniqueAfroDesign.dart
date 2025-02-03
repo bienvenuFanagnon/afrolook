@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -20,8 +21,9 @@ import 'package:provider/provider.dart';
 
 class UniqueAfrolookDesign extends StatefulWidget {
   final Uint8List initialImage;
+  final Canal canal;
 
-  UniqueAfrolookDesign({required this.initialImage});
+  UniqueAfrolookDesign({required this.initialImage, required this.canal});
 
   @override
   _UniqueAfrolookDesignState createState() => _UniqueAfrolookDesignState();
@@ -57,8 +59,9 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign>  with Examp
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
           onImageEditingComplete: onImageEditingComplete,
-          onCloseEditor: onCloseEditor,
-        ),
+          onCloseEditor: () {
+            onCloseEditor(canal: widget.canal!);
+          },        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),
@@ -69,8 +72,9 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign>  with Examp
         callbacks: ProImageEditorCallbacks(
           onImageEditingStarted: onImageEditingStarted,
           onImageEditingComplete: onImageEditingComplete,
-          onCloseEditor: onCloseEditor,
-        ),
+          onCloseEditor: () {
+            onCloseEditor(canal: widget.canal!);
+          },        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),

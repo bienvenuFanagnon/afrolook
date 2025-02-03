@@ -211,6 +211,42 @@ Map<String, dynamic> _$CategorieToJson(Categorie instance) => <String, dynamic>{
       'updatedAt': instance.updatedAt,
     };
 
+Canal _$CanalFromJson(Map<String, dynamic> json) => Canal(
+      titre: json['titre'] as String?,
+      type: json['type'] as String?,
+      description: json['description'] as String?,
+      urlImage: json['urlImage'] as String?,
+      usersSuiviId: (json['usersSuiviId'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      userId: json['userId'] as String?,
+      suivi: (json['suivi'] as num?)?.toInt() ?? 0,
+      publicash: (json['publicash'] as num?)?.toDouble() ?? 0.0,
+      publication: (json['publication'] as num?)?.toInt() ?? 0,
+      id: json['id'] as String?,
+    )
+      ..urlCouverture = json['urlCouverture'] as String?
+      ..isVerify = json['isVerify'] as bool?
+      ..createdAt = (json['createdAt'] as num?)?.toInt()
+      ..updatedAt = (json['updatedAt'] as num?)?.toInt();
+
+Map<String, dynamic> _$CanalToJson(Canal instance) => <String, dynamic>{
+      'usersSuiviId': instance.usersSuiviId,
+      'titre': instance.titre,
+      'type': instance.type,
+      'id': instance.id,
+      'description': instance.description,
+      'suivi': instance.suivi,
+      'publication': instance.publication,
+      'publicash': instance.publicash,
+      'urlImage': instance.urlImage,
+      'urlCouverture': instance.urlCouverture,
+      'isVerify': instance.isVerify,
+      'userId': instance.userId,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
+    };
+
 Commande _$CommandeFromJson(Map<String, dynamic> json) => Commande()
   ..id = json['id'] as String?
   ..user_client_id = json['user_client_id'] as String?

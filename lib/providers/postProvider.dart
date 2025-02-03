@@ -282,6 +282,8 @@ class PostProvider extends ChangeNotifier {
       yield listConstposts;
     }
   }
+
+
   Stream<NotificationData> getListNotification(String user_id) async* {
     var postStream = FirebaseFirestore.instance
         .collection('Notifications')
@@ -313,6 +315,106 @@ class PostProvider extends ChangeNotifier {
       }
     }
   }
+
+  Stream<Canal> getCanaux2() async* {
+    var postStream =  FirebaseFirestore.instance
+        .collection('Canaux')
+        .orderBy('updated_at', descending: true)
+        .limit(100)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      for (var post in snapshot.docs) {
+        Canal canal = Canal.fromJson(post.data());
+
+
+        // Récupérer les infos de l'utilisateur associé
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: canal.userId)
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          canal.user = userList.first;
+        }
+
+        // Émettre chaque notification dès qu'elle est prête
+        yield canal;
+      }
+    }
+  }
+
+  Stream<List<Canal>> getCanaux() async* {
+    var postStream = FirebaseFirestore.instance
+        .collection('Canaux')
+        .orderBy('updatedAt', descending: true)
+        .limit(100)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      List<Canal> canals = [];
+
+      for (var post in snapshot.docs) {
+        Canal canal = Canal.fromJson(post.data());
+
+        // Récupérer les infos de l'utilisateur associé
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: canal.userId)
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          canal.user = userList.first;
+        }
+
+        canals.add(canal);
+      }
+      printVm('canals tailles: ${canals.length}');
+
+      yield canals; // Émettre toute la liste au lieu d'un seul canal
+    }
+  }
+
+  Stream<Canal> getCanauxByUser(String user_id) async* {
+    var postStream =  FirebaseFirestore.instance
+        .collection('Canaux')
+        .where("userId", isEqualTo: user_id)
+        .orderBy('updatedAt', descending: true)
+        .limit(100)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      for (var post in snapshot.docs) {
+        Canal canal = Canal.fromJson(post.data());
+
+        // Récupérer les infos de l'utilisateur associé
+        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+            .collection('Users')
+            .where("id", isEqualTo: canal.userId)
+            .get();
+
+        List<UserData> userList = querySnapshotUser.docs.map((doc) {
+          return UserData.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (userList.isNotEmpty) {
+          canal.user = userList.first;
+        }
+
+        // Émettre chaque notification dès qu'elle est prête
+        yield canal;
+      }
+    }
+  }
+
 
   Stream<List<NotificationData>> getListNotification2(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
@@ -479,6 +581,7 @@ class PostProvider extends ChangeNotifier {
   }
 
   Stream<List<Post>> getPostsImages2(int limite) async* {
+    printVm("get canal data ");
     List<Post> posts = [];
      listConstposts = [];
     DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
@@ -609,11 +712,30 @@ class PostProvider extends ChangeNotifier {
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
         }).toList();
+      printVm("------------------post canal data 1 -----------------");
 
-        if (userList.isNotEmpty) {
-          post.user = userList.first;
+        if(post.canal_id!.isNotEmpty){
+
+          printVm("------------------post canal data 2 -----------------");
+
+          QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+              .collection('Canaux')
+              .where("id", isEqualTo: '${post.canal_id}')
+              .get();
+
+          List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+            return Canal.fromJson(doc.data() as Map<String, dynamic>);
+          }).toList();
+
+
+          if (canalList.isNotEmpty) {
+            post.canal = canalList.first;
+          }
         }
 
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
         // Ajouter le post à la liste
         posts.add(post);
       listConstposts.add(post);
@@ -622,6 +744,166 @@ class PostProvider extends ChangeNotifier {
       //}
     }
   }
+
+  Stream<List<Post>> getCanalPosts(int limite,Canal canal) async* {
+    List<Post> posts = [];
+    listConstposts = [];
+    DateTime afterDate = DateTime(2024, 11, 06); // Date de référence
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+    int todayTimestamp = DateTime.now().microsecondsSinceEpoch;
+
+// Début de la journée actuelle (minuit)
+    int startOfDay = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    ).microsecondsSinceEpoch;
+
+// Fin de la journée actuelle (23:59:59)
+    int endOfDay = startOfDay + Duration(hours: 23, minutes: 59, seconds: 59).inMicroseconds;
+    // 1. Récupérer les publications de la journée
+    // Query queryToday = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    // )
+    // // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .where("created_at", isGreaterThanOrEqualTo: startOfDay)
+    //     .where("created_at", isLessThanOrEqualTo: endOfDay)
+    //     .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .where("type", isEqualTo: PostType.POST.name)
+    //     .orderBy('created_at', descending: true)
+    // // .orderBy('updated_at', descending: true)
+    //     .limit(limite);
+    //
+    //
+    // Query queryPub = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    // )
+    //     .where("type", isEqualTo: PostType.PUB.name)
+    //     .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .orderBy('created_at', descending: true)
+    // // .orderBy('updated_at', descending: true)
+    //     .where("type", isEqualTo: PostType.POST.name)
+    //
+    //     .limit(limite);
+
+// 2. Récupérer les publications restantes
+    Query queryOthers = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+    // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .where("created_at", isLessThan: startOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("type", isEqualTo: PostType.POST.name)
+        .where("canal_id", isEqualTo: canal.id!)
+
+        .orderBy('created_at', descending: true)
+        .limit(limite);
+
+    // Query query = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    // )
+    //     .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+    //     .where("created_at", isGreaterThanOrEqualTo: startOfDay) // Pour les publications de la journée
+    //     .orderBy('updated_at', descending: true)
+    //     .limit(limite);
+
+    // // Effectuer une requête pour récupérer les posts
+    // Query query = postCollect
+    //     .where(
+    //   Filter.or(
+    //     Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+    //     Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+    //   ),
+    //
+    // )      .where(
+    //     "status", isNotEqualTo: PostStatus.SUPPRIMER.name
+    //
+    // )
+    //     .where('created_at', isGreaterThanOrEqualTo: DateTime.now().microsecondsSinceEpoch
+    // )
+    //
+    //     .orderBy('updated_at', descending: true)
+    //     .limit(limite);
+
+    // Effectuer les deux requêtes en parallèle
+    // List<DocumentSnapshot> pubPosts = (await queryPub.get()).docs;
+    // List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+
+    // Combiner les résultats
+    List<DocumentSnapshot> querySnapshotPosts = [ ...otherPosts];
+    // List<DocumentSnapshot> querySnapshotPosts = [...pubPosts,...todayPosts, ...otherPosts];
+
+    // QuerySnapshot querySnapshotPost = await query.get();
+
+    // QuerySnapshot querySnapshotPost = await query.get();
+
+    // List<Post> postList = querySnapshotPost.docs.map((doc) {
+    //   Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+    //   return post;
+    // }).where((post) =>
+    // post.status != PostStatus.NONVALIDE.name &&
+    //     post.status != PostStatus.SUPPRIMER.name).toList();
+
+    // Traiter les documents progressivement
+    // for (var doc in querySnapshotPost.docs) {
+    for (var doc in querySnapshotPosts) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Filtrer selon le statut
+      // if (post.status != PostStatus.NONVALIDE.name &&
+      //     post.status != PostStatus.SUPPRIMER.name) {
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+          .collection('Canaux')
+          .where("id", isEqualTo: '${post.canal_id}')
+          .get();
+
+      List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+        return Canal.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+      if (canalList.isNotEmpty) {
+        post.canal = canalList.first;
+      }
+
+      // Ajouter le post à la liste
+      posts.add(post);
+      listConstposts.add(post);
+      // Transmettre les données partiellement récupérées
+      yield posts;
+      //}
+    }
+  }
+
   DocumentSnapshot? lastDocumentData;
   Post? lastPostData;
   bool isLoading=false;
@@ -1619,6 +1901,52 @@ class PostProvider extends ChangeNotifier {
     }
 
   }
+
+  Future<List<Canal>> getCanauxHome() async {
+
+    List<Canal>  listArticles = [];
+    bool hasData=false;
+    try{
+      CollectionReference userCollect =
+      FirebaseFirestore.instance.collection('Canaux');
+      // Get docs from collection reference
+      QuerySnapshot querySnapshotUser = await userCollect
+          .orderBy('updatedAt', descending: true)
+          .limit(10)
+          .get();
+
+      // Afficher la liste
+      listArticles = querySnapshotUser.docs.map((doc) =>
+          Canal.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      for (var article in listArticles) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        printVm(' UserServices user ${user.toJson()}');
+
+        article.user = user;
+      }
+      listArticles.shuffle();
+      listArticles.shuffle();
+
+
+
+      print('list UserServices ${listArticles.length}');
+      hasData=true;
+      // teams.shuffle();
+
+
+
+
+      return listArticles;
+      // return teams;
+    }catch(e){
+      print("erreur ${e}");
+      hasData=false;
+      return [];
+    }
+
+  }
+
   Future<List<UserServiceData>> getAllUserServiceHome() async {
 
     List<UserServiceData>  listArticles = [];
@@ -1727,6 +2055,24 @@ class PostProvider extends ChangeNotifier {
       return false;
     }
   }
+  Future<bool> updateCanal(Canal data,BuildContext context) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Canaux')
+          .doc(data.id)
+          .update(data.toJson());
+
+      return true;
+    }catch(e){
+      print("erreur update  : ${e}");
+      return false;
+    }
+  }
+
+
 
 
   Future<List<EntrepriseData>>
