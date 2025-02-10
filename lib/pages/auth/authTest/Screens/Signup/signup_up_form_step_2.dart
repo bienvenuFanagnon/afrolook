@@ -87,6 +87,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     // Vérifier si le nom existe déjà
     //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
 
+
+
     if (list.isNotEmpty) {
       printVm("user trouver");
       await authProvider.getAppData();
@@ -97,54 +99,84 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           printVm("current user trouver");
           printVm("current user trouver :${list.first.toJson()}");
 
-          list.first.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-          list.first.votre_solde=list.first.votre_solde! + 5.1;
-          list.first.publi_cash=list.first.publi_cash! + 5.1;
-          list.first.usersParrainer!.add(authProvider.registerUser.id!);
-          authProvider.updateUser(list.first).then((value) async {
-            if(value){
-              await authProvider.sendNotification(
-                  userIds: [list.first!.oneIgnalUserid!],
-                  smallImage: "${authProvider.registerUser.imageUrl!}",
-                  send_user_id: "${authProvider.registerUser.id!}",
-                  recever_user_id: "${list.first!.id!}",
-                  message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
-                  type_notif: NotificationType.PARRAINAGE.name,
-                  post_id: "",
-                  post_type: "",
-                  chat_id: ''
-              );
+      // Assure-toi que la liste n'est pas vide
 
-              NotificationData notif=NotificationData();
-              notif.id=firestore
-                  .collection('Notifications')
-                  .doc()
-                  .id;
-              notif.titre="Parrainage 🤑";
-              notif.media_url=authProvider.registerUser.imageUrl;
-              notif.type=NotificationType.PARRAINAGE.name;
-              notif.description="Vous avez gagné 5 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
-              notif.users_id_view=[];
-              notif.user_id=authProvider.registerUser.id;
-              notif.receiver_id=list.first.id!;
-              notif.post_id="";
-              notif.post_data_type="";
+      var user = list.first;
+      user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
 
-              notif.updatedAt =
-                  DateTime.now().microsecondsSinceEpoch;
-              notif.createdAt =
-                  DateTime.now().microsecondsSinceEpoch;
-              notif.status = PostStatus.VALIDE.name;
+      // Vérifie que usersParrainer n'est pas null avant d'ajouter un nouvel ID
+      if (user.usersParrainer != null) {
+        user.usersParrainer!.add(authProvider.registerUser.id!);
+      } else {
+        user.usersParrainer = [authProvider.registerUser.id!];
+      }
 
-              // users.add(pseudo.toJson());
+      // Met à jour les autres champs
+      user.votre_solde = (user.votre_solde ?? 0) + 5.1;
+      user.publi_cash = (user.publi_cash ?? 0) + 5.1;
 
-              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+      // Mets à jour l'utilisateur dans Firebase
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.id)
+          .update({
+        'usersParrainer': user.usersParrainer,
+        'votre_solde': user.votre_solde,
+        'publi_cash': user.publi_cash,
+      });
+      await authProvider.sendNotification(
+          userIds: [list.first!.oneIgnalUserid!],
+          smallImage: "${list.first!.imageUrl!}",
+          send_user_id: "${authProvider.registerUser.id!}",
+          recever_user_id: "${list.first!.id!}",
+          message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
+          type_notif: NotificationType.PARRAINAGE.name,
+          post_id: "",
+          post_type: "",
+          chat_id: ''
+      );
 
+      NotificationData notif=NotificationData();
+      notif.id=firestore
+          .collection('Notifications')
+          .doc()
+          .id;
+      notif.titre="Parrainage 🤑";
+      notif.media_url=list.first!.imageUrl;
+      notif.type=NotificationType.PARRAINAGE.name;
+      notif.description="Vous avez gagné 5 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
+      notif.users_id_view=[];
+      notif.user_id=authProvider.registerUser.id;
+      notif.receiver_id=list.first.id!;
+      notif.post_id="";
+      notif.post_data_type="";
 
+      notif.updatedAt =
+          DateTime.now().microsecondsSinceEpoch;
+      notif.createdAt =
+          DateTime.now().microsecondsSinceEpoch;
+      notif.status = PostStatus.VALIDE.name;
 
-            }
-          });
-          // await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
+      // users.add(pseudo.toJson());
+
+      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+      //
+      //     user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
+      //     // list.first.votre_solde=list.first.votre_solde! + 5.1;
+      //     // list.first.publi_cash=list.first.publi_cash! + 5.1;
+      //     list.first.usersParrainer!.add(authProvider.registerUser.id!);
+      //    await authProvider.ajouterAuSolde(list.first.id!,5.1).then((value) async {
+      //
+      //
+      //
+      //
+      //
+      //
+      //     });
+      //
+      // await authProvider.updateUser(list.first).then((value) async { });
+      //     // await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
 
        
 

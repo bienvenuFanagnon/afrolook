@@ -6,7 +6,7 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
-import 'package:afrotok/pages/user/retrait.dart';
+import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -98,6 +98,18 @@ class _MesNotificationState extends State<MesNotification> {
 
             break;
           case "IMAGE":
+            postProvider.getPostsImagesById(notification.post_id!).then((posts) {
+              if(posts.isNotEmpty){
+                setState(() {
+                  onTap=false;
+                });
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+
+              }
+
+            },);
+            break;
+          case "TEXT":
             postProvider.getPostsImagesById(notification.post_id!).then((posts) {
               if(posts.isNotEmpty){
                 setState(() {

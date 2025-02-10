@@ -282,8 +282,172 @@ class PostProvider extends ChangeNotifier {
       yield listConstposts;
     }
   }
+  Stream<List<PostMonetiser>> getListPostsMonetiser(String user_id) async* {
+    var postStream = FirebaseFirestore.instance
+        .collection('PostsMonetiser')
+        .where("user_id", isEqualTo: user_id)
+        .orderBy('solde', descending: true)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      List<PostMonetiser> postMonetiserList = [];
+      for (var post in snapshot.docs) {
+        PostMonetiser postMonetiser = PostMonetiser.fromJson(post.data());
+        var postImages = await getPostsImagesById(postMonetiser.post_id!);
+        if (postImages.isNotEmpty) {
+          postMonetiser.post = postImages.first;
+        }
+        postMonetiserList.add(postMonetiser);
+      }
+      // Émettre la liste complète des posts
+      yield postMonetiserList;
+    }
+  }
+
+  Stream<PostMonetiser> getListPostsMonetiser2(String user_id) async* {
+    var postStream = FirebaseFirestore.instance
+        .collection('PostsMonetiser')
+        .where("user_id", isEqualTo: user_id)
+        .orderBy('solde', descending: true)
+        // .limit(100)
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      for (var post in snapshot.docs) {
+        PostMonetiser postMonetiser = PostMonetiser.fromJson(post.data());
+        getPostsImagesById(postMonetiser!.post_id!).then((value) {
+          if(value.isNotEmpty){
+            postMonetiser.post=value.first;
+
+          }
+        },);
 
 
+
+        // Émettre chaque notification dès qu'elle est prête
+        yield postMonetiser;
+      }
+    }
+  }
+
+  Future<PostMonetiser> getOrCreatePostMonetiser(String postId, String userId) async {
+    // Référence à la collection 'PostsMonetiser'
+    var collection = FirebaseFirestore.instance.collection('PostsMonetiser');
+
+    // Rechercher le post par son ID
+    var doc = await collection.doc(postId).get();
+
+    if (doc.exists) {
+      // Si le post existe, le retourner
+      return PostMonetiser.fromJson(doc.data()!);
+    } else {
+      // Si le post n'existe pas, le créer
+      PostMonetiser newPost = PostMonetiser(
+        id: postId,
+        user_id: userId,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        solde: 0.1,
+          users_comments_id: [],
+          users_partage_id: [],
+          users_like_id: []
+      );
+
+      // Ajouter le nouveau post à Firestore
+      await collection.doc(postId).set(newPost.toJson());
+
+      return newPost;
+    }
+  }
+
+
+  Future<void> interactWithPostAndIncrementSolde(String postId, String userId, String interactionType,String currentUserId,) async {
+    // Référence à la collection 'PostsMonetiser'
+    printVm("like poste monetisation inter");
+    printVm("like poste monetisation type ${interactionType}");
+
+    var collection = FirebaseFirestore.instance.collection('PostsMonetiser');
+
+    // Rechercher le post par son ID
+    var doc = await collection
+        .where("post_id", isEqualTo: postId)
+        .get();
+
+    PostMonetiser post;
+
+    if (doc.docs.isNotEmpty) {
+      // Si le post existe, le récupérer
+      post = PostMonetiser.fromJson(doc.docs.first .data()!);
+    } else {
+      // Si le post n'existe pas, le créer avec des valeurs par défaut
+      String postMId = FirebaseFirestore.instance
+          .collection('PostsMonetiser')
+          .doc()
+          .id;
+      PostMonetiser postMonetiser = PostMonetiser(
+        id: postMId,
+        user_id: currentUserId,
+        post_id: postId,
+        users_like_id: [],
+        users_love_id: [],
+        users_comments_id: [],
+        users_partage_id: [],
+        solde: 0.0,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      printVm("like poste monetisation create");
+
+      post=postMonetiser;
+      await collection.doc(post.id).set(post.toJson());
+
+
+    }
+
+    bool shouldIncrement = false;
+
+    // Vérifier le type d'interaction et mettre à jour la liste correspondante
+    switch (interactionType) {
+      case 'like':
+        if (!(post.users_like_id?.contains(userId) ?? false)) {
+          post.users_like_id?.add(userId);
+          shouldIncrement = true;
+        }
+        break;
+      case 'comment':
+        if (!(post.users_comments_id?.contains(userId) ?? false)) {
+          post.users_comments_id?.add(userId);
+          shouldIncrement = true;
+        }
+        break;
+      case 'share':
+        if (!(post.users_partage_id?.contains(userId) ?? false)) {
+          post.users_partage_id?.add(userId);
+          shouldIncrement = true;
+          print('nouveau partager ${post.toJson()}');
+
+        }else{
+          print('deja partager ${post.toJson()}');
+
+        }
+        break;
+      default:
+        print('Invalid interaction type');
+        return;
+    }
+    print('mise à jour de post avant ${post.toJson()}');
+
+    // Incrémenter le solde si nécessaire
+    if (shouldIncrement) {
+      post.solde = (post.solde ?? 0.0) + 1.1;
+    }
+    print('mise à jour de post money');
+    print('mise à jour de post apres ${post.toJson()}');
+
+    // Mettre à jour ou créer le post dans Firestore
+    await collection.doc(post.id).update(post.toJson());
+
+    }
   Stream<NotificationData> getListNotification(String user_id) async* {
     var postStream = FirebaseFirestore.instance
         .collection('Notifications')
@@ -579,8 +743,230 @@ class PostProvider extends ChangeNotifier {
     return listConstposts;
 
   }
-
   Stream<List<Post>> getPostsImages2(int limite) async* {
+    printVm("get canal data ");
+    List<Post> posts = [];
+    listConstposts = [];
+    Set<String> postIdsToday = {}; // Ensemble pour les identifiants des posts du jour
+    Set<String> postIdsWeek = {}; // Ensemble pour les identifiants des posts de la semaine
+    Set<String> postIdsOthers = {}; // Ensemble pour les identifiants des autres posts
+    DateTime afterDate = DateTime.now(); // Date de référence dynamique
+    CollectionReference postCollect = FirebaseFirestore.instance.collection('Posts');
+    int todayTimestamp = DateTime.now().microsecondsSinceEpoch;
+
+    // Début de la journée actuelle (minuit)
+    int startOfDay = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    ).microsecondsSinceEpoch;
+
+    // Fin de la journée actuelle (23:59:59)
+    int endOfDay = startOfDay + Duration(hours: 23, minutes: 59, seconds: 59).inMicroseconds;
+
+    // Début de la semaine actuelle (lundi minuit)
+    int startOfWeek = startOfDay - Duration(days: DateTime.now().weekday - 1).inMicroseconds;
+
+    // Fin de la semaine actuelle (dimanche 23:59:59)
+    int endOfWeek = startOfWeek + Duration(days: 6, hours: 23, minutes: 59, seconds: 59).inMicroseconds;
+
+    // 1. Récupérer les publications de la journée
+    Query queryToday = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+        .where("created_at", isGreaterThanOrEqualTo: startOfDay)
+        .where("created_at", isLessThanOrEqualTo: endOfDay)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("type", isEqualTo: PostType.POST.name)
+        .orderBy('created_at', descending: true)
+        .limit(limite);
+
+    // 2. Récupérer les publications de la semaine
+    Query queryWeek = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+        .where("created_at", isGreaterThanOrEqualTo: startOfWeek)
+        .where("created_at", isLessThanOrEqualTo: endOfWeek)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("type", isEqualTo: PostType.POST.name)
+        .orderBy('created_at', descending: true)
+        .limit(limite);
+
+    // 3. Récupérer les publications restantes
+    Query queryOthers = postCollect
+        .where(
+      Filter.or(
+        Filter("dataType", isEqualTo: '${PostDataType.IMAGE.name}'),
+        Filter("dataType", isEqualTo: '${PostDataType.TEXT.name}'),
+      ),
+    )
+        .where("created_at", isLessThan: startOfWeek)
+        .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("type", isEqualTo: PostType.POST.name)
+        .orderBy('updated_at', descending: true)
+        .limit(limite);
+
+    // Effectuer les requêtes en parallèle
+    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
+    List<DocumentSnapshot> weekPosts = (await queryWeek.get()).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+
+    // Traiter les documents de la journée
+    for (var doc in todayPosts) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Vérifier si l'identifiant du post est déjà dans l'ensemble du jour
+      if (postIdsToday.contains(post.id)) {
+        continue; // Passer au document suivant si le post est déjà ajouté
+      }
+
+      // Ajouter l'identifiant du post à l'ensemble du jour
+      postIdsToday.add(post.id!);
+
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (post.canal_id!.isNotEmpty) {
+        QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+            .collection('Canaux')
+            .where("id", isEqualTo: '${post.canal_id}')
+            .get();
+
+        List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+          return Canal.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (canalList.isNotEmpty) {
+          post.canal = canalList.first;
+        }
+      }
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+
+      // Ajouter le post à la liste
+      posts.add(post);
+      listConstposts.add(post);
+
+      // Transmettre les données partiellement récupérées
+      yield posts;
+    }
+
+    // Traiter les documents de la semaine
+    for (var doc in weekPosts) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Vérifier si l'identifiant du post est déjà dans l'ensemble du jour ou de la semaine
+      if (postIdsToday.contains(post.id) || postIdsWeek.contains(post.id)) {
+        continue; // Passer au document suivant si le post est déjà ajouté
+      }
+
+      // Ajouter l'identifiant du post à l'ensemble de la semaine
+      postIdsWeek.add(post.id!);
+
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (post.canal_id!.isNotEmpty) {
+        QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+            .collection('Canaux')
+            .where("id", isEqualTo: '${post.canal_id}')
+            .get();
+
+        List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+          return Canal.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (canalList.isNotEmpty) {
+          post.canal = canalList.first;
+        }
+      }
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+
+      // Ajouter le post à la liste
+      posts.add(post);
+      listConstposts.add(post);
+
+      // Transmettre les données partiellement récupérées
+      yield posts;
+    }
+
+    // Traiter les autres documents
+    for (var doc in otherPosts) {
+      Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+
+      // Vérifier si l'identifiant du post est déjà dans l'ensemble du jour, de la semaine ou des autres
+      if (postIdsToday.contains(post.id) || postIdsWeek.contains(post.id) || postIdsOthers.contains(post.id)) {
+        continue; // Passer au document suivant si le post est déjà ajouté
+      }
+
+      // Ajouter l'identifiant du post à l'ensemble des autres
+      postIdsOthers.add(post.id!);
+
+      // Récupérer les données utilisateur liées
+      QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: '${post.user_id}')
+          .get();
+
+      List<UserData> userList = querySnapshotUser.docs.map((doc) {
+        return UserData.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      if (post.canal_id!.isNotEmpty) {
+        QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+            .collection('Canaux')
+            .where("id", isEqualTo: '${post.canal_id}')
+            .get();
+
+        List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+          return Canal.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        if (canalList.isNotEmpty) {
+          post.canal = canalList.first;
+        }
+      }
+
+      if (userList.isNotEmpty) {
+        post.user = userList.first;
+      }
+
+      // Ajouter le post à la liste
+      posts.add(post);
+      listConstposts.add(post);
+
+      // Transmettre les données partiellement récupérées
+      yield posts;
+    }
+  }
+  Stream<List<Post>> getPostsImages21(int limite) async* {
     printVm("get canal data ");
     List<Post> posts = [];
      listConstposts = [];
@@ -1278,6 +1664,24 @@ class PostProvider extends ChangeNotifier {
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      if(p.canal_id!.isNotEmpty){
+
+        printVm("------------------post canal data 2 -----------------");
+
+        QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
+            .collection('Canaux')
+            .where("id", isEqualTo: '${p.canal_id}')
+            .get();
+
+        List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
+          return Canal.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
+
+
+        if (canalList.isNotEmpty) {
+          p.canal = canalList.first;
+        }
+      }
 
 //get entreprise
       if (p.type==PostType.PUB.name) {
@@ -2507,6 +2911,28 @@ class PostProvider extends ChangeNotifier {
 
 
       post.updatedAt=DateTime.now().microsecondsSinceEpoch;
+
+      // final now = DateTime.now().microsecondsSinceEpoch;
+      // final difference = now - post.updatedAt!;
+      //
+      // int newDuration=0;
+      //
+      // if (difference < Duration.microsecondsPerDay) {
+      //   newDuration = Duration.microsecondsPerHour;
+      // } else if (difference < 3 * Duration.microsecondsPerDay) {
+      //   newDuration = 12 * Duration.microsecondsPerHour;
+      // } else if (difference < 7 * Duration.microsecondsPerDay) {
+      //   newDuration = Duration.microsecondsPerDay;
+      // } else if (difference < 14 * Duration.microsecondsPerDay) {
+      //   newDuration = Duration.microsecondsPerDay + 12 * Duration.microsecondsPerHour;
+      // } else {
+      //   newDuration = 2 * Duration.microsecondsPerDay;
+      // }
+      //
+      // final newTimestamp = now + newDuration;
+      //
+      // printVm('update poste **********************************************************************');
+      // post.updatedAt=newTimestamp;
       await FirebaseFirestore.instance
           .collection('Posts')
           .doc(post.id)

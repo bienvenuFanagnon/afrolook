@@ -46,7 +46,7 @@ import 'package:afrotok/pages/user/conversation/listUserConv.dart';
 import 'package:afrotok/pages/user/profile/profile.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/page/profile_page.dart';
 import 'package:afrotok/pages/user/profile/userProfileDetails.dart';
-import 'package:afrotok/pages/user/retrait.dart';
+import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';

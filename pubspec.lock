@@ -366,6 +366,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.0"
+  cinetpay:
+    dependency: "direct main"
+    description:
+      name: cinetpay
+      sha256: d56a82316beab8fa6cbdd034e46ccb4f982613c2229673184d1819db0305b0b0
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.8"
   circle_flags:
     dependency: transitive
     description:
@@ -1858,6 +1866,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.1"
+  panara_dialogs:
+    dependency: transitive
+    description:
+      name: panara_dialogs
+      sha256: "43047f996ae8b16130879da4e67f03b5b3df3071b879efe32667d139bc35b35f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.5"
   path:
     dependency: transitive
     description:

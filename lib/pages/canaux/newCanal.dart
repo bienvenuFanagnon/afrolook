@@ -162,6 +162,7 @@ class _NewCanalState extends State<NewCanal> {
                                 Canal canal = Canal();
                                 canal.titre = _titreController.text;
                                 canal.type = "CANAL";
+                                canal.isVerify = false;
                                 canal.id = id;
                                 canal.userId = authProvider.loginUserData.id!;
                                 canal.description = _descriptionController.text;

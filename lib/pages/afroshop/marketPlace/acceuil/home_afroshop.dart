@@ -44,6 +44,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
   Provider.of<PostProvider>(context, listen: false);
   late CategorieProduitProvider categorieProduitProvider =
       Provider.of<CategorieProduitProvider>(context, listen: false);
+  List<ArticleData> articles = []; // Liste locale pour stocker les notifications
 
   int item_selected = -1;
   late Categorie categorieDataSelected=Categorie();
@@ -319,7 +320,9 @@ class _HomePageState extends State<HomeAfroshopPage> {
                           setState(() {
                             is_selected = true;
                             item_selected = -1;
-                          //  articles.shuffle();
+                            articles=[];
+
+                            //  articles.shuffle();
                           });
                         },
                         child: Container(
@@ -368,6 +371,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
                                               setState(() {
                                                 categorieDataSelected=snapshot.data[index];
                                                 is_selected = false;
+                                                articles=[];
 
                                                 item_selected = index;
                                               //  articles.shuffle();
@@ -467,7 +471,8 @@ class _HomePageState extends State<HomeAfroshopPage> {
                   }
                 },
               ),
-            ),                    SliverPadding(
+            ),
+                    SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                       sliver: SliverToBoxAdapter(
                         child: Padding(
@@ -499,16 +504,28 @@ class _HomePageState extends State<HomeAfroshopPage> {
                     ),
 
                     SliverToBoxAdapter(
-                      child: FutureBuilder<List<ArticleData>>(
-                        future: item_selected == -1
-                            ? categorieProduitProvider.getAllArticles()
-                            : categorieProduitProvider.getArticlesByCategorie(categorieDataSelected!.id!),
-                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                          if (snapshot.hasData) {
-                            List<ArticleData> articles = snapshot.data;
-                            return GridView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
+                      child: StreamBuilder<ArticleData>(
+                        stream: item_selected == -1
+                            ? categorieProduitProvider.getAllArticlesStream()
+                            : categorieProduitProvider.getArticlesByCategorieStream(categorieDataSelected!.id!),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting && articles.isEmpty) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+
+                          if (snapshot.hasError) {
+                            return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
+                          }
+
+                          // Ajouter le nouvel article à la liste locale
+                          if (snapshot.hasData && !articles.contains(snapshot.data!)) {
+                            articles.add(snapshot.data!);
+                          }
+
+                          return Container(
+                            width: width,
+                            height: height * 0.86,
+                            child: GridView.builder(
                               itemCount: articles.length,
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2, // Nombre de colonnes dans la grille
@@ -518,18 +535,24 @@ class _HomePageState extends State<HomeAfroshopPage> {
                                     (MediaQuery.of(context).size.height / 1.4),
                               ),
                               itemBuilder: (context, index) {
-                                return ArticleTile( article: articles[index], w: width, h: height,);
+                                ArticleData article = articles[index];
 
-                                // return ArticleTile(articles[index], width, height);
+                                return Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                                      color: Colors.white,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(2.0),
+                                      child: ArticleTile(article: article, w: width, h: height),
+                                    ),
+                                  ),
+                                );
                               },
-                            );
-                          } else if (snapshot.hasError) {
-                            return Icon(Icons.error_outline);
-                          } else {
-                            return SizedBox(
-                                height: 30,
-                                width: 30,child: Center(child: CircularProgressIndicator()));
-                          }
+                            ),
+                          );
                         },
                       ),
                     ),

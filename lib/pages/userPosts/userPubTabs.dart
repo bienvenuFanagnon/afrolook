@@ -208,7 +208,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                     TextFormField(
                       controller: _descriptionController,
                       onChanged: _onTextChanged,
-                      readOnly: true, // Empêche la modification
+                      // readOnly: true, // Empêche la modification
 
                       decoration: InputDecoration(
                         hintText: 'Exprimez votre pensée',
@@ -217,7 +217,8 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                           borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
                         ),
                       ),
-                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      maxLines: null,
                       maxLength: 300,
 
                       validator: (value) {
@@ -302,6 +303,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                     .collection('Posts')
                                     .doc()
                                     .id;
+
                                 Post post = Post();
                                 post.user_id = authProvider.loginUserData.id;
                                 post.description = _descriptionController.text;
@@ -319,6 +321,23 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 post.loves = 0;
                                 post.id = postId;
                                 post.images = [];
+                                String postMId = FirebaseFirestore.instance
+                                    .collection('PostsMonetiser')
+                                    .doc()
+                                    .id;
+                                PostMonetiser postMonetiser = PostMonetiser(
+                                  id: postMId,
+                                  user_id: authProvider.loginUserData.id,
+                                  post_id: postId,
+                                  users_like_id: [],
+                                  users_love_id: [],
+                                  users_comments_id: [],
+                                  users_partage_id: [],
+                                  solde: 0.1,
+                                  createdAt: DateTime.now().millisecondsSinceEpoch,
+                                  updatedAt: DateTime.now().millisecondsSinceEpoch,
+                                );
+
                                 if(widget.canal!=null){
                                   post.canal_id=widget.canal!.id;
                                   post.categorie="CANAL";
@@ -328,6 +347,10 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                     .collection('Posts')
                                     .doc(postId)
                                     .set(post.toJson());
+                                await FirebaseFirestore.instance
+                                    .collection('PostsMonetiser')
+                                    .doc(postMId)
+                                    .set(postMonetiser.toJson());
                                 listimages=[];
                                 _descriptionController.text='';
                                 setState(() {
@@ -415,12 +438,12 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
-                                postProvider.getPostsImages(limitePosts).then((value) {
-                                  // value.forEach((element) {
-                                  //   print(element.toJson());
-                                  // },);
-
-                                },);
+                                // postProvider.getPostsImages(limitePosts).then((value) {
+                                //   // value.forEach((element) {
+                                //   //   print(element.toJson());
+                                //   // },);
+                                //
+                                // },);
 
                               } catch (e) {
                                 print("erreur ${e}");
@@ -1236,6 +1259,23 @@ bool onTap=false;
                               post.loves = 0;
                               post.id = postId;
                               post.images = [];
+
+                              String postMId = FirebaseFirestore.instance
+                                  .collection('PostsMonetiser')
+                                  .doc()
+                                  .id;
+                              PostMonetiser postMonetiser = PostMonetiser(
+                                id: postMId,
+                                user_id: authProvider.loginUserData.id,
+                                post_id: postId,
+                                users_like_id: [],
+                                users_love_id: [],
+                                users_comments_id: [],
+                                users_partage_id: [],
+                                solde: 0.1,
+                                createdAt: DateTime.now().millisecondsSinceEpoch,
+                                updatedAt: DateTime.now().millisecondsSinceEpoch,
+                              );
                               Reference storageReference =
                               FirebaseStorage.instance.ref().child(
                                   'post_media/${Path.basename(File(videoFile.path).path)}');
@@ -1268,6 +1308,11 @@ bool onTap=false;
                                   .collection('Posts')
                                   .doc(postId)
                                   .set(post.toJson());
+
+                              await FirebaseFirestore.instance
+                                  .collection('PostsMonetiser')
+                                  .doc(postMId)
+                                  .set(postMonetiser.toJson());
                               listimages=[];
                               _descriptionController.text='';
                               setState(() {

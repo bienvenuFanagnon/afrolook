@@ -1,6 +1,7 @@
 import 'package:afrotok/pages/canaux/newCanal.dart';
+import 'package:afrotok/pages/user/profile/postsMonetisation.dart';
 import 'package:afrotok/pages/user/profile/profileTabsBar/tabBar.dart';
-import 'package:afrotok/pages/user/retrait.dart';
+import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -404,6 +405,42 @@ class _UserProfilState extends State<UserProfil> {
                                         Container(
                                           child: TextCustomerMenu(
                                             titre: "Mes Canaux",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      ],
+
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10,),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => PostsMonetiserPage(title: '',),));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                child: Container(
+                                  color: ConstColors.buttonsColors,
+                                  // alignment: Alignment.centerLeft,
+                                  width: 180,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Container(
+                                            child: Icon(FontAwesome.money,size: 20,color: Colors.green,),
+                                          ),
+                                        ),
+                                        Container(
+                                          child: TextCustomerMenu(
+                                            titre: "Posts Monetiser",
                                             fontSize: SizeText.homeProfileTextSize,
                                             couleur: ConstColors.textColors,
                                             fontWeight: FontWeight.w600,

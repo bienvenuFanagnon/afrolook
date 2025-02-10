@@ -33,7 +33,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
   late int? userId = 0;
-  late int app_version_code = 48;
+  late int app_version_code = 52;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -336,6 +336,17 @@ class UserAuthProvider extends ChangeNotifier {
     // printVm("get token : ${token}");
     //notifyListeners();
     return prefs.getString('token');
+  }
+  Future<void> ajouterAuSolde(String userId, double montant) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'votre_solde': FieldValue.increment(montant)});
+      print('Montant ajouté avec succès.');
+    } catch (e) {
+      print("Erreur lors de l'ajout du montant : $e");
+    }
   }
 
   Future<List<Invitation>> userInvitaionRecu() async {

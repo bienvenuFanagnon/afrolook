@@ -40,6 +40,8 @@ import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
+import 'canaux/detailsCanal.dart';
+import 'canaux/listCanal.dart';
 import 'component/consoleWidget.dart';
 import 'component/showImage.dart';
 import 'component/showUserDetails.dart';
@@ -679,7 +681,22 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
+              Row(
+                spacing: 2,
+                children: [
+                  Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Visibility(
+                    visible: pcm.user!.isVerify!,
+                    child: Card(
+                      child: const Icon(
+                        Icons.verified,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
@@ -765,6 +782,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               Text("@${rpc.user_pseudo}", style: TextStyle(fontWeight: FontWeight.bold)),
               // HashTagText(
               //   text: rpc.status == PostStatus.SUPPRIMER.name ? "Supprimé" : rpc.message!,
@@ -780,7 +798,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ),
                   child: HashTagText(
 
-                    text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
+                    text: "➡️ ${rpc.user_reply_pseudo??''} ${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
                     decoratedStyle: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -886,6 +904,23 @@ List<UserData> users=[];
       ),
     );
   }
+  Future<void> suivreCanal(Canal canal) async {
+    canal.usersSuiviId!.add(authProvider.loginUserData.id!);
+    await firestore.collection('Canaux').doc(canal.id).update({
+      'usersSuiviId': canal.usersSuiviId,
+    });
+    setState(() {
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Vous suivez maintenant ce canal.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.green),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -922,73 +957,181 @@ List<UserData> users=[];
                           child: SingleChildScrollView(
                             child: Column(
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Align(
-                                    //   alignment: Alignment.centerLeft,
-                                    //   child: IconButton(onPressed: () {
-                                    //
-                                    //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
-                                    // ),
-                                    Row(
-                                      children: [
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8.0),
-                                          child: CircleAvatar(
-                                            backgroundImage: NetworkImage(
-                                                '${widget.post.user!.imageUrl!}'),
+                                widget.post.canal!=null?GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
+
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 8.0),
+                                            child: CircleAvatar(
+                                              backgroundImage: NetworkImage(
+                                                  '${widget.post.canal!.urlImage!}'),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: 2,
+                                          ),
+                                          Row(
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(
+                                                    //width: 100,
+                                                    child: TextCustomerUserTitle(
+                                                      titre: "#${widget.post.canal!.titre!}",
+                                                      fontSize: SizeText.homeProfileTextSize,
+                                                      couleur: ConstColors.textColors,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  TextCustomerUserTitle(
+                                                    titre: "${formatNumber(widget.post.canal!.usersSuiviId!.length)} abonné(s)",
+                                                    fontSize: SizeText.homeProfileTextSize,
+                                                    couleur: ConstColors.textColors,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                  // TextCustomerUserTitle(
+                                                  //   titre: "${formatNumber(post.user!.userlikes!)} like(s)",
+                                                  //   fontSize: SizeText.homeProfileTextSize,
+                                                  //   couleur: Colors.green,
+                                                  //   fontWeight: FontWeight.w700,
+                                                  // ),
+
+                                                ],
+                                              ),
+                                              /*
+                              IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(
+                                    Icons.add_circle_outlined,
+                                    size: 20,
+                                    color: ConstColors.regIconColors,
+                                  )),
+
+                               */
+                                            ],
+                                          ),
+
+                                        ],
+                                      ),
+                                      Visibility(
+                                        visible: widget.post.canal!.isVerify!,
+                                        child: Card(
+                                          child: const Icon(
+                                            Icons.verified,
+                                            color: Colors.blue,
+                                            size: 20,
                                           ),
                                         ),
-                                        SizedBox(
-                                          height: 2,
+                                      ),
+                                      Container(
+                                        child: widget.post.canal!.usersSuiviId!.contains(authProvider.loginUserData.id)
+                                            ? null
+                                            : TextButton(
+                                          onPressed: () {
+                                            suivreCanal(widget.post.canal!);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+
+                                            backgroundColor: Colors.green, // Background color
+                                            // onPrimary: Colors.white, // Text color
+                                          ),
+                                          child: Text('Suivre', style: TextStyle(color: Colors.white)),
                                         ),
-                                        Row(
-                                          children: [
-                                            Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-        
-                                              children: [
-                                                SizedBox(
-                                                  //width: 100,
-                                                  child: TextCustomerUserTitle(
-                                                    titre:
-                                                        "@${widget.post.user!.pseudo!}",
-                                                    fontSize: SizeText
-                                                        .homeProfileTextSize,
-                                                    couleur:
-                                                        ConstColors.textColors,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                TextCustomerUserTitle(
-                                                  titre:
-                                                      "${widget.post.user!.abonnes!} abonné(s)",
-                                                  fontSize: SizeText
-                                                      .homeProfileTextSize,
-                                                  couleur: ConstColors.textColors,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                      ),
+                                      ElevatedButton(onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
+                                        // Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
+
+                                      }, child: Text('Voir plus',style: TextStyle(color: Colors.green),))
+                                      // IconButton(
+                                      //     onPressed: () {
+                                      //       _showModalDialog(post);
+                                      //     },
+                                      //     icon: Icon(
+                                      //       Icons.more_horiz,
+                                      //       size: 30,
+                                      //       color: ConstColors.blackIconColors,
+                                      //     )),
+                                    ],
+                                  ),
+                                ):     Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Align(
+                            //   alignment: Alignment.centerLeft,
+                            //   child: IconButton(onPressed: () {
+                            //
+                            //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
+                            // ),
+                            Row(
+                              children: [
+                                Padding(
+                                  padding:
+                                  const EdgeInsets.only(right: 8.0),
+                                  child: CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                        '${widget.post.user!.imageUrl!}'),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 2,
+                                ),
+                                Row(
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                                      children: [
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre:
+                                            "@${widget.post.user!.pseudo!}",
+                                            fontSize: SizeText
+                                                .homeProfileTextSize,
+                                            couleur:
+                                            ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre:
+                                          "${widget.post.user!.abonnes!} abonné(s)",
+                                          fontSize: SizeText
+                                              .homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ],
                                     ),
-                                    IconButton(
-                                        onPressed: () {
-                                          _showPostMenuModalDialog(widget.post);
-                                        },
-                                        icon: Icon(
-                                          Icons.more_horiz,
-                                          size: 30,
-                                          color: ConstColors.blackIconColors,
-                                        )),
                                   ],
                                 ),
+                              ],
+                            ),
+                            IconButton(
+                                onPressed: () {
+                                  _showPostMenuModalDialog(widget.post);
+                                },
+                                icon: Icon(
+                                  Icons.more_horiz,
+                                  size: 30,
+                                  color: ConstColors.blackIconColors,
+                                )),
+                          ],
+                        ),
+
+
                                 SizedBox(
                                   height: 5,
                                 ),
@@ -1200,6 +1343,7 @@ List<UserData> users=[];
                     if (replying) {
 
                       printVm("****** reply ++++response sended user id **** : ${replyUser_id}");
+                      printVm('monetisation reply 1');
 
                       ResponsePostComment comment =
                       ResponsePostComment(user_id: authProvider.loginUserData!.id);
@@ -1211,6 +1355,8 @@ List<UserData> users=[];
                           authProvider.loginUserData!.pseudo;
                       comment.post_comment_id =
                           commentSelectedToReply.id;
+                      comment.user_reply_pseudo = replyingTo;
+
                       comment.message =
                           textComment;
                       comment.createdAt = DateTime.now()
@@ -1362,6 +1508,7 @@ List<UserData> users=[];
                             );
 
                             sendMessageTap = false;
+
                             // _focusNode.unfocus();
                             _textController.text = "";
 
@@ -1378,7 +1525,10 @@ List<UserData> users=[];
                           sendMessageTap = false;
                         },
                       );
+                      await postProviders.interactWithPostAndIncrementSolde(widget.post.id!, authProvider.loginUserData.id!, "comment",widget.post.user_id!);
+
                     } else {
+                      printVm('monetisation 2');
                       PostComment comment = PostComment();
                       comment.user_id =
                           authProvider.loginUserData.id;
@@ -1541,6 +1691,7 @@ List<UserData> users=[];
 
 
                             sendMessageTap = false;
+
                             _focusNode.unfocus();
 
                           } else {
@@ -1552,6 +1703,8 @@ List<UserData> users=[];
                           sendMessageTap = false;
                         },
                       );
+                      postProviders.interactWithPostAndIncrementSolde(widget.post.id!, authProvider.loginUserData.id!, "comment",widget.post.user_id!);
+
                     }
                   }
                   setState(() {

@@ -1422,6 +1422,7 @@ class _AfroVideoState extends State<AfroVideo> {
                                                       // users.add(pseudo.toJson());
 
                                                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                                      postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
 
                                                     }
 

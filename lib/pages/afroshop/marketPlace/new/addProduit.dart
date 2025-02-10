@@ -72,6 +72,7 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
       setState(() {
         if (images != null && images.isNotEmpty) {
           if(widget.entrepriseData.abonnement!.type==TypeAbonement.GRATUIT.name){
+            _mediaFileList=[];
             _mediaFileList!.add(images.first);
 
           }else{

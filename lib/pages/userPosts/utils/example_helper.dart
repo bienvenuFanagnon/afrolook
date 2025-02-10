@@ -192,7 +192,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
   /// generating the image.
   ///
   void onCloseEditor({
-    required Canal canal,
+    required Canal? canal,
     bool showThumbnail = false,
     ui.Image? rawOriginalImage,
     final ImageGenerationConfigs? generationConfigs,
@@ -216,7 +216,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
                 generationTime: _generationTime,
                 showThumbnail: showThumbnail,
                 rawOriginalImage: rawOriginalImage,
-                generationConfigs: generationConfigs, canal: canal,
+                generationConfigs: generationConfigs, canal:canal==null?null: canal!,
               );
             },
           ),

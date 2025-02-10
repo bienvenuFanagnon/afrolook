@@ -68,51 +68,28 @@ class CategorieProduitProvider extends ChangeNotifier {
 
   }
 
-  Future<List<ArticleData>> getAllArticles() async {
-
-    listArticles = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Articles');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-       .where("disponible",isEqualTo: true)
-          .orderBy('createdAt', descending: true)
+  Stream<ArticleData> getAllArticlesStream() async* {
+    var articleStream = FirebaseFirestore.instance
+        .collection('Articles')
+        .where("disponible", isEqualTo: true)
+        .orderBy('createdAt', descending: true)
         .limit(100)
-          .get();
+        .snapshots();
 
-      // Afficher la liste
-      listArticles = querySnapshotUser.docs.map((doc) =>
-          ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      for (var article in listArticles) {
+    await for (var snapshot in articleStream) {
+      for (var doc in snapshot.docs) {
+        ArticleData article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
+
+        // Récupérer les infos de l'utilisateur associé
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
-        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' article user ${user.toJson()}');
-
+        UserData user = UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         article.user = user;
+
+        // Émettre chaque article dès qu'il est prêt
+        yield article;
       }
-      listArticles.shuffle();
-
-
-
-      print('list article ${listArticles.length}');
-      hasData=true;
-      // teams.shuffle();
-
-
-
-
-      return listArticles;
-      // return teams;
-    }catch(e){
-      print("erreur ${e}");
-      hasData=false;
-      return [];
     }
-
   }
-
   Future<List<ArticleData>> getAllArticlesByUser(String user_id) async {
 
     listArticles = [];
@@ -387,9 +364,29 @@ class CategorieProduitProvider extends ChangeNotifier {
     }
 
   }
+  Stream<ArticleData> getArticlesByCategorieStream(String categorie_id) async* {
+    var articleStream = FirebaseFirestore.instance
+        .collection('Articles')
+        .where("disponible", isEqualTo: true)
+        .where("categorie_id", isEqualTo: categorie_id)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
 
+    await for (var snapshot in articleStream) {
+      for (var doc in snapshot.docs) {
+        ArticleData article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
 
-  Future<List<ArticleData>> getArticlesByCategorie(String categorie_id) async {
+        // Récupérer les infos de l'utilisateur associé
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        UserData user = UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
+        article.user = user;
+
+        // Émettre chaque article dès qu'il est prêt
+        yield article;
+      }
+    }
+  }
+  Future<List<ArticleData>> getArticlesByCategorie2(String categorie_id) async {
 
     listArticles = [];
     bool hasData=false;

@@ -8,7 +8,7 @@ import '../../models/model_data.dart';
 
 class Uniquedesign extends StatefulWidget {
   final Uint8List initialImage;
-  final Canal canal;
+  final Canal? canal;
 
   const Uniquedesign({super.key, required this.initialImage, required this.canal});
 
@@ -36,7 +36,7 @@ class _UniquedesignState extends State<Uniquedesign> {
         child: Container(
           child: Consumer<UserAuthProvider>(
             builder: (context, userProvider, child) {
-              return                   UniqueAfrolookDesign(initialImage: widget.initialImage, canal: widget.canal,);
+              return                   UniqueAfrolookDesign(initialImage: widget.initialImage, canal: widget.canal==null?null:widget.canal!,);
 
             },
           ),

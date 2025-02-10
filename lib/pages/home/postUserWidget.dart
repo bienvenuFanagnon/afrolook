@@ -113,7 +113,7 @@ void _showPostMenuModalDialog(Post post,BuildContext context) {
 
                  */
               Visibility(
-                visible: authProvider.loginUserData.role == UserRole.ADM.name,
+                visible: post.user!.id == authProvider.loginUserData.id ||authProvider.loginUserData.role == UserRole.ADM.name?true:false ,
                 child: ListTile(
                   onTap: () async {
                     if (authProvider.loginUserData.role == UserRole.ADM.name) {
@@ -1025,168 +1025,173 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: IntrinsicWidth(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // Ajuste la hauteur au contenu
-                    children: [
-                      Stack(
-                        alignment: Alignment.bottomCenter,
-                        children: [
-                          // Ajout d'un espace par défaut pour l'icône et les bulles
-                          SizedBox(
-                            height: 180, // Assure un minimum d'espace
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Grande bulle de pensée
-                                Card(
-                                  child: Container(
-                                    padding: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black26,
-                                          blurRadius: 10,
-                                          offset: Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: HashTagText(
-                                      text: post.description ?? "",
-                                      decoratedStyle: TextStyle(
-                                        fontSize: fontSize,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.green,
-                                        fontFamily: 'Nunito',
-                                      ),
-                                      basicStyle: TextStyle(
-                                        fontSize: fontSize,
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.normal,
-                                        fontFamily: 'Nunito',
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: null,
-                                      softWrap: true,
-                                    ),
+                  child: SizedBox(
+                    // height: 200,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.max, // Ajuste la hauteur au contenu
+                      children: [
+                        SizedBox(
+                          height: 150, // Assure un minimum d'espace
+
+                          child:    Card(
+                            child: Container
+                              (
+
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
                                   ),
+                                ],
+                              ),
+                              child: HashTagText(
+                                text: post.description ?? "",
+                                decoratedStyle: TextStyle(
+                                  fontSize: fontSize,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                  fontFamily: 'Nunito',
                                 ),
-                                SizedBox(height: 10), // Espace pour éviter que l'icône touche la bulle
-                              ],
+                                basicStyle: TextStyle(
+                                  fontSize: fontSize,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.normal,
+                                  fontFamily: 'Nunito',
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: null,
+                                softWrap: true,
+                              ),
                             ),
                           ),
-                          // Petites bulles de pensée
-                          // Positioned(bottom: 70, left: 60, child: CircleAvatar(radius: 15, backgroundColor: Colors.white)),
-                          Positioned(bottom: 50, left: 50, child: CircleAvatar(radius: 10, backgroundColor: Colors.white)),
-                          Positioned(bottom: 40, left: 40, child: CircleAvatar(radius: 5, backgroundColor: Colors.white)),
-                          // Icône de personne qui pense
-                          Positioned(bottom: 0, left: 2, child:
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child:post.canal!=null?GestureDetector(
-                              onTap: () async {
-                                // await  authProvider.getUserById(post.user_id!).then((users) async {
-                                //   if(users.isNotEmpty){
-                                //     showUserDetailsModalDialog(users.first, w, h,context);
-                                //
-                                //   }
-                                // },);
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: post.canal!),));
 
-                              },
-                              child:
-                              Row(
-                                spacing: 10,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
+                        ),
 
-                                    backgroundImage:
-                                    NetworkImage('${post.canal!.urlImage!}'),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black26,
-                                          blurRadius: 10,
-                                          offset: Offset(0, 4),
-                                        ),
-                                      ],
+                        Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            // Ajout d'un espace par défaut pour l'icône et les bulles
+                            SizedBox(height: 10),
+                            Container(
+                              height: 70,
+                            ),
+                            // Petites bulles de pensée
+                            // Positioned(bottom: 70, left: 60, child: CircleAvatar(radius: 15, backgroundColor: Colors.white)),
+                            Positioned(bottom: 50, left: 50, child: CircleAvatar(radius: 10, backgroundColor: Colors.white)),
+                            Positioned(bottom: 40, left: 40, child: CircleAvatar(radius: 5, backgroundColor: Colors.white)),
+                            // Icône de personne qui pense
+                            Positioned(bottom: 0, left: 2, child:
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child:post.canal!=null?GestureDetector(
+                                onTap: () async {
+                                  // await  authProvider.getUserById(post.user_id!).then((users) async {
+                                  //   if(users.isNotEmpty){
+                                  //     showUserDetailsModalDialog(users.first, w, h,context);
+                                  //
+                                  //   }
+                                  // },);
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: post.canal!),));
+
+                                },
+                                child:
+                                Row(
+                                  spacing: 10,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+
+                                      backgroundImage:
+                                      NetworkImage('${post.canal!.urlImage!}'),
                                     ),
-                                    child: const Text(
+                                    Container(
+                                      padding: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Text(
+                                        "Mes pensées",
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.black87,
+                                          fontFamily: 'Nunito',
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: null,
+                                        softWrap: true,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ):  GestureDetector(
+                                onTap: () async {
+                                  await  authProvider.getUserById(post.user_id!).then((users) async {
+                                    if(users.isNotEmpty){
+                                      showUserDetailsModalDialog(users.first, w, h,context);
+
+                                    }
+                                  },);
+
+                                },
+                                child:
+                                Row(
+                                  spacing: 10,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+
+                                      backgroundImage:
+                                      NetworkImage('${post.user!.imageUrl!}'),
+                                    ),
+                                    Container(
+                                      padding: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Text(
                                       "Mes pensées",
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.black87,
-                                        fontFamily: 'Nunito',
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: null,
-                                      softWrap: true,
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ):  GestureDetector(
-                              onTap: () async {
-                                await  authProvider.getUserById(post.user_id!).then((users) async {
-                                  if(users.isNotEmpty){
-                                    showUserDetailsModalDialog(users.first, w, h,context);
-
-                                  }
-                                },);
-
-                              },
-                              child:
-                              Row(
-                                spacing: 10,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
-
-                                    backgroundImage:
-                                    NetworkImage('${post.user!.imageUrl!}'),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black26,
-                                          blurRadius: 10,
-                                          offset: Offset(0, 4),
+                                    style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.black87,
+                                          fontFamily: 'Nunito',
                                         ),
-                                      ],
-                                    ),
-                                    child: const Text(
-                                    "Mes pensées",
-                                  style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.black87,
-                                        fontFamily: 'Nunito',
+                                        textAlign: TextAlign.center,
+                                        maxLines: null,
+                                        softWrap: true,
                                       ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: null,
-                                      softWrap: true,
-                                    ),
-                                  )
-                                ],
+                                    )
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1302,6 +1307,10 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                                 love = post.loves!;
                                 //loves.add(idUser);
                               });
+                              printVm("share post");
+                              printVm("like poste monetisation 1 .....");
+                              postProvider.interactWithPostAndIncrementSolde(post.id!, authProvider.loginUserData.id!, "like",post.user_id!);
+
                               CollectionReference userCollect =
                               FirebaseFirestore.instance
                                   .collection('Users');
@@ -1758,6 +1767,10 @@ Widget homePostUsers(Post post,Color color, double height, double width,BuildCon
                           (BuildContext context, StateSetter setState) {
                         return GestureDetector(
                           onTap: () async {
+                            printVm("share post");
+                            printVm("like poste monetisation 1 .....");
+                            postProvider.interactWithPostAndIncrementSolde(post.id!, authProvider.loginUserData.id!, "share",post.user_id!);
+
                             // await authProvider.createLink(post).then((value) {
                             final box = context.findRenderObject() as RenderBox?;
 
@@ -2659,6 +2672,8 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
+                                 postProvider.interactWithPostAndIncrementSolde(post.id!, authProvider.loginUserData.id!, "like",post.user_id!);
+
                                 postProvider.updatePost(
                                     post, listUsers.first, context);
                                 await authProvider.getAppData();
@@ -3033,8 +3048,12 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                           (BuildContext context, StateSetter setState) {
                         return GestureDetector(
                           onTap: () async {
+                            printVm("like poste monetisation 1 .....");
+                            postProvider.interactWithPostAndIncrementSolde(post.id!, authProvider.loginUserData.id!, "share",post.user_id!);
+
                             // await authProvider.createLink(post).then((value) {
                             final box = context.findRenderObject() as RenderBox?;
+                            printVm("like poste monetisation 1 .....");
 
                             await authProvider.createLink(true,post).then((url) async {
                               await Share.shareUri(
@@ -3053,6 +3072,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                 // love = post.loves!;
                                 // //loves.add(idUser);
                               });
+
                               CollectionReference userCollect =
                               FirebaseFirestore.instance
                                   .collection('Users');
@@ -3135,6 +3155,7 @@ Widget homeChallengePostUsers(Challenge challenge,Post post,Color color, double 
                                 // );
                                 // ScaffoldMessenger.of(context)
                                 //     .showSnackBar(snackBar);
+
                                 postProvider.updatePost(
                                     post, listUsers.first, context);
                                 // await authProvider.getAppData();

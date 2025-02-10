@@ -326,7 +326,7 @@ class _PostPhotoEditorState extends State<PostPhotoEditor>
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Uniquedesign(initialImage:bytes!, canal: widget.canal!, ),
+            builder: (context) => Uniquedesign(initialImage:bytes!, canal: widget.canal==null?null:widget.canal!, ),
           ),
         );
         // Uint8List? watermarkedBytes = await addWatermark(bytes);

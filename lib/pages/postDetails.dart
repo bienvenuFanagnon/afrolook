@@ -287,137 +287,6 @@ class _DetailsPostState extends State<DetailsPost> {
   void onShow() {
     printVm('Menu is show');
   }
-  void _showModalDialog(Post post) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu d\'options'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                ListTile(
-                  onTap: () async {
-
-                    post.status=PostStatus.SIGNALER.name;
-                    await postProvider.updateVuePost(post, context).then((value) {
-                      if (value) {
-                        SnackBar snackBar = SnackBar(
-                          content: Text(
-                            'Post signalé !',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.green),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
-                      }  else{
-                        SnackBar snackBar = SnackBar(
-                          content: Text(
-                            'échec !',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        );
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(snackBar);
-                      }
-                      Navigator.pop(context);
-                    },);
-                    setState(() {
-                    });
-
-                  },
-                  leading: Icon(Icons.flag,color: Colors.blueGrey,),
-                  title: Text('Signaler',),
-                ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                ListTile(
-                  onTap: () async {
-                    if (authProvider.loginUserData.role==UserRole.ADM.name) {
-                      post.status=PostStatus.NONVALIDE.name;
-                      await postProvider.updateVuePost(post, context).then((value) {
-                        if (value) {
-                          SnackBar snackBar = SnackBar(
-                            content: Text(
-                              'Post bloqué !',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.green),
-                            ),
-                          );
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(snackBar);
-                        }  else{
-                          SnackBar snackBar = SnackBar(
-                            content: Text(
-                              'échec !',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          );
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(snackBar);
-                        }
-                      },);
-                    }  else
-                    if (post.type==PostType.POST.name){
-                      if (post.user!.id==authProvider.loginUserData.id) {
-                        post.status=PostStatus.SUPPRIMER.name;
-                        await postProvider.updateVuePost(post, context).then((value) {
-                          if (value) {
-                            SnackBar snackBar = SnackBar(
-
-                              content: Text(
-                                'Post supprimé !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
-                          }  else{
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'échec !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
-                          }
-                        },);
-                      }
-
-                    }
-
-
-
-                    setState(() {
-                      Navigator.pop(context);
-
-                    });
-
-                  },
-                  leading: Icon(Icons.delete,color: Colors.red,),
-                  title:authProvider.loginUserData.role==UserRole.ADM.name? Text('Bloquer'):Text('Supprimer'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Future<Chat> getChatsData(UserData amigo) async {
 
@@ -604,105 +473,6 @@ class _DetailsPostState extends State<DetailsPost> {
 
                                   ],
                                 ),
-                                // StatefulBuilder(
-                                //
-                                //     builder: (BuildContext context, void Function(void Function()) setState) {
-                                //       return Container(
-                                //         child: isUserAbonne(post.user!.userAbonnesIds!,
-                                //             authProvider.loginUserData.id!)?Container(): TextButton(
-                                //
-                                //             onPressed:abonneTap?
-                                //                 ()  { }:
-                                //                 ()async{
-                                //               if (!isUserAbonne(post.user!.userAbonnesIds!,
-                                //                   authProvider.loginUserData.id!)) {
-                                //                 setState(() {
-                                //                   abonneTap=true;
-                                //                 });
-                                //                 UserAbonnes userAbonne = UserAbonnes();
-                                //                 userAbonne.compteUserId=authProvider.loginUserData.id;
-                                //                 userAbonne.abonneUserId=post.user!.id;
-                                //
-                                //                 userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                //                 userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                //                 await  userProvider.sendAbonnementRequest(userAbonne,post.user!,context).then((value) async {
-                                //                   if (value) {
-                                //                     authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                //                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                //                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                //                     if (post.user!.oneIgnalUserid!=null&&post.user!.oneIgnalUserid!.length>5) {
-                                //                       await authProvider.sendNotification(
-                                //                           userIds: [post.user!.oneIgnalUserid!],
-                                //                           smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                //                           send_user_id: "${authProvider.loginUserData.id!}",
-                                //                           recever_user_id: "${post.user!.id!}",
-                                //                           message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
-                                //                           type_notif: NotificationType.ABONNER.name,
-                                //                           post_id: "${post!.id!}",
-                                //                           post_type: PostDataType.IMAGE.name, chat_id: ''
-                                //                       );
-                                //                       NotificationData notif=NotificationData();
-                                //                       notif.id=firestore
-                                //                           .collection('Notifications')
-                                //                           .doc()
-                                //                           .id;
-                                //                       notif.titre="Nouveau Abonnement ✅";
-                                //                       notif.media_url=authProvider.loginUserData.imageUrl;
-                                //                       notif.type=NotificationType.ABONNER.name;
-                                //                       notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                //                       notif.users_id_view=[];
-                                //                       notif.user_id=authProvider.loginUserData.id;
-                                //                       notif.receiver_id=post.user!.id!;
-                                //                       notif.post_id=post.id!;
-                                //                       notif.post_data_type=PostDataType.IMAGE.name!;
-                                //                       notif.updatedAt =
-                                //                           DateTime.now().microsecondsSinceEpoch;
-                                //                       notif.createdAt =
-                                //                           DateTime.now().microsecondsSinceEpoch;
-                                //                       notif.status = PostStatus.VALIDE.name;
-                                //
-                                //                       // users.add(pseudo.toJson());
-                                //
-                                //                       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                //
-                                //
-                                //                     }
-                                //                     SnackBar snackBar = SnackBar(
-                                //                       content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                //                     );
-                                //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                //                     setState(() {
-                                //                       abonneTap=false;
-                                //                     });
-                                //                   }  else{
-                                //                     SnackBar snackBar = SnackBar(
-                                //                       content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                //                     );
-                                //                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                //                     setState(() {
-                                //                       abonneTap=false;
-                                //                     });
-                                //                   }
-                                //                 },);
-                                //
-                                //
-                                //                 setState(() {
-                                //                   abonneTap=false;
-                                //                 });
-                                //               }
-                                //
-                                //             },
-                                //             child:abonneTap? Center(
-                                //               child: LoadingAnimationWidget.flickr(
-                                //                 size: 20,
-                                //                 leftDotColor: Colors.green,
-                                //                 rightDotColor: Colors.black,
-                                //               ),
-                                //             ): Text("S'abonner",style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.blue),)
-                                //         ),
-                                //       );
-                                //     }
-                                // ),
                                 /*
                               IconButton(
                                   onPressed: () {},
@@ -1283,6 +1053,8 @@ class _DetailsPostState extends State<DetailsPost> {
                                   // postProvider.updateVuePost(post, context);
 
                                   //userProvider.updateUser(listUsers.first);
+                                  postProvider.interactWithPostAndIncrementSolde(post.id!,authProvider.loginUserData.id!, "like",post.user_id!);
+
                                   SnackBar snackBar = SnackBar(
                                     content: Text(
                                       '+2 points.  Voir le classement',
@@ -1656,6 +1428,10 @@ class _DetailsPostState extends State<DetailsPost> {
                             (BuildContext context, StateSetter setState) {
                           return GestureDetector(
                             onTap: () async {
+                              printVm("share post");
+                              printVm("like poste monetisation 1 .....");
+                              postProvider.interactWithPostAndIncrementSolde(post.id!, authProvider.loginUserData.id!, "share",post.user_id!);
+
                               // await authProvider.createLink(post).then((value) {
                               final box = context.findRenderObject() as RenderBox?;
 
@@ -1676,6 +1452,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                   // love = post.loves!;
                                   // //loves.add(idUser);
                                 });
+
                                 CollectionReference userCollect =
                                 FirebaseFirestore.instance
                                     .collection('Users');
@@ -1757,6 +1534,7 @@ class _DetailsPostState extends State<DetailsPost> {
                                   // );
                                   // ScaffoldMessenger.of(context)
                                   //     .showSnackBar(snackBar);
+
                                   postProvider.updatePost(
                                       post, listUsers.first, context);
                                   // await authProvider.getAppData();

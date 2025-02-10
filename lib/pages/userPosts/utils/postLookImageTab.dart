@@ -86,7 +86,7 @@ class PostLookImageTab extends StatefulWidget {
 
   /// The image data in bytes to be displayed.
    final Uint8List imgBytes;
-   final Canal canal;
+   final Canal? canal;
 
   /// The time taken to generate the image, in milliseconds.
   final double? generationTime;
@@ -207,6 +207,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
     try {
       String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
+      String postMId = FirebaseFirestore.instance.collection('PostsMonetiser').doc().id;
 
       Post post = Post()
         ..user_id = authProvider.loginUserData.id
@@ -223,6 +224,18 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..loves = 0
         ..id = postId
         ..images = [];
+      PostMonetiser postMonetiser = PostMonetiser(
+        id: postMId,
+        user_id: authProvider.loginUserData.id,
+        post_id: postId,
+        users_like_id: [],
+        users_love_id: [],
+        users_comments_id: [],
+        users_partage_id: [],
+        solde: 0.1,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
       if(widget.canal!=null){
         post.canal_id=widget.canal!.id;
         post.categorie="CANAL";
@@ -241,6 +254,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           post.images!.add(fileURL);
 
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+          await FirebaseFirestore.instance.collection('PostsMonetiser').doc(postMId).set(postMonetiser.toJson());
 
           authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
           await userProvider.updateUser(authProvider.loginUserData!);
@@ -562,10 +576,10 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             padding: const EdgeInsets.all(16.0),
             child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text("Type post: ${widget.canal==null?"Look":"Canal"}"),
-                ),
+                // Padding(
+                //   padding: const EdgeInsets.all(8.0),
+                //   child: Text("Type post: ${widget.canal==null?"Look":"Canal"}"),
+                // ),
                 Form(
                   key: _formKey,
                   child: Column(
@@ -579,8 +593,10 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                             borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
                           ),
                         ),
-                        maxLines: 2,
-                        maxLength: 400,
+                        // maxLines: 3,
+                        maxLength: 3000,
+                        maxLines: null, // Permet d'écrire sur plusieurs lignes
+                        keyboardType: TextInputType.multiline,
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'La légende est obligatoire';
@@ -847,138 +863,4 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
     );
   }
 
-  Widget _buildGenerationInfos() {
-    TableRow tableSpace = const TableRow(
-      children: [SizedBox(height: 3), SizedBox()],
-    );
-    return Positioned(
-      top: 10,
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            child: FutureBuilder<ImageInfos>(
-                future: _decodedImageInfos,
-                builder: (context, snapshot) {
-                  return Table(
-                    defaultColumnWidth: const IntrinsicColumnWidth(),
-                    children: [
-                      TableRow(children: [
-                        const Text('Generation-Time'),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            '${_numberFormatter.format(_generationTime)} ms',
-                            style: _valueStyle,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ]),
-                      tableSpace,
-                      TableRow(children: [
-                        const Text('Image-Size'),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            formatBytes(_imageBytes!.length),
-                            style: _valueStyle,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ]),
-                      tableSpace,
-                      TableRow(children: [
-                        const Text('Content-Type'),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            _contentType,
-                            style: _valueStyle,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ]),
-                      tableSpace,
-                      TableRow(children: [
-                        const Text('Dimension'),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            snapshot.connectionState == ConnectionState.done
-                                ? '${_numberFormatter.format(
-                                    snapshot.data!.rawSize.width.round(),
-                                  )} x ${_numberFormatter.format(
-                                    snapshot.data!.rawSize.height.round(),
-                                  )}'
-                                : 'Loading...',
-                            style: _valueStyle,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ]),
-                      tableSpace,
-                      TableRow(children: [
-                        const Text('Pixel-Ratio'),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            snapshot.connectionState == ConnectionState.done
-                                ? snapshot.data!.pixelRatio.toStringAsFixed(3)
-                                : 'Loading...',
-                            style: _valueStyle,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ]),
-                    ],
-                  );
-                }),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThumbnailPreview() {
-    if (_highQualityGeneration == null) return Container();
-    return FutureBuilder<Uint8List?>(
-        future: _highQualityGeneration,
-        builder: (context, snapshot) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: snapshot.connectionState == ConnectionState.done
-                ? _buildFinalImage(bytes: snapshot.data)
-                : Stack(
-                    fit: StackFit.expand,
-                    alignment: Alignment.center,
-                    children: [
-                      Hero(
-                        tag: const ProImageEditorConfigs().heroTag,
-                        child: Image.memory(
-                          widget.imgBytes,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      if (snapshot.connectionState != ConnectionState.done)
-                        const Center(
-                          child: SizedBox(
-                            width: 60,
-                            height: 60,
-                            child: FittedBox(
-                              child: PlatformCircularProgressIndicator(
-                                configs: ProImageEditorConfigs(),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-          );
-        });
-  }
 }

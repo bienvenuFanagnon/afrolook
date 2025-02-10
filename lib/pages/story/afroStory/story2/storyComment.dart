@@ -684,7 +684,22 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
+              Row(
+                spacing: 2,
+                children: [
+                  Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Visibility(
+                    visible: pcm.user!.isVerify!,
+                    child: Card(
+                      child: const Icon(
+                        Icons.verified,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
@@ -785,7 +800,7 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
                   ),
                   child: HashTagText(
 
-                    text: "${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
+                    text: "➡️ ${rpc.user_reply_pseudo??''} ${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
                     decoratedStyle: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1208,6 +1223,8 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
                           authProvider.loginUserData!.imageUrl;
                       comment.user_pseudo =
                           authProvider.loginUserData!.pseudo;
+                      comment.user_reply_pseudo = replyingTo;
+                          // authProvider.loginUserData!.pseudo;
                       comment.post_comment_id =
                           commentSelectedToReply.id;
                       comment.message =

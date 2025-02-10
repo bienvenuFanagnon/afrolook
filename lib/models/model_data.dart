@@ -494,6 +494,7 @@ class UserData {
 
   double? publi_cash = 0.0;
   double? votre_solde = 0.0;
+  double? votre_solde_contenu = 0.0;
   int? pubEntreprise = 0;
   int? mesPubs = 0;
   int? partage = 0;
@@ -559,6 +560,7 @@ class UserData {
       this.userlikes = 0,
       this.partage = 0,
       this.userjaimes = 0,
+      this.votre_solde_contenu = 0.0,
       this.comments = 0,
       this.createdAt = 0,
       this.updatedAt = 0,
@@ -577,6 +579,7 @@ class UserData {
       this.password = "",
       this.codeParrain,
       this.countryData,
+      this.usersParrainer,
       this.stories,
       this.state = "OFFLINE",
 
@@ -666,6 +669,7 @@ class UserData {
     isVerify = json['isVerify'] == null ? false : json['isVerify'];
     email = json['email'] == null ? "" : json['email'];
     genre = json['genre'] == null ? "" : json['genre'];
+    votre_solde_contenu = json['votre_solde_contenu'] == null ? 0.0 : json['votre_solde_contenu'];
     userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
     userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
     partage = json['partage'] == null ? 0 : json['partage'];
@@ -691,6 +695,7 @@ class UserData {
     data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
     data['code_parrainage'] = this.codeParrainage;
+    data['votre_solde_contenu'] = this.votre_solde_contenu;
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
@@ -1444,6 +1449,8 @@ class Post {
   List<String>? images = [];
   List<String>? users_like_id = [];
   List<String>? users_love_id = [];
+  List<String>? users_comments_id = [];
+  List<String>? users_partage_id = [];
 
   List<String>? users_vue_id = [];
 
@@ -1470,6 +1477,8 @@ class Post {
     this.vues,
     this.likes,
     this.commentaires,
+    this.users_partage_id,
+    this.users_comments_id,
     this.contact_whatsapp,
     this.description,
     this.urlLink,
@@ -1510,9 +1519,15 @@ class Post {
     users_like_id = json['users_like_id'] == null
         ? []
         : json['users_like_id'].cast<String>();
+    // users_comments_id = json['users_comments_id'] == null
+    //     ? []
+    //     : json['users_like_id'].cast<String>();
     users_love_id = json['users_love_id'] == null
         ? []
         : json['users_love_id'].cast<String>();
+    // users_partage_id = json['users_partage_id'] == null
+    //     ? []
+    //     : json['users_partage_id'].cast<String>();
     users_vue_id =
         json['users_vue_id'] == null ? [] : json['users_vue_id'].cast<String>();
     nombreCollaborateur = json['nombreCollaborateur'];
@@ -1543,6 +1558,8 @@ class Post {
     data['images'] = this.images;
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;
+    data['users_comments_id'] = this.users_comments_id;
+    data['users_partage_id'] = this.users_partage_id;
     data['likes'] = this.likes;
     data['partage'] = this.partage;
     data['users_vue_id'] = this.users_vue_id;
@@ -1592,12 +1609,69 @@ class PostImage {
   }
 }
 
+class PostMonetiser {
+  String? id;
+  String? post_id;
+  String? user_id;
+
+  List<String>? users_like_id;
+  List<String>? users_love_id;
+  List<String>? users_comments_id;
+  List<String>? users_partage_id;
+  double? solde;
+  Post? post;
+
+  int? createdAt;
+  int? updatedAt;
+
+  PostMonetiser({
+    this.id = '',
+    required this.user_id,
+    this.post_id = '',
+    this.users_like_id,
+    this.users_love_id,
+    this.users_comments_id,
+    this.users_partage_id,
+    this.solde = 0.0,
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
+
+  PostMonetiser.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    post_id = json['post_id'];
+    user_id = json['user_id'];
+    users_like_id = json['users_like_id']?.cast<String>() ?? [];
+    users_love_id = json['users_love_id']?.cast<String>() ?? [];
+    users_comments_id = json['users_comments_id']?.cast<String>() ?? [];
+    users_partage_id = json['users_partage_id']?.cast<String>() ?? [];
+    solde = json['solde']?.toDouble() ?? 0.0;
+    createdAt = json['created_at'];
+    updatedAt = json['updated_at'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['post_id'] = post_id;
+    data['user_id'] = user_id;
+    data['users_like_id'] = users_like_id;
+    data['users_love_id'] = users_love_id;
+    data['users_comments_id'] = users_comments_id;
+    data['users_partage_id'] = users_partage_id;
+    data['solde'] = solde;
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
+    return data;
+  }
+}
 class ResponsePostComment {
   String? id;
   String? post_comment_id;
   String? user_id;
   String? user_logo_url;
   String? user_pseudo;
+  String? user_reply_pseudo;
   String? message;
   String? status;
   UserData? user;
@@ -1611,6 +1685,7 @@ class ResponsePostComment {
     this.user_pseudo = '',
     this.user_logo_url = '',
     this.post_comment_id = '',
+    this.user_reply_pseudo = '',
     this.status = '',
     required this.user_id,
     this.createdAt = 0,
@@ -1626,6 +1701,7 @@ class ResponsePostComment {
     user_pseudo = json['user_pseudo'];
     user_logo_url = json['user_logo_url'];
     post_comment_id = json['post_comment_id'];
+    user_reply_pseudo = json['user_reply_pseudo'] == null ? "" : json['user_reply_pseudo'];
     user_id = json['user_id'] == null ? "" : json['user_id'];
     status = json['status'] == null ? "" : json['status'];
   }
@@ -1638,6 +1714,7 @@ class ResponsePostComment {
     data['message'] = this.message;
     data['status'] = this.status;
     data['user_pseudo'] = this.user_pseudo;
+    data['user_reply_pseudo'] = this.user_reply_pseudo;
     data['user_logo_url'] = this.user_logo_url;
     data['post_comment_id'] = this.post_comment_id;
     data['user_id'] = this.user_id;

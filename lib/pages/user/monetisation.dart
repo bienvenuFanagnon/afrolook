@@ -24,6 +24,10 @@ class _RetraitPageState extends State<RetraitPage> {
     double montantFcfa = publiCash * 25;
     double montantValable = montantFcfa*authProvider.loginUserData.popularite!;
 
+    double contenuPubliCash = authProvider.loginUserData.votre_solde_contenu ?? 0;
+    double contenuMontantFcfa = contenuPubliCash * 25;
+    double contenuMontantValable = contenuMontantFcfa*authProvider.loginUserData.popularite!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Monétisation', style: TextStyle(color: Colors.white)),
@@ -32,26 +36,50 @@ class _RetraitPageState extends State<RetraitPage> {
       ),
       body: Padding(
         padding: EdgeInsets.all(15.0),
-        child: Column(
-          children: [
-            _buildSoldeCard(publiCash, montantFcfa,montantValable),
-            SizedBox(height: 20),
-            Text(
-              'Parrainez plus de personnes pour gagner plus de PubliCash !',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-
-            SizedBox(height: 30),
-            _buildRetraitButton(publiCash),
-
-            SizedBox(height: 20),
-            Text(
-              "💰 Votre solde disponible correspond au montant que vous pouvez retirer, calculé en fonction de votre popularité 🌟. Augmentez votre popularité 🚀 pour augmenter votre solde disponible 💵.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Text(
+                'Monétisation par parrainage',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              SizedBox(height: 5),
+          
+              _buildSoldeCard(publiCash, montantFcfa,montantValable),
+              SizedBox(height: 10),
+              Text(
+                'Parrainez plus de personnes pour gagner plus de PubliCash !',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+          
+              SizedBox(height: 10),
+              _buildRetraitButton(publiCash),
+          
+              SizedBox(height: 20),
+              Divider(),
+          
+              Text(
+                'Monétisation par post contenu',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              SizedBox(height: 5),
+          
+              _buildSoldeCard(contenuPubliCash, contenuMontantFcfa,contenuMontantValable),
+              SizedBox(height: 10),
+          
+              _buildRetraitButton(contenuPubliCash),
+          
+              SizedBox(height: 30),
+              Text(
+                "💰 Votre solde valable correspond au montant que vous pouvez retirer, calculé en fonction de votre popularité 🌟. Augmentez votre popularité 🚀 pour augmenter votre solde disponible 💵.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -21,7 +21,7 @@ import 'package:provider/provider.dart';
 
 class UniqueAfrolookDesign extends StatefulWidget {
   final Uint8List initialImage;
-  final Canal canal;
+  final Canal? canal;
 
   UniqueAfrolookDesign({required this.initialImage, required this.canal});
 
@@ -73,7 +73,7 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign>  with Examp
           onImageEditingStarted: onImageEditingStarted,
           onImageEditingComplete: onImageEditingComplete,
           onCloseEditor: () {
-            onCloseEditor(canal: widget.canal!);
+            onCloseEditor(canal: widget.canal==null?null:widget.canal!);
           },        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
