@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:afrotok/pages/home/postMenu.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/userPosts/challenge/lookChallenge/listLookChallenge.dart';
 import 'package:afrotok/pages/userPosts/challenge/userPostToChallenge.dart';

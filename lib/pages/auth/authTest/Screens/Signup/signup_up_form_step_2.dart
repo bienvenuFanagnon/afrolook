@@ -116,14 +116,15 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       user.publi_cash = (user.publi_cash ?? 0) + 5.1;
 
       // Mets à jour l'utilisateur dans Firebase
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.id)
-          .update({
-        'usersParrainer': user.usersParrainer,
-        'votre_solde': user.votre_solde,
-        'publi_cash': user.publi_cash,
-      });
+      // await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .doc(user.id)
+      //     .update({
+      //   'usersParrainer': user.usersParrainer,
+      //   'votre_solde': user.votre_solde,
+      //   'publi_cash': user.publi_cash,
+      // });
+      await authProvider.updateUser(user);
       await authProvider.sendNotification(
           userIds: [list.first!.oneIgnalUserid!],
           smallImage: "${list.first!.imageUrl!}",

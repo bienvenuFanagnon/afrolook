@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:afrotok/pages/home/postMenu.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/home_view_model.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/search_view_model.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/comment_text_field.dart';
@@ -1655,35 +1655,41 @@ List<UserData> users=[];
                                   post_id: "${widget.post!.id!}",
                                   post_type: PostDataType.COMMENT.name, chat_id: ''
                               );
-                              userNames.forEach((user) async {
+                              if(userNames.isNotEmpty){
+                                for(var user in userNames){
+                                  NotificationData notif2=NotificationData();
+                                  notif.id=firestore
+                                      .collection('Notifications')
+                                      .doc()
+                                      .id;
+                                  notif.titre="Tagué 💬";
+                                  notif.media_url=authProvider.loginUserData.imageUrl;
+                                  notif.type=NotificationType.POST.name;
+                                  notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
+                                  notif.users_id_view=[];
+                                  notif.user_id=authProvider.loginUserData.id;
+                                  notif.receiver_id=user!.id!;
+                                  notif.post_id=widget.post!.id!;
+                                  notif.post_data_type=PostDataType.COMMENT.name!;
 
-                                NotificationData notif2=NotificationData();
-                                notif.id=firestore
-                                    .collection('Notifications')
-                                    .doc()
-                                    .id;
-                                notif.titre="Tagué 💬";
-                                notif.media_url=authProvider.loginUserData.imageUrl;
-                                notif.type=NotificationType.POST.name;
-                                notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
-                                notif.users_id_view=[];
-                                notif.user_id=authProvider.loginUserData.id;
-                                notif.receiver_id=user!.id!;
-                                notif.post_id=widget.post!.id!;
-                                notif.post_data_type=PostDataType.COMMENT.name!;
+                                  notif.updatedAt =
+                                      DateTime.now().microsecondsSinceEpoch;
+                                  notif.createdAt =
+                                      DateTime.now().microsecondsSinceEpoch;
+                                  notif.status = PostStatus.VALIDE.name;
 
-                                notif.updatedAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.createdAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.status = PostStatus.VALIDE.name;
+                                  // users.add(pseudo.toJson());
 
-                                // users.add(pseudo.toJson());
+                                  await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
 
-                                await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
+                                }
 
-
-                              });
+                              }
+                              // userNames.forEach((user) async {
+                              //
+                              //
+                              //
+                              // });
                             }
 
 

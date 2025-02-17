@@ -124,7 +124,8 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
 
     print("Solde encaissé avec succès.");
     isProcessing = false;
-  }  @override
+  }
+  @override
   Widget build(BuildContext context) {
     double montant=widget.post.solde!*25;
     return Card(
@@ -174,45 +175,75 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
             ),            SizedBox(height: 5),
 
 TextButton(onPressed: () {
-  switch (widget.post.post!.dataType!) {
-    case "VIDEO":
-      postProvider.getPostsVideosById(widget.post.post_id!).then((videos_posts) {
-        if(videos_posts.isNotEmpty){
 
-          printVm("video detail ======== : ${videos_posts.first.toJson()}");
+  postProvider.getPostsImagesById(widget.post.post_id!).then((posts) {
+    if(posts.isNotEmpty){
+      printVm("poste detail ======== : ${posts.first.toJson()}");
+
+      var p=posts.first;
+      if(p.dataType=='VIDEO'){
+        postProvider.getPostsVideosById(p.id!).then((videos_posts) {
+          if(videos_posts.isNotEmpty){
+
+            printVm("video detail ======== : ${videos_posts.first.toJson()}");
 
 
 
-          Navigator.push(context, MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
 
-        }
-      },);
+          }else{
 
-      break;
-    case "IMAGE":
-      postProvider.getPostsImagesById(widget.post.post_id!).then((posts) {
-        if(posts.isNotEmpty){
+          }
+        },);
+      }else{
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
 
-          Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+      }
 
-        }
 
-      },);
-      break;
-    case "TEXT":
-      postProvider.getPostsImagesById(widget.post.post_id!).then((posts) {
-        if(posts.isNotEmpty){
+    }
 
-          Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+  },);
 
-        }
-
-      },);
-      break;
-    default:
-    // Handle unknown post type
-      break;
-  }
+  // switch (widget.post.post!.dataType!) {
+  //   case "VIDEO":
+  //     postProvider.getPostsVideosById(widget.post.post_id!).then((videos_posts) {
+  //       if(videos_posts.isNotEmpty){
+  //
+  //         printVm("video detail ======== : ${videos_posts.first.toJson()}");
+  //
+  //
+  //
+  //         Navigator.push(context, MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
+  //
+  //       }
+  //     },);
+  //
+  //     break;
+  //   case "IMAGE":
+  //     postProvider.getPostsImagesById(widget.post.post_id!).then((posts) {
+  //       if(posts.isNotEmpty){
+  //
+  //         Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+  //
+  //       }
+  //
+  //     },);
+  //     break;
+  //   case "TEXT":
+  //     postProvider.getPostsImagesById(widget.post.post_id!).then((posts) {
+  //       if(posts.isNotEmpty){
+  //
+  //         Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+  //
+  //       }
+  //
+  //     },);
+  //     break;
+  //   default:
+  //   // Handle unknown post type
+  //     break;
+  //}
 
 }, child: Text('Voir le post',style: TextStyle(color: Colors.green),))  ,
             SizedBox(height: 5),

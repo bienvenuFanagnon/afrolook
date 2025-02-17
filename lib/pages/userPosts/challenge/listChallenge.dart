@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/postProvider.dart';
-import '../../home/postUserWidget.dart';
+import '../postWidgets/postUserWidget.dart';
 
 
 

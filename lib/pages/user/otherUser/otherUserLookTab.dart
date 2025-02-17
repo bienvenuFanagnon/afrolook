@@ -26,9 +26,9 @@ import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../../providers/userProvider.dart';
 import '../../component/consoleWidget.dart';
-import '../../home/postUserWidget.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
+import '../../userPosts/postWidgets/postWidgetPage.dart';
 
 class OtherUserLookTab extends StatefulWidget {
   final UserData otherUser;
@@ -1108,10 +1108,11 @@ class _OtherUserLookTabState extends State<OtherUserLookTab> {
                     for(Post p in snapshot.data!)
                       Padding(
                         padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                        child: homePostUsers(p,Colors.brown,
-                            // _color,
-                            height,
-                            width,context),
+                        child:           HomePostUsersWidget(
+                          post: p,
+                          // color: _color,
+                          height: height, width: width,
+                        ),
                       )
                   ],
                 );

@@ -236,7 +236,7 @@ class _MesNotificationState extends State<MesNotification> {
         setState(() {
           onTap=false;
         });
-        Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
 
       }else{
         Navigator.pop(context);

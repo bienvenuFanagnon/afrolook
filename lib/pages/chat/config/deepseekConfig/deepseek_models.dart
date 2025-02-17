@@ -1,0 +1,1 @@
+enum DeekSeekModels { chat, coder }

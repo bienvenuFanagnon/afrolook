@@ -21,7 +21,6 @@ import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
 import 'package:afrotok/pages/home/home.dart';
-import 'package:afrotok/pages/home/postView.dart';
 import 'package:afrotok/pages/ia/compagnon/iaCompagnon.dart';
 import 'package:afrotok/pages/ia/compagnon/introIaCompagnon.dart';
 import 'package:afrotok/pages/info.dart';
@@ -30,7 +29,9 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/socialVideos/afrolive/afrolookLive.dart';
 import 'package:afrotok/pages/socialVideos/afrovibes/afroVibes.dart';
+import 'package:afrotok/pages/socialVideos/afrovideos/afroFeedVideo.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/videoHorizontal.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
@@ -388,7 +389,7 @@ class _MyAppState extends State<MyApp> {
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.PARRAINAGE.name) {
 
-          Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
 
         }
         else {
@@ -602,6 +603,8 @@ class _MyAppState extends State<MyApp> {
                 // child: MainScreen(), type: PageTransitionType.fade);
                 child: AfroVideo(), type: PageTransitionType.fade);
                 // child: AfroVibesPage(), type: PageTransitionType.fade);
+                // child: LiveStreamPage(), type: PageTransitionType.fade);
+                // child: VideoFeedPage(), type: PageTransitionType.fade);
             break;
 
           case '/home_profile_user':

@@ -1,27 +1,22 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
+import 'package:afrotok/pages/chat/deepseek.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
-import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:animated_icon/animated_icon.dart';
-import 'package:afrotok/pages/home/postUserWidget.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
-import 'package:afrotok/pages/ia/gemini/geminibot.dart';
 import 'package:auto_animated/auto_animated.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
-import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/constant/iconGradient.dart';
 import 'package:afrotok/constant/logo.dart';
 import 'package:afrotok/constant/sizeText.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -45,6 +40,7 @@ import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
+import '../chat/ia_Chat.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -56,13 +52,11 @@ import '../component/consoleWidget.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../story/afroStory/gnews.dart';
 import '../story/afroStory/storie/storyView.dart';
-import '../story/afroStory/storyItem.dart';
-import '../story/afroStory/whatsapp.dart';
 import '../user/conponent.dart';
 import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
+import '../userPosts/postWidgets/postUserWidget.dart';
+import '../userPosts/postWidgets/postWidgetPage.dart';
 
 
 class MyHomePage extends StatefulWidget {
@@ -80,6 +74,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool dejaVuPub = true;
   bool contact_whatsapp = false;
   bool contact_afrolook = false;
+  double homeIconSize = 20;
   // late int app_version_code=0;
 
   GlobalKey btnKey = GlobalKey();
@@ -1114,7 +1109,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 children: [
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                              
+
                                     children: [
                                       Container(
                                         alignment: Alignment.center,
@@ -1178,7 +1173,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   ),
                                   SizedBox(width: 10,),
 
-                              
+
                                 ],
                               ),
                             ),
@@ -1858,17 +1853,17 @@ class _MyHomePageState extends State<MyHomePage>
                                     onTap = false;
                                   });
                                   // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChat(),));
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first,),));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => DeepSeepChat(instruction: '${authProvider.appDefaultData.ia_instruction!}'),));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first,),));
 
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
-                                  //         chat: chat,
-                                  //         user: authProvider.loginUserData,
-                                  //         userIACompte: value.first,
-                                  //         instruction:
-                                  //             '${authProvider.appDefaultData.ia_instruction!}',
-                                  //       ),
-                                  //     ));
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
+                                          chat: chat,
+                                          user: authProvider.loginUserData,
+                                          userIACompte: value.first,
+                                          instruction:
+                                              '${authProvider.appDefaultData.ia_instruction!}',
+                                        ),
+                                      ));
                                 });
                               } else {
                                 Navigator.push(
@@ -2034,7 +2029,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.25 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.31 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2676,6 +2671,8 @@ class _MyHomePageState extends State<MyHomePage>
     //     ]));
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+    homeIconSize=width*0.065;
+
     //userProvider.getUsers(authProvider.loginUserData!.id!);
     // if(postProvider.listConstposts.isNotEmpty){
     //   setState(() {
@@ -2750,7 +2747,7 @@ class _MyHomePageState extends State<MyHomePage>
               // 'Afro Chronique',
               'Afrolook',
               style: TextStyle(
-                fontSize: 25,
+                fontSize: homeIconSize*0.7,
                 fontWeight: FontWeight.w900,
                 color: Colors.green,
                 letterSpacing: 1.5,
@@ -2772,9 +2769,9 @@ class _MyHomePageState extends State<MyHomePage>
                       .getListNotificationAuth(authProvider.loginUserData.id!),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: 40,height: 40,);
+                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
                     } else if (snapshot.hasError) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: 40,height: 40,);
+                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
                     } else {
                       List<NotificationData> list = snapshot!.data!;
 
@@ -2793,7 +2790,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   style: TextStyle(
                                       fontSize: 10, color: Colors.white),
                                 ),
-                          child: Image.asset("assets/icons/icons8-bell-188.png",width: 30,height: 30,)
+                          child: Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,)
                         ,
                         ),
                       );
@@ -2801,6 +2798,7 @@ class _MyHomePageState extends State<MyHomePage>
                   },
                 ),
               ),
+              SizedBox(width: 10,),
               // IconButton(
               //     onPressed: () async {
               //       // _scrollController.animateTo(
@@ -2831,12 +2829,14 @@ class _MyHomePageState extends State<MyHomePage>
 
             },
             iconType: IconType.continueAnimation,
-            height: 70,
-            width: 70,
+            height: homeIconSize,
+            width: homeIconSize,
             color: Colors.green,
             animateIcon: AnimateIcons.settings,
           ),
-          AnimateIcon(
+              SizedBox(width: 10,),
+
+              AnimateIcon(
             key: UniqueKey(),
             onTap: () async {
               checkAppVersionAndProceed(context, () {
@@ -2845,11 +2845,13 @@ class _MyHomePageState extends State<MyHomePage>
 
             },
             iconType: IconType.continueAnimation,
-            height: 70,
-            width: 70,
+            height: homeIconSize,
+            width: homeIconSize,
             color: Colors.green,
             animateIcon: AnimateIcons.paid,
           ),
+              SizedBox(width: 10,),
+
               GestureDetector(
                 onTap: () async {
                   if (_scrollController.hasClients) {
@@ -3112,7 +3114,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   // 'Afro Chronique',
                                   'Chroniques',
                                   style: TextStyle(
-                                    fontSize: 20,
+                                    fontSize: homeIconSize*0.7,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.green,
                                     letterSpacing: 1.5,
@@ -3179,7 +3181,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 ),
                               ),
                               // SizedBox(
-                              //   height: height * 0.35,
+                              //   height: height * 0.homeIconSize,
                               //   child: ListView.builder(
                               //     scrollDirection: Axis.horizontal,
                               //     itemCount: list.length,
@@ -3367,7 +3369,7 @@ class _MyHomePageState extends State<MyHomePage>
                             printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
                         // if (index % 7 == 6) {
                         //   return SizedBox(
-                        //     height: height * 0.35,
+                        //     height: height * 0.homeIconSize,
                         //     child: ListView.builder(
                         //       scrollDirection: Axis.horizontal,
                         //       itemCount: userList.length,
@@ -3582,14 +3584,17 @@ class _MyHomePageState extends State<MyHomePage>
                             ],
                           );
                         }
-
-                        return homePostUsers(
-                          listConstposts[index],
-                          _color,
-                          height,
-                          width,
-                          context,
+                        return HomePostUsersWidget(
+                          post: listConstposts[index], color: _color, height: height, width: width,
                         );
+                        //
+                        // return HomePostUsersWidget(
+                        //   listConstposts[index],
+                        //   _color,
+                        //   height,
+                        //   width,
+                        //   context,
+                        // );
                       },
                     ),
                   );
@@ -3637,7 +3642,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,)
+                              child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,)
                             );
                           } else if (snapshot.hasData) {
                             if (snapshot.data! > 0) {
@@ -3653,13 +3658,13 @@ class _MyHomePageState extends State<MyHomePage>
                                         style: TextStyle(
                                             fontSize: 10, color: Colors.white),
                                       ),
-                                child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,)
+                                child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,)
                               );
                             } else {
                               return badges.Badge(
                                 badgeContent: Text('1'),
                                 showBadge: false,
-                                child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,),
+                                child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,),
                               );
                             }
                           } else {
@@ -3667,7 +3672,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Image.asset("assets/icons/icons8-people-188.png",width: 35,height: 35,),
+                              child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,),
                             );
                           }
                         }),
@@ -3685,7 +3690,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
+                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
                             );
                           } else if (snapshot.hasData) {
                             if (snapshot.data! > 0) {
@@ -3701,13 +3706,13 @@ class _MyHomePageState extends State<MyHomePage>
                                         style: TextStyle(
                                             fontSize: 10, color: Colors.white),
                                       ),
-                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
+                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
                               );
                             } else {
                               return badges.Badge(
                                 badgeContent: Text('1'),
                                 showBadge: false,
-                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
+                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
                               );
                             }
                           } else {
@@ -3715,7 +3720,7 @@ class _MyHomePageState extends State<MyHomePage>
                             return badges.Badge(
                               badgeContent: Text('1'),
                               showBadge: false,
-                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: 35,height: 35,),
+                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
                             );
                           }
                         }),
@@ -3792,7 +3797,7 @@ class _MyHomePageState extends State<MyHomePage>
                         //   },
                         // );
                       },
-                      child: Image.asset('assets/icons/icons8-plus-188.png',width: 50,height: 50,)),
+                      child: Image.asset('assets/icons/icons8-plus-188.png',width: homeIconSize+10,height: homeIconSize+10,)),
                   GestureDetector(
                       onTap: () {
                         Navigator.pushNamed(context, '/videos');
@@ -3867,7 +3872,15 @@ class _MyHomePageState extends State<MyHomePage>
                         //   },
                         // );
                       },
-                      child: Image.asset('assets/icons/icons8-video-gallery-188.png',width: 35,height: 35,)),
+                      child:                       badges.Badge(
+                          badgeContent:
+                          Text(
+                            '9+',
+                            style: TextStyle(
+                                fontSize: 8, color: Colors.white),
+                          ),
+                          child: Image.asset("assets/icons/icons8-video-gallery-188.png",width: homeIconSize,height: homeIconSize,)
+                      ),),
                   GestureDetector(
                       onTap: () {
                         checkAppVersionAndProceed(context, () {
@@ -3943,7 +3956,7 @@ class _MyHomePageState extends State<MyHomePage>
                         //   },
                         // );
                       },
-                      child: Image.asset('assets/icons/icons8-menu-188.png',width: 35,height: 35,)),
+                      child: Image.asset('assets/icons/icons8-menu-188.png',width: homeIconSize,height: homeIconSize,)),
 
                   //
                   // IconButton(

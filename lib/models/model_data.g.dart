@@ -211,6 +211,29 @@ Map<String, dynamic> _$CategorieToJson(Categorie instance) => <String, dynamic>{
       'updatedAt': instance.updatedAt,
     };
 
+TransactionSolde _$TransactionSoldeFromJson(Map<String, dynamic> json) =>
+    TransactionSolde()
+      ..id = json['id'] as String?
+      ..user_id = json['user_id'] as String?
+      ..type = json['type'] as String?
+      ..statut = json['statut'] as String?
+      ..description = json['description'] as String?
+      ..montant = (json['montant'] as num?)?.toDouble()
+      ..createdAt = (json['createdAt'] as num?)?.toInt()
+      ..updatedAt = (json['updatedAt'] as num?)?.toInt();
+
+Map<String, dynamic> _$TransactionSoldeToJson(TransactionSolde instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'user_id': instance.user_id,
+      'type': instance.type,
+      'statut': instance.statut,
+      'description': instance.description,
+      'montant': instance.montant,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
+    };
+
 Canal _$CanalFromJson(Map<String, dynamic> json) => Canal(
       titre: json['titre'] as String?,
       type: json['type'] as String?,

@@ -1,6 +1,8 @@
 import 'package:cinetpay/cinetpay.dart';
 import 'package:flutter/material.dart';
 
+import '../../user/monetisation.dart';
+
 class SubscriptionPage extends StatefulWidget {
   @override
   State<SubscriptionPage> createState() => _SubscriptionPageState();
@@ -8,29 +10,6 @@ class SubscriptionPage extends StatefulWidget {
 
 class _SubscriptionPageState extends State<SubscriptionPage> {
 
-   Widget paiment(double montant){
-     return CinetPayCheckout(
-         title: 'Guichet de paiement',
-         configData: <String, dynamic> {
-           'apikey': '102325650865f879a7b10492.83921456',
-           'site_id': '5870078',
-           'notify_url': 'https://mondomaine.com/notify/'
-         },
-         paymentData: <String, dynamic> {
-           'transaction_id': '${DateTime.now().millisecondsSinceEpoch}',
-           'amount': montant,
-           'currency': 'XOF',
-           'channels': 'ALL',
-           'description': 'Test de paiement'
-         },
-         waitResponse: (response) {
-           print(response);
-         },
-         onError: (error) {
-       print(error);
-     }
-     );
-   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -236,8 +215,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) =>  paiment(double.parse(calculatedPrice.toStringAsFixed(0)))
-                    ,));
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) =>  paiment(double.parse(calculatedPrice.toStringAsFixed(0)))
+                    // ,));
 
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),

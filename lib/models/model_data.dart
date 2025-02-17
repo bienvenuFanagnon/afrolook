@@ -373,6 +373,8 @@ class AppDefaultData {
   double? tarifPubliCash_to_xof = 250.0;
   double? tarifVideo = 1.0;
   double? tarifjour = 0.5;
+  double? solde_principal = 0.0;
+  double? solde_gain = 0.0;
   int? nbr_loves = 0;
   int? default_point_new_user = 5;
   int? default_point_new_like = 1;
@@ -395,6 +397,8 @@ class AppDefaultData {
       this.tarifImage = 0.5,
       this.tarifVideo = 1.0,
       this.nbr_likes = 0,
+      this.solde_principal = 0.0,
+      this.solde_gain = 0.0,
       this.nbr_comments = 0,
       this.nbr_loves = 0,
       this.default_point_new_user = 5,
@@ -412,6 +416,10 @@ class AppDefaultData {
         json['ia_instruction'] == null ? "" : json['ia_instruction'];
     app_version_code_officiel =
         json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
+    solde_principal =
+        json['solde_principal'] == null ? 0.0 : json['solde_principal'];
+    solde_gain =
+        json['solde_gain'] == null ? 0.0 : json['solde_gain'];
     app_version_code =
         json['app_version_code'] == null ? 0 : json['app_version_code'];
     googleVerification =
@@ -456,6 +464,8 @@ class AppDefaultData {
     data['tarifVideo'] = this.tarifVideo;
     data['app_link'] = this.app_link;
     data['tarifjour'] = this.tarifjour;
+    data['solde_principal'] = this.solde_principal;
+    data['solde_gain'] = this.solde_gain;
     data['app_version_code_officiel'] = this.app_version_code_officiel;
     data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
     data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
@@ -495,6 +505,8 @@ class UserData {
   double? publi_cash = 0.0;
   double? votre_solde = 0.0;
   double? votre_solde_contenu = 0.0;
+  double? votre_solde_principal = 0.0;
+  double? votre_solde_cadeau = 0.0;
   int? pubEntreprise = 0;
   int? mesPubs = 0;
   int? partage = 0;
@@ -561,6 +573,8 @@ class UserData {
       this.partage = 0,
       this.userjaimes = 0,
       this.votre_solde_contenu = 0.0,
+      this.votre_solde_principal = 0.0,
+      this.votre_solde_cadeau = 0.0,
       this.comments = 0,
       this.createdAt = 0,
       this.updatedAt = 0,
@@ -672,6 +686,8 @@ class UserData {
     votre_solde_contenu = json['votre_solde_contenu'] == null ? 0.0 : json['votre_solde_contenu'];
     userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
     userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
+    votre_solde_cadeau = json['votre_solde_cadeau'] == null ? 0 : json['votre_solde_cadeau'];
+    votre_solde_principal = json['votre_solde_principal'] == null ? 0 : json['votre_solde_principal'];
     partage = json['partage'] == null ? 0 : json['partage'];
     // genreId = json['genre_id'];
     role = json['role'];
@@ -696,6 +712,8 @@ class UserData {
     data['mesPubs'] = this.mesPubs;
     data['code_parrainage'] = this.codeParrainage;
     data['votre_solde_contenu'] = this.votre_solde_contenu;
+    data['votre_solde_principal'] = this.votre_solde_principal;
+    data['votre_solde_cadeau'] = this.votre_solde_cadeau;
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
@@ -1004,6 +1022,27 @@ class Categorie {
 }
 
 @JsonSerializable()
+class TransactionSolde {
+  late String? id = "";
+  late String? user_id = "";
+  late String? type = "";
+  late String? statut = "";
+  late String? description = "";
+  late double? montant = 0.0;
+  int? createdAt;
+  int? updatedAt;
+
+  TransactionSolde();
+
+  // Add a factory constructor that creates a new instance from a JSON map
+  factory TransactionSolde.fromJson(Map<String, dynamic> json) =>
+      _$TransactionSoldeFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$TransactionSoldeToJson(this);
+}
+
+@JsonSerializable()
 class Canal {
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<UserData>? usersSuivi = [];
@@ -1133,9 +1172,14 @@ class CommandeCode {
 enum RoleUser { ADMIN, USER, SUPERADMIN }
 
 enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
+enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 
 enum TypeAbonement{
   GRATUIT,STANDARD,PREMIUM
+}
+
+enum TypeTransaction{
+  DEPOT,RETRAIT
 }
 
 @JsonSerializable()
@@ -1451,6 +1495,8 @@ class Post {
   List<String>? users_love_id = [];
   List<String>? users_comments_id = [];
   List<String>? users_partage_id = [];
+  List<String>? users_cadeau_id = [];
+  List<String>? users_republier_id = [];
 
   List<String>? users_vue_id = [];
 
@@ -1478,6 +1524,8 @@ class Post {
     this.likes,
     this.commentaires,
     this.users_partage_id,
+    this.users_republier_id,
+    this.users_cadeau_id,
     this.users_comments_id,
     this.contact_whatsapp,
     this.description,
@@ -1519,6 +1567,12 @@ class Post {
     users_like_id = json['users_like_id'] == null
         ? []
         : json['users_like_id'].cast<String>();
+    users_cadeau_id = json['users_cadeau_id'] == null
+        ? []
+        : json['users_cadeau_id'].cast<String>();
+    users_republier_id = json['users_republier_id'] == null
+        ? []
+        : json['users_republier_id'].cast<String>();
     // users_comments_id = json['users_comments_id'] == null
     //     ? []
     //     : json['users_like_id'].cast<String>();
@@ -1558,6 +1612,8 @@ class Post {
     data['images'] = this.images;
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;
+    data['users_republier_id'] = this.users_republier_id;
+    data['users_cadeau_id'] = this.users_cadeau_id;
     data['users_comments_id'] = this.users_comments_id;
     data['users_partage_id'] = this.users_partage_id;
     data['likes'] = this.likes;
@@ -1622,12 +1678,14 @@ class PostMonetiser {
   Post? post;
 
   int? createdAt;
+  String? dataType;
   int? updatedAt;
 
   PostMonetiser({
     this.id = '',
     required this.user_id,
     this.post_id = '',
+    this.dataType = '',
     this.users_like_id,
     this.users_love_id,
     this.users_comments_id,
@@ -1641,6 +1699,7 @@ class PostMonetiser {
     id = json['id'];
     post_id = json['post_id'];
     user_id = json['user_id'];
+    dataType = json['dataType']==null?'':json['dataType'];
     users_like_id = json['users_like_id']?.cast<String>() ?? [];
     users_love_id = json['users_love_id']?.cast<String>() ?? [];
     users_comments_id = json['users_comments_id']?.cast<String>() ?? [];
@@ -1661,6 +1720,7 @@ class PostMonetiser {
     data['users_partage_id'] = users_partage_id;
     data['solde'] = solde;
     data['created_at'] = createdAt;
+    data['dataType'] = dataType;
     data['updated_at'] = updatedAt;
     return data;
   }

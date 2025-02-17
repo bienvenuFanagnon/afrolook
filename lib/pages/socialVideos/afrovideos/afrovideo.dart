@@ -34,6 +34,8 @@ import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../user/detailsOtherUser.dart';
+import '../../userPosts/postWidgets/postCadeau.dart';
+import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'SimpleVideoView.dart';
 
 class AfroVideo extends StatefulWidget {
@@ -43,7 +45,7 @@ class AfroVideo extends StatefulWidget {
   State<AfroVideo> createState() => _AfroVideoState();
 }
 
-class _AfroVideoState extends State<AfroVideo> {
+class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, TickerProviderStateMixin {
 
   bool abonneTap=false;
 
@@ -83,12 +85,17 @@ class _AfroVideoState extends State<AfroVideo> {
       throw Exception('Impossible d\'ouvrir WhatsApp');
     }
   }
+  bool isLoading = false;
+
+  bool _isLoading = false;
+  final List<AnimationController> _heartAnimations = [];
+  final List<AnimationController> _giftAnimations = [];
+
   StreamController<List<Post>> _streamController = StreamController<List<Post>>();
 
   int limitePosts = 40;
 
   List<Post> listConstposts=[];
-  bool isLoading = false;
 
   void _showUserDetailsModalDialog(UserData user, double w, double h) {
     showDialog(
@@ -537,6 +544,315 @@ class _AfroVideoState extends State<AfroVideo> {
       await prefs.setString('lastShownDateVideo', todayDate);
     }
   }
+
+  bool _showHeart = false;
+  bool _showGift = false;
+
+
+  void _sendLike() {
+    final controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1000),
+    );
+    setState(() {
+      _heartAnimations.add(controller);
+    });
+    controller.forward().then((_) {
+      setState(() {
+        _heartAnimations.remove(controller);
+      });
+    });
+  }
+  void _sendReplyGift(String gift) {
+    final controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1500),
+    );
+    setState(() {
+      _giftReplyAnimations.add(controller);
+    });
+    controller.forward().then((_) {
+      setState(() {
+        _giftReplyAnimations.remove(controller);
+      });
+    });
+  }
+
+  void _sendGift(String gift) {
+    final controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1500),
+    );
+    setState(() {
+      _giftAnimations.add(controller);
+    });
+    controller.forward().then((_) {
+      setState(() {
+        _giftAnimations.remove(controller);
+      });
+    });
+  }
+
+  final List<AnimationController> _giftReplyAnimations = [];
+
+  final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba74bc65?rik=vHxQSLwSFG2gAw&riu=http%3a%2f%2fwww.conseilsdefamille.com%2fwp-content%2fuploads%2f2013%2f03%2fCadeau-Fotolia_27171652CMYK_WB.jpg&ehk=vzUbV07%2fUgXnc1LdlIVCaD36qZGAxa7V8JtbqOFfoqY%3d&risl=&pid=ImgRaw&r=0';
+
+
+  void showRepublishDialog(Post post, UserData userSendCadeau,AppDefaultData appdata ,BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          title: Text(
+            "✨ Republier ce post",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "🔝 Cette action mettra votre post en première position des actualités du jour.\n\n"
+                    "💰 1 PC sera retiré de votre compte principal.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black, fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Text("⚡ Plus de visibilité, plus d’interactions !", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(backgroundColor: Colors.brown),
+              child: Text("❌ Fermer", style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+
+                  List<UserData> listUsers = querySnapshotUser.docs.map(
+                        (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
+                  ).toList();
+
+                  if (listUsers.isNotEmpty) {
+                    userSendCadeau = listUsers.first;
+                    printVm("envoyer cadeau");
+                    printVm("userSendCadeau.votre_solde_principal : ${userSendCadeau.votre_solde_principal}");
+                    userSendCadeau.votre_solde_principal ??= 0.0;
+                    appdata.solde_gain ??= 0.0;
+
+                    if (userSendCadeau.votre_solde_principal! >= 2) {
+                      post.users_republier_id ??= [];
+                      post.users_republier_id?.add(userSendCadeau.id!);
+                      double gain=0.0;
+                      double deduire=0.0;
+
+//
+// // Ajouter le gain au solde cadeau
+//                       post.user!.votre_solde_cadeau =
+//                           (post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+
+// Ajouter le reste au solde principal
+                      userSendCadeau.votre_solde_principal =
+                          userSendCadeau.votre_solde_principal! - 2;
+                      appdata.solde_gain=appdata.solde_gain!+2;
+
+
+
+                      await  postProvider.updateReplyPost(post, context);
+                      await authProvider.updateUser(post!.user!).then((value) async {
+                        await  authProvider.updateUser(userSendCadeau);
+                        await  authProvider.updateAppData(appdata);
+
+                      },);
+                      printVm('update send user');
+                      printVm('update send user votre_solde_principal : ${userSendCadeau.votre_solde_principal}');
+                      setState(() => _isLoading = false);
+                      Navigator.of(context).pop();
+                      _sendReplyGift('🔝');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.green,
+                          content: Text(
+                            '🔝 Félicitations ! Vous avez reposter ce look ',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    } else {
+                      setState(() => _isLoading = false);
+                      showInsufficientBalanceDialog(context);
+                    }
+                  }
+                } catch (e) {
+                  setState(() => _isLoading = false);
+                  print("Erreur : $e");
+                }
+              },
+
+              style: TextButton.styleFrom(backgroundColor: Colors.green),
+              child: Text("🚀 Republier", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void showGiftDialog(Post post, UserData userSendCadeau,AppDefaultData appdata) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Empêche la fermeture
+      builder: (BuildContext context) {
+        String _selectedGift = '';
+        double _selectedPrice = 0.0;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Stack(
+              children: [
+                GiftDialog(
+                  isLoading: _isLoading,
+                  onGiftSelected: (String gift, int price) async {
+                    setState(() {
+                      _isLoading = true;
+                      _selectedPrice=price.toDouble();
+                      _selectedGift=gift;
+                    },);
+
+                    try {
+                      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+
+                      List<UserData> listUsers = querySnapshotUser.docs.map(
+                            (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
+                      ).toList();
+
+                      if (listUsers.isNotEmpty) {
+                        userSendCadeau = listUsers.first;
+                        printVm("envoyer cadeau");
+                        printVm("userSendCadeau.votre_solde_principal : ${userSendCadeau.votre_solde_principal}");
+                        printVm("_selectedPrice : ${_selectedPrice}");
+                        userSendCadeau.votre_solde_principal ??= 0.0;
+                        appdata.solde_gain ??= 0.0;
+
+                        if (userSendCadeau.votre_solde_principal! >= _selectedPrice) {
+                          post.users_cadeau_id ??= [];
+                          post.users_cadeau_id?.add(userSendCadeau.id!);
+                          double gain=0.0;
+                          double deduire=0.0;
+
+                          if (_selectedPrice <= 2) {
+                            gain = 1;
+                            // reste = _selectedPrice - gain;
+                          } else {
+                            gain = _selectedPrice * 0.25;
+                            // reste = _selectedPrice - gain;
+                          }
+                          deduire=_selectedPrice+gain;
+
+// Ajouter le gain au solde cadeau
+                          post.user!.votre_solde_cadeau =
+                              (post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+
+// Ajouter le reste au solde principal
+                          userSendCadeau.votre_solde_principal =
+                              userSendCadeau.votre_solde_principal! - deduire;
+                          appdata.solde_gain=appdata.solde_gain!+gain;
+
+                          // post.user!.votre_solde_cadeau = (post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+                          // userSendCadeau.votre_solde_principal = userSendCadeau.votre_solde_principal! - (_selectedPrice);
+
+                          NotificationData notif = NotificationData(
+                            id: firestore.collection('Notifications').doc().id,
+                            titre: "Nouveau Cadeau 🎁",
+                            media_url: imageCadeau,
+                            type: NotificationType.POST.name,
+                            description: "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
+                            user_id: post.user!.id,
+                            receiver_id: post!.user_id!,
+                            post_id: post!.id!,
+                            post_data_type: PostDataType.IMAGE.name!,
+                            createdAt: DateTime.now().microsecondsSinceEpoch,
+                            updatedAt: DateTime.now().microsecondsSinceEpoch,
+                            status: PostStatus.VALIDE.name,
+                          );
+
+                          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                          await authProvider.sendNotification(
+                              userIds: [post!.user!.oneIgnalUserid!],
+                              smallImage:
+                              // "${authProvider.loginUserData.imageUrl!}",
+                              "${imageCadeau}",
+                              send_user_id:
+                              "",
+                              // "${authProvider.loginUserData.id!}",
+                              recever_user_id: "${post!.user_id!}",
+                              message:
+                              // "📢 @${authProvider.loginUserData
+                              //     .pseudo!} a aimé votre look",
+                              "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
+                              type_notif:
+                              NotificationType.POST.name,
+                              post_id: "${post!.id!}",
+                              post_type: PostDataType.IMAGE.name,
+                              chat_id: '');
+
+
+                          await  postProvider.updateVuePost(post, context);
+                          await authProvider.updateUser(post!.user!).then((value) async {
+                            await  authProvider.updateUser(userSendCadeau);
+                            await  authProvider.updateAppData(appdata);
+
+                          },);
+                          printVm('update send user');
+                          printVm('update send user votre_solde_principal : ${userSendCadeau.votre_solde_principal}');
+                          setState(() => _isLoading = false);
+                          Navigator.of(context).pop();
+
+                          _sendGift("🎁");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.green,
+                              content: Text(
+                                '🎁 Félicitations ! Vous avez envoyé un cadeau ${_selectedGift} à @${post!.user!.pseudo}.',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        } else {
+                          setState(() => _isLoading = false);
+                          showInsufficientBalanceDialog(context);
+                        }
+                      }
+                    } catch (e) {
+                      setState(() => _isLoading = false);
+                      print("Erreur : $e");
+                    }
+                  },
+                ),
+                if (_isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 
   @override
   void initState() {
@@ -1031,650 +1347,353 @@ class _AfroVideoState extends State<AfroVideo> {
                                           bottom: 50.0,
                                           child: Padding(
                                             padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              children: [
-                                                const SizedBox(
-                                                  height: 20.0,
-                                                ),
-                                                // StatefulBuilder(
-                                                //
-                                                //     builder: (BuildContext context, void Function(void Function()) setStateM) {
-                                                //       return Container(
-                                                //         child:    isUserAbonne(datas[index].user!.userAbonnesIds!,
-                                                //             authProvider.loginUserData.id!)?
-                                                //         Container(
-                                                //
-                                                //           child: Icon(Icons.check_circle,color:Colors.green),
-                                                //           alignment: Alignment.center,
-                                                //
-                                                //         ):
-                                                //         Container(
-                                                //
-                                                //           child: TextButton(
-                                                //             onPressed:abonneTap?
-                                                //                 ()  { }:
-                                                //                 ()async{
-                                                //                   if (!isUserAbonne(
-                                                //                       datas[index].user!
-                                                //                           .userAbonnesIds!,
-                                                //                       authProvider
-                                                //                           .loginUserData
-                                                //                           .id!))
-                                                //                   {
-                                                //                     setStateM(() {
-                                                //                       abonneTap = true;
-                                                //                     });
-                                                //                     UserAbonnes userAbonne =
-                                                //                     UserAbonnes();
-                                                //                     userAbonne.compteUserId =
-                                                //                         authProvider
-                                                //                             .loginUserData.id;
-                                                //                     userAbonne.abonneUserId =
-                                                //                         datas[index].user!.id;
-                                                //
-                                                //                     userAbonne
-                                                //                         .createdAt = DateTime
-                                                //                         .now()
-                                                //                         .millisecondsSinceEpoch;
-                                                //                     userAbonne
-                                                //                         .updatedAt = DateTime
-                                                //                         .now()
-                                                //                         .millisecondsSinceEpoch;
-                                                //                     await userProvider
-                                                //                         .sendAbonnementRequest(
-                                                //                         userAbonne,
-                                                //                         datas[index].user!,
-                                                //                         context)
-                                                //                         .then(
-                                                //                           (value) async {
-                                                //                         if (value) {
-                                                //                           authProvider
-                                                //                               .loginUserData
-                                                //                               .userAbonnes!
-                                                //                               .add(
-                                                //                               userAbonne);
-                                                //                           datas[index].user!
-                                                //                               .userAbonnesIds!.add(userAbonne.id!);
-                                                //                           // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                                //                           await authProvider
-                                                //                               .getCurrentUser(
-                                                //                               authProvider
-                                                //                                   .loginUserData!
-                                                //                                   .id!);
-                                                //                           datas[index].user!
-                                                //                               .userAbonnesIds!
-                                                //                               .add(authProvider
-                                                //                               .loginUserData
-                                                //                               .id!);
-                                                //                           userProvider
-                                                //                               .updateUser(
-                                                //                               datas[index].user!);
-                                                //                           if (datas[index].user!
-                                                //                               .oneIgnalUserid !=
-                                                //                               null &&
-                                                //                               datas[index]
-                                                //                                   .user!
-                                                //                                   .oneIgnalUserid!
-                                                //                                   .length >
-                                                //                                   5) {
-                                                //                             await authProvider.sendNotification(
-                                                //                                 userIds: [
-                                                //                                   datas[index].user!
-                                                //                                       .oneIgnalUserid!
-                                                //                                 ],
-                                                //                                 smallImage:
-                                                //                                 "${authProvider.loginUserData.imageUrl!}",
-                                                //                                 send_user_id:
-                                                //                                 "${authProvider.loginUserData.id!}",
-                                                //                                 recever_user_id:
-                                                //                                 "${datas[index].user!.id!}",
-                                                //                                 message:
-                                                //                                 "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
-                                                //                                 type_notif:
-                                                //                                 NotificationType
-                                                //                                     .ABONNER
-                                                //                                     .name,
-                                                //                                 post_id:
-                                                //                                 "${datas[index]!.id!}",
-                                                //                                 post_type:
-                                                //                                 PostDataType
-                                                //                                     .IMAGE
-                                                //                                     .name,
-                                                //                                 chat_id: '');
-                                                //                             NotificationData
-                                                //                             notif =
-                                                //                             NotificationData();
-                                                //                             notif.id = firestore
-                                                //                                 .collection(
-                                                //                                 'Notifications')
-                                                //                                 .doc()
-                                                //                                 .id;
-                                                //                             notif.titre =
-                                                //                             "Nouveau Abonnement ✅";
-                                                //                             notif.media_url =
-                                                //                                 authProvider
-                                                //                                     .loginUserData
-                                                //                                     .imageUrl;
-                                                //                             notif.type =
-                                                //                                 NotificationType
-                                                //                                     .ABONNER
-                                                //                                     .name;
-                                                //                             notif.description =
-                                                //                             "@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                                //                             notif.users_id_view =
-                                                //                             [];
-                                                //                             notif.user_id =
-                                                //                                 authProvider
-                                                //                                     .loginUserData
-                                                //                                     .id;
-                                                //                             notif.receiver_id =
-                                                //                             datas[index].user!
-                                                //                                 .id!;
-                                                //                             notif.post_id =
-                                                //                             datas[index].id!;
-                                                //                             notif.post_data_type =
-                                                //                             PostDataType
-                                                //                                 .IMAGE
-                                                //                                 .name!;
-                                                //                             notif.updatedAt =
-                                                //                                 DateTime.now()
-                                                //                                     .microsecondsSinceEpoch;
-                                                //                             notif.createdAt =
-                                                //                                 DateTime.now()
-                                                //                                     .microsecondsSinceEpoch;
-                                                //                             notif.status =
-                                                //                                 PostStatus
-                                                //                                     .VALIDE
-                                                //                                     .name;
-                                                //
-                                                //                             // users.add(pseudo.toJson());
-                                                //
-                                                //                             await firestore
-                                                //                                 .collection(
-                                                //                                 'Notifications')
-                                                //                                 .doc(notif.id)
-                                                //                                 .set(notif
-                                                //                                 .toJson());
-                                                //                           }
-                                                //                           SnackBar snackBar =
-                                                //                           SnackBar(
-                                                //                             content: Text(
-                                                //                               'abonné, Bravo ! Vous avez gagné 4 points.',
-                                                //                               textAlign:
-                                                //                               TextAlign
-                                                //                                   .center,
-                                                //                               style: TextStyle(
-                                                //                                   color: Colors
-                                                //                                       .green),
-                                                //                             ),
-                                                //                           );
-                                                //                           ScaffoldMessenger
-                                                //                               .of(context)
-                                                //                               .showSnackBar(
-                                                //                               snackBar);
-                                                //                           setStateM(() {
-                                                //                             abonneTap = false;
-                                                //                           });
-                                                //                         } else {
-                                                //                           SnackBar snackBar =
-                                                //                           SnackBar(
-                                                //                             content: Text(
-                                                //                               'une erreur',
-                                                //                               textAlign:
-                                                //                               TextAlign
-                                                //                                   .center,
-                                                //                               style: TextStyle(
-                                                //                                   color: Colors
-                                                //                                       .red),
-                                                //                             ),
-                                                //                           );
-                                                //                           ScaffoldMessenger
-                                                //                               .of(context)
-                                                //                               .showSnackBar(
-                                                //                               snackBar);
-                                                //                           setStateM(() {
-                                                //                             abonneTap = false;
-                                                //                           });
-                                                //                         }
-                                                //                       },
-                                                //                     );
-                                                //
-                                                //                     setStateM(() {
-                                                //                       abonneTap = false;
-                                                //                     });
-                                                //                   }
-                                                //                   setState(() {
-                                                //
-                                                //                   });
-                                                //
-                                                //               // if (!isUserAbonne(datas[index].user!.userAbonnesIds!,
-                                                //               //     authProvider.loginUserData.id!)) {
-                                                //               //   setState(() {
-                                                //               //     abonneTap=true;
-                                                //               //   });
-                                                //               //   UserAbonnes userAbonne = UserAbonnes();
-                                                //               //   userAbonne.compteUserId=authProvider.loginUserData.id;
-                                                //               //   userAbonne.abonneUserId=datas[index].user!.id;
-                                                //               //
-                                                //               //   userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-                                                //               //   userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-                                                //               //   await  userProvider.sendAbonnementRequest(userAbonne,datas[index].user!,context).then((value) async {
-                                                //               //     if (value) {
-                                                //               //
-                                                //               //
-                                                //               //       // await userProvider.getUsers(authProvider.loginUserData!.id!);
-                                                //               //       authProvider.loginUserData.userAbonnes!.add(userAbonne);
-                                                //               //       await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                                //               //       if (datas[index].user!.oneIgnalUserid!=null&&datas[index].user!.oneIgnalUserid!.length>5) {
-                                                //               //         await authProvider.sendNotification(
-                                                //               //             userIds: [datas[index].user!.oneIgnalUserid!],
-                                                //               //             smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                //               //             send_user_id: "${authProvider.loginUserData.id!}",
-                                                //               //             recever_user_id: "${datas[index].user!.id!}",
-                                                //               //             message: "📢 @${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte",
-                                                //               //             type_notif: NotificationType.ABONNER.name,
-                                                //               //             post_id: "${datas[index]!.id!}",
-                                                //               //             post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                //               //         );
-                                                //               //         NotificationData notif=NotificationData();
-                                                //               //         notif.id=firestore
-                                                //               //             .collection('Notifications')
-                                                //               //             .doc()
-                                                //               //             .id;
-                                                //               //         notif.titre="Nouveau Abonnement ✅";
-                                                //               //         notif.media_url=authProvider.loginUserData.imageUrl;
-                                                //               //         notif.type=NotificationType.ABONNER.name;
-                                                //               //         notif.description="@${authProvider.loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                                                //               //         notif.users_id_view=[];
-                                                //               //         notif.user_id=authProvider.loginUserData.id;
-                                                //               //         notif.receiver_id="${datas[index].user!.id!}";
-                                                //               //         notif.updatedAt =
-                                                //               //             DateTime.now().microsecondsSinceEpoch;
-                                                //               //         notif.createdAt =
-                                                //               //             DateTime.now().microsecondsSinceEpoch;
-                                                //               //         notif.status = PostStatus.VALIDE.name;
-                                                //               //
-                                                //               //         // users.add(pseudo.toJson());
-                                                //               //
-                                                //               //         await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                                //               //
-                                                //               //
-                                                //               //       }
-                                                //               //       SnackBar snackBar = SnackBar(
-                                                //               //         content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                                                //               //       );
-                                                //               //       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                //               //       setState(() {
-                                                //               //         abonneTap=false;
-                                                //               //
-                                                //               //       });
-                                                //               //     }  else{
-                                                //               //       SnackBar snackBar = SnackBar(
-                                                //               //         content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                                                //               //       );
-                                                //               //       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                                                //               //       setState(() {
-                                                //               //         abonneTap=false;
-                                                //               //       });
-                                                //               //     }
-                                                //               //   },);
-                                                //               //
-                                                //               //
-                                                //               //   setState(() {
-                                                //               //     abonneTap=false;
-                                                //               //   });
-                                                //               // }
-                                                //             },
-                                                //             child:abonneTap? Center(
-                                                //               child: LoadingAnimationWidget.flickr(
-                                                //                 size: 20,
-                                                //                 leftDotColor: Colors.green,
-                                                //                 rightDotColor: Colors.black,
-                                                //               ),
-                                                //             ):
-                                                //             Container(
-                                                //
-                                                //               child: Icon(Icons.add,color:Colors.white,size: 15,),
-                                                //               alignment: Alignment.center,
-                                                //               width: 40,
-                                                //               height: 20,
-                                                //               decoration: BoxDecoration(
-                                                //                   color: Colors.red,
-                                                //                   borderRadius: BorderRadius.all(Radius.circular(10))
-                                                //               ),
-                                                //             ),),
-                                                //         ),
-                                                //       );
-                                                //     }
-                                                // ),
-                                                // const SizedBox(
-                                                //   height: 5.0,
-                                                // ),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.1), // Shadow color
+                                                    spreadRadius: 2, // Spread of the shadow
+                                                    blurRadius: 5, // Blur effect to soften the shadow
+                                                    offset: Offset(0, 4), // Shadow position (x, y)
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Column(
+                                                spacing: 5,
+                                                children: [
+                                                  const SizedBox(
+                                                    height: 20.0,
+                                                  ),
 
-                                                LikeButton(
+                                                  LikeButton(
 
-                                                  onTap: (bool isLiked) async {
-                                                    if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
-                                                      printVm('tap');
-                                                      setState(()  {
-                                                        datas[index].loves=datas[index]!.loves!+1;
+                                                    onTap: (bool isLiked) async {
+                                                      // _triggerAnimation('like');
+                                                      _sendLike();
+                                                      if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
+                                                        printVm('tap');
+                                                        setState(()  {
+                                                          datas[index].loves=datas[index]!.loves!+1;
 
 
-                                                        datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
+                                                          datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
 
-                                                        printVm('update');
-                                                        //loves.add(idUser);
-                                                      });
-                                                      CollectionReference userCollect =
-                                                      FirebaseFirestore.instance.collection('Users');
-                                                      // Get docs from collection reference
-                                                      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
-                                                      // Afficher la liste
-                                                      List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                                      if (listUsers.isNotEmpty) {
-                                                        listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
-                                                        postProvider.updatePost(datas[index], listUsers.first!!,context);
-                                                        await authProvider.getAppData();
-                                                        authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                        authProvider.updateAppData(authProvider.appDefaultData);
+                                                          printVm('update');
+                                                          //loves.add(idUser);
+                                                        });
+                                                        CollectionReference userCollect =
+                                                        FirebaseFirestore.instance.collection('Users');
+                                                        // Get docs from collection reference
+                                                        QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                                        // Afficher la liste
+                                                        List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                                            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                                        if (listUsers.isNotEmpty) {
+                                                          listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
+                                                          postProvider.updatePost(datas[index], listUsers.first!!,context);
+                                                          await authProvider.getAppData();
+                                                          authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                          authProvider.updateAppData(authProvider.appDefaultData);
 
 
-                                                      }else{
-                                                        datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
-                                                        postProvider.updatePost( datas[index],datas[index].user!,context);
-                                                        await authProvider.getAppData();
-                                                        authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                        authProvider.updateAppData(authProvider.appDefaultData);
+                                                        }else{
+                                                          datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
+                                                          postProvider.updatePost( datas[index],datas[index].user!,context);
+                                                          await authProvider.getAppData();
+                                                          authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                          authProvider.updateAppData(authProvider.appDefaultData);
+
+                                                        }
+                                                        await authProvider.sendNotification(
+                                                            userIds: [datas[index].user!.oneIgnalUserid!],
+                                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                            send_user_id: "${authProvider.loginUserData.id!}",
+                                                            recever_user_id: "${datas[index].user!.id!}",
+                                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
+                                                            type_notif: NotificationType.POST.name,
+                                                            post_id: "${datas[index]!.id!}",
+                                                            post_type: PostDataType.VIDEO.name, chat_id: ''
+                                                        );
+
+                                                        NotificationData notif=NotificationData();
+                                                        notif.id=firestore
+                                                            .collection('Notifications')
+                                                            .doc()
+                                                            .id;
+                                                        notif.titre="Nouveau j'aime ❤️";
+                                                        notif.media_url=authProvider.loginUserData.imageUrl;
+                                                        notif.type=NotificationType.POST.name;
+                                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
+                                                        notif.users_id_view=[];
+                                                        notif.user_id=authProvider.loginUserData.id;
+                                                        notif.receiver_id="${datas[index].user!.id!}";
+                                                        notif.post_id=datas[index].id!;
+                                                        notif.post_data_type=PostDataType.VIDEO.name!;
+                                                        notif.updatedAt =
+                                                            DateTime.now().microsecondsSinceEpoch;
+                                                        notif.createdAt =
+                                                            DateTime.now().microsecondsSinceEpoch;
+                                                        notif.status = PostStatus.VALIDE.name;
+
+                                                        // users.add(pseudo.toJson());
+
+                                                        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                                        postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
 
                                                       }
-                                                      await authProvider.sendNotification(
-                                                          userIds: [datas[index].user!.oneIgnalUserid!],
-                                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                          send_user_id: "${authProvider.loginUserData.id!}",
-                                                          recever_user_id: "${datas[index].user!.id!}",
-                                                          message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
-                                                          type_notif: NotificationType.POST.name,
-                                                          post_id: "${datas[index]!.id!}",
-                                                          post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                      );
 
-                                                      NotificationData notif=NotificationData();
-                                                      notif.id=firestore
-                                                          .collection('Notifications')
-                                                          .doc()
-                                                          .id;
-                                                      notif.titre="Nouveau j'aime ❤️";
-                                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                                      notif.type=NotificationType.POST.name;
-                                                      notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
-                                                      notif.users_id_view=[];
-                                                      notif.user_id=authProvider.loginUserData.id;
-                                                      notif.receiver_id="${datas[index].user!.id!}";
-                                                      notif.post_id=datas[index].id!;
-                                                      notif.post_data_type=PostDataType.VIDEO.name!;
-                                                      notif.updatedAt =
-                                                          DateTime.now().microsecondsSinceEpoch;
-                                                      notif.createdAt =
-                                                          DateTime.now().microsecondsSinceEpoch;
-                                                      notif.status = PostStatus.VALIDE.name;
-
-                                                      // users.add(pseudo.toJson());
-
-                                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                                      postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
-
-                                                    }
-
-                                                    return Future.value(!isLiked);
-                                                  },
-                                                  isLiked: isIn(datas[index]!.users_love_id!,authProvider.loginUserData.id!),
-
-                                                  size: 35,
-                                                  circleColor:
-                                                  CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                  bubblesColor: BubblesColor(
-                                                    dotPrimaryColor: Color(0xff3b9ade),
-                                                    dotSecondaryColor: Color(0xffe33232),
-                                                  ),
-                                                  countPostion: CountPostion.bottom,
-                                                  likeBuilder: (bool isLiked) {
-                                                    return Icon(
-                                                      Entypo.heart,
-                                                      color: isLiked ? Colors.red : Colors.white,
-                                                      size: 35,
-                                                    );
-                                                  },
-                                                  likeCount:  datas[index]!.users_love_id!.length!,
-                                                  countBuilder: (int? count, bool isLiked, String text) {
-                                                    var color = isLiked ? Colors.white : Colors.white;
-                                                    Widget result;
-                                                    if (count == 0) {
-                                                      result = Text(
-                                                        "0",textAlign: TextAlign.center,
-                                                        style: TextStyle(color: color),
-                                                      );
-                                                    } else
-                                                      result = Text(
-                                                        text,
-                                                        style: TextStyle(color: color),
-                                                      );
-                                                    return result;
-                                                  },
-
-                                                ),
-                                                // LikeButton(
-                                                //   onTap: (bool isLiked) async {
-                                                //     if (!isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!)) {
-                                                //       printVm('tap');
-                                                //       setState(()  {
-                                                //         datas[index]!.likes= datas[index]!.likes!+1;
-                                                //
-                                                //         datas[index].users_like_id!.add(authProvider!.loginUserData.id!);
-                                                //
-                                                //         printVm('update');
-                                                //         //loves.add(idUser);
-                                                //       });
-                                                //       CollectionReference userCollect =
-                                                //       FirebaseFirestore.instance.collection('Users');
-                                                //       // Get docs from collection reference
-                                                //       QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
-                                                //       // Afficher la liste
-                                                //       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                //           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                                //
-                                                //
-                                                //       if (listUsers.isNotEmpty) {
-                                                //         listUsers.first!.likes=listUsers.first!.likes!+1;
-                                                //         postProvider.updatePost(datas[index], listUsers.first,context);
-                                                //         authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
-                                                //         authProvider.updateAppData(authProvider.appDefaultData);
-                                                //
-                                                //
-                                                //       }else{
-                                                //         datas[index].user!.likes=datas[index].user!.likes!+1;
-                                                //         postProvider.updatePost( datas[index],datas[index].user!,context);
-                                                //         authProvider.appDefaultData.nbr_likes=authProvider.appDefaultData.nbr_likes!+1;
-                                                //         authProvider.updateAppData(authProvider.appDefaultData);
-                                                //       }
-                                                //
-                                                //       await authProvider.sendNotification(
-                                                //           userIds: [datas[index].user!.oneIgnalUserid!],
-                                                //           smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                //           send_user_id: "${authProvider.loginUserData.id!}",
-                                                //           recever_user_id: "${datas[index].user!.id!}",
-                                                //           message: "📢 @${authProvider.loginUserData.pseudo!} a liké 👍🏾 votre look video",
-                                                //           type_notif: NotificationType.POST.name,
-                                                //           post_id: "${datas[index]!.id!}",
-                                                //           post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                //       );
-                                                //
-                                                //       NotificationData notif=NotificationData();
-                                                //       notif.id=firestore
-                                                //           .collection('Notifications')
-                                                //           .doc()
-                                                //           .id;
-                                                //       notif.titre="Nouveau like 👍🏾";
-                                                //       notif.media_url=authProvider.loginUserData.imageUrl;
-                                                //       notif.type=NotificationType.POST.name;
-                                                //       notif.description="@${authProvider.loginUserData.pseudo!} a liké votre look video";
-                                                //       notif.users_id_view=[];
-                                                //       notif.user_id=authProvider.loginUserData.id;
-                                                //       notif.receiver_id=datas[index]!.user!.id!;
-                                                //       notif.post_id=datas[index]!.id!;
-                                                //       notif.post_data_type=PostDataType.VIDEO.name!;
-                                                //
-                                                //       notif.updatedAt =
-                                                //           DateTime.now().microsecondsSinceEpoch;
-                                                //       notif.createdAt =
-                                                //           DateTime.now().microsecondsSinceEpoch;
-                                                //       notif.status = PostStatus.VALIDE.name;
-                                                //
-                                                //       // users.add(pseudo.toJson());
-                                                //
-                                                //       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                                //
-                                                //     }
-                                                //
-                                                //
-                                                //
-                                                //     return Future.value(!isLiked);
-                                                //   },
-                                                //   isLiked: isIn( datas[index]!.users_like_id!,authProvider.loginUserData.id!),
-                                                //   size: 35,
-                                                //   circleColor:
-                                                //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                //   bubblesColor: BubblesColor(
-                                                //     dotPrimaryColor: Color(0xff3b9ade),
-                                                //     dotSecondaryColor: Color(0xff1176f3),
-                                                //   ),
-                                                //   countPostion: CountPostion.bottom,
-                                                //   likeBuilder: (bool isLiked) {
-                                                //     return Icon(
-                                                //       AntDesign.like1,
-                                                //       color: isLiked ? Colors.blue : Colors.white,
-                                                //       size: 35,
-                                                //
-                                                //
-                                                //
-                                                //     );
-                                                //   },
-                                                //   likeCount:  datas[index]!.users_like_id!.length!,
-                                                //   countBuilder: (int? count, bool isLiked, String text) {
-                                                //     var color = isLiked ? Colors.white : Colors.white;
-                                                //     Widget result;
-                                                //     if (count == 0) {
-                                                //       result = Text(
-                                                //         "0",textAlign: TextAlign.center,
-                                                //         style: TextStyle(color: color),
-                                                //       );
-                                                //     } else
-                                                //       result = Text(
-                                                //         text,
-                                                //         style: TextStyle(color: color),
-                                                //       );
-                                                //     return result;
-                                                //   },
-                                                //
-                                                // ),
-
-                                                LikeButton(
-                                                  onTap: (bool isLiked) {
-
-                                                    //  _chewieController.pause();
-                                                    //  videoPlayerController.pause();
-
-
-                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post:  datas[index]!),));
-
-
-                                                    return Future.value(!isLiked);
-                                                  },
-
-                                                  isLiked: false,
-                                                  size: 35,
-                                                  circleColor:
-                                                  CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                  bubblesColor: BubblesColor(
-                                                    dotPrimaryColor: Color(0xff3b9ade),
-                                                    dotSecondaryColor: Color(0xff027f19),
-                                                  ),
-                                                  countPostion: CountPostion.bottom,
-                                                  likeBuilder: (bool isLiked) {
-                                                    return Icon(
-                                                      FontAwesome.commenting,
-                                                      color: isLiked ? Colors.white : Colors.white,
-                                                      size: 35,
-                                                    );
-                                                  },
-                                                  likeCount: datas[index]!.comments!,
-                                                  countBuilder: (int? count, bool isLiked, String text) {
-                                                    var color = isLiked ? Colors.white : Colors.white;
-                                                    Widget result;
-                                                    if (count == 0) {
-                                                      result = Text(
-                                                        "0",textAlign: TextAlign.center,
-                                                        style: TextStyle(color: color),
-                                                      );
-                                                    } else
-                                                      result = Text(
-                                                        text,
-                                                        style: TextStyle(color: color),
-                                                      );
-                                                    return result;
-                                                  },
-
-                                                ),
-                                                LikeButton(
-                                                  isLiked: false,
-                                                  size: 35,
-                                                  circleColor:
-                                                  CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                  bubblesColor: BubblesColor(
-                                                    dotPrimaryColor: Color(0xff3b9ade),
-                                                    dotSecondaryColor: Color(0xff027f19),
-                                                  ),
-                                                  countPostion: CountPostion.bottom,
-                                                  likeBuilder: (bool isLiked) {
-                                                    return Icon(
-                                                      FontAwesome.eye,
-                                                      color: isLiked ? Colors.white : Colors.white,
-                                                      size: 35,
-                                                    );
-                                                  },
-                                                  likeCount:  datas[index].vues!,
-                                                  countBuilder: (int? count, bool isLiked, String text) {
-                                                    var color = isLiked ? Colors.white : Colors.white;
-                                                    Widget result;
-                                                    if (count == 0) {
-                                                      result = Text(
-                                                        "0",textAlign: TextAlign.center,
-                                                        style: TextStyle(color: color,fontSize: 8),
-                                                      );
-                                                    } else
-                                                      result = Text(
-                                                        text,
-                                                        style: TextStyle(color: color,fontSize: 8),
-                                                      );
-                                                    return result;
-                                                  },
-
-                                                ),
-
-                                                IconButton(
-                                                    onPressed: () {
-                                                      // _showModalDialog(datas[index]);
-                                                      _showPostMenuModalDialog(datas[index],context);
+                                                      return Future.value(!isLiked);
                                                     },
-                                                    icon: Icon(
-                                                      Icons.more_horiz,
-                                                      size: 35,
-                                                      color: Colors.white,
-                                                    )),
+                                                    isLiked: isIn(datas[index]!.users_love_id!,authProvider.loginUserData.id!),
 
-                                              ],
+                                                    size: 30,
+                                                    circleColor:
+                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                    bubblesColor: BubblesColor(
+                                                      dotPrimaryColor: Color(0xff3b9ade),
+                                                      dotSecondaryColor: Color(0xffe33232),
+                                                    ),
+                                                    countPostion: CountPostion.bottom,
+                                                    likeBuilder: (bool isLiked) {
+                                                      return Icon(
+                                                        Entypo.heart,
+                                                        color: isLiked ? Colors.red : Colors.white,
+                                                        size: 30,
+                                                      );
+                                                    },
+                                                    likeCount:  datas[index]!.users_love_id!.length!,
+                                                    countBuilder: (int? count, bool isLiked, String text) {
+                                                      var color = isLiked ? Colors.white : Colors.white;
+                                                      Widget result;
+                                                      if (count == 0) {
+                                                        result = Text(
+                                                          "0",textAlign: TextAlign.center,
+                                                          style: TextStyle(color: color),
+
+                                                        );
+                                                      } else
+                                                        result = Text(
+                                                          text,
+                                                          style: TextStyle(color: color),
+                                                        );
+                                                      return result;
+                                                    },
+
+                                                  ),
+
+                                                  LikeButton(
+                                                    onTap: (bool isLiked) {
+
+                                                      //  _chewieController.pause();
+                                                      //  videoPlayerController.pause();
+
+
+                                                      Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post:  datas[index]!),));
+
+
+                                                      return Future.value(!isLiked);
+                                                    },
+
+                                                    isLiked: false,
+                                                    size: 30,
+                                                    circleColor:
+                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                    bubblesColor: BubblesColor(
+                                                      dotPrimaryColor: Color(0xff3b9ade),
+                                                      dotSecondaryColor: Color(0xff027f19),
+                                                    ),
+                                                    countPostion: CountPostion.bottom,
+                                                    likeBuilder: (bool isLiked) {
+                                                      return Icon(
+                                                        FontAwesome.commenting,
+                                                        color: isLiked ? Colors.white : Colors.white,
+                                                        size: 30,
+                                                      );
+                                                    },
+                                                    likeCount: datas[index]!.comments!,
+                                                    countBuilder: (int? count, bool isLiked, String text) {
+                                                      var color = isLiked ? Colors.white : Colors.white;
+                                                      Widget result;
+                                                      if (count == 0) {
+                                                        result = Text(
+                                                          "0",textAlign: TextAlign.center,
+                                                          style: TextStyle(color: color),
+                                                        );
+                                                      } else
+                                                        result = Text(
+                                                          text,
+                                                          style: TextStyle(color: color),
+                                                        );
+                                                      return result;
+                                                    },
+
+                                                  ),
+                                                  //vues
+                                                  // LikeButton(
+                                                  //   isLiked: false,
+                                                  //   size: 35,
+                                                  //   circleColor:
+                                                  //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                  //   bubblesColor: BubblesColor(
+                                                  //     dotPrimaryColor: Color(0xff3b9ade),
+                                                  //     dotSecondaryColor: Color(0xff027f19),
+                                                  //   ),
+                                                  //   countPostion: CountPostion.bottom,
+                                                  //   likeBuilder: (bool isLiked) {
+                                                  //     return Icon(
+                                                  //       FontAwesome.eye,
+                                                  //       color: isLiked ? Colors.white : Colors.white,
+                                                  //       size: 35,
+                                                  //     );
+                                                  //   },
+                                                  //   likeCount:  datas[index].vues!,
+                                                  //   countBuilder: (int? count, bool isLiked, String text) {
+                                                  //     var color = isLiked ? Colors.white : Colors.white;
+                                                  //     Widget result;
+                                                  //     if (count == 0) {
+                                                  //       result = Text(
+                                                  //         "0",textAlign: TextAlign.center,
+                                                  //         style: TextStyle(color: color,fontSize: 8),
+                                                  //       );
+                                                  //     } else
+                                                  //       result = Text(
+                                                  //         text,
+                                                  //         style: TextStyle(color: color,fontSize: 8),
+                                                  //       );
+                                                  //     return result;
+                                                  //   },
+                                                  //
+                                                  // ),
+                                                  LikeButton(
+                                                    onTap: (bool isLiked) {
+
+                                                      //  _chewieController.pause();
+                                                      //  videoPlayerController.pause();
+
+
+
+                                                      postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
+                                                        if(value.isNotEmpty){
+                                                          datas[index]!=value.first;
+                                                          await authProvider.getAppData();
+                                                          showGiftDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData);
+
+                                                        }
+                                                      },);
+
+
+                                                      return Future.value(!isLiked);
+                                                    },
+                                                    isLiked: false,
+                                                    size: 35,
+                                                    circleColor:
+                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                    bubblesColor: BubblesColor(
+                                                      dotPrimaryColor: Color(0xff3b9ade),
+                                                      dotSecondaryColor: Color(0xff027f19),
+                                                    ),
+                                                    countPostion: CountPostion.bottom,
+                                                    likeBuilder: (bool isLiked) {
+                                                      return Text('🎁',style: TextStyle(fontSize: 30),);
+                                                    },
+                                                    likeCount:  datas[index].users_cadeau_id!=null?datas[index].users_cadeau_id!.length:0,
+                                                    countBuilder: (int? count, bool isLiked, String text) {
+                                                      var color = isLiked ? Colors.white : Colors.white;
+                                                      Widget result;
+                                                      if (count == 0) {
+                                                        result = Text(
+                                                          "0",textAlign: TextAlign.center,
+                                                           style: TextStyle(color: color),
+                                                        );
+                                                      } else
+                                                        result = Text(
+                                                          text,
+                                                           style: TextStyle(color: color),
+                                                        );
+                                                      return result;
+                                                    },
+
+                                                  ),
+                                                  LikeButton(
+                                                    onTap: (bool isLiked) {
+
+                                                      //  _chewieController.pause();
+                                                      //  videoPlayerController.pause();
+
+
+
+                                                      postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
+                                                        if(value.isNotEmpty){
+                                                          datas[index]!=value.first;
+                                                          await authProvider.getAppData();
+                                                          showRepublishDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData,context);
+
+                                                        }
+                                                      },);
+
+
+                                                      return Future.value(!isLiked);
+                                                    },
+                                                    isLiked: false,
+                                                    size: 30,
+                                                    circleColor:
+                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                    bubblesColor: BubblesColor(
+                                                      dotPrimaryColor: Color(0xff3b9ade),
+                                                      dotSecondaryColor: Color(0xff027f19),
+                                                    ),
+                                                    countPostion: CountPostion.bottom,
+                                                    likeBuilder: (bool isLiked) {
+                                                      return Icon(
+                                                        Feather.repeat,
+                                                        color: isLiked ? Colors.blue : Colors.blue,
+                                                        size: 30,
+                                                      );
+                                                    },
+                                                    likeCount:  datas[index].users_republier_id!=null?datas[index].users_republier_id!.length:0,
+                                                    countBuilder: (int? count, bool isLiked, String text) {
+                                                      var color = isLiked ? Colors.white : Colors.white;
+                                                      Widget result;
+                                                      if (count == 0) {
+                                                        result = Text(
+                                                          "0",textAlign: TextAlign.center,
+                                                          style: TextStyle(color: color),
+
+                                                        );
+                                                      } else
+                                                        result = Text(
+                                                          text,
+                                                          style: TextStyle(color: color),
+
+                                                        );
+                                                      return result;
+                                                    },
+
+                                                  ),
+
+
+
+                                                  IconButton(
+                                                      onPressed: () {
+                                                        // _showModalDialog(datas[index]);
+                                                        _showPostMenuModalDialog(datas[index],context);
+                                                      },
+                                                      icon: Icon(
+                                                        Icons.more_horiz,
+                                                        size: 35,
+                                                        color: Colors.white,
+                                                      )),
+
+                                                ],
+                                              ),
                                             ),
-                                          ))
+                                          )),
+                                      // Animations des likes
+                                      ..._heartAnimations.map((controller) => HeartAnimation(controller: controller)),
+
+                                      // Animations des cadeaux
+                                      ..._giftAnimations.map((controller) => GiftAnimation(controller: controller)),
+                                      ..._giftReplyAnimations.map((controller) => GiftReplyAnimation(controller: controller)),
                                     ],
                                   ),
                                 );
@@ -1698,3 +1717,121 @@ class _AfroVideoState extends State<AfroVideo> {
 
 
 
+class HeartAnimation extends StatelessWidget {
+  final AnimationController controller;
+
+  const HeartAnimation({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        return Center(
+          child: Opacity(
+            opacity: 1 - controller.value,
+            child: Transform.scale(
+              scale: 1 + controller.value * 2,
+              child: Icon(
+                Icons.favorite,
+                color: Colors.red,
+                size: 100,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GiftAnimation extends StatelessWidget {
+  final AnimationController controller;
+
+  const GiftAnimation({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        return Center(
+          child: Opacity(
+            opacity: 1 - controller.value,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.scale(
+                  scale: 1 + controller.value,
+                  child: Text(
+                    '🎁',
+                    style: TextStyle(fontSize: 80),
+                  ),
+                ),
+                // Text(
+                //   'User a envoyé un cadeau!',
+                //   style: TextStyle(
+                //     color: Colors.white,
+                //     fontSize: 20,
+                //     shadows: [
+                //       Shadow(
+                //         color: Colors.black,
+                //         blurRadius: 10,
+                //         offset: Offset(2, 2),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+class GiftReplyAnimation extends StatelessWidget {
+  final AnimationController controller;
+
+  const GiftReplyAnimation({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        return Center(
+          child: Opacity(
+            opacity: 1 - controller.value,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.scale(
+                  scale: 1 + controller.value,
+                  child: Text(
+                    '🔝',
+                    style: TextStyle(fontSize: 80),
+                  ),
+                ),
+                // Text(
+                //   'User a envoyé un cadeau!',
+                //   style: TextStyle(
+                //     color: Colors.white,
+                //     fontSize: 20,
+                //     shadows: [
+                //       Shadow(
+                //         color: Colors.black,
+                //         blurRadius: 10,
+                //         offset: Offset(2, 2),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

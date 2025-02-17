@@ -26,7 +26,7 @@ import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../../providers/userProvider.dart';
 import '../../component/consoleWidget.dart';
-import '../../home/postUserWidget.dart';
+import '../postWidgets/postUserWidget.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 

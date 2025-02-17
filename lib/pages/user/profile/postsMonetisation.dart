@@ -1,5 +1,8 @@
 
+import 'dart:convert';
+
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/postMonetiserWidget.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -74,7 +77,7 @@ class _HomePageState extends State<PostsMonetiserPage> {
         backgroundColor: Colors.white,
 
         appBar: AppBar(
-          title: Text('Posts Monétiser', style: TextStyle(color: Colors.white)),
+          title: Text('Posts Monétiser Afrolook', style: TextStyle(color: Colors.white)),
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
@@ -104,112 +107,53 @@ class _HomePageState extends State<PostsMonetiserPage> {
               SizedBox(
                 height: height * 0.9,
                 width: width,
-                child: CustomScrollView(
-                  slivers: [
+                child:StreamBuilder<List<PostMonetiser>>(
+                  stream: postProvider.getListPostsMonetiser(authProvider.loginUserData!.id!),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting && postsMonetiser.isEmpty) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-                    SliverToBoxAdapter(
-                      child: StreamBuilder<List<PostMonetiser>>(
-                        stream: postProvider.getListPostsMonetiser(authProvider.loginUserData!.id!),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting && postsMonetiser.isEmpty) {
-                            return Center(child: CircularProgressIndicator());
-                          }
+                    if (snapshot.hasError) {
+                      printVm('*************Erreur d affichage *************');
+                      printVm('${snapshot.error}');
+                      return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
+                    }
 
-                          if (snapshot.hasError) {
-                            return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
-                          }
-
-                          // Mettre à jour la liste locale avec les nouvelles données
-                          if (snapshot.hasData) {
-                            postsMonetiser = snapshot.data!;
-                          }
-
-                          return Container(
-                            width: width,
-                            height: height * 0.86,
-                            child: GridView.builder(
-                              itemCount: postsMonetiser.length,
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2, // Nombre de colonnes dans la grille
-                                crossAxisSpacing: 10.0, // Espacement horizontal entre les éléments
-                                mainAxisSpacing: 10.0, // Espacement vertical entre les éléments
-                                childAspectRatio: MediaQuery.of(context).size.width /
-                                    (MediaQuery.of(context).size.height / 1.4),
+                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      // Ajouter les nouveaux posts au lieu de remplacer toute la liste
+                      postsMonetiser.clear();
+                      postsMonetiser.addAll(snapshot.data!);
+                      return GridView.builder(
+                        itemCount: postsMonetiser.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10.0,
+                          mainAxisSpacing: 10.0,
+                          childAspectRatio: MediaQuery.of(context).size.width /
+                              (MediaQuery.of(context).size.height / 1.4),
+                        ),
+                        itemBuilder: (context, index) {
+                          PostMonetiser postM = postsMonetiser[index];
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.all(Radius.circular(5)),
+                                color: Colors.white,
                               ),
-                              itemBuilder: (context, index) {
-                                PostMonetiser postM = postsMonetiser[index];
-
-                                return Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.all(Radius.circular(5)),
-                                      color: Colors.white,
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: PostMonetiserWidget(post: postM),
-                                    ),
-                                  ),
-                                );
-                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: PostMonetiserWidget(post: postM),
+                              ),
                             ),
                           );
                         },
-                      ),
-                    ),
-                    // SliverToBoxAdapter(
-                    //   child: StreamBuilder<PostMonetiser>(
-                    //     stream:  postProvider.getListPostsMonetiser(authProvider.loginUserData!.id!),
-                    //     builder: (context, snapshot) {
-                    //       if (snapshot.connectionState == ConnectionState.waiting && postsMonetiser.isEmpty) {
-                    //         return Center(child: CircularProgressIndicator());
-                    //       }
-                    //
-                    //       if (snapshot.hasError) {
-                    //         return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
-                    //       }
-                    //
-                    //       // Ajouter le nouvel article à la liste locale
-                    //       if (snapshot.hasData && !postsMonetiser.contains(snapshot.data!)) {
-                    //         postsMonetiser.add(snapshot.data!);
-                    //       }
-                    //
-                    //       return Container(
-                    //         width: width,
-                    //         height: height * 0.86,
-                    //         child: GridView.builder(
-                    //           itemCount: postsMonetiser.length,
-                    //           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    //             crossAxisCount: 2, // Nombre de colonnes dans la grille
-                    //             crossAxisSpacing: 10.0, // Espacement horizontal entre les éléments
-                    //             mainAxisSpacing: 10.0, // Espacement vertical entre les éléments
-                    //             childAspectRatio: MediaQuery.of(context).size.width /
-                    //                 (MediaQuery.of(context).size.height / 1.4),
-                    //           ),
-                    //           itemBuilder: (context, index) {
-                    //             PostMonetiser postM = postsMonetiser[index];
-                    //
-                    //             return Padding(
-                    //               padding: const EdgeInsets.all(4.0),
-                    //               child: Container(
-                    //                 decoration: BoxDecoration(
-                    //                   borderRadius: BorderRadius.all(Radius.circular(5)),
-                    //                   color: Colors.white,
-                    //                 ),
-                    //                 child: Padding(
-                    //                   padding: const EdgeInsets.all(2.0),
-                    //                   child: PostMonetiserWidget(post: postM),
-                    //                 ),
-                    //               ),
-                    //             );
-                    //           },
-                    //         ),
-                    //       );
-                    //     },
-                    //   ),
-                    // ),
-                  ],
+                      );
+                    }
+
+                    return Center(child: Text("Aucune donnée", style: TextStyle(color: Colors.red)));
+                  },
                 ),
               )
               // Padding(

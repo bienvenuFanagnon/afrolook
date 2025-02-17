@@ -344,7 +344,7 @@ class _UserProfilState extends State<UserProfil> {
                             SizedBox(height: 10,),
                             GestureDetector(
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => RetraitPage(),));
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),

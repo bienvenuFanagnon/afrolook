@@ -1,13 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'dart:math';
 
-import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:popup_menu/popup_menu.dart';
@@ -15,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../constant/constColors.dart';
-import '../../../../constant/iconGradient.dart';
 import '../../../../constant/listItemsCarousel.dart';
 import '../../../../constant/sizeText.dart';
 import '../../../../constant/textCustom.dart';
@@ -24,7 +17,7 @@ import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../../providers/userProvider.dart';
 import '../../../component/consoleWidget.dart';
-import '../../../home/postUserWidget.dart';
+import '../../../userPosts/postWidgets/postWidgetPage.dart';
 
 class ProfileImageTab extends StatefulWidget {
   const ProfileImageTab({super.key});
@@ -427,10 +420,15 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
 
                           child: Padding(
                             padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                            child: homePostUsers(p,Colors.brown,
-                                // _color,
-                                height,
-                                width,context),
+                            child:           HomePostUsersWidget(
+                            post: p,
+                              // color: _color,
+                              height: height, width: width,
+              ),
+                            // child: HomePostUsersWidget(p,Colors.brown,
+                            //     // _color,
+                            //     height,
+                            //     width,context),
                           ),
                         )
                     ],
@@ -779,10 +777,11 @@ class _ProfileImageTabState extends State<ProfileImageTab> {
                     for(Post p in snapshot.data!)
                       Padding(
                         padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                        child: homePostUsers(p,Colors.brown,
-                            // _color,
-                            height,
-                            width,context),
+                        child:           HomePostUsersWidget(
+                          post: p,
+                          // color: _color,
+                          height: height, width: width,
+                        ),
                       )
                   ],
                 );

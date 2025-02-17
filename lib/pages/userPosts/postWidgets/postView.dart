@@ -43,23 +43,23 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../constant/custom_theme.dart';
-import '../../constant/textCustom.dart';
-import '../../models/chatmodels/message.dart';
-import '../../providers/afroshop/authAfroshopProvider.dart';
-import '../../providers/afroshop/categorie_produits_provider.dart';
-import '../../providers/authProvider.dart';
-import '../afroshop/marketPlace/acceuil/produit_details.dart';
-import '../chat/entrepriseChat.dart';
-import '../chat/ia_Chat.dart';
-import '../chat/myChat.dart';
-import '../component/consoleWidget.dart';
-import '../ia/compagnon/introIaCompagnon.dart';
+import '../../../constant/custom_theme.dart';
+import '../../../constant/textCustom.dart';
+import '../../../models/chatmodels/message.dart';
+import '../../../providers/afroshop/authAfroshopProvider.dart';
+import '../../../providers/afroshop/categorie_produits_provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../afroshop/marketPlace/acceuil/produit_details.dart';
+import '../../chat/entrepriseChat.dart';
+import '../../chat/ia_Chat.dart';
+import '../../chat/myChat.dart';
+import '../../component/consoleWidget.dart';
+import '../../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../user/amis/addListAmis.dart';
-import '../user/amis/pageMesInvitations.dart';
+import '../../user/amis/addListAmis.dart';
+import '../../user/amis/pageMesInvitations.dart';
 
 class PostView extends StatefulWidget {
   const PostView({super.key, required this.pageController});
