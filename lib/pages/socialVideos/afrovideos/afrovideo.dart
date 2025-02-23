@@ -29,6 +29,7 @@ import '../../UserServices/listUserService.dart';
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../afroshop/marketPlace/modalView/ArticleBottomSheet.dart';
+import '../../chat/chatXilo.dart';
 import '../../chat/entrepriseChat.dart';
 import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
@@ -474,7 +475,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       return false;
     }
   }
-  void _showDialog() {
+  void _showServiceDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -522,24 +523,37 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       },
     );
   }
+  void _showChatXiloDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChatXiloPage(
+          userName: authProvider.loginUserData.pseudo!,
+          userGender: authProvider.loginUserData.genre!,
+        );
+      },
+    );
+  }
 
   Future<void> _checkAndShowDialog() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String lastShownDate = prefs.getString('lastShownDateVideo') ?? '';
 
     String todayDate = DateTime.now().toIso8601String().split('T')[0];
-
+    _showChatXiloDialog();
     if (lastShownDate != todayDate) {
+      _showChatXiloDialog();
+
       // Show the dialog
       Timer(Duration(seconds: 20), () {
-        _showDialog();
+        _showServiceDialog();
       });
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          child: ArticleBottomSheet(),
-        ),
-      );
+      // showDialog(
+      //   context: context,
+      //   builder: (context) => Dialog(
+      //     child: ArticleBottomSheet(),
+      //   ),
+      // );
       // Update the last shown date
       await prefs.setString('lastShownDateVideo', todayDate);
     }

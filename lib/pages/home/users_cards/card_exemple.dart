@@ -23,9 +23,9 @@ import '../../user/operation.dart';
 import 'cardModel.dart';
 
 class ExampleCard extends StatefulWidget {
-  final UserData cardUser;
+  late  UserData cardUser;
 
-  const ExampleCard(
+   ExampleCard(
       this.cardUser, {
         super.key,
       });
@@ -219,8 +219,11 @@ class _ExampleCardState extends State<ExampleCard> {
             if (listUsers.isNotEmpty) {
               setState(() {
                 isLike=true;
+                if(listUsers.first!.userlikes==null){
+                  listUsers.first!.userlikes=0;
+                }
                 listUsers.first!.userlikes=listUsers.first!.userlikes!+1;
-                widget.cardUser!.userlikes=listUsers.first!.userlikes;
+                widget.cardUser=listUsers.first;
               });
 
 

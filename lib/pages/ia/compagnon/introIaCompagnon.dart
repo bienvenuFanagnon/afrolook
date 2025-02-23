@@ -171,7 +171,7 @@ class _IaCompagnonState extends State<IntroIaCompagnon> {
                           child: CircleAvatar(
                             radius: 30,
                             backgroundImage: AssetImage(
-                                'assets/menu/8.png'),
+                                'assets/icon/X.png'),
                           ),
                         ),
                         SizedBox(
@@ -265,7 +265,7 @@ SizedBox(height: height*0.2,),
                           setState(() {
                             onTap=false;
                           });
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}',),));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}', appDefaultData: authProvider.appDefaultData,),));
                         });
 
 
@@ -273,7 +273,7 @@ SizedBox(height: height*0.2,),
                         UserIACompte user_ia=UserIACompte();
                         user_ia.userId=authProvider.loginUserData.id!;
                         user_ia.ia_name="mon Ia";
-                        user_ia.jetons=2000;
+                        user_ia.jetons=10000;
                         user_ia.ia_url_avatar="url";
                         user_ia.createdAt=DateTime.now().millisecondsSinceEpoch;
                         user_ia.updatedAt=DateTime.now().millisecondsSinceEpoch;
@@ -286,7 +286,7 @@ SizedBox(height: height*0.2,),
           setState(() {
             onTap=false;
           });
-          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}',),));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(chat: chat, user: authProvider.loginUserData, userIACompte: value.first, instruction: '${widget.instruction!}', appDefaultData: authProvider.appDefaultData,),));
         });
 
 

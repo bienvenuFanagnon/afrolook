@@ -37,7 +37,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 58;
+  late int app_version_code = 59;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1363,7 +1363,8 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
   Future<bool> ajouterContactCinetPay(
-      String token, String prefix, String phone, String name, String surname, String email) async {
+      String token, String prefix, String phone, String name, String surname, String email)
+  async {
     final url = Uri.parse('https://client.cinetpay.com/v1/transfer/contact');
 
     final headers = {

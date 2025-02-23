@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/pages/contact.dart';
+import 'package:flutter_gemini_bot/models/chat_model.dart';
+import 'package:flutter_gemini_bot/services/gemini_ai_api.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:afrotok/models/chatmodels/models.dart';
 import 'package:afrotok/models/chatmodels/reply_message.dart';
@@ -26,15 +30,18 @@ import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
 import '../postDetails.dart';
+import '../userPosts/postWidgets/achatTokenPage.dart';
+import '../userPosts/postWidgets/postWidgetPage.dart';
 
 class IaChat extends StatefulWidget {
 
   final Chat chat;
   final UserData user;
   final UserIACompte userIACompte;
+  final AppDefaultData appDefaultData;
   final String instruction;
 
-  IaChat({Key? key, required this.chat, required this.user, required this.userIACompte, required this.instruction}) : super(key: key);
+  IaChat({Key? key, required this.chat, required this.user, required this.userIACompte, required this.instruction, required this.appDefaultData}) : super(key: key);
 
   @override
   _EntrepriseMyChatState createState() => _EntrepriseMyChatState();
@@ -53,6 +60,10 @@ class _EntrepriseMyChatState extends State<IaChat> {
   bool isLoading = false;
   bool isPause = false;
   bool sendMessageTap = false;
+  late List<ChatModel> chatList=[];
+  late String errorMessage="";
+  List<Map<String, String>> messages = [];
+
   double siveBoxLastmessage=10;
   ScrollController _controller = ScrollController();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -103,6 +114,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
     // Définissez la requête
     var friendsStream = FirebaseFirestore.instance.collection('Messages').where('chat_id', isEqualTo: widget.chat.docId!)
         .orderBy('createdAt', descending: false)
+    // .limit(50)
         .snapshots();
 
 // Obtenez la liste des utilisateurs
@@ -127,6 +139,143 @@ class _EntrepriseMyChatState extends State<IaChat> {
     }
 
   }
+  late bool _isLoading=false;
+  void showTokenDialog( UserData userToken,AppDefaultData appdata) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Empêche la fermeture
+      builder: (BuildContext context) {
+        String _selectedGift = '';
+        double _selectedPrice = 0.0;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Stack(
+              children: [
+                TokenPurchaseDialog(
+                  isLoading: _isLoading,
+                  onTokenSelected: (String gift, double price,int token) async {
+                    setState(() {
+                      _isLoading = true;
+                      _selectedPrice=price;
+                      _selectedGift=gift;
+                    },);
+
+                    try {
+                      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userToken.id!).get();
+
+                      List<UserData> listUsers = querySnapshotUser.docs.map(
+                            (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
+                      ).toList();
+
+                      if (listUsers.isNotEmpty) {
+                        userToken = listUsers.first;
+                        printVm("envoyer cadeau");
+                        printVm("userSendCadeau.votre_solde_principal : ${userToken.votre_solde_principal}");
+                        printVm("_selectedPrice : ${_selectedPrice}");
+                        userToken.votre_solde_principal ??= 0.0;
+                        appdata.solde_gain ??= 0.0;
+
+                        if (userToken.votre_solde_principal! >= _selectedPrice) {
+
+
+// Ajouter le gain au solde cadeau
+                          widget.userIACompte.jetons =
+                              (widget.userIACompte.jetons ?? 0) + token;
+                          await firestore.collection('User_Ia_Compte').doc(widget.userIACompte.id!).update(widget.userIACompte.toJson());
+
+// Ajouter le reste au solde principal
+                          userToken.votre_solde_principal =
+                              userToken.votre_solde_principal! - _selectedPrice;
+                          appdata.solde_gain=appdata.solde_gain!+_selectedPrice;
+
+                          // widget.post.user!.votre_solde_cadeau = (widget.post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+                          // userSendCadeau.votre_solde_principal = userSendCadeau.votre_solde_principal! - (_selectedPrice);
+                          String imagetoken="https://e7.pngegg.com/pngimages/464/876/png-clipart-onecoin-security-token-cryptocurrency-%D0%A2%D0%BE%D0%BA%D0%B5%D0%BD-money-others-label-trademark.png";
+                          NotificationData notif = NotificationData(
+                            id: firestore.collection('Notifications').doc().id,
+                            titre: "Achat de token",
+                            media_url: imagetoken,
+                            type: '',
+                            description: "🎉 Félicitations ! 🥳 Vous venez d'acheter des tokens. 💰💎",
+                            user_id: authProvider.loginUserData.id!,
+                            receiver_id: authProvider.loginUserData.id!,
+                            post_id: '',
+                            post_data_type: PostDataType.IMAGE.name!,
+                            createdAt: DateTime.now().microsecondsSinceEpoch,
+                            updatedAt: DateTime.now().microsecondsSinceEpoch,
+                            status: PostStatus.VALIDE.name,
+                          );
+
+                          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                          await authProvider.sendNotification(
+                              userIds: [authProvider.loginUserData.oneIgnalUserid!],
+                              smallImage:
+                              // "${authProvider.loginUserData.imageUrl!}",
+                              "${imagetoken}",
+                              send_user_id:
+                              "",
+                              // "${authProvider.loginUserData.id!}",
+                              recever_user_id: "${authProvider.loginUserData.id!}",
+                              message:
+                              // "📢 @${authProvider.loginUserData
+                              //     .pseudo!} a aimé votre look",
+                              "Vous venez d'acheter des tokens. 💰💎}",
+                              type_notif:
+                              NotificationType.POST.name,
+                              post_id: "",
+                              post_type: PostDataType.IMAGE.name,
+                              chat_id: '');
+
+
+                          await authProvider.updateUser(userToken).then((value) async {
+                            await  authProvider.updateUser(userToken);
+                            await  authProvider.updateAppData(appdata);
+
+                          },);
+                          printVm('update send user');
+                          printVm('update send user votre_solde_principal : ${userToken.votre_solde_principal}');
+                          setState(() => _isLoading = false);
+                          Navigator.of(context).pop();
+
+                          // _sendGift("🎁");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.green,
+                              content: Text(
+                                "🎉 Félicitations ! 🥳 Vous venez d'acheter des tokens. 💰💎",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        } else {
+                          setState(() => _isLoading = false);
+                          showInsufficientBalanceDialog(context);
+                        }
+                      }
+                    } catch (e) {
+                      setState(() => _isLoading = false);
+                      print("Erreur : $e");
+                    }
+                  },
+                ),
+                if (_isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
   @override
   void initState() {
     // TODO: implement initState
@@ -290,11 +439,11 @@ class _EntrepriseMyChatState extends State<IaChat> {
                 Row(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(right: 15.0),
+                      padding: const EdgeInsets.only(right: 5.0,left: 10),
                       child: CircleAvatar(
-                        radius: 30,
+                        radius: 26,
                         backgroundImage: AssetImage(
-                            'assets/menu/8.png'),
+                            'assets/icon/X.png'),
                       ),
                     ),
                     SizedBox(
@@ -349,7 +498,12 @@ class _EntrepriseMyChatState extends State<IaChat> {
                         fontWeight: FontWeight.w700,
                       ),
                       SizedBox(height: 2,),
-                      AchatJetonButton(),
+                      GestureDetector(
+                          onTap: () {
+                            showTokenDialog(authProvider.loginUserData, authProvider.appDefaultData)  ;
+
+                          },
+                          child: AchatJetonButton()),
 
                     ],
                   ),
@@ -761,60 +915,172 @@ class _EntrepriseMyChatState extends State<IaChat> {
             await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
 
 
-            await authProvider.generateText(ancienMessages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte, user: authProvider.loginUserData).then((value) async {
+            // await authProvider.generateText(ancienMessages: widget.chat!.messages!, message: message_text,regle: widget.instruction!, ia: widget.userIACompte, user: authProvider.loginUserData).then((value) async {
+            //
+            //
+            //
+            //   Message msg=Message(
+            //     id: id.toString(),
+            //     createdAt: DateTime.now(),
+            //     message: value==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":value!,
+            //     // sendBy: authProvider.loginUserData.id!.toString(),
+            //     sendBy:  '${widget.userIACompte.id}',
+            //     replyMessage: reply,
+            //     // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
+            //
+            //     messageType: MessageType.text.name,
+            //     chat_id: widget.chat.docId!,
+            //     create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+            //     message_state: MessageState.NONLU.name,
+            //     receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
+            //
+            //   );
+            //   widget.chat.lastMessage=message_text;
+            //   widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+            //   message_text = '';
+            //
+            //
+            //
+            //   String msgid = firestore
+            //       .collection('Messages')
+            //       .doc()
+            //       .id;
+            //   msg.setStatus=
+            //       MessageStatus.undelivered;
+            //   msg.id=msgid;
+            //   msg.replyMessage=reply;
+            //   await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+            //   widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+            //
+            //
+            //   await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+            //   setState(() {
+            //     sendMessageTap=false;
+            //     messageIsLoarding = false;
+            //
+            //   });
+            //
+            //
+            //
+            // },);
 
 
 
-              Message msg=Message(
-                id: id.toString(),
-                createdAt: DateTime.now(),
-                message: value==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":value!,
-                // sendBy: authProvider.loginUserData.id!.toString(),
-                sendBy:  '${widget.userIACompte.id}',
-                replyMessage: reply,
-                // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
-
-                messageType: MessageType.text.name,
-                chat_id: widget.chat.docId!,
-                create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
-                message_state: MessageState.NONLU.name,
-                receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
-
-              );
-              widget.chat.lastMessage=message_text;
-              widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
-              message_text = '';
-
-
-
-              String msgid = firestore
-                  .collection('Messages')
-                  .doc()
-                  .id;
-              msg.setStatus=
-                  MessageStatus.undelivered;
-              msg.id=msgid;
-              msg.replyMessage=reply;
-              await firestore.collection('Messages').doc(msgid).set(msg.toJson());
-              widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
-
-
-              await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+              var question = message_text;
               setState(() {
-                sendMessageTap=false;
-                messageIsLoarding = false;
+               chatList.add(ChatModel(
+                    chat: 0,
+                    message: message_text,
+                    time:
+                    "${DateTime.now().hour}:${DateTime.now().second}"));
 
+                setState(() {
+                  chatList.add(ChatModel(
+                      chatType: ChatTypeIa.loading,
+                      chat: 1,
+                      message: "",
+                      time: ""));
+                });
+
+                // FocusScope.of(context).unfocus();
+                // try {
+                //   _scrollController.animateTo(
+                //       _scrollController.position.maxScrollExtent,
+                //       duration: const Duration(milliseconds: 300),
+                //       curve: Curves.easeOut);
+                // } catch (e) {
+                //   print(
+                //       "**************************************************************");
+                //   print(e);
+                // }
+                messages.add({
+                  "text": widget.instruction+"pseudo: ${authProvider.loginUserData.pseudo} nombre abonnees : ${authProvider.loginUserData.abonnes} popularité en pourcentage à arrondie : ${authProvider.loginUserData.popularite!=null?authProvider.loginUserData.popularite!*100:0} point de contribution à l'amelioration de l application : ${authProvider.loginUserData.pointContribution}" + "\n" + question,
+                });
+                message_text = "";
+              });
+              var (responseString, response) =
+              await GeminiApi.geminiChatApi(
+
+                  messages: messages, apiKey: widget.appDefaultData.geminiapiKey!);
+              setState(() async {
+                FocusScope.of(context).unfocus();
+                // _scrollController.animateTo(
+                //     _scrollController.position.maxScrollExtent +
+                //         MediaQuery.of(context).size.height,
+                //     duration: const Duration(milliseconds: 300),
+                //     curve: Curves.easeOut);
+                if (response.statusCode == 200) {
+                  printVm('response api gemini :');
+                  printVm('response api gemini : ${jsonDecode(response.body)['usageMetadata']}');
+                  // Analyser la réponse pour obtenir les informations sur les tokens
+                  String token=jsonDecode(response.body)['usageMetadata']['totalTokenCount'].toString();
+
+                  // // Mise à jour des jetons restants pour l'utilisateur IA
+                  widget.userIACompte.jetons = widget.userIACompte.jetons! - int.parse(token);
+                  await firestore.collection('User_Ia_Compte').doc(widget.userIACompte.id!).update(widget.userIACompte.toJson());
+                  chatList.removeLast();
+                  chatList.add(ChatModel(
+                      chat: 1,
+                      message: responseString,
+                      time:
+                      "${DateTime.now().hour}:${DateTime.now().second}"));
+
+                  Message msg=Message(
+                    id: id.toString(),
+                    createdAt: DateTime.now(),
+                    message: responseString==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":responseString!,
+                    // sendBy: authProvider.loginUserData.id!.toString(),
+                    sendBy:  '${widget.userIACompte.id}',
+                    replyMessage: reply,
+                    // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
+
+                    messageType: MessageType.text.name,
+                    chat_id: widget.chat.docId!,
+                    create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+                    message_state: MessageState.NONLU.name,
+                    receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
+
+                  );
+                  widget.chat.lastMessage=message_text;
+                  widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+                  message_text = '';
+
+
+
+                  String msgid = firestore
+                      .collection('Messages')
+                      .doc()
+                      .id;
+                  msg.setStatus=
+                      MessageStatus.undelivered;
+                  msg.id=msgid;
+                  msg.replyMessage=reply;
+                  await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+                  widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+
+
+                  await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+                  setState(() {
+                    sendMessageTap=false;
+                    messageIsLoarding = false;
+
+                  });
+                } else {
+                  chatList.removeLast();
+                  chatList.add(ChatModel(
+                      chat: 0,
+                      chatType: ChatTypeIa.error,
+                      message: errorMessage,
+                      time:
+                      "${DateTime.now().hour}:${DateTime.now().second}"));
+                }
+                FocusScope.of(context).unfocus();
               });
 
 
 
-            },);
 
-
-
-
-
-            _controller.animateTo(
+                                _controller.animateTo(
               _controller.position.maxScrollExtent*500,
               duration: Duration(milliseconds: 800),
               curve: Curves.fastOutSlowIn,
@@ -858,8 +1124,8 @@ class _EntrepriseMyChatState extends State<IaChat> {
                       ),
                       SizedBox(height: 10.0),
                       Text(
-                        'Les jetons vous manquent pour discuter avec Xilo ? ❌ Pas de panique ! ➡️ Contactez-nous dès maintenant pour acquérir les 20000 '
-                            'jetons nécessaires et poursuivre vos conversations. 100 PubliCash ==> (1000 fcfa) seulement ! ',textAlign: TextAlign.center,
+                        '🚀 Boostez vos conversations avec Xilo ! 💬 Ne laissez pas le manque de jetons freiner vos échanges. 🎯 Contactez-nous dès maintenant pour recharger votre compte et continuer à discuter sans interruption. 📲',
+                        textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13.0),
                       ),
                       SizedBox(height: 20.0),
@@ -869,8 +1135,10 @@ class _EntrepriseMyChatState extends State<IaChat> {
                         ),
                         onPressed: () {
                           // Navigator.push(context, MaterialPageRoute(builder: (context) => ContactPage(),));
-                          launchWhatsApp("+22896198801");
-                        },
+                          // launchWhatsApp("+22896198801");
+                          Navigator.pop(context);
+                          showTokenDialog(authProvider.loginUserData, authProvider.appDefaultData)  ;
+                          },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment
                           .center,
@@ -878,7 +1146,7 @@ class _EntrepriseMyChatState extends State<IaChat> {
                           children: [
                             Icon(Fontisto.whatsapp,color: Colors.green),
                             SizedBox(width: 5,),
-                            Text('Contactez-nous',
+                            Text('Achetez maintenant',
                               style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),),
                           ],
                         ),
@@ -1001,4 +1269,12 @@ class _EntrepriseMyChatState extends State<IaChat> {
       });
     });
   }
+}
+enum ChatTypeIa {
+  message,
+  error,
+  success,
+  warning,
+  info,
+  loading,
 }

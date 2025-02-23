@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
+import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chat/deepseek.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
@@ -52,6 +53,7 @@ import '../component/consoleWidget.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import '../ia/gemini/geminibot.dart';
 import '../story/afroStory/storie/storyView.dart';
 import '../user/conponent.dart';
 import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
@@ -833,7 +835,7 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void _showDialog() {
+  void _showServiceDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -881,7 +883,17 @@ class _MyHomePageState extends State<MyHomePage>
       },
     );
   }
-
+  void _showChatXiloDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChatXiloPage(
+          userName: authProvider.loginUserData.pseudo!,
+          userGender: authProvider.loginUserData.genre!,
+        );
+      },
+    );
+  }
 
   Future<Chat> getChatsData(UserData amigo) async {
     // Définissez la requête
@@ -1505,7 +1517,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  Widget menu(BuildContext context) {
+  Widget menu(BuildContext context,double w,h) {
     bool onTap = false;
 
     return RefreshIndicator(
@@ -1533,94 +1545,100 @@ class _MyHomePageState extends State<MyHomePage>
                       width: 150,
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                  '${authProvider.loginUserData.imageUrl!}'),
-                              onBackgroundImageError: (exception, stackTrace) =>
-                                  AssetImage(
-                                      "assets/icon/user-removebg-preview.png"),
+                  GestureDetector(
+                    onTap: () {
+                      showUserDetailsModalDialog(authProvider.loginUserData, w, h,context);
+
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: CircleAvatar(
+                                backgroundImage: NetworkImage(
+                                    '${authProvider.loginUserData.imageUrl!}'),
+                                onBackgroundImageError: (exception, stackTrace) =>
+                                    AssetImage(
+                                        "assets/icon/user-removebg-preview.png"),
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            height: 2,
-                          ),
-                          Row(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    //width: 100,
-                                    child: TextCustomerUserTitle(
+                            SizedBox(
+                              height: 2,
+                            ),
+                            Row(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      //width: 100,
+                                      child: TextCustomerUserTitle(
+                                        titre:
+                                            "@${authProvider.loginUserData.pseudo}",
+                                        fontSize: SizeText.homeProfileTextSize,
+                                        couleur: ConstColors.textColors,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    TextCustomerUserTitle(
                                       titre:
-                                          "@${authProvider.loginUserData.pseudo}",
+                                          "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
                                       fontSize: SizeText.homeProfileTextSize,
                                       couleur: ConstColors.textColors,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w400,
                                     ),
-                                  ),
-                                  TextCustomerUserTitle(
-                                    titre:
-                                        "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                  TextCustomerUserTitle(
-                                    titre:
-                                    "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: Colors.green,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                    TextCustomerUserTitle(
+                                      titre:
+                                      "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: Colors.green,
+                                      fontWeight: FontWeight.w700,
+                                    ),
 
-                                ],
-                              ),
-                              SizedBox(width: 5,),
-                              Visibility(
-                                visible: authProvider.loginUserData!.isVerify!,
-                                child: const Icon(
-                                  Icons.verified,
-                                  color: Colors.green,
-                                  size: 20,
+                                  ],
                                 ),
-                              ),
+                                SizedBox(width: 5,),
+                                Visibility(
+                                  visible: authProvider.loginUserData!.isVerify!,
+                                  child: const Icon(
+                                    Icons.verified,
+                                    color: Colors.green,
+                                    size: 20,
+                                  ),
+                                ),
 
-                            ],
-                          ),
-                        ],
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Row(
-                          children: [
-                            TextCustomerUserTitle(
-                              titre: "".toUpperCase(),
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.w400,
+                              ],
                             ),
-                            /*
-                            IconButton(
-                                onPressed: () {},
-                                icon: Icon(
-                                  Icons.monetization_on,
-                                  size: 20,
-                                  color: Colors.red,
-                                )),
-
-                             */
                           ],
                         ),
-                      ),
-                    ],
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            children: [
+                              TextCustomerUserTitle(
+                                titre: "".toUpperCase(),
+                                fontSize: SizeText.homeProfileTextSize,
+                                couleur: ConstColors.textColors,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              /*
+                              IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(
+                                    Icons.monetization_on,
+                                    size: 20,
+                                    color: Colors.red,
+                                  )),
+
+                               */
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1666,6 +1684,79 @@ class _MyHomePageState extends State<MyHomePage>
                       Navigator.pushNamed(context, '/amis');
                     },
                   ),
+                  ListTile(
+                    trailing: TextCustomerMenu(
+                      titre: "Discuter",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    leading: CircleAvatar(
+                      radius: 15, // Taille de l'avatar
+                      backgroundImage: AssetImage('assets/icon/X.png'),
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Xilo",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    subtitle: TextCustomerMenu(
+                      titre: "Votre ami(e)",
+                      fontSize: 9,
+                      couleur: ConstColors.textColors,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      setState(() {
+                        onTap = true;
+                      });
+
+                      await authProvider.getAppData().then(
+                            (appdata) async {
+                          // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
+
+                          await authProvider
+                              .getUserIa(authProvider.loginUserData.id!)
+                              .then(
+                                (value) async {
+                              if (value.isNotEmpty) {
+                                await getIAChatsData(value.first).then((chat) {
+                                  setState(() {
+                                    onTap = false;
+                                  });
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => DeepSeepChat(instruction: '${authProvider.appDefaultData.ia_instruction!}'),));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first, apiKey:'${authProvider.appDefaultData.geminiapiKey!}' ,),));
+
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
+                                    chat: chat,
+                                    user: authProvider.loginUserData,
+                                    userIACompte: value.first,
+                                    instruction:
+                                    '${authProvider.appDefaultData.ia_instruction!}', appDefaultData: authProvider.appDefaultData,
+                                  ),
+                                  ));
+                                });
+                              } else {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => IntroIaCompagnon(
+                                        instruction: authProvider
+                                            .appDefaultData.ia_instruction!,
+                                      ),
+                                    ));
+                              }
+                            },
+                          );
+                        },
+                      );
+
+                      // Navigator.pushNamed(context, '/intro_ia_compagnon');
+                    },
+                  ),
+
                   /*
                   ListTile(
                     trailing: Icon(
@@ -1806,79 +1897,6 @@ class _MyHomePageState extends State<MyHomePage>
 
                       Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
 
-
-                      // Navigator.pushNamed(context, '/intro_ia_compagnon');
-                    },
-                  ),
-                  ListTile(
-                    trailing: TextCustomerMenu(
-                      titre: "Discuter",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.blue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    leading: Image.asset(
-                      'assets/menu/8.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Xilo",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    subtitle: TextCustomerMenu(
-                      titre: "Amis imaginaire",
-                      fontSize: 9,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      setState(() {
-                        onTap = true;
-                      });
-
-                      await authProvider.getAppData().then(
-                            (appdata) async {
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-
-                          await authProvider
-                              .getUserIa(authProvider.loginUserData.id!)
-                              .then(
-                                (value) async {
-                              if (value.isNotEmpty) {
-                                await getIAChatsData(value.first).then((chat) {
-                                  setState(() {
-                                    onTap = false;
-                                  });
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => DeepSeepChat(instruction: '${authProvider.appDefaultData.ia_instruction!}'),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first,),));
-
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
-                                          chat: chat,
-                                          user: authProvider.loginUserData,
-                                          userIACompte: value.first,
-                                          instruction:
-                                              '${authProvider.appDefaultData.ia_instruction!}',
-                                        ),
-                                      ));
-                                });
-                              } else {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => IntroIaCompagnon(
-                                        instruction: authProvider
-                                            .appDefaultData.ia_instruction!,
-                                      ),
-                                    ));
-                              }
-                            },
-                          );
-                        },
-                      );
 
                       // Navigator.pushNamed(context, '/intro_ia_compagnon');
                     },
@@ -2029,7 +2047,7 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             SizedBox(height: 5,),
-            Text('Version: 1.1.31 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
+            Text('Version: 1.1.32 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
             Container(
                 child: Align(
                     alignment: FractionalOffset.bottomCenter,
@@ -2458,18 +2476,21 @@ class _MyHomePageState extends State<MyHomePage>
     String lastShownDate = prefs.getString('lastShownDate') ?? '';
 
     String todayDate = DateTime.now().toIso8601String().split('T')[0];
+    _showChatXiloDialog();
 
     if (lastShownDate != todayDate) {
+
+      // _showChatXiloDialog();
       // Show the dialog
       Timer(Duration(seconds: 20), () {
-        _showDialog();
+        _showServiceDialog();
       });
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          child: ArticleBottomSheet(),
-        ),
-      );
+      // showDialog(
+      //   context: context,
+      //   builder: (context) => Dialog(
+      //     child: ArticleBottomSheet(),
+      //   ),
+      // );
       // Update the last shown date
       await prefs.setString('lastShownDate', todayDate);
     }
@@ -2799,26 +2820,18 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
               ),
               SizedBox(width: 10,),
-              // IconButton(
-              //     onPressed: () async {
-              //       // _scrollController.animateTo(
-              //       //   0.0,
-              //       //   duration: Duration(milliseconds: 1000),
-              //       //   curve: Curves.ease,
-              //       // );
-              //       // setState(() {
-              //       //   postProvider
-              //       //       .reloadPostsImages(limitePosts, _scrollController)
-              //       //       .then(
-              //       //         (value) {},
-              //       //       );
-              //       //   postProvider.getPostsVideos().then((value) {
-              //       //
-              //       //   },);
-              //       //
-              //       // });
-              //     },
-              //     icon: Icon(FontAwesome.refresh)),
+
+              GestureDetector(
+                onTap: () async {
+                  _showChatXiloDialog();
+
+                },
+                child: CircleAvatar(
+                  radius: 15, // Taille de l'avatar
+                  backgroundImage: AssetImage('assets/icon/X.png'),
+                ),
+              ),
+              SizedBox(width: 10,),
           AnimateIcon(
             key: UniqueKey(),
             onTap: () async {
@@ -2940,145 +2953,12 @@ class _MyHomePageState extends State<MyHomePage>
             ],
             //title: Text(widget.title),
           ),
-          drawer: menu(context),
+          drawer: menu(context,width,height),
           body: SafeArea(
             child: CustomScrollView(
 
               controller: _scrollController,
               slivers: <Widget>[
-                // SliverPadding(
-                //   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                //   sliver: SliverList(
-                //     delegate: SliverChildListDelegate(
-                //       [
-                //         Padding(
-                //           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                //           child: Column(
-                //             children: <Widget>[
-                //               Center(
-                //                 child: Text(
-                //                   "Story View Demos",
-                //                   style: TextStyle(
-                //                     fontSize: 24,
-                //                     fontWeight: FontWeight.bold,
-                //                   ),
-                //                 ),
-                //               ),
-                //               SizedBox(height: 16),
-                //               Center(
-                //                 child: Text(
-                //                   "An exhibit on the capabilities of the story_view library for Flutter. Enjoy!",
-                //                   textAlign: TextAlign.center,
-                //                   style: TextStyle(
-                //                     fontSize: 16,
-                //                     color: Colors.grey,
-                //                   ),
-                //                 ),
-                //               ),
-                //               SizedBox(height: 24),
-                //               NavigationItem(
-                //                 title: "Google News Example",
-                //                 description: "A look at inline stories just like Google News highlights",
-                //                 icon: Image.asset("assets/images/gnews.png"),
-                //                 onTap: () {
-                //                   Navigator.of(context).push(
-                //                     MaterialPageRoute(builder: (context) => GnewsView()),
-                //                   );
-                //                 },
-                //               ),
-                //               SizedBox(height: 16),
-                //               NavigationItem(
-                //                 title: "Whatsapp Custom Story",
-                //                 description: "Demo on full page stories with customizations",
-                //                 icon: Image.asset("assets/images/whatsapp.png"),
-                //                 onTap: () {
-                //                   Navigator.of(context).push(
-                //                     MaterialPageRoute(builder: (context) => Whatsapp()),
-                //                   );
-                //                 },
-                //               ),
-                //               // Expanded(child: SizedBox()),
-                //               // Flexible(
-                //               //     fit: FlexFit.loose,
-                //               //     child: SizedBox()),
-                //               Column(
-                //                 children: <Widget>[
-                //                   Text(
-                //                     "Powered by",
-                //                     style: TextStyle(
-                //                       color: Colors.grey,
-                //                     ),
-                //                   ),
-                //                   Text(
-                //                     "github/blackmann",
-                //                     style: TextStyle(
-                //                       fontWeight: FontWeight.bold,
-                //                       fontSize: 18,
-                //                     ),
-                //                   ),
-                //                 ],
-                //               ),
-                //             ],
-                //           ),
-                //         ),
-                //       ],
-                //     ),
-                //   ),
-                // ),
-    //             SliverPadding(
-    //               padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-    //               sliver: SliverToBoxAdapter(
-    //                 child: Row(
-    //
-    //                   children: [
-    //                     authProvider.app_version_code== authProvider.appDefaultData.app_version_code?  Container(): ElevatedButton(
-    //                       style: ElevatedButton.styleFrom(
-    //                         backgroundColor: Colors.red,
-    //                       ),
-    //                       onPressed: () {
-    // authProvider.getAppData().then((value) {
-    //
-    //   _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-    //
-    // });
-    //                       },
-    //                       child: Row(
-    //                         mainAxisAlignment: MainAxisAlignment.center,
-    //                         children: [
-    //
-    //                           Text('Faire la mise à jour',
-    //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-    //                         ],
-    //                       ),
-    //
-    //                     ),
-    //
-    //
-    //                     ElevatedButton(
-    //                       style: ElevatedButton.styleFrom(
-    //                         backgroundColor: Colors.green,
-    //                       ),
-    //                       onPressed: () {
-    //                         _launchUrl(Uri.parse('https://www.kwendoo.com/cagnottes/soutenir-afrolook'));
-    //                       },
-    //                       child: Row(
-    //                         mainAxisAlignment: MainAxisAlignment.center,
-    //                         children: [
-    //
-    //                           Text('🎁 Faire un don 🙏',
-    //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-    //                         ],
-    //                       ),
-    //
-    //                     ),
-    //
-    //                   ],
-    //                   mainAxisAlignment:
-    //                   MainAxisAlignment
-    //                       .spaceBetween,
-    //                 ),
-    //               ),
-    //             ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   sliver: FutureBuilder<List<UserData>>(

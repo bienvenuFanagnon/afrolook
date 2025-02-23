@@ -451,6 +451,8 @@ class _SignUpFormEtap1State extends State<SignUpFormEtap1> {
                             authProvider.registerUser.email=emailController.text;
                             //authProvider.registerUser.password=authProvider.encrypt(motDePasseController.text);
                             // sendOtpCode();
+                            Navigator.pop(context);
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(

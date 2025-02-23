@@ -12,9 +12,10 @@ import '../../../models/model_data.dart';
 
 
 class GeminiChatBot extends StatefulWidget {
-  const GeminiChatBot({super.key, required this.title, required this.instruction, required this.userIACompte});
+  const GeminiChatBot({super.key, required this.title, required this.instruction, required this.userIACompte, required this.apiKey});
   final String title;
   final String instruction;
+  final String apiKey;
 
   final UserIACompte userIACompte;
 
@@ -24,7 +25,6 @@ class GeminiChatBot extends StatefulWidget {
 
 class _GeminiChatBotState extends State<GeminiChatBot> {
   List<ChatModel> chatList = []; // Your list of ChatModel objects
-  String apiKey = "AIzaSyCZ1h1h3zdZw0ePPdz-XVyAgkY_izAD-yQ";
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +70,8 @@ title:  Text('@Xilo',style: TextStyle(fontWeight: FontWeight.w900,color: Colors.
         hintText: "message",
         chatContext: widget.instruction,
         chatList: chatList,
-        apiKey: apiKey,
+        apiKey: widget.apiKey,
+
 
         botChatBubbleColor: Colors.green,
         botChatBubbleTextColor: Colors.black87,

@@ -656,8 +656,9 @@ class UserData {
     userPays = json['user_pays'] != null
         ? new UserPays.fromJson(json['user_pays'])
         : null;
-    publi_cash =double.parse(json['publi_cash'].toString()) ;
-    votre_solde =double.parse(json['votre_solde'].toString()) ;
+    // publi_cash =double.parse(json['publi_cash'].toString()) ;
+    votre_solde =json['votre_solde']==null?0.0:json['votre_solde'] ;
+    publi_cash =json['publi_cash']==null?0.0:json['publi_cash'] ;
     // votre_solde = json['votre_solde'];
     pubEntreprise = json['pub_entreprise'];
     pointContribution = json['point_contribution'];
@@ -711,6 +712,9 @@ class UserData {
     data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
     data['code_parrainage'] = this.codeParrainage;
+    data['usersParrainer'] = this.usersParrainer;
+    data['publi_cash'] = this.publi_cash;
+    data['votre_solde'] = this.votre_solde;
     data['votre_solde_contenu'] = this.votre_solde_contenu;
     data['votre_solde_principal'] = this.votre_solde_principal;
     data['votre_solde_cadeau'] = this.votre_solde_cadeau;
@@ -744,8 +748,7 @@ class UserData {
     // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
-    data['publi_cash'] = this.publi_cash;
-    data['votre_solde'] = this.votre_solde;
+
     data['pub_entreprise'] = this.pubEntreprise;
     data['point_contribution'] = this.pointContribution;
     data['likes'] = this.likes;
@@ -760,7 +763,6 @@ class UserData {
     data['friendsIds'] = this.friendsIds;
     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
     data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
-    data['usersParrainer'] = this.usersParrainer;
     // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;

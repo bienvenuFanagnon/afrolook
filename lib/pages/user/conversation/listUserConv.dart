@@ -17,6 +17,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
+import '../../chat/chatXilo.dart';
 import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
@@ -223,6 +224,83 @@ class _ListUserChatsState extends State<ListUserChats> {
       ),
     );
   }
+  void _showChatXiloDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChatXiloPage(
+          userName: authProvider.loginUserData.pseudo!,
+          userGender: authProvider.loginUserData.genre!,
+        );
+      },
+    );
+  }
+
+  Widget chatXiloWidget() {
+    return GestureDetector(
+      onTap: () {
+        _showChatXiloDialog();
+      },
+      child: Container(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 25, // Taille de l'avatar
+                        backgroundImage: AssetImage('assets/icon/X.png'),
+                      ),
+                      Positioned(
+                        bottom: 3,
+                        right: 5,
+                        child: ClipRRect(
+                          borderRadius:
+                          BorderRadius.all(Radius.circular(200)),
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            color: Colors.green,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(
+                    width: 16,
+                  ),
+                  Expanded(
+                    child: Container(
+                      color: Colors.transparent,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            "@XILO",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          SizedBox(
+                            height: 6,
+                          ),
+
+
+
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget chatUserOnLyWidget(Chat chat) {
     return Container(
@@ -606,36 +684,6 @@ class _ListUserChatsState extends State<ListUserChats> {
                     width: w,
                     child: SearchableList<Chat>(
                       initialList: chats,
-                      // builder: (displayedList, itemIndex, chat) =>
-                      //     GestureDetector(
-                      //         onTap: () async {
-                      //           CollectionReference friendCollect =
-                      //               await FirebaseFirestore.instance
-                      //                   .collection('Messages');
-                      //           QuerySnapshot querySnapshotUser =
-                      //               await friendCollect
-                      //                   .where("chat_id", isEqualTo: chat.docId)
-                      //                   .get();
-                      //           // Afficher la liste
-                      //           List<Message> messages = querySnapshotUser.docs
-                      //               .map((doc) => Message.fromJson(
-                      //                   doc.data() as Map<String, dynamic>))
-                      //               .toList();
-                      //           //snapshot.data![index].messages=messages;
-                      //           userProvider.chat.messages = messages;
-                      //           Navigator.of(context).pop();
-                      //           Navigator.push(
-                      //               context,
-                      //               PageTransition(
-                      //                   type: PageTransitionType.fade,
-                      //                   child: MyChat(
-                      //                     title: 'mon chat',
-                      //                     chat: chat,
-                      //                   )));
-                      //
-                      //           //  Navigator.pushNamed(context, '/basic_chat');
-                      //         },
-                      //         child: chatWidget(chat)),
                       filter: (value) => chats
                           .where(
                             (element) => element.chatFriend!.pseudo!
@@ -1178,6 +1226,8 @@ class _ListUserChatsState extends State<ListUserChats> {
             },
           ),
           Divider(),
+          chatXiloWidget(),
+
           StreamBuilder<List<Chat>>(
             //initialData: [],
             stream: getAllChatsData()!,

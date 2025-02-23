@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as Path;
@@ -71,124 +72,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late bool tap= false;
   final _auth = FirebaseAuth.instance;
-  Future<bool> verifierParrain(String codeParrain) async {
-
-
-    // Récupérer la liste des utilisateurs
-    CollectionReference appdatacollection = firestore.collection('Appdata');
-    CollectionReference users = firestore.collection("Users");
-    QuerySnapshot snapshot = await users
-        .where(
-        "code_parrainage", isEqualTo: codeParrain)
-        .get();
-    final list = snapshot.docs.map((doc) =>
-        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    bool existe= list.any((e) => e.codeParrainage==codeParrain);
-    // Vérifier si le nom existe déjà
-    //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
-
-
-
-    if (list.isNotEmpty) {
-      printVm("user trouver");
-      await authProvider.getAppData();
-
-      authProvider.registerUser!.pointContribution=authProvider.registerUser!.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-      authProvider.registerUser.votre_solde= 5.1;
-      authProvider.registerUser.publi_cash= 5.1;
-          printVm("current user trouver");
-          printVm("current user trouver :${list.first.toJson()}");
-
-      // Assure-toi que la liste n'est pas vide
-
-      var user = list.first;
-      user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-
-      // Vérifie que usersParrainer n'est pas null avant d'ajouter un nouvel ID
-      if (user.usersParrainer != null) {
-        user.usersParrainer!.add(authProvider.registerUser.id!);
-      } else {
-        user.usersParrainer = [authProvider.registerUser.id!];
-      }
-
-      // Met à jour les autres champs
-      user.votre_solde = (user.votre_solde ?? 0) + 5.1;
-      user.publi_cash = (user.publi_cash ?? 0) + 5.1;
-
-      // Mets à jour l'utilisateur dans Firebase
-      // await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .doc(user.id)
-      //     .update({
-      //   'usersParrainer': user.usersParrainer,
-      //   'votre_solde': user.votre_solde,
-      //   'publi_cash': user.publi_cash,
-      // });
-      await authProvider.updateUser(user);
-      await authProvider.sendNotification(
-          userIds: [list.first!.oneIgnalUserid!],
-          smallImage: "${list.first!.imageUrl!}",
-          send_user_id: "${authProvider.registerUser.id!}",
-          recever_user_id: "${list.first!.id!}",
-          message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
-          type_notif: NotificationType.PARRAINAGE.name,
-          post_id: "",
-          post_type: "",
-          chat_id: ''
-      );
-
-      NotificationData notif=NotificationData();
-      notif.id=firestore
-          .collection('Notifications')
-          .doc()
-          .id;
-      notif.titre="Parrainage 🤑";
-      notif.media_url=list.first!.imageUrl;
-      notif.type=NotificationType.PARRAINAGE.name;
-      notif.description="Vous avez gagné 5 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !";
-      notif.users_id_view=[];
-      notif.user_id=authProvider.registerUser.id;
-      notif.receiver_id=list.first.id!;
-      notif.post_id="";
-      notif.post_data_type="";
-
-      notif.updatedAt =
-          DateTime.now().microsecondsSinceEpoch;
-      notif.createdAt =
-          DateTime.now().microsecondsSinceEpoch;
-      notif.status = PostStatus.VALIDE.name;
-
-      // users.add(pseudo.toJson());
-
-      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-      //
-      //     user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
-      //     // list.first.votre_solde=list.first.votre_solde! + 5.1;
-      //     // list.first.publi_cash=list.first.publi_cash! + 5.1;
-      //     list.first.usersParrainer!.add(authProvider.registerUser.id!);
-      //    await authProvider.ajouterAuSolde(list.first.id!,5.1).then((value) async {
-      //
-      //
-      //
-      //
-      //
-      //
-      //     });
-      //
-      // await authProvider.updateUser(list.first).then((value) async { });
-      //     // await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
-
-       
-
-return true;
-
-    }else{
-      printVm("user non trouver^^^^^^^^^^^^^^^^^^^^");
-      return false;
-
-    }
-  }
 
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled;
@@ -287,38 +170,274 @@ return true;
       });
     }
   }
+  Future<UserData?> verifierParrain(String codeParrain) async {
 
+
+    // Récupérer la liste des utilisateurs
+    CollectionReference appdatacollection = firestore.collection('Appdata');
+    CollectionReference users = firestore.collection("Users");
+    QuerySnapshot snapshot = await users
+        .where(
+        "code_parrainage", isEqualTo: codeParrain)
+        .get();
+    final list = snapshot.docs.map((doc) =>
+        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    bool existe= list.any((e) => e.codeParrainage==codeParrain);
+    // Vérifier si le nom existe déjà
+    //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
+
+
+
+    if (list.isNotEmpty) {
+      printVm("user trouver");
+
+      //
+      //     user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;
+      //     // list.first.votre_solde=list.first.votre_solde! + 5.1;
+      //     // list.first.publi_cash=list.first.publi_cash! + 5.1;
+      //     list.first.usersParrainer!.add(authProvider.registerUser.id!);
+      //    await authProvider.ajouterAuSolde(list.first.id!,5.1).then((value) async {
+      //
+      //
+      //
+      //
+      //
+      //
+      //     });
+      //
+      // await authProvider.updateUser(list.first).then((value) async { });
+      //     // await firestore.collection('Users').doc(list.first.id!).update(list.first.toJson());
+
+
+
+      return list.first;
+
+    }else{
+      printVm("user non trouver^^^^^^^^^^^^^^^^^^^^");
+      return null;
+
+    }
+  }
   void signUp(String email, String password) async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         tap= true;
       });
-
-
-
       try {
-        await _auth
-            .createUserWithEmailAndPassword(email: email, password: password)
-            .then((value) => {
+        authProvider.registerUser.role = UserRole.USER.name!;
+        authProvider.registerUser.updatedAt =
+            DateTime.now().microsecondsSinceEpoch;
+        authProvider.registerUser.createdAt =
+            DateTime.now().microsecondsSinceEpoch;
+        UserPseudo pseudo=UserPseudo();
+        String id="";
+        NotificationData notif=NotificationData();
 
-          postDetailsToFirestore(value.user!.uid!),
+        SnackBar snackBar1 = SnackBar(
+          backgroundColor: Colors.green,
+          content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
+        );
+        try{
+          printVm("codeParrain : ${authProvider.registerUser.codeParrain!}");
 
-        }).catchError((e) {
+          if(authProvider.registerUser.codeParrain!.isNotEmpty){
+            printVm("codeParrain 2 : ${authProvider.registerUser.codeParrain!}");
+            await verifierParrain(authProvider.registerUser.codeParrain!).then((user) async {
+              if(user!=null){
+
+                await _auth
+                    .createUserWithEmailAndPassword(email: email, password: password)
+                    .then((value) async =>
+                {
+                   id=value.user!.uid,
+                pseudo.id=firestore
+                    .collection('Pseudo')
+                    .doc()
+                    .id,
+                pseudo.name=authProvider.registerUser.pseudo,
+                authProvider.registerUser.id =id,
+
+                await authProvider.getAppData(),
+
+                    authProvider.registerUser!.pointContribution=authProvider.registerUser!.pointContribution! + authProvider.appDefaultData.default_point_new_user!,
+                    authProvider.registerUser.votre_solde= 5.1,
+                    authProvider.registerUser.publi_cash= 5.1,
+
+                    printVm("current user trouver"),
+                printVm("current user trouver :${user.toJson()}"),
+
+                // Assure-toi que la liste n'est pas vide
+
+                user.pointContribution=user.pointContribution! + authProvider.appDefaultData.default_point_new_user!,
+
+                // Vérifie que usersParrainer n'est pas null avant d'ajouter un nouvel ID
+                if (user.usersParrainer != null) {
+                  user.usersParrainer!.add(authProvider.registerUser.id!),
+                } else {
+                  user.usersParrainer = [],
+                  user.usersParrainer!.add(authProvider.registerUser.id!),
+
+                },
+                  user.votre_solde = (user.votre_solde==null? 0.0:user.votre_solde!) + 5.1,
+                  user.publi_cash = (user.publi_cash==null? 0.0:user.publi_cash!) + 5.1,
+                // user.publi_cash = (user.publi_cash ?? 0.0) + 5.1,
+
+                // Mets à jour l'utilisateur dans Firebase
+
+                // await authProvider.updateUser(user).then((value) {
+                //   if(value){
+                //
+                //   }
+                // },),
+
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(user.id)
+                    .update(user.toJson()),
+
+                  printVm("after current user trouver :${user.toJson()}"),
+
+                  await authProvider.sendNotification(
+                    userIds: [user.oneIgnalUserid!],
+                    smallImage: "${user.imageUrl!}",
+                    send_user_id: "${authProvider.registerUser.id!}",
+                    recever_user_id: "${user.id!}",
+                    message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
+                    type_notif: NotificationType.PARRAINAGE.name,
+                    post_id: "",
+                    post_type: "",
+                    chat_id: ''
+                ),
+
+                notif.id=firestore
+                    .collection('Notifications')
+                    .doc()
+                    .id,
+                notif.titre="Parrainage 🤑",
+                notif.media_url=user.imageUrl,
+                notif.type=NotificationType.PARRAINAGE.name,
+                notif.description="Vous avez gagné 5 PubliCash grâce à un parrainage ! Vérifiez votre solde dans la page Monétisation pour profiter de vos gains.N'oubliez pas de continuer à parrainer vos amis pour gagner encore plus d'argent !",
+                notif.users_id_view=[],
+                notif.user_id=authProvider.registerUser.id,
+                notif.receiver_id=user.id!,
+                notif.post_id="",
+                notif.post_data_type="",
+
+                notif.updatedAt =
+                    DateTime.now().microsecondsSinceEpoch,
+                notif.createdAt =
+                    DateTime.now().microsecondsSinceEpoch,
+                notif.status = PostStatus.VALIDE.name,
+
+                // users.add(pseudo.toJson());
+
+                await firestore.collection('Notifications').doc(notif.id).set(notif.toJson()),
+
+
+                await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson()),
+
+                    authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1,
+                    if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
+              authProvider.appDefaultData.users_id!.add(id),
+              },
+
+              await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson()),
+              printVm("///////////-- save pseudo --///////////////"),
+              await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson()),
+
+
+              ScaffoldMessenger.of(context).showSnackBar(snackBar1),
+              setState(() {
+              tap= false;
+              }),
+                  Navigator.pop(context),
+
+                  Navigator.pushNamed(context, '/bon_a_savoir'),
+                })
+                  .catchError((e) {
+
+                  SnackBar snackBar = SnackBar(
+                    backgroundColor: Colors.red,
+                    content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.white),),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  printVm('error ${e!.message}');
+                  setState(() {
+                    tap= false;
+                  });
+
+                });
+
+              }else{
+
+                SnackBar snackBar = SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text('Le code de parrainage est erroné !',style: TextStyle(color: Colors.white),),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+              }
+            },);
+          }
+          else{
+            await _auth
+                .createUserWithEmailAndPassword(email: email, password: password)
+                .then((value) async =>
+            {
+              id=value.user!.uid,
+              pseudo.id=firestore
+                  .collection('Pseudo')
+                  .doc()
+                  .id,
+              pseudo.name=authProvider.registerUser.pseudo,
+              authProvider.registerUser.id =id,
+
+              await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson()),
+
+              authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1,
+              if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
+                authProvider.appDefaultData.users_id!.add(id),
+              },
+
+              await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson()),
+              printVm("///////////-- save pseudo --///////////////"),
+              await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson()),
+
+
+              ScaffoldMessenger.of(context).showSnackBar(snackBar1),
+              Navigator.pop(context),
+              setState(() {
+                tap= false;
+              }),
+              Navigator.pushNamed(context, '/bon_a_savoir'),
+          })
+        .catchError((e) {
+
+    SnackBar snackBar = SnackBar(
+    backgroundColor: Colors.red,
+    content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.white),),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    printVm('error ${e!.message}');
+    setState(() {
+    tap= false;
+    });
+
+    });
+          }
+
+        } on FirebaseException catch(error){
 
           SnackBar snackBar = SnackBar(
-            backgroundColor: Colors.red,
-            content: Text("Une erreur s'est produite",style: TextStyle(color: Colors.white),),
+            content: Text('${error}',style: TextStyle(color: Colors.red),),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          printVm('error ${e!.message}');
-          setState(() {
-            tap= false;
-          });
-
+          printVm('error ${error}');
+        }
+        setState(() {
+          tap= false;
         });
-        // setState(() {
-        //   tap= false;
-        // });
+
       } on FirebaseAuthException catch (error) {
         switch (error.code) {
 
@@ -358,118 +477,185 @@ return true;
         });
       }
 
-
-
-
     }
   }
-  postDetailsToFirestore(String id) async {
 
-    authProvider.registerUser.role = UserRole.USER.name!;
-    authProvider.registerUser.updatedAt =
-        DateTime.now().microsecondsSinceEpoch;
-    authProvider.registerUser.createdAt =
-        DateTime.now().microsecondsSinceEpoch;
-    authProvider.registerUser.id =id;
 
-    try{
-      if(authProvider.registerUser.codeParrain!.isNotEmpty){
-        await verifierParrain(authProvider.registerUser.codeParrain!).then((value) async {
-          if(value){
-            await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
+  void signUp2(String email, String password) async {
+    if (!_formKey.currentState!.validate()) return;
 
-            authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1;
-            if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
-              authProvider.appDefaultData.users_id!.add(id);
-            }
-            UserPseudo pseudo=UserPseudo();
-            pseudo.id=firestore
-                .collection('Pseudo')
-                .doc()
-                .id;
-            pseudo.name=authProvider.registerUser.pseudo;
+    setState(() => tap = true);
 
-            // users.add(pseudo.toJson());
+    try {
+      // Initialisation des données utilisateur
+      _setupUserData();
 
-            await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
-            printVm("///////////-- save pseudo --///////////////");
-            await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
-
-            SnackBar snackBar = SnackBar(
-              backgroundColor: Colors.green,
-              content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
-            );
-
-            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            Navigator.pop(context);
-            setState(() {
-              tap= false;
-            });
-            Navigator.pushNamed(context, '/bon_a_savoir');
-          }else{
-
-            SnackBar snackBar = SnackBar(
-              backgroundColor: Colors.red,
-              content: Text('Le code de parrainage est erroné !',style: TextStyle(color: Colors.white),),
-            );
-
-            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          }
-        },);
-
-      }else{
-        authProvider.registerUser.id =id;
-        await firestore.collection('Users').doc(id).set( authProvider.registerUser.toJson());
-
-        authProvider.appDefaultData.nbr_abonnes=authProvider.appDefaultData.nbr_abonnes!+1;
-        if (authProvider.appDefaultData.users_id!.any((element) => element==id)==false) {
-          authProvider.appDefaultData.users_id!.add(id);
-        }
-        UserPseudo pseudo=UserPseudo();
-        pseudo.id=firestore
-            .collection('Pseudo')
-            .doc()
-            .id;
-        pseudo.name=authProvider.registerUser.pseudo;
-
-        // users.add(pseudo.toJson());
-
-        await firestore.collection('Pseudo').doc(pseudo.id).set(pseudo.toJson());
-        printVm("///////////-- save pseudo --///////////////");
-        await firestore.collection('AppData').doc( authProvider.appDefaultData.id!).update( authProvider.appDefaultData.toJson());
-
-        SnackBar snackBar = SnackBar(
-          backgroundColor: Colors.green,
-          content: Text('Compte créé avec succès !',style: TextStyle(color: Colors.white),),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        Navigator.pop(context);
-        setState(() {
-          tap= false;
-        });
-        Navigator.pushNamed(context, '/bon_a_savoir');
+      if (authProvider.registerUser.codeParrain?.isNotEmpty ?? false) {
+        await _handleParrainageSignUp(email, password);
+      } else {
+        await _handleRegularSignUp(email, password);
       }
 
-
-
-
-    } on FirebaseException catch(error){
-
-      SnackBar snackBar = SnackBar(
-        content: Text('${error}',style: TextStyle(color: Colors.red),),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      printVm('error ${error}');
+      ScaffoldMessenger.of(context).showSnackBar(_successSnackBar());
+      _navigateAfterSignUp();
+    } on FirebaseAuthException catch (e) {
+      _handleAuthError(e);
+    } on FirebaseException catch (e) {
+      _handleFirebaseError(e);
+    } catch (e) {
+      _handleGenericError(e);
+    } finally {
+      setState(() => tap = false);
     }
-    setState(() {
-      tap= false;
-    });
-
   }
 
+// Helper methods
 
-  //Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  void _setupUserData() {
+    authProvider.registerUser
+      ..role = UserRole.USER.name!
+      ..updatedAt = DateTime.now().microsecondsSinceEpoch
+      ..createdAt = DateTime.now().microsecondsSinceEpoch;
+  }
+
+  Future<void> _handleParrainageSignUp(String email, String password) async {
+    final parrain = await verifierParrain(authProvider.registerUser.codeParrain!);
+    if (parrain == null) throw Exception('Code de parrainage invalide');
+
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    await _updateParrainData(parrain);
+    await _createUserData(userCredential.user!.uid);
+    await _sendParrainageNotification(parrain);
+  }
+
+  Future<void> _handleRegularSignUp(String email, String password) async {
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    await _createUserData(userCredential.user!.uid);
+  }
+  int generateRandomNumber() {
+    final random = Random();
+    return random.nextInt(99999) + 1; // nextInt(99999) génère un nombre entre 0 et 99998, donc on ajoute 1
+  }
+  Future<void> _createUserData(String userId) async {
+    final batch = firestore.batch();
+
+    // Création du pseudo
+    final pseudo = UserPseudo()
+      ..id = firestore.collection('Pseudo').doc().id
+      ..name = authProvider.registerUser.pseudo;
+
+    // Configuration utilisateur
+    authProvider.registerUser
+      ..id = userId
+      ..codeParrainage = "${pseudo}${generateRandomNumber()}"
+      ..pointContribution = authProvider.appDefaultData.default_point_new_user!
+      ..votre_solde = 5.1
+      ..publi_cash = 5.1;
+
+    // Configuration AppData
+    authProvider.appDefaultData.nbr_abonnes = (authProvider.appDefaultData.nbr_abonnes ?? 0) + 1;
+    if (!(authProvider.appDefaultData.users_id?.contains(userId) ?? false)) {
+      authProvider.appDefaultData.users_id?.add(userId);
+    }
+
+    // Ajout des opérations batch
+    batch.set(firestore.collection('Users').doc(userId), authProvider.registerUser.toJson());
+    batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
+    batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
+      'nbr_abonnes': authProvider.appDefaultData.nbr_abonnes,
+      'users_id': authProvider.appDefaultData.users_id,
+    });
+
+    await batch.commit();
+  }
+
+  Future<void> _updateParrainData(UserData parrain) async {
+    final batch = firestore.batch();
+
+    parrain
+      ..pointContribution = (parrain.pointContribution ?? 0) + authProvider.appDefaultData.default_point_new_user!
+      ..votre_solde = (parrain.votre_solde ?? 0.0) + 5.1
+      ..publi_cash = (parrain.publi_cash ?? 0.0) + 5.1
+      ..usersParrainer = [...parrain.usersParrainer ?? [], authProvider.registerUser.id!];
+
+    batch.update(firestore.collection('Users').doc(parrain.id!), parrain.toJson());
+    await batch.commit();
+  }
+
+  Future<void> _sendParrainageNotification(UserData parrain) async {
+    final notif = NotificationData()
+      ..id = firestore.collection('Notifications').doc().id
+      ..titre = "Parrainage 🤑"
+      ..media_url = parrain.imageUrl
+      ..type = NotificationType.PARRAINAGE.name
+      ..description = "Vous avez gagné 5 PubliCash grâce à un parrainage..."
+      ..user_id = authProvider.registerUser.id
+      ..receiver_id = parrain.id!
+      ..updatedAt = DateTime.now().microsecondsSinceEpoch
+      ..createdAt = DateTime.now().microsecondsSinceEpoch
+      ..status = PostStatus.VALIDE.name;
+
+    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+    await authProvider.sendNotification(
+      userIds: [parrain.oneIgnalUserid!],
+      smallImage: parrain.imageUrl!,
+      send_user_id: authProvider.registerUser.id!,
+      recever_user_id: parrain.id!,
+      message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
+      type_notif: NotificationType.PARRAINAGE.name, post_id: '', post_type: '', chat_id: '',
+    );
+  }
+
+// Gestion d'erreurs
+  void _handleAuthError(FirebaseAuthException error) {
+    final messages = {
+      "invalid-email": "Votre email semble être malformé.",
+      "wrong-password": "Votre mot de passe est erroné.",
+      "email-already-in-use": "L'email est déjà utilisé par un autre compte.",
+      "user-not-found": "L'utilisateur avec cet email n'existe pas.",
+      "user-disabled": "L'utilisateur avec cet email a été désactivé.",
+      "too-many-requests": "Trop de demandes.",
+      "operation-not-allowed": "La connexion avec email/mot de passe n'est pas activée.",
+    };
+
+    final message = messages[error.code] ?? "Une erreur indéfinie s'est produite";
+    _showErrorSnackBar(message);
+  }
+
+  void _handleFirebaseError(FirebaseException error) {
+    printVm("_handleFirebaseError ${error.message ?? "Erreur Firebase"}");
+    _showErrorSnackBar(error.message ?? "Erreur Firebase");
+  }
+
+  void _handleGenericError(dynamic error) {
+    _showErrorSnackBar("Erreur inattendue: ${error.toString()}");
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(message, style: const TextStyle(color: Colors.white)),
+        ));
+    }
+
+  void _navigateAfterSignUp() {
+    Navigator.pop(context);
+    Navigator.pushNamed(context, '/bon_a_savoir');
+  }
+
+  SnackBar _successSnackBar() => SnackBar(
+    backgroundColor: Colors.green,
+    content: const Text('Compte créé avec succès !', style: TextStyle(color: Colors.white)),
+  );
 
   @override
   Widget build(BuildContext context) {
