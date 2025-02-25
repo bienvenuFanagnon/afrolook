@@ -205,28 +205,47 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
       // Navigate to the preview page to display the edited image.
       editorKey.currentState?.disablePopScope = true;
       //  Navigator.pop(context);
-      // Navigator.pop(context);
-      _openPickerText(editedBytes).then((value) async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              return PostLookImageTab(
-                imgBytes: value!,
-                generationTime: _generationTime,
-                showThumbnail: showThumbnail,
-                rawOriginalImage: rawOriginalImage,
-                generationConfigs: generationConfigs, canal:canal==null?null: canal!,
-              );
-            },
-          ),
-        ).whenComplete(() {
-          // Reset the state variables after navigation.
-          editedBytes = null;
-          _generationTime = null;
-          startEditingTime = null;
-        });
-      },);
+      Navigator.pop(context);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return PostLookImageTab(
+              imgBytes: editedBytes!,
+              generationTime: _generationTime,
+              showThumbnail: showThumbnail,
+              rawOriginalImage: rawOriginalImage,
+              generationConfigs: generationConfigs, canal:canal==null?null: canal!,
+            );
+          },
+        ),
+      ).whenComplete(() {
+        // Reset the state variables after navigation.
+        editedBytes = null;
+        _generationTime = null;
+        startEditingTime = null;
+      });
+      // _openPickerText(editedBytes).then((value) async {
+      //   await Navigator.push(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) {
+      //         return PostLookImageTab(
+      //           imgBytes: value!,
+      //           generationTime: _generationTime,
+      //           showThumbnail: showThumbnail,
+      //           rawOriginalImage: rawOriginalImage,
+      //           generationConfigs: generationConfigs, canal:canal==null?null: canal!,
+      //         );
+      //       },
+      //     ),
+      //   ).whenComplete(() {
+      //     // Reset the state variables after navigation.
+      //     editedBytes = null;
+      //     _generationTime = null;
+      //     startEditingTime = null;
+      //   });
+      // },);
 
     }
 

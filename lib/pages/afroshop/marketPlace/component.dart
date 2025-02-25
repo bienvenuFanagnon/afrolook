@@ -560,6 +560,7 @@ class _ArticleTileBoosterState extends State<ArticleTileBooster> {
   Widget build(BuildContext context) {
     return Card(
       child: Container(
+        color: Colors.lightGreen.shade300,
         child: Stack(
           children: [
             GestureDetector(

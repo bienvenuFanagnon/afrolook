@@ -2761,6 +2761,7 @@ class _MyHomePageState extends State<MyHomePage>
           key: _scaffoldKey,
           backgroundColor: ConstColors.backgroundColor,
           appBar: AppBar(
+            backgroundColor: Colors.lightGreen.shade300,
             automaticallyImplyLeading: false,
 
             titleSpacing: 10,
@@ -2909,444 +2910,333 @@ class _MyHomePageState extends State<MyHomePage>
                     padding: const EdgeInsets.all(8.0),
                     child: Image.asset("assets/icon/cocotier-home.png",height: 30,width: 30,),
                   )),
-//               IconButton(
-//                   onPressed: () async {
-//                     if (_scrollController.hasClients) {
-//
-//                       _scrollController.animateTo(
-//                         0.0,
-//                         duration: Duration(milliseconds: 1000),
-//                         curve: Curves.ease,
-//                       );
-//                       }
-//                     setState(() {
-// listConstposts.clear();
-// postProvider.getPostsImages2(limitePosts).listen((data) {
-//   _streamController.add(data);
-// });
-//                     });
-//
-//                     // setState(() {
-//                     //   postProvider.getHomePostsImages(limitePosts).then((value) {
-//                     //
-//                     //   },);
-//                     // });
-//
-//                     //   Restart.restartApp();
-//
-//                     /*
-//                 await userProvider.getAllAnnonces();
-//                 await postProvider.getPostsImages(limitePosts).then((value) {
-//                   printVm('actualiser');
-//                   setState(() {
-//                     postLenght=8;
-//                     is_actualised = false;
-//
-//                   });
-//
-//
-//                 },);
-//
-//                  */
-//                   },
-//                   icon: Icon(Icons.home))
             ],
             //title: Text(widget.title),
           ),
           drawer: menu(context,width,height),
           body: SafeArea(
-            child: CustomScrollView(
+            child: Container(
 
-              controller: _scrollController,
-              slivers: <Widget>[
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  sliver: FutureBuilder<List<UserData>>(
-                    future: authProvider.getUsersStorie(authProvider.loginUserData.id!,
-                      limiteUsers,
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: height * 0.35,
-                            child: widgetSeke2(width, height),
-                          ),
-                        );
-                      } else if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: height * 0.35,
-                            child: widgetSeke2(width, height),
-                          ),
-                        );
-                      } else {
-                        List<UserData> list = snapshot.data!;
-                        // list.shuffle();
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
+                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
+                  ],
+                ),
+              ),
+              child: CustomScrollView(
 
-                        return SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0,bottom: 4),
-                                child: Text(
-                                  // 'Afro Chronique',
-                                  'Chroniques',
-                                  style: TextStyle(
-                                    fontSize: homeIconSize*0.7,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.green,
-                                    letterSpacing: 1.5,
+                controller: _scrollController,
+                slivers: <Widget>[
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    sliver: FutureBuilder<List<UserData>>(
+                      future: authProvider.getUsersStorie(authProvider.loginUserData.id!,
+                        limiteUsers,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: height * 0.35,
+                              child: widgetSeke2(width, height),
+                            ),
+                          );
+                        } else if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: height * 0.35,
+                              child: widgetSeke2(width, height),
+                            ),
+                          );
+                        } else {
+                          List<UserData> list = snapshot.data!;
+                          // list.shuffle();
+
+                          return SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0,bottom: 4),
+                                  child: Text(
+                                    // 'Afro Chronique',
+                                    'Chroniques',
+                                    style: TextStyle(
+                                      fontSize: homeIconSize*0.7,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.green,
+                                      letterSpacing: 1.5,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(
-                                height: height * 0.25,
+                                SizedBox(
+                                  height: height * 0.25,
 
-                                child: Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: GestureDetector(
-                                        onTap: () async {
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: GestureDetector(
+                                          onTap: () async {
 
-                                          checkAppVersionAndProceed(context, () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (context) => StoryChoicePage(),));
-                                          });
+                                            checkAppVersionAndProceed(context, () {
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => StoryChoicePage(),));
+                                            });
 
 
-                                        },
-                                        child: Container(
+                                          },
+                                          child: Container(
 
-                                          width: width * 0.2,
-                                          height: height * 0.25,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(10),
-                                            color: Colors.grey[300],
+                                            width: width * 0.2,
+                                            height: height * 0.25,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(10),
+                                              color: Colors.grey[300],
+                                            ),
+                                            child: Center(
+                                              child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
+                                            ),
                                           ),
-                                          child: Center(
-                                            child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
+
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: list.length,
+                                          itemBuilder: (context, index) {
+                                            List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
+                                            list[index].stories=storiesWithTimeAgo;
+                                            // printVm('user index : ${index} stories ${list[index].stories!.length}');
+                                            //
+                                            // printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
+
+                                            return
+                                                list[index].stories!.isNotEmpty
+                                                ? Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: StoryPreview(
+                                                user: list[index],
+                                                h: height * 0.25,
+                                                w: width * 0.3,
+                                              ),
+                                            )
+                                                : Container();
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // SizedBox(
+                                //   height: height * 0.homeIconSize,
+                                //   child: ListView.builder(
+                                //     scrollDirection: Axis.horizontal,
+                                //     itemCount: list.length,
+                                //     itemBuilder: (context, index) {
+                                //       return list[index].stories != null &&
+                                //           list[index].stories!.isNotEmpty
+                                //           ? Padding(
+                                //         padding: const EdgeInsets.all(8.0),
+                                //         child: StoryPreview(user: list[index], h: height * 0.34, w: width * 0.4,),
+                                //       )
+                                //           : Container();
+                                //     },
+                                //   ),
+                                // ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    sliver: FutureBuilder<List<UserData>>(
+                      future: userProvider.getProfileUsers(
+                        authProvider.loginUserData.id!,
+                        context,
+                        limiteUsers,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return SliverToBoxAdapter(
+                            child: SizedBox(
+                                height: height * 0.35,
+
+                                child: widgetSeke2(width, height)),
+                          );
+                        } else if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: SizedBox(
+                                height: height * 0.35,
+
+                                child: widgetSeke2(width, height)),
+                          );
+                        } else {
+                          List<UserData> list = snapshot.data!;
+                          userList=list;
+                          userList.shuffle();
+
+                          return SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: height * 0.35,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  return homeProfileUsers(list[index], width, height);
+                                },
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+
+                  SliverPadding
+                    (
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    sliver: FutureBuilder<List<Challenge>>(
+                      future: postProvider.getCurrentChallenges(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return SliverToBoxAdapter(
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        } else if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        } else {
+                          List<Challenge> list = snapshot.data!;
+                          list;
+                          // userList.shuffle();
+                          if(list.isEmpty){
+                            return SliverToBoxAdapter(child: SizedBox.shrink());
+                          }else{
+                            return SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Challenges Disponibles 🔥🎁',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange, // Couleur du texte pour attirer l'attention
                                           ),
                                         ),
-
-                                      ),
-                                    ),
-                                    Expanded(
+                                        SizedBox(width: 8),
+                                        Icon(
+                                          Icons.local_fire_department, // Icône de feu pour illustrer l'excitation
+                                          color: Colors.red, // Couleur du feu
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Gagnez un Prix 🏆',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green, // Couleur du texte pour un appel à l'action positif
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Icon(
+                                          Icons.card_giftcard, // Icône de cadeau pour symboliser la récompense
+                                          color: Colors.green, // Couleur du cadeau
+                                        ),
+                                      ],
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                    )
+                                ,
+                                    SizedBox(
+                                      height: height * 0.58,
+                                      // width: width * 0.8,
                                       child: ListView.builder(
                                         scrollDirection: Axis.horizontal,
                                         itemCount: list.length,
                                         itemBuilder: (context, index) {
-                                          List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
-                                          list[index].stories=storiesWithTimeAgo;
-                                          // printVm('user index : ${index} stories ${list[index].stories!.length}');
-                                          //
-                                          // printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
-
-                                          return
-                                              list[index].stories!.isNotEmpty
-                                              ? Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: StoryPreview(
-                                              user: list[index],
-                                              h: height * 0.25,
-                                              w: width * 0.3,
-                                            ),
-                                          )
-                                              : Container();
+                                          return homeChallenge(
+                                            list[index]!,
+                                            Colors.brown,
+                                            height,
+                                            width,
+                                            context,
+                                          );
                                         },
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              // SizedBox(
-                              //   height: height * 0.homeIconSize,
-                              //   child: ListView.builder(
-                              //     scrollDirection: Axis.horizontal,
-                              //     itemCount: list.length,
-                              //     itemBuilder: (context, index) {
-                              //       return list[index].stories != null &&
-                              //           list[index].stories!.isNotEmpty
-                              //           ? Padding(
-                              //         padding: const EdgeInsets.all(8.0),
-                              //         child: StoryPreview(user: list[index], h: height * 0.34, w: width * 0.4,),
-                              //       )
-                              //           : Container();
-                              //     },
-                              //   ),
-                              // ),
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  sliver: FutureBuilder<List<UserData>>(
-                    future: userProvider.getProfileUsers(
-                      authProvider.loginUserData.id!,
-                      context,
-                      limiteUsers,
+                            );
+
+                          }
+
+                        }
+                      },
                     ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SliverToBoxAdapter(
-                          child: SizedBox(
-                              height: height * 0.35,
-
-                              child: widgetSeke2(width, height)),
-                        );
-                      } else if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: SizedBox(
-                              height: height * 0.35,
-
-                              child: widgetSeke2(width, height)),
-                        );
-                      } else {
-                        List<UserData> list = snapshot.data!;
-                        userList=list;
-                        userList.shuffle();
-
-                        return SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: height * 0.35,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: list.length,
-                              itemBuilder: (context, index) {
-                                return homeProfileUsers(list[index], width, height);
-                              },
-                            ),
-                          ),
-                        );
-                      }
-                    },
                   ),
-                ),
+                  // SliverPadding(
+                  //   padding: EdgeInsets.symmetric(horizontal: 1, vertical: 0),
+                  //   sliver:  Divider(),
+                  // ),
 
-                SliverPadding
-                  (
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  sliver: FutureBuilder<List<Challenge>>(
-                    future: postProvider.getCurrentChallenges(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SliverToBoxAdapter(
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      } else if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      } else {
-                        List<Challenge> list = snapshot.data!;
-                        list;
-                        // userList.shuffle();
-                        if(list.isEmpty){
-                          return SliverToBoxAdapter(child: SizedBox.shrink());
-                        }else{
-                          return SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.all(4.0),
+
+                        SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+              sliver: StreamBuilder<List<Post>>(
+                stream: _streamController.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return SliverToBoxAdapter(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError) {
+                    return SliverToBoxAdapter(
+                      child: Center(child: Icon(Icons.error)),
+                    );
+                  } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                    List<Post> listConstposts = snapshot.data!;
+
+                    return LiveSliverList(
+                      controller: _scrollController,
+                      showItemInterval: Duration(milliseconds: 10),
+                      showItemDuration: Duration(milliseconds: 30),
+                      itemCount: listConstposts.length,
+                      itemBuilder: animationItemBuilder(
+                            (index) {
+                              printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
+                          // if (index % 7 == 6) {
+                          //   return SizedBox(
+                          //     height: height * 0.homeIconSize,
+                          //     child: ListView.builder(
+                          //       scrollDirection: Axis.horizontal,
+                          //       itemCount: userList.length,
+                          //       itemBuilder: (context, index) {
+                          //         return homeProfileUsers(userList[index], width, height);
+                          //       },
+                          //     ),
+                          //   );
+                          // }
+                          if (index % 9 == 8) {
+                            return articles.isEmpty
+                                ? SizedBox.shrink()
+                                : SizedBox(
+                              height: height * 0.35,
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Challenges Disponibles 🔥🎁',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.orange, // Couleur du texte pour attirer l'attention
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(
-                                        Icons.local_fire_department, // Icône de feu pour illustrer l'excitation
-                                        color: Colors.red, // Couleur du feu
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Gagnez un Prix 🏆',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green, // Couleur du texte pour un appel à l'action positif
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(
-                                        Icons.card_giftcard, // Icône de cadeau pour symboliser la récompense
-                                        color: Colors.green, // Couleur du cadeau
-                                      ),
-                                    ],
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                  )
-                              ,
-                                  SizedBox(
-                                    height: height * 0.58,
-                                    // width: width * 0.8,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: list.length,
-                                      itemBuilder: (context, index) {
-                                        return homeChallenge(
-                                          list[index]!,
-                                          Colors.brown,
-                                          height,
-                                          width,
-                                          context,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-
-                        }
-
-                      }
-                    },
-                  ),
-                ),
-                // SliverPadding(
-                //   padding: EdgeInsets.symmetric(horizontal: 1, vertical: 0),
-                //   sliver:  Divider(),
-                // ),
-
-
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            sliver: StreamBuilder<List<Post>>(
-              stream: _streamController.stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                } else if (snapshot.hasError) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: Icon(Icons.error)),
-                  );
-                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  List<Post> listConstposts = snapshot.data!;
-
-                  return LiveSliverList(
-                    controller: _scrollController,
-                    showItemInterval: Duration(milliseconds: 10),
-                    showItemDuration: Duration(milliseconds: 30),
-                    itemCount: listConstposts.length,
-                    itemBuilder: animationItemBuilder(
-                          (index) {
-                            printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
-                        // if (index % 7 == 6) {
-                        //   return SizedBox(
-                        //     height: height * 0.homeIconSize,
-                        //     child: ListView.builder(
-                        //       scrollDirection: Axis.horizontal,
-                        //       itemCount: userList.length,
-                        //       itemBuilder: (context, index) {
-                        //         return homeProfileUsers(userList[index], width, height);
-                        //       },
-                        //     ),
-                        //   );
-                        // }
-                        if (index % 9 == 8) {
-                          return articles.isEmpty
-                              ? SizedBox.shrink()
-                              : SizedBox(
-                            height: height * 0.35,
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'Produits Boostés',
-                                            style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green),
-                                          ),
-                                          SizedBox(width: 8),
-                                          Icon(
-                                            Icons.local_fire_department,
-                                            color: Colors.red,
-                                          ),
-                                        ],
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                      ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  HomeAfroshopPage(title: ''),
-                                            ),
-                                          );
-                                        },
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              'Boutiques',
-                                              style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.green),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Icon(
-                                              Icons.storefront,
-                                              color: Colors.red,
-                                            ),
-                                          ],
-                                          mainAxisAlignment: MainAxisAlignment.start,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  child: CarouselSlider(
-                                    items: articles.map((article) {
-                                      return Builder(
-                                        builder: (BuildContext context) {
-                                          return ArticleTileBooster(
-                                              article: article,
-                                              w: width,
-                                              h: height,
-                                              isOtherPage: true);
-                                        },
-                                      );
-                                    }).toList(),
-                                    options: CarouselOptions(
-                                      height: 250,
-                                      autoPlay: true,
-                                      enlargeCenterPage: true,
-                                      viewportFraction: 0.6,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                            if (index % 7 == 6) {
-                              return canaux.isEmpty?SizedBox.shrink():Column(
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
@@ -3356,11 +3246,16 @@ class _MyHomePageState extends State<MyHomePage>
                                         Row(
                                           children: [
                                             Text(
-                                              '📺 Afrolook Canal',
+                                              'Produits Boostés',
                                               style: TextStyle(
                                                   fontSize: 15,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.green),
+                                                  color: Colors.white),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Icon(
+                                              Icons.local_fire_department,
+                                              color: Colors.red,
                                             ),
                                           ],
                                           mainAxisAlignment: MainAxisAlignment.start,
@@ -3370,18 +3265,24 @@ class _MyHomePageState extends State<MyHomePage>
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (context) => CanalListPage(isUserCanals: false),
+                                                builder: (context) =>
+                                                    HomeAfroshopPage(title: ''),
                                               ),
                                             );
                                           },
                                           child: Row(
                                             children: [
                                               Text(
-                                                'Voir plus 📺',
+                                                'Boutiques',
                                                 style: TextStyle(
                                                     fontSize: 15,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.green),
+                                                    color: Colors.white),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Icon(
+                                                Icons.storefront,
+                                                color: Colors.red,
                                               ),
                                             ],
                                             mainAxisAlignment: MainAxisAlignment.start,
@@ -3390,54 +3291,104 @@ class _MyHomePageState extends State<MyHomePage>
                                       ],
                                     ),
                                   ),
-                                  SizedBox(
-                                    height: height * 0.33,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: canaux.length,
-                                      itemBuilder: (context, index) {
-                                        return channelWidget(
-                                            canaux[index], width, height, context);
-                                      },
+                                  Container(
+                                    child: CarouselSlider(
+                                      items: articles.map((article) {
+                                        return Builder(
+                                          builder: (BuildContext context) {
+                                            return ArticleTileBooster(
+                                                article: article,
+                                                w: width,
+                                                h: height,
+                                                isOtherPage: true);
+                                          },
+                                        );
+                                      }).toList(),
+                                      options: CarouselOptions(
+                                        height: 250,
+                                        autoPlay: true,
+                                        enlargeCenterPage: true,
+                                        viewportFraction: 0.6,
+                                      ),
                                     ),
                                   ),
                                 ],
-                              );
-                            }
+                              ),
+                            );
+                          }
 
-                        if (index % 6 == 5) {
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              if (index % 7 == 6) {
+                                return canaux.isEmpty?SizedBox.shrink():Column(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '🛠️Services & Jobs 💼',
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green),
-                                        ),
-                                      ],
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => UserServiceListPage(),
-                                          ),
-                                        );
-                                      },
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
                                       child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '📺 Afrolook Canal',
+                                                style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green),
+                                              ),
+                                            ],
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => CanalListPage(isUserCanals: false),
+                                                ),
+                                              );
+                                            },
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  'Voir plus 📺',
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.green),
+                                                ),
+                                              ],
+                                              mainAxisAlignment: MainAxisAlignment.start,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: height * 0.33,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: canaux.length,
+                                        itemBuilder: (context, index) {
+                                          return channelWidget(
+                                              canaux[index], width, height, context);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+
+                          if (index % 6 == 5) {
+                            return Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
                                         children: [
                                           Text(
-                                            'Voir plus 🛠️ 💼',
+                                            '🛠️Services & Jobs 💼',
                                             style: TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
@@ -3446,52 +3397,74 @@ class _MyHomePageState extends State<MyHomePage>
                                         ],
                                         mainAxisAlignment: MainAxisAlignment.start,
                                       ),
-                                    ),
-                                  ],
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => UserServiceListPage(),
+                                            ),
+                                          );
+                                        },
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              'Voir plus 🛠️ 💼',
+                                              style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green),
+                                            ),
+                                          ],
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              SizedBox(
-                                height: height * 0.3,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: userServices.length,
-                                  itemBuilder: (context, index) {
-                                    return userServiceWidget(
-                                        userServices[index], width, height, context);
-                                  },
+                                SizedBox(
+                                  height: height * 0.3,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: userServices.length,
+                                    itemBuilder: (context, index) {
+                                      return userServiceWidget(
+                                          userServices[index], width, height, context);
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            );
+                          }
+                          return HomePostUsersWidget(
+                            post: listConstposts[index], color: _color, height: height, width: width,
                           );
-                        }
-                        return HomePostUsersWidget(
-                          post: listConstposts[index], color: _color, height: height, width: width,
-                        );
-                        //
-                        // return HomePostUsersWidget(
-                        //   listConstposts[index],
-                        //   _color,
-                        //   height,
-                        //   width,
-                        //   context,
-                        // );
-                      },
-                    ),
-                  );
+                          //
+                          // return HomePostUsersWidget(
+                          //   listConstposts[index],
+                          //   _color,
+                          //   height,
+                          //   width,
+                          //   context,
+                          // );
+                        },
+                      ),
+                    );
 
-                }
-                return SliverToBoxAdapter(
-                  child: Center(child: Text('Pas de looks')),
-                );
-              },
-            ),
-          )
-              ],
+                  }
+                  return SliverToBoxAdapter(
+                    child: Center(child: Text('Pas de looks')),
+                  );
+                },
+              ),
+                        )
+                ],
+              ),
             ),
           ),
           bottomNavigationBar: Container(
             height: 50,
-            color: Colors.transparent,
+            color:  Colors.lightGreen.shade300,
             child: Center(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -3611,146 +3584,12 @@ class _MyHomePageState extends State<MyHomePage>
                           Navigator.pushNamed(context, '/user_posts_form');
                         });
 
-                        // authProvider.getAppData().then(
-                        //       (appdata) async {
-                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
-                        //       Navigator.pushNamed(context, '/user_posts_form');
-                        //
-                        //
-                        //
-                        //     }        else{
-                        //       showModalBottomSheet(
-                        //         context: context,
-                        //         builder: (BuildContext context) {
-                        //           return Container(
-                        //             height: 300,
-                        //             child: Center(
-                        //               child: Padding(
-                        //                 padding: const EdgeInsets.all(20.0),
-                        //                 child: Column(
-                        //                   mainAxisAlignment: MainAxisAlignment.center,
-                        //                   crossAxisAlignment: CrossAxisAlignment.center,
-                        //                   children: [
-                        //                     Icon(Icons.info,color: Colors.red,),
-                        //                     Text(
-                        //                       'Nouvelle mise à jour disponible!',
-                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                        //                     ),
-                        //                     SizedBox(height: 10.0),
-                        //                     Text(
-                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                        //                       style: TextStyle(fontSize: 16.0),
-                        //                     ),
-                        //                     SizedBox(height: 20.0),
-                        //                     ElevatedButton(
-                        //                       style: ElevatedButton.styleFrom(
-                        //                         backgroundColor: Colors.green,
-                        //                       ),
-                        //                       onPressed: () {
-                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                        //                       },
-                        //                       child: Row(
-                        //                         mainAxisAlignment: MainAxisAlignment.center,
-                        //                         children: [
-                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
-                        //                           SizedBox(width: 5,),
-                        //                           Text('Télécharger sur le play store',
-                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                        //                         ],
-                        //                       ),
-                        //
-                        //                     ),
-                        //                   ],
-                        //                 ),
-                        //               ),
-                        //             ),
-                        //           );
-                        //         },
-                        //       );
-                        //
-                        //     }
-                        //
-                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-                        //
-                        //
-                        //   },
-                        // );
                       },
                       child: Image.asset('assets/icons/icons8-plus-188.png',width: homeIconSize+10,height: homeIconSize+10,)),
                   GestureDetector(
                       onTap: () {
                         Navigator.pushNamed(context, '/videos');
 
-                        // checkAppVersionAndProceed(context, () {
-                        //   Navigator.pushNamed(context, '/videos');
-                        // });
-
-                        // authProvider.getAppData().then(
-                        //       (appdata) async {
-                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
-                        //       Navigator.pushNamed(context, '/user_posts_form');
-                        //
-                        //
-                        //
-                        //     }        else{
-                        //       showModalBottomSheet(
-                        //         context: context,
-                        //         builder: (BuildContext context) {
-                        //           return Container(
-                        //             height: 300,
-                        //             child: Center(
-                        //               child: Padding(
-                        //                 padding: const EdgeInsets.all(20.0),
-                        //                 child: Column(
-                        //                   mainAxisAlignment: MainAxisAlignment.center,
-                        //                   crossAxisAlignment: CrossAxisAlignment.center,
-                        //                   children: [
-                        //                     Icon(Icons.info,color: Colors.red,),
-                        //                     Text(
-                        //                       'Nouvelle mise à jour disponible!',
-                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                        //                     ),
-                        //                     SizedBox(height: 10.0),
-                        //                     Text(
-                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                        //                       style: TextStyle(fontSize: 16.0),
-                        //                     ),
-                        //                     SizedBox(height: 20.0),
-                        //                     ElevatedButton(
-                        //                       style: ElevatedButton.styleFrom(
-                        //                         backgroundColor: Colors.green,
-                        //                       ),
-                        //                       onPressed: () {
-                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                        //                       },
-                        //                       child: Row(
-                        //                         mainAxisAlignment: MainAxisAlignment.center,
-                        //                         children: [
-                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
-                        //                           SizedBox(width: 5,),
-                        //                           Text('Télécharger sur le play store',
-                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                        //                         ],
-                        //                       ),
-                        //
-                        //                     ),
-                        //                   ],
-                        //                 ),
-                        //               ),
-                        //             ),
-                        //           );
-                        //         },
-                        //       );
-                        //
-                        //     }
-                        //
-                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-                        //
-                        //
-                        //   },
-                        // );
                       },
                       child:                       badges.Badge(
                           badgeContent:
@@ -3766,111 +3605,9 @@ class _MyHomePageState extends State<MyHomePage>
                         checkAppVersionAndProceed(context, () {
                           _scaffoldKey.currentState!.openDrawer();
                         });
-                        // checkAppVersionAndProceed(context, () {
-                        //   Navigator.pushNamed(context, '/videos');
-                        // });
-
-                        // authProvider.getAppData().then(
-                        //       (appdata) async {
-                        //     printVm("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-                        //     if (authProvider.app_version_code== authProvider.appDefaultData.app_version_code_officiel) {
-                        //       Navigator.pushNamed(context, '/user_posts_form');
-                        //
-                        //
-                        //
-                        //     }        else{
-                        //       showModalBottomSheet(
-                        //         context: context,
-                        //         builder: (BuildContext context) {
-                        //           return Container(
-                        //             height: 300,
-                        //             child: Center(
-                        //               child: Padding(
-                        //                 padding: const EdgeInsets.all(20.0),
-                        //                 child: Column(
-                        //                   mainAxisAlignment: MainAxisAlignment.center,
-                        //                   crossAxisAlignment: CrossAxisAlignment.center,
-                        //                   children: [
-                        //                     Icon(Icons.info,color: Colors.red,),
-                        //                     Text(
-                        //                       'Nouvelle mise à jour disponible!',
-                        //                       style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                        //                     ),
-                        //                     SizedBox(height: 10.0),
-                        //                     Text(
-                        //                       'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                        //                       style: TextStyle(fontSize: 16.0),
-                        //                     ),
-                        //                     SizedBox(height: 20.0),
-                        //                     ElevatedButton(
-                        //                       style: ElevatedButton.styleFrom(
-                        //                         backgroundColor: Colors.green,
-                        //                       ),
-                        //                       onPressed: () {
-                        //                         _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                        //                       },
-                        //                       child: Row(
-                        //                         mainAxisAlignment: MainAxisAlignment.center,
-                        //                         children: [
-                        //                           Icon(Ionicons.ios_logo_google_playstore,color: Colors.white,),
-                        //                           SizedBox(width: 5,),
-                        //                           Text('Télécharger sur le play store',
-                        //                             style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-                        //                         ],
-                        //                       ),
-                        //
-                        //                     ),
-                        //                   ],
-                        //                 ),
-                        //               ),
-                        //             ),
-                        //           );
-                        //         },
-                        //       );
-                        //
-                        //     }
-                        //
-                        //     // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-                        //
-                        //
-                        //   },
-                        // );
                       },
                       child: Image.asset('assets/icons/icons8-menu-188.png',width: homeIconSize,height: homeIconSize,)),
 
-                  //
-                  // IconButton(
-                  //     onPressed: () {
-                  //       /*
-                  //       postProvider.getPostsVideos().then((value) {
-                  //         if (value.length>0) {
-                  //           Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCards(),));
-                  //         }
-                  //       },);
-                  //
-                  //        */
-                  //
-                  //       Navigator.pushNamed(context, '/videos');
-                  //     },
-                  //     icon: Icon(
-                  //       Icons.video_library_rounded,
-                  //       size: 30,
-                  //       color: ConstColors.blackIconColors,
-                  //     )),
-                  // IconButton(
-                  //     onPressed: () async {
-                  //       printVm('tap');
-                  //       checkAppVersionAndProceed(context, () {
-                  //         _scaffoldKey.currentState!.openDrawer();
-                  //       });
-                  //
-                  //       // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
-                  //     },
-                  //     icon: Icon(
-                  //       Icons.menu,
-                  //       size: 30,
-                  //       color: ConstColors.blackIconColors,
-                  //     )),
                 ],
               ),
             ),

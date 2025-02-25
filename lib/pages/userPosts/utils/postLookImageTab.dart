@@ -41,6 +41,7 @@ import '../hashtag/textHashTag/views/view_models/home_view_model.dart';
 import '../hashtag/textHashTag/views/view_models/search_view_model.dart';
 import '../hashtag/textHashTag/views/widgets/comment_text_field.dart';
 import '../hashtag/textHashTag/views/widgets/search_result_overlay.dart';
+import '../postColorsWidget.dart';
 import '../utils/pixel_transparent_painter.dart';
 
 /// A page that displays a preview of the generated image.
@@ -224,6 +225,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..loves = 0
         ..id = postId
         ..images = [];
+
+
       PostMonetiser postMonetiser = PostMonetiser(
         id: postMId,
         user_id: authProvider.loginUserData.id,
@@ -251,6 +254,13 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
         await uploadTask.whenComplete(() async {
           String fileURL = await storageReference.getDownloadURL();
+
+          await extractColorsFromImageUrl(fileURL).then((value) {
+            post.colorDomine= value['dominantColor'];
+            post.colorSecondaire= value['vibrantColor'];
+
+          },);
+
           post.images!.add(fileURL);
 
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
@@ -258,7 +268,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
           authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
           await userProvider.updateUser(authProvider.loginUserData!);
-          postProvider.listConstposts.add(post);
+          // postProvider.listConstposts.add(post);
 
 
           if(isChallenge){

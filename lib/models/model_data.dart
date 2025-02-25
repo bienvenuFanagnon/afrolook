@@ -1472,6 +1472,8 @@ class Post {
   String? status;
   String? urlLink;
   String? dataType;
+  String? colorDomine;
+  String? colorSecondaire;
   String? description;
   String? contact_whatsapp;
   int? nombreCollaborateur;
@@ -1530,6 +1532,8 @@ class Post {
     this.users_cadeau_id,
     this.users_comments_id,
     this.contact_whatsapp,
+    this.colorDomine,
+    this.colorSecondaire,
     this.description,
     this.urlLink,
     this.createdAt,
@@ -1555,6 +1559,12 @@ class Post {
     url_media = json['url_media'];
     contact_whatsapp =
         json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
+
+    colorSecondaire =
+        json['colorSecondaire'] == null ? null : json['colorSecondaire'];
+
+    colorDomine =
+        json['colorDomine'] == null ? null : json['colorDomine'];
     challenge_id =
         json['challenge_id'] == null ? "" : json['challenge_id'];
     categorie =
@@ -1604,6 +1614,8 @@ class Post {
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
     data['url_media'] = this.url_media;
+    data['colorDomine'] = this.colorDomine;
+    data['colorSecondaire'] = this.colorSecondaire;
 
     data['loves'] = this.loves;
     data['contact_whatsapp'] = this.contact_whatsapp;

@@ -7,6 +7,7 @@ import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/services/user/userService.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_story_presenter/flutter_story_presenter.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chatmodels/message.dart';
 
 import '../pages/component/consoleWidget.dart';
+import '../pages/userPosts/postColorsWidget.dart';
 import '../services/auth/authService.dart';
 import 'authProvider.dart';
 
@@ -831,6 +833,14 @@ class PostProvider extends ChangeNotifier {
     return listConstposts;
 
   }
+
+  Color colorFromHex(String? hexString) {
+    if (hexString == null) return Colors.transparent;
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
   Stream<List<Post>> getPostsImages2(int limite) async* {
     printVm("get canal data ");
     List<Post> posts = [];
@@ -910,6 +920,24 @@ class PostProvider extends ChangeNotifier {
     // Traiter les documents de la journée
     for (var doc in todayPosts) {
       Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
+      if(post.colorDomine==null){
+        if(post.images!=null&&post.images!.isNotEmpty){
+
+          await extractColorsFromImageUrl(post!.images!.first!).then((value) {
+            post.colorDomine= value['dominantColor'];
+            post.colorSecondaire= value['vibrantColor'];
+
+          },);
+
+        }else{
+          await extractColorsFromImageUrl("").then((value) {
+            post.colorDomine= value['dominantColor'];
+            post.colorSecondaire= value['vibrantColor'];
+
+          },);
+        }
+
+      }
 
       // Vérifier si l'identifiant du post est déjà dans l'ensemble du jour
       if (postIdsToday.contains(post.id)) {
