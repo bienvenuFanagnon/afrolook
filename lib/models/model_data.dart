@@ -1472,9 +1472,11 @@ class Post {
   String? status;
   String? urlLink;
   String? dataType;
+  String? typeTabbar;
   String? colorDomine;
   String? colorSecondaire;
   String? description;
+  String? isPostLink;
   String? contact_whatsapp;
   int? nombreCollaborateur;
   double? publiCashTotal;
@@ -1518,6 +1520,7 @@ class Post {
     this.nombrePersonneParJour = 0,
     this.type,
     this.images,
+    this.isPostLink,
     this.users_like_id,
     this.users_love_id,
     this.loves,
@@ -1535,6 +1538,7 @@ class Post {
     this.colorDomine,
     this.colorSecondaire,
     this.description,
+    this.typeTabbar,
     this.urlLink,
     this.createdAt,
     this.updatedAt,
@@ -1559,6 +1563,10 @@ class Post {
     url_media = json['url_media'];
     contact_whatsapp =
         json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
+    typeTabbar =
+        json['typeTabbar'] == null ? "" : json['typeTabbar'];
+    isPostLink =
+        json['isPostLink'] == null ? "NON" : json['isPostLink'];
 
     colorSecondaire =
         json['colorSecondaire'] == null ? null : json['colorSecondaire'];
@@ -1624,6 +1632,7 @@ class Post {
     data['categorie'] = this.categorie==null?'LOOK':"CANAL";
     data['urlLink'] = this.urlLink;
     data['images'] = this.images;
+    data['isPostLink'] = this.isPostLink;
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;
     data['users_republier_id'] = this.users_republier_id;
@@ -1634,6 +1643,7 @@ class Post {
     data['partage'] = this.partage;
     data['users_vue_id'] = this.users_vue_id;
     data['vues'] = this.vues;
+    data['typeTabbar'] = this.typeTabbar;
     data['canal_id'] = this.canal_id;
     data['nombreCollaborateur'] = this.nombreCollaborateur;
     data['publiCashTotal'] = this.publiCashTotal;
@@ -2099,3 +2109,12 @@ enum NotificationType {
 enum TypeEntreprise { personnel, partenaire }
 enum TypeAbonnement { GRATUIT, STANDART,PREMIUM }
 enum StatutData { ENCOURS, TERMINER,ANNULER,ATTENTE }
+
+enum TabBarType {
+  ACTUALITES,
+  LOOKS,
+  SPORT,
+  EVENEMENT,
+  OFFRES,
+  GAMER,
+}

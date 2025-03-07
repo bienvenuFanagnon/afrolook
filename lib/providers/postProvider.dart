@@ -841,7 +841,7 @@ class PostProvider extends ChangeNotifier {
     buffer.write(hexString.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
-  Stream<List<Post>> getPostsImages2(int limite) async* {
+  Stream<List<Post>> getPostsImages2(int limite,String tabBarType) async* {
     printVm("get canal data ");
     List<Post> posts = [];
     listConstposts = [];
@@ -879,6 +879,7 @@ class PostProvider extends ChangeNotifier {
         .where("created_at", isGreaterThanOrEqualTo: startOfDay)
         .where("created_at", isLessThanOrEqualTo: endOfDay)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("typeTabbar", isEqualTo:tabBarType )
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy('created_at', descending: true)
         .limit(limite);
@@ -894,6 +895,8 @@ class PostProvider extends ChangeNotifier {
         .where("created_at", isGreaterThanOrEqualTo: startOfWeek)
         .where("created_at", isLessThanOrEqualTo: endOfWeek)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("typeTabbar", isEqualTo:tabBarType )
+
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy('created_at', descending: true)
         .limit(limite);
@@ -908,6 +911,8 @@ class PostProvider extends ChangeNotifier {
     )
         .where("created_at", isLessThan: startOfWeek)
         .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+        .where("typeTabbar", isEqualTo:tabBarType )
+
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy('updated_at', descending: true)
         .limit(limite);

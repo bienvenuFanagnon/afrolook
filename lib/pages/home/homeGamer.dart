@@ -61,16 +61,16 @@ import '../userPosts/postWidgets/postUserWidget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class GamerPage extends StatefulWidget {
+  const GamerPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<GamerPage> createState() => _GamerPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
+class _GamerPageState extends State<GamerPage>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   String token = '';
   bool dejaVuPub = true;
@@ -86,17 +86,17 @@ class _MyHomePageState extends State<MyHomePage>
   final _formKey = GlobalKey<FormState>();
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late UserAuthProvider authProvider =
-      Provider.of<UserAuthProvider>(context, listen: false);
+  Provider.of<UserAuthProvider>(context, listen: false);
 
   late UserShopAuthProvider authProviderShop =
-      Provider.of<UserShopAuthProvider>(context, listen: false);
+  Provider.of<UserShopAuthProvider>(context, listen: false);
   late CategorieProduitProvider categorieProduitProvider =
-      Provider.of<CategorieProduitProvider>(context, listen: false);
+  Provider.of<CategorieProduitProvider>(context, listen: false);
   late UserProvider userProvider =
-      Provider.of<UserProvider>(context, listen: false);
+  Provider.of<UserProvider>(context, listen: false);
   final List<String> noms = ['Alice', 'Bob', 'Charlie'];
   late PostProvider postProvider =
-      Provider.of<PostProvider>(context, listen: false);
+  Provider.of<PostProvider>(context, listen: false);
   TextEditingController commentController = TextEditingController();
   List<Post> listConstposts=[];
   List<ArticleData> articles=[];
@@ -239,11 +239,11 @@ class _MyHomePageState extends State<MyHomePage>
     var friendsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-          Filter('docId',
-              isEqualTo: '${authProvider.loginUserData.id}${amigo.id}'),
-          Filter('docId',
-              isEqualTo: '${amigo.id}${authProvider.loginUserData.id}'),
-        ))
+      Filter('docId',
+          isEqualTo: '${authProvider.loginUserData.id}${amigo.id}'),
+      Filter('docId',
+          isEqualTo: '${amigo.id}${authProvider.loginUserData.id}'),
+    ))
         .snapshots();
 
 // Obtenez la liste des utilisateurs
@@ -304,9 +304,9 @@ class _MyHomePageState extends State<MyHomePage>
         }
       });
       CollectionReference messageCollect =
-          await FirebaseFirestore.instance.collection('Messages');
+      await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-          await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -351,11 +351,11 @@ class _MyHomePageState extends State<MyHomePage>
     var friendsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-          Filter('docId',
-              isEqualTo: '${post.id}${authProvider.loginUserData!.id}'),
-          Filter('docId',
-              isEqualTo: '${authProvider.loginUserData!.id}${post.id}'),
-        ))
+      Filter('docId',
+          isEqualTo: '${post.id}${authProvider.loginUserData!.id}'),
+      Filter('docId',
+          isEqualTo: '${authProvider.loginUserData!.id}${post.id}'),
+    ))
         .snapshots();
 
 // Obtenez la liste des utilisateurs
@@ -418,9 +418,9 @@ class _MyHomePageState extends State<MyHomePage>
         }
       });
       CollectionReference messageCollect =
-          await FirebaseFirestore.instance.collection('Messages');
+      await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-          await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -438,19 +438,19 @@ class _MyHomePageState extends State<MyHomePage>
 
       /////////////ami//////////
       CollectionReference friendCollect =
-          await FirebaseFirestore.instance.collection('Users');
+      await FirebaseFirestore.instance.collection('Users');
       QuerySnapshot querySnapshotUserSender = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.id!
-                  ? '${amigo.id}'
-                  : '${authProvider.loginUserData!.id}')
+          isEqualTo: authProvider.loginUserData.id == amigo.id!
+              ? '${amigo.id}'
+              : '${authProvider.loginUserData!.id}')
           .get();
       // Afficher la liste
       QuerySnapshot querySnapshotUserReceiver = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.id
-                  ? '${authProvider.loginUserData!.id}'
-                  : '${amigo.id}')
+          isEqualTo: authProvider.loginUserData.id == amigo.id
+              ? '${authProvider.loginUserData!.id}'
+              : '${amigo.id}')
           .get();
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs
@@ -465,13 +465,13 @@ class _MyHomePageState extends State<MyHomePage>
 
       /////////////entreprise//////////
       CollectionReference entrepriseCollect =
-          await FirebaseFirestore.instance.collection('Entreprises');
+      await FirebaseFirestore.instance.collection('Entreprises');
       QuerySnapshot querySnapshotentreprise = await entrepriseCollect
           .where("id", isEqualTo: '${post.entreprise_id}')
           .get();
       List<EntrepriseData> entrepriseList = querySnapshotentreprise.docs
           .map((doc) =>
-              EntrepriseData.fromJson(doc.data() as Map<String, dynamic>))
+          EntrepriseData.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
       usersChat.entreprise = entrepriseList.first;
     }
@@ -542,298 +542,7 @@ class _MyHomePageState extends State<MyHomePage>
     printVm('Menu is show');
   }
 
-  void _showPostMenuModalDialog(Post post) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Visibility(
-                  visible: post.user!.id != authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      post.status = PostStatus.SIGNALER.name;
-                      await postProvider.updateVuePost(post, context).then(
-                        (value) {
-                          if (value) {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'Post signalé !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          } else {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'échec !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          }
-                          Navigator.pop(context);
-                        },
-                      );
-                      setState(() {});
-                    },
-                    leading: Icon(
-                      Icons.flag,
-                      color: Colors.blueGrey,
-                    ),
-                    title: Text(
-                      'Signaler',
-                    ),
-                  ),
-                ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
 
-                 */
-                Visibility(
-                  visible: authProvider.loginUserData.role == UserRole.ADM.name,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        post.status = PostStatus.SUPPRIMER.name;
-                        await postProvider.updateVuePost(post, context).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'Post supprimé !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else if (post.type == PostType.POST.name) {
-                        if (post.user!.id == authProvider.loginUserData.id) {
-                          post.status = PostStatus.SUPPRIMER.name;
-                          await postProvider.updateVuePost(post, context).then(
-                                (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'Post supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
-                      }
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                        ? Text('Supprimer')
-                        : Text('Supprimer'),
-                  ),
-                ),
-
-                // Visibility(
-                //   visible: post.user!.id == authProvider.loginUserData.id,
-                //   child: ListTile(
-                //     onTap: () async {
-                //       if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                //         post.status = PostStatus.NONVALIDE.name;
-                //         await postProvider.updateVuePost(post, context).then(
-                //           (value) {
-                //             if (value) {
-                //               SnackBar snackBar = SnackBar(
-                //                 content: Text(
-                //                   'Post bloqué !',
-                //                   textAlign: TextAlign.center,
-                //                   style: TextStyle(color: Colors.green),
-                //                 ),
-                //               );
-                //               ScaffoldMessenger.of(context)
-                //                   .showSnackBar(snackBar);
-                //             } else {
-                //               SnackBar snackBar = SnackBar(
-                //                 content: Text(
-                //                   'échec !',
-                //                   textAlign: TextAlign.center,
-                //                   style: TextStyle(color: Colors.red),
-                //                 ),
-                //               );
-                //               ScaffoldMessenger.of(context)
-                //                   .showSnackBar(snackBar);
-                //             }
-                //           },
-                //         );
-                //       } else if (post.type == PostType.POST.name) {
-                //         if (post.user!.id == authProvider.loginUserData.id) {
-                //           post.status = PostStatus.SUPPRIMER.name;
-                //           await postProvider.updateVuePost(post, context).then(
-                //             (value) {
-                //               if (value) {
-                //                 SnackBar snackBar = SnackBar(
-                //                   content: Text(
-                //                     'Post supprimé !',
-                //                     textAlign: TextAlign.center,
-                //                     style: TextStyle(color: Colors.green),
-                //                   ),
-                //                 );
-                //                 ScaffoldMessenger.of(context)
-                //                     .showSnackBar(snackBar);
-                //               } else {
-                //                 SnackBar snackBar = SnackBar(
-                //                   content: Text(
-                //                     'échec !',
-                //                     textAlign: TextAlign.center,
-                //                     style: TextStyle(color: Colors.red),
-                //                   ),
-                //                 );
-                //                 ScaffoldMessenger.of(context)
-                //                     .showSnackBar(snackBar);
-                //               }
-                //             },
-                //           );
-                //         }
-                //       }
-                //
-                //       setState(() {
-                //         Navigator.pop(context);
-                //       });
-                //     },
-                //     leading: Icon(
-                //       Icons.delete,
-                //       color: Colors.red,
-                //     ),
-                //     title: authProvider.loginUserData.role == UserRole.ADM.name
-                //         ? Text('Bloquer')
-                //         : Text('Supprimer'),
-                //   ),
-                // ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showUserDetailsAnnonceDialog(String url, Annonce annonce) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      topRight: Radius.circular(10)),
-                  child: Container(
-                    child: CachedNetworkImage(
-                      fit: BoxFit.cover,
-                      imageUrl: '${url}',
-                      progressIndicatorBuilder: (context, url,
-                              downloadProgress) =>
-                          //  LinearProgressIndicator(),
-
-                          Skeletonizer(
-                              child: SizedBox(
-                                  width: 120,
-                                  height: 100,
-                                  child: ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(10)),
-                                      child: Image.asset(
-                                          'assets/images/404.png')))),
-                      errorWidget: (context, url, error) => Container(
-                          width: 120,
-                          height: 100,
-                          child: Image.asset(
-                            "assets/icon/user-removebg-preview.png",
-                            fit: BoxFit.cover,
-                          )),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Container(
-                      //width: 100,
-                      decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.5),
-                          borderRadius: BorderRadius.all(Radius.circular(50))),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "vues: ",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              "${annonce.vues}",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _showServiceDialog() {
     showDialog(
@@ -900,11 +609,11 @@ class _MyHomePageState extends State<MyHomePage>
     var friendsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-          Filter('docId',
-              isEqualTo: '${amigo.id}${authProvider.loginUserData.id!}'),
-          Filter('docId',
-              isEqualTo: '${authProvider.loginUserData.id!}${amigo.id}'),
-        ))
+      Filter('docId',
+          isEqualTo: '${amigo.id}${authProvider.loginUserData.id!}'),
+      Filter('docId',
+          isEqualTo: '${authProvider.loginUserData.id!}${amigo.id}'),
+    ))
         .snapshots();
 
 // Obtenez la liste des utilisateurs
@@ -974,9 +683,9 @@ class _MyHomePageState extends State<MyHomePage>
         }
       });
       CollectionReference messageCollect =
-          await FirebaseFirestore.instance.collection('Messages');
+      await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-          await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -994,19 +703,19 @@ class _MyHomePageState extends State<MyHomePage>
 
       /////////////ami//////////
       CollectionReference friendCollect =
-          await FirebaseFirestore.instance.collection('Users');
+      await FirebaseFirestore.instance.collection('Users');
       QuerySnapshot querySnapshotUserSender = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.id
-                  ? '${amigo.id}'
-                  : '${authProvider.loginUserData.id!}')
+          isEqualTo: authProvider.loginUserData.id == amigo.id
+              ? '${amigo.id}'
+              : '${authProvider.loginUserData.id!}')
           .get();
       // Afficher la liste
       QuerySnapshot querySnapshotUserReceiver = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.id
-                  ? '${authProvider.loginUserData.id!}'
-                  : '${amigo.id}')
+          isEqualTo: authProvider.loginUserData.id == amigo.id
+              ? '${authProvider.loginUserData.id!}'
+              : '${amigo.id}')
           .get();
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs
@@ -1064,17 +773,17 @@ class _MyHomePageState extends State<MyHomePage>
                         imageUrl: '${user.imageUrl!}',
                         progressIndicatorBuilder:
                             (context, url, downloadProgress) =>
-                                //  LinearProgressIndicator(),
+                        //  LinearProgressIndicator(),
 
-                                Skeletonizer(
-                                    child: SizedBox(
-                                        width: w*0.45,
-                                        height: h*0.32,
-                                        child: ClipRRect(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(10)),
-                                            child: Image.asset(
-                                                'assets/images/404.png',fit: BoxFit.cover,)))),
+                        Skeletonizer(
+                            child: SizedBox(
+                                width: w*0.45,
+                                height: h*0.32,
+                                child: ClipRRect(
+                                    borderRadius: BorderRadius.all(
+                                        Radius.circular(10)),
+                                    child: Image.asset(
+                                      'assets/images/404.png',fit: BoxFit.cover,)))),
                         errorWidget: (context, url, error) => Container(
                             width: w*0.45,
                             height: h*0.32,
@@ -1218,63 +927,63 @@ class _MyHomePageState extends State<MyHomePage>
     return Skeletonizer(
       child: StatefulBuilder(
           builder: (BuildContext context, StateSetter setStateImages) {
-        return Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: (PointerDownEvent details) {},
-          child: Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (PointerDownEvent details) {},
+              child: Padding(
+                padding: const EdgeInsets.all(5.0),
+                child: Column(
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/images/404.png'),
-                              ),
-                            ),
-                            SizedBox(
-                              height: 2,
-                            ),
                             Row(
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      //width: 100,
-                                      child: TextCustomerUserTitle(
-                                        titre: "#afrolook",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      //width: 100,
-                                      child: TextCustomerUserTitle(
-                                        titre: "&afrolook",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                    TextCustomerUserTitle(
-                                      titre: "0suivi(s)",
-                                      fontSize: 10,
-                                      couleur: ConstColors.textColors,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ],
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: CircleAvatar(
+                                    backgroundImage:
+                                    AssetImage('assets/images/404.png'),
+                                  ),
                                 ),
+                                SizedBox(
+                                  height: 2,
+                                ),
+                                Row(
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "#afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "&afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre: "0suivi(s)",
+                                          fontSize: 10,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ],
+                                    ),
 
-                                /*
+                                    /*
                                   IconButton(
                                       onPressed: () {},
                                       icon: Icon(
@@ -1284,57 +993,57 @@ class _MyHomePageState extends State<MyHomePage>
                                       )),
 
                                    */
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
-                        SizedBox(
-                          width: 20,
-                        ),
-                        Icon(
-                          Entypo.arrow_long_right,
-                          color: Colors.green,
-                        ),
-                        SizedBox(
-                          width: 20,
-                        ),
-                        Row(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/images/404.png'),
-                              ),
+                            SizedBox(
+                              width: 20,
+                            ),
+                            Icon(
+                              Entypo.arrow_long_right,
+                              color: Colors.green,
                             ),
                             SizedBox(
-                              height: 2,
+                              width: 20,
                             ),
                             Row(
                               children: [
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      //width: 100,
-                                      child: TextCustomerUserTitle(
-                                        titre: "@afrolook",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextCustomerUserTitle(
-                                      titre: "0 abonné(s)",
-                                      fontSize: 10,
-                                      couleur: ConstColors.textColors,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ],
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: CircleAvatar(
+                                    backgroundImage:
+                                    AssetImage('assets/images/404.png'),
+                                  ),
                                 ),
+                                SizedBox(
+                                  height: 2,
+                                ),
+                                Row(
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          //width: 100,
+                                          child: TextCustomerUserTitle(
+                                            titre: "@afrolook",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre: "0 abonné(s)",
+                                          fontSize: 10,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ],
+                                    ),
 
-                                /*
+                                    /*
                               IconButton(
                                   onPressed: () {},
                                   icon: Icon(
@@ -1344,174 +1053,174 @@ class _MyHomePageState extends State<MyHomePage>
                                   )),
 
                                */
+                                  ],
+                                ),
                               ],
                             ),
                           ],
                         ),
+                        IconButton(
+                            onPressed: () {
+                              // _showModalDialog(post);
+                            },
+                            icon: Icon(
+                              Icons.more_horiz,
+                              size: 30,
+                              color: ConstColors.blackIconColors,
+                            )),
                       ],
                     ),
-                    IconButton(
-                        onPressed: () {
-                          // _showModalDialog(post);
-                        },
-                        icon: Icon(
-                          Icons.more_horiz,
-                          size: 30,
-                          color: ConstColors.blackIconColors,
-                        )),
-                  ],
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Entypo.network,
-                        size: 15,
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Entypo.network,
+                            size: 15,
+                          ),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          TextCustomerUserTitle(
+                            titre: "publicité",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: Colors.green,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ],
                       ),
-                      SizedBox(
-                        width: 10,
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        width: width * 0.8,
+                        height: 50,
+                        child: Container(
+                          alignment: Alignment.centerLeft,
+                          child: TextCustomerPostDescription(
+                            titre: "afrolook",
+                            fontSize: SizeText.homeProfileTextSize,
+                            couleur: ConstColors.textColors,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
                       ),
-                      TextCustomerUserTitle(
-                        titre: "publicité",
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: Colors.green,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: width * 0.8,
-                    height: 50,
-                    child: Container(
-                      alignment: Alignment.centerLeft,
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Align(
+                      alignment: Alignment.topLeft,
                       child: TextCustomerPostDescription(
                         titre: "afrolook",
-                        fontSize: SizeText.homeProfileTextSize,
+                        fontSize: SizeText.homeProfileDateTextSize,
                         couleur: ConstColors.textColors,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: TextCustomerPostDescription(
-                    titre: "afrolook",
-                    fontSize: SizeText.homeProfileDateTextSize,
-                    couleur: ConstColors.textColors,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    //Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
-                  },
-                  child: Container(
-                    //width: w*0.9,
-                    // height: h*0.5,
-
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        //Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: post),));
+                      },
                       child: Container(
-                        child: Image.asset('assets/images/404.png'),
+                        //width: w*0.9,
+                        // height: h*0.5,
+
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                          child: Container(
+                            child: Image.asset('assets/images/404.png'),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: contact_afrolook
-                            ? Center(
-                                child: LoadingAnimationWidget.flickr(
-                                  size: 30,
-                                  leftDotColor: Colors.green,
-                                  rightDotColor: Colors.black,
+                    SizedBox(
+                      height: 10,
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                            onPressed: () {},
+                            child: contact_afrolook
+                                ? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            )
+                                : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  AntDesign.message1,
+                                  color: Colors.black,
                                 ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    AntDesign.message1,
-                                    color: Colors.black,
-                                  ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
-                                  Text(
-                                    "Afrolook",
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              )),
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: contact_whatsapp
-                            ? Center(
-                                child: LoadingAnimationWidget.flickr(
-                                  size: 30,
-                                  leftDotColor: Colors.green,
-                                  rightDotColor: Colors.black,
+                                SizedBox(
+                                  width: 5,
                                 ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Fontisto.whatsapp,
-                                    color: Colors.green,
-                                  ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
-                                  Text(
-                                    "WhatsApp",
-                                    style: TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              )),
+                                Text(
+                                  "Afrolook",
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            )),
+                        ElevatedButton(
+                            onPressed: () {},
+                            child: contact_whatsapp
+                                ? Center(
+                              child: LoadingAnimationWidget.flickr(
+                                size: 30,
+                                leftDotColor: Colors.green,
+                                rightDotColor: Colors.black,
+                              ),
+                            )
+                                : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Fontisto.whatsapp,
+                                  color: Colors.green,
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                  "WhatsApp",
+                                  style: TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            )),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Divider(
+                      height: 3,
+                    )
                   ],
                 ),
-                SizedBox(
-                  height: 10,
-                ),
-                Divider(
-                  height: 3,
-                )
-              ],
-            ),
-          ),
-        );
-      }),
+              ),
+            );
+          }),
     );
   }
 
@@ -1577,7 +1286,7 @@ class _MyHomePageState extends State<MyHomePage>
                                       //width: 100,
                                       child: TextCustomerUserTitle(
                                         titre:
-                                            "@${authProvider.loginUserData.pseudo}",
+                                        "@${authProvider.loginUserData.pseudo}",
                                         fontSize: SizeText.homeProfileTextSize,
                                         couleur: ConstColors.textColors,
                                         fontWeight: FontWeight.bold,
@@ -1585,7 +1294,7 @@ class _MyHomePageState extends State<MyHomePage>
                                     ),
                                     TextCustomerUserTitle(
                                       titre:
-                                          "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
+                                      "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
                                       fontSize: SizeText.homeProfileTextSize,
                                       couleur: ConstColors.textColors,
                                       fontWeight: FontWeight.w400,
@@ -1648,7 +1357,7 @@ class _MyHomePageState extends State<MyHomePage>
                 children: [
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/1.png',
                       height: 20,
@@ -1667,7 +1376,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/3.png',
                       height: 20,
@@ -1789,7 +1498,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(FontAwesome.forumbee,size: 30,color: Colors.green,),
                     title: TextCustomerMenu(
                       titre: "Canaux",
@@ -1806,7 +1515,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/images/trophee.png',
                       height: 20,
@@ -1823,7 +1532,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                       await userProvider.getAllUsers().then(
                             (value) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
                         },
                       );
 
@@ -1831,7 +1540,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green,),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green,),
                     leading: Icon(Icons.history_toggle_off_sharp,size: 30,),
                     title: TextCustomerMenu(
                       titre: "Mes chroniques",
@@ -1903,7 +1612,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/6.png',
                       height: 20,
@@ -1923,7 +1632,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/6.png',
                       height: 20,
@@ -1966,7 +1675,7 @@ class _MyHomePageState extends State<MyHomePage>
                   // ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/7.png',
                       height: 20,
@@ -1981,7 +1690,7 @@ class _MyHomePageState extends State<MyHomePage>
                     onTap: () async {
                       // Add your navigation logic here
                       await userProvider.getAllInfos().then(
-                        (value) {
+                            (value) {
                           Navigator.pushNamed(context, '/app_info');
                         },
                       );
@@ -1989,7 +1698,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.contact_mail, color: Colors.green),
                     title: TextCustomerMenu(
                       titre: "Nos Contactes",
@@ -2000,7 +1709,7 @@ class _MyHomePageState extends State<MyHomePage>
                     onTap: () async {
                       // Add your navigation logic here
                       await userProvider.getAllInfos().then(
-                        (value) {
+                            (value) {
                           Navigator.pushNamed(context, '/contact');
                         },
                       );
@@ -2008,9 +1717,9 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing:
-                        Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading:
-                        Icon(MaterialIcons.smartphone, color: Colors.green),
+                    Icon(MaterialIcons.smartphone, color: Colors.green),
                     title: TextCustomerMenu(
                       titre: "Partager l'application",
                       fontSize: SizeText.homeProfileTextSize,
@@ -2022,12 +1731,12 @@ class _MyHomePageState extends State<MyHomePage>
                       final box = context.findRenderObject() as RenderBox?;
 
                       await authProvider.getAppData().then(
-                        (value) async {
+                            (value) async {
                           await Share.shareUri(
                             Uri.parse(
                                 '${authProvider.appDefaultData.app_link}'),
                             sharePositionOrigin:
-                                box!.localToGlobal(Offset.zero) & box.size,
+                            box!.localToGlobal(Offset.zero) & box.size,
                           );
 
                           //   if (result.status == ShareResultStatus.success) {
@@ -2072,7 +1781,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 user: authProvider.loginUserData,
                                 state: UserState.OFFLINE.name);
                             authProvider.storeToken('').then(
-                              (value) {
+                                  (value) {
                                 Navigator.pop(context);
                                 Navigator.pushReplacementNamed(
                                     context, "/login");
@@ -2153,7 +1862,7 @@ class _MyHomePageState extends State<MyHomePage>
                                             TextCustomerUserTitle(
                                               titre: "S'abonner",
                                               fontSize:
-                                                  SizeText.homeProfileTextSize,
+                                              SizeText.homeProfileTextSize,
                                               couleur: Colors.blue,
                                               fontWeight: FontWeight.w600,
                                             )
@@ -2223,7 +1932,7 @@ class _MyHomePageState extends State<MyHomePage>
                                             TextCustomerUserTitle(
                                               titre: "S'abonner",
                                               fontSize:
-                                                  SizeText.homeProfileTextSize,
+                                              SizeText.homeProfileTextSize,
                                               couleur: Colors.blue,
                                               fontWeight: FontWeight.w600,
                                             )
@@ -2293,12 +2002,12 @@ class _MyHomePageState extends State<MyHomePage>
     var friendsStream = FirebaseFirestore.instance
         .collection('Messages')
         .where(Filter.or(
-          Filter('send_by', isEqualTo: authProvider.loginUserData.id!),
-          Filter('receiverBy', isEqualTo: authProvider.loginUserData.id!),
-        ))
+      Filter('send_by', isEqualTo: authProvider.loginUserData.id!),
+      Filter('receiverBy', isEqualTo: authProvider.loginUserData.id!),
+    ))
         .where('message_state', isEqualTo: MessageState.NONLU.name)
         .where('receiverBy', isEqualTo: authProvider.loginUserData.id!)
-        //.orderBy('createdAt', descending: false)
+    //.orderBy('createdAt', descending: false)
 
         .snapshots();
 
@@ -2408,9 +2117,9 @@ class _MyHomePageState extends State<MyHomePage>
     var chatsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-          Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
-          Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
-        ))
+      Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
+      Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
+    ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
         .snapshots();
@@ -2423,13 +2132,13 @@ class _MyHomePageState extends State<MyHomePage>
     await for (var chatSnapshot in chatsStream) {
       for (var chatDoc in chatSnapshot.docs) {
         CollectionReference friendCollect =
-            await FirebaseFirestore.instance.collection('Users');
+        await FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect
             .where("id",
-                isEqualTo:
-                    authProvider.loginUserData.id == chatDoc["receiver_id"]
-                        ? chatDoc["sender_id"]
-                        : chatDoc["receiver_id"]!)
+            isEqualTo:
+            authProvider.loginUserData.id == chatDoc["receiver_id"]
+                ? chatDoc["sender_id"]
+                : chatDoc["receiver_id"]!)
             .get();
         // Afficher la liste
         List<UserData> userList = querySnapshotUser.docs
@@ -2476,7 +2185,7 @@ class _MyHomePageState extends State<MyHomePage>
     String lastShownDate = prefs.getString('lastShownDate') ?? '';
 
     String todayDate = DateTime.now().toIso8601String().split('T')[0];
-    _showChatXiloDialog();
+    // _showChatXiloDialog();
 
     if (lastShownDate != todayDate) {
 
@@ -2505,9 +2214,9 @@ class _MyHomePageState extends State<MyHomePage>
 
     hasShownDialogToday().then((value) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      authProvider.getAppData().then((value) {
-        // setState(() {});
-      });
+      // authProvider.getAppData().then((value) {
+      //   // setState(() {});
+      // });
       categorieProduitProvider.getArticleBooster().then((value) {
         articles = value;
         // setState(() {});
@@ -2524,48 +2233,48 @@ class _MyHomePageState extends State<MyHomePage>
         // setState(() {});
       });
 
-      if (value && mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Nouvelle offre sur Afrolook'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
-                    SizedBox(height: 5),
-                    Icon(FontAwesome.money, size: 50, color: Colors.green),
-                    SizedBox(height: 10),
-                    Text('Vous avez la possibilité de'),
-                    Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
-                    Text(
-                      'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  child: Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    prefs.setString('lastShownDateKey', DateTime.now().toString());
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-      _checkAndShowDialog();
+      // if (value && mounted) {
+      //   showDialog(
+      //     context: context,
+      //     builder: (BuildContext context) {
+      //       return AlertDialog(
+      //         title: Text('Nouvelle offre sur Afrolook'),
+      //         content: SingleChildScrollView(
+      //           child: Column(
+      //             mainAxisSize: MainAxisSize.max,
+      //             children: [
+      //               Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
+      //               SizedBox(height: 5),
+      //               Icon(FontAwesome.money, size: 50, color: Colors.green),
+      //               SizedBox(height: 10),
+      //               Text('Vous avez la possibilité de'),
+      //               Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
+      //               Text(
+      //                 'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
+      //                 textAlign: TextAlign.center,
+      //               ),
+      //             ],
+      //           ),
+      //         ),
+      //         actions: [
+      //           TextButton(
+      //             child: Text('OK'),
+      //             onPressed: () {
+      //               Navigator.of(context).pop();
+      //               prefs.setString('lastShownDateKey', DateTime.now().toString());
+      //             },
+      //           ),
+      //         ],
+      //       );
+      //     },
+      //   );
+      // }
+      // _checkAndShowDialog();
     });
 
     authProvider.getToken().then((token) async {
       printVm("token: ${token}");
-      postProvider.getPostsImages2(limitePosts).listen((data) {
+      postProvider.getPostsImages2(limitePosts,TabBarType.GAMER.name).listen((data) {
         if (!_streamController.isClosed) {
           _streamController.add(data);
         }
@@ -2617,7 +2326,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     switch (state) {
       case AppLifecycleState.detached:
-        // _onDetached();
+      // _onDetached();
         _onPaused();
         break;
       case AppLifecycleState.resumed:
@@ -2625,7 +2334,7 @@ class _MyHomePageState extends State<MyHomePage>
         // _onResumed();
         break;
       case AppLifecycleState.inactive:
-        // _onInactive();
+      // _onInactive();
         _onPaused();
         break;
       case AppLifecycleState.paused:
@@ -2730,293 +2439,266 @@ class _MyHomePageState extends State<MyHomePage>
 
          */
       },
-      child: WillPopScope(
-        onWillPop: () async {
-          // Cette fonction sera appelée lorsque l'utilisateur appuie sur le bouton "Retour"
-          return await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Voulez-vous quitter l\'application ?'),
-              content: const Text(
-                  'Êtes-vous sûr de vouloir quitter l\'application ? Toutes vos données non enregistrées seront perdues.'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context)
-                        .pop(false); // Annuler la fermeture de l'application
-                  },
-                  child: const Text('Annuler'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(true); // Quitter l'application
-                  },
-                  child: const Text('Quitter'),
-                ),
-              ],
-            ),
-          );
-        },
-        child: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: ConstColors.backgroundColor,
-          appBar: AppBar(
-            backgroundColor: Colors.lightGreen.shade300,
-            automaticallyImplyLeading: false,
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: ConstColors.backgroundColor,
+        // appBar: AppBar(
+        //   backgroundColor: Colors.lightGreen.shade300,
+        //   automaticallyImplyLeading: false,
+        //
+        //   titleSpacing: 10,
+        //   title: Text(
+        //     // 'Afro Chronique',
+        //     'Afrolook',
+        //     style: TextStyle(
+        //       fontSize: homeIconSize*0.7,
+        //       fontWeight: FontWeight.w900,
+        //       color: Colors.green,
+        //       letterSpacing: 1.5,
+        //     ),
+        //   ),
+        //
+        //   //backgroundColor: Colors.blue,
+        //   actions: [
+        //
+        //     GestureDetector(
+        //       onTap: () async {
+        //         checkAppVersionAndProceed(context, () {
+        //           Navigator.pushNamed(context, "/mes_notifications");
+        //         });
+        //
+        //       },
+        //       child: StreamBuilder<List<NotificationData>>(
+        //         stream: authProvider
+        //             .getListNotificationAuth(authProvider.loginUserData.id!),
+        //         builder: (context, snapshot) {
+        //           if (snapshot.connectionState == ConnectionState.waiting) {
+        //             return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
+        //           } else if (snapshot.hasError) {
+        //             return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
+        //           } else {
+        //             List<NotificationData> list = snapshot!.data!;
+        //
+        //             return Padding(
+        //               padding: const EdgeInsets.only(right: 15.0),
+        //               child: badges.Badge(
+        //                 showBadge: list.length < 1 ? false : true,
+        //                 badgeContent: list.length > 9
+        //                     ? Text(
+        //                         '9+',
+        //                         style: TextStyle(
+        //                             fontSize: 10, color: Colors.white),
+        //                       )
+        //                     : Text(
+        //                         '${list.length}',
+        //                         style: TextStyle(
+        //                             fontSize: 10, color: Colors.white),
+        //                       ),
+        //                 child: Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,)
+        //               ,
+        //               ),
+        //             );
+        //           }
+        //         },
+        //       ),
+        //     ),
+        //     SizedBox(width: 10,),
+        //
+        //     GestureDetector(
+        //       onTap: () async {
+        //         _showChatXiloDialog();
+        //
+        //       },
+        //       child: CircleAvatar(
+        //         radius: 15, // Taille de l'avatar
+        //         backgroundImage: AssetImage('assets/icon/X.png'),
+        //       ),
+        //     ),
+        //     SizedBox(width: 10,),
+        // AnimateIcon(
+        //   key: UniqueKey(),
+        //   onTap: () async {
+        //     checkAppVersionAndProceed(context, () {
+        //       Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
+        //     });
+        //
+        //
+        //   },
+        //   iconType: IconType.continueAnimation,
+        //   height: homeIconSize,
+        //   width: homeIconSize,
+        //   color: Colors.green,
+        //   animateIcon: AnimateIcons.settings,
+        // ),
+        //     SizedBox(width: 10,),
+        //
+        //     AnimateIcon(
+        //   key: UniqueKey(),
+        //   onTap: () async {
+        //     checkAppVersionAndProceed(context, () {
+        //       Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+        //     });
+        //
+        //   },
+        //   iconType: IconType.continueAnimation,
+        //   height: homeIconSize,
+        //   width: homeIconSize,
+        //   color: Colors.green,
+        //   animateIcon: AnimateIcons.paid,
+        // ),
+        //     SizedBox(width: 10,),
+        //
+        //     GestureDetector(
+        //       onTap: () async {
+        //         if (_scrollController.hasClients) {
+        //
+        //           _scrollController.animateTo(
+        //             0.0,
+        //             duration: Duration(milliseconds: 1000),
+        //             curve: Curves.ease,
+        //           );
+        //         }
+        //         setState(() {
+        //           listConstposts.clear();
+        //           postProvider.getPostsImages2(limitePosts).listen((data) {
+        //             _streamController.add(data);
+        //           });
+        //         });
+        //
+        //         // setState(() {
+        //         //   postProvider.getHomePostsImages(limitePosts).then((value) {
+        //         //
+        //         //   },);
+        //         // });
+        //
+        //         //   Restart.restartApp();
+        //
+        //         /*
+        //       await userProvider.getAllAnnonces();
+        //       await postProvider.getPostsImages(limitePosts).then((value) {
+        //         printVm('actualiser');
+        //         setState(() {
+        //           postLenght=8;
+        //           is_actualised = false;
+        //
+        //         });
+        //
+        //
+        //       },);
+        //
+        //        */
+        //       },
+        //         child: Padding(
+        //           padding: const EdgeInsets.all(8.0),
+        //           child: Image.asset("assets/icon/cocotier-home.png",height: 30,width: 30,),
+        //         )),
+        //   ],
+        //   //title: Text(widget.title),
+        // ),
+        // drawer: menu(context,width,height),
+        body: SafeArea(
+          child: Container(
 
-            titleSpacing: 10,
-            title: Text(
-              // 'Afro Chronique',
-              'Afrolook',
-              style: TextStyle(
-                fontSize: homeIconSize*0.7,
-                fontWeight: FontWeight.w900,
-                color: Colors.green,
-                letterSpacing: 1.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.lightGreen.shade200, // Noir plus dominant mais atténué
+                  Colors.lightGreen.shade200, // Noir plus dominant mais atténué
+                ],
               ),
             ),
+            child: CustomScrollView(
 
-            //backgroundColor: Colors.blue,
-            actions: [
+              controller: _scrollController,
+              slivers: <Widget>[
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<UserData>>(
+                    future: authProvider.getUsersStorie(authProvider.loginUserData.id!,
+                      limiteUsers,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: widgetSeke2(width, height),
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: widgetSeke2(width, height),
+                          ),
+                        );
+                      } else {
+                        List<UserData> list = snapshot.data!;
+                        // list.shuffle();
 
-              GestureDetector(
-                onTap: () async {
-                  checkAppVersionAndProceed(context, () {
-                    Navigator.pushNamed(context, "/mes_notifications");
-                  });
-
-                },
-                child: StreamBuilder<List<NotificationData>>(
-                  stream: authProvider
-                      .getListNotificationAuth(authProvider.loginUserData.id!),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
-                    } else if (snapshot.hasError) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
-                    } else {
-                      List<NotificationData> list = snapshot!.data!;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 15.0),
-                        child: badges.Badge(
-                          showBadge: list.length < 1 ? false : true,
-                          badgeContent: list.length > 9
-                              ? Text(
-                                  '9+',
+                        return SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0,bottom: 4),
+                                child: Text(
+                                  // 'Afro Chronique',
+                                  'Chroniques',
                                   style: TextStyle(
-                                      fontSize: 10, color: Colors.white),
-                                )
-                              : Text(
-                                  '${list.length}',
-                                  style: TextStyle(
-                                      fontSize: 10, color: Colors.white),
-                                ),
-                          child: Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,)
-                        ,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-              SizedBox(width: 10,),
-
-              GestureDetector(
-                onTap: () async {
-                  _showChatXiloDialog();
-
-                },
-                child: CircleAvatar(
-                  radius: 15, // Taille de l'avatar
-                  backgroundImage: AssetImage('assets/icon/X.png'),
-                ),
-              ),
-              SizedBox(width: 10,),
-          AnimateIcon(
-            key: UniqueKey(),
-            onTap: () async {
-              checkAppVersionAndProceed(context, () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
-              });
-
-
-            },
-            iconType: IconType.continueAnimation,
-            height: homeIconSize,
-            width: homeIconSize,
-            color: Colors.green,
-            animateIcon: AnimateIcons.settings,
-          ),
-              SizedBox(width: 10,),
-
-              AnimateIcon(
-            key: UniqueKey(),
-            onTap: () async {
-              checkAppVersionAndProceed(context, () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-              });
-
-            },
-            iconType: IconType.continueAnimation,
-            height: homeIconSize,
-            width: homeIconSize,
-            color: Colors.green,
-            animateIcon: AnimateIcons.paid,
-          ),
-              SizedBox(width: 10,),
-
-              GestureDetector(
-                onTap: () async {
-                  if (_scrollController.hasClients) {
-
-                    _scrollController.animateTo(
-                      0.0,
-                      duration: Duration(milliseconds: 1000),
-                      curve: Curves.ease,
-                    );
-                  }
-                  setState(() {
-                    listConstposts.clear();
-                    postProvider.getPostsImages2(limitePosts).listen((data) {
-                      _streamController.add(data);
-                    });
-                  });
-
-                  // setState(() {
-                  //   postProvider.getHomePostsImages(limitePosts).then((value) {
-                  //
-                  //   },);
-                  // });
-
-                  //   Restart.restartApp();
-
-                  /*
-                await userProvider.getAllAnnonces();
-                await postProvider.getPostsImages(limitePosts).then((value) {
-                  printVm('actualiser');
-                  setState(() {
-                    postLenght=8;
-                    is_actualised = false;
-
-                  });
-
-
-                },);
-
-                 */
-                },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.asset("assets/icon/cocotier-home.png",height: 30,width: 30,),
-                  )),
-            ],
-            //title: Text(widget.title),
-          ),
-          drawer: menu(context,width,height),
-          body: SafeArea(
-            child: Container(
-
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
-                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
-                  ],
-                ),
-              ),
-              child: CustomScrollView(
-
-                controller: _scrollController,
-                slivers: <Widget>[
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                    sliver: FutureBuilder<List<UserData>>(
-                      future: authProvider.getUsersStorie(authProvider.loginUserData.id!,
-                        limiteUsers,
-                      ),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: height * 0.35,
-                              child: widgetSeke2(width, height),
-                            ),
-                          );
-                        } else if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: height * 0.35,
-                              child: widgetSeke2(width, height),
-                            ),
-                          );
-                        } else {
-                          List<UserData> list = snapshot.data!;
-                          // list.shuffle();
-
-                          return SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8.0,bottom: 4),
-                                  child: Text(
-                                    // 'Afro Chronique',
-                                    'Chroniques',
-                                    style: TextStyle(
-                                      fontSize: homeIconSize*0.7,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.green,
-                                      letterSpacing: 1.5,
-                                    ),
+                                    fontSize: homeIconSize*0.7,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.green,
+                                    letterSpacing: 1.5,
                                   ),
                                 ),
-                                SizedBox(
-                                  height: height * 0.25,
+                              ),
+                              SizedBox(
+                                height: height * 0.25,
 
-                                  child: Row(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: GestureDetector(
-                                          onTap: () async {
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: GestureDetector(
+                                        onTap: () async {
 
-                                            checkAppVersionAndProceed(context, () {
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => StoryChoicePage(),));
-                                            });
+                                          checkAppVersionAndProceed(context, () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => StoryChoicePage(),));
+                                          });
 
 
-                                          },
-                                          child: Container(
+                                        },
+                                        child: Container(
 
-                                            width: width * 0.2,
-                                            height: height * 0.25,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(10),
-                                              color: Colors.grey[300],
-                                            ),
-                                            child: Center(
-                                              child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
-                                            ),
+                                          width: width * 0.2,
+                                          height: height * 0.25,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(10),
+                                            color: Colors.grey[300],
                                           ),
-
+                                          child: Center(
+                                            child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
+                                          ),
                                         ),
-                                      ),
-                                      Expanded(
-                                        child: ListView.builder(
-                                          scrollDirection: Axis.horizontal,
-                                          itemCount: list.length,
-                                          itemBuilder: (context, index) {
-                                            List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
-                                            list[index].stories=storiesWithTimeAgo;
-                                            // printVm('user index : ${index} stories ${list[index].stories!.length}');
-                                            //
-                                            // printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
 
-                                            return
-                                                list[index].stories!.isNotEmpty
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: list.length,
+                                        itemBuilder: (context, index) {
+                                          List<WhatsappStory> storiesWithTimeAgo = authProvider.getStoriesWithTimeAgo(list[index].stories!);
+                                          list[index].stories=storiesWithTimeAgo;
+                                          // printVm('user index : ${index} stories ${list[index].stories!.length}');
+                                          //
+                                          // printVm('user home : ${index} stories ${list[index].stories!.first.toJson()}');
+
+                                          return
+                                            list[index].stories!.isNotEmpty
                                                 ? Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: StoryPreview(
@@ -3026,296 +2708,296 @@ class _MyHomePageState extends State<MyHomePage>
                                               ),
                                             )
                                                 : Container();
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // SizedBox(
-                                //   height: height * 0.homeIconSize,
-                                //   child: ListView.builder(
-                                //     scrollDirection: Axis.horizontal,
-                                //     itemCount: list.length,
-                                //     itemBuilder: (context, index) {
-                                //       return list[index].stories != null &&
-                                //           list[index].stories!.isNotEmpty
-                                //           ? Padding(
-                                //         padding: const EdgeInsets.all(8.0),
-                                //         child: StoryPreview(user: list[index], h: height * 0.34, w: width * 0.4,),
-                                //       )
-                                //           : Container();
-                                //     },
-                                //   ),
-                                // ),
-                              ],
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                    sliver: FutureBuilder<List<UserData>>(
-                      future: userProvider.getProfileUsers(
-                        authProvider.loginUserData.id!,
-                        context,
-                        limiteUsers,
-                      ),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return SliverToBoxAdapter(
-                            child: SizedBox(
-                                height: height * 0.35,
-
-                                child: widgetSeke2(width, height)),
-                          );
-                        } else if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: SizedBox(
-                                height: height * 0.35,
-
-                                child: widgetSeke2(width, height)),
-                          );
-                        } else {
-                          List<UserData> list = snapshot.data!;
-                          userList=list;
-                          userList.shuffle();
-
-                          return SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: height * 0.35,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: list.length,
-                                itemBuilder: (context, index) {
-                                  return homeProfileUsers(list[index], width, height);
-                                },
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-
-                  SliverPadding
-                    (
-                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                    sliver: FutureBuilder<List<Challenge>>(
-                      future: postProvider.getCurrentChallenges(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return SliverToBoxAdapter(
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        } else if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        } else {
-                          List<Challenge> list = snapshot.data!;
-                          list;
-                          // userList.shuffle();
-                          if(list.isEmpty){
-                            return SliverToBoxAdapter(child: SizedBox.shrink());
-                          }else{
-                            return SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'Challenges Disponibles 🔥🎁',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange, // Couleur du texte pour attirer l'attention
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(
-                                          Icons.local_fire_department, // Icône de feu pour illustrer l'excitation
-                                          color: Colors.red, // Couleur du feu
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Gagnez un Prix 🏆',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green, // Couleur du texte pour un appel à l'action positif
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(
-                                          Icons.card_giftcard, // Icône de cadeau pour symboliser la récompense
-                                          color: Colors.green, // Couleur du cadeau
-                                        ),
-                                      ],
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                    )
-                                ,
-                                    SizedBox(
-                                      height: height * 0.58,
-                                      // width: width * 0.8,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: list.length,
-                                        itemBuilder: (context, index) {
-                                          return homeChallenge(
-                                            list[index]!,
-                                            Colors.brown,
-                                            height,
-                                            width,
-                                            context,
-                                          );
                                         },
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            );
-
-                          }
-
-                        }
-                      },
-                    ),
+                              // SizedBox(
+                              //   height: height * 0.homeIconSize,
+                              //   child: ListView.builder(
+                              //     scrollDirection: Axis.horizontal,
+                              //     itemCount: list.length,
+                              //     itemBuilder: (context, index) {
+                              //       return list[index].stories != null &&
+                              //           list[index].stories!.isNotEmpty
+                              //           ? Padding(
+                              //         padding: const EdgeInsets.all(8.0),
+                              //         child: StoryPreview(user: list[index], h: height * 0.34, w: width * 0.4,),
+                              //       )
+                              //           : Container();
+                              //     },
+                              //   ),
+                              // ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
                   ),
-                  // SliverPadding(
-                  //   padding: EdgeInsets.symmetric(horizontal: 1, vertical: 0),
-                  //   sliver:  Divider(),
-                  // ),
-
-
-                        SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              sliver: StreamBuilder<List<Post>>(
-                stream: _streamController.stream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  } else if (snapshot.hasError) {
-                    return SliverToBoxAdapter(
-                      child: Center(child: Icon(Icons.error)),
-                    );
-                  } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                    List<Post> listConstposts = snapshot.data!;
-
-                    return LiveSliverList(
-                      controller: _scrollController,
-                      showItemInterval: Duration(milliseconds: 10),
-                      showItemDuration: Duration(milliseconds: 30),
-                      itemCount: listConstposts.length,
-                      itemBuilder: animationItemBuilder(
-                            (index) {
-                              printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
-                          // if (index % 7 == 6) {
-                          //   return SizedBox(
-                          //     height: height * 0.homeIconSize,
-                          //     child: ListView.builder(
-                          //       scrollDirection: Axis.horizontal,
-                          //       itemCount: userList.length,
-                          //       itemBuilder: (context, index) {
-                          //         return homeProfileUsers(userList[index], width, height);
-                          //       },
-                          //     ),
-                          //   );
-                          // }
-                          if (index % 9 == 8) {
-                            return articles.isEmpty
-                                ? SizedBox.shrink()
-                                : SizedBox(
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<UserData>>(
+                    future: userProvider.getProfileUsers(
+                      authProvider.loginUserData.id!,
+                      context,
+                      limiteUsers,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
                               height: height * 0.35,
+
+                              child: widgetSeke2(width, height)),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                              height: height * 0.35,
+
+                              child: widgetSeke2(width, height)),
+                        );
+                      } else {
+                        List<UserData> list = snapshot.data!;
+                        userList=list;
+                        userList.shuffle();
+
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: height * 0.35,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: list.length,
+                              itemBuilder: (context, index) {
+                                return homeProfileUsers(list[index], width, height);
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+
+                SliverPadding
+                  (
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: FutureBuilder<List<Challenge>>(
+                    future: postProvider.getCurrentChallenges(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else {
+                        List<Challenge> list = snapshot.data!;
+                        list;
+                        // userList.shuffle();
+                        if(list.isEmpty){
+                          return SliverToBoxAdapter(child: SizedBox.shrink());
+                        }else{
+                          return SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
                               child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'Produits Boostés',
-                                              style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Icon(
-                                              Icons.local_fire_department,
-                                              color: Colors.red,
-                                            ),
-                                          ],
-                                          mainAxisAlignment: MainAxisAlignment.start,
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Challenges Disponibles 🔥🎁',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.orange, // Couleur du texte pour attirer l'attention
                                         ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    HomeAfroshopPage(title: ''),
-                                              ),
-                                            );
-                                          },
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                'Boutiques',
-                                                style: TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white),
-                                              ),
-                                              SizedBox(width: 8),
-                                              Icon(
-                                                Icons.storefront,
-                                                color: Colors.red,
-                                              ),
-                                            ],
-                                            mainAxisAlignment: MainAxisAlignment.start,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    child: CarouselSlider(
-                                      items: articles.map((article) {
-                                        return Builder(
-                                          builder: (BuildContext context) {
-                                            return ArticleTileBooster(
-                                                article: article,
-                                                w: width,
-                                                h: height,
-                                                isOtherPage: true);
-                                          },
-                                        );
-                                      }).toList(),
-                                      options: CarouselOptions(
-                                        height: 250,
-                                        autoPlay: true,
-                                        enlargeCenterPage: true,
-                                        viewportFraction: 0.6,
                                       ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.local_fire_department, // Icône de feu pour illustrer l'excitation
+                                        color: Colors.red, // Couleur du feu
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Gagnez un Prix 🏆',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green, // Couleur du texte pour un appel à l'action positif
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.card_giftcard, // Icône de cadeau pour symboliser la récompense
+                                        color: Colors.green, // Couleur du cadeau
+                                      ),
+                                    ],
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                  )
+                                  ,
+                                  SizedBox(
+                                    height: height * 0.58,
+                                    // width: width * 0.8,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: list.length,
+                                      itemBuilder: (context, index) {
+                                        return homeChallenge(
+                                          list[index]!,
+                                          Colors.brown,
+                                          height,
+                                          width,
+                                          context,
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          }
+                            ),
+                          );
+
+                        }
+
+                      }
+                    },
+                  ),
+                ),
+                // SliverPadding(
+                //   padding: EdgeInsets.symmetric(horizontal: 1, vertical: 0),
+                //   sliver:  Divider(),
+                // ),
+
+
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  sliver: StreamBuilder<List<Post>>(
+                    stream: _streamController.stream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: Icon(Icons.error)),
+                        );
+                      } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        List<Post> listConstposts = snapshot.data!;
+
+                        return LiveSliverList(
+                          controller: _scrollController,
+                          showItemInterval: Duration(milliseconds: 10),
+                          showItemDuration: Duration(milliseconds: 30),
+                          itemCount: listConstposts.length,
+                          itemBuilder: animationItemBuilder(
+                                (index) {
+                              printVm("data hommmme**** ! ${listConstposts[index].toJson()}");
+                              // if (index % 7 == 6) {
+                              //   return SizedBox(
+                              //     height: height * 0.homeIconSize,
+                              //     child: ListView.builder(
+                              //       scrollDirection: Axis.horizontal,
+                              //       itemCount: userList.length,
+                              //       itemBuilder: (context, index) {
+                              //         return homeProfileUsers(userList[index], width, height);
+                              //       },
+                              //     ),
+                              //   );
+                              // }
+                              if (index % 9 == 8) {
+                                return articles.isEmpty
+                                    ? SizedBox.shrink()
+                                    : SizedBox(
+                                  height: height * 0.35,
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  'Produits Boostés',
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white),
+                                                ),
+                                                SizedBox(width: 8),
+                                                Icon(
+                                                  Icons.local_fire_department,
+                                                  color: Colors.red,
+                                                ),
+                                              ],
+                                              mainAxisAlignment: MainAxisAlignment.start,
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        HomeAfroshopPage(title: ''),
+                                                  ),
+                                                );
+                                              },
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    'Boutiques',
+                                                    style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white),
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Icon(
+                                                    Icons.storefront,
+                                                    color: Colors.red,
+                                                  ),
+                                                ],
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        child: CarouselSlider(
+                                          items: articles.map((article) {
+                                            return Builder(
+                                              builder: (BuildContext context) {
+                                                return ArticleTileBooster(
+                                                    article: article,
+                                                    w: width,
+                                                    h: height,
+                                                    isOtherPage: true);
+                                              },
+                                            );
+                                          }).toList(),
+                                          options: CarouselOptions(
+                                            height: 250,
+                                            autoPlay: true,
+                                            enlargeCenterPage: true,
+                                            viewportFraction: 0.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
 
                               if (index % 7 == 6) {
                                 return canaux.isEmpty?SizedBox.shrink():Column(
@@ -3377,239 +3059,88 @@ class _MyHomePageState extends State<MyHomePage>
                                 );
                               }
 
-                          if (index % 6 == 5) {
-                            return Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
+                              if (index % 6 == 5) {
+                                return Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            '🛠️Services & Jobs 💼',
-                                            style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '🛠️Services & Jobs 💼',
+                                                style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green),
+                                              ),
+                                            ],
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => UserServiceListPage(),
+                                                ),
+                                              );
+                                            },
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  'Voir plus 🛠️ 💼',
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.green),
+                                                ),
+                                              ],
+                                              mainAxisAlignment: MainAxisAlignment.start,
+                                            ),
                                           ),
                                         ],
-                                        mainAxisAlignment: MainAxisAlignment.start,
                                       ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => UserServiceListPage(),
-                                            ),
-                                          );
+                                    ),
+                                    SizedBox(
+                                      height: height * 0.3,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: userServices.length,
+                                        itemBuilder: (context, index) {
+                                          return userServiceWidget(
+                                              userServices[index], width, height, context);
                                         },
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              'Voir plus 🛠️ 💼',
-                                              style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.green),
-                                            ),
-                                          ],
-                                          mainAxisAlignment: MainAxisAlignment.start,
-                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: height * 0.3,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: userServices.length,
-                                    itemBuilder: (context, index) {
-                                      return userServiceWidget(
-                                          userServices[index], width, height, context);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                          return HomePostUsersWidget(
-                            post: listConstposts[index], color: _color, height: height, width: width,
-                          );
-                          //
-                          // return HomePostUsersWidget(
-                          //   listConstposts[index],
-                          //   _color,
-                          //   height,
-                          //   width,
-                          //   context,
-                          // );
-                        },
-                      ),
-                    );
-
-                  }
-                  return SliverToBoxAdapter(
-                    child: Center(child: Text('Pas de looks')),
-                  );
-                },
-              ),
-                        )
-                ],
-              ),
-            ),
-          ),
-          bottomNavigationBar: Container(
-            height: 50,
-            color:  Colors.lightGreen.shade300,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await userProvider
-                          .getProfileUsers(authProvider.loginUserData!.id!,
-                              context, limiteUsers)
-                          .then(
-                        (value) {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => UserCards(),
-                              ));
-                        },
-                      );
-
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
-                    },
-                    child: StreamBuilder<int>(
-                        stream: getNbrInvitation(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            printVm("erreur: ${snapshot.error.toString()}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,)
-                            );
-                          } else if (snapshot.hasData) {
-                            if (snapshot.data! > 0) {
-                              return badges.Badge(
-                                badgeContent: snapshot.data! > 10
-                                    ? Text(
-                                        '9+',
-                                        style: TextStyle(
-                                            fontSize: 10, color: Colors.white),
-                                      )
-                                    : Text(
-                                        '${snapshot.data!}',
-                                        style: TextStyle(
-                                            fontSize: 10, color: Colors.white),
-                                      ),
-                                child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,)
+                                    ),
+                                  ],
+                                );
+                              }
+                              return HomePostUsersWidget(
+                                post: listConstposts[index], color: _color, height: height, width: width,
                               );
-                            } else {
-                              return badges.Badge(
-                                badgeContent: Text('1'),
-                                showBadge: false,
-                                child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,),
-                              );
-                            }
-                          } else {
-                            printVm("data: ${snapshot.data}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/icons8-people-188.png",width: homeIconSize,height: homeIconSize,),
-                            );
-                          }
-                        }),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/list_users_chat');
-                      //Navigator.pushNamed(context, '/test_chat');
-                    },
-                    child: StreamBuilder<int>(
-                        stream: getNbrMessageNonLu(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            printVm("erreur: ${snapshot.error.toString()}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
-                            );
-                          } else if (snapshot.hasData) {
-                            if (snapshot.data! > 0) {
-                              return badges.Badge(
-                                badgeContent: snapshot.data! > 10
-                                    ? Text(
-                                        '9+',
-                                        style: TextStyle(
-                                            fontSize: 10, color: Colors.white),
-                                      )
-                                    : Text(
-                                        '${snapshot.data!}',
-                                        style: TextStyle(
-                                            fontSize: 10, color: Colors.white),
-                                      ),
-                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
-                              );
-                            } else {
-                              return badges.Badge(
-                                badgeContent: Text('1'),
-                                showBadge: false,
-                                child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
-                              );
-                            }
-                          } else {
-                            printVm("data: ${snapshot.data}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/icons8-chat-bubbles-188.png",width: homeIconSize,height: homeIconSize,),
-                            );
-                          }
-                        }),
-                  ),
-                  GestureDetector(
-                      onTap: () {
-                        checkAppVersionAndProceed(context, () {
-                          Navigator.pushNamed(context, '/user_posts_form');
-                        });
-
-                      },
-                      child: Image.asset('assets/icons/icons8-plus-188.png',width: homeIconSize+10,height: homeIconSize+10,)),
-                  GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/videos');
-
-                      },
-                      child:                       badges.Badge(
-                          badgeContent:
-                          Text(
-                            '9+',
-                            style: TextStyle(
-                                fontSize: 8, color: Colors.white),
+                              //
+                              // return HomePostUsersWidget(
+                              //   listConstposts[index],
+                              //   _color,
+                              //   height,
+                              //   width,
+                              //   context,
+                              // );
+                            },
                           ),
-                          child: Image.asset("assets/icons/icons8-video-gallery-188.png",width: homeIconSize,height: homeIconSize,)
-                      ),),
-                  GestureDetector(
-                      onTap: () {
-                        checkAppVersionAndProceed(context, () {
-                          _scaffoldKey.currentState!.openDrawer();
-                        });
-                      },
-                      child: Image.asset('assets/icons/icons8-menu-188.png',width: homeIconSize,height: homeIconSize,)),
+                        );
 
-                ],
-              ),
+                      }
+                      return SliverToBoxAdapter(
+                        child: Center(child: Text('Pas de looks')),
+                      );
+                    },
+                  ),
+                )
+              ],
             ),
           ),
         ),

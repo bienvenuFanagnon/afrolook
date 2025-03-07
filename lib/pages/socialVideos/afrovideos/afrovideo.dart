@@ -908,9 +908,9 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
         body: RefreshIndicator(
           onRefresh: ()async {
             listConstposts.clear();
-          await  postProvider.getPostsImages2(limitePosts).listen((data) {
-              _streamController.add(data);
-            });
+          // await  postProvider.getPostsImages2(limitePosts).listen((data) {
+          //     _streamController.add(data);
+          //   });
           },
           child: Center(
             child: Column(

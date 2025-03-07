@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -40,10 +41,12 @@ class HomePostUsersWidget extends StatefulWidget {
   late Color? color;
   final double height;
   final double width;
+  final bool isDegrade;
 
    HomePostUsersWidget({
     required this.post,
      this.color,
+     this.isDegrade=false,
     required this.height,
     required this.width,
     Key? key,
@@ -756,14 +759,16 @@ final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba
                                             Colors.black,
                                           ),
                                         )
-                                            : Text(
-                                          "S'abonner",
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight:
-                                              FontWeight.normal,
-                                              color: Colors.blue),
-                                        )),
+                                            : Card(
+                                              child: Text(
+                                                                                        "S'abonner",
+                                                                                        style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight:
+                                                FontWeight.normal,
+                                                color: Colors.blue),
+                                                                                      ),
+                                            )),
                                   );
                                 }),
                               ),
@@ -826,7 +831,31 @@ final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba
                                     fontWeight: FontWeight.normal,
                                     fontFamily: 'Nunito', // Définir la police Nunito
                                   ),))),
-                              HashTagText(
+                              widget.post!.isPostLink=="OUI"?  Linkify(
+                                onOpen: (link) async {
+                                  if (!await launchUrl(Uri.parse(link.url))) {
+                                    throw Exception('Could not launch ${link.url}');
+                                  }
+                                },
+                                text: truncateWords( widget.post!.description ?? "", 20),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+
+                                  color: Colors.white,
+                                  fontFamily: 'Nunito', // Définir la police Nunito
+                                ),
+                                linkStyle: TextStyle(color: Colors.blue.shade300,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5), // Couleur de l'ombre
+                                      offset: Offset(1, 1), // Décalage de l'ombre (horizontal, vertical)
+                                      blurRadius: 2, // Flou de l'ombre
+                                    ),
+                                  ],
+
+                                ),
+                              ):  HashTagText(
                                 text: truncateWords( widget.post!.description ?? "", 20),
                                 decoratedStyle: TextStyle(
                                   fontSize: 13,
@@ -1758,16 +1787,21 @@ final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba
       ),
     );
   }
-
+  // Fonction pour mélanger les couleurs
+  Color mixColors(Color color1, Color color2, double factor) {
+    return Color.lerp(color1, color2, factor)!;
+  }
   @override
   Widget build(BuildContext context) {
     // extractColorsFromImageUrl(imageCadeau);
+    Color blendedColor = mixColors(colorFromHex( widget.post.colorDomine), colorFromHex( widget.post.colorSecondaire), 0.5);
 
 
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
 
-    return Container(
+    return widget.isDegrade? Container(
+      // color: Colors.black38,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -1776,8 +1810,8 @@ final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba
             // Colors.green, // Vert pur en bas
             // Colors.green.withOpacity(0.5), // Vert plus clair au milieu
             // Colors.green.withOpacity(0.1),
-            widget.post.colorDomine==null?HSLColor.fromColor( Colors.green).withLightness(0.6).toColor(): HSLColor.fromColor(colorFromHex( widget.post.colorDomine)).withLightness(0.4).toColor(),
-            widget.post.colorDomine==null?HSLColor.fromColor( Colors.green).withLightness(0.6).toColor():  HSLColor.fromColor(colorFromHex( widget.post.colorDomine)).withLightness(0.6).toColor(), // Plus foncé
+            widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.4).toColor(): HSLColor.fromColor(colorFromHex( widget.post.colorDomine)).withLightness(0.4).toColor(),
+            widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.6).toColor():  HSLColor.fromColor(colorFromHex( widget.post.colorSecondaire)).withLightness(0.45).toColor(), // Plus foncé
 
             // widget.post.colorSecondaire==null?Colors.green: colorFromHex(widget.post.colorSecondaire),
             //
@@ -1787,6 +1821,30 @@ final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba
         ),
       ),
       child: postWidget(w, h),
+    ):Container(
+      color: Colors.black38,
+      // decoration: BoxDecoration(
+      //   gradient: LinearGradient(
+      //     begin: Alignment.topCenter,
+      //     end: Alignment.bottomCenter,
+      //     colors: [
+      //       // Colors.green, // Vert pur en bas
+      //       // Colors.green.withOpacity(0.5), // Vert plus clair au milieu
+      //       // Colors.green.withOpacity(0.1),
+      //       widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.4).toColor(): HSLColor.fromColor(colorFromHex( widget.post.colorDomine)).withLightness(0.4).toColor(),
+      //       widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.6).toColor():  HSLColor.fromColor(colorFromHex( widget.post.colorSecondaire)).withLightness(0.45).toColor(), // Plus foncé
+      //
+      //       // widget.post.colorSecondaire==null?Colors.green: colorFromHex(widget.post.colorSecondaire),
+      //       //
+      //       // widget.post.colorDomine==null?Colors.black38: colorFromHex( widget.post.colorDomine),
+      //     ],
+      //     stops: [0.2, 0.8],
+      //   ),
+      // ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 2.0),
+        child: postWidget(w, h),
+      ),
     );
   }
 //

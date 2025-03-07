@@ -59,7 +59,9 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
       child: Card(
         child: Container(
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(200))
+              // borderRadius: BorderRadius.all(Radius.circular(200)),
+              color: Colors.green.shade200
+
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,6 +150,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(10)),
+            color: Colors.green.shade200
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +181,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
                       children: [
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:Colors.blue
+                            backgroundColor:Colors.green.shade700
                           ),
                           onPressed: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));

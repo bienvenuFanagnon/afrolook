@@ -4,6 +4,8 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/pages/home/homeWidget.dart';
+import 'package:afrotok/pages/userPosts/operationPublicash.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:path/path.dart' as Path;
 
@@ -144,6 +146,49 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   int  limitePosts = 40;
   File? _selectedFile;
   final ImagePicker _picker = ImagePicker();
+  String? _selectedPostType; // Variable pour stocker la valeur sélectionnée (code)
+  String? _selectedPostLink; // Variable pour stocker la valeur sélectionnée (code)
+  String? _selectedPostTypeLibeller; // Variable pour stocker la valeur sélectionnée (code)
+
+  // Map des types de post avec code et libellé
+  final Map<String, Map<String, dynamic>> _postTypes = {
+    'ACTUALITES': {
+      'label': 'Actualités',
+      'icon': Icons.article,
+    },
+    'LOOKS': {
+      'label': 'Looks',
+      'icon': Icons.style,
+    },
+    'SPORT': {
+      'label': 'Sport',
+      'icon': Icons.sports,
+    },
+    'EVENEMENT': {
+      'label': 'Événement',
+      'icon': Icons.event,
+    },
+    'OFFRES': {
+      'label': 'Offres',
+      'icon': Icons.local_offer,
+    },
+    'GAMER': {
+      'label': 'Games story',
+      'icon': Icons.gamepad,
+    },
+  };
+
+  final Map<String, Map<String, dynamic>> _postLink = {
+    'OUI': {
+      'label': 'Avec de lien',
+      'icon': Icons.check_box,
+    },
+    'NON': {
+      'label': 'Pas de lien',
+      'icon': Icons.close,
+    },
+
+  };
 
   // Capture an image or video
   Future<void> _captureMedia(bool isPhoto) async {
@@ -174,51 +219,80 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
     return file;
   }
-  void save(BuildContext pagecontext) {
-    if (_imageBytes! == null) {
-      setState(() {
-        onTap = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Veuillez choisir une image.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-      return;
-    }
+  Future<void> save(BuildContext pagecontext, String description) async {
 
-    setState(() {
-      onTap = true; // Désactive le bouton
-    });
-
-    // Afficher un indicateur de chargement
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
 
     try {
+
+      if (_imageBytes! == null) {
+        setState(() {
+          onTap = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Veuillez choisir une image.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        );
+        return;
+      }
+      String? selectedPostLink='NON';
+      if(_selectedPostLink=='OUI'){
+        selectedPostLink=_selectedPostLink;
+        bool success = await processPublicashTransaction(
+          // userSendCadeau: authProvider.loginUserData,
+          context: context,
+          // authProvider: authProvider,
+          postProvider: postProvider,
+          appdata: authProvider.appDefaultData,
+        );
+
+        if (!success) {
+          print("Transaction échouée.");
+
+          return;
+
+        } else {
+          print("Transaction réussie !");
+
+        }
+
+      }
+
+
+
+      setState(() {
+        onTap = true; // Désactive le bouton
+      });
+
+      // Afficher un indicateur de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
       String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
       String postMId = FirebaseFirestore.instance.collection('PostsMonetiser').doc().id;
 
       Post post = Post()
         ..user_id = authProvider.loginUserData.id
-        ..description = _descriptionController.text
+        ..description = description
         ..updatedAt = DateTime.now().microsecondsSinceEpoch
         ..createdAt = DateTime.now().microsecondsSinceEpoch
         ..status = PostStatus.VALIDE.name
         ..type =isChallenge? PostType.CHALLENGE.name:isSwitched? PostType.PUB.name:PostType.POST.name
         ..urlLink =isSwitched? _linkController.text:""
         ..comments = 0
+        ..typeTabbar = _selectedPostType
+        ..isPostLink = selectedPostLink
         ..nombrePersonneParJour = 60
         ..dataType = PostDataType.IMAGE.name
         ..likes = 0
@@ -297,7 +371,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
             await FirebaseFirestore.instance.collection('Challenges').doc(challengeId).set(challenge.toJson());
           }
-          _descriptionController.clear();
+          // _descriptionController.clear();
 
           // Notification logic
           // NotificationData notif = NotificationData()
@@ -324,7 +398,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       smallImage: "${widget.canal!.urlImage}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: "📢 Canal ${widget.canal!.titre} a posté un look infos ✨",
+                      message: "📢 Canal ${widget.canal!.titre} ${getTabBarTypeMessage(_selectedPostType!)}",
                       type_notif: NotificationType.POST.name,
                       post_id: "${post!.id!}",
                       post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -348,7 +422,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!)}",
                       type_notif: NotificationType.CHALLENGE.name,
                       post_id: "${post!.id!}",
                       post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -615,6 +689,93 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                           return null;
                         },
                       ),
+                      SizedBox(height: 20),
+
+                      // Liste déroulante pour le type de post
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          hintText: 'Type de post',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0), // Add rounded corners
+                            borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
+                          ),
+                        ),
+
+                        value: _selectedPostType,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedPostType = newValue;
+                            printVm('_selectedPostType: ${_selectedPostType}');
+                            String? selectedLabel = _postTypes[_selectedPostType]?['label'];
+                            _selectedPostTypeLibeller=selectedLabel;
+
+                            printVm('selectedLabel: ${selectedLabel}');
+
+                          });
+                        },
+                        items: _postTypes.entries.map<DropdownMenuItem<String>>((entry) {
+                          return DropdownMenuItem<String>(
+                            value: entry.key, // Utilisez la clé (code) comme valeur
+                            child: Row(
+                              children: [
+                                Icon(entry.value['icon'], color: Colors.green), // Icône
+                                SizedBox(width: 10),
+                                Text(entry.value['label']), // Libellé
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez sélectionner un type de post';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(
+                        height: 15.0,
+                      ),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Le post contient-il un lien ? Si oui, coût : 2 PC.',
+                          labelStyle: TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0), // Add rounded corners
+                            borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
+                          ),
+                        ),
+
+                        value: _selectedPostLink,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedPostLink = newValue;
+                            printVm('_selectedPostLink: ${_selectedPostLink}');
+                            // String? selectedLabel = _postTypes[_selectedPostType]?['label'];
+                            // _selectedPostTypeLibeller=selectedLabel;
+                            //
+                            // printVm('selectedLabel: ${selectedLabel}');
+
+                          });
+                        },
+                        items: _postLink.entries.map<DropdownMenuItem<String>>((entry) {
+                          return DropdownMenuItem<String>(
+                            value: entry.key, // Utilisez la clé (code) comme valeur
+                            child: Row(
+                              children: [
+                                Icon(entry.value['icon'], color: Colors.green), // Icône
+                                SizedBox(width: 10),
+                                Text(entry.value['label']), // Libellé
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez sélectionner';
+                          }
+                          return null;
+                        },
+                      ),
                       SizedBox(
                         height: 15.0,
                       ),
@@ -844,16 +1005,17 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
                 //_getImages();
                 String textComment=_descriptionController.text;
+                printVm('textComment: ${textComment}');
 
                 if (_formKey.currentState!.validate()) {
-                  save(context);
+                  save(context,textComment);
 
 
                 }
 
 
 
-                _descriptionController.clear();
+                // _descriptionController.clear();
               },
             );
           },

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/pages/contact.dart';
@@ -966,118 +968,305 @@ class _EntrepriseMyChatState extends State<IaChat> {
 
 
 
+            try {
               var question = message_text;
-              setState(() {
-               chatList.add(ChatModel(
-                    chat: 0,
-                    message: message_text,
-                    time:
-                    "${DateTime.now().hour}:${DateTime.now().second}"));
 
-                setState(() {
-                  chatList.add(ChatModel(
+              // Ajout du message utilisateur et indicateur de chargement
+              setState(() {
+                chatList
+                  ..add(ChatModel(
+                      chat: 0,
+                      message: message_text,
+                      time: "${DateTime.now().hour}:${DateTime.now().second}"))
+                  ..add(ChatModel(
                       chatType: ChatTypeIa.loading,
                       chat: 1,
                       message: "",
                       time: ""));
-                });
-
-                // FocusScope.of(context).unfocus();
-                // try {
-                //   _scrollController.animateTo(
-                //       _scrollController.position.maxScrollExtent,
-                //       duration: const Duration(milliseconds: 300),
-                //       curve: Curves.easeOut);
-                // } catch (e) {
-                //   print(
-                //       "**************************************************************");
-                //   print(e);
-                // }
-                messages.add({
-                  "text": widget.instruction+"pseudo: ${authProvider.loginUserData.pseudo} nombre abonnees : ${authProvider.loginUserData.abonnes} popularité en pourcentage à arrondie : ${authProvider.loginUserData.popularite!=null?authProvider.loginUserData.popularite!*100:0} point de contribution à l'amelioration de l application : ${authProvider.loginUserData.pointContribution}" + "\n" + question,
-                });
-                message_text = "";
               });
-              var (responseString, response) =
-              await GeminiApi.geminiChatApi(
 
-                  messages: messages, apiKey: widget.appDefaultData.geminiapiKey!);
-              setState(() async {
-                FocusScope.of(context).unfocus();
-                // _scrollController.animateTo(
-                //     _scrollController.position.maxScrollExtent +
-                //         MediaQuery.of(context).size.height,
-                //     duration: const Duration(milliseconds: 300),
-                //     curve: Curves.easeOut);
-                if (response.statusCode == 200) {
-                  printVm('response api gemini :');
-                  printVm('response api gemini : ${jsonDecode(response.body)['usageMetadata']}');
-                  // Analyser la réponse pour obtenir les informations sur les tokens
-                  String token=jsonDecode(response.body)['usageMetadata']['totalTokenCount'].toString();
+              // Préparation des messages
+              messages.add({
+                "text": "${widget.instruction}"
+                    "pseudo: ${authProvider.loginUserData.pseudo}"
+                    "nombre abonnees : ${authProvider.loginUserData.abonnes}"
+                    "popularité : ${authProvider.loginUserData.popularite != null ? (authProvider.loginUserData.popularite! * 100).round() : 0}%"
+                    "points contribution : ${authProvider.loginUserData.pointContribution}\n"
+                    "$question",
+              });
 
-                  // // Mise à jour des jetons restants pour l'utilisateur IA
-                  widget.userIACompte.jetons = widget.userIACompte.jetons! - int.parse(token);
-                  await firestore.collection('User_Ia_Compte').doc(widget.userIACompte.id!).update(widget.userIACompte.toJson());
-                  chatList.removeLast();
-                  chatList.add(ChatModel(
-                      chat: 1,
-                      message: responseString,
-                      time:
-                      "${DateTime.now().hour}:${DateTime.now().second}"));
+              // Appel API
+              final (responseString, response) = await GeminiApi.geminiChatApi(
+                messages: messages,
+                apiKey: widget.appDefaultData.geminiapiKey!,
+              ).timeout(const Duration(seconds: 30)); // Timeout ajouté
+              printVm("Response API: ${response.statusCode}");
+              printVm("Response API: ${response.body}");
 
-                  Message msg=Message(
-                    id: id.toString(),
-                    createdAt: DateTime.now(),
-                    message: responseString==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":responseString!,
-                    // sendBy: authProvider.loginUserData.id!.toString(),
-                    sendBy:  '${widget.userIACompte.id}',
-                    replyMessage: reply,
-                    // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
+              // Gestion de la réponse
+              if (response.statusCode == 200) {
+                // Traitement réussi
+                final body = jsonDecode(response.body);
+                final token = body['usageMetadata']['totalTokenCount'] ?? 0;
+                    // String token=jsonDecode(response.body)['usageMetadata']['totalTokenCount'].toString();
 
-                    messageType: MessageType.text.name,
-                    chat_id: widget.chat.docId!,
-                    create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
-                    message_state: MessageState.NONLU.name,
-                    receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
+                    // // Mise à jour des jetons restants pour l'utilisateur IA
+                    widget.userIACompte.jetons = widget.userIACompte.jetons! - int.parse(token);
+                    await firestore.collection('User_Ia_Compte').doc(widget.userIACompte.id!).update(widget.userIACompte.toJson());
+                    chatList.removeLast();
+                    chatList.add(ChatModel(
+                        chat: 1,
+                        message: responseString,
+                        time:
+                        "${DateTime.now().hour}:${DateTime.now().second}"));
 
-                  );
-                  widget.chat.lastMessage=message_text;
-                  widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
-                  message_text = '';
+                    Message msg=Message(
+                      id: id.toString(),
+                      createdAt: DateTime.now(),
+                      message: responseString==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":responseString!,
+                      // sendBy: authProvider.loginUserData.id!.toString(),
+                      sendBy:  '${widget.userIACompte.id}',
+                      replyMessage: reply,
+                      // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
 
+                      messageType: MessageType.text.name,
+                      chat_id: widget.chat.docId!,
+                      create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+                      message_state: MessageState.NONLU.name,
+                      receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
 
-
-                  String msgid = firestore
-                      .collection('Messages')
-                      .doc()
-                      .id;
-                  msg.setStatus=
-                      MessageStatus.undelivered;
-                  msg.id=msgid;
-                  msg.replyMessage=reply;
-                  await firestore.collection('Messages').doc(msgid).set(msg.toJson());
-                  widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+                    );
+                    widget.chat.lastMessage=message_text;
+                    widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+                    message_text = '';
 
 
-                  await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
-                  setState(() {
-                    sendMessageTap=false;
-                    messageIsLoarding = false;
 
-                  });
-                } else {
-                  chatList.removeLast();
-                  chatList.add(ChatModel(
-                      chat: 0,
+                    String msgid = firestore
+                        .collection('Messages')
+                        .doc()
+                        .id;
+                    msg.setStatus=
+                        MessageStatus.undelivered;
+                    msg.id=msgid;
+                    msg.replyMessage=reply;
+                    await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+                    widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+
+
+                    await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+                    setState(() {
+                      sendMessageTap=false;
+                      messageIsLoarding = false;
+
+                    });
+                // Mise à jour UI
+                setState(() {
+                  chatList
+                    ..removeLast()
+                    ..add(ChatModel(
+                        chat: 1,
+                        message: responseString ?? "Réponse vide de l'API",
+                        time: "${DateTime.now().hour}:${DateTime.now().second}"));
+                });
+
+                // ... reste du code de traitement ...
+
+              } else {
+                // Erreur API (status code != 200)
+                final errorBody = jsonDecode(response.body);
+                final apiError = errorBody['error']['message'] ?? 'Erreur inconnue';
+                printVm("Erreur API: ${apiError}");
+
+                setState(() {
+                  chatList
+                    ..removeLast()
+                    ..add(ChatModel(
+                        chatType: ChatTypeIa.error,
+                        chat: 1,
+                        message: "Erreur API: $apiError (${response.statusCode})",
+                        time: "${DateTime.now().hour}:${DateTime.now().second}"));
+                });
+              }
+            } on SocketException catch (e) {
+              printVm("Erreur de connexion: ${e}");
+
+              // Erreur réseau
+              setState(() {
+                chatList
+                  ..removeLast()
+                  ..add(ChatModel(
                       chatType: ChatTypeIa.error,
-                      message: errorMessage,
-                      time:
-                      "${DateTime.now().hour}:${DateTime.now().second}"));
-                }
-                FocusScope.of(context).unfocus();
+                      chat: 1,
+                      message: "Erreur de connexion: ${e.message}",
+                      time: "${DateTime.now().hour}:${DateTime.now().second}"));
               });
+            } on TimeoutException catch (_) {
+              // Timeout
+              setState(() {
+                chatList
+                  ..removeLast()
+                  ..add(ChatModel(
+                      chatType: ChatTypeIa.error,
+                      chat: 1,
+                      message: "Temps d'attente dépassé",
+                      time: "${DateTime.now().hour}:${DateTime.now().second}"));
+              });
+            } on FormatException catch (e) {
+              // Erreur de format JSON
+              printVm("Erreur de format des données: ${e.message}");
+              setState(() {
+                chatList
+                  ..removeLast()
+                  ..add(ChatModel(
+                      chatType: ChatTypeIa.error,
+                      chat: 1,
+                      message: "Erreur de format des données: ${e.message}",
+                      time: "${DateTime.now().hour}:${DateTime.now().second}"));
+              });
+            } catch (e) {
+              printVm("Erreur inattendue: ${e}");
+
+              // Erreur générique
+              setState(() {
+                chatList
+                  ..removeLast()
+                  ..add(ChatModel(
+                      chatType: ChatTypeIa.error,
+                      chat: 1,
+                      message: "Erreur inattendue: ${e.toString()}",
+                      time: "${DateTime.now().hour}:${DateTime.now().second}"));
+              });
+            } finally {
+              // Nettoyage final
+              setState(() {
+                sendMessageTap = false;
+                messageIsLoarding = false;
+              });
+              FocusScope.of(context).unfocus();
+            }
 
 
+            // try {
+            //   var question = message_text;
+            //   setState(() {
+            //     chatList.add(ChatModel(
+            //         chat: 0,
+            //         message: message_text,
+            //         time:
+            //         "${DateTime.now().hour}:${DateTime.now().second}"));
+            //
+            //     setState(() {
+            //       chatList.add(ChatModel(
+            //           chatType: ChatTypeIa.loading,
+            //           chat: 1,
+            //           message: "",
+            //           time: ""));
+            //     });
+            //
+            //     // FocusScope.of(context).unfocus();
+            //
+            //     messages.add({
+            //       "text": widget.instruction+"pseudo: ${authProvider.loginUserData.pseudo} nombre abonnees : ${authProvider.loginUserData.abonnes} popularité en pourcentage à arrondie : ${authProvider.loginUserData.popularite!=null?authProvider.loginUserData.popularite!*100:0} point de contribution à l'amelioration de l application : ${authProvider.loginUserData.pointContribution}" + "\n" + question,
+            //     });
+            //     message_text = "";
+            //   });
+            //   var (responseString, response) =
+            //   await GeminiApi.geminiChatApi(
+            //
+            //       messages: messages, apiKey: widget.appDefaultData.geminiapiKey!);
+            //
+            //   printVm('response api gemini body');
+            //   printVm('response api gemini body code: ${response.body}');
+            //
+            //   if (response.statusCode == 200) {
+            //     printVm('response api gemini :');
+            //     printVm('response api gemini : ${jsonDecode(response.body)['usageMetadata']}');
+            //     // Analyser la réponse pour obtenir les informations sur les tokens
+            //     String token=jsonDecode(response.body)['usageMetadata']['totalTokenCount'].toString();
+            //
+            //     // // Mise à jour des jetons restants pour l'utilisateur IA
+            //     widget.userIACompte.jetons = widget.userIACompte.jetons! - int.parse(token);
+            //     await firestore.collection('User_Ia_Compte').doc(widget.userIACompte.id!).update(widget.userIACompte.toJson());
+            //     chatList.removeLast();
+            //     chatList.add(ChatModel(
+            //         chat: 1,
+            //         message: responseString,
+            //         time:
+            //         "${DateTime.now().hour}:${DateTime.now().second}"));
+            //
+            //     Message msg=Message(
+            //       id: id.toString(),
+            //       createdAt: DateTime.now(),
+            //       message: responseString==null?"Serait-il possible de reformuler la question d'une manière plus claire ou plus précise, s'il vous plaît ?":responseString!,
+            //       // sendBy: authProvider.loginUserData.id!.toString(),
+            //       sendBy:  '${widget.userIACompte.id}',
+            //       replyMessage: reply,
+            //       // messageType:messageType==MessageType.text? MessageType.text:message.messageType==MessageType.image?MessageType.image:message.messageType==MessageType.voice?MessageType.voice:MessageType.custom,
+            //
+            //       messageType: MessageType.text.name,
+            //       chat_id: widget.chat.docId!,
+            //       create_at_time_spam: DateTime.now().millisecondsSinceEpoch,
+            //       message_state: MessageState.NONLU.name,
+            //       receiverBy: widget.chat!.senderId==authProvider.loginUserData.id!?widget.chat!.receiverId!:widget.chat!.senderId!,
+            //
+            //     );
+            //     widget.chat.lastMessage=message_text;
+            //     widget.chat.senderId==authProvider.loginUserData.id!?widget.chat.your_msg_not_read=widget.chat.your_msg_not_read!+1:widget.chat.my_msg_not_read=widget.chat.my_msg_not_read!+1;
+            //     message_text = '';
+            //
+            //
+            //
+            //     String msgid = firestore
+            //         .collection('Messages')
+            //         .doc()
+            //         .id;
+            //     msg.setStatus=
+            //         MessageStatus.undelivered;
+            //     msg.id=msgid;
+            //     msg.replyMessage=reply;
+            //     await firestore.collection('Messages').doc(msgid).set(msg.toJson());
+            //     widget.chat.updatedAt= DateTime.now().millisecondsSinceEpoch;
+            //
+            //
+            //     await firestore.collection('Chats').doc(widget.chat.id).update( widget.chat!.toJson());
+            //     setState(() {
+            //       sendMessageTap=false;
+            //       messageIsLoarding = false;
+            //
+            //     });
+            //   } else {
+            //     chatList.removeLast();
+            //     chatList.add(ChatModel(
+            //         chat: 0,
+            //         chatType: ChatTypeIa.error,
+            //         message: errorMessage,
+            //         time:
+            //         "${DateTime.now().hour}:${DateTime.now().second}"));
+            //   }
+            //   FocusScope.of(context).unfocus();
+            //   setState(() {
+            //   });
+            // } catch (e) {
+            //   setState(() {
+            //     sendMessageTap=false;
+            //   });
+            //   print(
+            //       "**************************************************************");
+            //   printVm('response api gemini body erreur : ${e}');
+            // }
+
+            // FocusScope.of(context).unfocus();
+            // _scrollController.animateTo(
+            //     _scrollController.position.maxScrollExtent +
+            //         MediaQuery.of(context).size.height,
+            //     duration: const Duration(milliseconds: 300),
+            //     curve: Curves.easeOut);
+
+
+setState(() {
+
+});
 
 
                                 _controller.animateTo(

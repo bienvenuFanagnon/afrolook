@@ -27,6 +27,7 @@ import '../../constant/sizeButtons.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
+import '../home/homeWidget.dart';
 import 'hashtag/textHashTag/views/view_models/home_view_model.dart';
 import 'hashtag/textHashTag/views/view_models/search_view_model.dart';
 import 'hashtag/textHashTag/views/widgets/comment_text_field.dart';
@@ -154,7 +155,36 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
       _descriptionController.dismissOverlay();
     }
   }
+  String? _selectedPostType; // Variable pour stocker la valeur sélectionnée (code)
+  String? _selectedPostTypeLibeller; // Variable pour stocker la valeur sélectionnée (code)
 
+  // Map des types de post avec code et libellé
+  final Map<String, Map<String, dynamic>> _postTypes = {
+    'ACTUALITES': {
+      'label': 'Actualités',
+      'icon': Icons.article,
+    },
+    'LOOKS': {
+      'label': 'Looks',
+      'icon': Icons.style,
+    },
+    'SPORT': {
+      'label': 'Sport',
+      'icon': Icons.sports,
+    },
+    'EVENEMENT': {
+      'label': 'Événement',
+      'icon': Icons.event,
+    },
+    'OFFRES': {
+      'label': 'Offres',
+      'icon': Icons.local_offer,
+    },
+    'GAMER': {
+      'label': 'Games story',
+      'icon': Icons.gamepad,
+    },
+  };
   @override
   void initState() {
     super.initState();
@@ -214,7 +244,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                         hintText: 'Exprimez votre pensée',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10.0), // Add rounded corners
-                          borderSide: BorderSide(color: Colors.blue, width: 2.0), // Customize color and thickness
+                          borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
                         ),
                       ),
                       keyboardType: TextInputType.multiline,
@@ -229,28 +259,50 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                         return null;
                       },
                     ),
-                    // if (currentHashtag.isNotEmpty && filteredHashtags.isNotEmpty)
-                    //   SizedBox(
-                    //     height: height*0.1,
-                    //     width: width,
-                    //     child: ListView.builder(
-                    //       itemCount: filteredHashtags.length,
-                    //       itemBuilder: (context, index) {
-                    //         final tag = filteredHashtags[index];
-                    //         return ListTile(
-                    //           title: Text(tag),
-                    //           onTap: () => _addHashtag(tag),
-                    //         );
-                    //       },
-                    //     ),
-                    //   ),
-                    // if (currentHashtag.isNotEmpty && filteredHashtags.isEmpty)
-                    //   ElevatedButton(
-                    //     onPressed: () => _addHashtag(currentHashtag),
-                    //     child: Text("Ajouter $currentHashtag"),
-                    //   ),
 
+                    // Liste déroulante pour le type de post
+                    SizedBox(height: 20),
 
+                    // Liste déroulante pour le type de post
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        hintText: 'Type de post',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0), // Add rounded corners
+                          borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
+                        ),
+                      ),
+
+                      value: _selectedPostType,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedPostType = newValue;
+                          printVm('_selectedPostType: ${_selectedPostType}');
+                          String? selectedLabel = _postTypes[_selectedPostType]?['label'];
+                          _selectedPostTypeLibeller=selectedLabel;
+
+                          printVm('selectedLabel: ${selectedLabel}');
+                        });
+                      },
+                      items: _postTypes.entries.map<DropdownMenuItem<String>>((entry) {
+                        return DropdownMenuItem<String>(
+                          value: entry.key, // Utilisez la clé (code) comme valeur
+                          child: Row(
+                            children: [
+                              Icon(entry.value['icon'], color: Colors.green), // Icône
+                              SizedBox(width: 10),
+                              Text(entry.value['label']), // Libellé
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez sélectionner un type de post';
+                        }
+                        return null;
+                      },
+                    ),
                     SizedBox(
                       height: 60,
                     ),
@@ -317,6 +369,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 post.comments = 0;
                                 post.nombrePersonneParJour = 60;
                                 post.dataType = PostDataType.TEXT.name;
+                            post.typeTabbar = _selectedPostType;
                                 post.likes = 0;
                                 post.loves = 0;
                                 post.id = postId;
@@ -371,7 +424,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                             smallImage: "${widget.canal!.urlImage}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "",
-                                            message: "📢 Canal ${widget.canal!.titre} a posté un look infos ✨",
+                                            message: "📢 Canal ${widget.canal!.titre} ${getTabBarTypeMessage(_selectedPostType!)}",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -394,7 +447,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "",
-                                            message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                                            message: "📢 ${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!)}",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
