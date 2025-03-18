@@ -613,6 +613,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                     ),
                                   ),
                                   Text(
+                                    "${widget.post!.canal!.suivi ?? '0'} abonnés",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      shadows: [
+                                        Shadow(
+                                          color: _afroBlack,
+                                          blurRadius: 2,
+                                          offset: Offset(1, 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
                                     formaterDateTime(
                                         DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
                                     style: TextStyle(
@@ -668,6 +683,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
+                                    shadows: [
+                                      Shadow(
+                                        color: _afroBlack,
+                                        blurRadius: 2,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  "${widget.post!.user!.userAbonnesIds!.length ?? '0'} abonnés",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                     shadows: [
                                       Shadow(
                                         color: _afroBlack,
