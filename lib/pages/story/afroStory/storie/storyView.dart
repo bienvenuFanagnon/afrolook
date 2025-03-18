@@ -8,7 +8,6 @@ import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
 import '../../../component/showUserDetails.dart';
 import '../util.dart';
-import '../whatsapp.dart';
 
 
 class StoryPreview extends StatefulWidget {

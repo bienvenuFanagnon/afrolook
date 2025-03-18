@@ -7,7 +7,6 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_watermark/image_watermark.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -123,30 +122,32 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
 
   Future<bool> _saveImage(Uint8List? image) async {
     try {
-      if (image == null) return false;
+      // if (image == null) return false;
+      //
+      // // Demander les permissions
+      // if (await Permission.storage.request().isGranted ||
+      //     await Permission.photos.request().isGranted) {
+      //   // Enregistrer l'image dans la galerie
+      //   final result = await ImageGallerySaverPlus.saveImage(image);
+      //   print(result);
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text('Image enregistrée dans la galerie', style: TextStyle(color: Colors.white)),
+      //       backgroundColor: Colors.green,
+      //     ),
+      //   );
+      //   return true;
+      // } else {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text("Erreur d'enregistrement dans la galerie : Permission refusée", style: TextStyle(color: Colors.white)),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      //   return false;
+      // }
+      return false;
 
-      // Demander les permissions
-      if (await Permission.storage.request().isGranted ||
-          await Permission.photos.request().isGranted) {
-        // Enregistrer l'image dans la galerie
-        final result = await ImageGallerySaverPlus.saveImage(image);
-        print(result);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Image enregistrée dans la galerie', style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.green,
-          ),
-        );
-        return true;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erreur d'enregistrement dans la galerie : Permission refusée", style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
     } catch (e) {
       print('erreur: $e');
       ScaffoldMessenger.of(context).showSnackBar(

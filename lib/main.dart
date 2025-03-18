@@ -35,6 +35,7 @@ import 'package:afrotok/pages/socialVideos/afrovibes/afroVibes.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afroFeedVideo.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/videoHorizontal.dart';
+import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/splashVideo.dart';
@@ -602,7 +603,8 @@ class _MyAppState extends State<MyApp> {
 
             return PageTransition(
                 // child: MainScreen(), type: PageTransitionType.fade);
-                child: AfroVideo(), type: PageTransitionType.fade);
+                child: AfroVideoThreads(), type: PageTransitionType.fade);
+                // child: AfroVideo(), type: PageTransitionType.fade);
                 // child: AfroVibesPage(), type: PageTransitionType.fade);
                 // child: LiveStreamPage(), type: PageTransitionType.fade);
                 // child: VideoFeedPage(), type: PageTransitionType.fade);

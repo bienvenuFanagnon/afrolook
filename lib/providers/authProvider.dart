@@ -12,7 +12,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:encrypt_decrypt_plus/cipher/cipher.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -37,7 +36,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 65;
+  late int app_version_code = 69;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1021,21 +1020,7 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
-  String encrypt(String pwd){
-    Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
-    String encryptTxt = cipher.xorEncode("${pwd}");
-    printVm("password");
-    printVm(encryptTxt);
-    return encryptTxt;
-  }
-  String decrypt(String pwd_crypted){
-    Cipher cipher = Cipher(secretKey: "afroshop_secret_key.com");
 
-    String decryptTxt = cipher.xorDecode(pwd_crypted);
-   // printVm(encryptTxt);
-    printVm(decryptTxt);
-    return decryptTxt;
-  }
 
 
   Future<bool> getCurrentUser(String currentUserId) async {

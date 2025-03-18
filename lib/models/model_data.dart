@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:json_annotation/json_annotation.dart';
 
 import '../pages/story/afroStory/repository.dart';
 import 'chatmodels/message.dart';
+
+import 'package:json_annotation/json_annotation.dart';
 part 'model_data.g.dart'; // Generated file name based on the class name
 /* flutter pub run build_runner build */
 

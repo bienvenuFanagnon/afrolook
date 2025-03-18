@@ -3045,7 +3045,7 @@ class _GamerPageState extends State<GamerPage>
                                       ),
                                     ),
                                     SizedBox(
-                                      height: height * 0.33,
+                                      height: height * 0.34,
                                       child: ListView.builder(
                                         scrollDirection: Axis.horizontal,
                                         itemCount: canaux.length,

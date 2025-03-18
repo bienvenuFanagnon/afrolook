@@ -3045,7 +3045,7 @@ class _LooksPageState extends State<LooksPage>
                                     ),
                                   ),
                                   SizedBox(
-                                    height: height * 0.33,
+                                    height: height * 0.34,
                                     child: ListView.builder(
                                       scrollDirection: Axis.horizontal,
                                       itemCount: canaux.length,
@@ -3059,65 +3059,65 @@ class _LooksPageState extends State<LooksPage>
                               );
                             }
 
-                        if (index % 6 == 5) {
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '🛠️Services & Jobs 💼',
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green),
-                                        ),
-                                      ],
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => UserServiceListPage(),
-                                          ),
-                                        );
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            'Voir plus 🛠️ 💼',
-                                            style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green),
-                                          ),
-                                        ],
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                height: height * 0.3,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: userServices.length,
-                                  itemBuilder: (context, index) {
-                                    return userServiceWidget(
-                                        userServices[index], width, height, context);
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        }
+                        // if (index % 6 == 5) {
+                        //   return Column(
+                        //     children: [
+                        //       Padding(
+                        //         padding: const EdgeInsets.all(8.0),
+                        //         child: Row(
+                        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //           children: [
+                        //             Row(
+                        //               children: [
+                        //                 Text(
+                        //                   '🛠️Services & Jobs 💼',
+                        //                   style: TextStyle(
+                        //                       fontSize: 15,
+                        //                       fontWeight: FontWeight.bold,
+                        //                       color: Colors.green),
+                        //                 ),
+                        //               ],
+                        //               mainAxisAlignment: MainAxisAlignment.start,
+                        //             ),
+                        //             GestureDetector(
+                        //               onTap: () {
+                        //                 Navigator.push(
+                        //                   context,
+                        //                   MaterialPageRoute(
+                        //                     builder: (context) => UserServiceListPage(),
+                        //                   ),
+                        //                 );
+                        //               },
+                        //               child: Row(
+                        //                 children: [
+                        //                   Text(
+                        //                     'Voir plus 🛠️ 💼',
+                        //                     style: TextStyle(
+                        //                         fontSize: 15,
+                        //                         fontWeight: FontWeight.bold,
+                        //                         color: Colors.green),
+                        //                   ),
+                        //                 ],
+                        //                 mainAxisAlignment: MainAxisAlignment.start,
+                        //               ),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //       SizedBox(
+                        //         height: height * 0.3,
+                        //         child: ListView.builder(
+                        //           scrollDirection: Axis.horizontal,
+                        //           itemCount: userServices.length,
+                        //           itemBuilder: (context, index) {
+                        //             return userServiceWidget(
+                        //                 userServices[index], width, height, context);
+                        //           },
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   );
+                        // }
                         return HomePostUsersWidget(
 
                           post: listConstposts[index], color: _color, height: height, width: width,isDegrade: true,

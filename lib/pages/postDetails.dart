@@ -779,18 +779,58 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
                       SizedBox(
                         height: 5,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextCustomerPostDescription(
-                            titre: "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!))}",
-                            fontSize: SizeText.homeProfileDateTextSize,
-                            couleur: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextCustomerPostDescription(
+                                titre:
+                                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post!.createdAt!))}",
+                                fontSize: SizeText.homeProfileDateTextSize,
+                                couleur: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Card(
+
+                                child: Padding(
+                                  padding: const EdgeInsets.all(5.0),
+                                  child: TextCustomerPostDescription(
+                                    titre:
+                                    "Vues ${post!.vues}",
+                                    fontSize: SizeText.homeProfileDateTextSize,
+                                    couleur: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                color: Colors.black12,
+                              ),
+                            ),
+                          ),
+
+                        ],
                       ),
+
+                      // Padding(
+                      //   padding: const EdgeInsets.only(bottom: 8.0),
+                      //   child: Align(
+                      //     alignment: Alignment.centerLeft,
+                      //     child: TextCustomerPostDescription(
+                      //       titre: "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!))}",
+                      //       fontSize: SizeText.homeProfileDateTextSize,
+                      //       couleur: Colors.white,
+                      //       fontWeight: FontWeight.bold,
+                      //     ),
+                      //   ),
+                      // ),
                       Visibility(
                         visible: post.dataType==PostDataType.TEXT.name?true:false,
 
@@ -1540,6 +1580,26 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
+@override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if (widget.post?.id != null) {
+      postProvider.getPostsImagesById(widget.post!.id!).then((value) {
+        if (value.isNotEmpty) {
+          final updatedPost = value.first;
+          if (updatedPost.vues != null) {
+            updatedPost.vues = (updatedPost.vues ?? 0) + 1;
+          }
+
+          if (updatedPost.user != null) {
+            postProvider.updatePost(updatedPost, updatedPost.user!, context);
+          }
+        }
+      });
+    }
+
+}
 
   @override
   void dispose() {

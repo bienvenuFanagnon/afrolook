@@ -913,814 +913,807 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
           //   });
           },
           child: Center(
-            child: Column(
-              children: [
+            child: StreamBuilder<List<Post>>(
+              // stream: postProvider.getPostsImages2(limitePosts,),
+              stream: _streamController.stream,
 
-                StreamBuilder<List<Post>>(
-                  // stream: postProvider.getPostsImages2(limitePosts,),
-                  stream: _streamController.stream,
+              // initialData: postProvider.listConstposts,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  printVm('Error: ${snapshot.error}');
+                  return Center(child: Icon(Icons.error));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('No posts found'));
+                }
+                // Mettre à jour seulement si de nouvelles données arrivent
+                if (!isLoading && snapshot.data != listConstposts) {
 
-                  // initialData: postProvider.listConstposts,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      printVm('Error: ${snapshot.error}');
-                      return Center(child: Icon(Icons.error));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(child: Text('No posts found'));
-                    }
-                    // Mettre à jour seulement si de nouvelles données arrivent
-                    if (!isLoading && snapshot.data != listConstposts) {
+                  listConstposts = snapshot.data!;
 
-                      listConstposts = snapshot.data!;
+                }
 
-                    }
+                listConstposts = snapshot.data!;
 
-                    listConstposts = snapshot.data!;
+                return Expanded(
+                  child: Consumer<PostProvider>(
+                    builder: (context, postListProvider, child) {
+                      var datas= listConstposts;
+                      return datas.isEmpty
+                          ? Center(child: SizedBox(
+                          height: 20,
+                          width: 20,
 
-                    return Expanded(
-                      child: Consumer<PostProvider>(
-                        builder: (context, postListProvider, child) {
-                          var datas= listConstposts;
-                          return datas.isEmpty
-                              ? Center(child: SizedBox(
-                              height: 20,
-                              width: 20,
+                          child: CircularProgressIndicator()))
+                          : PageView.builder(
+                          scrollDirection: Axis.vertical,
+                          itemCount: datas.length,
 
-                              child: CircularProgressIndicator()))
-                              : PageView.builder(
-                              scrollDirection: Axis.vertical,
-                              itemCount: datas.length,
-
-                              itemBuilder: (context, index) {
-                                if (index % 8 == 7) {
-                                  return FutureBuilder<List<ArticleData>>(
-                                    future: categorieProduitProvider.getArticleBooster(),
-                                    builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                      if (snapshot.hasData) {
-                                        List<ArticleData> articles = snapshot.data;
-                                        if (articles.isEmpty) {
-                                          return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
-                                        }
-                                        return SizedBox(
-                                          height: h * 0.35,
-                                          child: Column(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.all(8.0),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          itemBuilder: (context, index) {
+                            if (index % 8 == 7) {
+                              return FutureBuilder<List<ArticleData>>(
+                                future: categorieProduitProvider.getArticleBooster(),
+                                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                  if (snapshot.hasData) {
+                                    List<ArticleData> articles = snapshot.data;
+                                    if (articles.isEmpty) {
+                                      return SizedBox.shrink(); // Retourne un widget vide si la liste est vide
+                                    }
+                                    return SizedBox(
+                                      height: h * 0.35,
+                                      child: Column(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
                                                   children: [
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          'Produits Boostés',
-                                                          style: TextStyle(
-                                                              fontSize: 12,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.green),
-                                                        ),
-                                                        SizedBox(width: 8),
-                                                        Icon(
-                                                          Icons.local_fire_department,
-                                                          color: Colors.red,
-                                                        ),
-                                                      ],
-                                                      mainAxisAlignment: MainAxisAlignment.start,
+                                                    Text(
+                                                      'Produits Boostés',
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.green),
                                                     ),
-                                                    GestureDetector(
-                                                      onTap: () {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (context) => HomeAfroshopPage(title: ''),
-                                                          ),
-                                                        );
-                                                      },
-                                                      child: Row(
-                                                        children: [
-                                                          Text(
-                                                            'Boutiques',
-                                                            style: TextStyle(
-                                                                fontSize: 18,
-                                                                fontWeight: FontWeight.bold,
-                                                                color: Colors.green),
-                                                          ),
-                                                          SizedBox(width: 8),
-                                                          Icon(
-                                                            Icons.storefront,
-                                                            color: Colors.red,
-                                                          ),
-                                                        ],
-                                                        mainAxisAlignment: MainAxisAlignment.start,
-                                                      ),
+                                                    SizedBox(width: 8),
+                                                    Icon(
+                                                      Icons.local_fire_department,
+                                                      color: Colors.red,
                                                     ),
                                                   ],
+                                                  mainAxisAlignment: MainAxisAlignment.start,
                                                 ),
-                                              ),
-                                              Container(
-                                                child: CarouselSlider(
-                                                  items: articles.map((article) {
-                                                    return Builder(
-                                                      builder: (BuildContext context) {
-                                                        return ArticleTileBooster(
-                                                            article: article, w: w, h: h, isOtherPage: true);
-                                                      },
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) => HomeAfroshopPage(title: ''),
+                                                      ),
                                                     );
-                                                  }).toList(),
-                                                  options: CarouselOptions(
-                                                    height: h*0.4,
-                                                    autoPlay: true,
-                                                    enlargeCenterPage: true,
-                                                    viewportFraction: 0.6,
+                                                  },
+                                                  child: Row(
+                                                    children: [
+                                                      Text(
+                                                        'Boutiques',
+                                                        style: TextStyle(
+                                                            fontSize: 18,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.green),
+                                                      ),
+                                                      SizedBox(width: 8),
+                                                      Icon(
+                                                        Icons.storefront,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ],
+                                                    mainAxisAlignment: MainAxisAlignment.start,
                                                   ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
-                                        );
-                                      } else if (snapshot.hasError) {
-                                        return Icon(Icons.error_outline);
-                                      } else {
-                                        return Center(
-                                          child: SizedBox(
-                                            height: 30,
-                                              width: 30,
+                                          Container(
+                                            child: CarouselSlider(
+                                              items: articles.map((article) {
+                                                return Builder(
+                                                  builder: (BuildContext context) {
+                                                    return ArticleTileBooster(
+                                                        article: article, w: w, h: h, isOtherPage: true);
+                                                  },
+                                                );
+                                              }).toList(),
+                                              options: CarouselOptions(
+                                                height: h*0.4,
+                                                autoPlay: true,
+                                                enlargeCenterPage: true,
+                                                viewportFraction: 0.6,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else if (snapshot.hasError) {
+                                    return Icon(Icons.error_outline);
+                                  } else {
+                                    return Center(
+                                      child: SizedBox(
+                                        height: 30,
+                                          width: 30,
 
-                                              child: CircularProgressIndicator()),
-                                        );
-                                      }
-                                    },
-                                  );
-                                }
+                                          child: CircularProgressIndicator()),
+                                    );
+                                  }
+                                },
+                              );
+                            }
 
 
-                                return   Container(
-                                  color: Colors.black,
-                                  //  height: MediaQuery.of(context).size.height,
-                                  child: Stack(
-                                    children: [
-                                      SamplePlayer(post: datas[index]!),
-                                      // VideoWidget(post: datas[index]!),
+                            return   Container(
+                              color: Colors.black,
+                              //  height: MediaQuery.of(context).size.height,
+                              child: Stack(
+                                children: [
+                                  SamplePlayer(post: datas[index]!),
+                                  // VideoWidget(post: datas[index]!),
 
-                                      // Expanded(
-                                      //
-                                      //   child: SimpleVideoPlayerWidget(videoUrl: datas[index].url_media!)),
-                                      // Container(
-                                      //   padding: const EdgeInsets.all(10.0),
-                                      //   decoration: BoxDecoration(
-                                      //     gradient: LinearGradient(
-                                      //       colors: [
-                                      //         Colors.black,
-                                      //         Colors.transparent,
-                                      //         Colors.transparent,
-                                      //         Colors.black.withOpacity(0.15)
-                                      //       ],
-                                      //       begin: Alignment.topCenter,
-                                      //       end: Alignment.bottomCenter,
-                                      //       stops: const [0, 0, 0.6, 1],
-                                      //     ),
-                                      //   ),
-                                      // ),
-                                      Positioned(
+                                  // Expanded(
+                                  //
+                                  //   child: SimpleVideoPlayerWidget(videoUrl: datas[index].url_media!)),
+                                  // Container(
+                                  //   padding: const EdgeInsets.all(10.0),
+                                  //   decoration: BoxDecoration(
+                                  //     gradient: LinearGradient(
+                                  //       colors: [
+                                  //         Colors.black,
+                                  //         Colors.transparent,
+                                  //         Colors.transparent,
+                                  //         Colors.black.withOpacity(0.15)
+                                  //       ],
+                                  //       begin: Alignment.topCenter,
+                                  //       end: Alignment.bottomCenter,
+                                  //       stops: const [0, 0, 0.6, 1],
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                  Positioned(
 
-                                        left: 12.0,
-                                        bottom: 20.0,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: SafeArea(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                    left: 12.0,
+                                    bottom: 20.0,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: SafeArea(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              datas[index].type==PostType.PUB.name?
+                                              Column(
+
                                                 children: [
-                                                  datas[index].type==PostType.PUB.name?
-                                                  Column(
-
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(bottom: 4.0),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Entypo.network,size: 15,color: Colors.green,),
+                                                        SizedBox(width: 10,),
+                                                        TextCustomerUserTitle(
+                                                          titre: "publicité",
+                                                          fontSize: SizeText.homeProfileTextSize,
+                                                          couleur: Colors.white,
+                                                          fontWeight: FontWeight.w400,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Row(
                                                     children: [
-                                                      Padding(
-                                                        padding: const EdgeInsets.only(bottom: 4.0),
+                                                      TextButton(
+
+                                                        onPressed: () {
+                                                          _showUserDetailsModalDialog(datas[index].user!, w, h);
+                                                        },
                                                         child: Row(
                                                           children: [
-                                                            Icon(Entypo.network,size: 15,color: Colors.green,),
-                                                            SizedBox(width: 10,),
-                                                            TextCustomerUserTitle(
-                                                              titre: "publicité",
-                                                              fontSize: SizeText.homeProfileTextSize,
-                                                              couleur: Colors.white,
-                                                              fontWeight: FontWeight.w400,
+                                                            Padding(
+                                                              padding: const EdgeInsets.only(right: 8.0),
+                                                              child: CircleAvatar(
+                                                                radius: 12,
+                                                                backgroundImage: NetworkImage(
+                                                                    '${ datas[index].entrepriseData!.urlImage!}'),
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                              height: 2,
+                                                            ),
+                                                            Row(
+                                                              children: [
+                                                                Column(
+                                                                  children: [
+                                                                    SizedBox(
+                                                                      //width: 100,
+                                                                      child: TextCustomerUserTitle(
+                                                                        titre: "${ datas[index].entrepriseData!.titre!}",
+                                                                        fontSize: 10,
+                                                                        couleur: Colors.white,
+                                                                        fontWeight: FontWeight.bold,
+
+                                                                      ),
+                                                                    ),
+                                                                    TextCustomerUserTitle(
+                                                                      titre: "${datas[index].entrepriseData!.suivi!} suivi(s)",
+                                                                      fontSize: 10,
+                                                                      couleur: Colors.white,
+                                                                      fontWeight: FontWeight.w400,
+                                                                    ),
+
+
+                                                                  ],
+                                                                ),
+
+                                                                /*
+                                                                                                              IconButton(
+                                                        onPressed: () {},
+                                                        icon: Icon(
+                                                          Icons.add_circle_outlined,
+                                                          size: 20,
+                                                          color: ConstColors.regIconColors,
+                                                        )),
+
+                                                                                                               */
+                                                              ],
                                                             ),
                                                           ],
                                                         ),
                                                       ),
+
+                                                      SizedBox(width: 10,),
+                                                      Icon(Entypo.arrow_long_right,color: Colors.green,size: 12,),
+                                                      SizedBox(width: 10,),
                                                       Row(
                                                         children: [
-                                                          TextButton(
-
-                                                            onPressed: () {
-                                                              _showUserDetailsModalDialog(datas[index].user!, w, h);
-                                                            },
-                                                            child: Row(
-                                                              children: [
-                                                                Padding(
-                                                                  padding: const EdgeInsets.only(right: 8.0),
-                                                                  child: CircleAvatar(
-                                                                    radius: 12,
-                                                                    backgroundImage: NetworkImage(
-                                                                        '${ datas[index].entrepriseData!.urlImage!}'),
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                  height: 2,
-                                                                ),
-                                                                Row(
-                                                                  children: [
-                                                                    Column(
-                                                                      children: [
-                                                                        SizedBox(
-                                                                          //width: 100,
-                                                                          child: TextCustomerUserTitle(
-                                                                            titre: "${ datas[index].entrepriseData!.titre!}",
-                                                                            fontSize: 10,
-                                                                            couleur: Colors.white,
-                                                                            fontWeight: FontWeight.bold,
-
-                                                                          ),
-                                                                        ),
-                                                                        TextCustomerUserTitle(
-                                                                          titre: "${datas[index].entrepriseData!.suivi!} suivi(s)",
-                                                                          fontSize: 10,
-                                                                          couleur: Colors.white,
-                                                                          fontWeight: FontWeight.w400,
-                                                                        ),
-
-
-                                                                      ],
-                                                                    ),
-
-                                                                    /*
-                                                                                                                  IconButton(
-                                                            onPressed: () {},
-                                                            icon: Icon(
-                                                              Icons.add_circle_outlined,
-                                                              size: 20,
-                                                              color: ConstColors.regIconColors,
-                                                            )),
-
-                                                                                                                   */
-                                                                  ],
-                                                                ),
-                                                              ],
+                                                          Padding(
+                                                            padding: const EdgeInsets.only(right: 8.0),
+                                                            child: CircleAvatar(
+                                                              radius: 12,
+                                                              backgroundImage: NetworkImage(
+                                                                  '${ datas[index].user!.imageUrl!}'),
                                                             ),
                                                           ),
-
-                                                          SizedBox(width: 10,),
-                                                          Icon(Entypo.arrow_long_right,color: Colors.green,size: 12,),
-                                                          SizedBox(width: 10,),
+                                                          SizedBox(
+                                                            height: 2,
+                                                          ),
                                                           Row(
                                                             children: [
-                                                              Padding(
-                                                                padding: const EdgeInsets.only(right: 8.0),
-                                                                child: CircleAvatar(
-                                                                  radius: 12,
-                                                                  backgroundImage: NetworkImage(
-                                                                      '${ datas[index].user!.imageUrl!}'),
-                                                                ),
-                                                              ),
-                                                              SizedBox(
-                                                                height: 2,
-                                                              ),
-                                                              Row(
+                                                              Column(
+                                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                                 children: [
-                                                                  Column(
-                                                                    mainAxisAlignment: MainAxisAlignment.start,
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                      SizedBox(
-                                                                        //width: 100,
-                                                                        child: TextCustomerUserTitle(
-                                                                          titre: "@${ datas[index].user!.pseudo!}",
-                                                                          fontSize: 10,
-                                                                          couleur: Colors.white,
-                                                                          fontWeight: FontWeight.bold,
-                                                                        ),
-                                                                      ),
-                                                                      TextCustomerUserTitle(
-                                                                        titre: "${ datas[index].user!.abonnes!} abonné(s)",
-                                                                        fontSize: 10,
-                                                                        couleur: Colors.white,
-                                                                        fontWeight: FontWeight.w400,
-                                                                      ),
-
-                                                                    ],
+                                                                  SizedBox(
+                                                                    //width: 100,
+                                                                    child: TextCustomerUserTitle(
+                                                                      titre: "@${ datas[index].user!.pseudo!}",
+                                                                      fontSize: 10,
+                                                                      couleur: Colors.white,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                  TextCustomerUserTitle(
+                                                                    titre: "${ datas[index].user!.abonnes!} abonné(s)",
+                                                                    fontSize: 10,
+                                                                    couleur: Colors.white,
+                                                                    fontWeight: FontWeight.w400,
                                                                   ),
 
-                                                                  /*
-                                                  IconButton(
-                                                      onPressed: () {},
-                                                      icon: Icon(
-                                                        Icons.add_circle_outlined,
-                                                        size: 20,
-                                                        color: ConstColors.regIconColors,
-                                                      )),
-
-                                                   */
                                                                 ],
                                                               ),
 
+                                                              /*
+                                              IconButton(
+                                                  onPressed: () {},
+                                                  icon: Icon(
+                                                    Icons.add_circle_outlined,
+                                                    size: 20,
+                                                    color: ConstColors.regIconColors,
+                                                  )),
+
+                                               */
                                                             ],
                                                           ),
+
                                                         ],
                                                       ),
-                                                      SizedBox(height: 5,),
-                                                      Row(
-                                                        children: [
-                                                          Container(
-                                                            //width: 50,
-                                                            height: 30,
-                                                            margin: EdgeInsets.zero,
-                                                            decoration: BoxDecoration(
-                                                                color: Colors.blue,
-                                                                borderRadius: BorderRadius.all(Radius.circular(20))),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 5,),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        //width: 50,
+                                                        height: 30,
+                                                        margin: EdgeInsets.zero,
+                                                        decoration: BoxDecoration(
+                                                            color: Colors.blue,
+                                                            borderRadius: BorderRadius.all(Radius.circular(20))),
 
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.only(left: 3.0,right: 3),
-                                                              child: TextButton(onPressed: () {
-                                                                printVm('contact tap');
-                                                                getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
-                                                                  userProvider.chat.messages=chat.messages;
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.only(left: 3.0,right: 3),
+                                                          child: TextButton(onPressed: () {
+                                                            printVm('contact tap');
+                                                            getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
+                                                              userProvider.chat.messages=chat.messages;
 
-                                                                  //_chewieController.pause();
-                                                                  // videoPlayerController.pause();
-
-
-                                                                  Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: datas[index], isEntreprise: false,)));
-
+                                                              //_chewieController.pause();
+                                                              // videoPlayerController.pause();
 
 
+                                                              Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: datas[index], isEntreprise: false,)));
 
 
-                                                                },);
-
-                                                              },
-                                                                  child: Row(
-                                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                                                    children: [
-                                                                      Icon(AntDesign.message1,color: Colors.white,size: 12,),
-                                                                      SizedBox(width: 5,),
-                                                                      Text("Afrolook",style: TextStyle(color: Colors.white,fontSize: 12,fontWeight: FontWeight.w600),),
-                                                                    ],
-                                                                  )),
-                                                            ),
-
-                                                          ),
-                                                          SizedBox(width: 10,),
-                                                          Container(
-                                                            //width: 50,
-                                                            height: 30,
-                                                            margin: EdgeInsets.zero,
-                                                            decoration: BoxDecoration(
-                                                                color: Colors.white,
-                                                                borderRadius: BorderRadius.all(Radius.circular(20))),
-
-                                                            child: Padding(
-                                                              padding: const EdgeInsets.only(left: 3.0,right: 3),
-                                                              child: TextButton(onPressed: () {
-                                                                launchWhatsApp("${datas[index].contact_whatsapp}");
 
 
-                                                              },
-                                                                  child: Row(
-                                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                                                    children: [
-                                                                      Icon(Fontisto.whatsapp,color: Colors.green,size: 12,),
-                                                                      SizedBox(width: 5,),
-                                                                      Text("WhatsApp",style: TextStyle(color: Colors.green,fontSize: 12,fontWeight: FontWeight.w600),),
-                                                                    ],
-                                                                  )),
-                                                            ),
 
-                                                          ),
+                                                            },);
 
-                                                        ],
-                                                      )
+                                                          },
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                                children: [
+                                                                  Icon(AntDesign.message1,color: Colors.white,size: 12,),
+                                                                  SizedBox(width: 5,),
+                                                                  Text("Afrolook",style: TextStyle(color: Colors.white,fontSize: 12,fontWeight: FontWeight.w600),),
+                                                                ],
+                                                              )),
+                                                        ),
+
+                                                      ),
+                                                      SizedBox(width: 10,),
+                                                      Container(
+                                                        //width: 50,
+                                                        height: 30,
+                                                        margin: EdgeInsets.zero,
+                                                        decoration: BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius: BorderRadius.all(Radius.circular(20))),
+
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.only(left: 3.0,right: 3),
+                                                          child: TextButton(onPressed: () {
+                                                            launchWhatsApp("${datas[index].contact_whatsapp}");
+
+
+                                                          },
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                                children: [
+                                                                  Icon(Fontisto.whatsapp,color: Colors.green,size: 12,),
+                                                                  SizedBox(width: 5,),
+                                                                  Text("WhatsApp",style: TextStyle(color: Colors.green,fontSize: 12,fontWeight: FontWeight.w600),),
+                                                                ],
+                                                              )),
+                                                        ),
+
+                                                      ),
 
                                                     ],
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                  ): TextButton(
-                                                    onPressed: () {
-
-                                                        _showUserDetailsModalDialog(datas[index].user!, w, h);
-
-                                                    },
-                                                    child: Row(
-                                                      children: [
-                                                        Container(
-                                                          height: 30.0,
-                                                          width: 30.0,
-                                                          decoration: BoxDecoration(
-                                                              border:
-                                                              Border.all(width: 1.0, color: Colors.white),
-                                                              shape: BoxShape.circle,
-                                                              image: DecorationImage(
-                                                                  image: NetworkImage( datas[index].user!.imageUrl!),
-                                                                  fit: BoxFit.cover)),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 5.0,
-                                                        ),
-                                                        Text(
-                                                          "@${datas[index].user!.pseudo!}",
-                                                          style: const TextStyle(
-                                                            fontSize: 12.0, color: Colors.white,),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 5.0,
-                                                        )
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const SizedBox(
-                                                    height: 12.0,
-                                                  ),
-                                                  Container(
-                                                    width: 300,
-                                                    height: 40,
-                                                    child: Text(
-                                                      datas[index].description!,
-                                                      style: const TextStyle(color: Colors.white,fontSize: 10),
-                                                    ),
                                                   )
+
                                                 ],
-                                              )),
-                                        ),
-                                      ),
-                                      Positioned(
-                                          right: 10.0,
-                                          bottom: 50.0,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withOpacity(0.1), // Shadow color
-                                                    spreadRadius: 2, // Spread of the shadow
-                                                    blurRadius: 5, // Blur effect to soften the shadow
-                                                    offset: Offset(0, 4), // Shadow position (x, y)
-                                                  ),
-                                                ],
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                              ): TextButton(
+                                                onPressed: () {
+
+                                                    _showUserDetailsModalDialog(datas[index].user!, w, h);
+
+                                                },
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      height: 30.0,
+                                                      width: 30.0,
+                                                      decoration: BoxDecoration(
+                                                          border:
+                                                          Border.all(width: 1.0, color: Colors.white),
+                                                          shape: BoxShape.circle,
+                                                          image: DecorationImage(
+                                                              image: NetworkImage( datas[index].user!.imageUrl!),
+                                                              fit: BoxFit.cover)),
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 5.0,
+                                                    ),
+                                                    Text(
+                                                      "@${datas[index].user!.pseudo!}",
+                                                      style: const TextStyle(
+                                                        fontSize: 12.0, color: Colors.white,),
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 5.0,
+                                                    )
+                                                  ],
+                                                ),
                                               ),
-                                              child: Column(
-                                                spacing: 5,
-                                                children: [
-                                                  const SizedBox(
-                                                    height: 20.0,
-                                                  ),
-
-                                                  LikeButton(
-
-                                                    onTap: (bool isLiked) async {
-                                                      // _triggerAnimation('like');
-                                                      _sendLike();
-                                                      if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
-                                                        printVm('tap');
-                                                        setState(()  {
-                                                          datas[index].loves=datas[index]!.loves!+1;
-
-
-                                                          datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
-
-                                                          printVm('update');
-                                                          //loves.add(idUser);
-                                                        });
-                                                        CollectionReference userCollect =
-                                                        FirebaseFirestore.instance.collection('Users');
-                                                        // Get docs from collection reference
-                                                        QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
-                                                        // Afficher la liste
-                                                        List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                                        if (listUsers.isNotEmpty) {
-                                                          listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
-                                                          postProvider.updatePost(datas[index], listUsers.first!!,context);
-                                                          await authProvider.getAppData();
-                                                          authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                          authProvider.updateAppData(authProvider.appDefaultData);
-
-
-                                                        }else{
-                                                          datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
-                                                          postProvider.updatePost( datas[index],datas[index].user!,context);
-                                                          await authProvider.getAppData();
-                                                          authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                          authProvider.updateAppData(authProvider.appDefaultData);
-
-                                                        }
-                                                        await authProvider.sendNotification(
-                                                            userIds: [datas[index].user!.oneIgnalUserid!],
-                                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                            send_user_id: "${authProvider.loginUserData.id!}",
-                                                            recever_user_id: "${datas[index].user!.id!}",
-                                                            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
-                                                            type_notif: NotificationType.POST.name,
-                                                            post_id: "${datas[index]!.id!}",
-                                                            post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                        );
-
-                                                        NotificationData notif=NotificationData();
-                                                        notif.id=firestore
-                                                            .collection('Notifications')
-                                                            .doc()
-                                                            .id;
-                                                        notif.titre="Nouveau j'aime ❤️";
-                                                        notif.media_url=authProvider.loginUserData.imageUrl;
-                                                        notif.type=NotificationType.POST.name;
-                                                        notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
-                                                        notif.users_id_view=[];
-                                                        notif.user_id=authProvider.loginUserData.id;
-                                                        notif.receiver_id="${datas[index].user!.id!}";
-                                                        notif.post_id=datas[index].id!;
-                                                        notif.post_data_type=PostDataType.VIDEO.name!;
-                                                        notif.updatedAt =
-                                                            DateTime.now().microsecondsSinceEpoch;
-                                                        notif.createdAt =
-                                                            DateTime.now().microsecondsSinceEpoch;
-                                                        notif.status = PostStatus.VALIDE.name;
-
-                                                        // users.add(pseudo.toJson());
-
-                                                        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                                        postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
-
-                                                      }
-
-                                                      return Future.value(!isLiked);
-                                                    },
-                                                    isLiked: isIn(datas[index]!.users_love_id!,authProvider.loginUserData.id!),
-
-                                                    size: 30,
-                                                    circleColor:
-                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                    bubblesColor: BubblesColor(
-                                                      dotPrimaryColor: Color(0xff3b9ade),
-                                                      dotSecondaryColor: Color(0xffe33232),
-                                                    ),
-                                                    countPostion: CountPostion.bottom,
-                                                    likeBuilder: (bool isLiked) {
-                                                      return Icon(
-                                                        Entypo.heart,
-                                                        color: isLiked ? Colors.red : Colors.white,
-                                                        size: 30,
-                                                      );
-                                                    },
-                                                    likeCount:  datas[index]!.users_love_id!.length!,
-                                                    countBuilder: (int? count, bool isLiked, String text) {
-                                                      var color = isLiked ? Colors.white : Colors.white;
-                                                      Widget result;
-                                                      if (count == 0) {
-                                                        result = Text(
-                                                          "0",textAlign: TextAlign.center,
-                                                          style: TextStyle(color: color),
-
-                                                        );
-                                                      } else
-                                                        result = Text(
-                                                          text,
-                                                          style: TextStyle(color: color),
-                                                        );
-                                                      return result;
-                                                    },
-
-                                                  ),
-
-                                                  LikeButton(
-                                                    onTap: (bool isLiked) {
-
-                                                      //  _chewieController.pause();
-                                                      //  videoPlayerController.pause();
-
-
-                                                      Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post:  datas[index]!),));
-
-
-                                                      return Future.value(!isLiked);
-                                                    },
-
-                                                    isLiked: false,
-                                                    size: 30,
-                                                    circleColor:
-                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                    bubblesColor: BubblesColor(
-                                                      dotPrimaryColor: Color(0xff3b9ade),
-                                                      dotSecondaryColor: Color(0xff027f19),
-                                                    ),
-                                                    countPostion: CountPostion.bottom,
-                                                    likeBuilder: (bool isLiked) {
-                                                      return Icon(
-                                                        FontAwesome.commenting,
-                                                        color: isLiked ? Colors.white : Colors.white,
-                                                        size: 30,
-                                                      );
-                                                    },
-                                                    likeCount: datas[index]!.comments!,
-                                                    countBuilder: (int? count, bool isLiked, String text) {
-                                                      var color = isLiked ? Colors.white : Colors.white;
-                                                      Widget result;
-                                                      if (count == 0) {
-                                                        result = Text(
-                                                          "0",textAlign: TextAlign.center,
-                                                          style: TextStyle(color: color),
-                                                        );
-                                                      } else
-                                                        result = Text(
-                                                          text,
-                                                          style: TextStyle(color: color),
-                                                        );
-                                                      return result;
-                                                    },
-
-                                                  ),
-                                                  //vues
-                                                  // LikeButton(
-                                                  //   isLiked: false,
-                                                  //   size: 35,
-                                                  //   circleColor:
-                                                  //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                  //   bubblesColor: BubblesColor(
-                                                  //     dotPrimaryColor: Color(0xff3b9ade),
-                                                  //     dotSecondaryColor: Color(0xff027f19),
-                                                  //   ),
-                                                  //   countPostion: CountPostion.bottom,
-                                                  //   likeBuilder: (bool isLiked) {
-                                                  //     return Icon(
-                                                  //       FontAwesome.eye,
-                                                  //       color: isLiked ? Colors.white : Colors.white,
-                                                  //       size: 35,
-                                                  //     );
-                                                  //   },
-                                                  //   likeCount:  datas[index].vues!,
-                                                  //   countBuilder: (int? count, bool isLiked, String text) {
-                                                  //     var color = isLiked ? Colors.white : Colors.white;
-                                                  //     Widget result;
-                                                  //     if (count == 0) {
-                                                  //       result = Text(
-                                                  //         "0",textAlign: TextAlign.center,
-                                                  //         style: TextStyle(color: color,fontSize: 8),
-                                                  //       );
-                                                  //     } else
-                                                  //       result = Text(
-                                                  //         text,
-                                                  //         style: TextStyle(color: color,fontSize: 8),
-                                                  //       );
-                                                  //     return result;
-                                                  //   },
-                                                  //
-                                                  // ),
-                                                  LikeButton(
-                                                    onTap: (bool isLiked) {
-
-                                                      //  _chewieController.pause();
-                                                      //  videoPlayerController.pause();
-
-
-
-                                                      postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
-                                                        if(value.isNotEmpty){
-                                                          datas[index]!=value.first;
-                                                          await authProvider.getAppData();
-                                                          showGiftDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData);
-
-                                                        }
-                                                      },);
-
-
-                                                      return Future.value(!isLiked);
-                                                    },
-                                                    isLiked: false,
-                                                    size: 35,
-                                                    circleColor:
-                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                    bubblesColor: BubblesColor(
-                                                      dotPrimaryColor: Color(0xff3b9ade),
-                                                      dotSecondaryColor: Color(0xff027f19),
-                                                    ),
-                                                    countPostion: CountPostion.bottom,
-                                                    likeBuilder: (bool isLiked) {
-                                                      return Text('🎁',style: TextStyle(fontSize: 30),);
-                                                    },
-                                                    likeCount:  datas[index].users_cadeau_id!=null?datas[index].users_cadeau_id!.length:0,
-                                                    countBuilder: (int? count, bool isLiked, String text) {
-                                                      var color = isLiked ? Colors.white : Colors.white;
-                                                      Widget result;
-                                                      if (count == 0) {
-                                                        result = Text(
-                                                          "0",textAlign: TextAlign.center,
-                                                           style: TextStyle(color: color),
-                                                        );
-                                                      } else
-                                                        result = Text(
-                                                          text,
-                                                           style: TextStyle(color: color),
-                                                        );
-                                                      return result;
-                                                    },
-
-                                                  ),
-                                                  LikeButton(
-                                                    onTap: (bool isLiked) {
-
-                                                      //  _chewieController.pause();
-                                                      //  videoPlayerController.pause();
-
-
-
-                                                      postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
-                                                        if(value.isNotEmpty){
-                                                          datas[index]!=value.first;
-                                                          await authProvider.getAppData();
-                                                          showRepublishDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData,context);
-
-                                                        }
-                                                      },);
-
-
-                                                      return Future.value(!isLiked);
-                                                    },
-                                                    isLiked: false,
-                                                    size: 30,
-                                                    circleColor:
-                                                    CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                    bubblesColor: BubblesColor(
-                                                      dotPrimaryColor: Color(0xff3b9ade),
-                                                      dotSecondaryColor: Color(0xff027f19),
-                                                    ),
-                                                    countPostion: CountPostion.bottom,
-                                                    likeBuilder: (bool isLiked) {
-                                                      return Icon(
-                                                        Feather.repeat,
-                                                        color: isLiked ? Colors.blue : Colors.blue,
-                                                        size: 30,
-                                                      );
-                                                    },
-                                                    likeCount:  datas[index].users_republier_id!=null?datas[index].users_republier_id!.length:0,
-                                                    countBuilder: (int? count, bool isLiked, String text) {
-                                                      var color = isLiked ? Colors.white : Colors.white;
-                                                      Widget result;
-                                                      if (count == 0) {
-                                                        result = Text(
-                                                          "0",textAlign: TextAlign.center,
-                                                          style: TextStyle(color: color),
-
-                                                        );
-                                                      } else
-                                                        result = Text(
-                                                          text,
-                                                          style: TextStyle(color: color),
-
-                                                        );
-                                                      return result;
-                                                    },
-
-                                                  ),
-
-
-
-                                                  IconButton(
-                                                      onPressed: () {
-                                                        // _showModalDialog(datas[index]);
-                                                        _showPostMenuModalDialog(datas[index],context);
-                                                      },
-                                                      icon: Icon(
-                                                        Icons.more_horiz,
-                                                        size: 35,
-                                                        color: Colors.white,
-                                                      )),
-
-                                                ],
+                                              const SizedBox(
+                                                height: 12.0,
                                               ),
-                                            ),
+                                              Container(
+                                                width: 300,
+                                                height: 40,
+                                                child: Text(
+                                                  datas[index].description!,
+                                                  style: const TextStyle(color: Colors.white,fontSize: 10),
+                                                ),
+                                              )
+                                            ],
                                           )),
-                                      // Animations des likes
-                                      ..._heartAnimations.map((controller) => HeartAnimation(controller: controller)),
-
-                                      // Animations des cadeaux
-                                      ..._giftAnimations.map((controller) => GiftAnimation(controller: controller)),
-                                      ..._giftReplyAnimations.map((controller) => GiftReplyAnimation(controller: controller)),
-                                    ],
+                                    ),
                                   ),
-                                );
-                              });
+                                  Positioned(
+                                      right: 10.0,
+                                      bottom: 50.0,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1), // Shadow color
+                                                spreadRadius: 2, // Spread of the shadow
+                                                blurRadius: 5, // Blur effect to soften the shadow
+                                                offset: Offset(0, 4), // Shadow position (x, y)
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            spacing: 5,
+                                            children: [
+                                              const SizedBox(
+                                                height: 20.0,
+                                              ),
 
-                        },
-                      ),
-                    );
-                  },
-                ),
+                                              LikeButton(
+
+                                                onTap: (bool isLiked) async {
+                                                  // _triggerAnimation('like');
+                                                  _sendLike();
+                                                  if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
+                                                    printVm('tap');
+                                                    setState(()  {
+                                                      datas[index].loves=datas[index]!.loves!+1;
 
 
-              ],
+                                                      datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
+
+                                                      printVm('update');
+                                                      //loves.add(idUser);
+                                                    });
+                                                    CollectionReference userCollect =
+                                                    FirebaseFirestore.instance.collection('Users');
+                                                    // Get docs from collection reference
+                                                    QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                                    // Afficher la liste
+                                                    List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                                        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                                    if (listUsers.isNotEmpty) {
+                                                      listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
+                                                      postProvider.updatePost(datas[index], listUsers.first!!,context);
+                                                      await authProvider.getAppData();
+                                                      authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                      authProvider.updateAppData(authProvider.appDefaultData);
+
+
+                                                    }else{
+                                                      datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
+                                                      postProvider.updatePost( datas[index],datas[index].user!,context);
+                                                      await authProvider.getAppData();
+                                                      authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                      authProvider.updateAppData(authProvider.appDefaultData);
+
+                                                    }
+                                                    await authProvider.sendNotification(
+                                                        userIds: [datas[index].user!.oneIgnalUserid!],
+                                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                        send_user_id: "${authProvider.loginUserData.id!}",
+                                                        recever_user_id: "${datas[index].user!.id!}",
+                                                        message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
+                                                        type_notif: NotificationType.POST.name,
+                                                        post_id: "${datas[index]!.id!}",
+                                                        post_type: PostDataType.VIDEO.name, chat_id: ''
+                                                    );
+
+                                                    NotificationData notif=NotificationData();
+                                                    notif.id=firestore
+                                                        .collection('Notifications')
+                                                        .doc()
+                                                        .id;
+                                                    notif.titre="Nouveau j'aime ❤️";
+                                                    notif.media_url=authProvider.loginUserData.imageUrl;
+                                                    notif.type=NotificationType.POST.name;
+                                                    notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
+                                                    notif.users_id_view=[];
+                                                    notif.user_id=authProvider.loginUserData.id;
+                                                    notif.receiver_id="${datas[index].user!.id!}";
+                                                    notif.post_id=datas[index].id!;
+                                                    notif.post_data_type=PostDataType.VIDEO.name!;
+                                                    notif.updatedAt =
+                                                        DateTime.now().microsecondsSinceEpoch;
+                                                    notif.createdAt =
+                                                        DateTime.now().microsecondsSinceEpoch;
+                                                    notif.status = PostStatus.VALIDE.name;
+
+                                                    // users.add(pseudo.toJson());
+
+                                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                                    postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
+
+                                                  }
+
+                                                  return Future.value(!isLiked);
+                                                },
+                                                isLiked: isIn(datas[index]!.users_love_id!,authProvider.loginUserData.id!),
+
+                                                size: 30,
+                                                circleColor:
+                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                bubblesColor: BubblesColor(
+                                                  dotPrimaryColor: Color(0xff3b9ade),
+                                                  dotSecondaryColor: Color(0xffe33232),
+                                                ),
+                                                countPostion: CountPostion.bottom,
+                                                likeBuilder: (bool isLiked) {
+                                                  return Icon(
+                                                    Entypo.heart,
+                                                    color: isLiked ? Colors.red : Colors.white,
+                                                    size: 30,
+                                                  );
+                                                },
+                                                likeCount:  datas[index]!.users_love_id!.length!,
+                                                countBuilder: (int? count, bool isLiked, String text) {
+                                                  var color = isLiked ? Colors.white : Colors.white;
+                                                  Widget result;
+                                                  if (count == 0) {
+                                                    result = Text(
+                                                      "0",textAlign: TextAlign.center,
+                                                      style: TextStyle(color: color),
+
+                                                    );
+                                                  } else
+                                                    result = Text(
+                                                      text,
+                                                      style: TextStyle(color: color),
+                                                    );
+                                                  return result;
+                                                },
+
+                                              ),
+
+                                              LikeButton(
+                                                onTap: (bool isLiked) {
+
+                                                  //  _chewieController.pause();
+                                                  //  videoPlayerController.pause();
+
+
+                                                  Navigator.push(context, MaterialPageRoute(builder: (context) => PostComments(post:  datas[index]!),));
+
+
+                                                  return Future.value(!isLiked);
+                                                },
+
+                                                isLiked: false,
+                                                size: 30,
+                                                circleColor:
+                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                bubblesColor: BubblesColor(
+                                                  dotPrimaryColor: Color(0xff3b9ade),
+                                                  dotSecondaryColor: Color(0xff027f19),
+                                                ),
+                                                countPostion: CountPostion.bottom,
+                                                likeBuilder: (bool isLiked) {
+                                                  return Icon(
+                                                    FontAwesome.commenting,
+                                                    color: isLiked ? Colors.white : Colors.white,
+                                                    size: 30,
+                                                  );
+                                                },
+                                                likeCount: datas[index]!.comments!,
+                                                countBuilder: (int? count, bool isLiked, String text) {
+                                                  var color = isLiked ? Colors.white : Colors.white;
+                                                  Widget result;
+                                                  if (count == 0) {
+                                                    result = Text(
+                                                      "0",textAlign: TextAlign.center,
+                                                      style: TextStyle(color: color),
+                                                    );
+                                                  } else
+                                                    result = Text(
+                                                      text,
+                                                      style: TextStyle(color: color),
+                                                    );
+                                                  return result;
+                                                },
+
+                                              ),
+                                              //vues
+                                              // LikeButton(
+                                              //   isLiked: false,
+                                              //   size: 35,
+                                              //   circleColor:
+                                              //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                              //   bubblesColor: BubblesColor(
+                                              //     dotPrimaryColor: Color(0xff3b9ade),
+                                              //     dotSecondaryColor: Color(0xff027f19),
+                                              //   ),
+                                              //   countPostion: CountPostion.bottom,
+                                              //   likeBuilder: (bool isLiked) {
+                                              //     return Icon(
+                                              //       FontAwesome.eye,
+                                              //       color: isLiked ? Colors.white : Colors.white,
+                                              //       size: 35,
+                                              //     );
+                                              //   },
+                                              //   likeCount:  datas[index].vues!,
+                                              //   countBuilder: (int? count, bool isLiked, String text) {
+                                              //     var color = isLiked ? Colors.white : Colors.white;
+                                              //     Widget result;
+                                              //     if (count == 0) {
+                                              //       result = Text(
+                                              //         "0",textAlign: TextAlign.center,
+                                              //         style: TextStyle(color: color,fontSize: 8),
+                                              //       );
+                                              //     } else
+                                              //       result = Text(
+                                              //         text,
+                                              //         style: TextStyle(color: color,fontSize: 8),
+                                              //       );
+                                              //     return result;
+                                              //   },
+                                              //
+                                              // ),
+                                              LikeButton(
+                                                onTap: (bool isLiked) {
+
+                                                  //  _chewieController.pause();
+                                                  //  videoPlayerController.pause();
+
+
+
+                                                  postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
+                                                    if(value.isNotEmpty){
+                                                      datas[index]!=value.first;
+                                                      await authProvider.getAppData();
+                                                      showGiftDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData);
+
+                                                    }
+                                                  },);
+
+
+                                                  return Future.value(!isLiked);
+                                                },
+                                                isLiked: false,
+                                                size: 35,
+                                                circleColor:
+                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                bubblesColor: BubblesColor(
+                                                  dotPrimaryColor: Color(0xff3b9ade),
+                                                  dotSecondaryColor: Color(0xff027f19),
+                                                ),
+                                                countPostion: CountPostion.bottom,
+                                                likeBuilder: (bool isLiked) {
+                                                  return Text('🎁',style: TextStyle(fontSize: 30),);
+                                                },
+                                                likeCount:  datas[index].users_cadeau_id!=null?datas[index].users_cadeau_id!.length:0,
+                                                countBuilder: (int? count, bool isLiked, String text) {
+                                                  var color = isLiked ? Colors.white : Colors.white;
+                                                  Widget result;
+                                                  if (count == 0) {
+                                                    result = Text(
+                                                      "0",textAlign: TextAlign.center,
+                                                       style: TextStyle(color: color),
+                                                    );
+                                                  } else
+                                                    result = Text(
+                                                      text,
+                                                       style: TextStyle(color: color),
+                                                    );
+                                                  return result;
+                                                },
+
+                                              ),
+                                              LikeButton(
+                                                onTap: (bool isLiked) {
+
+                                                  //  _chewieController.pause();
+                                                  //  videoPlayerController.pause();
+
+
+
+                                                  postProvider.getPostsImagesById(datas[index]!.id!).then((value) async {
+                                                    if(value.isNotEmpty){
+                                                      datas[index]!=value.first;
+                                                      await authProvider.getAppData();
+                                                      showRepublishDialog(datas[index]!,authProvider.loginUserData,authProvider.appDefaultData,context);
+
+                                                    }
+                                                  },);
+
+
+                                                  return Future.value(!isLiked);
+                                                },
+                                                isLiked: false,
+                                                size: 30,
+                                                circleColor:
+                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                                bubblesColor: BubblesColor(
+                                                  dotPrimaryColor: Color(0xff3b9ade),
+                                                  dotSecondaryColor: Color(0xff027f19),
+                                                ),
+                                                countPostion: CountPostion.bottom,
+                                                likeBuilder: (bool isLiked) {
+                                                  return Icon(
+                                                    Feather.repeat,
+                                                    color: isLiked ? Colors.blue : Colors.blue,
+                                                    size: 30,
+                                                  );
+                                                },
+                                                likeCount:  datas[index].users_republier_id!=null?datas[index].users_republier_id!.length:0,
+                                                countBuilder: (int? count, bool isLiked, String text) {
+                                                  var color = isLiked ? Colors.white : Colors.white;
+                                                  Widget result;
+                                                  if (count == 0) {
+                                                    result = Text(
+                                                      "0",textAlign: TextAlign.center,
+                                                      style: TextStyle(color: color),
+
+                                                    );
+                                                  } else
+                                                    result = Text(
+                                                      text,
+                                                      style: TextStyle(color: color),
+
+                                                    );
+                                                  return result;
+                                                },
+
+                                              ),
+
+
+
+                                              IconButton(
+                                                  onPressed: () {
+                                                    // _showModalDialog(datas[index]);
+                                                    _showPostMenuModalDialog(datas[index],context);
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.more_horiz,
+                                                    size: 35,
+                                                    color: Colors.white,
+                                                  )),
+
+                                            ],
+                                          ),
+                                        ),
+                                      )),
+                                  // Animations des likes
+                                  ..._heartAnimations.map((controller) => HeartAnimation(controller: controller)),
+
+                                  // Animations des cadeaux
+                                  ..._giftAnimations.map((controller) => GiftAnimation(controller: controller)),
+                                  ..._giftReplyAnimations.map((controller) => GiftReplyAnimation(controller: controller)),
+                                ],
+                              ),
+                            );
+                          });
+
+                    },
+                  ),
+                );
+              },
             ),
           ),
         )

@@ -74,8 +74,8 @@ class _Story2State extends State<Story2> {
                       //     ])
           ),
                 ):Container()), dateAgo: whatsappStory.when,
-            listVues: whatsappStory.vues,
-            jaimes: whatsappStory.jaimes,
+            listVues: whatsappStory.vues!,
+            jaimes: whatsappStory.jaimes!,
             createdAt: whatsappStory.createdAt,
 
             // caption: whatsappStory.caption,

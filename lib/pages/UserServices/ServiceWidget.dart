@@ -2,6 +2,7 @@
 
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -135,8 +136,122 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
   );
 }
 
-
 Widget channelWidget(Canal data, double height, double width, BuildContext context) {
+  final Color afroGreen = Color(0xFF2ECC71);
+  final Color afroYellow = Color(0xFFF1C40F);
+  final Color afroBlack = Color(0xFF2C3E50);
+
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => CanalDetails(canal: data)));
+    },
+    child: Container(
+      width: width * 0.3,
+      margin: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: afroBlack.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Image avec ratio 16:9
+          AspectRatio(
+            aspectRatio: 16/9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+              child: CachedNetworkImage(
+                imageUrl: data.urlImage ?? '',
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: afroGreen.withOpacity(0.1),
+                ),
+                errorWidget: (context, url, error) => Icon(Icons.error),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.only(left: 8,right: 8,top: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Titre avec vérification
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '#${data.titre ?? 'Sans titre'}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: afroBlack,
+                        ),
+                      ),
+                    ),
+                    if(data.isVerify ?? false)
+                      Icon(Icons.verified, color: afroYellow, size: 22),
+                  ],
+                ),
+
+                // SizedBox(height: 4),
+
+                // Nombre d'abonnés
+                Text(
+                  '${data.usersSuiviId?.length ?? 0} abonnés',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: afroBlack.withOpacity(0.6),
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                // Bouton Suivre
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: afroGreen,
+                      // padding: EdgeInsets.symmetric(vertical: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      // Logique d'abonnement
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => CanalDetails(canal: data)));
+                    },
+                    child: Text(
+                      'Suivre',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+Widget channelWidget2(Canal data, double height, double width, BuildContext context) {
   return GestureDetector(
     onTap: () {
       Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
@@ -145,7 +260,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
       // Action à effectuer lors du clic sur le widget
     },
     child: SizedBox(
-      width: width * 0.2,
+      // width: width * 0.2,
       child: Card(
         child: Container(
           decoration: BoxDecoration(

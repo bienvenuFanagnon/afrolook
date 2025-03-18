@@ -6,8 +6,10 @@ String getTabBarTypeMessage(String type) {
       return 'a posté une actualité 📰';
     case 'LOOKS':
       return 'a posté un look 📸';
-    case 'SPORT':
+    case 'GAMER':
       return 'a posté un game story 🎮';
+    case 'SPORT':
+      return 'a posté un sport story ⚽⛹️';
     case 'EVENEMENT':
       return 'a posté un événement 📅';
     case 'OFFRES':

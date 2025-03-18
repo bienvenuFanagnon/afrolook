@@ -30,7 +30,7 @@ def keystorePropertiesFile = rootProject.file('key.properties')
 android {
     namespace "com.afrotok.afrotok"
     testNamespace = "com.afrotok.afrotok"
-    compileSdkVersion 34
+    compileSdkVersion 35
     ndkVersion "25.1.8937393"
 
 ////    namespace = "com.anvt.vnmobile"

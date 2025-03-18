@@ -637,6 +637,20 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
   void initState() {
     // feedBloc.getFeeds();
     super.initState();
+    // if (widget.videos.first?.id != null) {
+    //   postProvider.getPostsVideosById(widget.videos.first!.id!).then((value) {
+    //     if (value.isNotEmpty) {
+    //       final updatedPost = value.first;
+    //       if (updatedPost.vues != null) {
+    //         updatedPost.vues = (updatedPost.vues ?? 0) + 1;
+    //       }
+    //
+    //       if (updatedPost.user != null) {
+    //         postProvider.updatePost(updatedPost, updatedPost.user!, context);
+    //       }
+    //     }
+    //   });
+    // }
   }
 
   @override
@@ -675,31 +689,6 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                         itemCount: datas.length,
 
                         itemBuilder: (context, index) {
-                          // print("index : ${index}");
-                          // if (datas[index].type==PostType.PUB.name) {
-                          //   if (!isIn(datas[index].users_vue_id!,authProvider.loginUserData.id!)) {
-                          //
-                          //
-                          //   }else{
-                          //
-                          //     datas[index].users_vue_id!.add(authProvider!.loginUserData.id!);
-                          //   }
-                          //
-                          //   datas[index].vues=datas[index].vues!+1;
-                          //   // vue=post.vues!;
-                          //
-                          //
-                          //   postProvider.updateVuePost(datas[index],context);
-                          //   print("update......");
-                          //   //loves.add(idUser);
-                          //
-                          //
-                          //
-                          //   // }
-                          // }
-
-                          //  datas.shuffle();
-                          // datas.shuffle();
 
 
                           return   Container(
@@ -1111,6 +1100,52 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                               },
 
                                             ),
+                                            LikeButton(
+                                              onTap: (bool isLiked) {
+
+                                                //  _chewieController.pause();
+                                                //  videoPlayerController.pause();
+
+
+
+
+                                                return Future.value(!isLiked);
+                                              },
+
+                                              isLiked: false,
+                                              size: 30,
+                                              circleColor:
+                                              CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                                              bubblesColor: BubblesColor(
+                                                dotPrimaryColor: Color(0xff3b9ade),
+                                                dotSecondaryColor: Color(0xff027f19),
+                                              ),
+                                              countPostion: CountPostion.bottom,
+                                              likeBuilder: (bool isLiked) {
+                                                return Icon(
+                                                  FontAwesome.eye,
+                                                  color: isLiked ? Colors.white : Colors.white,
+                                                  size: 30,
+                                                );
+                                              },
+                                              likeCount: datas[index]!.vues!,
+                                              countBuilder: (int? count, bool isLiked, String text) {
+                                                var color = isLiked ? Colors.white : Colors.white;
+                                                Widget result;
+                                                if (count == 0) {
+                                                  result = Text(
+                                                    "0",textAlign: TextAlign.center,
+                                                    style: TextStyle(color: color),
+                                                  );
+                                                } else
+                                                  result = Text(
+                                                    text,
+                                                    style: TextStyle(color: color),
+                                                  );
+                                                return result;
+                                              },
+
+                                            ),
 
                                             LikeButton(
                                               onTap: (bool isLiked) {
@@ -1159,42 +1194,6 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                               },
 
                                             ),
-                                            //vues
-                                            // LikeButton(
-                                            //   isLiked: false,
-                                            //   size: 35,
-                                            //   circleColor:
-                                            //   CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                            //   bubblesColor: BubblesColor(
-                                            //     dotPrimaryColor: Color(0xff3b9ade),
-                                            //     dotSecondaryColor: Color(0xff027f19),
-                                            //   ),
-                                            //   countPostion: CountPostion.bottom,
-                                            //   likeBuilder: (bool isLiked) {
-                                            //     return Icon(
-                                            //       FontAwesome.eye,
-                                            //       color: isLiked ? Colors.white : Colors.white,
-                                            //       size: 35,
-                                            //     );
-                                            //   },
-                                            //   likeCount:  datas[index].vues!,
-                                            //   countBuilder: (int? count, bool isLiked, String text) {
-                                            //     var color = isLiked ? Colors.white : Colors.white;
-                                            //     Widget result;
-                                            //     if (count == 0) {
-                                            //       result = Text(
-                                            //         "0",textAlign: TextAlign.center,
-                                            //         style: TextStyle(color: color,fontSize: 8),
-                                            //       );
-                                            //     } else
-                                            //       result = Text(
-                                            //         text,
-                                            //         style: TextStyle(color: color,fontSize: 8),
-                                            //       );
-                                            //     return result;
-                                            //   },
-                                            //
-                                            // ),
                                             LikeButton(
                                               onTap: (bool isLiked) {
 

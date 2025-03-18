@@ -45,8 +45,7 @@ import '../hashtag/textHashTag/views/widgets/comment_text_field.dart';
 import '../hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 import '../postColorsWidget.dart';
 import '../utils/pixel_transparent_painter.dart';
-
-/// A page that displays a preview of the generated image.
+import 'package:uuid/uuid.dart';/// A page that displays a preview of the generated image.
 ///
 /// The [PostLookImageTab] widget is a stateful widget that shows a preview of
 /// an image created using the provided [imgBytes]. It also supports showing
@@ -152,13 +151,14 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
   // Map des types de post avec code et libellé
   final Map<String, Map<String, dynamic>> _postTypes = {
-    'ACTUALITES': {
-      'label': 'Actualités',
-      'icon': Icons.article,
-    },
+
     'LOOKS': {
       'label': 'Looks',
       'icon': Icons.style,
+    },
+    'ACTUALITES': {
+      'label': 'Actualités',
+      'icon': Icons.article,
     },
     'SPORT': {
       'label': 'Sport',
@@ -322,20 +322,41 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         _imageBytes!,
         '${Path.basename(File.fromRawPath(_imageBytes!).path)}',
       ).then((file) async {
+
+        // Générer un nom unique AVANT l'upload
+        final String uniqueFileName = const Uuid().v4();
+
+// Créer la référence avec le nom unique
         Reference storageReference =
-        FirebaseStorage.instance.ref().child('post_media/${file.path}');
-        UploadTask uploadTask = storageReference.putFile(file);
+        FirebaseStorage.instance.ref().child('post_media/$uniqueFileName.jpg');
 
-        await uploadTask.whenComplete(() async {
-          String fileURL = await storageReference.getDownloadURL();
+// Uploader le fichier
+        await storageReference.putFile(file);
 
-          await extractColorsFromImageUrl(fileURL).then((value) {
-            post.colorDomine= value['dominantColor'];
-            post.colorSecondaire= value['vibrantColor'];
+// Récupérer l'URL
+        String fileURL = await storageReference.getDownloadURL();
 
-          },);
+// Extraire les couleurs (avec await direct)
+        final colorData = await extractColorsFromImageUrl(fileURL);
+        post.colorDomine = colorData['dominantColor'];
+        post.colorSecondaire = colorData['vibrantColor'];
 
-          post.images!.add(fileURL);
+// Ajouter l'URL au post
+        post.images!.add(fileURL);
+        // Reference storageReference =
+        // FirebaseStorage.instance.ref().child('post_media/${file.path}');
+        // UploadTask uploadTask = storageReference.putFile(file);
+
+        // await uploadTask.whenComplete(() async {
+        //   String fileURL = await storageReference.getDownloadURL();
+        //
+        //   await extractColorsFromImageUrl(fileURL).then((value) {
+        //     post.colorDomine= value['dominantColor'];
+        //     post.colorSecondaire= value['vibrantColor'];
+        //
+        //   },);
+        //
+        //   post.images!.add(fileURL);
 
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
           await FirebaseFirestore.instance.collection('PostsMonetiser').doc(postMId).set(postMonetiser.toJson());
@@ -371,21 +392,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
             await FirebaseFirestore.instance.collection('Challenges').doc(challengeId).set(challenge.toJson());
           }
-          // _descriptionController.clear();
 
-          // Notification logic
-          // NotificationData notif = NotificationData()
-          //   ..id = firestore.collection('Notifications').doc().id
-          //   ..titre = isChallenge?"Nouveau Challenge":"Nouveau post"
-          //   ..description = isChallenge?"🎉 Nouveau challenge en ligne ! 🎉":"Un nouveau post a été publié !"
-          //   ..users_id_view = []
-          //   ..receiver_id = ""
-          //   ..user_id = authProvider.loginUserData.id
-          //   ..updatedAt = DateTime.now().microsecondsSinceEpoch
-          //   ..createdAt = DateTime.now().microsecondsSinceEpoch
-          //   ..status = PostStatus.VALIDE.name;
-          //
-          // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
           if(widget.canal!=null){
             await authProvider
@@ -410,7 +417,8 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             widget.canal!.updatedAt =
                 DateTime.now().microsecondsSinceEpoch;
             postProvider.updateCanal( widget.canal!, context);
-          }else{
+          }
+          else{
             await authProvider
                 .getAllUsersOneSignaUserId()
                 .then(
@@ -450,7 +458,6 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
               ),
             ),
           );
-        });
       }).catchError((error) {
         Navigator.pop(context); // Fermer le dialog de chargement en cas d'erreur
         throw error; // Relancer pour le catch suivant

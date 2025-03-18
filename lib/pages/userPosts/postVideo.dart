@@ -1,6 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/userPosts/postVideoEditor.dart';
 import 'package:camera/camera.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';

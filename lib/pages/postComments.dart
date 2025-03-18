@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/home_view_model.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/search_view_model.dart';
@@ -1140,13 +1141,22 @@ List<UserData> users=[];
                                   child: SizedBox(
                                     width: width * 0.9,
                                     height: 80,
-                                    child: Container(
-                                      alignment: Alignment.centerLeft,
-                                      child: TextCustomerPostDescription(
-                                        titre: "${widget.post.description}",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
-                                        fontWeight: FontWeight.normal,
+                                    child:          InkWell(
+                                      borderRadius: BorderRadius.circular(25),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => DetailsPost(post: widget.post),
+                                        ),
+                                      ),
+                                      child: Container(
+                                        alignment: Alignment.centerLeft,
+                                        child: TextCustomerPostDescription(
+                                          titre: "${widget.post.description}",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: ConstColors.textColors,
+                                          fontWeight: FontWeight.normal,
+                                        ),
                                       ),
                                     ),
                                   ),

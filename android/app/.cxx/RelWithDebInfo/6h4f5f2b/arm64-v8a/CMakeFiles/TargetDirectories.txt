@@ -1,0 +1,2 @@
+D:/bienvenu/Projets/other Projets/afrolook/afrotok/android/app/.cxx/RelWithDebInfo/6h4f5f2b/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/bienvenu/Projets/other Projets/afrolook/afrotok/android/app/.cxx/RelWithDebInfo/6h4f5f2b/arm64-v8a/CMakeFiles/rebuild_cache.dir

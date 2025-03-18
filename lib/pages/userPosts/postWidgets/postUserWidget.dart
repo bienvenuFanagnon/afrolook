@@ -543,11 +543,11 @@ Widget HomePostUsersWidget2(Post post,Color color, double height, double width,B
                                   ),
 
                                   Visibility(
-                                    visible: post.canal!.isVerify!,
+                                    visible: post.canal!.isVerify!=null||post.canal!.isVerify==false?false:true,
                                     child: Card(
                                       child: const Icon(
                                         Icons.verified,
-                                        color: Colors.blue,
+                                        color: Colors.yellow,
                                         size: 20,
                                       ),
                                     ),
@@ -695,7 +695,7 @@ Widget HomePostUsersWidget2(Post post,Color color, double height, double width,B
                             icon: Icon(
                               Icons.more_horiz,
                               size: 30,
-                              color: ConstColors.blackIconColors,
+                              color: Colors.white,
                             )),
                       ],
                     ),
@@ -5531,4 +5531,9 @@ Widget lookChallengeWidget(LookChallenge lookchallenge,Color color, double heigh
           );
         }),
   );
+}
+
+String truncateWords(String text, int maxWords) {
+  List<String> words = text.split(' ');
+  return (words.length > maxWords) ? '${words.sublist(0, maxWords).join(' ')}...' : text;
 }

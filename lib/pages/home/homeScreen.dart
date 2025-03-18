@@ -113,8 +113,8 @@ class _MyHomePageState extends State<MyHomePage>
 
   // Liste des onglets avec texte et icônes
   final List<Tab> _tabs = [
-    Tab(text: 'Actu', icon: Icon(Icons.article)), // Abrégé pour "Actualités"
     Tab(text: 'Looks', icon: Icon(Icons.style)),
+    Tab(text: 'Actu', icon: Icon(Icons.article)), // Abrégé pour "Actualités"
     Tab(text: 'Sport', icon: Icon(Icons.sports)),
     Tab(text: 'Évén.', icon: Icon(Icons.event)), // Abrégé pour "Événement"
     Tab(text: 'Offres', icon: Icon(Icons.local_offer)),
@@ -1487,15 +1487,15 @@ class _MyHomePageState extends State<MyHomePage>
     String lastShownDate = prefs.getString('lastShownDate') ?? '';
 
     String todayDate = DateTime.now().toIso8601String().split('T')[0];
-    _showChatXiloDialog();
+    // _showChatXiloDialog();
 
     if (lastShownDate != todayDate) {
 
       // _showChatXiloDialog();
       // Show the dialog
-      Timer(Duration(seconds: 20), () {
-        _showServiceDialog();
-      });
+      // Timer(Duration(seconds: 20), () {
+      //   _showServiceDialog();
+      // });
       // showDialog(
       //   context: context,
       //   builder: (context) => Dialog(
@@ -1515,7 +1515,8 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
 
-
+    checkAppVersionAndProceed(context, () {
+    });
     hasShownDialogToday().then((value) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       authProvider.getAppData().then((value) {
@@ -1953,9 +1954,9 @@ class _MyHomePageState extends State<MyHomePage>
               child:TabBarView(
                 controller: _tabController,
                 children: [
+                  Center(child: LooksPage(title: '')),
                   // Contenu de chaque onglet
                   Center(child: ActualitePage(title: '')),
-                  Center(child: LooksPage(title: '')),
                   Center(child: SportPage(title: '')),
                   Center(child: EventPage(title: '')),
                   Center(child: OffrePage(title: '')),

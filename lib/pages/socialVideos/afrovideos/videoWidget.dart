@@ -28,7 +28,8 @@ class _VideoWidgetState extends State<VideoWidget> {
   late VideoPlayerController videoPlayerController;
   late Future<void> _initializeVideoPlayerFuture;
   ChewieController? _chewieController;
-
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
   @override
   void initState() {
     super.initState();
@@ -56,6 +57,21 @@ class _VideoWidgetState extends State<VideoWidget> {
     }).catchError((error) {
       debugPrint('Erreur lors de l\'initialisation du lecteur vidéo : $error');
     });
+
+    if (widget.post?.id != null) {
+      postProvider.getPostsVideosById(widget.post.id!).then((value) {
+        if (value.isNotEmpty) {
+          final updatedPost = value.first;
+          if (updatedPost.vues != null) {
+            updatedPost.vues = (updatedPost.vues ?? 0) + 1;
+          }
+
+          if (updatedPost.user != null) {
+            postProvider.updatePost(updatedPost, updatedPost.user!, context);
+          }
+        }
+      });
+    }
   }
 
   @override

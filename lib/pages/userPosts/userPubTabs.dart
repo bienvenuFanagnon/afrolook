@@ -160,13 +160,14 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
 
   // Map des types de post avec code et libellé
   final Map<String, Map<String, dynamic>> _postTypes = {
-    'ACTUALITES': {
-      'label': 'Actualités',
-      'icon': Icons.article,
-    },
+
     'LOOKS': {
       'label': 'Looks',
       'icon': Icons.style,
+    },
+    'ACTUALITES': {
+      'label': 'Actualités',
+      'icon': Icons.article,
     },
     'SPORT': {
       'label': 'Sport',

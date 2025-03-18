@@ -150,19 +150,19 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     setState(() {
                       onTap=true;
                     });
-                 await   getUserByPhone("${widget.phoneNumber}@gmail.com").then((user) async {
-                      if (user!=null) {
-                        await    authProvider.getUserById(user.uid).then((users) {
-                          if (users.isNotEmpty) {
-                            _changePassword(authProvider.decrypt(users.first.password!), _newPasswordController.text,user);
-
-                          }
-
-                        },);
-
-                      }
-
-                    },);
+                 // await   getUserByPhone("${widget.phoneNumber}@gmail.com").then((user) async {
+                 //      if (user!=null) {
+                 //        await    authProvider.getUserById(user.uid).then((users) {
+                 //          if (users.isNotEmpty) {
+                 //            _changePassword(authProvider.decrypt(users.first.password!), _newPasswordController.text,user);
+                 //
+                 //          }
+                 //
+                 //        },);
+                 //
+                 //      }
+                 //
+                 //    },);
                     // Mettre à jour le mot de passe
                     // Afficher un message de succès
                     setState(() {
