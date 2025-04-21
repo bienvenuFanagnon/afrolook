@@ -841,6 +841,28 @@ class PostProvider extends ChangeNotifier {
     buffer.write(hexString.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
+
+  Future<List<Post>> loadMorePosts(int limit, String type, DocumentSnapshot lastDoc) async {
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('Posts')
+          .where('type', isEqualTo: type)
+          .orderBy('createdAt', descending: true)
+          .startAfterDocument(lastDoc)
+          .limit(limit);
+
+      QuerySnapshot snapshot = await query.get();
+
+      List<Post> newPosts = snapshot.docs.map((doc) {
+        return Post.fromJson(doc as Map<String,dynamic>);
+      }).toList();
+
+      return newPosts;
+    } catch (e) {
+      print("Erreur chargement posts: $e");
+      return [];
+    }
+  }
   Stream<List<Post>> getPostsImages2(int limite,String tabBarType) async* {
     printVm("get canal data ");
     List<Post> posts = [];

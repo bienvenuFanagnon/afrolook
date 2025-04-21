@@ -1175,7 +1175,6 @@ class CommandeCode {
 enum RoleUser { ADMIN, USER, SUPERADMIN }
 
 enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
-enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 
 enum TypeAbonement{
   GRATUIT,STANDARD,PREMIUM
@@ -1184,6 +1183,8 @@ enum TypeAbonement{
 enum TypeTransaction{
   DEPOT,RETRAIT
 }
+enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
+
 
 @JsonSerializable()
 class UserIACompte {

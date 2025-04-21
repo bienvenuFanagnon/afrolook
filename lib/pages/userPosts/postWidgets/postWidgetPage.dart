@@ -26,6 +26,7 @@ import '../../../constant/constColors.dart';
 import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
 import '../../../models/model_data.dart';
+import '../../home/homeWidget.dart';
 import '../../postComments.dart';
 import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
@@ -47,6 +48,7 @@ class HomePostUsersWidget extends StatefulWidget {
   final double height;
   final double width;
   final bool isDegrade;
+  bool isPreview;
 
   HomePostUsersWidget({
     required this.post,
@@ -54,7 +56,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.isDegrade=false,
     required this.height,
     required this.width,
-    Key? key,
+    Key? key, this.isPreview=true,
   }) : super(key: key);
 
   @override
@@ -597,23 +599,28 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "#${widget.post!.canal!.titre ?? 'canal'}",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      shadows: [
-                                        Shadow(
-                                          color: _afroBlack,
-                                          blurRadius: 2,
-                                          offset: Offset(1, 1),
-                                        ),
-                                      ],
+                                  SizedBox(
+                                    width:210,
+                                    child: Text(
+                                      "#${widget.post!.canal!.titre ?? 'canal'}",
+
+                                      style: TextStyle(
+                                        overflow: TextOverflow.fade,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        shadows: [
+                                          Shadow(
+                                            color: _afroBlack,
+                                            blurRadius: 2,
+                                            offset: Offset(1, 1),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                   Text(
-                                    "${widget.post!.canal!.suivi ?? '0'} abonnés",
+                                    "${widget.post!.canal!.usersSuiviId!.length ?? '0'} abonnés",
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -657,21 +664,40 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         },
                         child: Row(
                           children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: _afroYellow, width: 2),
-                              ),
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundColor: _afroGreen,
-                                backgroundImage: widget.post.user?.imageUrl != null
-                                    ? NetworkImage(widget.post.user!.imageUrl!)
-                                    : null,
-                                child: widget.post.user?.imageUrl == null
-                                    ? Icon(Icons.person, color: Colors.white)
-                                    : null,
-                              ),
+                            Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: _afroYellow, width: 2),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: _afroGreen,
+                                    backgroundImage: widget.post.user?.imageUrl != null
+                                        ? NetworkImage(widget.post.user!.imageUrl!)
+                                        : null,
+                                    child: widget.post.user?.imageUrl == null
+                                        ? Icon(Icons.person, color: Colors.white)
+                                        : null,
+                                  ),
+                                ),
+                                Positioned(
+                                  right: -2,
+                                  bottom: 0,
+                                  child: Visibility(
+                                    visible: widget.post!.user!.isVerify==null?false:widget.post!.user!.isVerify!,
+                                    child: Card(
+                                      child: const Icon(
+                                        Icons.verified,
+                                        color: Colors.green,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              ],
                             ),
                             SizedBox(width: 12),
                             Column(
@@ -717,17 +743,31 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                 ),
                               ],
                             ),
-                            Visibility(
-                              visible: widget.post!.user!.isVerify==null?false:widget.post!.user!.isVerify!,
-                              child: Card(
-                                child: const Icon(
-                                  Icons.verified,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
+
+                          ],
+                        ),
+                      ),
+                      Visibility(
+                        visible: widget.post!.canal==null?true:false,
+
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(0.0),
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                _showUserDetailsModalDialog(widget.post.user!, w, h);
+
+                              },
+                              icon: Icon(
+
+                                isUserAbonne(widget.post.user!.userAbonnesIds!, authProvider.loginUserData.id!)
+                                    ? Icons.check_circle
+                                    : Icons.person_add,
+                                color: Colors.green,
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                       IconButton(
@@ -775,7 +815,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                   ),
                                 ),
                                 child: HashTagText(
-                                  text:truncateWords( widget.post!.description ?? "", 30),
+                                  text:truncateWords( widget.post!.description ?? "",widget.post.images!.isNotEmpty? 4:30),
                                   decoratedStyle: TextStyle(
                                     fontSize: 16,
                                     color: _afroGreen,
@@ -794,7 +834,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(15),
                                   child: ImageSlideshow(
-                                    height: h * 0.25,
+                                    height: h * 0.35,
                                     children: widget.post.images!.map((url) => CachedNetworkImage(
                                       imageUrl: url,
                                       fit: BoxFit.cover,
@@ -837,134 +877,326 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                             isActive: isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!),
                             onPressed: () async {
                               _sendLike();
-                              if (!isIn(widget.post!.users_love_id!,
-                                  authProvider.loginUserData.id!)) {
-                                setState(() {
-                                  widget.post!.loves = widget.post!.loves! + 1;
 
-                                  widget.post!.users_love_id!
-                                      .add(authProvider!.loginUserData.id!);
-                                  love = widget.post!.loves!;
-                                  //loves.add(idUser);
-                                });
-                                printVm("share post");
-                                printVm("like poste monetisation 1 .....");
-                                postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
+                                await postProvider.getPostsImagesById(widget.post!.id!).then((value) async {
+                                  if(value.isNotEmpty) {
+                                    widget.post= value.first;
+                                    printVm("jaime data ");
 
-                                CollectionReference userCollect =
-                                FirebaseFirestore.instance
-                                    .collection('Users');
-                                // Get docs from collection reference
-                                QuerySnapshot querySnapshotUser =
-                                    await userCollect
-                                    .where("id",
-                                    isEqualTo: widget.post!.user_id!)
-                                    .get();
-                                // Afficher la liste
-                                List<UserData> listUsers = querySnapshotUser
-                                    .docs
-                                    .map((doc) => UserData.fromJson(
-                                    doc.data() as Map<String, dynamic>))
-                                    .toList();
-                                if (listUsers.isNotEmpty) {
-                                  listUsers.first!.jaimes =
-                                      listUsers.first!.jaimes! + 1;
-                                  printVm("user trouver");
-                                  if (widget.post!.user!.oneIgnalUserid != null &&
-                                      widget.post!.user!.oneIgnalUserid!.length > 5) {
+                                    if (authProvider.loginUserData.role ==
+                                        UserRole.ADM.name) {
+                                      setState(() {
+                                        int nbr=genererNombreAleatoire();
+                                        widget.post!.loves =
+                                            widget.post!.loves! + nbr;
 
+                                        widget.post!.users_love_id!
+                                            .add(
+                                            authProvider!.loginUserData.id!);
+                                        love = widget.post!.loves!;
+                                        //loves.add(idUser);
+                                      });
+                                      await postProvider.updatePost(
+                                          widget.post, authProvider.loginUserData,
+                                          context);
+                                    } else {
+                                      if (!isIn(widget.post!.users_love_id!,
+                                          authProvider.loginUserData.id!)) {
+                                        setState(() {
+                                          widget.post!.loves =
+                                              widget.post!.loves! + 1;
 
-                                    NotificationData notif =
-                                    NotificationData();
-                                    notif.id = firestore
-                                        .collection('Notifications')
-                                        .doc()
-                                        .id;
-                                    notif.titre = "Nouveau j'aime ❤️";
-                                    notif.media_url =
-                                        authProvider.loginUserData.imageUrl;
-                                    notif.type = NotificationType.POST.name;
-                                    notif.description =
-                                    "@${authProvider.loginUserData.pseudo!} a aimé votre look";
-                                    notif.users_id_view = [];
-                                    notif.user_id =
-                                        authProvider.loginUserData.id;
-                                    notif.receiver_id = widget.post!.user_id!;
-                                    notif.post_id = widget.post!.id!;
-                                    notif.post_data_type =
-                                    PostDataType.IMAGE.name!;
+                                          widget.post!.users_love_id!
+                                              .add(
+                                              authProvider!.loginUserData.id!);
+                                          love = widget.post!.loves!;
+                                          //loves.add(idUser);
+                                        });
+                                        printVm("share post");
+                                        printVm(
+                                            "like poste monetisation 1 .....");
+                                        postProvider
+                                            .interactWithPostAndIncrementSolde(
+                                            widget.post!.id!,
+                                            authProvider.loginUserData.id!,
+                                            "like", widget.post!.user_id!);
 
-                                    notif.updatedAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    notif.createdAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    notif.status = PostStatus.VALIDE.name;
+                                        CollectionReference userCollect =
+                                        FirebaseFirestore.instance
+                                            .collection('Users');
+                                        // Get docs from collection reference
+                                        QuerySnapshot querySnapshotUser =
+                                        await userCollect
+                                            .where("id",
+                                            isEqualTo: widget.post!.user_id!)
+                                            .get();
+                                        // Afficher la liste
+                                        List<
+                                            UserData> listUsers = querySnapshotUser
+                                            .docs
+                                            .map((doc) =>
+                                            UserData.fromJson(
+                                                doc.data() as Map<
+                                                    String,
+                                                    dynamic>))
+                                            .toList();
+                                        if (listUsers.isNotEmpty) {
+                                          listUsers.first!.jaimes =
+                                              listUsers.first!.jaimes! + 1;
+                                          printVm("user trouver");
+                                          if (widget.post!.user!
+                                              .oneIgnalUserid != null &&
+                                              widget.post!.user!.oneIgnalUserid!
+                                                  .length > 5) {
+                                            NotificationData notif =
+                                            NotificationData();
+                                            notif.id = firestore
+                                                .collection('Notifications')
+                                                .doc()
+                                                .id;
+                                            notif.titre = "Nouveau j'aime ❤️";
+                                            notif.media_url =
+                                                authProvider.loginUserData
+                                                    .imageUrl;
+                                            notif.type =
+                                                NotificationType.POST.name;
+                                            notif.description =
+                                            "@${authProvider.loginUserData
+                                                .pseudo!} a aimé votre look";
+                                            notif.users_id_view = [];
+                                            notif.user_id =
+                                                authProvider.loginUserData.id;
+                                            notif.receiver_id =
+                                            widget.post!.user_id!;
+                                            notif.post_id = widget.post!.id!;
+                                            notif.post_data_type =
+                                            PostDataType.IMAGE.name!;
 
-                                    // users.add(pseudo.toJson());
+                                            notif.updatedAt =
+                                                DateTime
+                                                    .now()
+                                                    .microsecondsSinceEpoch;
+                                            notif.createdAt =
+                                                DateTime
+                                                    .now()
+                                                    .microsecondsSinceEpoch;
+                                            notif.status =
+                                                PostStatus.VALIDE.name;
 
-                                    await firestore
-                                        .collection('Notifications')
-                                        .doc(notif.id)
-                                        .set(notif.toJson());
-                                    await authProvider.sendNotification(
-                                        userIds: [widget.post!.user!.oneIgnalUserid!],
-                                        smallImage:
-                                        "${authProvider.loginUserData.imageUrl!}",
-                                        send_user_id:
-                                        "${authProvider.loginUserData.id!}",
-                                        recever_user_id: "${widget.post!.user_id!}",
-                                        message:
-                                        "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                                        type_notif:
-                                        NotificationType.POST.name,
-                                        post_id: "${widget.post!.id!}",
-                                        post_type: PostDataType.IMAGE.name,
-                                        chat_id: '');
+                                            // users.add(pseudo.toJson());
+
+                                            await firestore
+                                                .collection('Notifications')
+                                                .doc(notif.id)
+                                                .set(notif.toJson());
+                                            await authProvider.sendNotification(
+                                                userIds: [
+                                                  widget.post!.user!
+                                                      .oneIgnalUserid!
+                                                ],
+                                                smallImage:
+                                                "${authProvider.loginUserData
+                                                    .imageUrl!}",
+                                                send_user_id:
+                                                "${authProvider.loginUserData
+                                                    .id!}",
+                                                recever_user_id: "${widget.post!
+                                                    .user_id!}",
+                                                message:
+                                                "📢 @${authProvider.loginUserData
+                                                    .pseudo!} a aimé votre look",
+                                                type_notif:
+                                                NotificationType.POST.name,
+                                                post_id: "${widget.post!.id!}",
+                                                post_type: PostDataType.IMAGE
+                                                    .name,
+                                                chat_id: '');
+                                          }
+                                          // postProvider.updateVuePost(post, context);
+
+                                          //userProvider.updateUser(listUsers.first);
+                                          SnackBar snackBar = SnackBar(
+                                            content: Text(
+                                              '+2 points.  Voir le classement',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                  color: Colors.green),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(snackBar);
+                                          postProvider.updatePost(
+                                              widget.post, listUsers.first,
+                                              context);
+                                          await authProvider.getAppData();
+                                          authProvider.appDefaultData
+                                              .nbr_loves =
+                                              authProvider.appDefaultData
+                                                  .nbr_loves! +
+                                                  2;
+                                          authProvider.updateAppData(
+                                              authProvider.appDefaultData);
+                                        } else {
+                                          widget.post!.user!.jaimes =
+                                              widget.post!.user!.jaimes! + 1;
+                                          SnackBar snackBar = SnackBar(
+                                            content: Text(
+                                              '+2 points.  Voir le classement',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                  color: Colors.green),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(snackBar);
+                                          postProvider.updatePost(
+                                              widget.post, widget.post!.user!,
+                                              context);
+                                          await authProvider.getAppData();
+                                          authProvider.appDefaultData
+                                              .nbr_loves =
+                                              authProvider.appDefaultData
+                                                  .nbr_loves! +
+                                                  2;
+                                          authProvider.updateAppData(
+                                              authProvider.appDefaultData);
+                                        }
+
+                                        tapLove = true;
+                                      }
+                                      printVm("jaime");
+                                    }
                                   }
-                                  // postProvider.updateVuePost(post, context);
+                                },);
 
-                                  //userProvider.updateUser(listUsers.first);
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text(
-                                      '+2 points.  Voir le classement',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.green),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(snackBar);
-                                  postProvider.updatePost(
-                                      widget.post, listUsers.first, context);
-                                  await authProvider.getAppData();
-                                  authProvider.appDefaultData.nbr_loves =
-                                      authProvider.appDefaultData.nbr_loves! +
-                                          2;
-                                  authProvider.updateAppData(
-                                      authProvider.appDefaultData);
-                                } else {
-                                  widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
-                                  SnackBar snackBar = SnackBar(
-                                    content: Text(
-                                      '+2 points.  Voir le classement',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.green),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(snackBar);
-                                  postProvider.updatePost(
-                                      widget.post, widget.post!.user!, context);
-                                  await authProvider.getAppData();
-                                  authProvider.appDefaultData.nbr_loves =
-                                      authProvider.appDefaultData.nbr_loves! +
-                                          2;
-                                  authProvider.updateAppData(
-                                      authProvider.appDefaultData);
-                                }
-
-                                tapLove = true;
-                              }
-                              printVm("jaime");
+                              // if (!isIn(widget.post!.users_love_id!,
+                              //     authProvider.loginUserData.id!)) {
+                              //   setState(() {
+                              //     widget.post!.loves = widget.post!.loves! + 1;
+                              //
+                              //     widget.post!.users_love_id!
+                              //         .add(authProvider!.loginUserData.id!);
+                              //     love = widget.post!.loves!;
+                              //     //loves.add(idUser);
+                              //   });
+                              //   printVm("share post");
+                              //   printVm("like poste monetisation 1 .....");
+                              //   postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
+                              //
+                              //   CollectionReference userCollect =
+                              //   FirebaseFirestore.instance
+                              //       .collection('Users');
+                              //   // Get docs from collection reference
+                              //   QuerySnapshot querySnapshotUser =
+                              //       await userCollect
+                              //       .where("id",
+                              //       isEqualTo: widget.post!.user_id!)
+                              //       .get();
+                              //   // Afficher la liste
+                              //   List<UserData> listUsers = querySnapshotUser
+                              //       .docs
+                              //       .map((doc) => UserData.fromJson(
+                              //       doc.data() as Map<String, dynamic>))
+                              //       .toList();
+                              //   if (listUsers.isNotEmpty) {
+                              //     listUsers.first!.jaimes =
+                              //         listUsers.first!.jaimes! + 1;
+                              //     printVm("user trouver");
+                              //     if (widget.post!.user!.oneIgnalUserid != null &&
+                              //         widget.post!.user!.oneIgnalUserid!.length > 5) {
+                              //
+                              //
+                              //       NotificationData notif =
+                              //       NotificationData();
+                              //       notif.id = firestore
+                              //           .collection('Notifications')
+                              //           .doc()
+                              //           .id;
+                              //       notif.titre = "Nouveau j'aime ❤️";
+                              //       notif.media_url =
+                              //           authProvider.loginUserData.imageUrl;
+                              //       notif.type = NotificationType.POST.name;
+                              //       notif.description =
+                              //       "@${authProvider.loginUserData.pseudo!} a aimé votre look";
+                              //       notif.users_id_view = [];
+                              //       notif.user_id =
+                              //           authProvider.loginUserData.id;
+                              //       notif.receiver_id = widget.post!.user_id!;
+                              //       notif.post_id = widget.post!.id!;
+                              //       notif.post_data_type =
+                              //       PostDataType.IMAGE.name!;
+                              //
+                              //       notif.updatedAt =
+                              //           DateTime.now().microsecondsSinceEpoch;
+                              //       notif.createdAt =
+                              //           DateTime.now().microsecondsSinceEpoch;
+                              //       notif.status = PostStatus.VALIDE.name;
+                              //
+                              //       // users.add(pseudo.toJson());
+                              //
+                              //       await firestore
+                              //           .collection('Notifications')
+                              //           .doc(notif.id)
+                              //           .set(notif.toJson());
+                              //       await authProvider.sendNotification(
+                              //           userIds: [widget.post!.user!.oneIgnalUserid!],
+                              //           smallImage:
+                              //           "${authProvider.loginUserData.imageUrl!}",
+                              //           send_user_id:
+                              //           "${authProvider.loginUserData.id!}",
+                              //           recever_user_id: "${widget.post!.user_id!}",
+                              //           message:
+                              //           "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+                              //           type_notif:
+                              //           NotificationType.POST.name,
+                              //           post_id: "${widget.post!.id!}",
+                              //           post_type: PostDataType.IMAGE.name,
+                              //           chat_id: '');
+                              //     }
+                              //     // postProvider.updateVuePost(post, context);
+                              //
+                              //     //userProvider.updateUser(listUsers.first);
+                              //     SnackBar snackBar = SnackBar(
+                              //       content: Text(
+                              //         '+2 points.  Voir le classement',
+                              //         textAlign: TextAlign.center,
+                              //         style: TextStyle(color: Colors.green),
+                              //       ),
+                              //     );
+                              //     ScaffoldMessenger.of(context)
+                              //         .showSnackBar(snackBar);
+                              //     postProvider.updatePost(
+                              //         widget.post, listUsers.first, context);
+                              //     await authProvider.getAppData();
+                              //     authProvider.appDefaultData.nbr_loves =
+                              //         authProvider.appDefaultData.nbr_loves! +
+                              //             2;
+                              //     authProvider.updateAppData(
+                              //         authProvider.appDefaultData);
+                              //   } else {
+                              //     widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
+                              //     SnackBar snackBar = SnackBar(
+                              //       content: Text(
+                              //         '+2 points.  Voir le classement',
+                              //         textAlign: TextAlign.center,
+                              //         style: TextStyle(color: Colors.green),
+                              //       ),
+                              //     );
+                              //     ScaffoldMessenger.of(context)
+                              //         .showSnackBar(snackBar);
+                              //     postProvider.updatePost(
+                              //         widget.post, widget.post!.user!, context);
+                              //     await authProvider.getAppData();
+                              //     authProvider.appDefaultData.nbr_loves =
+                              //         authProvider.appDefaultData.nbr_loves! +
+                              //             2;
+                              //     authProvider.updateAppData(
+                              //         authProvider.appDefaultData);
+                              //   }
+                              //
+                              //   tapLove = true;
+                              // }
+                              // printVm("jaime");
                               // setState(() {
                               // });
                             },

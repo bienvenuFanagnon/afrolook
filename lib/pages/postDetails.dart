@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postCadeau.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
@@ -546,7 +547,7 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         SizedBox(
-                                          //width: 100,
+                                          width: 100,
                                           child: TextCustomerUserTitle(
                                             titre: "#${post.canal!.titre!}",
                                             fontSize: SizeText.homeProfileTextSize,
@@ -1117,134 +1118,140 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
                                       return GestureDetector(
                                         onTap: () async {
                                           _sendLike();
-                                          if (!isIn(widget.post!.users_love_id!,
-                                              authProvider.loginUserData.id!)) {
-                                            setState(() {
-                                              widget.post!.loves = widget.post!.loves! + 1;
+                                          postProvider.getPostsImagesById(widget.post!.id!).then((value) async {
+                                            if(value.isNotEmpty){
+                                              widget.post!=value.first;
+                                              if (!isIn(widget.post!.users_love_id!,
+                                                  authProvider.loginUserData.id!)) {
+                                                setState(() {
+                                                  widget.post!.loves = widget.post!.loves! + 1;
 
-                                              widget.post!.users_love_id!
-                                                  .add(authProvider!.loginUserData.id!);
-                                              love = widget.post!.loves!;
-                                              //loves.add(idUser);
-                                            });
-                                            printVm("share post");
-                                            printVm("like poste monetisation 1 .....");
-                                            postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
+                                                  widget.post!.users_love_id!
+                                                      .add(authProvider!.loginUserData.id!);
+                                                  love = widget.post!.loves!;
+                                                  //loves.add(idUser);
+                                                });
+                                                printVm("share post");
+                                                printVm("like poste monetisation 1 .....");
+                                                postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
 
-                                            CollectionReference userCollect =
-                                            FirebaseFirestore.instance
-                                                .collection('Users');
-                                            // Get docs from collection reference
-                                            QuerySnapshot querySnapshotUser =
-                                            await userCollect
-                                                .where("id",
-                                                isEqualTo: widget.post!.user_id!)
-                                                .get();
-                                            // Afficher la liste
-                                            List<UserData> listUsers = querySnapshotUser
-                                                .docs
-                                                .map((doc) => UserData.fromJson(
-                                                doc.data() as Map<String, dynamic>))
-                                                .toList();
-                                            if (listUsers.isNotEmpty) {
-                                              listUsers.first!.jaimes =
-                                                  listUsers.first!.jaimes! + 1;
-                                              printVm("user trouver");
-                                              if (widget.post!.user!.oneIgnalUserid != null &&
-                                                  widget.post!.user!.oneIgnalUserid!.length > 5) {
+                                                CollectionReference userCollect =
+                                                FirebaseFirestore.instance
+                                                    .collection('Users');
+                                                // Get docs from collection reference
+                                                QuerySnapshot querySnapshotUser =
+                                                    await userCollect
+                                                    .where("id",
+                                                    isEqualTo: widget.post!.user_id!)
+                                                    .get();
+                                                // Afficher la liste
+                                                List<UserData> listUsers = querySnapshotUser
+                                                    .docs
+                                                    .map((doc) => UserData.fromJson(
+                                                    doc.data() as Map<String, dynamic>))
+                                                    .toList();
+                                                if (listUsers.isNotEmpty) {
+                                                  listUsers.first!.jaimes =
+                                                      listUsers.first!.jaimes! + 1;
+                                                  printVm("user trouver");
+                                                  if (widget.post!.user!.oneIgnalUserid != null &&
+                                                      widget.post!.user!.oneIgnalUserid!.length > 5) {
 
 
-                                                NotificationData notif =
-                                                NotificationData();
-                                                notif.id = firestore
-                                                    .collection('Notifications')
-                                                    .doc()
-                                                    .id;
-                                                notif.titre = "Nouveau j'aime ❤️";
-                                                notif.media_url =
-                                                    authProvider.loginUserData.imageUrl;
-                                                notif.type = NotificationType.POST.name;
-                                                notif.description =
-                                                "@${authProvider.loginUserData.pseudo!} a aimé votre look";
-                                                notif.users_id_view = [];
-                                                notif.user_id =
-                                                    authProvider.loginUserData.id;
-                                                notif.receiver_id = widget.post!.user_id!;
-                                                notif.post_id = widget.post!.id!;
-                                                notif.post_data_type =
-                                                PostDataType.IMAGE.name!;
+                                                    NotificationData notif =
+                                                    NotificationData();
+                                                    notif.id = firestore
+                                                        .collection('Notifications')
+                                                        .doc()
+                                                        .id;
+                                                    notif.titre = "Nouveau j'aime ❤️";
+                                                    notif.media_url =
+                                                        authProvider.loginUserData.imageUrl;
+                                                    notif.type = NotificationType.POST.name;
+                                                    notif.description =
+                                                    "@${authProvider.loginUserData.pseudo!} a aimé votre look";
+                                                    notif.users_id_view = [];
+                                                    notif.user_id =
+                                                        authProvider.loginUserData.id;
+                                                    notif.receiver_id = widget.post!.user_id!;
+                                                    notif.post_id = widget.post!.id!;
+                                                    notif.post_data_type =
+                                                    PostDataType.IMAGE.name!;
 
-                                                notif.updatedAt =
-                                                    DateTime.now().microsecondsSinceEpoch;
-                                                notif.createdAt =
-                                                    DateTime.now().microsecondsSinceEpoch;
-                                                notif.status = PostStatus.VALIDE.name;
+                                                    notif.updatedAt =
+                                                        DateTime.now().microsecondsSinceEpoch;
+                                                    notif.createdAt =
+                                                        DateTime.now().microsecondsSinceEpoch;
+                                                    notif.status = PostStatus.VALIDE.name;
 
-                                                // users.add(pseudo.toJson());
+                                                    // users.add(pseudo.toJson());
 
-                                                await firestore
-                                                    .collection('Notifications')
-                                                    .doc(notif.id)
-                                                    .set(notif.toJson());
-                                                await authProvider.sendNotification(
-                                                    userIds: [widget.post!.user!.oneIgnalUserid!],
-                                                    smallImage:
-                                                    "${authProvider.loginUserData.imageUrl!}",
-                                                    send_user_id:
-                                                    "${authProvider.loginUserData.id!}",
-                                                    recever_user_id: "${widget.post!.user_id!}",
-                                                    message:
-                                                    "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                                                    type_notif:
-                                                    NotificationType.POST.name,
-                                                    post_id: "${widget.post!.id!}",
-                                                    post_type: PostDataType.IMAGE.name,
-                                                    chat_id: '');
+                                                    await firestore
+                                                        .collection('Notifications')
+                                                        .doc(notif.id)
+                                                        .set(notif.toJson());
+                                                    await authProvider.sendNotification(
+                                                        userIds: [widget.post!.user!.oneIgnalUserid!],
+                                                        smallImage:
+                                                        "${authProvider.loginUserData.imageUrl!}",
+                                                        send_user_id:
+                                                        "${authProvider.loginUserData.id!}",
+                                                        recever_user_id: "${widget.post!.user_id!}",
+                                                        message:
+                                                        "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+                                                        type_notif:
+                                                        NotificationType.POST.name,
+                                                        post_id: "${widget.post!.id!}",
+                                                        post_type: PostDataType.IMAGE.name,
+                                                        chat_id: '');
+                                                  }
+                                                  // postProvider.updateVuePost(post, context);
+
+                                                  //userProvider.updateUser(listUsers.first);
+                                                  SnackBar snackBar = SnackBar(
+                                                    content: Text(
+                                                      '+2 points.  Voir le classement',
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(color: Colors.green),
+                                                    ),
+                                                  );
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(snackBar);
+                                                  postProvider.updatePost(
+                                                      widget.post, listUsers.first, context);
+                                                  await authProvider.getAppData();
+                                                  authProvider.appDefaultData.nbr_loves =
+                                                      authProvider.appDefaultData.nbr_loves! +
+                                                          2;
+                                                  authProvider.updateAppData(
+                                                      authProvider.appDefaultData);
+                                                } else {
+                                                  widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
+                                                  SnackBar snackBar = SnackBar(
+                                                    content: Text(
+                                                      '+2 points.  Voir le classement',
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(color: Colors.green),
+                                                    ),
+                                                  );
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(snackBar);
+                                                  postProvider.updatePost(
+                                                      widget.post, widget.post!.user!, context);
+                                                  await authProvider.getAppData();
+                                                  authProvider.appDefaultData.nbr_loves =
+                                                      authProvider.appDefaultData.nbr_loves! +
+                                                          2;
+                                                  authProvider.updateAppData(
+                                                      authProvider.appDefaultData);
+                                                }
+
+                                                tapLove = true;
                                               }
-                                              // postProvider.updateVuePost(post, context);
-
-                                              //userProvider.updateUser(listUsers.first);
-                                              SnackBar snackBar = SnackBar(
-                                                content: Text(
-                                                  '+2 points.  Voir le classement',
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(color: Colors.green),
-                                                ),
-                                              );
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(snackBar);
-                                              postProvider.updatePost(
-                                                  widget.post, listUsers.first, context);
-                                              await authProvider.getAppData();
-                                              authProvider.appDefaultData.nbr_loves =
-                                                  authProvider.appDefaultData.nbr_loves! +
-                                                      2;
-                                              authProvider.updateAppData(
-                                                  authProvider.appDefaultData);
-                                            } else {
-                                              widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
-                                              SnackBar snackBar = SnackBar(
-                                                content: Text(
-                                                  '+2 points.  Voir le classement',
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(color: Colors.green),
-                                                ),
-                                              );
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(snackBar);
-                                              postProvider.updatePost(
-                                                  widget.post, widget.post!.user!, context);
-                                              await authProvider.getAppData();
-                                              authProvider.appDefaultData.nbr_loves =
-                                                  authProvider.appDefaultData.nbr_loves! +
-                                                      2;
-                                              authProvider.updateAppData(
-                                                  authProvider.appDefaultData);
+                                              printVm("jaime");
                                             }
+                                          },);
 
-                                            tapLove = true;
-                                          }
-                                          printVm("jaime");
                                           // setState(() {
                                           // });
                                         },
@@ -1588,6 +1595,12 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
       postProvider.getPostsImagesById(widget.post!.id!).then((value) {
         if (value.isNotEmpty) {
           final updatedPost = value.first;
+          if (authProvider.loginUserData.role ==
+              UserRole.ADM.name){
+            if (updatedPost.vues != null) {
+              updatedPost.vues = (updatedPost.vues ?? 0) + genererNombreAleatoire();
+            }
+          }
           if (updatedPost.vues != null) {
             updatedPost.vues = (updatedPost.vues ?? 0) + 1;
           }

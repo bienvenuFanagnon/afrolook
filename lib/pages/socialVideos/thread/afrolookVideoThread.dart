@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:afrotok/pages/user/profile/profileDetail/model/user.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import '../../afroshop/marketPlace/component.dart';
 import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
 import '../../user/detailsOtherUser.dart';
+import '../../userPosts/postWidgets/postUserWidget.dart';
 import '../video_details.dart';
 
 class AfroVideoThreads extends StatefulWidget {
@@ -625,6 +627,8 @@ class _VideoPostItemState extends State<_VideoPostItem> {
   ChewieController? _chewieController;
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
   @override
   void initState() {
     super.initState();
@@ -645,18 +649,18 @@ class _VideoPostItemState extends State<_VideoPostItem> {
 
     if (mounted) setState(() {});
     if (widget.post?.id != null) {
-      postProvider.getPostsVideosById(widget.post.id!).then((value) {
-        if (value.isNotEmpty) {
-          final updatedPost = value.first;
-          if (updatedPost.vues != null) {
-            updatedPost.vues = (updatedPost.vues ?? 0) + 1;
-          }
-
-          if (updatedPost.user != null) {
-            postProvider.updatePost(updatedPost, updatedPost.user!, context);
-          }
-        }
-      });
+      // postProvider.getPostsVideosById(widget.post.id!).then((value) {
+      //   if (value.isNotEmpty) {
+      //     final updatedPost = value.first;
+      //     if (updatedPost.vues != null) {
+      //       updatedPost.vues = (updatedPost.vues ?? 0) + 1;
+      //     }
+      //
+      //     if (updatedPost.user != null) {
+      //       postProvider.updatePost(updatedPost, updatedPost.user!, context);
+      //     }
+      //   }
+      // });
     }
   }
 
@@ -814,7 +818,8 @@ class _VideoPostItemState extends State<_VideoPostItem> {
                     children: [
                       _buildStatWithBadge(
                         icon: Icons.favorite,
-                        count: widget.post.users_love_id!.length,
+                        count: widget.post.loves!,
+                        // count: widget.post.users_love_id!.length,
                         color: Colors.redAccent,
                       ),
                       _buildStatWithBadge(
@@ -932,18 +937,47 @@ class _VideoPostItemState extends State<_VideoPostItem> {
       },
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 15,
-            backgroundImage: NetworkImage(user.imageUrl!),
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 15,
+                backgroundImage: NetworkImage(user.imageUrl!),
+              ),
+            ],
           ),
           SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('@${user.pseudo}', style: TextStyle(color: Colors.white)),
-              Text('${user.abonnes} abonnés',
+              Text('${user.userAbonnesIds!.length} abonnés',
                   style: TextStyle(color: Colors.white54)),
             ],
+          ),
+          SizedBox(width: 20),
+
+          Visibility(
+            visible: widget.post!.canal==null?true:false,
+
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(0.0),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    _showUserDetailsModalDialog(widget.post.user!, w, h);
+
+                  },
+                  icon: Icon(
+
+                    isUserAbonne(widget.post.user!.userAbonnesIds!, authProvider.loginUserData.id!)
+                        ? Icons.check_circle
+                        : Icons.person_add,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

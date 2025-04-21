@@ -417,42 +417,42 @@ class _UserProfilState extends State<UserProfil> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 10,),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => PostsMonetiserPage(title: '',),));
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-                                child: Container(
-                                  color: ConstColors.buttonsColors,
-                                  // alignment: Alignment.centerLeft,
-                                  width: 180,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Row(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(right: 5.0),
-                                          child: Container(
-                                            child: Icon(FontAwesome.money,size: 20,color: Colors.green,),
-                                          ),
-                                        ),
-                                        Container(
-                                          child: TextCustomerMenu(
-                                            titre: "Posts Monetiser",
-                                            fontSize: SizeText.homeProfileTextSize,
-                                            couleur: ConstColors.textColors,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        )
-                                      ],
-
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                            // SizedBox(height: 10,),
+                            // GestureDetector(
+                            //   onTap: () {
+                            //     Navigator.push(context, MaterialPageRoute(builder: (context) => PostsMonetiserPage(title: '',),));
+                            //   },
+                            //   child: ClipRRect(
+                            //     borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                            //     child: Container(
+                            //       color: ConstColors.buttonsColors,
+                            //       // alignment: Alignment.centerLeft,
+                            //       width: 180,
+                            //       child: Padding(
+                            //         padding: const EdgeInsets.all(8.0),
+                            //         child: Row(
+                            //           children: [
+                            //             Padding(
+                            //               padding: const EdgeInsets.only(right: 5.0),
+                            //               child: Container(
+                            //                 child: Icon(FontAwesome.money,size: 20,color: Colors.green,),
+                            //               ),
+                            //             ),
+                            //             Container(
+                            //               child: TextCustomerMenu(
+                            //                 titre: "Posts Monetiser",
+                            //                 fontSize: SizeText.homeProfileTextSize,
+                            //                 couleur: ConstColors.textColors,
+                            //                 fontWeight: FontWeight.w600,
+                            //               ),
+                            //             )
+                            //           ],
+                            //
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ),
                             SizedBox(height: 10,),
                             ClipRRect(
                               borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),

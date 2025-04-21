@@ -36,7 +36,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 69;
+  late int app_version_code = 71;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -737,8 +737,8 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
-  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
-    return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+  bool isUserAbonne(List<String> abonnesIds, String userId) {
+    return abonnesIds.contains(userId);
   }
 
 
@@ -823,7 +823,7 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
-  Future<bool> abonner(UserData updateUserData,BuildContext context) async {
+  Future<bool> abonner2(UserData updateUserData,BuildContext context) async {
     try{
       late UserProvider userProvider =
       Provider.of<UserProvider>(context, listen: false);
@@ -933,7 +933,110 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> abonner(UserData updateUserData, BuildContext context) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final currentUserId = loginUserData.id!;
 
+      // Vérification client-side de l'abonnement
+      if (isUserAbonne(updateUserData.userAbonnesIds!, currentUserId)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Vous êtes déjà abonné.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red))),
+        );
+        return true;
+      }
+
+      // Création de la relation d'abonnement
+      final userAbonne = UserAbonnes()
+        ..compteUserId = currentUserId
+        ..abonneUserId = updateUserData.id
+        ..createdAt = DateTime.now().millisecondsSinceEpoch
+        ..updatedAt = DateTime.now().millisecondsSinceEpoch;
+
+      // Envoi de la demande d'abonnement
+      final success = await userProvider.sendAbonnementRequest(
+          userAbonne, updateUserData, context);
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Erreur lors de l\'abonnement',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red))),
+        );
+        return false;
+      }
+
+      // Mise à jour atomique dans Firestore
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(updateUserData.id)
+          .update({
+        'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
+        'abonnes': FieldValue.increment(1),
+        'updatedAt': DateTime.now().microsecondsSinceEpoch,
+      });
+
+      // Mise à jour locale
+      loginUserData.userAbonnes!.add(userAbonne);
+      updateUserData.userAbonnesIds!.add(currentUserId);
+      updateUserData.abonnes = (updateUserData.abonnes ?? 0) + 1;
+
+      // Envoi de notification
+      if (updateUserData.oneIgnalUserid != null &&
+          updateUserData.oneIgnalUserid!.length > 5) {
+        await sendNotification(
+          userIds: [updateUserData.oneIgnalUserid!],
+          smallImage: loginUserData.imageUrl!,
+          send_user_id: currentUserId,
+          recever_user_id: updateUserData.id!,
+          message: "📢 @${loginUserData.pseudo!} s'est abonné(e) à votre compte !",
+          type_notif: NotificationType.ABONNER.name,
+          post_id: '',
+          post_type: '',
+          chat_id: '',
+        );
+
+        final notif = NotificationData()
+          ..id = FirebaseFirestore.instance.collection('Notifications').doc().id
+          ..titre = "Nouvel Abonnement ✅"
+          ..media_url = loginUserData.imageUrl
+          ..type = NotificationType.ABONNER.name
+          ..description = "@${loginUserData.pseudo!} s'est abonné(e) à votre compte"
+          ..user_id = currentUserId
+          ..updatedAt = DateTime.now().microsecondsSinceEpoch
+          ..createdAt = DateTime.now().microsecondsSinceEpoch
+          ..status = PostStatus.VALIDE.name;
+
+        await FirebaseFirestore.instance
+            .collection('Notifications')
+            .doc(notif.id)
+            .set(notif.toJson());
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Abonné, Bravo ! Vous avez gagné 4 points.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green)),
+        ),
+      );
+
+      return true;
+    } catch (e) {
+      print("Erreur lors de l'abonnement : $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Erreur technique',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red))),
+      );
+      return false;
+    }
+  }
 
   Future<bool> getUserByPhone(String phone) async {
     //   await getAppData();

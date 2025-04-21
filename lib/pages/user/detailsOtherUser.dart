@@ -130,8 +130,12 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
       return nbAbonnes.toString();
     }
   }
-  bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+  bool isUserAbonne2(List<String> userAbonnesList, String userIdToCheck) {
     return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+  }
+
+  bool isUserAbonne(List<String> abonnesIds, String userId) {
+    return abonnesIds.contains(userId);
   }
 
   bool isIn(List<String> users_id, String userIdToCheck) {

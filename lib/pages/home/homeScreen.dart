@@ -1954,13 +1954,13 @@ class _MyHomePageState extends State<MyHomePage>
               child:TabBarView(
                 controller: _tabController,
                 children: [
-                  Center(child: LooksPage(title: '')),
+                  Center(child: LooksPage(type: TabBarType.LOOKS.name,)),
                   // Contenu de chaque onglet
-                  Center(child: ActualitePage(title: '')),
-                  Center(child: SportPage(title: '')),
-                  Center(child: EventPage(title: '')),
-                  Center(child: OffrePage(title: '')),
-                  Center(child: GamerPage(title: '')),
+                  Center(child: ActualitePage(type: TabBarType.ACTUALITES.name)),
+                  Center(child: SportPage(type: TabBarType.SPORT.name)),
+                  Center(child: EventPage(type: TabBarType.EVENEMENT.name)),
+                  Center(child: OffrePage(type: TabBarType.OFFRES.name)),
+                  Center(child: GamerPage(type: TabBarType.GAMER.name)),
                 ],
               ),
             ),

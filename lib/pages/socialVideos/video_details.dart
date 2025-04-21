@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
@@ -637,20 +638,27 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
   void initState() {
     // feedBloc.getFeeds();
     super.initState();
-    // if (widget.videos.first?.id != null) {
-    //   postProvider.getPostsVideosById(widget.videos.first!.id!).then((value) {
-    //     if (value.isNotEmpty) {
-    //       final updatedPost = value.first;
-    //       if (updatedPost.vues != null) {
-    //         updatedPost.vues = (updatedPost.vues ?? 0) + 1;
-    //       }
-    //
-    //       if (updatedPost.user != null) {
-    //         postProvider.updatePost(updatedPost, updatedPost.user!, context);
-    //       }
-    //     }
-    //   });
-    // }
+    if (widget.videos.first?.id != null) {
+      postProvider.getPostsVideosById(widget.videos.first!.id!).then((value) {
+        if (value.isNotEmpty) {
+          final updatedPost = value.first;
+          if (authProvider.loginUserData.role ==
+              UserRole.ADM.name){
+            setState(()  {
+              updatedPost.vues = (updatedPost.vues ?? 0) + genererNombreAleatoire();
+
+            });
+          }
+          if (updatedPost.vues != null) {
+            updatedPost.vues = (updatedPost.vues ?? 0) + 1;
+          }
+
+          if (updatedPost.user != null) {
+            postProvider.updatePost(updatedPost, updatedPost.user!, context);
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -991,77 +999,98 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                               onTap: (bool isLiked) async {
                                                 // _triggerAnimation('like');
                                                 _sendLike();
-                                                if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
-                                                  printVm('tap');
-                                                  setState(()  {
-                                                    datas[index].loves=datas[index]!.loves!+1;
+                                                await postProvider.getPostsVideosById(datas[index].id!).then((value) async {
+                                                  if(value.isNotEmpty){
+                                                    datas[index]=value.first;
+                                                    if (authProvider.loginUserData.role ==
+                                                        UserRole.ADM.name){
+                                                      setState(()  async {
+                                                        datas[index].loves=datas[index]!.loves!+genererNombreAleatoire();
 
 
-                                                    datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
+                                                        datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
+                                                        await postProvider.updatePost(datas[index], authProvider.loginUserData!,context);
 
-                                                    printVm('update');
-                                                    //loves.add(idUser);
-                                                  });
-                                                  CollectionReference userCollect =
-                                                  FirebaseFirestore.instance.collection('Users');
-                                                  // Get docs from collection reference
-                                                  QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
-                                                  // Afficher la liste
-                                                  List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                                      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                                                  if (listUsers.isNotEmpty) {
-                                                    listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
-                                                    postProvider.updatePost(datas[index], listUsers.first!!,context);
-                                                    await authProvider.getAppData();
-                                                    authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                    authProvider.updateAppData(authProvider.appDefaultData);
+                                                        printVm('update');
+                                                        //loves.add(idUser);
+                                                      });
+                                                    }
+                                                    if (!isIn( datas[index].users_love_id!,authProvider.loginUserData.id!)) {
+                                                      printVm('tap');
+                                                      setState(()  {
+                                                        datas[index].loves=datas[index]!.loves!+1;
 
 
-                                                  }else{
-                                                    datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
-                                                    postProvider.updatePost( datas[index],datas[index].user!,context);
-                                                    await authProvider.getAppData();
-                                                    authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
-                                                    authProvider.updateAppData(authProvider.appDefaultData);
+                                                        datas[index]!.users_love_id!.add(authProvider!.loginUserData.id!);
+
+                                                        printVm('update');
+                                                        //loves.add(idUser);
+                                                      });
+                                                      CollectionReference userCollect =
+                                                      FirebaseFirestore.instance.collection('Users');
+                                                      // Get docs from collection reference
+                                                      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                                      // Afficher la liste
+                                                      List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
+                                                          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+                                                      if (listUsers.isNotEmpty) {
+                                                        listUsers.first!.jaimes=listUsers.first!.jaimes!+1;
+                                                        postProvider.updatePost(datas[index], listUsers.first!!,context);
+                                                        await authProvider.getAppData();
+                                                        authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                        authProvider.updateAppData(authProvider.appDefaultData);
+
+
+                                                      }else{
+                                                        datas[index].user!.jaimes=datas[index].user!.jaimes!+1;
+                                                        postProvider.updatePost( datas[index],datas[index].user!,context);
+                                                        await authProvider.getAppData();
+                                                        authProvider.appDefaultData.nbr_loves=authProvider.appDefaultData.nbr_loves!+1;
+                                                        authProvider.updateAppData(authProvider.appDefaultData);
+
+                                                      }
+                                                      await authProvider.sendNotification(
+                                                          userIds: [datas[index].user!.oneIgnalUserid!],
+                                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                                          send_user_id: "${authProvider.loginUserData.id!}",
+                                                          recever_user_id: "${datas[index].user!.id!}",
+                                                          message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
+                                                          type_notif: NotificationType.POST.name,
+                                                          post_id: "${datas[index]!.id!}",
+                                                          post_type: PostDataType.VIDEO.name, chat_id: ''
+                                                      );
+
+                                                      NotificationData notif=NotificationData();
+                                                      notif.id=firestore
+                                                          .collection('Notifications')
+                                                          .doc()
+                                                          .id;
+                                                      notif.titre="Nouveau j'aime ❤️";
+                                                      notif.media_url=authProvider.loginUserData.imageUrl;
+                                                      notif.type=NotificationType.POST.name;
+                                                      notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
+                                                      notif.users_id_view=[];
+                                                      notif.user_id=authProvider.loginUserData.id;
+                                                      notif.receiver_id="${datas[index].user!.id!}";
+                                                      notif.post_id=datas[index].id!;
+                                                      notif.post_data_type=PostDataType.VIDEO.name!;
+                                                      notif.updatedAt =
+                                                          DateTime.now().microsecondsSinceEpoch;
+                                                      notif.createdAt =
+                                                          DateTime.now().microsecondsSinceEpoch;
+                                                      notif.status = PostStatus.VALIDE.name;
+
+                                                      // users.add(pseudo.toJson());
+
+                                                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+                                                      postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
+
+                                                    }
 
                                                   }
-                                                  await authProvider.sendNotification(
-                                                      userIds: [datas[index].user!.oneIgnalUserid!],
-                                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                                      send_user_id: "${authProvider.loginUserData.id!}",
-                                                      recever_user_id: "${datas[index].user!.id!}",
-                                                      message: "📢 @${authProvider.loginUserData.pseudo!} a aimé ❤️ votre look video",
-                                                      type_notif: NotificationType.POST.name,
-                                                      post_id: "${datas[index]!.id!}",
-                                                      post_type: PostDataType.VIDEO.name, chat_id: ''
-                                                  );
+                                                },);
 
-                                                  NotificationData notif=NotificationData();
-                                                  notif.id=firestore
-                                                      .collection('Notifications')
-                                                      .doc()
-                                                      .id;
-                                                  notif.titre="Nouveau j'aime ❤️";
-                                                  notif.media_url=authProvider.loginUserData.imageUrl;
-                                                  notif.type=NotificationType.POST.name;
-                                                  notif.description="@${authProvider.loginUserData.pseudo!} a aimé votre look video";
-                                                  notif.users_id_view=[];
-                                                  notif.user_id=authProvider.loginUserData.id;
-                                                  notif.receiver_id="${datas[index].user!.id!}";
-                                                  notif.post_id=datas[index].id!;
-                                                  notif.post_data_type=PostDataType.VIDEO.name!;
-                                                  notif.updatedAt =
-                                                      DateTime.now().microsecondsSinceEpoch;
-                                                  notif.createdAt =
-                                                      DateTime.now().microsecondsSinceEpoch;
-                                                  notif.status = PostStatus.VALIDE.name;
 
-                                                  // users.add(pseudo.toJson());
-
-                                                  await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                                  postProvider.interactWithPostAndIncrementSolde(datas[index].id!, authProvider.loginUserData.id!, "like",datas[index].user_id!);
-
-                                                }
 
                                                 return Future.value(!isLiked);
                                               },
@@ -1082,7 +1111,8 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                                   size: 30,
                                                 );
                                               },
-                                              likeCount:  datas[index]!.users_love_id!.length!,
+                                              likeCount:  datas[index]!.loves!,
+                                              // likeCount:  datas[index]!.users_love_id!.length!,
                                               countBuilder: (int? count, bool isLiked, String text) {
                                                 var color = isLiked ? Colors.white : Colors.white;
                                                 Widget result;

@@ -309,8 +309,12 @@ String formatAbonnes(int nbAbonnes) {
   }
 }
 
-bool isUserAbonne(List<String> userAbonnesList, String userIdToCheck) {
+bool isUserAbonne2(List<String> userAbonnesList, String userIdToCheck) {
   return userAbonnesList.any((userAbonneId) => userAbonneId == userIdToCheck);
+}
+
+bool isUserAbonne(List<String> abonnesIds, String userId) {
+  return abonnesIds.contains(userId);
 }
 
 bool isIn(List<String> users_id, String userIdToCheck) {
@@ -5533,7 +5537,20 @@ Widget lookChallengeWidget(LookChallenge lookchallenge,Color color, double heigh
   );
 }
 
-String truncateWords(String text, int maxWords) {
+String truncateWords2(String text, int maxWords) {
   List<String> words = text.split(' ');
   return (words.length > maxWords) ? '${words.sublist(0, maxWords).join(' ')}...' : text;
+}
+
+String truncateWords(String text, int maxWords) {
+  // Supprime les espaces en trop et remplace \n, \r, \t par un seul espace
+  String cleanedText = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+  // Découpe le texte en mots
+  List<String> words = cleanedText.split(' ');
+
+  // Tronque si nécessaire
+  return (words.length > maxWords)
+      ? '${words.sublist(0, maxWords).join(' ')}...'
+      : cleanedText;
 }
