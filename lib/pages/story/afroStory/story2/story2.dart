@@ -6,6 +6,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/story/afroStory/story2/storyComment.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -87,158 +88,6 @@ class _Story2State extends State<Story2> {
   }
   List<StoryModel> sampleStory = [];
 
-  //Story Data
-  // List<StoryModel> sampleStory2 = [
-  //   StoryModel(
-  //     userName: 'Kaival Patel',
-  //     userProfile: 'https://avatars.githubusercontent.com/u/39383435?v=4',
-  //     stories: [
-  //       StoryItem(
-  //         storyItemType: StoryItemType.custom,
-  //         audioConfig: StoryViewAudioConfig(
-  //           audioPath: 'https://audios.ftcdn.net/08/98/82/47/48K_898824706.m4a',
-  //           source: StoryItemSource.network,
-  //           onAudioStart: (p0) {},
-  //         ),
-  //         customWidget: (p0, audioPlayer) => AudioCustomView1(
-  //           controller: p0,
-  //           audioPlayer: audioPlayer,
-  //         ),
-  //       ),
-  //       StoryItem(
-  //         storyItemType: StoryItemType.image,
-  //         url:
-  //         "https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&w=800",
-  //       ),
-  //       StoryItem(
-  //         storyItemType: StoryItemType.video,
-  //         storyItemSource: StoryItemSource.asset,
-  //         url: 'assets/fb8512a35d6f4b2e8917b74a048de71a.MP4',
-  //         thumbnail: const Center(
-  //             child: Row(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 CupertinoActivityIndicator(
-  //                   radius: 15,
-  //                 ),
-  //                 SizedBox(
-  //                   width: 10,
-  //                 ),
-  //                 Text('Video Loading')
-  //               ],
-  //             )),
-  //         videoConfig: const StoryViewVideoConfig(
-  //           fit: BoxFit.cover,
-  //         ),
-  //       ),
-  //       StoryItem(
-  //           storyItemType: StoryItemType.video,
-  //           url:
-  //           'https://videos.pexels.com/video-files/5913245/5913245-uhd_1440_2560_30fps.mp4',
-  //           videoConfig: const StoryViewVideoConfig(
-  //             fit: BoxFit.cover,
-  //             height: double.infinity,
-  //             width: double.infinity,
-  //             loadingWidget: Center(child: CupertinoActivityIndicator()),
-  //           )),
-  //       StoryItem(
-  //         storyItemType: StoryItemType.custom,
-  //         duration: const Duration(seconds: 20),
-  //         customWidget: (p0, audioPlayer) => PostOverlayView(
-  //           controller: p0,
-  //         ),
-  //         imageConfig: StoryViewImageConfig(
-  //           fit: BoxFit.contain,
-  //           progressIndicatorBuilder: (p0, p1, p2) => const Center(
-  //             child: CupertinoActivityIndicator(),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   ),
-  //   StoryModel(
-  //     userName: 'Lakhan P.',
-  //     userProfile: 'https://devkrest.com/team/lakhan.png',
-  //     stories: [
-  //       StoryItem(
-  //         storyItemType: StoryItemType.custom,
-  //         duration: const Duration(seconds: 20),
-  //         customWidget: (p0, audioPlayer) => PostOverlayView(
-  //           controller: p0,
-  //         ),
-  //         imageConfig: StoryViewImageConfig(
-  //           fit: BoxFit.contain,
-  //           progressIndicatorBuilder: (p0, p1, p2) => const Center(
-  //             child: CupertinoActivityIndicator(),
-  //           ),
-  //         ),
-  //       ),
-  //       StoryItem(
-  //         storyItemType: StoryItemType.video,
-  //         storyItemSource: StoryItemSource.asset,
-  //         url: 'assets/StorySaver.net-_spindia_-Video-1718781607686.mp4',
-  //         thumbnail: const Center(
-  //             child: Row(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 CupertinoActivityIndicator(
-  //                   radius: 15,
-  //                 ),
-  //                 SizedBox(
-  //                   width: 10,
-  //                 ),
-  //                 Text('Video Loading')
-  //               ],
-  //             )),
-  //         videoConfig: const StoryViewVideoConfig(
-  //           fit: BoxFit.contain,
-  //         ),
-  //       ),
-  //     ],
-  //   ),
-  //   StoryModel(
-  //     userName: 'Harsh P.',
-  //     userProfile: 'https://devkrest.com/team/harsh.jpg',
-  //     stories: [
-  //       StoryItem(
-  //         storyItemType: StoryItemType.text,
-  //         textConfig: StoryViewTextConfig(
-  //             textWidget: const Text(
-  //               "Happy Independence Day",
-  //               style: TextStyle(
-  //                   color: Colors.black,
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 24,
-  //                   fontStyle: FontStyle.italic),
-  //             ),
-  //             backgroundWidget: Container(
-  //               decoration: const BoxDecoration(
-  //                   gradient: LinearGradient(
-  //                       begin: Alignment.topCenter,
-  //                       end: Alignment.bottomCenter,
-  //                       colors: [
-  //                         Colors.deepOrange,
-  //                         Colors.white,
-  //                         Colors.green
-  //                       ])),
-  //             )),
-  //         url: "Happy Independence Day",
-  //       ),
-  //       StoryItem(
-  //         storyItemType: StoryItemType.web,
-  //         url:
-  //         'https://www.ndtv.com/webstories/travel/10-things-to-do-in-amritsar-from-golden-temple-visit-to-wagah-border-47',
-  //         duration: const Duration(seconds: 20),
-  //         imageConfig: StoryViewImageConfig(
-  //           fit: BoxFit.contain,
-  //           progressIndicatorBuilder: (p0, p1, p2) => const Center(
-  //             child: CupertinoActivityIndicator(),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   ),
-  // ];
 
   @override
   void initState() {
@@ -425,29 +274,68 @@ class _MessageBoxViewState extends State<MessageBoxView> {
   late int nbrVues=0;
   late WhatsappStory whatsappStory;
 
+  Future<void> _incrementStoryView(String currentUserId) async {
+    try {
+      final userDocRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.userStory.id);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(userDocRef);
+        if (!snapshot.exists) return;
+
+        final stories = List<Map<String, dynamic>>.from(snapshot.data()?['stories'] ?? []);
+        final index = stories.indexWhere((s) => s['createdAt'] == widget.storyItem.createdAt);
+        if (index == -1) return;
+
+        // Récupérer la liste des vues actuelles
+        List<String> vues = List<String>.from(stories[index]['vues'] ?? []);
+        printVm('vues.length avant : ${vues.length}');
+
+        // Vérifier si l'utilisateur a déjà vu la story
+        // if (!vues.contains(currentUserId)) {
+          vues.add(currentUserId);
+          stories[index]['vues'] = vues;
+          stories[index]['nbrVues'] = vues.length; // Mettre à jour le compteur
+        // }
+
+        transaction.update(userDocRef, {'stories': stories});
+
+        if (!vues.contains(currentUserId)) {
+          widget.storyItem.vues = vues.length;
+
+          setState(() {
+            printVm('vues.length : ${vues.length}');
+            printVm(' widget.storyItem.vues : ${ widget.storyItem.vues}');
+
+          });
+        }
+
+      });
+
+
+    } catch (e) {
+      debugPrint("Erreur lors de l'incrémentation des vues : $e");
+    }
+  }
   @override
   void initState() {
     printVm('widget.storyItem : ${widget.storyItem.createdAt}');
+    _incrementStoryView(widget.userStory.id!);
 
-    widget.storyItem.vues=widget.storyItem.vues!+1;
-   WhatsappStory story= widget.userStory.stories!.where((element) => element.createdAt==    widget.storyItem.createdAt,).first;
-    setState(() {
-      if(story!=null){
-        int indexStory=widget.userStory.stories!.indexOf(story);
-        story.nbrVues=widget.storyItem.vues;
-        widget.userStory.stories![indexStory]=story;
-        widget.authProvider.updateUser(widget.userStory);
-
-      }
-
-    });
-    // TODO: implement initState
-    // widget.authProvider.getUserById(widget.userStory.id!).then((value) {
-    //   if(value.isNotEmpty){
-    //     widget.userStory.stories![widget.currentPage].nbrVues=widget.userStory.stories![widget.currentPage].nbrVues!+1;
-    //     widget.authProvider.updateUser(widget.userStory);
-    //   }
-    // },);
+   //
+   //  widget.storyItem.vues=widget.storyItem.vues!+1;
+   // WhatsappStory story= widget.userStory.stories!.where((element) => element.createdAt==    widget.storyItem.createdAt,).first;
+   //  setState(() {
+   //    if(story!=null){
+   //      int indexStory=widget.userStory.stories!.indexOf(story);
+   //      story.nbrVues=widget.storyItem.vues;
+   //      widget.userStory.stories![indexStory]=story;
+   //      widget.authProvider.updateUser(widget.userStory);
+   //
+   //    }
+   //
+   //  });
     super.initState();
   }
   @override
@@ -482,88 +370,172 @@ class _MessageBoxViewState extends State<MessageBoxView> {
             ),
             Row(
               children: [
+                // IconButton(
+                //     onPressed: () async {
+                //       if(!widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)){
+                //
+                //         widget.storyItem.jaime=widget.storyItem.jaime!+1;
+                //         widget.storyItem.jaimes!.add(widget.userConnected.id!);
+                //
+                //         setState(()  {
+                //
+                //         });
+                //
+                //           WhatsappStory story=widget.userStory.stories!.where((element) => element.createdAt==widget.storyItem.createdAt,).first;
+                //
+                //           story.nbrJaimes=story.nbrJaimes!+1;
+                //           story.jaimes!.add(widget.authProvider.loginUserData.id!);
+                //           int indexStory= widget.userStory.stories!.indexOf(story);
+                //           widget.userStory.stories![indexStory]=story;
+                //           widget.authProvider.updateUser(widget.userStory);
+                //
+                //           await widget. authProvider.sendNotification(
+                //               userIds: [widget.userStory.oneIgnalUserid!],
+                //               smallImage: "${widget.authProvider.loginUserData.imageUrl!}",
+                //               send_user_id: "${widget.authProvider.loginUserData.id!}",
+                //               recever_user_id: "",
+                //               message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️   votre  chronique 🎥✨ !",
+                //               type_notif: NotificationType.CHRONIQUE.name,
+                //               post_id: "id",
+                //               post_type: PostDataType.TEXT.name, chat_id: ''
+                //           );
+                //
+                //         }
+                //
+                //
+                //         // widget.authProvider.getUserById(widget.userStory.id!).then((value) async {
+                //         //   if(value.isNotEmpty){
+                //         //     widget.userStory=value.first;
+                //         //
+                //         //     if(!widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)){
+                //         //
+                //         //       WhatsappStory story=widget.userStory.stories!.where((element) => element.createdAt==widget.storyItem.createdAt,).first;
+                //         //
+                //         //       story.nbrJaimes=story.nbrJaimes!+1;
+                //         //       story.jaimes!.add(widget.authProvider.loginUserData.id!);
+                //         //      int indexStory= widget.userStory.stories!.indexOf(story);
+                //         //       widget.userStory.stories![indexStory]=story;
+                //         //       await widget. authProvider.sendNotification(
+                //         //           userIds: [widget.userStory.oneIgnalUserid!],
+                //         //           smallImage: "${widget.authProvider.loginUserData.imageUrl!}",
+                //         //           send_user_id: "${widget.authProvider.loginUserData.id!}",
+                //         //           recever_user_id: "",
+                //         //           message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️   votre  chronique 🎥✨ !",
+                //         //           type_notif: NotificationType.CHRONIQUE.name,
+                //         //           post_id: "id",
+                //         //           post_type: PostDataType.TEXT.name, chat_id: ''
+                //         //       );
+                //         //
+                //         //       widget.authProvider.updateUser(widget.userStory);
+                //         //     }
+                //         //   }
+                //         // },);
+                //
+                //
+                //
+                //
+                //     },
+                //     iconSize: 25,
+                //     icon:  Padding(
+                //       padding: EdgeInsets.only(bottom: 9),
+                //       child: Icon(
+                //         widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)?  AntDesign.heart:AntDesign.hearto,
+                //         // AntDesign.hearto
+                //         color: Colors.red,
+                //       ),
+                //     )
+                // ),
+
                 IconButton(
-                    onPressed: () async {
-                      if(!widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)){
+                  onPressed: () async {
+                    final currentUserId = widget.userConnected.id;
+                    final storyDocRef = FirebaseFirestore.instance
+                        .collection('Users')
+                        .doc(widget.userStory.id);
 
-                        widget.storyItem.jaime=widget.storyItem.jaime!+1;
-                        widget.storyItem.jaimes!.add(widget.userConnected.id!);
+                    final storySnapshot = await storyDocRef.get();
+                    if (!storySnapshot.exists) return;
 
-                        setState(()  {
+                    final stories = List.from(storySnapshot.data()?['stories'] ?? []);
+                    final index = stories.indexWhere((s) => s['createdAt'] == widget.storyItem.createdAt);
+                    if (index == -1) return;
 
-                        });
+                    final story = stories[index];
+                    final jaimes = List<String>.from(story['jaimes'] ?? []);
+                    final alreadyLiked = jaimes.contains(currentUserId);
+                    // Mettre à jour la story localement
+                    stories[index]['jaimes'] = jaimes;
+                    stories[index]['nbrJaimes'] = (story['nbrJaimes'] ?? 0) + 1;
 
-                          WhatsappStory story=widget.userStory.stories!.where((element) => element.createdAt==widget.storyItem.createdAt,).first;
+                    // Mettre à jour Firestore
+                    await storyDocRef.update({
+                      'stories': stories,
+                    });
+                    // Préparer les mises à jour
+                    if (!alreadyLiked) {
+                      setState(() {
 
-                          story.nbrJaimes=story.nbrJaimes!+1;
-                          story.jaimes!.add(widget.authProvider.loginUserData.id!);
-                          int indexStory= widget.userStory.stories!.indexOf(story);
-                          widget.userStory.stories![indexStory]=story;
-                          widget.authProvider.updateUser(widget.userStory);
+                      });
+                      // jaimes.add(currentUserId!);
+                      //
+                      // // Mettre à jour la story localement
+                      // stories[index]['jaimes'] = jaimes;
+                      // stories[index]['nbrJaimes'] = (story['nbrJaimes'] ?? 0) + 1;
+                      //
+                      // // Mettre à jour Firestore
+                      // await storyDocRef.update({
+                      //   'stories': stories,
+                      // });
 
-                          await widget. authProvider.sendNotification(
-                              userIds: [widget.userStory.oneIgnalUserid!],
-                              smallImage: "${widget.authProvider.loginUserData.imageUrl!}",
-                              send_user_id: "${widget.authProvider.loginUserData.id!}",
-                              recever_user_id: "",
-                              message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️   votre  chronique 🎥✨ !",
-                              type_notif: NotificationType.CHRONIQUE.name,
-                              post_id: "id",
-                              post_type: PostDataType.TEXT.name, chat_id: ''
-                          );
-
-                        }
-
-
-                        // widget.authProvider.getUserById(widget.userStory.id!).then((value) async {
-                        //   if(value.isNotEmpty){
-                        //     widget.userStory=value.first;
-                        //
-                        //     if(!widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)){
-                        //
-                        //       WhatsappStory story=widget.userStory.stories!.where((element) => element.createdAt==widget.storyItem.createdAt,).first;
-                        //
-                        //       story.nbrJaimes=story.nbrJaimes!+1;
-                        //       story.jaimes!.add(widget.authProvider.loginUserData.id!);
-                        //      int indexStory= widget.userStory.stories!.indexOf(story);
-                        //       widget.userStory.stories![indexStory]=story;
-                        //       await widget. authProvider.sendNotification(
-                        //           userIds: [widget.userStory.oneIgnalUserid!],
-                        //           smallImage: "${widget.authProvider.loginUserData.imageUrl!}",
-                        //           send_user_id: "${widget.authProvider.loginUserData.id!}",
-                        //           recever_user_id: "",
-                        //           message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️   votre  chronique 🎥✨ !",
-                        //           type_notif: NotificationType.CHRONIQUE.name,
-                        //           post_id: "id",
-                        //           post_type: PostDataType.TEXT.name, chat_id: ''
-                        //       );
-                        //
-                        //       widget.authProvider.updateUser(widget.userStory);
-                        //     }
-                        //   }
-                        // },);
-
-
-
-
-                    },
-                    iconSize: 25,
-                    icon:  Padding(
-                      padding: EdgeInsets.only(bottom: 9),
-                      child: Icon(
-                        widget.storyItem.jaimes!.any((element) => element==widget.userConnected.id)?  AntDesign.heart:AntDesign.hearto,
-                        // AntDesign.hearto
-                        color: Colors.red,
-                      ),
-                    )
+                      // Envoyer notification
+                      await widget.authProvider.sendNotification(
+                        userIds: [widget.userStory.oneIgnalUserid!],
+                        smallImage: widget.authProvider.loginUserData.imageUrl!,
+                        send_user_id: widget.authProvider.loginUserData.id!,
+                        recever_user_id: '',
+                        message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️ votre chronique 🎥✨ !",
+                        type_notif: NotificationType.CHRONIQUE.name,
+                        post_id: "id",
+                        post_type: PostDataType.TEXT.name,
+                        chat_id: '',
+                      );
+                    }
+                  },
+                  iconSize: 25,
+                  icon: Padding(
+                    padding: EdgeInsets.only(bottom: 9),
+                    child: Icon(
+                      widget.storyItem.jaimes!.contains(widget.userConnected.id)
+                          ? AntDesign.heart
+                          : AntDesign.hearto,
+                      color: Colors.red,
+                    ),
+                  ),
                 ),
+
+
                 Text("${widget.storyItem.jaime!}",style: TextStyle(color: Colors.white),)
               ],
             ),
             Row(
               children: [
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      widget.controller.pause();
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (BuildContext context) {
+                          return FractionallySizedBox(
+                            heightFactor: 0.8, // 90% de la hauteur de l'écran
+                            child: Container(
+                              color: Colors.white,
+                              child: StoryComments(story: widget.storyItem, userStory: widget.userStory,),
+                            ),
+                          );
+                        },
+                      );
+                    },
                     iconSize: 25,
                     icon:  Padding(
                       padding: EdgeInsets.only(bottom: 9),

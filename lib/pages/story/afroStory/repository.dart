@@ -31,11 +31,13 @@ class WhatsappStory {
   late final String? caption;
   String? when;
   String? color;
-  int? nbrVues;
+  // int? nbrVues;
   int? nbrComment;
-  List<String>? vues;
-  int? nbrJaimes;
-  List<String>? jaimes;
+  List<String>? vues = const [];
+  int? nbrVues = 0;
+  // List<String>? vues;
+  int? nbrJaimes = 0;
+  List<String>? jaimes = const [];
   int? createdAt;
   int? updatedAt;
 
@@ -48,9 +50,9 @@ class WhatsappStory {
     this.color,
     this.nbrVues=0,
     this.nbrComment=0,
-    this.vues=const[],
+    this.vues,
     this.nbrJaimes=0,
-    this.jaimes=const[],
+    this.jaimes,
     this.createdAt,
     this.updatedAt,
 
@@ -109,8 +111,10 @@ class WhatsappStory {
       caption= json['caption'];
       when= json['when'];
       color= json['color'];
-      nbrVues= json['nbrVues'];
-      vues= List<String>.from(json['vues']);
+      vues: json['vues'] != null ? List<String>.from(json['vues']) : [];
+      nbrVues: json['nbrVues'] ?? 0;
+      // nbrVues= json['nbrVues'];
+      // vues= List<String>.from(json['vues']);
       nbrJaimes= json['nbrJaimes'];
       nbrComment= json['nbrComment']==null?0:json['nbrComment'];
       jaimes= List<String>.from(json['jaimes']);

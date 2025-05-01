@@ -106,13 +106,17 @@ class _ChargementState extends State<SplahsChargement> {
 
                 }else{
                   printVm("token: existe");
+
                   await    authProvider.getLoginUser(token!).then((value) async {
                     if (value) {
+
+
                       if(authProvider.loginUserData.countryData!["countryCode"]!=null){
                         printVm("*****************countryData************ : ${jsonEncode(authProvider.loginUserData.countryData!)}");
                         // await userProvider.getAllAnnonces();
-                        userProvider.changeState(user: authProvider.loginUserData,
-                            state: UserState.ONLINE.name);
+                        // authProvider.loginUserData.state=UserState.ONLINE.name;
+                        // userProvider.changeState(user: authProvider.loginUserData,
+                        //     state: UserState.ONLINE.name);
 
                         // Navigator.pop(context);
 

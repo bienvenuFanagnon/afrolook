@@ -646,9 +646,73 @@ class UserAuthProvider extends ChangeNotifier {
       print('Index invalide');
     }
   }
-
-
   Future<bool> getLoginUser(String id) async {
+    await getAppData();
+    bool haveData = false;
+
+    try {
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: id)
+          .limit(1)
+          .get();
+
+      if (userSnapshot.docs.isEmpty) return false;
+
+      // 1. Chargement des données utilisateur
+      final userDoc = userSnapshot.docs.first;
+      loginUserData = UserData.fromJson(userDoc.data()..['id'] = userDoc.id);
+
+      // 2. Mise à jour sélective des champs sans toucher aux stories
+      final updateData = <String, dynamic>{
+        'oneIgnalUserid': OneSignal.User.pushSubscription.id,
+        'popularite': _calculatePopularity(loginUserData!),
+        'compteTarif': loginUserData!.popularite! * 80,
+        'last_time_active': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      // 3. Update ciblé pour ne pas écraser les stories
+      await userDoc.reference.update(updateData);
+
+      // 4. Chargement des amis séparément
+      final friendsSnapshot = await FirebaseFirestore.instance
+          .collection('Friends')
+          .where(Filter.or(
+        Filter('current_user_id', isEqualTo: id),
+        Filter('friend_id', isEqualTo: id),
+      ))
+          .get();
+
+      loginUserData!.friends = friendsSnapshot.docs
+          .map((doc) => Friends.fromJson(doc.data()))
+          .toList();
+
+      haveData = true;
+
+      // 5. Rafraîchissement des données locales
+      await _refreshUserData(userDoc.reference);
+
+    } catch (e, stack) {
+      debugPrint("Erreur de connexion: $e");
+      debugPrint("Stack trace: $stack");
+      haveData = false;
+    }
+
+    return haveData;
+  }
+
+  double _calculatePopularity(UserData user) {
+    return (user.abonnes! + user.likes! + user.jaimes!) /
+        (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! + appDefaultData.nbr_loves!);
+  }
+
+  Future<void> _refreshUserData(DocumentReference ref) async {
+    final updatedDoc = await ref.get();
+    loginUserData = UserData.fromJson(updatedDoc.data() as Map<String, dynamic>)
+      ..friends = loginUserData?.friends;
+  }
+
+  Future<bool> getLoginUser2(String id) async {
     await getAppData();
     late List<UserData> list = [];
     late bool haveData = false;
