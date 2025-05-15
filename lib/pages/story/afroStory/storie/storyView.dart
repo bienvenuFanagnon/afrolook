@@ -42,7 +42,7 @@ class _StoryPreviewState extends State<StoryPreview> {
           // Navigator.of(context).push(
           //     MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
           Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => Story2(userData: widget.user,)));
+              MaterialPageRoute(builder: (context) => Story2(userData: widget.user, whatsappStories: [],)));
         },
         child: Container(
           width: widget.w,
@@ -62,7 +62,7 @@ class _StoryPreviewState extends State<StoryPreview> {
           // Navigator.of(context).push(
           //     MaterialPageRoute(builder: (context) => Whatsapp(userData: widget.user,)));
           Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => Story2(userData: widget.user,)));
+              MaterialPageRoute(builder: (context) => Story2(userData: widget.user, whatsappStories: [],)));
         },
         child: Container(
           width: widget.w,

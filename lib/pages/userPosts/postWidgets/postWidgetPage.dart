@@ -552,7 +552,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     child:  Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text("#Afrolook Canal",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w900,color: Colors.white),),
+                        // Text("#Afrolook Canal",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w900,color: Colors.white),),
                       ],
                     ),
                   ):SizedBox.shrink(),
@@ -608,7 +608,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                         overflow: TextOverflow.fade,
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                         shadows: [
                                           Shadow(
                                             color: _afroBlack,
@@ -634,13 +634,29 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                       ],
                                     ),
                                   ),
-                                  Text(
-                                    formaterDateTime(
-                                        DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    spacing: 10,
+
+                                    children: [
+                                      Text(
+                                        formaterDateTime(
+                                            DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Row(
+                                        spacing: 5,
+                                        children: [
+                                          Icon(FontAwesome.eye,color: Colors.white,size: 20,),
+                                          Text("${widget.post.vues ?? 0} vues",style: TextStyle(color: Colors.white),)
+
+                                        ],
+                                      ),
+
+                                    ],
                                   ),
                                 ],
                               ),
@@ -834,7 +850,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(15),
                                   child: ImageSlideshow(
-                                    height: h * 0.35,
+                                    height:widget.post!.canal!=null?h * 0.4: h * 0.35,
                                     children: widget.post.images!.map((url) => CachedNetworkImage(
                                       imageUrl: url,
                                       fit: BoxFit.cover,
@@ -857,7 +873,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   SizedBox(height: 20),
 
                   // Actions
-                  InkWell(
+                  widget.post!.canal!=null?SizedBox.shrink(): InkWell(
                     borderRadius: BorderRadius.circular(25),
                     onTap: () => Navigator.push(
                       context,

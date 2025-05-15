@@ -656,7 +656,7 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
                                         ),
                                       ),
                                       TextCustomerUserTitle(
-                                        titre: "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                                        titre: "${formatNumber(post.user!.userAbonnesIds!.length!)} abonné(s)",
                                         fontSize: SizeText.homeProfileTextSize,
                                         couleur: Colors.white,
                                         fontWeight: FontWeight.w400,

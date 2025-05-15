@@ -23,7 +23,8 @@ import '../util.dart';
 
 class Story2 extends StatefulWidget {
   final UserData userData;
-  const Story2({super.key, required this.userData});
+  final List<WhatsappStory> whatsappStories;
+  const Story2({super.key, required this.userData, required this.whatsappStories});
 
   @override
   State<Story2> createState() => _Story2State();
@@ -40,7 +41,7 @@ class _Story2State extends State<Story2> {
         stories: [
           StoryItem(
             vues: whatsappStory.nbrVues!,
-            jaime: whatsappStory.jaimes!.length!,
+            jaime: whatsappStory.nbrJaimes,
             comment: whatsappStory.nbrComment==null?0:whatsappStory.nbrComment!,
             storyItemType: whatsappStory!.mediaType == MediaType.image
                 ? StoryItemType.image
@@ -300,9 +301,9 @@ class _MessageBoxViewState extends State<MessageBoxView> {
         // }
 
         transaction.update(userDocRef, {'stories': stories});
-
+        widget.storyItem.vues = vues.length;
         if (!vues.contains(currentUserId)) {
-          widget.storyItem.vues = vues.length;
+
 
           setState(() {
             printVm('vues.length : ${vues.length}');
@@ -310,6 +311,9 @@ class _MessageBoxViewState extends State<MessageBoxView> {
 
           });
         }
+        setState(() {
+
+        });
 
       });
 
@@ -464,8 +468,18 @@ class _MessageBoxViewState extends State<MessageBoxView> {
                     final jaimes = List<String>.from(story['jaimes'] ?? []);
                     final alreadyLiked = jaimes.contains(currentUserId);
                     // Mettre à jour la story localement
+
+    if (!alreadyLiked) {
+      jaimes.add(currentUserId!);
+      setState(() {
+
+      });
+
+    }
                     stories[index]['jaimes'] = jaimes;
                     stories[index]['nbrJaimes'] = (story['nbrJaimes'] ?? 0) + 1;
+                    widget.storyItem.jaime=stories[index]['nbrJaimes'];
+                    // widget.storyItem.vues=stories[index]['nbrVues'];
 
                     // Mettre à jour Firestore
                     await storyDocRef.update({
@@ -473,33 +487,38 @@ class _MessageBoxViewState extends State<MessageBoxView> {
                     });
                     // Préparer les mises à jour
                     if (!alreadyLiked) {
-                      setState(() {
+                      setState(() async {
+                        //
+                        // // Mettre à jour la story localement
+                        // stories[index]['jaimes'] = jaimes;
+                        // stories[index]['nbrJaimes'] = (story['nbrJaimes'] ?? 0) + 1;
+                        //
+                        // // Mettre à jour Firestore
+                        // await storyDocRef.update({
+                        //   'stories': stories,
+                        // });
 
+
+                        // Envoyer notification
+                        await widget.authProvider.sendNotification(
+                          userIds: [widget.userStory.oneIgnalUserid!],
+                          smallImage: widget.authProvider.loginUserData.imageUrl!,
+                          send_user_id: widget.authProvider.loginUserData.id!,
+                          recever_user_id: '',
+                          message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️ votre chronique 🎥✨ !",
+                          type_notif: NotificationType.CHRONIQUE.name,
+                          post_id: "id",
+                          post_type: PostDataType.TEXT.name,
+                          chat_id: '',
+                        );
                       });
-                      // jaimes.add(currentUserId!);
-                      //
-                      // // Mettre à jour la story localement
-                      // stories[index]['jaimes'] = jaimes;
-                      // stories[index]['nbrJaimes'] = (story['nbrJaimes'] ?? 0) + 1;
-                      //
-                      // // Mettre à jour Firestore
-                      // await storyDocRef.update({
-                      //   'stories': stories,
-                      // });
 
-                      // Envoyer notification
-                      await widget.authProvider.sendNotification(
-                        userIds: [widget.userStory.oneIgnalUserid!],
-                        smallImage: widget.authProvider.loginUserData.imageUrl!,
-                        send_user_id: widget.authProvider.loginUserData.id!,
-                        recever_user_id: '',
-                        message: "📢 @${widget.authProvider.loginUserData.pseudo!} aime ❤️ votre chronique 🎥✨ !",
-                        type_notif: NotificationType.CHRONIQUE.name,
-                        post_id: "id",
-                        post_type: PostDataType.TEXT.name,
-                        chat_id: '',
-                      );
+                    }else{
+                      // setState(() {
+                      //
+                      // });
                     }
+
                   },
                   iconSize: 25,
                   icon: Padding(
