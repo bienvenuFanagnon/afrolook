@@ -13,6 +13,7 @@ import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
+import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
 import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
@@ -113,12 +114,13 @@ class _MyHomePageState extends State<MyHomePage>
 
   // Liste des onglets avec texte et icônes
   final List<Tab> _tabs = [
+    Tab(text: 'Tiktok', icon: Icon(Icons.tiktok,color: Colors.red,size: 20,)),
     Tab(text: 'Looks', icon: Icon(Icons.style)),
     Tab(text: 'Actu', icon: Icon(Icons.article)), // Abrégé pour "Actualités"
     Tab(text: 'Sport', icon: Icon(Icons.sports)),
-    Tab(text: 'Évén.', icon: Icon(Icons.event)), // Abrégé pour "Événement"
+    // Tab(text: 'Évén.', icon: Icon(Icons.event)), // Abrégé pour "Événement"
     Tab(text: 'Offres', icon: Icon(Icons.local_offer)),
-    Tab(text: 'Gamer', icon: Icon(Icons.gamepad)),
+    // Tab(text: 'Gamer', icon: Icon(Icons.gamepad)),
   ];
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
@@ -142,71 +144,6 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
-    await authProvider.getAppData().then((appdata) async {
-      print("code app data *** : ${authProvider.appDefaultData.app_version_code}");
-      if (!authProvider.appDefaultData.googleVerification!) {
-        if (authProvider.app_version_code == authProvider.appDefaultData.app_version_code) {
-          onSuccess();
-        } else {
-          showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return Container(
-                height: 300,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(Icons.info, color: Colors.red),
-                        Text(
-                          'Nouvelle mise à jour disponible!',
-                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 10.0),
-                        Text(
-                          'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
-                          style: TextStyle(fontSize: 16.0),
-                        ),
-                        SizedBox(height: 20.0),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                          ),
-                          onPressed: () {
-                            _launchUrl(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Ionicons.ios_logo_google_playstore, color: Colors.white),
-                              SizedBox(width: 5),
-                              Text(
-                                'Télécharger sur le play store',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        }
-
-      }else{
-        onSuccess();
-
-      }
-
-    });
-  }
 
 
   Future<void> launchWhatsApp(String phone) async {
@@ -1515,7 +1452,7 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
 
-    checkAppVersionAndProceed(context, () {
+    authProvider.checkAppVersionAndProceed(context, () {
     });
     hasShownDialogToday().then((value) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1796,7 +1733,7 @@ class _MyHomePageState extends State<MyHomePage>
 
               GestureDetector(
                 onTap: () async {
-                  checkAppVersionAndProceed(context, () {
+                  authProvider.checkAppVersionAndProceed(context, () {
                     Navigator.pushNamed(context, "/mes_notifications");
                   });
 
@@ -1851,7 +1788,7 @@ class _MyHomePageState extends State<MyHomePage>
               AnimateIcon(
                 key: UniqueKey(),
                 onTap: () async {
-                  checkAppVersionAndProceed(context, () {
+                  authProvider.checkAppVersionAndProceed(context, () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
                   });
 
@@ -1868,7 +1805,7 @@ class _MyHomePageState extends State<MyHomePage>
               AnimateIcon(
                 key: UniqueKey(),
                 onTap: () async {
-                  checkAppVersionAndProceed(context, () {
+                  authProvider.checkAppVersionAndProceed(context, () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
                   });
 
@@ -1929,9 +1866,10 @@ class _MyHomePageState extends State<MyHomePage>
             bottom: TabBar(
               controller: _tabController,
               tabs: _tabs,
+
               labelColor: Color(0xFFE4A918), // Couleur du texte de l'onglet sélectionné
               // unselectedLabelColor: Colors.white, // Couleur du texte des onglets non sélectionnés
-              unselectedLabelColor: Colors.green, // Couleur du texte des onglets non sélectionnés
+              unselectedLabelColor:_tabs.first.text=='Tiktok'? Colors.green:Colors.red , // Couleur du texte des onglets non sélectionnés
               // unselectedLabelColor: Color(0xFFE4A918), // Couleur du texte des onglets non sélectionnés
               indicatorColor: Color(0xFFE4A918), // Couleur de l'indicateur de l'onglet sélectionné
             ),
@@ -1954,13 +1892,15 @@ class _MyHomePageState extends State<MyHomePage>
               child:TabBarView(
                 controller: _tabController,
                 children: [
+                  Center(child: VideoFeedTiktokPage(fullPage: false,)),
+
                   Center(child: LooksPage(type: TabBarType.LOOKS.name,)),
                   // Contenu de chaque onglet
                   Center(child: ActualitePage(type: TabBarType.ACTUALITES.name)),
                   Center(child: SportPage(type: TabBarType.SPORT.name)),
-                  Center(child: EventPage(type: TabBarType.EVENEMENT.name)),
+                  // Center(child: EventPage(type: TabBarType.EVENEMENT.name)),
                   Center(child: OffrePage(type: TabBarType.OFFRES.name)),
-                  Center(child: GamerPage(type: TabBarType.GAMER.name)),
+                  // Center(child: GamerPage(type: TabBarType.GAMER.name)),
                 ],
               ),
             ),
@@ -2083,7 +2023,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   GestureDetector(
                       onTap: () {
-                        checkAppVersionAndProceed(context, () {
+                        authProvider.checkAppVersionAndProceed(context, () {
                           Navigator.pushNamed(context, '/user_posts_form');
                         });
 
@@ -2106,7 +2046,7 @@ class _MyHomePageState extends State<MyHomePage>
                     ),),
                   GestureDetector(
                       onTap: () {
-                        checkAppVersionAndProceed(context, () {
+                        authProvider.checkAppVersionAndProceed(context, () {
                           _scaffoldKey.currentState!.openDrawer();
                         });
                       },

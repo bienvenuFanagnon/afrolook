@@ -624,7 +624,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                           onPressed:
                               ()  { },
                           child: TextCustomerUserTitle(
-                            titre: "déjà abonné",
+                            titre: "Déjà abonné",
                             fontSize: SizeText.homeProfileTextSize,
                             couleur: Colors.green,
                             fontWeight: FontWeight.w600,

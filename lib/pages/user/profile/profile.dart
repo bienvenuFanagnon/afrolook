@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/canaux/newCanal.dart';
+import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
 import 'package:afrotok/pages/user/profile/postsMonetisation.dart';
 import 'package:afrotok/pages/user/profile/profileTabsBar/tabBar.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
@@ -18,6 +19,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
+import '../../tiktokProjet/userTiktokVide.dart';
 
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
@@ -376,6 +378,41 @@ class _UserProfilState extends State<UserProfil> {
                                         )
                                       ],
                               
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),     SizedBox(height: 10,),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => UserVideoFeedTiktokPage(),));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                child: Container(
+                                  color: ConstColors.buttonsColors,
+                                  // alignment: Alignment.centerLeft,
+                                  width: 180,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Container(
+                                            child: Icon(Icons.tiktok,color: Colors.red,),
+                                          ),
+                                        ),
+                                        Container(
+                                          child: TextCustomerMenu(
+                                            titre: "Mon Tiktok",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      ],
+
                                     ),
                                   ),
                                 ),

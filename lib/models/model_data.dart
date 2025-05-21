@@ -508,8 +508,10 @@ class UserData {
   double? votre_solde_contenu = 0.0;
   double? votre_solde_principal = 0.0;
   double? votre_solde_cadeau = 0.0;
+  double? tiktokviewerSolde = 0.0;
   int? pubEntreprise = 0;
   int? mesPubs = 0;
+  int? mesTiktokPubs = 0;
   int? partage = 0;
   int? last_time_active = 0;
   int? pointContribution = 0;
@@ -550,6 +552,7 @@ class UserData {
   Map<String, String>? countryData;
   // List<Map<String, dynamic>>? stories = [];
   List<WhatsappStory>? stories = [];
+  List<String> viewedVideos = []; // Liste des vidéos déjà vues
 
 
   UserData(
@@ -567,6 +570,7 @@ class UserData {
       this.publi_cash = 0,
       this.pubEntreprise = 0,
       this.mesPubs = 0,
+      this.mesTiktokPubs,
       this.pointContribution = 0,
       this.likes = 0,
       this.jaimes = 0,
@@ -576,6 +580,7 @@ class UserData {
       this.votre_solde_contenu = 0.0,
       this.votre_solde_principal = 0.0,
       this.votre_solde_cadeau = 0.0,
+      this.tiktokviewerSolde = 0.0,
       this.comments = 0,
       this.createdAt = 0,
       this.updatedAt = 0,
@@ -597,6 +602,7 @@ class UserData {
       this.usersParrainer,
       this.stories,
       this.state = "OFFLINE",
+        this.viewedVideos = const [],
 
       //this.genreId,
       this.role,
@@ -660,6 +666,8 @@ class UserData {
     // publi_cash =double.parse(json['publi_cash'].toString()) ;
     votre_solde =json['votre_solde']==null?0.0:json['votre_solde'] ;
     publi_cash =json['publi_cash']==null?0.0:json['publi_cash'] ;
+    tiktokviewerSolde = json['tiktokviewerSolde'] == null ? 0.0 : double.tryParse(json['tiktokviewerSolde'].toString()) ?? 0.0;
+    viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
     // votre_solde = json['votre_solde'];
     pubEntreprise = json['pub_entreprise'];
     pointContribution = json['point_contribution'];
@@ -691,6 +699,7 @@ class UserData {
     votre_solde_cadeau = json['votre_solde_cadeau'] == null ? 0 : json['votre_solde_cadeau'];
     votre_solde_principal = json['votre_solde_principal'] == null ? 0 : json['votre_solde_principal'];
     partage = json['partage'] == null ? 0 : json['partage'];
+    mesTiktokPubs = json['mesTiktokPubs'] == null ? 0 : json['mesTiktokPubs'];
     // genreId = json['genre_id'];
     role = json['role'];
     //userGlobalTags = json['user_global_tags'].cast<int>();
@@ -712,6 +721,7 @@ class UserData {
     data['isVerify'] = this.isVerify;
     data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
+    // data['mesTiktokPubs'] = this.mesTiktokPubs;
     data['code_parrainage'] = this.codeParrainage;
     data['usersParrainer'] = this.usersParrainer;
     data['publi_cash'] = this.publi_cash;
@@ -749,6 +759,7 @@ class UserData {
     // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
+    // data['tiktokviewerSolde'] = this.tiktokviewerSolde;
 
     data['pub_entreprise'] = this.pubEntreprise;
     data['point_contribution'] = this.pointContribution;
@@ -760,13 +771,15 @@ class UserData {
     data['abonnes'] = this.abonnes;
     data['compte_tarif'] = this.compteTarif;
     data['popularite'] = this.popularite;
-    data['userAbonnesIds'] = this.userAbonnesIds;
+    // data['userAbonnesIds'] = this.userAbonnesIds;
     data['friendsIds'] = this.friendsIds;
     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
     data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
     // data['password'] = this.password;
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;
+    data['viewedVideos'] = this.viewedVideos;
+
     return data;
   }
 }

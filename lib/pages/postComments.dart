@@ -1108,7 +1108,7 @@ List<UserData> users=[];
                                         ),
                                         TextCustomerUserTitle(
                                           titre:
-                                          "${widget.post.user!.abonnes!} abonné(s)",
+                                          "${widget.post.user!.userAbonnesIds!.length!} abonné(s)",
                                           fontSize: SizeText
                                               .homeProfileTextSize,
                                           couleur: ConstColors.textColors,

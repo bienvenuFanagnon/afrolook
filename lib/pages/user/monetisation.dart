@@ -221,6 +221,11 @@ class _MonetisationPageState extends State<MonetisationPage> {
     double cadeauMontantFcfa = cadeauPubliCash * 25;
     double cadeauMontantValable = cadeauMontantFcfa;
 
+    //cadeau
+    double tiktokPubliCash = authProvider.loginUserData.tiktokviewerSolde ?? 0;
+    double tiktokMontantFcfa = tiktokPubliCash * 25;
+    double tiktokMontantValable = tiktokMontantFcfa;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Monétisation', style: TextStyle(color: Colors.white)),
@@ -233,6 +238,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
           child: Column(
             children: [
               _buildSoldeSection('💰 Solde Principal', principalpubliCash, principalmontantFcfa, principalmontantValable, false,Colors.green,"PP"),
+              _buildSoldeSection('📱 Solde Tiktok', tiktokPubliCash, tiktokMontantFcfa, tiktokMontantValable, true,Colors.red,"TA"),
               _buildSoldeSection('🎁 Solde Cadeau', cadeauPubliCash, cadeauMontantFcfa, cadeauMontantValable, true,Colors.amber,"CA"),
 
               _buildSoldeSection('💰 👥 Solde Parrainage', publiCash, montantFcfa, montantValable, true,Colors.blue,"PA"),
@@ -420,6 +426,15 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 userData.votre_solde_cadeau=0.0;
               }
 
+              if (type == 'TA' && userData.tiktokviewerSolde! > 100) {
+                montantEncaisser = userData.tiktokviewerSolde!;
+                userData.tiktokviewerSolde=0.0;
+              }else{
+                _showRetraitTiktokSoldeDialog();
+                Navigator.pop(context); // Ferme le loader
+
+              }
+
               // else if (type == 'CC' && userData.votre_solde_contenu! > 0) {
               //   montantEncaisser = userData.votre_solde_contenu!;
               // }
@@ -437,8 +452,16 @@ class _MonetisationPageState extends State<MonetisationPage> {
 
                 });
               } else {
-                Navigator.pop(context); // Ferme le loader
-                _showRetraitAutherSoldeDialog();
+                Navigator.pop(context);
+                if (type == 'TA') {
+                  // Ferme le loader
+                  _showRetraitTiktokSoldeDialog();
+                }else{
+                  _showRetraitAutherSoldeDialog();
+
+                }
+                // Navigator.pop(context); // Ferme le loader
+
                 return;
               }
             } else {
@@ -537,6 +560,32 @@ class _MonetisationPageState extends State<MonetisationPage> {
       ),
     );
   }
+
+  void _showRetraitTiktokSoldeDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Solde insuffisant pour effectuer un retrait. Min 3500 f',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            SizedBox(height: 15),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('OK', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
 
 }

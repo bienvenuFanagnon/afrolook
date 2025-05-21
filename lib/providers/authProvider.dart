@@ -7,6 +7,7 @@ import 'package:deeplynks/deeplynks_service.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
@@ -19,6 +20,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../pages/component/consoleWidget.dart';
 import '../pages/story/afroStory/repository.dart';
@@ -36,7 +38,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 74;
+  late int app_version_code = 75;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -116,7 +118,11 @@ class UserAuthProvider extends ChangeNotifier {
     printVm('***********Deeplynks Link 1: $_linkMessage');
 
   }
-
+  Future<void> _launchUrl(Uri url) async {
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+  }
   Future<String> createLink(bool short, Post post) async {
     FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
 
@@ -1564,6 +1570,71 @@ class UserAuthProvider extends ChangeNotifier {
       print('Une erreur est survenue: $e');
       return false;
     }
+  }
+  Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
+    await getAppData().then((appdata) async {
+      print("code app data *** : ${appDefaultData.app_version_code}");
+      if (!appDefaultData.googleVerification!) {
+        if (app_version_code == appDefaultData.app_version_code) {
+          onSuccess();
+        } else {
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                height: 300,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.info, color: Colors.red),
+                        Text(
+                          'Nouvelle mise à jour disponible!',
+                          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 10.0),
+                        Text(
+                          'Une nouvelle version de l\'application est disponible. Veuillez télécharger la mise à jour pour profiter des dernières fonctionnalités et améliorations.',
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                        SizedBox(height: 20.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          onPressed: () {
+                            _launchUrl(Uri.parse('${appDefaultData.app_link}'));
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Ionicons.ios_logo_google_playstore, color: Colors.white),
+                              SizedBox(width: 5),
+                              Text(
+                                'Télécharger sur le play store',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+      }else{
+        onSuccess();
+
+      }
+
+    });
   }
 
 }
