@@ -141,7 +141,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
           MaterialPageRoute(
             builder: (context) => PaiementPage(
               // id: postId,
-              montant: montantTotal.toInt(), // Montant en XOF
+              montant: montantTotal, // Montant en XOF
               onSuccess: (success) async {
                 if (success) {
                   await  authProvider.getUserById(authProvider.loginUserData.id!).then((value) async {

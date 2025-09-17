@@ -27,51 +27,51 @@ class _DepotPageState extends State<DepotPage> {
   @override
   Widget build(BuildContext context) {
 
-    final List<Transaction> transactions = [
-      Transaction(
+    final List<Transactionunk> transactions = [
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 1)),
         montant: 100.0,
         status: "Validé",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 2)),
         montant: 50.0,
         status: "En attente",
        // type: "Retrait",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 1)),
         montant: 100.0,
         status: "Annulé",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 2)),
         montant: 50.0,
         status: "Annulé",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 1)),
         montant: 100.0,
         status: "Validé",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 2)),
         montant: 50.0,
         status: "En attente",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 1)),
         montant: 100.0,
         status: "Annulé",
         type: "Dépôt",
       ),
-      Transaction(
+      Transactionunk(
         date: DateTime.now().subtract(const Duration(days: 2)),
         montant: 50.0,
         status: "En attente",

@@ -700,105 +700,6 @@ class UserData {
     viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
   }
 
-  // UserData.fromJson(Map<String, dynamic> json) {
-  //   id = json['id'];
-  //   pseudo = json['pseudo'];
-  //   state = json['state'];
-  //   nom = json['nom'];
-  //   prenom = json['prenom'];
-  //   if (json['userAbonnesIds'] != null) {
-  //     userAbonnesIds = <String>[];
-  //     json['userAbonnesIds'].forEach((v) {
-  //       userAbonnesIds!.add(v);
-  //     });
-  //   }
-  //   if (json['friendsIds'] != null) {
-  //     friendsIds = <String>[];
-  //     json['friendsIds'].forEach((v) {
-  //       friendsIds!.add(v);
-  //     });
-  //   }
-  //
-  //   if (json['stories'] != null) {
-  //     stories = [];
-  //     json['stories'].forEach((v) {
-  //       stories!.add(WhatsappStory.fromJson(v));
-  //     });
-  //   }
-  //
-  //   if (json['mesInvitationsEnvoyerId'] != null) {
-  //     mesInvitationsEnvoyerId = <String>[];
-  //     json['mesInvitationsEnvoyerId'].forEach((v) {
-  //       mesInvitationsEnvoyerId!.add(v);
-  //     });
-  //   }
-  //   if (json['usersParrainer'] != null) {
-  //     usersParrainer = <String>[];
-  //     json['usersParrainer'].forEach((v) {
-  //       usersParrainer!.add(v);
-  //     });
-  //   }
-  //   if (json['autreInvitationsEnvoyerId'] != null) {
-  //     autreInvitationsEnvoyerId = <String>[];
-  //     json['autreInvitationsEnvoyerId'].forEach((v) {
-  //       autreInvitationsEnvoyerId!.add(v);
-  //     });
-  //   }
-  //   imageUrl = json['imageUrl'];
-  //   numeroDeTelephone = json['numero_de_telephone'];
-  //   adresse = json['adresse'];
-  //   // email = json['adresse'];
-  //   oneIgnalUserid = json['oneIgnalUserid'];
-  //   codeParrainage = json['code_parrainage'];
-  //   codeParrain = json['code_parrain'];
-  //   isConnected = json['isConnected'];
-  //   userPays = json['user_pays'] != null
-  //       ? new UserPays.fromJson(json['user_pays'])
-  //       : null;
-  //   // publi_cash =double.parse(json['publi_cash'].toString()) ;
-  //   votre_solde =json['votre_solde']==null?0.0:json['votre_solde'] ;
-  //   publi_cash =json['publi_cash']==null?0.0:json['publi_cash'] ;
-  //   tiktokviewerSolde = json['tiktokviewerSolde'] == null ? 0.0 : double.tryParse(json['tiktokviewerSolde'].toString()) ?? 0.0;
-  //   viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
-  //   // votre_solde = json['votre_solde'];
-  //   pubEntreprise = json['pub_entreprise'];
-  //   pointContribution = json['point_contribution'];
-  //   likes = json['likes'];
-  //   jaimes = json['jaimes'];
-  //   createdAt = json['createdAt'];
-  //   updatedAt = json['updatedAt'];
-  //   // mesPubs = json['mesPubs'];
-  //   comments = json['comments'];
-  //   abonnes = json['abonnes'];
-  //   compteTarif = json['compte_tarif']!.toDouble();
-  //   popularite =double.parse(json['popularite'].toString()) ;
-  //
-  //   // popularite = json['popularite'];
-  //   isBlocked = json['isBlocked'];
-  //   completeData = json['complete_data'];
-  //   hasEntreprise = json['has_entreprise'];
-  //   latitude =double.parse(json['latitude'].toString()) ;
-  //   longitude =double.parse(json['longitude'].toString()) ;
-  //   // longitude = json['longitude'];
-  //   apropos = json['apropos'];
-  //   password = json['password'] == null ? "" : json['password'];
-  //   isVerify = json['isVerify'] == null ? false : json['isVerify'];
-  //   email = json['email'] == null ? "" : json['email'];
-  //   genre = json['genre'] == null ? "" : json['genre'];
-  //   votre_solde_contenu = json['votre_solde_contenu'] == null ? 0.0 : json['votre_solde_contenu'];
-  //   userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
-  //   userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
-  //   votre_solde_cadeau = json['votre_solde_cadeau'] == null ? 0 : json['votre_solde_cadeau'];
-  //   votre_solde_principal = json['votre_solde_principal'] == null ? 0 : json['votre_solde_principal'];
-  //   partage = json['partage'] == null ? 0 : json['partage'];
-  //   mesTiktokPubs = json['mesTiktokPubs'] == null ? 0 : json['mesTiktokPubs'];
-  //   // genreId = json['genre_id'];
-  //   role = json['role'];
-  //   //userGlobalTags = json['user_global_tags'].cast<int>();
-  //   countryData = json['countryData'] != null
-  //       ? Map<String, String>.from(json['countryData'])
-  //       : {};
-  // }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
@@ -874,6 +775,38 @@ class UserData {
 
     return data;
   }
+}
+
+class PendingTransaction {
+  String? id;
+  String? userId;
+  double? montant;
+  double? frais;
+  double? montant_net;
+  String? statut; // 'pending', 'processing', 'completed', 'failed'
+  String? provider; // 'CinetPay'
+  String? provider_transaction_id;
+  String? payment_url;
+  int? createdAt;
+  int? expiresAt; // Date d'expiration du lien de paiement
+  Map<String, dynamic>? metadata;
+
+  PendingTransaction({
+    this.id,
+    this.userId,
+    this.montant,
+    this.frais,
+    this.montant_net,
+    this.statut,
+    this.provider,
+    this.provider_transaction_id,
+    this.payment_url,
+    this.createdAt,
+    this.expiresAt,
+    this.metadata,
+  });
+
+// Methods fromJson and toJson similar to Transaction
 }
 
 @JsonSerializable()
@@ -1170,6 +1103,11 @@ class TransactionSolde {
   late String? statut = "";
   late String? description = "";
   late double? montant = 0.0;
+  late String? numero_depot = "";
+  late double? frais = 0.0;
+  late double? montant_total = 0.0;
+  late String? methode_paiement = "";
+  late String? id_transaction_cinetpay = "";
   int? createdAt;
   int? updatedAt;
 
@@ -1181,6 +1119,79 @@ class TransactionSolde {
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$TransactionSoldeToJson(this);
+}
+
+
+class Transaction {
+  String? id;
+  String? userId;
+  String? type; // 'dépôt', 'retrait', 'achat', 'transfert'
+  String? statut; // 'en_attente', 'réussi', 'échoué', 'annulé'
+  double? montant;
+  double? frais;
+  double? montant_net; // montant - frais
+  String? methode_paiement; // 'CinetPay', 'MobileMoney', 'CarteBancaire'
+  String? description;
+  String? numero_transaction;
+  String? numero_depot; // Numéro de référence unique
+  int? createdAt;
+  int? updatedAt;
+  Map<String, dynamic>? metadata; // Données supplémentaires
+
+  Transaction({
+    this.id,
+    this.userId,
+    this.type,
+    this.statut,
+    this.montant,
+    this.frais,
+    this.montant_net,
+    this.methode_paiement,
+    this.description,
+    this.numero_transaction,
+    this.numero_depot,
+    this.createdAt,
+    this.updatedAt,
+    this.metadata,
+  });
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'],
+      userId: json['userId'],
+      type: json['type'],
+      statut: json['statut'],
+      montant: double.tryParse(json['montant']?.toString() ?? '0'),
+      frais: double.tryParse(json['frais']?.toString() ?? '0'),
+      montant_net: double.tryParse(json['montant_net']?.toString() ?? '0'),
+      methode_paiement: json['methode_paiement'],
+      description: json['description'],
+      numero_transaction: json['numero_transaction'],
+      numero_depot: json['numero_depot'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'type': type,
+      'statut': statut,
+      'montant': montant,
+      'frais': frais,
+      'montant_net': montant_net,
+      'methode_paiement': methode_paiement,
+      'description': description,
+      'numero_transaction': numero_transaction,
+      'numero_depot': numero_depot,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'metadata': metadata,
+    };
+  }
 }
 
 @JsonSerializable()
@@ -2164,13 +2175,13 @@ class PostComment {
   }
 }
 
-class Transaction {
+class Transactionunk {
   final DateTime date;
   final double montant;
   final String status;
   final String type;
 
-  Transaction({
+  Transactionunk({
     required this.date,
     required this.montant,
     required this.status,

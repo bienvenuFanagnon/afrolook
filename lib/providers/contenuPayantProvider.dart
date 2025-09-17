@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../pages/contenuPayant/contentDetails.dart';
+import '../pages/paiement/newDepot.dart';
 import 'authProvider.dart';
 
 class ContentProvider with ChangeNotifier {
@@ -553,7 +554,8 @@ class ContentProvider with ChangeNotifier {
                           onPressed: () {
                             Navigator.pop(context); // Fermer le modal
                             // Naviguer vers la page de rechargement
-                            Navigator.pushNamed(context, '/recharge');
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => DepositScreen()));
                           },
                           child: Text('Recharger'),
                         ),

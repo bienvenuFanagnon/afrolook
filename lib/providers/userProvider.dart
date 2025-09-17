@@ -343,6 +343,33 @@ setMessageNonLu(int nbr){
 
     return listUsers;
   }
+  Stream<List<UserData>> streamProfileUsers(
+      String currentUserId,
+      BuildContext context,
+      int limit,
+      ) {
+    late UserAuthProvider authProvider =
+    Provider.of<UserAuthProvider>(context, listen: false);
+
+    alphabet = authProvider.appDefaultData.users_id!;
+    alphabet.shuffle();
+    alphabet = alphabet.length < 100
+        ? alphabet.sublist(0, alphabet.length - 1)
+        : alphabet.sublist(0, 100);
+
+    CollectionReference userCollect =
+    FirebaseFirestore.instance.collection('Users');
+
+    return userCollect.snapshots().map((snapshot) {
+      List<DocumentSnapshot> users = snapshot.docs;
+      users.shuffle(); // mélanger
+      List<DocumentSnapshot> usersDocs = users.take(limit).toList();
+
+      return usersDocs
+          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
 
   Future<List<UserData>> getProfileUsers(String currentUserId,BuildContext context,int limit) async {
     late UserAuthProvider authProvider =

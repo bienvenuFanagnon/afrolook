@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:deeplynks/deeplynks_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,7 @@ import '../pages/story/afroStory/repository.dart';
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-
+import 'package:cloud_functions/cloud_functions.dart';
 class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
   late List<UserPhoneNumber> listNumbers = [];
@@ -52,7 +54,7 @@ class UserAuthProvider extends ChangeNotifier {
   late List<String> listUserGlobalTagString = [];
   late List<UserPseudo> listPseudo = [];
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
+  // final FirebaseFunctions functions = FirebaseFunctions.instance;
   initializeData() {
     registerUser = UserData();
   }
@@ -1603,4 +1605,170 @@ class UserAuthProvider extends ChangeNotifier {
     });
   }
 
+  Future<Map<String, dynamic>> initiateDeposit(double amount, UserData userdata) async {
+    try {
+      // Appelez cette fonction avant d'appeler initiateDeposit
+      await debugAuthentication();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('Utilisateur non connecté');
+      }
+
+      final functions = FirebaseFunctions.instance;
+      final callable = functions.httpsCallable('initiateAfrolookDeposit');
+
+      final result = await callable.call(<String, dynamic>{
+        'amount': amount,
+        'userId': user.uid, // Utiliser l'UID de l'utilisateur connecté
+      }).timeout(const Duration(seconds: 30));
+
+      // Vérification de la réponse
+      if (result.data != null &&
+          result.data is Map<String, dynamic> &&
+          result.data['payment_url'] != null) {
+
+        return {
+          'payment_url': result.data['payment_url'],
+          'transaction_id': result.data['transaction_id'],
+          'deposit_number': result.data['deposit_number'],
+          'success': true,
+        };
+      } else {
+        throw Exception('Réponse invalide de la fonction cloud');
+      }
+
+    } on FirebaseAuthException catch (e) {
+      throw Exception('Erreur d\'authentification: ${e.message}');
+    } on FirebaseFunctionsException catch (e) {
+      // Gestion spécifique des erreurs Firebase Functions
+      final code = e.code;
+      final message = e.message ?? 'Erreur inconnue';
+
+      switch (code) {
+        case 'invalid-argument':
+          throw Exception('Montant invalide: $message');
+        case 'unauthenticated':
+          throw Exception('Vous devez être connecté pour effectuer un dépôt');
+        case 'not-found':
+          throw Exception('Utilisateur non trouvé');
+        case 'internal':
+          throw Exception('Erreur interne du serveur: $message');
+        default:
+          throw Exception('Erreur lors du dépôt: $message');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de l\'initialisation du dépôt: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> initiateDeposit3(double amount, UserData userdata) async {
+    try {
+
+      // Pour les tests en développement, vous pouvez utiliser l'émulateur
+      // functions.useFunctionsEmulator('localhost', 5001);
+      final user = FirebaseAuth.instance.currentUser;
+      printVm('Erreur Firebase user : ${user!.uid!}');
+      printVm('Erreur Firebase userdata: ${userdata.id}');
+      if (user == null) {
+        throw Exception('Utilisateur non connecté');
+      }
+      final functions = FirebaseFunctions.instance;
+
+      // printVm('Erreur Firebase user : ${user.uid}');
+      // printVm('Erreur Firebase userdata: ${userdata.id}');
+      final callable = functions.httpsCallable('initiateAfrolookDeposit');
+
+      // Appel de la fonction avec timeout
+      final result = await callable.call(<String, dynamic>{
+        'amount': amount,
+        'userId': user.uid,
+      }).timeout(const Duration(seconds: 30));
+
+      // Vérification de la réponse
+      if (result.data != null &&
+          result.data is Map<String, dynamic> &&
+          result.data['payment_url'] != null) {
+
+        return {
+          'payment_url': result.data['payment_url'],
+          'transaction_id': result.data['transaction_id'],
+          'deposit_number': result.data['deposit_number'],
+          'success': true,
+        };
+      } else {
+        throw Exception('Réponse invalide de la fonction cloud');
+      }
+
+    } on FirebaseFunctionsException catch (e) {
+      // Gestion spécifique des erreurs Firebase Functions
+      final code = e.code;
+      final message = e.message ?? 'Erreur inconnue';
+      final details = e.details ?? '';
+      printVm('Erreur Firebase: ${e.code}');
+      printVm('Erreur Firebase: ${e.message}');
+      printVm('Erreur Firebase: ${e.details}');
+      switch (code) {
+        case 'invalid-argument':
+          throw Exception('Montant invalide: $message');
+        case 'unauthenticated':
+          throw Exception('Vous devez être connecté pour effectuer un dépôt');
+        case 'not-found':
+          throw Exception('Utilisateur non trouvé');
+        case 'internal':
+          throw Exception('Erreur interne du serveur: $message');
+        default:
+          throw Exception('Erreur lors du dépôt: $message');
+      }
+
+    } on FirebaseException catch (e) {
+      // Erreurs Firebase générales
+      throw Exception('Erreur Firebase: ${e.message}');
+
+    } catch (e) {
+      // Erreurs générales
+      throw Exception('Erreur lors de l\'initialisation du dépôt: ${e.toString()}');
+    }
+  }
+
+  Future<void> debugAuthentication() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      print('=== DEBUG AUTHENTICATION ===');
+      print('Current User: ${user?.uid}');
+      print('Email: ${user?.email}');
+      print('Is Anonymous: ${user?.isAnonymous}');
+
+      if (user != null) {
+        // Vérifier le token d'authentification
+        final idTokenResult = await user.getIdTokenResult(true);
+        print('Token expiration: ${idTokenResult.expirationTime}');
+        print('Token issued at: ${idTokenResult.issuedAtTime}');
+        print('Token claims: ${idTokenResult.claims}');
+        print('Token valid: ${idTokenResult.expirationTime!.isAfter(DateTime.now())}');
+
+        // Vérifier les providers d'authentification
+        for (final provider in user.providerData) {
+          print('Provider: ${provider.providerId}, UID: ${provider.uid}');
+        }
+      }
+
+      // Vérifier la configuration Firebase
+      final app = Firebase.app();
+      print('Firebase App: ${app.name}');
+      print('Firebase Options: ${app.options.projectId}');
+
+    } catch (e) {
+      print('Error in debugAuthentication: $e');
+    }
+  }
+
+  Stream<UserData> getUserStream() {
+    final uid = loginUserData.id;
+    if (uid == null) throw Exception("User ID manquant");
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => UserData.fromJson(doc.data()!));
+  }
 }

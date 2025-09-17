@@ -160,7 +160,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                         ),
                       ),
                       Text(
-                        '${user?.votre_solde_principal ?? 0} FCFA',
+                        '${user?.votre_solde_principal!.toStringAsFixed(2) ?? 0} FCFA',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -505,7 +505,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               child: Container(
-                height: 120,
+                height: 110,
                 child: CachedNetworkImage(
                   imageUrl: video.thumbnailUrl,
                   fit: BoxFit.cover,
@@ -539,13 +539,13 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                   SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.visibility, size: 14, color: Colors.grey),
+                      Icon(Icons.visibility, size: 10, color: Colors.grey),
                       SizedBox(width: 4),
-                      Text('${video.views}', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('${video.views}', style: TextStyle(fontSize: 10, color: Colors.grey)),
                       SizedBox(width: 12),
-                      Icon(Icons.thumb_up, size: 14, color: Colors.grey),
+                      Icon(Icons.thumb_up, size: 10, color: Colors.grey),
                       SizedBox(width: 4),
-                      Text('${video.likes}', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('${video.likes}', style: TextStyle(fontSize: 10, color: Colors.grey)),
                     ],
                   ),
                   SizedBox(height: 8),
@@ -560,13 +560,16 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
                       ),
                     ),
                     child: Text(
-                      video.isFree ? 'GRATUIT' : '${video.price} FCFA',
+                      video.isFree
+                          ? 'GRATUIT'
+                          : '${video.price.toStringAsFixed(2)} FCFA',
                       style: TextStyle(
                         color: video.isFree ? Colors.green[800] : Colors.yellow[800],
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: 9,
                       ),
                     ),
+
                   ),
                 ],
               ),

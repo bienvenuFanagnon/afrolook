@@ -1257,20 +1257,20 @@ class _MyHomePageState extends State<MyHomePage>
         titleSpacing: 10,
         title: Row(
           children: [
-            Container(
-              padding: EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: primaryGreen,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.people_alt_rounded, color: Colors.white, size: 24),
-            ),
-            SizedBox(width: 10),
+            // Container(
+            //   padding: EdgeInsets.all(6),
+            //   decoration: BoxDecoration(
+            //     color: primaryGreen,
+            //     shape: BoxShape.circle,
+            //   ),
+            //   child: Icon(Icons.people_alt_rounded, color: Colors.white, size: 24),
+            // ),
+            // SizedBox(width: 10),
             Text(
               'Afrolook',
               style: TextStyle(
                 fontSize: iconSize * 0.8,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 color: primaryGreen,
                 letterSpacing: 1.2,
               ),

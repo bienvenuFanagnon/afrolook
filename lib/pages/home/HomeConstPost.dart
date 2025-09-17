@@ -1562,12 +1562,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   List<Post> listVideos=[];
+  late Future<List<UserData>> _futureUsers;
 
   @override
   void initState() {
     // _changeColor();
     super.initState();
-
+    _futureUsers = userProvider.getProfileUsers(
+      authProvider.loginUserData.id!,
+      context,
+      limiteUsers,
+    );
     hasShownDialogToday().then((value) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       // authProvider.getAppData().then((value) {
@@ -1925,25 +1930,28 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-// 4. OPTIONNEL: Si vous utilisez StatefulWidget, ajoutez cette méthode
-  Widget _buildChroniquesSection2(BuildContext context) {
+  Widget _buildProfilesSection() {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
     return FutureBuilder<List<UserData>>(
-      future: authProvider.getUsersStorie(authProvider.loginUserData.id!, limiteUsers),
+      future: _futureUsers, // 👈 ne recrée pas le future à chaque build
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
-          return SizedBox(height: height * 0.35, child: _buildShimmerEffect(width, height));
+          return SizedBox(
+            height: height * 0.35,
+            child: _buildShimmerEffect(width, height),
+          );
         } else {
-          List<UserData> list = snapshot.data!;
+          List<UserData> list = snapshot.data!..shuffle();
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
                 child: Text(
-                  'Chroniques',
+                  'Profils à découvrir',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1952,84 +1960,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 ),
               ),
               SizedBox(
-                height: height * 0.25,
-                child: Row(
-                  children: [
-                    // Bouton pour ajouter une chronique
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: GestureDetector(
-                        onTap: () => checkAppVersionAndProceed(context, () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => StoryChoicePage()),
-                          );
-                        }),
-                        child: Container(
-                          width: width * 0.2,
-                          height: height * 0.25,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            gradient: LinearGradient(
-                              colors: [primaryGreen, accentYellow],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add, size: 30, color: darkBackground),
-                              SizedBox(height: 8),
-                              Text(
-                                'Ajouter',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: darkBackground,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                height: height * 0.35,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: list.length,
+                  itemBuilder: (context, index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    width: width * 0.4,
+                    decoration: BoxDecoration(
+                      color: darkBackground.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: primaryGreen.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-
-                    // Liste des chroniques
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: list.length,
-                        itemBuilder: (context, index) {
-                          List<WhatsappStory> stories = authProvider.getStoriesWithTimeAgo(list[index].stories!);
-                          list[index].stories = stories;
-                          return stories.isNotEmpty
-                              ? Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Container(
-                              width: width * 0.3,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: primaryGreen,
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(13),
-                                child: StoryPreview(
-                                  user: list[index],
-                                  h: height * 0.25,
-                                  w: width * 0.3,
-                                ),
-                              ),
-                            ),
-                          )
-                              : const SizedBox.shrink();
-                        },
-                      ),
-                    ),
-                  ],
+                    child: homeProfileUsers(list[index], width, height),
+                  ),
                 ),
               ),
             ],
@@ -2039,7 +1986,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  Widget _buildProfilesSection() {
+
+  Widget _buildProfilesSection2() {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 

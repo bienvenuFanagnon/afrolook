@@ -111,7 +111,7 @@ dependencies:
   cloud_firestore: ^5.4.3
 #  firebase_storage: ^11.6.0
   firebase_storage: ^12.3.2
-  firebase_dynamic_links: ^6.0.11
+  firebase_dynamic_links: ^6.1.10
   flash: ^3.1.0
   pulp_flash: ^0.0.6
   searchable_listview: ^2.10.1
@@ -121,6 +121,7 @@ dependencies:
   get: ^4.7.2
   webview_flutter: ^4.0.1
   tiktok_scraper: ^0.0.8
+  cloud_functions: any
 
 
 #  image: ^2.1.4
@@ -190,10 +191,10 @@ dependencies:
 #    #  firebase_core: ^2.24.2
 #    #  firebase_auth: ^4.16.0
 #    firebase_auth: ^5.3.1
-  firebase_core: ^3.12.1
+  firebase_core: ^3.15.2
 #  firebase_core: ^2.28.0
 #  firebase_auth: ^5.2.0
-  firebase_auth: ^5.5.1
+  firebase_auth: ^5.7.0
   uuid: ^4.5.1
 #  whatsapp_story_editor: ^0.0.6
 #  whatsapp_camera: ^1.0.0

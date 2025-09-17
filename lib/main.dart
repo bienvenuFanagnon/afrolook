@@ -59,6 +59,7 @@ import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deeplynks/deeplynks.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
@@ -93,7 +94,14 @@ Future<void> main() async {
     appleProvider: AppleProvider.debug,
     // webProvider: ReCaptchaV3Provider(kWebRecaptchaSiteKey),
   );
-
+  // Vérifier l'état d'authentification au démarrage
+  FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    if (user == null) {
+      print('Utilisateur non connecté');
+    } else {
+      print('Utilisateur connecté: ${user.uid}');
+    }
+  });
   //Remove this method to stop OneSignal Debugging
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
 
