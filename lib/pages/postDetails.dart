@@ -80,18 +80,6 @@ class _DetailsPostState extends State<DetailsPost> with TickerProviderStateMixin
 
 
   TextEditingController commentController =TextEditingController();
-  Future<void> launchWhatsApp(String phone) async {
-    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
-    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone="+phone+"";
-    if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
-
-      // Afficher le SnackBar en bas de la page
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      throw Exception('Impossible d\'ouvrir WhatsApp');
-    }
-  }
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 

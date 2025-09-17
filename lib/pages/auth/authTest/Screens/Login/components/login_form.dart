@@ -12,6 +12,7 @@ import '../../../../../../constant/textCustom.dart';
 import '../../../../../../providers/authProvider.dart';
 import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
+import '../../Signup/components/signup_form.dart';
 import '../../Signup/signup_screen.dart';
 
 class LoginForm extends StatefulWidget {
@@ -234,7 +235,7 @@ class _LoginFormState extends State<LoginForm> {
                       context,
                       MaterialPageRoute(
                         builder: (context) {
-                          return const SignUpScreen();
+                          return  SignUpScreen();
                         },
                       ),
                     );

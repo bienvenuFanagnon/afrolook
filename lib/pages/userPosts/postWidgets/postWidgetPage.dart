@@ -42,6 +42,13 @@ import '../../socialVideos/afrovideos/afrovideo.dart';
 import '../../user/detailsOtherUser.dart';
 // Ajoutez vos autres imports nécessaires ici
 
+
+// Couleurs de l'application AfroLook
+const _afroGreen = Color(0xFF2ECC71);
+const _afroDarkGreen = Color(0xFF27AE60);
+const _afroYellow = Color(0xFFF1C40F);
+const _afroBlack = Color(0xFF2C3E50);
+const _afroLightBg = Color(0xFFECF0F1);
 class HomePostUsersWidget extends StatefulWidget {
   late Post post;
   late Color? color;
@@ -504,744 +511,63 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Color mixColors(Color color1, Color color2, double factor) {
     return Color.lerp(color1, color2, factor)!;
   }
+
+
   @override
   Widget build(BuildContext context) {
     final h = MediaQuery.of(context).size.height;
     final w = MediaQuery.of(context).size.width;
-    Color blendedColor = mixColors(colorFromHex( widget.post.colorDomine), colorFromHex( widget.post.colorSecondaire), 0.5);
+
+    // Mélange des couleurs pour le dégradé d'arrière-plan
+    Color blendedColor = mixColors(
+        colorFromHex(widget.post.colorDomine),
+        colorFromHex(widget.post.colorSecondaire),
+        0.5
+    );
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: _afroBlack.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _afroBlack.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
+            color: _afroBlack.withOpacity(0.1),
+            blurRadius: 6,
+            spreadRadius: 1,
           ),
         ],
       ),
-      child: ClipPath(
-        clipper: _ThoughtBubbleClipper(),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.4).toColor(): HSLColor.fromColor(blendedColor).withLightness(0.4).toColor(),
-                widget.post.colorDomine==null?HSLColor.fromColor( Colors.green.shade300).withLightness(0.6).toColor():  HSLColor.fromColor(blendedColor).withLightness(0.6).toColor(), // Plus foncé
-
-                // _afroGreen.withOpacity(0.9),
-                // _afroYellow.withOpacity(0.7),
-              ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailsPost(post: widget.post),
             ),
-            borderRadius: BorderRadius.circular(25),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  widget.post!.canal!=null?Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child:  Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        // Text("#Afrolook Canal",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w900,color: Colors.white),),
-                      ],
-                    ),
-                  ):SizedBox.shrink(),
+          child: Padding(
+            padding: EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // En-tête avec info utilisateur/canal
+                _buildPostHeader(context, w, h),
+                SizedBox(height: 12),
 
-                  // En-tête Utilisateur
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      widget.post!.canal!=null?Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child:  GestureDetector(
-                          onTap: () async {
-                            // await  authProvider.getUserById(widget.post!.user_id!).then((users) async {
-                            //   if(users.isNotEmpty){
-                            //     showUserDetailsModalDialog(users.first, w, h,context);
-                            //
-                            //   }
-                            // },);
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post!.canal!),));
+                // Contenu texte avec limite de caractères
+                _buildPostContent(context),
 
+                // Galerie d'images (seulement 1ère image en aperçu)
+                if (widget.post.images?.isNotEmpty ?? false)
+                  _buildImagePreview(context, h),
 
-                          },
-                          child:
-                          Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: _afroYellow, width: 2),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: _afroRed,
-                                  backgroundImage: widget.post!.canal!.urlImage != null
-                                      ? NetworkImage(widget.post!.canal!.urlImage!)
-                                      : null,
-                                  child: widget.post!.canal!.urlImage! == null
-                                      ? Icon(Icons.person, color: Colors.white)
-                                      : null,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width:210,
-                                    child: Text(
-                                      "#${widget.post!.canal!.titre ?? 'canal'}",
-
-                                      style: TextStyle(
-                                        overflow: TextOverflow.fade,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        shadows: [
-                                          Shadow(
-                                            color: _afroBlack,
-                                            blurRadius: 2,
-                                            offset: Offset(1, 1),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    "${widget.post!.canal!.usersSuiviId!.length ?? '0'} abonnés",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                      shadows: [
-                                        Shadow(
-                                          color: _afroBlack,
-                                          blurRadius: 2,
-                                          offset: Offset(1, 1),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    spacing: 10,
-
-                                    children: [
-                                      Text(
-                                        formaterDateTime(
-                                            DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      Row(
-                                        spacing: 5,
-                                        children: [
-                                          Icon(FontAwesome.eye,color: Colors.white,size: 20,),
-                                          Text("${widget.post.vues ?? 0} vues",style: TextStyle(color: Colors.white),)
-
-                                        ],
-                                      ),
-
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Visibility(
-                                visible: widget.post!.canal!.isVerify==null?false:widget.post!.canal!.isVerify!,
-                                child: Card(
-                                  child: const Icon(
-                                    Icons.verified,
-                                    color: Colors.yellow,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ): GestureDetector(
-                        onTap: () {
-                          _showUserDetailsModalDialog(widget.post.user!, w, h);
-
-                        },
-                        child: Row(
-                          children: [
-                            Stack(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: _afroYellow, width: 2),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: _afroGreen,
-                                    backgroundImage: widget.post.user?.imageUrl != null
-                                        ? NetworkImage(widget.post.user!.imageUrl!)
-                                        : null,
-                                    child: widget.post.user?.imageUrl == null
-                                        ? Icon(Icons.person, color: Colors.white)
-                                        : null,
-                                  ),
-                                ),
-                                Positioned(
-                                  right: -2,
-                                  bottom: 0,
-                                  child: Visibility(
-                                    visible: widget.post!.user!.isVerify==null?false:widget.post!.user!.isVerify!,
-                                    child: Card(
-                                      child: const Icon(
-                                        Icons.verified,
-                                        color: Colors.green,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                              ],
-                            ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "@${widget.post.user?.pseudo ?? 'Afrolookeur'}",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    shadows: [
-                                      Shadow(
-                                        color: _afroBlack,
-                                        blurRadius: 2,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  "${widget.post!.user!.userAbonnesIds!.length ?? '0'} abonnés",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    shadows: [
-                                      Shadow(
-                                        color: _afroBlack,
-                                        blurRadius: 2,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  formaterDateTime(
-                                      DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                          ],
-                        ),
-                      ),
-                      Visibility(
-                        visible: widget.post!.canal==null?true:false,
-
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(0.0),
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                _showUserDetailsModalDialog(widget.post.user!, w, h);
-
-                              },
-                              icon: Icon(
-
-                                isUserAbonne(widget.post.user!.userAbonnesIds!, authProvider.loginUserData.id!)
-                                    ? Icons.check_circle
-                                    : Icons.person_add,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                          onPressed: () {
-                            showPostMenuModalDialog(widget.post!,context);
-                          },
-                          icon: Icon(
-                            Icons.more_horiz,
-                            size: 30,
-                            color: Colors.white,
-                          )),
-                    ],
-                  ),
-                  SizedBox(height: 15),
-
-                  // Contenu Principal
-                  InkWell(
-                    borderRadius: BorderRadius.circular(25),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailsPost(post: widget.post),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Texte
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(20),
-                                    topRight: Radius.circular(20),
-                                    bottomRight: Radius.circular(20),
-                                  ),
-                                ),
-                                child: HashTagText(
-                                  text:truncateWords( widget.post!.description ?? "",widget.post.images!.isNotEmpty? 4:30),
-                                  decoratedStyle: TextStyle(
-                                    fontSize: 16,
-                                    color: _afroGreen,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  basicStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: _afroBlack,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-
-                              // Galerie d'images
-                              if (widget.post.images?.isNotEmpty ?? false)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(15),
-                                  child: ImageSlideshow(
-                                    height:widget.post!.canal!=null?h * 0.4: h * 0.35,
-                                    children: widget.post.images!.map((url) => CachedNetworkImage(
-                                      imageUrl: url,
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, __) => Container(
-                                        color: _afroYellow.withOpacity(0.2),
-                                      ),
-                                      errorWidget: (_, __, ___) => Icon(
-                                        Icons.error,
-                                        color: _afroRed,
-                                      ),
-                                    )).toList(),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Actions
-                  widget.post!.canal!=null?SizedBox.shrink(): InkWell(
-                    borderRadius: BorderRadius.circular(25),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailsPost(post: widget.post),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildActionButton(
-                            icon: FontAwesome.heart,
-                            count: widget.post.loves ?? 0,
-                            color: Colors.white,
-                            isActive: isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!),
-                            onPressed: () async {
-                              _sendLike();
-
-                                await postProvider.getPostsImagesById(widget.post!.id!).then((value) async {
-                                  if(value.isNotEmpty) {
-                                    widget.post= value.first;
-                                    printVm("jaime data ");
-
-                                    if (authProvider.loginUserData.role ==
-                                        UserRole.ADM.name) {
-                                      setState(() {
-                                        int nbr=genererNombreAleatoire();
-                                        widget.post!.loves =
-                                            widget.post!.loves! + nbr;
-
-                                        widget.post!.users_love_id!
-                                            .add(
-                                            authProvider!.loginUserData.id!);
-                                        love = widget.post!.loves!;
-                                        //loves.add(idUser);
-                                      });
-                                      await postProvider.updatePost(
-                                          widget.post, authProvider.loginUserData,
-                                          context);
-                                    } else {
-                                      if (!isIn(widget.post!.users_love_id!,
-                                          authProvider.loginUserData.id!)) {
-                                        setState(() {
-                                          widget.post!.loves =
-                                              widget.post!.loves! + 1;
-
-                                          widget.post!.users_love_id!
-                                              .add(
-                                              authProvider!.loginUserData.id!);
-                                          love = widget.post!.loves!;
-                                          //loves.add(idUser);
-                                        });
-                                        printVm("share post");
-                                        printVm(
-                                            "like poste monetisation 1 .....");
-                                        postProvider
-                                            .interactWithPostAndIncrementSolde(
-                                            widget.post!.id!,
-                                            authProvider.loginUserData.id!,
-                                            "like", widget.post!.user_id!);
-
-                                        CollectionReference userCollect =
-                                        FirebaseFirestore.instance
-                                            .collection('Users');
-                                        // Get docs from collection reference
-                                        QuerySnapshot querySnapshotUser =
-                                        await userCollect
-                                            .where("id",
-                                            isEqualTo: widget.post!.user_id!)
-                                            .get();
-                                        // Afficher la liste
-                                        List<
-                                            UserData> listUsers = querySnapshotUser
-                                            .docs
-                                            .map((doc) =>
-                                            UserData.fromJson(
-                                                doc.data() as Map<
-                                                    String,
-                                                    dynamic>))
-                                            .toList();
-                                        if (listUsers.isNotEmpty) {
-                                          listUsers.first!.jaimes =
-                                              listUsers.first!.jaimes! + 1;
-                                          printVm("user trouver");
-                                          if (widget.post!.user!
-                                              .oneIgnalUserid != null &&
-                                              widget.post!.user!.oneIgnalUserid!
-                                                  .length > 5) {
-                                            NotificationData notif =
-                                            NotificationData();
-                                            notif.id = firestore
-                                                .collection('Notifications')
-                                                .doc()
-                                                .id;
-                                            notif.titre = "Nouveau j'aime ❤️";
-                                            notif.media_url =
-                                                authProvider.loginUserData
-                                                    .imageUrl;
-                                            notif.type =
-                                                NotificationType.POST.name;
-                                            notif.description =
-                                            "@${authProvider.loginUserData
-                                                .pseudo!} a aimé votre look";
-                                            notif.users_id_view = [];
-                                            notif.user_id =
-                                                authProvider.loginUserData.id;
-                                            notif.receiver_id =
-                                            widget.post!.user_id!;
-                                            notif.post_id = widget.post!.id!;
-                                            notif.post_data_type =
-                                            PostDataType.IMAGE.name!;
-
-                                            notif.updatedAt =
-                                                DateTime
-                                                    .now()
-                                                    .microsecondsSinceEpoch;
-                                            notif.createdAt =
-                                                DateTime
-                                                    .now()
-                                                    .microsecondsSinceEpoch;
-                                            notif.status =
-                                                PostStatus.VALIDE.name;
-
-                                            // users.add(pseudo.toJson());
-
-                                            await firestore
-                                                .collection('Notifications')
-                                                .doc(notif.id)
-                                                .set(notif.toJson());
-                                            await authProvider.sendNotification(
-                                                userIds: [
-                                                  widget.post!.user!
-                                                      .oneIgnalUserid!
-                                                ],
-                                                smallImage:
-                                                "${authProvider.loginUserData
-                                                    .imageUrl!}",
-                                                send_user_id:
-                                                "${authProvider.loginUserData
-                                                    .id!}",
-                                                recever_user_id: "${widget.post!
-                                                    .user_id!}",
-                                                message:
-                                                "📢 @${authProvider.loginUserData
-                                                    .pseudo!} a aimé votre look",
-                                                type_notif:
-                                                NotificationType.POST.name,
-                                                post_id: "${widget.post!.id!}",
-                                                post_type: PostDataType.IMAGE
-                                                    .name,
-                                                chat_id: '');
-                                          }
-                                          // postProvider.updateVuePost(post, context);
-
-                                          //userProvider.updateUser(listUsers.first);
-                                          SnackBar snackBar = SnackBar(
-                                            content: Text(
-                                              '+2 points.  Voir le classement',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                  color: Colors.green),
-                                            ),
-                                          );
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(snackBar);
-                                          postProvider.updatePost(
-                                              widget.post, listUsers.first,
-                                              context);
-                                          await authProvider.getAppData();
-                                          authProvider.appDefaultData
-                                              .nbr_loves =
-                                              authProvider.appDefaultData
-                                                  .nbr_loves! +
-                                                  2;
-                                          authProvider.updateAppData(
-                                              authProvider.appDefaultData);
-                                        } else {
-                                          widget.post!.user!.jaimes =
-                                              widget.post!.user!.jaimes! + 1;
-                                          SnackBar snackBar = SnackBar(
-                                            content: Text(
-                                              '+2 points.  Voir le classement',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                  color: Colors.green),
-                                            ),
-                                          );
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(snackBar);
-                                          postProvider.updatePost(
-                                              widget.post, widget.post!.user!,
-                                              context);
-                                          await authProvider.getAppData();
-                                          authProvider.appDefaultData
-                                              .nbr_loves =
-                                              authProvider.appDefaultData
-                                                  .nbr_loves! +
-                                                  2;
-                                          authProvider.updateAppData(
-                                              authProvider.appDefaultData);
-                                        }
-
-                                        tapLove = true;
-                                      }
-                                      printVm("jaime");
-                                    }
-                                  }
-                                },);
-
-                              // if (!isIn(widget.post!.users_love_id!,
-                              //     authProvider.loginUserData.id!)) {
-                              //   setState(() {
-                              //     widget.post!.loves = widget.post!.loves! + 1;
-                              //
-                              //     widget.post!.users_love_id!
-                              //         .add(authProvider!.loginUserData.id!);
-                              //     love = widget.post!.loves!;
-                              //     //loves.add(idUser);
-                              //   });
-                              //   printVm("share post");
-                              //   printVm("like poste monetisation 1 .....");
-                              //   postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
-                              //
-                              //   CollectionReference userCollect =
-                              //   FirebaseFirestore.instance
-                              //       .collection('Users');
-                              //   // Get docs from collection reference
-                              //   QuerySnapshot querySnapshotUser =
-                              //       await userCollect
-                              //       .where("id",
-                              //       isEqualTo: widget.post!.user_id!)
-                              //       .get();
-                              //   // Afficher la liste
-                              //   List<UserData> listUsers = querySnapshotUser
-                              //       .docs
-                              //       .map((doc) => UserData.fromJson(
-                              //       doc.data() as Map<String, dynamic>))
-                              //       .toList();
-                              //   if (listUsers.isNotEmpty) {
-                              //     listUsers.first!.jaimes =
-                              //         listUsers.first!.jaimes! + 1;
-                              //     printVm("user trouver");
-                              //     if (widget.post!.user!.oneIgnalUserid != null &&
-                              //         widget.post!.user!.oneIgnalUserid!.length > 5) {
-                              //
-                              //
-                              //       NotificationData notif =
-                              //       NotificationData();
-                              //       notif.id = firestore
-                              //           .collection('Notifications')
-                              //           .doc()
-                              //           .id;
-                              //       notif.titre = "Nouveau j'aime ❤️";
-                              //       notif.media_url =
-                              //           authProvider.loginUserData.imageUrl;
-                              //       notif.type = NotificationType.POST.name;
-                              //       notif.description =
-                              //       "@${authProvider.loginUserData.pseudo!} a aimé votre look";
-                              //       notif.users_id_view = [];
-                              //       notif.user_id =
-                              //           authProvider.loginUserData.id;
-                              //       notif.receiver_id = widget.post!.user_id!;
-                              //       notif.post_id = widget.post!.id!;
-                              //       notif.post_data_type =
-                              //       PostDataType.IMAGE.name!;
-                              //
-                              //       notif.updatedAt =
-                              //           DateTime.now().microsecondsSinceEpoch;
-                              //       notif.createdAt =
-                              //           DateTime.now().microsecondsSinceEpoch;
-                              //       notif.status = PostStatus.VALIDE.name;
-                              //
-                              //       // users.add(pseudo.toJson());
-                              //
-                              //       await firestore
-                              //           .collection('Notifications')
-                              //           .doc(notif.id)
-                              //           .set(notif.toJson());
-                              //       await authProvider.sendNotification(
-                              //           userIds: [widget.post!.user!.oneIgnalUserid!],
-                              //           smallImage:
-                              //           "${authProvider.loginUserData.imageUrl!}",
-                              //           send_user_id:
-                              //           "${authProvider.loginUserData.id!}",
-                              //           recever_user_id: "${widget.post!.user_id!}",
-                              //           message:
-                              //           "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                              //           type_notif:
-                              //           NotificationType.POST.name,
-                              //           post_id: "${widget.post!.id!}",
-                              //           post_type: PostDataType.IMAGE.name,
-                              //           chat_id: '');
-                              //     }
-                              //     // postProvider.updateVuePost(post, context);
-                              //
-                              //     //userProvider.updateUser(listUsers.first);
-                              //     SnackBar snackBar = SnackBar(
-                              //       content: Text(
-                              //         '+2 points.  Voir le classement',
-                              //         textAlign: TextAlign.center,
-                              //         style: TextStyle(color: Colors.green),
-                              //       ),
-                              //     );
-                              //     ScaffoldMessenger.of(context)
-                              //         .showSnackBar(snackBar);
-                              //     postProvider.updatePost(
-                              //         widget.post, listUsers.first, context);
-                              //     await authProvider.getAppData();
-                              //     authProvider.appDefaultData.nbr_loves =
-                              //         authProvider.appDefaultData.nbr_loves! +
-                              //             2;
-                              //     authProvider.updateAppData(
-                              //         authProvider.appDefaultData);
-                              //   } else {
-                              //     widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
-                              //     SnackBar snackBar = SnackBar(
-                              //       content: Text(
-                              //         '+2 points.  Voir le classement',
-                              //         textAlign: TextAlign.center,
-                              //         style: TextStyle(color: Colors.green),
-                              //       ),
-                              //     );
-                              //     ScaffoldMessenger.of(context)
-                              //         .showSnackBar(snackBar);
-                              //     postProvider.updatePost(
-                              //         widget.post, widget.post!.user!, context);
-                              //     await authProvider.getAppData();
-                              //     authProvider.appDefaultData.nbr_loves =
-                              //         authProvider.appDefaultData.nbr_loves! +
-                              //             2;
-                              //     authProvider.updateAppData(
-                              //         authProvider.appDefaultData);
-                              //   }
-                              //
-                              //   tapLove = true;
-                              // }
-                              // printVm("jaime");
-                              // setState(() {
-                              // });
-                            },
-                          ),
-                          _buildActionButton(
-                            icon: FontAwesome.comment,
-                            count: widget.post.comments ?? 0,
-                            color: Colors.white,
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PostComments(post: widget.post),
-                              ),
-                            ),
-                          ),
-                          _buildActionButton(
-                            icon: FontAwesome.eye,
-                            count: widget.post.vues ?? 0,
-                            color: Colors.white,
-                            onPressed: () {
-
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                // Actions (likes, commentaires, vues)
+                SizedBox(height: 12),
+                _buildPostActions(context),
+              ],
             ),
           ),
         ),
@@ -1249,34 +575,285 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
+// Construction de l'en-tête du post
+  Widget _buildPostHeader(BuildContext context, double w, double h) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Avatar avec badge de vérification
+        Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: _afroYellow, width: 1.5),
+              ),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: _afroGreen,
+                backgroundImage: _getProfileImage(),
+                child:  GestureDetector(
+                  onTap: () {
+                    if (widget.post.canal == null)
+                      _showUserDetailsModalDialog(widget.post.user!, w, h);
+                  },
+                  child: _getProfileImage() == null
+                      ? Icon(Icons.person, color: Colors.white, size: 18)
+                      : null,
+                ),
+              ),
+            ),
+            if (_isVerified())
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.verified,
+                    color: _afroYellow,
+                    size: 14,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(width: 10),
+
+        // Informations utilisateur/canal
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getDisplayName(),
+                style: TextStyle(
+                  color: _afroBlack,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    _getFollowerCount(),
+                    style: TextStyle(
+                      color: _afroBlack.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                  // SizedBox(width: 8),
+                  // Text(
+                  //   formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
+                  //   style: TextStyle(
+                  //     color: _afroBlack.withOpacity(0.6),
+                  //     fontSize: 9,
+                  //   ),
+                  // ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Bouton d'options et d'abonnement
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.post.canal == null &&
+                !isUserAbonne(widget.post.user!.userAbonnesIds!, authProvider.loginUserData.id!))
+              GestureDetector(
+                onTap: () {
+                  // Action d'abonnement
+                  _showUserDetailsModalDialog(widget.post.user!, w, h);
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _afroGreen,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Suivre',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            SizedBox(width: 6),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              onPressed: () {
+                showPostMenuModalDialog(widget.post!, context);
+              },
+              icon: Icon(
+                Icons.more_vert,
+                size: 20,
+                color: _afroBlack.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+// Construction du contenu texte
+  Widget _buildPostContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _afroLightBg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: HashTagText(
+        text: truncateWords(widget.post.description ?? "", 25),
+        decoratedStyle: TextStyle(
+          fontSize: 14,
+          color: _afroDarkGreen,
+          fontWeight: FontWeight.w600,
+        ),
+        basicStyle: TextStyle(
+          fontSize: 13,
+          color: _afroBlack,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+
+// Construction de l'aperçu d'image
+  Widget _buildImagePreview(BuildContext context, double h) {
+    return Padding(
+      padding: EdgeInsets.only(top: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: h * 0.25,
+          child: Stack(
+            children: [
+              ImageSlideshow(
+                height: h * 0.25,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: widget.post.images!.first,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    placeholder: (_, __) => Container(
+                      color: _afroYellow.withOpacity(0.1),
+                    ),
+                    errorWidget: (_, __, ___) => Icon(
+                      Icons.error,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Badge pour indiquer qu'il y a plusieurs images
+              if (widget.post.images!.length > 1)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _afroBlack.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '+${widget.post.images!.length - 1}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+// Construction des actions (likes, commentaires, vues)
+  Widget _buildPostActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildActionButton(
+          icon: FontAwesome.heart,
+          count: widget.post.loves ?? 0,
+          isActive: isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!),
+          onPressed: () async {
+            _sendLike();
+          },
+        ),
+        _buildActionButton(
+          icon: FontAwesome.comment,
+          count: widget.post.comments ?? 0,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostComments(post: widget.post),
+            ),
+          ),
+        ),
+        _buildActionButton(
+          icon: FontAwesome.eye,
+          count: widget.post.vues ?? 0,
+          onPressed: () {},
+        ),
+        Spacer(),
+        Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: _afroBlack.withOpacity(0.4),
+        ),
+      ],
+    );
+  }
+
+// Construction d'un bouton d'action
   Widget _buildActionButton({
     required IconData icon,
     required int count,
-    required Color color,
     bool isActive = false,
     required VoidCallback onPressed,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(20),
         onTap: onPressed,
         child: Padding(
-          padding: EdgeInsets.all(8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
             children: [
               Icon(
                 icon,
-                color: isActive ? color : color.withOpacity(0.7),
-                size: 28,
+                color: isActive ? _afroGreen : _afroBlack.withOpacity(0.6),
+                size: 18,
               ),
-              SizedBox(height: 4),
+              SizedBox(width: 4),
               Text(
                 formatNumber(count),
                 style: TextStyle(
-                  color: isActive ? color : color.withOpacity(0.7),
-                  fontWeight: FontWeight.bold,
+                  color: isActive ? _afroGreen : _afroBlack.withOpacity(0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1284,6 +861,45 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         ),
       ),
     );
+  }
+
+// Méthodes utilitaires
+  ImageProvider? _getProfileImage() {
+    if (widget.post.canal != null) {
+      return widget.post.canal!.urlImage != null
+          ? NetworkImage(widget.post.canal!.urlImage!)
+          : null;
+    } else {
+      return widget.post.user?.imageUrl != null
+          ?
+      NetworkImage(
+          widget.post.user!.imageUrl!)
+          : null;
+    }
+  }
+
+  bool _isVerified() {
+    if (widget.post.canal != null) {
+      return widget.post.canal!.isVerify ?? false;
+    } else {
+      return widget.post.user?.isVerify ?? false;
+    }
+  }
+
+  String _getDisplayName() {
+    if (widget.post.canal != null) {
+      return "#${widget.post.canal!.titre ?? 'canal'}";
+    } else {
+      return "@${widget.post.user?.pseudo ?? 'Afrolookeur'}";
+    }
+  }
+
+  String _getFollowerCount() {
+    if (widget.post.canal != null) {
+      return "${widget.post.canal!.usersSuiviId?.length ?? 0} abonnés";
+    } else {
+      return "${widget.post.user!.userAbonnesIds?.length ?? 0} abonnés";
+    }
   }
 
 // [Conserver les autres méthodes existantes]

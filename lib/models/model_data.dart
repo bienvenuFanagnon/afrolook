@@ -607,106 +607,198 @@ class UserData {
       //this.genreId,
       this.role,
       this.userGlobalTags});
-
   UserData.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    pseudo = json['pseudo'];
-    state = json['state'];
-    nom = json['nom'];
-    prenom = json['prenom'];
-    if (json['userAbonnesIds'] != null) {
-      userAbonnesIds = <String>[];
-      json['userAbonnesIds'].forEach((v) {
-        userAbonnesIds!.add(v);
-      });
-    }
-    if (json['friendsIds'] != null) {
-      friendsIds = <String>[];
-      json['friendsIds'].forEach((v) {
-        friendsIds!.add(v);
-      });
-    }
+    id = json['id']?.toString() ?? '';
+    pseudo = json['pseudo']?.toString() ?? '';
+    oneIgnalUserid = json['oneIgnalUserid']?.toString() ?? '';
 
-    if (json['stories'] != null) {
-      stories = [];
-      json['stories'].forEach((v) {
-        stories!.add(WhatsappStory.fromJson(v));
-      });
-    }
+    nom = json['nom']?.toString() ?? '';
+    prenom = json['prenom']?.toString() ?? '';
+    imageUrl = json['imageUrl']?.toString() ?? '';
 
-    if (json['mesInvitationsEnvoyerId'] != null) {
-      mesInvitationsEnvoyerId = <String>[];
-      json['mesInvitationsEnvoyerId'].forEach((v) {
-        mesInvitationsEnvoyerId!.add(v);
-      });
-    }
-    if (json['usersParrainer'] != null) {
-      usersParrainer = <String>[];
-      json['usersParrainer'].forEach((v) {
-        usersParrainer!.add(v);
-      });
-    }
-    if (json['autreInvitationsEnvoyerId'] != null) {
-      autreInvitationsEnvoyerId = <String>[];
-      json['autreInvitationsEnvoyerId'].forEach((v) {
-        autreInvitationsEnvoyerId!.add(v);
-      });
-    }
-    imageUrl = json['imageUrl'];
-    numeroDeTelephone = json['numero_de_telephone'];
-    adresse = json['adresse'];
-    // email = json['adresse'];
-    oneIgnalUserid = json['oneIgnalUserid'];
-    codeParrainage = json['code_parrainage'];
-    codeParrain = json['code_parrain'];
-    isConnected = json['isConnected'];
+    numeroDeTelephone = json['numero_de_telephone']?.toString() ?? '';
+    adresse = json['adresse']?.toString() ?? '';
+    email = json['email']?.toString() ?? '';
+    genre = json['genre']?.toString() ?? '';
+    codeParrainage = json['code_parrainage']?.toString() ?? '';
+    codeParrain = json['code_parrain']?.toString() ?? '';
+    state = json['state']?.toString() ?? '';
+
     userPays = json['user_pays'] != null
-        ? new UserPays.fromJson(json['user_pays'])
+        ? UserPays.fromJson(json['user_pays'] as Map<String, dynamic>)
         : null;
-    // publi_cash =double.parse(json['publi_cash'].toString()) ;
-    votre_solde =json['votre_solde']==null?0.0:json['votre_solde'] ;
-    publi_cash =json['publi_cash']==null?0.0:json['publi_cash'] ;
-    tiktokviewerSolde = json['tiktokviewerSolde'] == null ? 0.0 : double.tryParse(json['tiktokviewerSolde'].toString()) ?? 0.0;
-    viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
-    // votre_solde = json['votre_solde'];
-    pubEntreprise = json['pub_entreprise'];
-    pointContribution = json['point_contribution'];
-    likes = json['likes'];
-    jaimes = json['jaimes'];
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
-    // mesPubs = json['mesPubs'];
-    comments = json['comments'];
-    abonnes = json['abonnes'];
-    compteTarif = json['compte_tarif']!.toDouble();
-    popularite =double.parse(json['popularite'].toString()) ;
 
-    // popularite = json['popularite'];
-    isBlocked = json['isBlocked'];
-    completeData = json['complete_data'];
-    hasEntreprise = json['has_entreprise'];
-    latitude =double.parse(json['latitude'].toString()) ;
-    longitude =double.parse(json['longitude'].toString()) ;
-    // longitude = json['longitude'];
-    apropos = json['apropos'];
-    password = json['password'] == null ? "" : json['password'];
-    isVerify = json['isVerify'] == null ? false : json['isVerify'];
-    email = json['email'] == null ? "" : json['email'];
-    genre = json['genre'] == null ? "" : json['genre'];
-    votre_solde_contenu = json['votre_solde_contenu'] == null ? 0.0 : json['votre_solde_contenu'];
-    userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
-    userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
-    votre_solde_cadeau = json['votre_solde_cadeau'] == null ? 0 : json['votre_solde_cadeau'];
-    votre_solde_principal = json['votre_solde_principal'] == null ? 0 : json['votre_solde_principal'];
-    partage = json['partage'] == null ? 0 : json['partage'];
-    mesTiktokPubs = json['mesTiktokPubs'] == null ? 0 : json['mesTiktokPubs'];
-    // genreId = json['genre_id'];
-    role = json['role'];
-    //userGlobalTags = json['user_global_tags'].cast<int>();
+    publi_cash = (json['publi_cash'] as num?)?.toDouble() ?? 0.0;
+    votre_solde = (json['votre_solde'] as num?)?.toDouble() ?? 0.0;
+    votre_solde_contenu = (json['votre_solde_contenu'] as num?)?.toDouble() ?? 0.0;
+    votre_solde_principal = (json['votre_solde_principal'] as num?)?.toDouble() ?? 0.0;
+    votre_solde_cadeau = (json['votre_solde_cadeau'] as num?)?.toDouble() ?? 0.0;
+    tiktokviewerSolde = double.tryParse(json['tiktokviewerSolde']?.toString() ?? '0') ?? 0.0;
+
+    pubEntreprise = json['pub_entreprise'] ?? 0;
+    mesPubs = json['mesPubs'] ?? 0;
+    mesTiktokPubs = json['mesTiktokPubs'] ?? 0;
+    partage = json['partage'] ?? 0;
+    last_time_active = json['last_time_active'] ?? 0;
+    pointContribution = json['pointContribution'] ?? 0;
+    userlikes = json['userlikes'] ?? 0;
+    userjaimes = json['userjaimes'] ?? 0;
+    likes = json['likes'] ?? 0;
+    jaimes = json['jaimes'] ?? 0;
+    comments = json['comments'] ?? 0;
+    abonnes = json['abonnes'] ?? 0;
+
+    compteTarif = (json['compte_tarif'] as num?)?.toDouble() ?? 0.0;
+    popularite = double.tryParse(json['popularite']?.toString() ?? '0') ?? 0.0;
+    latitude = double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0;
+    longitude = double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0;
+
+    apropos = json['apropos']?.toString() ?? '';
+    isConnected = json['isConnected'] ?? false;
+    isBlocked = json['isBlocked'] ?? false;
+    completeData = json['completeData'] ?? false;
+    hasEntreprise = json['hasEntreprise'] ?? false;
+    isVerify = json['isVerify'] ?? false;
+
+    password = json['password']?.toString() ?? '';
+    role = json['role']?.toString() ?? '';
+    createdAt = json['createdAt'] ?? 0;
+    updatedAt = json['updatedAt'] ?? 0;
+
+    userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
+        ?.map((e) => int.tryParse(e.toString()) ?? 0)
+        .toList() ?? [];
+
+    userAbonnesIds = (json['userAbonnesIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    usersParrainer = (json['usersParrainer'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    friendsIds = (json['friendsIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    stories = (json['stories'] as List<dynamic>?)
+        ?.map((v) => WhatsappStory.fromJson(v as Map<String, dynamic>))
+        .toList() ?? [];
+
+    mesInvitationsEnvoyerId = (json['mesInvitationsEnvoyerId'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    autreInvitationsEnvoyerId = (json['autreInvitationsEnvoyerId'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
     countryData = json['countryData'] != null
         ? Map<String, String>.from(json['countryData'])
         : {};
+
+    viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
   }
+
+  // UserData.fromJson(Map<String, dynamic> json) {
+  //   id = json['id'];
+  //   pseudo = json['pseudo'];
+  //   state = json['state'];
+  //   nom = json['nom'];
+  //   prenom = json['prenom'];
+  //   if (json['userAbonnesIds'] != null) {
+  //     userAbonnesIds = <String>[];
+  //     json['userAbonnesIds'].forEach((v) {
+  //       userAbonnesIds!.add(v);
+  //     });
+  //   }
+  //   if (json['friendsIds'] != null) {
+  //     friendsIds = <String>[];
+  //     json['friendsIds'].forEach((v) {
+  //       friendsIds!.add(v);
+  //     });
+  //   }
+  //
+  //   if (json['stories'] != null) {
+  //     stories = [];
+  //     json['stories'].forEach((v) {
+  //       stories!.add(WhatsappStory.fromJson(v));
+  //     });
+  //   }
+  //
+  //   if (json['mesInvitationsEnvoyerId'] != null) {
+  //     mesInvitationsEnvoyerId = <String>[];
+  //     json['mesInvitationsEnvoyerId'].forEach((v) {
+  //       mesInvitationsEnvoyerId!.add(v);
+  //     });
+  //   }
+  //   if (json['usersParrainer'] != null) {
+  //     usersParrainer = <String>[];
+  //     json['usersParrainer'].forEach((v) {
+  //       usersParrainer!.add(v);
+  //     });
+  //   }
+  //   if (json['autreInvitationsEnvoyerId'] != null) {
+  //     autreInvitationsEnvoyerId = <String>[];
+  //     json['autreInvitationsEnvoyerId'].forEach((v) {
+  //       autreInvitationsEnvoyerId!.add(v);
+  //     });
+  //   }
+  //   imageUrl = json['imageUrl'];
+  //   numeroDeTelephone = json['numero_de_telephone'];
+  //   adresse = json['adresse'];
+  //   // email = json['adresse'];
+  //   oneIgnalUserid = json['oneIgnalUserid'];
+  //   codeParrainage = json['code_parrainage'];
+  //   codeParrain = json['code_parrain'];
+  //   isConnected = json['isConnected'];
+  //   userPays = json['user_pays'] != null
+  //       ? new UserPays.fromJson(json['user_pays'])
+  //       : null;
+  //   // publi_cash =double.parse(json['publi_cash'].toString()) ;
+  //   votre_solde =json['votre_solde']==null?0.0:json['votre_solde'] ;
+  //   publi_cash =json['publi_cash']==null?0.0:json['publi_cash'] ;
+  //   tiktokviewerSolde = json['tiktokviewerSolde'] == null ? 0.0 : double.tryParse(json['tiktokviewerSolde'].toString()) ?? 0.0;
+  //   viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
+  //   // votre_solde = json['votre_solde'];
+  //   pubEntreprise = json['pub_entreprise'];
+  //   pointContribution = json['point_contribution'];
+  //   likes = json['likes'];
+  //   jaimes = json['jaimes'];
+  //   createdAt = json['createdAt'];
+  //   updatedAt = json['updatedAt'];
+  //   // mesPubs = json['mesPubs'];
+  //   comments = json['comments'];
+  //   abonnes = json['abonnes'];
+  //   compteTarif = json['compte_tarif']!.toDouble();
+  //   popularite =double.parse(json['popularite'].toString()) ;
+  //
+  //   // popularite = json['popularite'];
+  //   isBlocked = json['isBlocked'];
+  //   completeData = json['complete_data'];
+  //   hasEntreprise = json['has_entreprise'];
+  //   latitude =double.parse(json['latitude'].toString()) ;
+  //   longitude =double.parse(json['longitude'].toString()) ;
+  //   // longitude = json['longitude'];
+  //   apropos = json['apropos'];
+  //   password = json['password'] == null ? "" : json['password'];
+  //   isVerify = json['isVerify'] == null ? false : json['isVerify'];
+  //   email = json['email'] == null ? "" : json['email'];
+  //   genre = json['genre'] == null ? "" : json['genre'];
+  //   votre_solde_contenu = json['votre_solde_contenu'] == null ? 0.0 : json['votre_solde_contenu'];
+  //   userlikes = json['userlikes'] == null ? 0 : json['userlikes'];
+  //   userjaimes = json['userjaimes'] == null ? 0 : json['userjaimes'];
+  //   votre_solde_cadeau = json['votre_solde_cadeau'] == null ? 0 : json['votre_solde_cadeau'];
+  //   votre_solde_principal = json['votre_solde_principal'] == null ? 0 : json['votre_solde_principal'];
+  //   partage = json['partage'] == null ? 0 : json['partage'];
+  //   mesTiktokPubs = json['mesTiktokPubs'] == null ? 0 : json['mesTiktokPubs'];
+  //   // genreId = json['genre_id'];
+  //   role = json['role'];
+  //   //userGlobalTags = json['user_global_tags'].cast<int>();
+  //   countryData = json['countryData'] != null
+  //       ? Map<String, String>.from(json['countryData'])
+  //       : {};
+  // }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
@@ -724,11 +816,11 @@ class UserData {
     // data['mesTiktokPubs'] = this.mesTiktokPubs;
     data['code_parrainage'] = this.codeParrainage;
     data['usersParrainer'] = this.usersParrainer;
-    data['publi_cash'] = this.publi_cash;
-    data['votre_solde'] = this.votre_solde;
-    data['votre_solde_contenu'] = this.votre_solde_contenu;
-    data['votre_solde_principal'] = this.votre_solde_principal;
-    data['votre_solde_cadeau'] = this.votre_solde_cadeau;
+    // data['publi_cash'] = this.publi_cash;
+    // data['votre_solde'] = this.votre_solde;
+    // data['votre_solde_contenu'] = this.votre_solde_contenu;
+    // data['votre_solde_principal'] = this.votre_solde_principal;
+    // data['votre_solde_cadeau'] = this.votre_solde_cadeau;
     data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
@@ -753,9 +845,9 @@ class UserData {
     data['apropos'] = this.apropos;
     // data['password'] = this.password;
     data['genre'] = this.genre;
-    data['userlikes'] = this.userlikes;
-    data['partage'] = this.partage;
-    data['userjaimes'] = this.userjaimes;
+    // data['userlikes'] = this.userlikes;
+    // data['partage'] = this.partage;
+    // data['userjaimes'] = this.userjaimes;
     // data['genre_id'] = this.genreId;
     data['isConnected'] = this.isConnected;
     data['role'] = this.role;
@@ -763,8 +855,8 @@ class UserData {
 
     data['pub_entreprise'] = this.pubEntreprise;
     data['point_contribution'] = this.pointContribution;
-    data['likes'] = this.likes;
-    data['jaimes'] = this.jaimes;
+    // data['likes'] = this.likes;
+    // data['jaimes'] = this.jaimes;
     data['updatedAt'] = this.updatedAt;
     data['createdAt'] = this.createdAt;
     data['comments'] = this.comments;
@@ -1018,6 +1110,39 @@ class EntrepriseData {
         'id': id,
       };
 }
+@JsonSerializable()
+class EntrepriseAbonnement {
+  String? type;
+  String? id;
+  String? entrepriseId;
+  String? description;
+  int? nombre_pub;
+  int? nombre_image_pub;
+  int? nbr_jour_pub_afrolook;
+  int? nbr_jour_pub_annonce_afrolook;
+
+  String? userId;
+  String? afroshop_user_magasin_id;
+  int? createdAt;
+  int? updatedAt;
+  int? star;
+  int? end;
+  bool? isFinished;
+  bool? dispo_afrolook;
+  List<String>? produistIdBoosted = [];
+
+
+  EntrepriseAbonnement();
+
+  factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) =>
+      _$EntrepriseAbonnementFromJson(json);
+
+  // Add a method that converts this instance to a JSON map
+  Map<String, dynamic> toJson() => _$EntrepriseAbonnementToJson(this);
+}
+enum TypeAbonement{
+  GRATUIT,STANDARD,PREMIUM
+}
 
 @JsonSerializable()
 class Categorie {
@@ -1189,9 +1314,7 @@ enum RoleUser { ADMIN, USER, SUPERADMIN }
 
 enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
-enum TypeAbonement{
-  GRATUIT,STANDARD,PREMIUM
-}
+
 
 enum TypeTransaction{
   DEPOT,RETRAIT
@@ -1230,36 +1353,6 @@ class UserIACompte {
   Map<String, dynamic> toJson() => _$UserIACompteToJson(this);
 }
 
-@JsonSerializable()
-class EntrepriseAbonnement {
-  String? type;
-  String? id;
-  String? entrepriseId;
-  String? description;
-  int? nombre_pub;
-  int? nombre_image_pub;
-  int? nbr_jour_pub_afrolook;
-  int? nbr_jour_pub_annonce_afrolook;
-
-  String? userId;
-  String? afroshop_user_magasin_id;
-  int? createdAt;
-  int? updatedAt;
-  int? star;
-  int? end;
-  bool? isFinished;
-  bool? dispo_afrolook;
-  List<String>? produistIdBoosted = [];
-
-
-  EntrepriseAbonnement();
-
-  factory EntrepriseAbonnement.fromJson(Map<String, dynamic> json) =>
-      _$EntrepriseAbonnementFromJson(json);
-
-  // Add a method that converts this instance to a JSON map
-  Map<String, dynamic> toJson() => _$EntrepriseAbonnementToJson(this);
-}
 
 @JsonSerializable()
 class UserServiceData {
@@ -2083,6 +2176,250 @@ class Transaction {
     required this.status,
     required this.type,
   });
+}
+
+
+////////////////////////// contenu payant //////////////////////////////
+
+
+// Modèle pour les catégories de contenu
+class ContentCategory {
+  String? id;
+  String name;
+  String? description;
+  String? imageUrl;
+
+  ContentCategory({
+    this.id,
+    required this.name,
+    this.description,
+    this.imageUrl,
+  });
+
+  factory ContentCategory.fromJson(Map<String, dynamic> json) {
+    return ContentCategory(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      imageUrl: json['imageUrl'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'imageUrl': imageUrl,
+    };
+  }
+}
+
+// Modèle pour les épisodes (pour les séries)
+class Episode {
+  String? id;
+  String seriesId;
+  String title;
+  String description;
+  String videoUrl;
+  String? thumbnailUrl;
+  int duration; // en secondes
+  int episodeNumber;
+  double price;
+  bool isFree;
+  int views;
+  int likes;
+  int createdAt;
+  int updatedAt;
+
+  Episode({
+    this.id,
+    required this.seriesId,
+    required this.title,
+    required this.description,
+    required this.videoUrl,
+    this.thumbnailUrl,
+    required this.duration,
+    required this.episodeNumber,
+    required this.price,
+    required this.isFree,
+    this.views = 0,
+    this.likes = 0,
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
+
+  factory Episode.fromJson(Map<String, dynamic> json) {
+    return Episode(
+      id: json['id'],
+      seriesId: json['seriesId'],
+      title: json['title'],
+      description: json['description'],
+      videoUrl: json['videoUrl'],
+      thumbnailUrl: json['thumbnailUrl'],
+      duration: json['duration'],
+      episodeNumber: json['episodeNumber'],
+      price: json['price']?.toDouble() ?? 0.0,
+      isFree: json['isFree'] ?? false,
+      views: json['views'] ?? 0,
+      likes: json['likes'] ?? 0,
+      createdAt: json['createdAt'] ?? 0,
+      updatedAt: json['updatedAt'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'seriesId': seriesId,
+      'title': title,
+      'description': description,
+      'videoUrl': videoUrl,
+      'thumbnailUrl': thumbnailUrl,
+      'duration': duration,
+      'episodeNumber': episodeNumber,
+      'price': price,
+      'isFree': isFree,
+      'views': views,
+      'likes': likes,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+// Modèle pour le contenu (vidéos simples ou séries)
+class ContentPaie {
+  String? id;
+  String ownerId;
+  String title;
+  String description;
+  String? videoUrl; // Pour les vidéos simples
+  String thumbnailUrl;
+  List<String> categories;
+  List<String> hashtags;
+  bool isSeries;
+  String? seriesId; // Pour les épisodes
+  double price;
+  bool isFree;
+  int views;
+  int likes;
+  int comments;
+  int duration; // en secondes
+  int createdAt;
+  int updatedAt;
+
+  ContentPaie({
+    this.id,
+    required this.ownerId,
+    required this.title,
+    required this.description,
+    this.videoUrl,
+    required this.thumbnailUrl,
+    required this.categories,
+    required this.hashtags,
+    this.isSeries = false,
+    this.seriesId,
+    required this.price,
+    required this.isFree,
+    this.views = 0,
+    this.likes = 0,
+    this.comments = 0,
+    this.duration = 0,
+    this.createdAt = 0,
+    this.updatedAt = 0,
+  });
+
+  factory ContentPaie.fromJson(Map<String, dynamic> json) {
+    return ContentPaie(
+      id: json['id'],
+      ownerId: json['ownerId'],
+      title: json['title'],
+      description: json['description'],
+      videoUrl: json['videoUrl'],
+      thumbnailUrl: json['thumbnailUrl'],
+      categories: List<String>.from(json['categories'] ?? []),
+      hashtags: List<String>.from(json['hashtags'] ?? []),
+      isSeries: json['isSeries'] ?? false,
+      seriesId: json['seriesId'],
+      price: json['price']?.toDouble() ?? 0.0,
+      isFree: json['isFree'] ?? false,
+      views: json['views'] ?? 0,
+      likes: json['likes'] ?? 0,
+      comments: json['comments'] ?? 0,
+      duration: json['duration'] ?? 0,
+      createdAt: json['createdAt'] ?? 0,
+      updatedAt: json['updatedAt'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'ownerId': ownerId,
+      'title': title,
+      'description': description,
+      'videoUrl': videoUrl,
+      'thumbnailUrl': thumbnailUrl,
+      'categories': categories,
+      'hashtags': hashtags,
+      'isSeries': isSeries,
+      'seriesId': seriesId,
+      'price': price,
+      'isFree': isFree,
+      'views': views,
+      'likes': likes,
+      'comments': comments,
+      'duration': duration,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+// Modèle pour les achats de contenu
+class ContentPurchase {
+  String? id;
+  String userId;
+  String contentId;
+  double amountPaid;
+  double ownerEarnings;
+  double platformEarnings;
+  int purchaseDate;
+
+  ContentPurchase({
+    this.id,
+    required this.userId,
+    required this.contentId,
+    required this.amountPaid,
+    required this.ownerEarnings,
+    required this.platformEarnings,
+    this.purchaseDate = 0,
+  });
+
+  factory ContentPurchase.fromJson(Map<String, dynamic> json) {
+    return ContentPurchase(
+      id: json['id'],
+      userId: json['userId'],
+      contentId: json['contentId'],
+      amountPaid: json['amountPaid']?.toDouble() ?? 0.0,
+      ownerEarnings: json['ownerEarnings']?.toDouble() ?? 0.0,
+      platformEarnings: json['platformEarnings']?.toDouble() ?? 0.0,
+      purchaseDate: json['purchaseDate'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'contentId': contentId,
+      'amountPaid': amountPaid,
+      'ownerEarnings': ownerEarnings,
+      'platformEarnings': platformEarnings,
+      'purchaseDate': purchaseDate,
+    };
+  }
 }
 
 enum UserRole { ADM, USER }

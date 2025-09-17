@@ -11,6 +11,7 @@ import '../../../../../providers/authProvider.dart';
 import '../components/already_have_an_account_acheck.dart';
 import '../constants.dart';
 import 'Login/components/login_screen_top_image.dart';
+import 'Signup/components/signup_form.dart';
 import 'Signup/signup_screen.dart';
 
 

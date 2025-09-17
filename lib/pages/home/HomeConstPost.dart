@@ -5,6 +5,7 @@ import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chat/deepseek.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:afrotok/pages/home/storyCustom/StoryCustom.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
@@ -41,6 +42,7 @@ import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
+import '../auth/authTest/Screens/Welcome/welcome_screen.dart';
 import '../chat/ia_Chat.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
@@ -48,7 +50,7 @@ import '../../models/chatmodels/message.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
-
+import 'package:shimmer/shimmer.dart';
 import '../component/consoleWidget.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
 
@@ -60,7 +62,10 @@ import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
-
+const Color primaryGreen = Color(0xFF25D366);
+const Color darkBackground = Color(0xFF121212);
+const Color lightBackground = Color(0xFF1E1E1E);
+const Color textColor = Colors.white;
 class HomeConstPostPage extends StatefulWidget {
   const HomeConstPostPage({super.key, required this.type});
 
@@ -408,193 +413,187 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
 
+
   Widget homeProfileUsers(UserData user, double w, double h) {
-    //authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-    //  printVm("invitation : ${authProvider.loginUserData.mesInvitationsEnvoyer!.length}");
+    // Liste des IDs d'abonnés du profil
+    List<String> userAbonnesIds = user.userAbonnesIds ?? [];
 
-    bool abonneTap = false;
-    bool inviteTap = false;
-    bool dejaInviter = false;
-    late Random random = Random();
-    late int     imageNumber = random.nextInt(8) + 1; // Génère un nombre entre 1 et 6
+    // Vérifier si l'utilisateur connecté est déjà abonné
+    bool alreadySubscribed = userAbonnesIds.contains(authProvider.loginUserData.id);
 
-    return SizedBox(
-      // width: w * 0.45,
-      // height: h * 0.15,
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () async {
-                await  authProvider.getUserById(user.id!).then((users) async {
-                  if(users.isNotEmpty){
-                    showUserDetailsModalDialog(users.first, w, h,context);
-
-                  }
-                },);
-
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.all( Radius.circular(10)),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: w*0.45,
-                      height: h*0.32,
-                      child: CachedNetworkImage(
-                        fit: BoxFit.cover,
-                        imageUrl: '${user.imageUrl!}',
-                        progressIndicatorBuilder:
-                            (context, url, downloadProgress) =>
-                        //  LinearProgressIndicator(),
-
-                        Skeletonizer(
-                            child: SizedBox(
-                                width: w*0.45,
-                                height: h*0.32,
-                                child: ClipRRect(
-                                    borderRadius: BorderRadius.all(
-                                        Radius.circular(10)),
-                                    child: Image.asset(
-                                      'assets/images/404.png',fit: BoxFit.cover,)))),
-                        errorWidget: (context, url, error) => Container(
-                            width: w*0.45,
-                            height: h*0.32,
-                            child: Image.asset(
-                              "assets/icon/user-removebg-preview.png",
-                              fit: BoxFit.cover,
-                            )),
+    return Container(
+      width: w * 0.4,
+      margin: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(
+        color: darkBackground.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: () async {
+              await authProvider.getUserById(user.id!).then((users) async {
+                if (users.isNotEmpty) {
+                  showUserDetailsModalDialog(users.first, w, h, context);
+                }
+              });
+            },
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                // Image de profil
+                Container(
+                  width: w * 0.4,
+                  height: h * 0.22,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    child: CachedNetworkImage(
+                      fit: BoxFit.cover,
+                      imageUrl: user.imageUrl ?? '',
+                      progressIndicatorBuilder: (context, url, downloadProgress) =>
+                          Container(
+                            color: Colors.grey[800],
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: downloadProgress.progress,
+                                color: primaryGreen,
+                              ),
+                            ),
+                          ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[800],
+                        child: Icon(Icons.person, color: Colors.grey[400], size: 40),
                       ),
                     ),
-                    Positioned(
-                      bottom: 0.0,
-                      left: 0.0,
-                      right: 0.0,
-                      child: Stack(
+                  ),
+                ),
+
+                // Overlay avec informations
+                Container(
+                  width: w * 0.4,
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black87, Colors.transparent],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Pseudo et vérification
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            height: 90,
-                            // width: w,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  // ConstColors.buttonColors,
-                                  Colors.black87,
-
-                                  // ConstColors.secondaryColor,
-
-                                  Color.fromARGB(0, 0, 0, 0)
-                                ],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                              ),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                                vertical: 10.0, horizontal: 20.0),
-                          ),
-                          Positioned(
-                            bottom: 0.0,
-                            left: 0.0,
-                            // right: 0.0,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-
-                                    children: [
-                                      Container(
-                                        alignment: Alignment.center,
-                                        child: TextCustomerPostDescription(
-                                          titre: '@${user.pseudo!.startsWith('@') ? user.pseudo!.replaceFirst('@', '') : user.pseudo!}',
-                                          fontSize: 17,
-                                          couleur: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Column(
-                                            children: [
-                                              Container(
-                                                alignment: Alignment.center,
-                                                child: TextCustomerPostDescription(
-                                                  titre: "${user.abonnes} Abonnés  ",
-                                                  fontSize: 11,
-                                                  couleur: Colors.yellow,
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                              ),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                spacing: 2,
-                                                children: [
-                                                  Icon(Icons.group,size: 13,color: Colors.blue,),
-                                                  Container(
-                                                    alignment: Alignment.center,
-                                                    child: TextCustomerPostDescription(
-                                                      titre: "${user.usersParrainer!.length} parrainages  ",
-                                                      fontSize: 11,
-                                                      couleur: Colors.yellow,
-                                                      fontWeight: FontWeight.w900,
-                                                    ),
-                                                  ),
-
-                                                ],
-                                              ),
-
-                                            ],
-                                          ),
-                                          Visibility(
-                                            visible: user!.isVerify!,
-                                            child: const Icon(
-                                              Icons.verified,
-                                              color: Colors.green,
-                                              size: 20,
-                                            ),
-                                          ),
-                                          SizedBox(width: 5,),
-
-
-                                          countryFlag(user.countryData!['countryCode']??""!, size: 20),
-
-                                        ],
-                                      ),
-
-                                    ],
-                                  ),
-                                  SizedBox(width: 10,),
-
-
-                                ],
+                          Expanded(
+                            child: Text(
+                              '@${user.pseudo!.startsWith('@') ? user.pseudo!.substring(1) : user.pseudo!}',
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
+                          if (user.isVerify!) Icon(Icons.verified, color: primaryGreen, size: 14),
                         ],
                       ),
-                    ),
-                    // Positioned(
-                    //   top: 0.0,
-                    //   right: 0.0,
-                    //   // left: 0.0,
-                    //   child: Image.asset("assets/userEticket/2.png",height: 50,width: 50,),
-                    // ),
-                  ],
+                      SizedBox(height: 4),
+
+                      // Statistiques
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Abonnés
+                          Row(
+                            children: [
+                              Icon(Icons.group, size: 10, color: accentYellow),
+                              SizedBox(width: 2),
+                              Text(
+                                '${user.abonnes}',
+                                style: TextStyle(
+                                  color: accentYellow,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Parrainages
+                          Row(
+                            children: [
+                              Icon(Icons.people_outline, size: 10, color: Colors.blue),
+                              SizedBox(width: 2),
+                              Text(
+                                '${user.usersParrainer?.length ?? 0}',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Drapeau pays
+                          countryFlag(user.countryData?['countryCode'] ?? "", size: 16),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bouton d'action (s'abonner) uniquement si non abonné
+          if (!alreadySubscribed)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: ElevatedButton(
+                onPressed: () async {
+                  await authProvider.getUserById(user.id!).then((users) async {
+                    if (users.isNotEmpty) {
+                      showUserDetailsModalDialog(users.first, w, h, context);
+                    }
+                  });                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryGreen,
+                  foregroundColor: darkBackground,
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'S\'abonner',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
-
-
 
   Widget homePostUsersSkele(double height, double width) {
     double h = MediaQuery.of(context).size.height;
@@ -1473,234 +1472,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  Widget widgetSeke(double width, double height) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(3.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            SizedBox(
-              width: width,
-              height: height * 0.79,
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.vertical,
-                itemCount: 6,
-                itemBuilder: (BuildContext context, int index) {
-                  if (index == 0) {
-                    return Column(
-                      children: <Widget>[
-                        SizedBox(
-                          //width: width,
-                          height: height * 0.33,
-                          child: Skeletonizer(
-                            //enabled: _loading,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: 4,
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding: const EdgeInsets.all(1.0),
-                                  child: Container(
-                                    width: 300,
-                                    child: Card(
-                                      color: Colors.white,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Column(
-                                          children: [
-                                            Container(
-                                              child: CircleAvatar(
-                                                backgroundImage: AssetImage(
-                                                  "assets/icon/user-removebg-preview.png",
-                                                ),
-                                              ),
-                                              height: 100,
-                                              width: 100,
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            SizedBox(
-                                              width: 70,
-                                              child: TextCustomerUserTitle(
-                                                titre: "jhasgjh",
-                                                fontSize: SizeText
-                                                    .homeProfileTextSize,
-                                                couleur: ConstColors.textColors,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            TextCustomerUserTitle(
-                                              titre: "S'abonner",
-                                              fontSize:
-                                              SizeText.homeProfileTextSize,
-                                              couleur: Colors.blue,
-                                              fontWeight: FontWeight.w600,
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-                      ],
-                    );
-                  }
-                  if (index == 3) {
-                    return Column(
-                      children: <Widget>[
-                        SizedBox(
-                          //width: width,
-                          height: height * 0.33,
-                          child: Skeletonizer(
-                            //enabled: _loading,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: 4,
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding: const EdgeInsets.all(1.0),
-                                  child: Container(
-                                    width: 300,
-                                    child: Card(
-                                      color: Colors.white,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Column(
-                                          children: [
-                                            Container(
-                                              child: CircleAvatar(
-                                                backgroundImage: AssetImage(
-                                                  "assets/icon/user-removebg-preview.png",
-                                                ),
-                                              ),
-                                              height: 100,
-                                              width: 100,
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            SizedBox(
-                                              width: 70,
-                                              child: TextCustomerUserTitle(
-                                                titre: "jhasgjh",
-                                                fontSize: SizeText
-                                                    .homeProfileTextSize,
-                                                couleur: ConstColors.textColors,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 2,
-                                            ),
-                                            TextCustomerUserTitle(
-                                              titre: "S'abonner",
-                                              fontSize:
-                                              SizeText.homeProfileTextSize,
-                                              couleur: Colors.blue,
-                                              fontWeight: FontWeight.w600,
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 5.0, bottom: 5),
-                      child: homePostUsersSkele(height, width),
-                    );
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
 
-  Widget widgetSeke2(double w,h) {
-    // printVm('article ${article.titre}');
-    return Skeletonizer(
-      //enabled: _loading,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 10,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Container(
-              // width: 300,
-              child: Card(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      Container(
-                        child: CircleAvatar(
-                          backgroundImage: AssetImage(
-                            "assets/icon/user-removebg-preview.png",
-                          ),
-                        ),
-                        width: w*0.45,
-                        height: h*0.2,
-                      ),
-                      SizedBox(
-                        height: 2,
-                      ),
-                      SizedBox(
-                        width: 70,
-                        child: TextCustomerUserTitle(
-                          titre: "jhasgjh",
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: ConstColors.textColors,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(
-                        height: 2,
-                      ),
-                      TextCustomerUserTitle(
-                        titre: "S'abonner",
-                        fontSize: SizeText.homeProfileTextSize,
-                        couleur: Colors.blue,
-                        fontWeight: FontWeight.w600,
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
 
   Future<bool> hasShownDialogToday() async {
@@ -1899,6 +1672,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   @override
   void dispose() {
     _streamController.close();
+    _cachedUsersWithStories = []; // Nettoyer le cache
+
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1948,87 +1723,94 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Widget build(BuildContext context) {
     _changeColor();
 
-    // _color=  _randomColor.randomColor(
-    //     colorHue: ColorHue.multiple(colorHues: [
-    //       ColorHue.red,
-    //       // ColorHue.blue,
-    //       // ColorHue.green,
-    //       ColorHue.orange,
-    //       ColorHue.yellow,
-    //       ColorHue.purple
-    //     ]));
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    homeIconSize=width*0.065;
-
-    //userProvider.getUsers(authProvider.loginUserData!.id!);
-    // if(postProvider.listConstposts.isNotEmpty){
-    //   setState(() {
-    //   });
-    // }
+    homeIconSize = width * 0.065;
 
     return RefreshIndicator(
       onRefresh: () async {
-        setState(() {
-
-
-        });
-
+        setState(() {});
       },
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: ConstColors.backgroundColor,
+        backgroundColor: darkBackground, // Utilisation de votre couleur de fond
         body: SafeArea(
           child: Container(
-
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.lightGreen.shade200, // Noir plus dominant mais atténué
-                  Colors.lightGreen.shade200, // Noir plus dominant mais atténué
+                  darkBackground.withOpacity(0.95),
+                  darkBackground,
                 ],
               ),
             ),
-            child: PageView(
-    scrollDirection: Axis.vertical,
-    children: [
-    SingleChildScrollView(
-    child: Column(
-    children: [
-    _buildChroniquesSection(context),
-    _buildProfilesSection(),
-    ],
-    ),
-    ),
-    _buildPostsSection(context),
-    ],
-    )))));
-    }
+            child: CustomScrollView(
+              slivers: [
 
+
+                // Section des chroniques
+                SliverToBoxAdapter(
+                  child: _buildChroniquesSection(context),
+                ),
+
+                // Section des profils utilisateurs
+                SliverToBoxAdapter(
+                  child: _buildProfilesSection(),
+                ),
+
+                // Section des posts
+                SliverToBoxAdapter(
+                  child: _buildPostsSection(context),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+// Votre fonction _buildChroniquesSection existante
+// 1. Créez une variable d'instance pour stocker les données
+  List<UserData> _cachedUsersWithStories = [];
+
+// 2. Modifiez votre méthode _buildChroniquesSection
   Widget _buildChroniquesSection(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+
+    // Utilisez un FutureBuilder avec un mécanisme de cache
     return FutureBuilder<List<UserData>>(
-      future: authProvider.getUsersStorie(authProvider.loginUserData.id!, limiteUsers),
+      future: _cachedUsersWithStories.isEmpty
+          ? authProvider.getUsersStorie(authProvider.loginUserData.id!, limiteUsers)
+          : Future.value(_cachedUsersWithStories),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
-          return SizedBox(height: height * 0.35, child: widgetSeke2(width, height));
+        if (snapshot.connectionState == ConnectionState.waiting && _cachedUsersWithStories.isEmpty) {
+          return SizedBox(height: height * 0.35, child: _buildShimmerEffect(width, height));
+        } else if (snapshot.hasError) {
+          return SizedBox(height: height * 0.35, child: _buildErrorWidget());
         } else {
-          List<UserData> list = snapshot.data!;
+          // Cache les données une fois qu'elles sont chargées
+          if (snapshot.hasData && snapshot.data!.isNotEmpty && _cachedUsersWithStories.isEmpty) {
+            _cachedUsersWithStories = snapshot.data!;
+          }
+
+          final list = _cachedUsersWithStories.isNotEmpty
+              ? _cachedUsersWithStories
+              : snapshot.data ?? [];
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 8.0, bottom: 4),
+                padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
                 child: Text(
                   'Chroniques',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.green,
-                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
                   ),
                 ),
               ),
@@ -2036,6 +1818,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 height: height * 0.25,
                 child: Row(
                   children: [
+                    // Bouton pour ajouter une chronique
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: GestureDetector(
@@ -2049,15 +1832,170 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                           width: width * 0.2,
                           height: height * 0.25,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(15),
+                            gradient: LinearGradient(
+                              colors: [primaryGreen, accentYellow],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
-                          child: Center(
-                            child: Icon(Icons.add_circle_outlined, size: 40, color: Colors.green),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add, size: 30, color: darkBackground),
+                              SizedBox(height: 8),
+                              Text(
+                                'Ajouter',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: darkBackground,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
+
+                    // Liste des chroniques
+                    Expanded(
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          final user = list[index];
+                          final stories = authProvider.getStoriesWithTimeAgo(user.stories ?? []);
+
+                          return stories.isNotEmpty
+                              ? Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                              width: width * 0.3,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: primaryGreen,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(13),
+                                child: StoryPreviewCustom(
+                                  user: user,
+                                  h: height * 0.25,
+                                  w: width * 0.3,
+                                ),
+                              ),
+                            ),
+                          )
+                              : const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+// 3. Ajoutez une méthode pour gérer les erreurs
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 50),
+          SizedBox(height: 10),
+          Text('Erreur de chargement des chroniques'),
+          SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () {
+              _cachedUsersWithStories = []; // Réinitialiser le cache
+              // Forcer le rebuild si vous utilisez setState
+            },
+            child: Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+// 4. OPTIONNEL: Si vous utilisez StatefulWidget, ajoutez cette méthode
+  Widget _buildChroniquesSection2(BuildContext context) {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
+
+    return FutureBuilder<List<UserData>>(
+      future: authProvider.getUsersStorie(authProvider.loginUserData.id!, limiteUsers),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
+          return SizedBox(height: height * 0.35, child: _buildShimmerEffect(width, height));
+        } else {
+          List<UserData> list = snapshot.data!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
+                child: Text(
+                  'Chroniques',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: height * 0.25,
+                child: Row(
+                  children: [
+                    // Bouton pour ajouter une chronique
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: GestureDetector(
+                        onTap: () => checkAppVersionAndProceed(context, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => StoryChoicePage()),
+                          );
+                        }),
+                        child: Container(
+                          width: width * 0.2,
+                          height: height * 0.25,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            gradient: LinearGradient(
+                              colors: [primaryGreen, accentYellow],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add, size: 30, color: darkBackground),
+                              SizedBox(height: 8),
+                              Text(
+                                'Ajouter',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: darkBackground,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Liste des chroniques
                     Expanded(
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -2068,10 +2006,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                           return stories.isNotEmpty
                               ? Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: StoryPreview(
-                              user: list[index],
-                              h: height * 0.25,
-                              w: width * 0.3,
+                            child: Container(
+                              width: width * 0.3,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: primaryGreen,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(13),
+                                child: StoryPreview(
+                                  user: list[index],
+                                  h: height * 0.25,
+                                  w: width * 0.3,
+                                ),
+                              ),
                             ),
                           )
                               : const SizedBox.shrink();
@@ -2091,75 +2042,287 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Widget _buildProfilesSection() {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+
     return FutureBuilder<List<UserData>>(
       future: userProvider.getProfileUsers(authProvider.loginUserData.id!, context, limiteUsers),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
-          return SizedBox(height: height * 0.35, child: widgetSeke2(width, height));
+          return SizedBox(height: height * 0.35, child: _buildShimmerEffect(width, height));
         } else {
           List<UserData> list = snapshot.data!..shuffle();
-          return SizedBox(
-            height: height * 0.35,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: list.length,
-              itemBuilder: (context, index) => homeProfileUsers(list[index], width, height),
-            ),
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
+                child: Text(
+                  'Profils à découvrir',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: height * 0.35,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: list.length,
+                  itemBuilder: (context, index) => Container(
+                    margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    width: width * 0.4,
+                    decoration: BoxDecoration(
+                      color: darkBackground.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: primaryGreen.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: homeProfileUsers(list[index], width, height),
+                  ),
+                ),
+              ),
+            ],
           );
         }
       },
     );
   }
 
+  Widget _buildShimmerEffect(double width, double height) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[800]!,
+      highlightColor: Colors.grey[600]!,
+      child: Container(
+        width: width,
+        height: height,
+        color: Colors.grey[800],
+      ),
+    );
+  }
+
+
   Widget _buildPostsSection(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+
     return StreamBuilder<List<Post>>(
       stream: _streamController.stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildPostsShimmerEffect(width, height);
         } else if (snapshot.hasError) {
-          return const Center(child: Icon(Icons.error));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, color: Colors.red, size: 40),
+                SizedBox(height: 10),
+                Text(
+                  'Erreur de chargement',
+                  style: TextStyle(color: textColor),
+                ),
+              ],
+            ),
+          );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Pas de looks'));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.photo_library, color: Colors.grey, size: 40),
+                SizedBox(height: 10),
+                Text(
+                  'Aucun look disponible',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    // Action pour créer le premier post
+                    authProvider.checkAppVersionAndProceed(context, () {
+                      Navigator.pushNamed(context, '/user_posts_form');
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGreen,
+                    foregroundColor: darkBackground,
+                  ),
+                  child: Text('Créer le premier look'),
+                ),
+              ],
+            ),
+          );
         }
 
         List<Post> posts = snapshot.data!;
+        List<Widget> postWidgets = [];
 
-        return Center(
-          child: PageView.builder(
+        // Construire la liste des posts avec les boosters et canaux intégrés
+        for (int i = 0; i < posts.length; i++) {
+          // Ajouter un booster tous les 9 posts
+          if (i % 9 == 8 && articles.isNotEmpty) {
+            postWidgets.add(_buildBoosterPage(context));
+          }
 
-            scrollDirection: Axis.vertical,
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              if (index % 9 == 8 && articles.isNotEmpty) {
-                return _buildBoosterPage(context);
-              }
+          // Ajouter un canal tous les 7 posts
+          if (i % 7 == 6 && canaux.isNotEmpty) {
+            postWidgets.add(_buildCanalPage(context));
+          }
 
-              if (index % 7 == 6 && canaux.isNotEmpty) {
-                return _buildCanalPage(context);
-              }
-
-              return HomePostUsersWidget(
-                post: posts[index],
+          // Ajouter le post normal
+          postWidgets.add(
+            Container(
+              margin: EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: darkBackground.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: HomePostUsersWidget(
+                post: posts[i],
                 color: _color,
-                height: height,
+                height: height * 0.6, // Ajuster selon besoin
                 width: width,
                 isDegrade: true,
-              );
-            },
+              ),
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // En-tête de section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Derniers Looks',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.filter_list, color: primaryGreen),
+                      onPressed: () {
+                        // Action de filtrage
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Liste des posts
+              Column(children: postWidgets),
+
+              // Indicateur de fin
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Vous avez vu tous les looks',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+// Effet de chargement type Shimmer
+  Widget _buildPostsShimmerEffect(double width, double height) {
+    return Column(
+      children: List.generate(3, (index) =>
+          Container(
+            margin: EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: darkBackground.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey[800]!,
+              highlightColor: Colors.grey[600]!,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // En-tête du post
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.grey[700],
+                        radius: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: width * 0.4,
+                            height: 14,
+                            color: Colors.grey[700],
+                          ),
+                          SizedBox(height: 6),
+                          Container(
+                            width: width * 0.3,
+                            height: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+
+                  // Contenu du post
+                  Container(
+                    width: double.infinity,
+                    height: height * 0.3,
+                    color: Colors.grey[700],
+                  ),
+                  SizedBox(height: 16),
+
+                  // Actions du post
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(3, (i) =>
+                        Container(
+                          width: width * 0.2,
+                          height: 14,
+                          color: Colors.grey[700],
+                        ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ),
+    );
+  }
   Widget _buildBoosterPage(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return Container(
-      color:  Colors.lightGreen.shade200, // Noir plus dominant mais attén,
+      // color:  Colors.lightGreen.shade200, // Noir plus dominant mais attén,
       child: Column(
         children: [
           Padding(
@@ -2212,7 +2375,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return Container(
-      color:  Colors.lightGreen.shade200, // Noir plus dominant mais attén,
+      // color:  Colors.lightGreen.shade200, // Noir plus dominant mais attén,
       child: Column(
         children: [
           Padding(

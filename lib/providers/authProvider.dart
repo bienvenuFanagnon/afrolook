@@ -38,7 +38,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 75;
+  late int app_version_code = 76;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -67,6 +67,7 @@ class UserAuthProvider extends ChangeNotifier {
   }
   String? _linkMessage;
   bool _isCreatingLink = false;
+
   Future<void> createLink3(bool short) async {
     FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
 
@@ -451,41 +452,6 @@ class UserAuthProvider extends ChangeNotifier {
       story.when = timeAgo(story.createdAt!);
       return story;
     }).toList();
-  }
-  Future<List<UserData>> getUsersStorie2(int limit) async {
-    List<UserData> listUsers = [];
-
-
-    try {
-      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshot = await userCollect.where('stories', isNotEqualTo: []).get();
-      List<DocumentSnapshot> users = querySnapshot.docs;
-      users.shuffle(); // Mélanger la liste pour obtenir des utilisateurs aléatoires
-      List<DocumentSnapshot> usersDocs = users.take(limit).toList();
-
-      listUsers = usersDocs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      List<UserData> usersRestants = await verifierEtSupprimerStories(listUsers);
-
-      // for(var user in usersRestants){
-      //   print('user auth stories ${user.stories!.first.toJson()}');
-      //
-      // }
-//         print('debut suppression');
-//         List<Map<String, dynamic>> storiesWithTimeAgo = getStoriesWithTimeAgo(user.stories!);
-// user.stories=storiesWithTimeAgo;
-      listUsers=usersRestants;
-//       }
-
-      print('list users stories ${listUsers.length}');
-      return listUsers;
-
-    } catch (e) {
-      print("erreur $e");
-      return [];
-
-    }
-
-    // return listUsers;
   }
 
   Future<List<UserData>> getUsersStorie(String currentUserId, int limit) async {

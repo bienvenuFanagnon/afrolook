@@ -44,7 +44,7 @@ import '../../../component/showUserDetails.dart';
 
 
 class StoryComments extends StatefulWidget {
-  final StoryItem story;
+  final WhatsappStory story;
   final UserData userStory;
   const StoryComments({super.key, required this.story, required this.userStory});
 
@@ -1244,12 +1244,12 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
                           if (value) {
                             // _textController.text = "";
                             printVm("****** response sended user id **** : ${replyUser_id}");
-                            widget.story.comment =
-                            widget.story.comment==null?0: widget.story.comment! + 1;
+                            widget.story.nbrComment =
+                            widget.story.nbrComment==null?0: widget.story.nbrComment! + 1;
                           for(var story in  widget.userStory.stories!){
                             if(story.createdAt==widget.story.createdAt){
                              int index= widget.userStory.stories!.indexOf(story);
-                             story.nbrComment= widget.story.comment;
+                             story.nbrComment= widget.story.nbrComment;
                              widget.userStory.stories![index]=story;
                              authProvider.updateUser(widget.userStory);
 
@@ -1433,13 +1433,13 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
                             (value) async {
                           if (value) {
 
-                            widget.story.comment =
-                                widget.story.comment! + 1;
+                            widget.story.nbrComment =
+                                widget.story.nbrComment! + 1;
 
                             for(var story in  widget.userStory.stories!){
                               if(story.createdAt==widget.story.createdAt){
                                 int index= widget.userStory.stories!.indexOf(story);
-                                story.nbrComment= widget.story.comment;
+                                story.nbrComment= widget.story.nbrComment;
                                 widget.userStory.stories![index]=story;
                                 authProvider.updateUser(widget.userStory);
 

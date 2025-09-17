@@ -3,11 +3,8 @@ import 'dart:developer';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/admin/annonce.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPage.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Login/login_screen.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Welcome/welcome_screen.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/login.dart';
 import 'package:afrotok/pages/bonASavoir.dart';
 import 'package:afrotok/pages/chargement.dart';
 import 'package:afrotok/pages/chat/myChat.dart';
@@ -15,7 +12,6 @@ import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
-import 'package:afrotok/pages/entreprise/conversation/listConversationUser.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterProduit.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
@@ -55,6 +51,7 @@ import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -544,6 +541,12 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostProvider()),
+        // ChangeNotifierProvider(create: (context) => ContentProvider()),
+
+        ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
+          create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
+          update: (context, authProvider, previous) => ContentProvider(authProvider: authProvider),
+        ),
 
 
 
@@ -637,7 +640,7 @@ class _MyAppState extends State<MyApp> {
 
           case '/basic_chat':
             return PageTransition(
-                child: WelcomeScreen(), type: PageTransitionType.fade);
+                child: const WelcomeScreen(), type: PageTransitionType.fade);
             break;
             case '/mes_notifications':
             return PageTransition(

@@ -549,7 +549,7 @@ class _MessageBoxViewState extends State<MessageBoxView> {
                             heightFactor: 0.8, // 90% de la hauteur de l'écran
                             child: Container(
                               color: Colors.white,
-                              child: StoryComments(story: widget.storyItem, userStory: widget.userStory,),
+                              child: Container(),
                             ),
                           );
                         },
@@ -586,7 +586,8 @@ class _MessageBoxViewState extends State<MessageBoxView> {
                         heightFactor: 0.8, // 90% de la hauteur de l'écran
                         child: Container(
                           color: Colors.white,
-                          child: StoryComments(story: widget.storyItem, userStory: widget.userStory,),
+                          child: Container(),
+                          // child: StoryComments(story: widget.storyItem, userStory: widget.userStory,),
                         ),
                       );
                     },

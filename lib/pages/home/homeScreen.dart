@@ -56,17 +56,17 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 
 import '../component/consoleWidget.dart';
+import '../contenuPayant/TableauDeBord.dart';
 import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import '../ia/gemini/geminibot.dart';
-import '../story/afroStory/storie/storyView.dart';
-import '../user/conponent.dart';
-import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
-import '../userPosts/postWidgets/postUserWidget.dart';
-import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'homeGamer.dart';
 
+import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
+
+const Color primaryGreen = Color(0xFF25D366);
+const Color accentYellow = Color(0xFFFFD700);
+const Color darkBackground = Color(0xFF121212);
+const Color textColor = Colors.white;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -114,14 +114,12 @@ class _MyHomePageState extends State<MyHomePage>
 
   // Liste des onglets avec texte et icônes
   final List<Tab> _tabs = [
-    Tab(text: 'Tiktok', icon: Icon(Icons.tiktok,color: Colors.red,size: 20,)),
-    Tab(text: 'Looks', icon: Icon(Icons.style)),
-    Tab(text: 'Actu', icon: Icon(Icons.article)), // Abrégé pour "Actualités"
-    Tab(text: 'Sport', icon: Icon(Icons.sports)),
-    // Tab(text: 'Évén.', icon: Icon(Icons.event)), // Abrégé pour "Événement"
-    Tab(text: 'Offres', icon: Icon(Icons.local_offer)),
-    // Tab(text: 'Gamer', icon: Icon(Icons.gamepad)),
-  ];
+    Tab(text: 'Accueil'),
+    Tab(text: 'Looks'),
+    // Tab(text: 'TikTok'),
+    Tab(text: 'Actualités'),
+    Tab(text: 'Sports'),
+    Tab(text: 'Offres'),];
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
   void _changeColor() {
@@ -146,27 +144,8 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  Future<void> launchWhatsApp(String phone) async {
-    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
-    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-    String url = "whatsapp://send?phone=" + phone + "";
-    if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(
-          duration: Duration(seconds: 2),
-          content: Text(
-            "Impossible d\'ouvrir WhatsApp",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ));
-
-      // Afficher le SnackBar en bas de la page
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      throw Exception('Impossible d\'ouvrir WhatsApp');
-    }
-  }
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  StreamController<List<Post>> _streamController = StreamController<List<Post>>();
   bool _buttonEnabled = true;
   RandomColor _randomColor = RandomColor();
 
@@ -297,140 +276,7 @@ class _MyHomePageState extends State<MyHomePage>
     return usersChat;
   }
 
-  Future<Chat> getChatsEntrepriseData(
-      UserData amigo, Post post, EntrepriseData entreprise)
-  async {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId',
-          isEqualTo: '${post.id}${authProvider.loginUserData!.id}'),
-      Filter('docId',
-          isEqualTo: '${authProvider.loginUserData!.id}${post.id}'),
-    ))
-        .snapshots();
 
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-      Chat chat = Chat(
-        docId: '${post.id}${authProvider.loginUserData!.id}',
-        id: chatId,
-        senderId: '${authProvider.loginUserData!.id}',
-        receiverId: '${amigo.id}',
-        lastMessage: 'hi',
-        post_id: post.id,
-        entreprise_id: post.entreprise_id,
-        type: ChatType.ENTREPRISE.name,
-        createdAt: DateTime.now()
-            .millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .set(chat.toJson());
-      usersChat = chat;
-    } else {
-      printVm("le chat existe  ");
-      // printVm("stream :${friendsStream}");
-      usersChat = await friendsStream.first.then((value) async {
-        // printVm("stream value l :${value.docs.length}");
-        if (value.docs.length <= 0) {
-          printVm("pas de chat ");
-          String chatId =
-              FirebaseFirestore.instance.collection('Chats').doc().id;
-          Chat chat = Chat(
-            docId: '${post.id}${authProvider.loginUserData!.id}',
-            id: chatId,
-            senderId: '${authProvider.loginUserData!.id}',
-            receiverId: '${amigo.id}',
-            lastMessage: 'hi',
-            entreprise_id: post.entreprise_id,
-            post_id: post.id,
-            type: ChatType.ENTREPRISE.name,
-            createdAt: DateTime.now()
-                .millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance
-              .collection('Chats')
-              .doc(chatId)
-              .set(chat.toJson());
-          usersChat = chat;
-          return chat;
-        } else {
-          return Chat.fromJson(value.docs.first.data());
-        }
-      });
-      CollectionReference messageCollect =
-      await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      if (messageList.isEmpty) {
-        usersChat.messages = [];
-        userProvider.chat = usersChat;
-        printVm("messages vide ");
-      } else {
-        printVm("have messages");
-        usersChat.messages = messageList;
-        userProvider.chat = usersChat;
-      }
-
-      /////////////ami//////////
-      CollectionReference friendCollect =
-      await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.id!
-              ? '${amigo.id}'
-              : '${authProvider.loginUserData!.id}')
-          .get();
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.id
-              ? '${authProvider.loginUserData!.id}'
-              : '${amigo.id}')
-          .get();
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.receiver = receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.sender = senderUserList.first;
-
-      /////////////entreprise//////////
-      CollectionReference entrepriseCollect =
-      await FirebaseFirestore.instance.collection('Entreprises');
-      QuerySnapshot querySnapshotentreprise = await entrepriseCollect
-          .where("id", isEqualTo: '${post.entreprise_id}')
-          .get();
-      List<EntrepriseData> entrepriseList = querySnapshotentreprise.docs
-          .map((doc) =>
-          EntrepriseData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.entreprise = entrepriseList.first;
-    }
-
-    return usersChat;
-  }
 
 
   String formaterDateTime(DateTime dateTime) {
@@ -497,54 +343,6 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  void _showServiceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Mettez en ligne vos services'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 10,
-            children: [
-              AnimateIcon(
-                key: UniqueKey(),
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
-
-                },
-                iconType: IconType.continueAnimation,
-                height: 70,
-                width: 70,
-                color: Colors.green,
-                animateIcon: AnimateIcons.settings,
-              ),
-
-              Text(
-                  'Il est désormais temps de mettre en ligne vos services et savoir-faire sur Afrolook afin qu\'une personne proposant un job puisse vous contacter.'),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Aller à la liste de services',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.green, // Couleur du bouton
-              ),
-              onPressed: () {
-                // Naviguer vers la page de liste de services
-                Navigator.pop(context);
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => UserServiceListPage()));
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
   void _showChatXiloDialog() {
     showDialog(
       context: context,
@@ -557,133 +355,6 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  Future<Chat> getChatsData(UserData amigo) async {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId',
-          isEqualTo: '${amigo.id}${authProvider.loginUserData.id!}'),
-      Filter('docId',
-          isEqualTo: '${authProvider.loginUserData.id!}${amigo.id}'),
-    ))
-        .snapshots();
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-      Chat chat = Chat(
-        docId: '${amigo.id}${authProvider.loginUserData.id!}',
-        id: chatId,
-        senderId: authProvider.loginUserData.id == amigo.id
-            ? '${amigo.id}'
-            : '${authProvider.loginUserData.id!}',
-        receiverId: authProvider.loginUserData.id == amigo.id
-            ? '${authProvider.loginUserData.id!}'
-            : '${amigo.id}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now()
-            .millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .set(chat.toJson());
-      usersChat = chat;
-    } else {
-      printVm("le chat existe  ");
-      printVm("stream :${friendsStream}");
-      usersChat = await friendsStream.first.then((value) async {
-        printVm("stream value l :${value.docs.length}");
-        if (value.docs.length <= 0) {
-          printVm("pas de chat ");
-
-          String chatId =
-              FirebaseFirestore.instance.collection('Chats').doc().id;
-          Chat chat = Chat(
-            docId: '${amigo.id}${authProvider.loginUserData.id!}',
-            id: chatId,
-            senderId: authProvider.loginUserData.id == amigo.id
-                ? '${amigo.id}'
-                : '${authProvider.loginUserData.id!}',
-            receiverId: authProvider.loginUserData.id == amigo.id
-                ? '${authProvider.loginUserData.id!}'
-                : '${amigo.id}',
-            lastMessage: 'hi',
-
-            type: ChatType.USER.name,
-            createdAt: DateTime.now()
-                .millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance
-              .collection('Chats')
-              .doc(chatId)
-              .set(chat.toJson());
-          usersChat = chat;
-          return chat;
-        } else {
-          return Chat.fromJson(value.docs.first.data());
-        }
-      });
-      CollectionReference messageCollect =
-      await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      if (messageList.isEmpty) {
-        usersChat.messages = [];
-        userProvider.chat = usersChat;
-        printVm("messgae vide ");
-      } else {
-        printVm("have messages");
-        usersChat.messages = messageList;
-        userProvider.chat = usersChat;
-      }
-
-      /////////////ami//////////
-      CollectionReference friendCollect =
-      await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.id
-              ? '${amigo.id}'
-              : '${authProvider.loginUserData.id!}')
-          .get();
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.id
-              ? '${authProvider.loginUserData.id!}'
-              : '${amigo.id}')
-          .get();
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.receiver = receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.sender = senderUserList.first;
-    }
-
-    return usersChat;
-  }
 
 
 
@@ -1454,79 +1125,46 @@ class _MyHomePageState extends State<MyHomePage>
 
     authProvider.checkAppVersionAndProceed(context, () {
     });
-    hasShownDialogToday().then((value) async {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      authProvider.getAppData().then((value) {
-        // setState(() {});
-      });
-      categorieProduitProvider.getArticleBooster().then((value) {
-        articles = value;
-        // setState(() {});
-      });
-
-      postProvider.getAllUserServiceHome().then((value) {
-        userServices = value;
-        userServices.shuffle();
-        // setState(() {});
-      });
-      postProvider.getCanauxHome().then((value) {
-        canaux = value;
-        canaux.shuffle();
-        // setState(() {});
-      });
-
-      if (value && mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Nouvelle offre sur Afrolook'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
-                    SizedBox(height: 5),
-                    Icon(FontAwesome.money, size: 50, color: Colors.green),
-                    SizedBox(height: 10),
-                    Text('Vous avez la possibilité de'),
-                    Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
-                    Text(
-                      'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  child: Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    prefs.setString('lastShownDateKey', DateTime.now().toString());
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-      _checkAndShowDialog();
-    });
-
-    authProvider.getToken().then((token) async {
-      printVm("token: ${token}");
-      // postProvider.getPostsImages2(limitePosts).listen((data) {
-      //   if (!_streamController.isClosed) {
-      //     _streamController.add(data);
-      //   }
-      // });
-
-      if (token == null || token == '') {
-        printVm("token: existe pas");
-        Navigator.pushNamed(context, '/welcome');
-      }
-    });
+    // hasShownDialogToday().then((value) async {
+    //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+    //   authProvider.getAppData().then((value) {
+    //     // setState(() {});
+    //   });
+    //   categorieProduitProvider.getArticleBooster().then((value) {
+    //     articles = value;
+    //     // setState(() {});
+    //   });
+    //
+    //   postProvider.getAllUserServiceHome().then((value) {
+    //     userServices = value;
+    //     userServices.shuffle();
+    //     // setState(() {});
+    //   });
+    //   postProvider.getCanauxHome().then((value) {
+    //     canaux = value;
+    //     canaux.shuffle();
+    //     // setState(() {});
+    //   });
+    //
+    //   if (value && mounted) {
+    //
+    //   }
+    //   _checkAndShowDialog();
+    // });
+    //
+    // authProvider.getToken().then((token) async {
+    //   printVm("token: ${token}");
+    //   // postProvider.getPostsImages2(limitePosts).listen((data) {
+    //   //   if (!_streamController.isClosed) {
+    //   //     _streamController.add(data);
+    //   //   }
+    //   // });
+    //
+    //   if (token == null || token == '') {
+    //     printVm("token: existe pas");
+    //     Navigator.pushNamed(context, '/welcome');
+    //   }
+    // });
 
     WidgetsBinding.instance.addObserver(this);
 
@@ -1593,30 +1231,6 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
 
-  void _onDetached() {
-    // Logique pour l'état detached
-    if (authProvider.loginUserData != null) {
-      authProvider.loginUserData!.isConnected = false;
-      userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE .name);
-    }
-  }
-
-  void _onResumed() {
-    // Logique pour l'état resumed
-    if (authProvider.loginUserData != null) {
-      authProvider.loginUserData!.isConnected = true;
-      userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
-    }
-  }
-
-  void _onInactive() {
-    // Logique pour l'état inactive
-    if (authProvider.loginUserData != null) {
-      authProvider.loginUserData!.isConnected = false;
-      userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE .name);
-    }
-  }
-
   void _onPaused() {
     if (authProvider.loginUserData != null) {
       authProvider.loginUserData!.isConnected = false;
@@ -1631,433 +1245,255 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    _changeColor();
-
-    // _color=  _randomColor.randomColor(
-    //     colorHue: ColorHue.multiple(colorHues: [
-    //       ColorHue.red,
-    //       // ColorHue.blue,
-    //       // ColorHue.green,
-    //       ColorHue.orange,
-    //       ColorHue.yellow,
-    //       ColorHue.purple
-    //     ]));
-    double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    homeIconSize=width*0.065;
+    double iconSize = width * 0.065;
 
-    //userProvider.getUsers(authProvider.loginUserData!.id!);
-    // if(postProvider.listConstposts.isNotEmpty){
-    //   setState(() {
-    //   });
-    // }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          // postProvider.getPostsImages(limitePosts).then(
-          //       (value) {},
-          //     );
-          // postProvider.getPostsVideos().then((value) {
-          //
-          // },);
-
-        });
-
-        //Restart.restartApp();
-        // is_actualised = true;
-
-        //     await userProvider.getAllAnnonces();
-        /*
-       await postProvider.getPostsImages(limitePosts).then((value) {
-          printVm('actualiser');
-          setState(() {
-            postLenght=8;
-            is_actualised = false;
-
-          });
-
-
-        },);
-
-         */
-      },
-      child: WillPopScope(
-        onWillPop: () async {
-          // Cette fonction sera appelée lorsque l'utilisateur appuie sur le bouton "Retour"
-          return await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Voulez-vous quitter l\'application ?'),
-              content: const Text(
-                  'Êtes-vous sûr de vouloir quitter l\'application ? Toutes vos données non enregistrées seront perdues.'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context)
-                        .pop(false); // Annuler la fermeture de l'application
-                  },
-                  child: const Text('Annuler'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(true); // Quitter l'application
-                  },
-                  child: const Text('Quitter'),
-                ),
-              ],
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: darkBackground, // Fond noir uniforme
+      appBar: AppBar(
+        backgroundColor: darkBackground,
+        automaticallyImplyLeading: false,
+        titleSpacing: 10,
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: primaryGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.people_alt_rounded, color: Colors.white, size: 24),
             ),
-          );
-        },
-        child: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: ConstColors.backgroundColor,
-          appBar: AppBar(
-            backgroundColor: Colors.lightGreen.shade300,
-            automaticallyImplyLeading: false,
-
-            titleSpacing: 10,
-            title: Text(
-              // 'Afro Chronique',
+            SizedBox(width: 10),
+            Text(
               'Afrolook',
               style: TextStyle(
-                fontSize: homeIconSize*0.7,
-                fontWeight: FontWeight.w900,
-                color: Colors.green,
-                letterSpacing: 1.5,
+                fontSize: iconSize * 0.8,
+                fontWeight: FontWeight.bold,
+                color: primaryGreen,
+                letterSpacing: 1.2,
               ),
             ),
-
-            //backgroundColor: Colors.blue,
-            actions: [
-
-              GestureDetector(
-                onTap: () async {
-                  authProvider.checkAppVersionAndProceed(context, () {
-                    Navigator.pushNamed(context, "/mes_notifications");
-                  });
-
-                },
-                child: StreamBuilder<List<NotificationData>>(
-                  stream: authProvider
-                      .getListNotificationAuth(authProvider.loginUserData.id!),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
-                    } else if (snapshot.hasError) {
-                      return Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,);
-                    } else {
-                      List<NotificationData> list = snapshot!.data!;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 15.0),
-                        child: badges.Badge(
-                          showBadge: list.length < 1 ? false : true,
-                          badgeContent: list.length > 9
-                              ? Text(
-                            '9+',
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.white),
-                          )
-                              : Text(
-                            '${list.length}',
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.white),
-                          ),
-                          child: Image.asset("assets/icons/icons8-bell-188.png",width: homeIconSize,height: homeIconSize,)
-                          ,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-              SizedBox(width: 10,),
-
-              GestureDetector(
-                onTap: () async {
-                  _showChatXiloDialog();
-
-                },
-                child: CircleAvatar(
-                  radius: 15, // Taille de l'avatar
-                  backgroundImage: AssetImage('assets/icon/X.png'),
-                ),
-              ),
-              SizedBox(width: 10,),
-              AnimateIcon(
-                key: UniqueKey(),
-                onTap: () async {
-                  authProvider.checkAppVersionAndProceed(context, () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
-                  });
-
-
-                },
-                iconType: IconType.continueAnimation,
-                height: homeIconSize,
-                width: homeIconSize,
-                color: Colors.green,
-                animateIcon: AnimateIcons.settings,
-              ),
-              SizedBox(width: 10,),
-
-              AnimateIcon(
-                key: UniqueKey(),
-                onTap: () async {
-                  authProvider.checkAppVersionAndProceed(context, () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
-                  });
-
-                },
-                iconType: IconType.continueAnimation,
-                height: homeIconSize,
-                width: homeIconSize,
-                color: Colors.green,
-                animateIcon: AnimateIcons.paid,
-              ),
-              SizedBox(width: 10,),
-
-              GestureDetector(
-                  onTap: () async {
-                    if (_scrollController.hasClients) {
-
-                      _scrollController.animateTo(
-                        0.0,
-                        duration: Duration(milliseconds: 1000),
-                        curve: Curves.ease,
-                      );
-                    }
-                    setState(() {
-                      listConstposts.clear();
-                      // postProvider.getPostsImages2(limitePosts).listen((data) {
-                      //   _streamController.add(data);
-                      // });
-                    });
-
-                    // setState(() {
-                    //   postProvider.getHomePostsImages(limitePosts).then((value) {
-                    //
-                    //   },);
-                    // });
-
-                    //   Restart.restartApp();
-
-                    /*
-                await userProvider.getAllAnnonces();
-                await postProvider.getPostsImages(limitePosts).then((value) {
-                  printVm('actualiser');
-                  setState(() {
-                    postLenght=8;
-                    is_actualised = false;
-
-                  });
-
-
-                },);
-
-                 */
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.asset("assets/icon/cocotier-home.png",height: 30,width: 30,),
-                  )),
-            ],
-            bottom: TabBar(
+          ],
+        ),
+        actions: [
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/mes_notifications"),
+            child: StreamBuilder<List<NotificationData>>(
+              stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
+              builder: (context, snapshot) {
+                int notificationCount = snapshot.hasData ? snapshot.data!.length : 0;
+                return badges.Badge(
+                  showBadge: notificationCount > 0,
+                  badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                  badgeContent: Text(
+                    notificationCount > 9 ? '9+' : '$notificationCount',
+                    style: TextStyle(fontSize: 10, color: darkBackground),
+                  ),
+                  child: Icon(Icons.notifications_none_rounded, color: textColor, size: iconSize),
+                );
+              },
+            ),
+          ),
+          // SizedBox(width: 10),
+          // GestureDetector(
+          //   onTap: _showChatXiloDialog,
+          //   child: Container(
+          //     width: 34,
+          //     height: 34,
+          //     decoration: BoxDecoration(color: primaryGreen, shape: BoxShape.circle),
+          //     child: Center(
+          //       child: Text('X', style: TextStyle(color: darkBackground, fontWeight: FontWeight.bold, fontSize: 16)),
+          //     ),
+          //   ),
+          // ),
+          SizedBox(width: 20),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage())),
+            child: Icon(Icons.settings_outlined, color: textColor, size: iconSize),
+          ),
+          SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: ''))),
+            child: Icon(Icons.storefront, color: textColor, size: iconSize),
+          ),
+          SizedBox(width: 10),
+          GestureDetector(
+            onTap: () {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(0.0, duration: Duration(milliseconds: 1000), curve: Curves.ease);
+              }
+              setState(() {
+                listConstposts.clear();
+              });
+            },
+            child: Icon(Icons.refresh_rounded, color: textColor, size: iconSize),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(48),
+          child: Container(
+            color: darkBackground,
+            child: TabBar(
               controller: _tabController,
-              tabs: _tabs,
-
-              labelColor: Color(0xFFE4A918), // Couleur du texte de l'onglet sélectionné
-              // unselectedLabelColor: Colors.white, // Couleur du texte des onglets non sélectionnés
-              unselectedLabelColor:_tabs.first.text=='Tiktok'? Colors.green:Colors.red , // Couleur du texte des onglets non sélectionnés
-              // unselectedLabelColor: Color(0xFFE4A918), // Couleur du texte des onglets non sélectionnés
-              indicatorColor: Color(0xFFE4A918), // Couleur de l'indicateur de l'onglet sélectionné
-            ),
-            //title: Text(widget.title),
-          ),
-          drawer: menu(context,width,height),
-          body: SafeArea(
-            child: Container(
-
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
-                    Colors.lightGreen.shade200, // Noir plus dominant mais atténué
-                  ],
-                ),
-              ),
-              child:TabBarView(
-                controller: _tabController,
-                children: [
-                  Center(child: VideoFeedTiktokPage(fullPage: false,)),
-
-                  Center(child: LooksPage(type: TabBarType.LOOKS.name,)),
-                  // Contenu de chaque onglet
-                  Center(child: ActualitePage(type: TabBarType.ACTUALITES.name)),
-                  Center(child: SportPage(type: TabBarType.SPORT.name)),
-                  // Center(child: EventPage(type: TabBarType.EVENEMENT.name)),
-                  Center(child: OffrePage(type: TabBarType.OFFRES.name)),
-                  // Center(child: GamerPage(type: TabBarType.GAMER.name)),
-                ],
-              ),
-            ),
-          ),
-          bottomNavigationBar: Container(
-            height: 50,
-            color:  Colors.lightGreen.shade300,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await userProvider
-                          .getProfileUsers(authProvider.loginUserData!.id!,
-                          context, limiteUsers)
-                          .then(
-                            (value) {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => UserCards(),
-                              ));
-                        },
-                      );
-
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
-                    },
-                    child: StreamBuilder<int>(
-                        stream: getNbrInvitation(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            printVm("erreur: ${snapshot.error.toString()}");
-                            return badges.Badge(
-                                badgeContent: Text('1'),
-                                showBadge: false,
-                                child: Image.asset("assets/icons/group3d.png",width: homeIconSize+18,height: homeIconSize+18,)
-                            );
-                          } else if (snapshot.hasData) {
-                            if (snapshot.data! > 0) {
-                              return badges.Badge(
-                                  badgeContent: snapshot.data! > 10
-                                      ? Text(
-                                    '9+',
-                                    style: TextStyle(
-                                        fontSize: 10, color: Colors.white),
-                                  )
-                                      : Text(
-                                    '${snapshot.data!}',
-                                    style: TextStyle(
-                                        fontSize: 10, color: Colors.white),
-                                  ),
-                                  child: Image.asset("assets/icons/group3d.png",width: homeIconSize+18,height: homeIconSize+18,)
-                              );
-                            } else {
-                              return badges.Badge(
-                                  badgeContent: Text('1'),
-                                  showBadge: false,
-                                  child: Image.asset("assets/icons/group3d.png",width: homeIconSize+18,height: homeIconSize+18,)
-                              );
-                            }
-                          } else {
-                            printVm("data: ${snapshot.data}");
-                            return badges.Badge(
-                                badgeContent: Text('1'),
-                                showBadge: false,
-                                child: Image.asset("assets/icons/group3d.png",width: homeIconSize+18,height: homeIconSize+18,)
-                            );
-                          }
-                        }),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/list_users_chat');
-                      //Navigator.pushNamed(context, '/test_chat');
-                    },
-                    child: StreamBuilder<int>(
-                        stream: getNbrMessageNonLu(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            printVm("erreur: ${snapshot.error.toString()}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/chat3d.png",width: homeIconSize+15,height: homeIconSize+15,),
-                            );
-                          } else if (snapshot.hasData) {
-                            if (snapshot.data! > 0) {
-                              return badges.Badge(
-                                badgeContent: snapshot.data! > 10
-                                    ? Text(
-                                  '9+',
-                                  style: TextStyle(
-                                      fontSize: 10, color: Colors.white),
-                                )
-                                    : Text(
-                                  '${snapshot.data!}',
-                                  style: TextStyle(
-                                      fontSize: 10, color: Colors.white),
-                                ),
-                                child: Image.asset("assets/icons/chat3d.png",width: homeIconSize+15,height: homeIconSize+15,),
-                              );
-                            } else {
-                              return badges.Badge(
-                                badgeContent: Text('1'),
-                                showBadge: false,
-                                child: Image.asset("assets/icons/chat3d.png",width: homeIconSize+15,height: homeIconSize+15,),
-                              );
-                            }
-                          } else {
-                            printVm("data: ${snapshot.data}");
-                            return badges.Badge(
-                              badgeContent: Text('1'),
-                              showBadge: false,
-                              child: Image.asset("assets/icons/chat3d.png",width: homeIconSize+15,height: homeIconSize+15,),
-                            );
-                          }
-                        }),
-                  ),
-                  GestureDetector(
-                      onTap: () {
-                        authProvider.checkAppVersionAndProceed(context, () {
-                          Navigator.pushNamed(context, '/user_posts_form');
-                        });
-
-                      },
-                      child: Image.asset('assets/icons/icons8-plus-188.png',width: homeIconSize+10,height: homeIconSize+10,)),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/videos');
-
-                    },
-                    child:                       badges.Badge(
-
-                        badgeContent:
-                        Text(
-                          '9+',
-                          style: TextStyle(
-                              fontSize: 9, color: Colors.white),
-                        ),
-                        child: Image.asset("assets/icons/video3d.png",width: homeIconSize+15,height: homeIconSize+15,)
-                    ),),
-                  GestureDetector(
-                      onTap: () {
-                        authProvider.checkAppVersionAndProceed(context, () {
-                          _scaffoldKey.currentState!.openDrawer();
-                        });
-                      },
-                      child: Image.asset('assets/icons/menu3d.png',width: homeIconSize+15,height: homeIconSize+15,)),
-
-                ],
-              ),
+              isScrollable: true,
+              indicatorColor: primaryGreen,
+              labelColor: accentYellow,
+              unselectedLabelColor: Colors.grey[400],
+              tabs: [
+                Tab(text: 'Accueil'),
+                Tab(text: 'Looks'),
+                // Tab(text: 'TikTok'),
+                Tab(text: 'Actualités'),
+                Tab(text: 'Sports'),
+                Tab(text: 'Offres'),
+              ],
             ),
           ),
         ),
       ),
+      drawer: menu(context, width, MediaQuery.of(context).size.height),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          DashboardContentScreen(),
+          LooksPage(type: TabBarType.LOOKS.name),
+          // VideoFeedTiktokPage(fullPage: false),
+          ActualitePage(type: TabBarType.ACTUALITES.name),
+          SportPage(type: TabBarType.SPORT.name),
+          OffrePage(type: TabBarType.OFFRES.name),
+        ],
+      ),
+
+      bottomNavigationBar: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          color: darkBackground,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 15,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // Bouton Communauté
+            GestureDetector(
+              onTap: () async {
+                await userProvider
+                    .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
+                    .then((value) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
+                });
+              },
+              child: StreamBuilder<int>(
+                stream: getNbrInvitation(),
+                builder: (context, snapshot) {
+                  int invitationCount = snapshot.hasData ? snapshot.data! : 0;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      badges.Badge(
+                        showBadge: invitationCount > 0,
+                        badgeStyle: badges.BadgeStyle(
+                          badgeColor: accentYellow,
+                        ),
+                        badgeContent: Text(
+                          invitationCount > 9 ? '9+' : '$invitationCount',
+                          style: TextStyle(fontSize: 9, color: darkBackground),
+                        ),
+                        child: Icon(Icons.group, color: textColor, size: 26),
+                      ),
+                      SizedBox(height: 4),
+                      Text('Communauté', style: TextStyle(color: textColor, fontSize: 10)),
+                    ],
+                  );
+                },
+              ),
+            ),
+            // Bouton Messages
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
+              child: StreamBuilder<int>(
+                stream: getNbrMessageNonLu(),
+                builder: (context, snapshot) {
+                  int messageCount = snapshot.hasData ? snapshot.data! : 0;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      badges.Badge(
+                        showBadge: messageCount > 0,
+                        badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                        badgeContent: Text(
+                          messageCount > 9 ? '9+' : '$messageCount',
+                          style: TextStyle(fontSize: 9, color: darkBackground),
+                        ),
+                        child: Icon(Icons.chat_bubble_outline, color: textColor, size: 26),
+                      ),
+                      SizedBox(height: 4),
+                      Text('Messages', style: TextStyle(color: textColor, fontSize: 10)),
+                    ],
+                  );
+                },
+              ),
+            ),
+            // Bouton Créer central
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryGreen, accentYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: primaryGreen.withOpacity(0.4), blurRadius: 10, spreadRadius: 2, offset: Offset(0, 3)),
+                  ],
+                ),
+                child: Icon(Icons.add, color: darkBackground, size: 30),
+              ),
+            ),
+            // Bouton Vidéos
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/videos'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  badges.Badge(
+                    showBadge: true,
+                    badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                    badgeContent: Text('9+', style: TextStyle(fontSize: 9, color: darkBackground)),
+                    child: Icon(Icons.video_library, color: textColor, size: 26),
+                  ),
+                  SizedBox(height: 4),
+                  Text('Vidéos', style: TextStyle(color: textColor, fontSize: 10)),
+                ],
+              ),
+            ),
+            // Bouton Menu
+            GestureDetector(
+              onTap: () => _scaffoldKey.currentState!.openDrawer(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.menu, color: textColor, size: 26),
+                  SizedBox(height: 4),
+                  Text('Menu', style: TextStyle(color: textColor, fontSize: 10)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+
 }
