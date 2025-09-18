@@ -32,7 +32,8 @@ android {
     testNamespace = "com.afrotok.afrotok"
     compileSdkVersion 36
 //    ndkVersion "26.1.10909125"
-    ndkVersion "29.0.14033849"
+//    ndkVersion "29.0.14033849"
+    ndkVersion = "25.1.8937393"
 
 ////    namespace = "com.anvt.vnmobile"
 //    compileSdk = flutter.compileSdkVersion
@@ -71,11 +72,12 @@ android {
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 24
         //noinspection OldTargetApi
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
-
+        // ✅ Active le MultiDex
+        multiDexEnabled true
 //        minSdk = flutter.minSdkVersion
 //        targetSdk = flutter.targetSdkVersion
 //        versionCode = flutter.versionCode
@@ -92,11 +94,11 @@ android {
           }
     buildTypes {
         release {
-            shrinkResources false
-            minifyEnabled false
-            ndk {
-                debugSymbolLevel 'NONE'
-            }
+            shrinkResources true
+            minifyEnabled true
+//            ndk {
+//                debugSymbolLevel 'NONE'
+//            }
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
 //            signingConfig signingConfigs.debug

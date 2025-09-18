@@ -1384,11 +1384,15 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Communauté
             GestureDetector(
               onTap: () async {
-                await userProvider
-                    .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
-                    .then((value) {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
+
+                authProvider.checkAppVersionAndProceed(context, () async {
+                  await userProvider
+                      .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
+                      .then((value) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
+                  });
                 });
+
               },
               child: StreamBuilder<int>(
                 stream: getNbrInvitation(),
@@ -1445,8 +1449,8 @@ class _MyHomePageState extends State<MyHomePage>
             GestureDetector(
               onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
               child: Container(
-                width: 56,
-                height: 56,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [primaryGreen, accentYellow],
@@ -1463,7 +1467,12 @@ class _MyHomePageState extends State<MyHomePage>
             ),
             // Bouton Vidéos
             GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/videos'),
+              onTap: () {
+                authProvider.checkAppVersionAndProceed(context, () async {
+                  Navigator.pushNamed(context, '/videos');
+
+                });
+              },
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1480,7 +1489,12 @@ class _MyHomePageState extends State<MyHomePage>
             ),
             // Bouton Menu
             GestureDetector(
-              onTap: () => _scaffoldKey.currentState!.openDrawer(),
+              onTap: () {
+                authProvider.checkAppVersionAndProceed(context, () async {
+                  _scaffoldKey.currentState!.openDrawer();
+
+                });
+              },
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

@@ -446,6 +446,22 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         );
 
         success = await contentProvider.addEpisode(episode);
+        // await userProvider.getAllUsersOneSignaUserId().then((userIds) async {
+        //   if (userIds.isNotEmpty) {
+        //     await userProvider.sendNotification(
+        //       userIds: userIds,
+        //       smallImage: episode.thumbnailUrl!,
+        //       send_user_id: userProvider.loginUserData!.id!,
+        //       recever_user_id: '',
+        //       message: "🔥🎥 ${episode.title} est en ligne et fait sensation !",
+        //       type_notif: NotificationType.POST.name,
+        //       post_id: episode.id ?? '',
+        //       post_type: PostDataType.VIDEO.name,
+        //       chat_id: '',
+        //     );
+        //   }
+        // });
+
       } else {
         // Création/mise à jour d'un contenu
         final content = ContentPaie(
@@ -470,6 +486,22 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
         if (widget.content == null) {
           success = await contentProvider.addContentPaie(content);
+          // await userProvider.getAllUsersOneSignaUserId().then((userIds) async {
+          //   if (userIds.isNotEmpty) {
+          //     await userProvider.sendNotification(
+          //       userIds: userIds,
+          //       smallImage: content.thumbnailUrl,
+          //       send_user_id: userProvider.loginUserData!.id!,
+          //       recever_user_id: '',
+          //       message: "🔥🎥 ${content.title} est en ligne et fait sensation !",
+          //       type_notif: NotificationType.POST.name,
+          //       post_id: content.id ?? '',
+          //       post_type: PostDataType.VIDEO.name,
+          //       chat_id: '',
+          //     );
+          //   }
+          // });
+
         } else {
           success = await contentProvider.updateContentPaie(content);
         }

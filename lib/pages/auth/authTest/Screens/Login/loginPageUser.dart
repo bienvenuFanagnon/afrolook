@@ -489,7 +489,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
   String? _errorMessage;
 
   // Fonction de connexion
-  Future<void> _signIn() async {
+  Future<void> _signIn2() async {
     if (!_formKey.currentState!.validate()) return;
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -586,6 +586,215 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
       }
     }
   }
+
+
+  Future<void> _signIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      final user = userCredential.user;
+
+      if (user != null && !user.emailVerified) {
+        // Afficher un modal pour demander la vérification
+        _showEmailVerificationModal(user);
+        return; // Stopper le reste de la connexion
+      }
+
+      // Si email vérifié, continuer la récupération des données
+      if (await authProvider.getCurrentUser(user!.uid)) {
+        if (authProvider.loginUserData != null &&
+            authProvider.loginUserData.id != null &&
+            authProvider.loginUserData.id!.length > 5) {
+
+          await authProvider.getAppData();
+          await userProvider.getAllAnnonces();
+
+          userProvider.changeState(
+              user: authProvider.loginUserData,
+              state: UserState.ONLINE.name
+          );
+          prefs.setString('token', user.uid);
+
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur de chargement', textAlign: TextAlign.center),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
+      _emailController.clear();
+      _passwordController.clear();
+
+    } on FirebaseAuthException catch (error) {
+      _handleFirebaseAuthError(error);
+    } catch (e) {
+      _errorMessage = "Une erreur inattendue s'est produite.";
+    } finally {
+      setState(() => _isLoading = false);
+      if (_errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage!, textAlign: TextAlign.center),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+// Modal pour email non vérifié
+  void _showEmailVerificationModal(User user) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.email, size: 60, color: Colors.orange),
+                SizedBox(height: 10),
+                Text(
+                  "Vérification de l'email requise",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Pour continuer, vous devez vérifier votre adresse email. "
+                      "Nous pouvons vous renvoyer un lien de vérification.",
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                  ),
+                  onPressed: () async {
+                    await user.sendEmailVerification();
+                    Navigator.pop(context); // fermer le premier modal
+
+                    // Afficher le deuxième modal informatif
+                    _showCheckEmailModal();
+                  },
+                  child: Text("Renvoyer le lien"),
+                ),
+                SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Annuler"),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+// Deuxième modal après l'envoi du lien
+  void _showCheckEmailModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.mark_email_read, size: 60, color: Colors.green),
+                SizedBox(height: 10),
+                Text(
+                  "Lien envoyé !",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Veuillez vérifier votre boîte mail pour confirmer votre compte. "
+                      "Pensez à regarder dans les spams si vous ne le trouvez pas.",
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Compris"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+// Méthode pour gérer les erreurs FirebaseAuth
+  void _handleFirebaseAuthError(FirebaseAuthException error) {
+    print("Une erreur indéfinie : ${error.code}");
+
+    switch (error.code) {
+      case "invalid-email":
+        _errorMessage = "Votre adresse email semble être malformée.";
+        break;
+      case "wrong-password":
+        _errorMessage = "Votre mot de passe est erroné.";
+        break;
+      case "user-not-found":
+        _errorMessage = "L'utilisateur avec cet email n'existe pas.";
+        break;
+      case "invalid-credential":
+        _errorMessage = "Informations de connexion incorrectes.";
+        break;
+      case "user-disabled":
+        _errorMessage = "L'utilisateur avec cet email a été désactivé.";
+        break;
+      case "too-many-requests":
+        _errorMessage = "Trop de tentatives de connexion. Réessayez plus tard.";
+        break;
+      case "operation-not-allowed":
+        _errorMessage = "La connexion avec email et mot de passe n'est pas activée.";
+        break;
+      case "network-request-failed":
+        _errorMessage = "Erreur de connexion. Vérifiez votre internet.";
+        break;
+      default:
+        _errorMessage = "Une erreur indéfinie s'est produite.";
+        }
+  }
+
 
   bool isValidEmail(String email) {
     final RegExp emailRegExp = RegExp(
@@ -766,7 +975,7 @@ if(authProvider.loginUserData!=null ||authProvider.loginUserData.id!=null ||auth
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ConfirmUser()));
               },
               child: Text(
                 "Mot de passe oublié?",

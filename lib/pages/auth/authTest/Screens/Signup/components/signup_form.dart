@@ -306,9 +306,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               await authProvider.getAppData();
                               authProvider.initializeData();
                               authProvider.registerUser.numeroDeTelephone = telephoneController.text;
-                              authProvider.registerUser.codeParrain = code_parrainageController.text;
-                              authProvider.registerUser.codeParrainage = "${pseudoController.text}${genererNombreAleatoire()}";
-                              authProvider.registerUser.pseudo = pseudoController.text;
+                              authProvider.registerUser.codeParrain = code_parrainageController.text.trim();
+                              authProvider.registerUser.codeParrainage = "${pseudoController.text}${genererNombreAleatoire()}".replaceAll(' ', '');
+                              authProvider.registerUser.pseudo = pseudoController.text.trim().replaceAll(' ', '_');
                               authProvider.registerUser.genre = selectedGenre;
                               authProvider.registerUser.password = motDePasseController.text;
                               authProvider.registerUser.email = emailController.text;

@@ -15,45 +15,115 @@ class ContentProvider with ChangeNotifier {
 
   List<ContentPaie> _featuredContentPaies = [];
   Map<String, List<ContentPaie>> _contentPaiesByCategory = {};
-  List<ContentCategory> _categories
-  = [
-  ContentCategory(
-  id: '1',
-  name: 'Musique',
-  description: 'Clips, concerts et tout ce qui bouge 🎶',
-  imageUrl: 'https://example.com/musique.jpg',
-  ),
-  ContentCategory(
-  id: '2',
-  name: 'Sport',
-  description: 'Football, basket, fitness et plus 🏀⚽',
-  imageUrl: 'https://example.com/sport.jpg',
-  ),
-  ContentCategory(
-  id: '3',
-  name: 'Éducation',
-  description: 'Cours, tutos et apprentissage 📚',
-  imageUrl: 'https://example.com/education.jpg',
-  ),
-  ContentCategory(
-  id: '4',
-  name: 'Divertissement',
-  description: 'Humour, films et distractions 😂🎬',
-  imageUrl: 'https://example.com/divertissement.jpg',
-  ),
-  ContentCategory(
-  id: '5',
-  name: 'Actualités',
-  description: 'Infos, débats et tendances 🌍',
-  imageUrl: 'https://example.com/actualites.jpg',
-  ),
-  ContentCategory(
-  id: '6',
-  name: 'Mode',
-  description: 'Styles, looks et tendances 👗👟',
-  imageUrl: 'https://example.com/mode.jpg',
-  ),
+  // List<ContentCategory> _categories
+  // = [
+  // ContentCategory(
+  // id: '1',
+  // name: 'Musique',
+  // description: 'Clips, concerts et tout ce qui bouge 🎶',
+  // imageUrl: 'https://example.com/musique.jpg',
+  // ),
+  // ContentCategory(
+  // id: '2',
+  // name: 'Sport',
+  // description: 'Football, basket, fitness et plus 🏀⚽',
+  // imageUrl: 'https://example.com/sport.jpg',
+  // ),
+  // ContentCategory(
+  // id: '3',
+  // name: 'Éducation',
+  // description: 'Cours, tutos et apprentissage 📚',
+  // imageUrl: 'https://example.com/education.jpg',
+  // ),
+  // ContentCategory(
+  // id: '4',
+  // name: 'Divertissement',
+  // description: 'Humour, films et distractions 😂🎬',
+  // imageUrl: 'https://example.com/divertissement.jpg',
+  // ),
+  // ContentCategory(
+  // id: '5',
+  // name: 'Actualités',
+  // description: 'Infos, débats et tendances 🌍',
+  // imageUrl: 'https://example.com/actualites.jpg',
+  // ),
+  // ContentCategory(
+  // id: '6',
+  // name: 'Mode',
+  // description: 'Styles, looks et tendances 👗👟',
+  // imageUrl: 'https://example.com/mode.jpg',
+  // ),
+  // ];
+
+  List<ContentCategory> _categories = [
+    ContentCategory(
+      id: '1',
+      name: 'Musique',
+      description: 'Clips, concerts et tout ce qui bouge 🎶',
+      imageUrl: 'https://example.com/musique.jpg',
+    ),
+    ContentCategory(
+      id: '2',
+      name: 'Sport',
+      description: 'Football, basket, fitness et plus 🏀⚽',
+      imageUrl: 'https://example.com/sport.jpg',
+    ),
+    ContentCategory(
+      id: '3',
+      name: 'Éducation',
+      description: 'Cours, tutos et apprentissage 📚',
+      imageUrl: 'https://example.com/education.jpg',
+    ),
+    ContentCategory(
+      id: '4',
+      name: 'Divertissement',
+      description: 'Humour, films et distractions 😂🎬',
+      imageUrl: 'https://example.com/divertissement.jpg',
+    ),
+    ContentCategory(
+      id: '5',
+      name: 'Actualités',
+      description: 'Infos, débats et tendances 🌍',
+      imageUrl: 'https://example.com/actualites.jpg',
+    ),
+    ContentCategory(
+      id: '6',
+      name: 'Mode',
+      description: 'Styles, looks et tendances 👗👟',
+      imageUrl: 'https://example.com/mode.jpg',
+    ),
+    ContentCategory(
+      id: '7',
+      name: 'Vidéos Virales',
+      description: 'Les vidéos qui font le buzz 🔥😂',
+      imageUrl: 'https://example.com/virales.jpg',
+    ),
+    ContentCategory(
+      id: '8',
+      name: 'Fuites & Exclus',
+      description: 'Contenus inédits et coulisses 🤫🎥',
+      imageUrl: 'https://example.com/fuites.jpg',
+    ),
+    ContentCategory(
+      id: '9',
+      name: 'Challenges',
+      description: 'Moments amusants et nostalgie 🎉👶',
+      imageUrl: 'https://example.com/jeunesse.jpg',
+    ),
+    ContentCategory(
+      id: '10',
+      name: 'Cartoon',
+      description: 'Animations 🐭🎨',
+      imageUrl: 'https://example.com/cartoon.jpg',
+    ),
+    ContentCategory(
+      id: '11',
+      name: 'Manga',
+      description: 'Bandes dessinées japonaises et animés 🇯🇵📖',
+      imageUrl: 'https://example.com/manga.jpg',
+    ),
   ];
+
   List<ContentPaie> _userContentPaies = [];
   List<ContentPurchase> _userPurchases = [];
   List<Episode> _episodes = [];
@@ -154,45 +224,7 @@ class ContentProvider with ChangeNotifier {
   }
   Future<void> loadCategories() async {
     try {
-      _categories = [
-        ContentCategory(
-          id: '4',
-          name: 'Divertissement',
-          description: 'Humour, films et distractions 😂🎬',
-          imageUrl: 'https://example.com/divertissement.jpg',
-        ),
-        ContentCategory(
-          id: '1',
-          name: 'Musique',
-          description: 'Clips, concerts et tout ce qui bouge 🎶',
-          imageUrl: 'https://example.com/musique.jpg',
-        ),
-        ContentCategory(
-          id: '2',
-          name: 'Sport',
-          description: 'Football, basket, fitness et plus 🏀⚽',
-          imageUrl: 'https://example.com/sport.jpg',
-        ),
-        ContentCategory(
-          id: '3',
-          name: 'Éducation',
-          description: 'Cours, tutos et apprentissage 📚',
-          imageUrl: 'https://example.com/education.jpg',
-        ),
-
-        ContentCategory(
-          id: '5',
-          name: 'Actualités',
-          description: 'Infos, débats et tendances 🌍',
-          imageUrl: 'https://example.com/actualites.jpg',
-        ),
-        ContentCategory(
-          id: '6',
-          name: 'Mode',
-          description: 'Styles, looks et tendances 👗👟',
-          imageUrl: 'https://example.com/mode.jpg',
-        ),
-      ];
+      _categories.shuffle();
 
       notifyListeners();
     } catch (e) {
@@ -322,9 +354,22 @@ class ContentProvider with ChangeNotifier {
         return PurchaseResult.alreadyPurchased;
       }
 
-      // Vérifier le solde de l'utilisateur
-      if (currentUser.votre_solde_principal! < contentPaie.price) {
-        _showInsufficientBalanceModal(context, contentPaie.price - currentUser.votre_solde_principal!);
+      // 🔹 Récupérer le solde en temps réel depuis Firestore
+      final userDoc =
+      await _firestore.collection('Users').doc(currentUser.id).get();
+
+      if (!userDoc.exists) {
+        _showErrorModal(context, "Utilisateur introuvable !");
+        return PurchaseResult.error;
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final double soldeActuel =
+      (userData['votre_solde_principal'] ?? 0).toDouble();
+
+      // Vérifier le solde
+      if (soldeActuel < contentPaie.price) {
+        _showInsufficientBalanceModal(context, contentPaie.price - soldeActuel);
         return PurchaseResult.insufficientBalance;
       }
 
@@ -332,35 +377,95 @@ class ContentProvider with ChangeNotifier {
       final ownerEarnings = contentPaie.price * 0.5;
       final platformEarnings = contentPaie.price * 0.5;
 
-      await _firestore.collection('Users').doc(currentUser.id).update({
-        'votre_solde_principal': FieldValue.increment(-contentPaie.price),
-      });
+      await _firestore.runTransaction((transaction) async {
+        final userRef = _firestore.collection('Users').doc(currentUser.id);
+        final ownerRef = _firestore.collection('Users').doc(contentPaie.ownerId);
+        final appDataRef =
+        _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
 
-      await _firestore.collection('Users').doc(contentPaie.ownerId).update({
-        'votre_solde_contenu': FieldValue.increment(ownerEarnings),
-      });
+        // 🔹 Débiter l'acheteur
+        transaction.update(userRef, {
+          'votre_solde_principal': FieldValue.increment(-contentPaie.price),
+        });
 
-      // Mettre à jour le solde de la plateforme
-      final appDataDoc = await _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT').get();
-      if (appDataDoc.exists) {
-        await _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT').update({
+        // 🔹 Créditer le créateur
+        transaction.update(ownerRef, {
+          'votre_solde_principal': FieldValue.increment(ownerEarnings),
+        });
+
+        // 🔹 Créditer la plateforme
+        transaction.update(appDataRef, {
           'solde_gain': FieldValue.increment(platformEarnings),
         });
+
+        // 🔹 Enregistrer l’achat
+        final purchase = ContentPurchase(
+          userId: currentUser.id!,
+          contentId: contentPaie.id!,
+          amountPaid: contentPaie.price,
+          ownerEarnings: ownerEarnings,
+          platformEarnings: platformEarnings,
+          purchaseDate: DateTime.now().millisecondsSinceEpoch,
+        );
+        transaction.set(
+          _firestore.collection('ContentPaie_purchases').doc(),
+          purchase.toJson(),
+        );
+
+        // 🔹 Créer la transaction "DEPENSE" pour l’acheteur
+        final depenseRef = _firestore.collection("TransactionSoldes").doc();
+        transaction.set(depenseRef, {
+          "id": depenseRef.id,
+          "user_id": currentUser.id,
+          "type": "DEPENSE",
+          "statut": "VALIDER",
+          "description": "Achat contenu ${contentPaie.id}",
+          "montant": contentPaie.price,
+          "numero_depot": "",
+          "createdAt": DateTime.now().millisecondsSinceEpoch,
+          "updatedAt": DateTime.now().millisecondsSinceEpoch,
+          "frais": 0.0,
+          "montant_total": contentPaie.price,
+          "methode_paiement": "SOLDE",
+          "id_transaction_cinetpay": "",
+        });
+
+        // 🔹 Créer la transaction "GAIN" pour le créateur
+        final gainRef = _firestore.collection("TransactionSoldes").doc();
+        transaction.set(gainRef, {
+          "id": gainRef.id,
+          "user_id": contentPaie.ownerId,
+          "type": "GAIN",
+          "statut": "VALIDER",
+          "description": "Vente contenu ${contentPaie.id}",
+          "montant": ownerEarnings,
+          "numero_depot": "",
+          "createdAt": DateTime.now().millisecondsSinceEpoch,
+          "updatedAt": DateTime.now().millisecondsSinceEpoch,
+          "frais": 0.0,
+          "montant_total": ownerEarnings,
+          "methode_paiement": "SOLDE",
+          "id_transaction_cinetpay": "",
+        });
+      });
+
+
+// 🔹 Envoyer la notification au créateur
+      final ownerDoc = await _firestore.collection('Users').doc(contentPaie.ownerId).get();
+      if (ownerDoc.exists) {
+        final ownerData = ownerDoc.data()!;
+        await _authProvider?.sendNotification(
+          userIds: [ownerData['oneIgnalUserid']],
+          smallImage: currentUser.imageUrl!,
+          send_user_id: currentUser.id!,
+          recever_user_id: contentPaie.ownerId!,
+          message: "📢 Votre vidéo a été achetée pour ${ownerEarnings.toStringAsFixed(2)} FCFA !",
+          type_notif: NotificationType.POST.name,
+          post_id: contentPaie.id!,
+          post_type: "video",
+          chat_id: '',
+        );
       }
-
-      final purchase = ContentPurchase(
-        userId: currentUser.id!,
-        contentId: contentPaie.id!,
-        amountPaid: contentPaie.price,
-        ownerEarnings: ownerEarnings,
-        platformEarnings: platformEarnings,
-        purchaseDate: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      await _firestore.collection('ContentPaie_purchases').add(purchase.toJson());
-
-
-
       await loadUserPurchases();
 
       return PurchaseResult.success;

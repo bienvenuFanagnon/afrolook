@@ -722,7 +722,7 @@ class UserData {
     // data['votre_solde_contenu'] = this.votre_solde_contenu;
     // data['votre_solde_principal'] = this.votre_solde_principal;
     // data['votre_solde_cadeau'] = this.votre_solde_cadeau;
-    data['code_parrain'] = this.codeParrain;
+    // data['code_parrain'] = this.codeParrain;
     // autres données
       data['countryData'] = this.countryData;
     if (stories != null) {
@@ -1328,7 +1328,7 @@ enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 
 enum TypeTransaction{
-  DEPOT,RETRAIT
+  DEPOT,RETRAIT,GAIN,DEPENSE
 }
 enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 

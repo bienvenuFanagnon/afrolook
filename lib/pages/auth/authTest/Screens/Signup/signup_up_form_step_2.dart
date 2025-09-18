@@ -94,14 +94,14 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     }
   }
 
-  // Modal de vérification d'email
+// Modal de création et vérification d'email
   void _showVerificationModal() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: MediaQuery.of(context).size.height * 0.8,
         decoration: BoxDecoration(
           color: darkBackground,
           borderRadius: BorderRadius.only(
@@ -115,41 +115,58 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.mark_email_read_outlined,
+                Icons.check_circle_outline,
                 size: 80,
-                color: primaryGreen,
+                color: Colors.greenAccent, // succès création
               ),
               SizedBox(height: 20),
               Text(
-                'Vérification requise',
+                'Compte créé avec succès !',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: textColor,
+                  color: Colors.greenAccent,
                 ),
               ),
               SizedBox(height: 15),
+              Icon(
+                Icons.mark_email_read_outlined,
+                size: 50,
+                color: Colors.orangeAccent, // attention vérif
+              ),
+              SizedBox(height: 10),
               Text(
-                'Un email de vérification a été envoyé à:',
+                'Il reste une étape : vérification de votre email',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orangeAccent,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Un email de vérification a été envoyé à :',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[400],
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 5),
               Text(
                 authProvider.registerUser.email!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: primaryGreen,
+                  color: Colors.orangeAccent,
                 ),
               ),
               SizedBox(height: 20),
               Text(
-                'Veuillez vérifier votre adresse email avant de vous connecter.',
+                'Veuillez vérifier votre adresse email avant de vous connecter.\n'
+                    'Si vous ne voyez pas l’email dans votre boîte principale, pensez à vérifier votre dossier Spam ou Courrier indésirable.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -163,7 +180,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/bon_a_savoir');
+                    Navigator.pushReplacementNamed(
+                        context, "/login");
+                    // Navigator.pushNamed(context, '/bon_a_savoir');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGreen,
@@ -187,6 +206,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       ),
     );
   }
+
   Future<UserData?> verifierParrain(String codeParrain) async {
 
 
@@ -237,7 +257,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   }
   // Méthode d'inscription principale
   Future<void> signUp(String email, String password) async {
+
     if (!_formKey.currentState!.validate()) return;
+
+
 
     // Vérification de l'image
     if (_image == null) {
@@ -289,6 +312,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         final UserData? parrain = await verifierParrain(authProvider.registerUser.codeParrain!);
 
         if (parrain != null) {
+
+
           // Création du compte avec parrainage
           final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
             email: email,
@@ -350,26 +375,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     }
   }
 
-// Méthode pour uploader l'image
-  Future<String> _uploadImage(File image) async {
-    try {
-      Reference storageReference = FirebaseStorage.instance
-          .ref()
-          .child('user_profile/${Path.basename(image.path)}_${DateTime.now().millisecondsSinceEpoch}');
-
-      UploadTask uploadTask = storageReference.putFile(image);
-      TaskSnapshot snapshot = await uploadTask;
-
-      return await snapshot.ref.getDownloadURL();
-    } catch (e) {
-      print("Erreur lors de l'upload de l'image: $e");
-      throw Exception("Échec de l'upload de l'image");
-    }
-  }
-
-
-
-// Configuration des données avec parrainage
+  // Configuration des données avec parrainage
   Future<void> _configureUserDataWithParrainage(String id, UserPseudo pseudo, UserData parrain) async {
     pseudo.id = firestore.collection('Pseudo').doc().id;
     pseudo.name = authProvider.registerUser.pseudo;
@@ -383,15 +389,21 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     authProvider.registerUser.publi_cash = 5.1;
 
     // Mise à jour du parrain
-    parrain.pointContribution = (parrain.pointContribution ?? 0) + authProvider.appDefaultData.default_point_new_user!;
-    parrain.usersParrainer = [...parrain.usersParrainer ?? [], id];
-    parrain.votre_solde = (parrain.votre_solde ?? 0.0) + 5.1;
-    parrain.publi_cash = (parrain.publi_cash ?? 0.0) + 5.1;
+    final usersRef = firestore.collection('Users');
+    final parrainRef = usersRef.doc(parrain.id!);
+
+// Mise à jour directe des champs
+    await parrainRef.update({
+      'pointContribution': (parrain.pointContribution ?? 0) + authProvider.appDefaultData.default_point_new_user!,
+      'votre_solde': (parrain.votre_solde ?? 0.0) + 5.1,
+      'publi_cash': (parrain.publi_cash ?? 0.0) + 5.1,
+      'usersParrainer': FieldValue.arrayUnion([id]), // ajoute le nouvel utilisateur dans la liste
+      'userAbonnesIds': FieldValue.arrayUnion([id]), // ajoute le nouvel abonné
+    });
 
     // Batch operations
     final batch = firestore.batch();
     batch.set(firestore.collection('Users').doc(id), authProvider.registerUser.toJson());
-    batch.update(firestore.collection('Users').doc(parrain.id!), parrain.toJson());
     batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
 
     // Mise à jour des statistiques globales
@@ -440,31 +452,52 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
 // Envoi de notification de parrainage
   Future<void> _sendParrainageNotification(UserData parrain, NotificationData notif) async {
-    notif.id = firestore.collection('Notifications').doc().id;
-    notif.titre = "Parrainage 🤑";
-    notif.media_url = parrain.imageUrl;
-    notif.type = NotificationType.PARRAINAGE.name;
-    notif.description = "Vous avez gagné 5 PubliCash grâce à un parrainage !";
-    notif.user_id = authProvider.registerUser.id;
-    notif.receiver_id = parrain.id!;
-    notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-    notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-    notif.status = PostStatus.VALIDE.name;
-
-    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+    // notif.id = firestore.collection('Notifications').doc().id;
+    // notif.titre = "Parrainage 🤑";
+    // notif.media_url = parrain.imageUrl;
+    // notif.type = NotificationType.PARRAINAGE.name;
+    // notif.description = "Vous avez gagné 1 PubliCash grâce à un parrainage !";
+    // notif.user_id = authProvider.registerUser.id;
+    // notif.receiver_id = parrain.id!;
+    // notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
+    // notif.createdAt = DateTime.now().microsecondsSinceEpoch;
+    // notif.status = PostStatus.VALIDE.name;
+    //
+    // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
     await authProvider.sendNotification(
         userIds: [parrain.oneIgnalUserid!],
         smallImage: parrain.imageUrl!,
         send_user_id: authProvider.registerUser.id!,
         recever_user_id: parrain.id!,
-        message: "🤑 Vous avez gagné 5 PubliCash grâce à un parrainage !",
+        message: "🤑 Vous avez gagné 1 abonné grâce à un parrainage !",
         type_notif: NotificationType.PARRAINAGE.name,
         post_id: "",
         post_type: "",
         chat_id: ''
     );
   }
+
+// Méthode pour uploader l'image
+  Future<String> _uploadImage(File image) async {
+    try {
+      Reference storageReference = FirebaseStorage.instance
+          .ref()
+          .child('user_profile/${Path.basename(image.path)}_${DateTime.now().millisecondsSinceEpoch}');
+
+      UploadTask uploadTask = storageReference.putFile(image);
+      TaskSnapshot snapshot = await uploadTask;
+
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      print("Erreur lors de l'upload de l'image: $e");
+      throw Exception("Échec de l'upload de l'image");
+    }
+  }
+
+
+
+
 
 // Affichage du succès et navigation
   void _showSuccessAndNavigate() {
@@ -776,6 +809,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         Expanded(
           child: ElevatedButton(
             onPressed: tap ? null : () async {
+
               if (_formKey.currentState!.validate()) {
                 await signUp(
                   authProvider.registerUser.email!,

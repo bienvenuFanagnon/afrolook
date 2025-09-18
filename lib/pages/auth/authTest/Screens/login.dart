@@ -1,5 +1,6 @@
 
 
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -45,6 +46,152 @@ class _LoginPageState extends State<LoginPages> {
   // string for displaying the error Message
   String? errorMessage;
   void signIn(String email, String password) async {
+    setState(() {
+      inputTap = false;
+    });
+
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      tap = true;
+    });
+
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = userCredential.user;
+      if (user == null) throw FirebaseAuthException(code: 'user-null', message: 'Utilisateur introuvable');
+
+      await user.reload(); // Recharge les infos de l'utilisateur
+      printVm('data');
+      if (!user.emailVerified) {
+        // Si email non vérifié, afficher modal
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(Icons.email_outlined, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text("Email non vérifié"),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Votre adresse email n'a pas encore été vérifiée. "
+                      "Veuillez cliquer sur le lien que nous allons vous renvoyer.",
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await user.sendEmailVerification();
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Lien de vérification envoyé ! Vérifiez votre boîte mail.",
+                          textAlign: TextAlign.center,
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.send),
+                  label: Text("Renvoyer le lien de vérification"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Annuler", style: TextStyle(color: Colors.grey[700])),
+                )
+              ],
+            ),
+          ),
+        );
+        setState(() => tap = false);
+        return;
+      }
+
+      // Si email vérifié, continuer la connexion
+      if (await authProvider.getLoginUser(user.uid)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Connexion réussie',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+        Navigator.pushNamed(context, '/home');
+        Navigator.pushNamed(context, '/chargement');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erreur de chargement',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        );
+      }
+
+      setState(() {
+        telephoneController.clear();
+        motDePasseController.clear();
+        tap = false;
+      });
+    } on FirebaseAuthException catch (error) {
+      setState(() => tap = false);
+
+      switch (error.code) {
+        case "invalid-email":
+          errorMessage = "Votre email semble malformé.";
+          break;
+        case "wrong-password":
+          errorMessage = "Mot de passe incorrect.";
+          break;
+        case "user-not-found":
+          errorMessage = "Utilisateur introuvable.";
+          break;
+        case "user-disabled":
+          errorMessage = "Ce compte a été désactivé.";
+          break;
+        case "too-many-requests":
+          errorMessage = "Trop de tentatives. Réessayez plus tard.";
+          break;
+        case "operation-not-allowed":
+          errorMessage = "Connexion par email et mot de passe non activée.";
+          break;
+        default:
+          errorMessage = "Une erreur inconnue est survenue.";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage!, style: TextStyle(color: Colors.red)),
+        ),
+      );
+      print(error.code);
+    }
+  }
+
+  void signIn2(String email, String password) async {
     setState(() {
       inputTap=false;
     });

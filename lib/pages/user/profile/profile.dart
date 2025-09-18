@@ -1,3 +1,4 @@
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/newCanal.dart';
 import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
 import 'package:afrotok/pages/user/profile/postsMonetisation.dart';
@@ -20,6 +21,7 @@ import '../../../providers/userProvider.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
+import 'adminprofil.dart';
 
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
@@ -115,7 +117,7 @@ class _UserProfilState extends State<UserProfil> {
                                     ),
                                   ),
                                   TextCustomerUserTitle(
-                                    titre: "${formatNumber(authProvider.loginUserData!.abonnes!)} abonné(s)",
+                                    titre: "${formatNumber(authProvider.loginUserData!.userAbonnesIds!.length??0)} abonné(s)",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.w400,
@@ -382,10 +384,13 @@ class _UserProfilState extends State<UserProfil> {
                                   ),
                                 ),
                               ),
-                            ),     SizedBox(height: 10,),
+                            ),
+                            if(authProvider.loginUserData.role==UserRole.ADM.name)
+                            SizedBox(height: 10,),
+                            if(authProvider.loginUserData.role==UserRole.ADM.name)
                             GestureDetector(
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => UserVideoFeedTiktokPage(),));
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => AppInfoPage(),));
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
@@ -400,12 +405,12 @@ class _UserProfilState extends State<UserProfil> {
                                         Padding(
                                           padding: const EdgeInsets.only(right: 5.0),
                                           child: Container(
-                                            child: Icon(Icons.tiktok,color: Colors.red,),
+                                            child: Icon(Icons.build_circle,color: Colors.blue,),
                                           ),
                                         ),
                                         Container(
                                           child: TextCustomerMenu(
-                                            titre: "Mon Tiktok",
+                                            titre: "AppData",
                                             fontSize: SizeText.homeProfileTextSize,
                                             couleur: ConstColors.textColors,
                                             fontWeight: FontWeight.w600,
@@ -418,6 +423,43 @@ class _UserProfilState extends State<UserProfil> {
                                 ),
                               ),
                             ),
+
+                            // SizedBox(height: 10,),
+                            // GestureDetector(
+                            //   onTap: () {
+                            //     Navigator.push(context, MaterialPageRoute(builder: (context) => UserVideoFeedTiktokPage(),));
+                            //   },
+                            //   child: ClipRRect(
+                            //     borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                            //     child: Container(
+                            //       color: ConstColors.buttonsColors,
+                            //       // alignment: Alignment.centerLeft,
+                            //       width: 180,
+                            //       child: Padding(
+                            //         padding: const EdgeInsets.all(8.0),
+                            //         child: Row(
+                            //           children: [
+                            //             Padding(
+                            //               padding: const EdgeInsets.only(right: 5.0),
+                            //               child: Container(
+                            //                 child: Icon(Icons.tiktok,color: Colors.red,),
+                            //               ),
+                            //             ),
+                            //             Container(
+                            //               child: TextCustomerMenu(
+                            //                 titre: "Mon Tiktok",
+                            //                 fontSize: SizeText.homeProfileTextSize,
+                            //                 couleur: ConstColors.textColors,
+                            //                 fontWeight: FontWeight.w600,
+                            //               ),
+                            //             )
+                            //           ],
+                            //
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ),
                             SizedBox(height: 10,),
                             GestureDetector(
                               onTap: () {

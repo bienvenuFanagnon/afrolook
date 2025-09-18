@@ -40,7 +40,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   late int? userId = 0;
-  late int app_version_code = 76;
+  late int app_version_code = 78;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1771,4 +1771,27 @@ class UserAuthProvider extends ChangeNotifier {
         .snapshots()
         .map((doc) => UserData.fromJson(doc.data()!));
   }
+
+  /// Retourne directement le Stream des données AppDefaultData
+  Stream<AppDefaultData> getAppDataStream() {
+    const documentId = "XgkSxKc10vWsJJ2uBraT"; // ID du document Firestore
+
+    return FirebaseFirestore.instance
+        .collection("AppData")
+        .doc(documentId)
+        .snapshots()
+        .map((documentSnapshot) {
+      if (documentSnapshot.exists) {
+        final data = documentSnapshot.data() as Map<String, dynamic>;
+        data['id'] = documentSnapshot.id;
+        return AppDefaultData.fromJson(data);
+      } else {
+        // Retourner des données par défaut si le document n'existe pas
+        return AppDefaultData();
+      }
+    });
+  }
+
+
+
 }
