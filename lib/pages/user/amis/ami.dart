@@ -1,5 +1,3 @@
-
-
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/services/api.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,10 +17,17 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
-
 import '../../component/consoleWidget.dart';
 import 'mesInvitationTable.dart';
 
+// Couleurs personnalisées pour le thème
+const Color primaryBlack = Color(0xFF000000);
+const Color primaryGreen = Color(0xFF4CAF50);
+const Color primaryYellow = Color(0xFFFFEB3B);
+const Color darkGray = Color(0xFF121212);
+const Color lightGray = Color(0xFF1E1E1E);
+const Color textWhite = Color(0xFFFFFFFF);
+const Color textGray = Color(0xFF9E9E9E);
 
 class Amis extends StatefulWidget {
   const Amis({super.key});
@@ -38,61 +43,54 @@ class _ListUserChatsState extends State<Amis> {
   Provider.of<UserProvider>(context, listen: false);
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
   }
+
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+
     return Scaffold(
+      backgroundColor: primaryBlack,
       appBar: AppBar(
-        title: TextCustomerPageTitle(
-          titre: "Amis",
-          fontSize: SizeText.homeProfileTextSize,
-          couleur: ConstColors.textColors,
-          fontWeight: FontWeight.bold,
+        backgroundColor: darkGray,
+        title: Text(
+          "Amis",
+          style: TextStyle(
+            fontSize: SizeText.homeProfileTextSize,
+            color: primaryYellow,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-
-
-        //backgroundColor: Colors.blue,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: Logo(),
           )
         ],
-        //title: Text(widget.title),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
+        backgroundColor: primaryGreen,
         onPressed: () {
           Navigator.pushNamed(context, '/add_list_amis');
-          // Action à effectuer lors du clic sur le bouton
         },
-        child: Icon(FontAwesome.users,color: Colors.white,),
+        child: Icon(FontAwesome.users, color: primaryBlack),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat, // Vous pouvez changer cette valeur selon vos besoins
-
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-
-            SizedBox(height: 20,),
+            SizedBox(height: 20),
             Container(
               width: width,
-              height: height*0.9,
-             // color: Colors.red,
-
-
+              height: height * 0.9,
               child: ContainedTabBarView(
-
-
                 tabs: [
                   Center(
                     child: Container(
@@ -102,26 +100,27 @@ class _ListUserChatsState extends State<Amis> {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 4.0),
-                            child: TextCustomerMenu(
-                              titre: "Mes Amis",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.w600,
+                            child: Text(
+                              "Mes Amis",
+                              style: TextStyle(
+                                fontSize: SizeText.homeProfileTextSize,
+                                color: textWhite,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(200)),
-                            child: Container(
-
-                              color: Colors.red,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2.0),
-                                child: TextCustomerMenu(
-                                  titre: "${userProvider.countFriends}",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: primaryGreen,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              "${userProvider.countFriends}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: primaryBlack,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -137,26 +136,27 @@ class _ListUserChatsState extends State<Amis> {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 4.0),
-                            child: TextCustomerMenu(
-                              titre: "Mes Invitations",
-                              fontSize: SizeText.homeProfileTextSize,
-                              couleur: ConstColors.textColors,
-                              fontWeight: FontWeight.w600,
+                            child: Text(
+                              "Mes Invitations",
+                              style: TextStyle(
+                                fontSize: SizeText.homeProfileTextSize,
+                                color: textWhite,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(200)),
-                            child: Container(
-
-                              color: Colors.red,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2.0),
-                                child: TextCustomerMenu(
-                                  titre: "${userProvider.countInvitations}",
-                                  fontSize: SizeText.homeProfileTextSize,
-                                  couleur: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: primaryGreen,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              "${userProvider.countInvitations}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: primaryBlack,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -167,23 +167,27 @@ class _ListUserChatsState extends State<Amis> {
                 ],
                 tabBarProperties: TabBarProperties(
                   alignment: TabBarAlignment.center,
-                  height: 32.0,
-                  indicatorColor: ConstColors.menuItemsColors,
-                  indicatorWeight: 6.0,
-                  labelColor: Colors.black,
-                  unselectedLabelColor: Colors.grey[400],
+                  height: 48.0,
+                  indicatorColor: primaryGreen,
+                  indicatorWeight: 4.0,
+                  labelColor: textWhite,
+                  unselectedLabelColor: textGray,
+                  background: Container(
+                    decoration: BoxDecoration(
+                      color: darkGray,
+                      border: Border(
+                        bottom: BorderSide(color: lightGray, width: 1),
+                      ),
+                    ),
+                  ),
                 ),
                 views: [
-
-                  MesAmis(context: context,),
-
+                  MesAmis(context: context),
                   MesInvitations(),
-                  
                 ],
                 onChange: (index) => printVm(index),
               ),
             ),
-
           ],
         ),
       ),
@@ -191,69 +195,122 @@ class _ListUserChatsState extends State<Amis> {
   }
 }
 
-class ConversationList extends StatefulWidget{
-  String name;
-  String messageText;
-  String imageUrl;
-  String time;
-  bool isMessageRead;
-  ConversationList({required this.name,required this.messageText,required this.imageUrl,required this.time,required this.isMessageRead});
+class ConversationList extends StatefulWidget {
+  final String name;
+  final String messageText;
+  final String imageUrl;
+  final String time;
+  final bool isMessageRead;
+  final int abonnesCount;
+
+  ConversationList({
+    required this.name,
+    required this.messageText,
+    required this.imageUrl,
+    required this.time,
+    required this.isMessageRead,
+    required this.abonnesCount,
+  });
+
   @override
   _ConversationListState createState() => _ConversationListState();
 }
-
 
 class _ConversationListState extends State<ConversationList> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(left: 16,right: 16,top: 10,bottom: 10),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: lightGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: <Widget>[
+          CircleAvatar(
+            backgroundImage: NetworkImage(widget.imageUrl),
+            radius: 28,
+            backgroundColor: darkGray,
+          ),
+          SizedBox(width: 16),
           Expanded(
-            child: Row(
-              children: <Widget>[
-                CircleAvatar(
-                  backgroundImage: NetworkImage(widget.imageUrl),
-                  maxRadius: 30,
-                ),
-                SizedBox(width: 16,),
-                Expanded(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(widget.name, style: TextStyle(fontSize: 16),),
-                        SizedBox(height: 6,),
-                        Text('320 abonne(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: widget.isMessageRead?FontWeight.bold:FontWeight.normal),),
-                      ],
+            child: Container(
+              color: Colors.transparent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    widget.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: textWhite,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people,
+                        size: 14,
+                        color: primaryYellow,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        '${widget.abonnesCount} abonné(s)',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: textGray,
+                            fontWeight: widget.isMessageRead ? FontWeight.bold : FontWeight.normal
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-
-
+          IconButton(
+            onPressed: () {
+              // Navigation vers la conversation
+            },
+            icon: Icon(
+              Icons.chat,
+              color: primaryGreen,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class Invitations extends StatefulWidget{
-  String name;
-  String messageText;
-  String imageUrl;
-  String time;
-  int invitation_id;
-  int user_accepted_id;
-  Invitation userInvitation=Invitation();
-  bool isMessageRead;
-  GlobalKey<FormState> formKey;
-  BuildContext context;
-  Invitations({required this.formKey,required this.context,required this.name,required this.messageText,required this.time,required this.imageUrl,required this.isMessageRead,required this.invitation_id,required this.user_accepted_id,required this.userInvitation});
+class Invitations extends StatefulWidget {
+  final String name;
+  final String messageText;
+  final String imageUrl;
+  final String time;
+  final int invitation_id;
+  final int user_accepted_id;
+  final Invitation userInvitation;
+  final bool isMessageRead;
+  final GlobalKey<FormState> formKey;
+  final BuildContext context;
+
+  Invitations({
+    required this.formKey,
+    required this.context,
+    required this.name,
+    required this.messageText,
+    required this.time,
+    required this.imageUrl,
+    required this.isMessageRead,
+    required this.invitation_id,
+    required this.user_accepted_id,
+    required this.userInvitation,
+  });
+
   @override
   _InvitationsState createState() => _InvitationsState();
 }
@@ -263,108 +320,168 @@ class _InvitationsState extends State<Invitations> {
   Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  bool inviteTap=false;
+  bool inviteTap = false;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(left: 16,right: 16,top: 10,bottom: 10),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: lightGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: <Widget>[
+          CircleAvatar(
+            backgroundImage: NetworkImage(widget.imageUrl),
+            radius: 28,
+            backgroundColor: darkGray,
+          ),
+          SizedBox(width: 16),
           Expanded(
-            child: Row(
-              children: <Widget>[
-                CircleAvatar(
-                  backgroundImage: NetworkImage(widget.imageUrl),
-                  maxRadius: 30,
-                ),
-                SizedBox(width: 16,),
-                Expanded(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(widget.name, style: TextStyle(fontSize: 16),),
-                        SizedBox(height: 6,),
-                        Text('${widget.userInvitation.inviteUser!.abonnes!} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: widget.isMessageRead?FontWeight.bold:FontWeight.normal),),
-                      ],
+            child: Container(
+              color: Colors.transparent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    widget.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: textWhite,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people,
+                        size: 14,
+                        color: primaryYellow,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        '${widget.userInvitation.inviteUser!.abonnes!} abonné(s)',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: textGray,
+                            fontWeight: widget.isMessageRead ? FontWeight.bold : FontWeight.normal
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           Row(
             children: [
-              TextButton(onPressed: inviteTap?() {}: () async {
-                setState(() {
-                  inviteTap =true;
-                });
-                await  userProvider.acceptInvitation(widget.userInvitation).then((value) async {
-                  if (value) {
-                    authProvider.loginUserData.friendsIds!.add(widget.userInvitation.inviteUser!.id!);
-                    await userProvider.updateUser(authProvider.loginUserData);
+              TextButton(
+                onPressed: inviteTap
+                    ? null
+                    : () async {
+                  setState(() {
+                    inviteTap = true;
+                  });
+                  await userProvider.acceptInvitation(widget.userInvitation).then((value) async {
+                    if (value) {
+                      authProvider.loginUserData.friendsIds!.add(widget.userInvitation.inviteUser!.id!);
+                      await userProvider.updateUser(authProvider.loginUserData);
 
-                    ScaffoldMessenger.of(context).showSnackBar(new SnackBar(
-                      key: widget.formKey,
-                      content: Center(child: Text("invitation acceptée!",style: TextStyle(color: Colors.green),)),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      margin: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).size.height - 100,
-                          right: 20,
-                          left: 20),
-                    ));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          key: widget.formKey,
+                          content: Text(
+                            "Invitation acceptée!",
+                            style: TextStyle(color: textWhite),
+                          ),
+                          backgroundColor: primaryGreen,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).size.height - 100,
+                            right: 20,
+                            left: 20,
+                          ),
+                        ),
+                      );
 
+                      await authProvider.getToken();
+                      await userProvider.getUsersProfile(authProvider.loginUserData!.id!, context);
+                      setState(() {
+                        inviteTap = false;
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Erreur lors de l'acceptation.",
+                            style: TextStyle(color: textWhite),
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).size.height - 100,
+                            right: 20,
+                            left: 20,
+                          ),
+                        ),
+                      );
 
-                    await authProvider.getToken().then((value) {
-
-                    },);
-                   // await  authProvider.getUserByToken(token: authProvider.token!);
-                    await userProvider.getUsersProfile(authProvider.loginUserData!.id!,context);
-                    setState(() {
-
-                      inviteTap =false;
-                    });
-
-                  }  else{
-                    ScaffoldMessenger.of(context).showSnackBar(new SnackBar(
-                      content: Center(child: Text("Erreur lors de l'acceptation.",style: TextStyle(color: Colors.red),)),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      margin: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).size.height - 100,
-                          right: 20,
-                          left: 20),
-                    ));
-
-                    setState(() {
-
-                      inviteTap =false;
-
-                    });
-                  }
-
-
-
-
-                },);
-
-              },
-                  child:inviteTap?Center(
-                    child: LoadingAnimationWidget.flickr(
-                      size: 15,
-                      leftDotColor: Colors.green,
-                      rightDotColor: Colors.black,
-                    ),
-                  ): Text('Accepter',style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.blue),)
+                      setState(() {
+                        inviteTap = false;
+                      });
+                    }
+                  });
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: primaryGreen,
+                  foregroundColor: primaryBlack,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: inviteTap
+                    ? Center(
+                  child: LoadingAnimationWidget.flickr(
+                    size: 15,
+                    leftDotColor: Colors.white,
+                    rightDotColor: primaryBlack,
+                  ),
+                )
+                    : Text(
+                  'Accepter',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
               ),
-              TextButton(onPressed: () {  },
-                  child: Text('Refuser',style: TextStyle(fontSize: 12,fontWeight:FontWeight.normal,color: Colors.red),)
+              SizedBox(width: 8),
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(
+                  foregroundColor: textGray,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Refuser',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
               ),
             ],
           ),

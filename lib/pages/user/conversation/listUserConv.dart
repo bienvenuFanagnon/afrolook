@@ -22,6 +22,18 @@ import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
 
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Modèles et providers (gardez vos imports existants)
+import 'package:afrotok/models/chatmodels/message.dart';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/userProvider.dart';
+import 'package:afrotok/constant/constColors.dart';
+
 class ListUserChats extends StatefulWidget {
   const ListUserChats({super.key});
 
@@ -30,410 +42,253 @@ class ListUserChats extends StatefulWidget {
 }
 
 class _ListUserChatsState extends State<ListUserChats> {
-  late UserAuthProvider authProvider =
-      Provider.of<UserAuthProvider>(context, listen: false);
-  late List<Friends> listfirends = [];
+  late UserAuthProvider authProvider;
+  late UserProvider userProvider;
+  late List<Chat> listChatsSearch = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  List<Chat> _searchResults = [];
 
-  late UserProvider userProvider =
-      Provider.of<UserProvider>(context, listen: false);
-  Widget chatWidget(Chat chat) {
-    return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Row(
-              children: <Widget>[
-                StreamBuilder<UserData>(
-                    stream: userProvider.getStreamUser(chat!.chatFriend!.id!),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return Stack(
-                          children: [
-                            CircleAvatar(
-                              backgroundImage:
-                                  NetworkImage("${snapshot.data!.imageUrl!}"),
-                              maxRadius: 25,
-                            ),
-                            Positioned(
-                              bottom: 3,
-                              right: 5,
-                              child: ClipRRect(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(200)),
-                                child: Container(
-                                  width: 12,
-                                  height: 12,
-                                  color: snapshot.data!.state ==
-                                          UserState.OFFLINE.name
-                                      ? Colors.blueGrey
-                                      : Colors.green,
-                                ),
-                              ),
-                            )
-                          ],
-                        );
-                      }
-                      return Stack(
-                        children: [
-                          CircleAvatar(
-                            backgroundImage:
-                                NetworkImage("${chat!.chatFriend!.imageUrl!}"),
-                            maxRadius: 25,
-                          ),
-                          Positioned(
-                            bottom: 3,
-                            right: 5,
-                            child: ClipRRect(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(200)),
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                color: Colors.blueGrey,
-                              ),
-                            ),
-                          )
-                        ],
-                      );
-                    }),
-                SizedBox(
-                  width: 16,
-                ),
-                Expanded(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          "@${chat!.chatFriend!.pseudo!}",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        SizedBox(
-                          height: 6,
-                        ),
+  // Couleurs de la palette
+  final Color primaryBlack = Colors.black;
+  final Color primaryGreen = Colors.green;
+  final Color primaryYellow = Colors.yellow;
+  final Color lightGrey = Colors.grey.shade300;
+  final Color darkGrey = Colors.grey.shade700;
 
-                        StreamBuilder<Chat>(
-                            stream: userProvider.getStreamChat(chat.id!),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                Chat streamchat=snapshot!.data!;
-                              //  printVm("update chat: ${streamchat.toJson()}");
-
-                                if (authProvider.loginUserData.id ==
-                                    snapshot!.data!.senderId) {
-                                  return snapshot!.data!.receiver_sending==IsSendMessage.SENDING.name
-                                      ? TextCustomerUserTitle(
-                                    titre: "écrit...",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: Colors.green,
-                                    fontWeight: FontWeight.w400,
-                                  )
-                                      : SizedBox(
-                                      width: 200,
-                                      height: 22,
-                                      child: Text(
-                                        '${chat.lastMessage!}',
-                                        overflow: TextOverflow.fade,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.normal),
-                                      ));
-                                } else if (authProvider.loginUserData.id ==
-                                    snapshot!.data!.receiverId) {
-                                  return snapshot!.data!.send_sending==IsSendMessage.SENDING.name
-                                      ? TextCustomerUserTitle(
-                                    titre: "écrit...",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: Colors.green,
-                                    fontWeight: FontWeight.w400,
-                                  )
-                                      : SizedBox(
-                                      width: 200,
-                                      height: 22,
-                                      child: Text(
-                                        '${chat.lastMessage!}',
-                                        overflow: TextOverflow.fade,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.normal),
-                                      ));
-                                }else {
-                                  return SizedBox(
-                                      width: 200,
-                                      height: 22,
-                                      child: Text(
-                                        '${chat.lastMessage!}',
-                                        overflow: TextOverflow.fade,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.normal),
-                                      ));
-
-                                }
-                              }else {
-                                return SizedBox(
-                                    width: 200,
-                                    height: 22,
-                                    child: Text(
-                                      '${chat.lastMessage!}',
-                                      overflow: TextOverflow.fade,
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.normal),
-                                    ));
-
-                              }
-                            }),
-
-
-                      ],
-                    ),
-                  ),
-                ),
-                ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(200)),
-                  child: Container(
-                      color: chat.senderId != authProvider.loginUserData.id!
-                          ? chat.your_msg_not_read == 0
-                              ? Colors.white
-                              : Colors.red
-                          : chat.my_msg_not_read == 0
-                              ? Colors.white
-                              : Colors.red,
-                      child: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: Text(
-                          '${chat.senderId != authProvider.loginUserData.id! ? chat.your_msg_not_read == 0 ? '' : chat.your_msg_not_read : chat.my_msg_not_read == 0 ? '' : chat.my_msg_not_read}',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      )),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
-  void _showChatXiloDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ChatXiloPage(
-          userName: authProvider.loginUserData.pseudo!,
-          userGender: authProvider.loginUserData.genre!,
-        );
-      },
-    );
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Méthode de recherche dans Firebase
+  Future<void> _searchChats(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchResults.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // Recherche dans les conversations existantes
+      final chatsQuery = FirebaseFirestore.instance
+          .collection('Chats')
+          .where(Filter.or(
+        Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
+        Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
+      ))
+          .where("type", isEqualTo: ChatType.USER.name)
+          .get();
+
+      // Recherche dans les utilisateurs pour trouver des correspondances
+      final usersQuery = FirebaseFirestore.instance
+          .collection('Users')
+          .where('pseudo', isGreaterThanOrEqualTo: query)
+          .where('pseudo', isLessThan: query + 'z')
+          .get();
+
+      final results = await Future.wait([chatsQuery, usersQuery]);
+      final chatsSnapshot = results[0] as QuerySnapshot;
+      final usersSnapshot = results[1] as QuerySnapshot;
+
+      List<Chat> foundChats = [];
+
+      // Traiter les conversations existantes
+      for (var chatDoc in chatsSnapshot.docs) {
+        Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
+
+        // Récupérer les informations de l'utilisateur correspondant
+        CollectionReference friendCollect = FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await friendCollect
+            .where("id",
+            isEqualTo: authProvider.loginUserData.id == chat.receiverId
+                ? chat.senderId
+                : chat.receiverId)
+            .get();
+
+        if (querySnapshotUser.docs.isNotEmpty) {
+          UserData userData = UserData.fromJson(
+              querySnapshotUser.docs.first.data() as Map<String, dynamic>);
+          chat.chatFriend = userData;
+
+          // Vérifier si le pseudo correspond à la recherche
+          if (userData.pseudo!.toLowerCase().contains(query.toLowerCase())) {
+            foundChats.add(chat);
+          }
+        }
+      }
+
+      // Vérifier si on a trouvé des utilisateurs qui ne sont pas encore dans les conversations
+      for (var userDoc in usersSnapshot.docs) {
+        UserData userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+
+        // Éviter de s'ajouter soi-même
+        if (userData.id == authProvider.loginUserData.id) continue;
+
+        // Vérifier si cet utilisateur n'est pas déjà dans les résultats
+        bool alreadyInResults = foundChats.any((chat) =>
+        chat.chatFriend != null && chat.chatFriend!.id == userData.id);
+
+        if (!alreadyInResults) {
+          // Créer une conversation fictive pour l'affichage
+          Chat newChat = Chat(
+            id: 'search_${userData.id}',
+            senderId: authProvider.loginUserData.id!,
+            receiverId: userData.id!,
+            lastMessage: 'Démarrer une conversation',
+            type: ChatType.USER.name,
+            createdAt: DateTime.now().millisecondsSinceEpoch,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            receiver: userData,
+          );
+          foundChats.add(newChat);
+        }
+      }
+
+      setState(() {
+        _searchResults = foundChats;
+      });
+    } catch (e) {
+      print("Erreur de recherche: $e");
+      setState(() {
+        _isSearching = false;
+        _searchResults = [];
+      });
+    }
   }
 
   Widget chatXiloWidget() {
     return GestureDetector(
       onTap: () {
-        _showChatXiloDialog();
+        // Votre logique pour ouvrir le chat XILO
       },
-      child: Container(
-        padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Row(
-                children: <Widget>[
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 25, // Taille de l'avatar
-                        backgroundImage: AssetImage('assets/icon/X.png'),
-                      ),
-                      Positioned(
-                        bottom: 3,
-                        right: 5,
-                        child: ClipRRect(
-                          borderRadius:
-                          BorderRadius.all(Radius.circular(200)),
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            color: Colors.green,
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                  SizedBox(
-                    width: 16,
-                  ),
-                  Expanded(
-                    child: Container(
-                      color: Colors.transparent,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            "@XILO",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          SizedBox(
-                            height: 6,
-                          ),
-
-
-
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: ConversationList(
+        name: "@XILO",
+        messageText: "Assistant virtuel",
+        imageUrl: "",
+        time: "",
+        isMessageRead: false,
+        isOnline: true,
+        unreadCount: 0,
+        isTyping: false,
       ),
     );
   }
 
-
-  Widget chatUserOnLyWidget(Chat chat) {
-    return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-      child: StreamBuilder<UserData>(
-          stream: userProvider.getStreamUser(chat!.chatFriend!.id!),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Stack(
-                children: [
-                  CircleAvatar(
-                    backgroundImage:
-                        NetworkImage("${snapshot.data!.imageUrl!}"),
-                    maxRadius: 27,
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    right: 4,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(Radius.circular(200)),
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        color: snapshot.data!.state == UserState.OFFLINE.name
-                            ? Colors.blueGrey
-                            : Colors.green,
-                      ),
-                    ),
-                  )
-                ],
-              );
-            }
-            return Stack(
-              children: [
-                CircleAvatar(
-                  backgroundImage:
-                      NetworkImage("${chat!.chatFriend!.imageUrl!}"),
-                  maxRadius: 25,
-                ),
-                Positioned(
-                  bottom: 3,
-                  right: 5,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.all(Radius.circular(200)),
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                )
-              ],
-            );
-          }),
-    );
-  }
-
-  Stream<List<Friends>> getFriendsData() async* {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Friends')
+  Stream<List<Chat>> getAllChatsData() async* {
+    var chatsStream = FirebaseFirestore.instance
+        .collection('Chats')
         .where(Filter.or(
-          Filter('current_user_id', isEqualTo: authProvider.loginUserData.id!),
-          Filter('friend_id', isEqualTo: authProvider.loginUserData.id!),
-        ))
+      Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
+      Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
+    ))
+        .where("type", isEqualTo: ChatType.USER.name)
+        .orderBy('updated_at', descending: true)
         .snapshots();
 
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    List<Friends> friends = [];
+    List<Chat> listChats = [];
 
-    await for (var friendSnapshot in friendsStream) {
-      for (var friendDoc in friendSnapshot.docs) {
-        CollectionReference friendCollect =
-            await FirebaseFirestore.instance.collection('Users');
+    await for (var chatSnapshot in chatsStream) {
+      for (var chatDoc in chatSnapshot.docs) {
+        CollectionReference friendCollect = FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect
             .where("id",
-                isEqualTo: authProvider.loginUserData.id ==
-                        friendDoc["current_user_id"]
-                    ? friendDoc["friend_id"]
-                    : friendDoc["current_user_id"]!)
+            isEqualTo: authProvider.loginUserData.id == chatDoc["receiver_id"]
+                ? chatDoc["sender_id"]
+                : chatDoc["receiver_id"]!)
             .get();
-        // Afficher la liste
+
         List<UserData> userList = querySnapshotUser.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
-        //userData=userList.first;
 
-        Friends friend;
-        if (userList.first != null) {
-          friend = Friends.fromJson(friendDoc.data());
-          friend.friend = userList.first;
-          if (friend.friend!.state == UserState.ONLINE.name) {
-            friends.add(friend);
-          }
+        if (userList.isNotEmpty) {
+          Chat usersChat = Chat.fromJson(chatDoc.data());
+          usersChat.chatFriend = userList.first;
+          usersChat.receiver = userList.first;
+          listChats.add(usersChat);
         }
-        listfirends = friends;
-        // Map to store unique user names
-        Map<String, Friends> uniqueUsers = {};
-
-// Iterate through the user list
-        for (Friends user in listfirends) {
-          // Check if the name already exists in the map
-          if (!uniqueUsers.containsKey(user.friend!.pseudo!)) {
-            // Add unique user to the map
-            uniqueUsers[user.friend!.pseudo!] = user;
-          }
-        }
-
-// Access unique users from the map
-        List<Friends> uniqueUserList = uniqueUsers.values.toList();
-
-        friends = uniqueUserList;
-        userProvider.countFriends = friends.length;
       }
-
-      yield friends;
+      listChatsSearch = List.from(listChats);
+      yield listChats;
+      listChats = [];
     }
   }
 
-  void _showUserDetailsModalDialog(UserData user, double w, double h) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: DetailsOtherUser(
-            user: user,
-            w: w,
-            h: h,
-          ),
+  // Créer ou récupérer une conversation
+  Future<void> _openChat(Chat chat) async {
+    // Si c'est une conversation de recherche (non existante)
+    if (chat.id!.startsWith('search_')) {
+      // Vérifier si une conversation existe déjà
+      final existingChats = await FirebaseFirestore.instance
+          .collection('Chats')
+          .where(Filter.or(
+        Filter('docId', isEqualTo: '${chat.senderId}${chat.receiverId}'),
+        Filter('docId', isEqualTo: '${chat.receiverId}${chat.senderId}'),
+      ))
+          .get();
+
+      if (existingChats.docs.isNotEmpty) {
+        // Conversation existe déjà, l'ouvrir
+        Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
+        existingChat.chatFriend = chat.chatFriend;
+        // Navigation vers le chat existant
+        // Navigator.push(...);
+      } else {
+        // Créer une nouvelle conversation
+        String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
+        Chat newChat = Chat(
+          docId: '${chat.senderId}${chat.receiverId}',
+          id: chatId,
+          senderId: chat.senderId!,
+          receiverId: chat.receiverId!,
+          lastMessage: '',
+          type: ChatType.USER.name,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          receiver: chat.chatFriend,
         );
-      },
-    );
+
+        await FirebaseFirestore.instance
+            .collection('Chats')
+            .doc(chatId)
+            .set(newChat.toJson());
+
+        // Navigation vers le nouveau chat
+        Navigator.push(
+            context,
+            PageTransition(
+                type: PageTransitionType.fade,
+                child: MyChat(
+                  title: 'mon chat',
+                  chat: chat,
+                )));      }
+    } else {
+      // Conversation existante, l'ouvrir normalement
+      // Navigation vers le chat
+      Navigator.push(
+          context,
+          PageTransition(
+              type: PageTransitionType.fade,
+              child: MyChat(
+                title: 'mon chat',
+                chat: chat,
+              )));
+    }
   }
 
   Future<Chat> getChatsData(Friends amigo) async {
@@ -441,9 +296,9 @@ class _ListUserChatsState extends State<ListUserChats> {
     var friendsStream = FirebaseFirestore.instance
         .collection('Chats')
         .where(Filter.or(
-          Filter('docId', isEqualTo: '${amigo.friendId}${amigo.currentUserId}'),
-          Filter('docId', isEqualTo: '${amigo.currentUserId}${amigo.friendId}'),
-        ))
+      Filter('docId', isEqualTo: '${amigo.friendId}${amigo.currentUserId}'),
+      Filter('docId', isEqualTo: '${amigo.currentUserId}${amigo.friendId}'),
+    ))
         .snapshots();
 
 // Obtenez la liste des utilisateurs
@@ -512,9 +367,9 @@ class _ListUserChatsState extends State<ListUserChats> {
         }
       });
       CollectionReference messageCollect =
-          await FirebaseFirestore.instance.collection('Messages');
+      await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-          await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -532,19 +387,19 @@ class _ListUserChatsState extends State<ListUserChats> {
 
       /////////////ami//////////
       CollectionReference friendCollect =
-          await FirebaseFirestore.instance.collection('Users');
+      await FirebaseFirestore.instance.collection('Users');
       QuerySnapshot querySnapshotUserSender = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.friendId
-                  ? '${amigo.friendId}'
-                  : '${amigo.currentUserId}')
+          isEqualTo: authProvider.loginUserData.id == amigo.friendId
+              ? '${amigo.friendId}'
+              : '${amigo.currentUserId}')
           .get();
       // Afficher la liste
       QuerySnapshot querySnapshotUserReceiver = await friendCollect
           .where("id",
-              isEqualTo: authProvider.loginUserData.id == amigo.friendId
-                  ? '${amigo.currentUserId}'
-                  : '${amigo.friendId}')
+          isEqualTo: authProvider.loginUserData.id == amigo.friendId
+              ? '${amigo.currentUserId}'
+              : '${amigo.friendId}')
           .get();
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs
@@ -561,1053 +416,392 @@ class _ListUserChatsState extends State<ListUserChats> {
     return usersChat;
   }
 
-  Widget Monami(Friends amigo) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-    return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-      child: StreamBuilder<UserData>(
-          stream: userProvider.getStreamUser(
-              authProvider.loginUserData.id == amigo.currentUserId
-                  ? amigo!.friendId!
-                  : amigo.currentUserId!),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Stack(
+
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: primaryBlack,
+      appBar: AppBar(
+        backgroundColor: primaryBlack,
+        elevation: 0,
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          style: TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Rechercher une conversation...",
+            hintStyle: TextStyle(color: lightGrey),
+            border: InputBorder.none,
+          ),
+          onChanged: _searchChats,
+        )
+            : Text(
+          "Conversations",
+          style: TextStyle(
+            color: primaryYellow,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        actions: [
+          _isSearching
+              ? IconButton(
+            icon: Icon(Icons.close, color: primaryYellow),
+            onPressed: () {
+              setState(() {
+                _isSearching = false;
+                _searchController.clear();
+                _searchResults.clear();
+              });
+            },
+          )
+              : Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.search, color: primaryYellow),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = true;
+                  });
+                },
+              ),
+              // Bouton pour aller à la liste d'amis
+              IconButton(
+                icon: Icon(Icons.people, color: primaryYellow),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/amis');
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Section XILO
+          if (!_isSearching) chatXiloWidget(),
+
+          if (!_isSearching) Divider(height: 1, color: darkGrey),
+
+          // En-tête des conversations
+          if (!_isSearching)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
-                      getChatsData(amigo!).then(
-                        (chat) async {
-                          userProvider.chat.messages = chat.messages;
-
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  type: PageTransitionType.fade,
-                                  child: MyChat(
-                                    title: 'mon chat',
-                                    chat: chat,
-                                  )));
-                        },
-                      );
-
-                      //  Navigator.pushNamed(context, '/basic_chat');
-                    },
-                    child: CircleAvatar(
-                      backgroundImage:
-                          NetworkImage("${amigo!.friend!.imageUrl!}"),
-                      maxRadius: 28,
+                  Text(
+                    "MESSAGES",
+                    style: TextStyle(
+                      color: primaryGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                  Positioned(
-                    bottom: 12,
-                    right: 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(Radius.circular(200)),
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        color: amigo.friend!.state == UserState.ONLINE.name
-                            ? Colors.green
-                            : Colors.blueGrey,
-                      ),
+                  Text(
+                    "${authProvider.loginUserData.pseudo}",
+                    style: TextStyle(
+                      color: lightGrey,
+                      fontSize: 12,
                     ),
-                  )
+                  ),
                 ],
-              );
-            }
-            return Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    // Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: ChatScreen(currentUserData: authProvider.loginUserData!, secondUser: snapshot.data![index]!.friend!)));
-                    getChatsData(amigo!).then(
-                      (chat) async {
-                        userProvider.chat.messages = chat.messages;
+              ),
+            ),
 
-                        Navigator.push(
-                            context,
-                            PageTransition(
-                                type: PageTransitionType.fade,
-                                child: MyChat(
-                                  title: 'mon chat',
-                                  chat: chat,
-                                )));
-                      },
-                    );
-
-                    //  Navigator.pushNamed(context, '/basic_chat');
-                  },
-                  child: CircleAvatar(
-                    backgroundImage:
-                        NetworkImage("${amigo!.friend!.imageUrl!}"),
-                    maxRadius: 28,
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 3,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.all(Radius.circular(200)),
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                )
-              ],
-            );
-          }),
+          // Liste des conversations ou résultats de recherche
+          Expanded(
+            child: _isSearching
+                ? _buildSearchResults()
+                : StreamBuilder<List<Chat>>(
+              stream: getAllChatsData(),
+              builder: (context, AsyncSnapshot<List<Chat>> snapshot) {
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  return _buildChatList(snapshot.data!);
+                } else if (snapshot.hasError) {
+                  return _buildErrorWidget();
+                } else if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingSkeleton();
+                } else {
+                  return _buildEmptyState();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  late List<Chat> listChatsSearch = [];
-  Future<void> searchListDialogue(
-      BuildContext context, double h, double w, List<Chat> chats) async {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Liste de Conversations'),
-          content: Container(
-            height: h, // Ajustez la hauteur selon vos besoins
-            width: w, // Ajustez la largeur selon vos besoins
-            child: ListView(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: SizedBox(
-                    height: h, // Ajustez la hauteur selon vos besoins
-                    width: w,
-                    child: SearchableList<Chat>(
-                      initialList: chats,
-                      filter: (value) => chats
-                          .where(
-                            (element) => element.chatFriend!.pseudo!
-                                .toLowerCase()
-                                .contains(value.toLowerCase()),
-                          )
-                          .toList(),
-                      emptyWidget: Container(
-                        child: Text('Conversations'),
-                      ),
-                      inputDecoration: InputDecoration(
-                        labelText: "Amis",
-                        fillColor: Colors.white,
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      itemBuilder: (Chat chat) =>
-                          GestureDetector(
-                              onTap: () async {
-                                CollectionReference friendCollect =
-                                await FirebaseFirestore.instance
-                                    .collection('Messages');
-                                QuerySnapshot querySnapshotUser =
-                                await friendCollect
-                                    .where("chat_id", isEqualTo: chat.docId)
-                                    .get();
-                                // Afficher la liste
-                                List<Message> messages = querySnapshotUser.docs
-                                    .map((doc) => Message.fromJson(
-                                    doc.data() as Map<String, dynamic>))
-                                    .toList();
-                                //snapshot.data![index].messages=messages;
-                                userProvider.chat.messages = messages;
-                                Navigator.of(context).pop();
-                                Navigator.push(
-                                    context,
-                                    PageTransition(
-                                        type: PageTransitionType.fade,
-                                        child: MyChat(
-                                          title: 'mon chat',
-                                          chat: chat,
-                                        )));
+  Widget _buildSearchResults() {
+    if (_searchController.text.isEmpty) {
+      return Center(
+        child: Text(
+          "Tapez pour rechercher des conversations",
+          style: TextStyle(color: lightGrey),
+        ),
+      );
+    }
 
-                                //  Navigator.pushNamed(context, '/basic_chat');
-                              },
-                              child: chatWidget(chat)),
-                    ),
-                  ),
-                ),
-                // Ajoutez d'autres éléments de liste ici
-              ],
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, color: primaryYellow, size: 48),
+            SizedBox(height: 16),
+            Text(
+              "Aucun résultat trouvé",
+              style: TextStyle(color: Colors.white),
             ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Fermer'),
+            SizedBox(height: 8),
+            Text(
+              "Essayez avec d'autres termes",
+              style: TextStyle(color: lightGrey, fontSize: 12),
             ),
           ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final Chat chat = _searchResults[index];
+        final bool isSearchResult = chat.id!.startsWith('search_');
+        final int unreadCount = isSearchResult ? 0 :
+        (authProvider.loginUserData.id == chat.senderId ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0));
+        final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
+
+        return GestureDetector(
+          onTap: () => _openChat(chat),
+          child: ConversationList(
+            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
+            messageText: isSearchResult ? "Démarrer une conversation" : (chat.lastMessage ?? ''),
+            imageUrl: chat.chatFriend?.imageUrl ?? '',
+            time: isSearchResult ? "" : _formatTime(chat.updatedAt),
+            isMessageRead: unreadCount == 0,
+            isOnline: isOnline,
+            unreadCount: unreadCount,
+            isTyping: false,
+            isSearchResult: isSearchResult,
+          ),
         );
       },
     );
   }
 
-  Stream<List<Chat>> getAllChatsData() async* {
-    // Définissez la requête
-    var chatsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-          Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
-          Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
-        ))
-        .where("type", isEqualTo: ChatType.USER.name)
-        .orderBy('updated_at', descending: true)
-        .snapshots();
+  Widget _buildChatList(List<Chat> chats) {
+    return ListView.builder(
+      itemCount: chats.length,
+      itemBuilder: (context, index) {
+        final Chat chat = chats[index];
+        final bool isCurrentUserSender = authProvider.loginUserData.id == chat.senderId;
+        final int unreadCount = isCurrentUserSender ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0);
+        final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
 
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-    List<Chat> listChats = [];
-
-    await for (var chatSnapshot in chatsStream) {
-      for (var chatDoc in chatSnapshot.docs) {
-        CollectionReference friendCollect =
-            await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect
-            .where("id",
-                isEqualTo:
-                    authProvider.loginUserData.id == chatDoc["receiver_id"]
-                        ? chatDoc["sender_id"]
-                        : chatDoc["receiver_id"]!)
-            .get();
-        // Afficher la liste
-        List<UserData> userList = querySnapshotUser.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .toList();
-        //userData=userList.first;
-
-        if (userList.isNotEmpty) {
-          usersChat = Chat.fromJson(chatDoc.data());
-          usersChat.chatFriend = userList.first;
-          usersChat.receiver = userList.first;
-
-          listChats.add(usersChat);
-        }
-        listChatsSearch = listChats;
-      }
-      yield listChats;
-      listChats = [];
-    }
+        return GestureDetector(
+          onTap: () => _openChat(chat),
+          child: ConversationList(
+            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
+            messageText: chat.lastMessage ?? '',
+            imageUrl: chat.chatFriend?.imageUrl ?? '',
+            time: _formatTime(chat.updatedAt),
+            isMessageRead: unreadCount == 0,
+            isOnline: isOnline,
+            unreadCount: unreadCount,
+            isTyping: false,
+          ),
+        );
+      },
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-    return Scaffold(
-      appBar: AppBar(
-        //backgroundColor: Colors.blue,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Logo(),
-          )
-        ],
-        //title: Text(widget.title),
-      ),
-      body: ListView(
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(
-                    "Conversations",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/amis');
-                    },
-                    child: Container(
-                      padding:
-                          EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: ConstColors.buttonsColors,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.add,
-                            color: Colors.blue,
-                            size: 20,
-                          ),
-                          SizedBox(
-                            width: 2,
-                          ),
-                          Text(
-                            "Amis",
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: primaryYellow, size: 48),
+          SizedBox(height: 16),
+          Text(
+            "Erreur de chargement",
+            style: TextStyle(color: Colors.white),
           ),
-          Padding(
-            padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-            child: TextField(
-              onTap: () {
-                searchListDialogue(
-                    context, height * 0.6, width * 0.8, listChatsSearch);
-              },
-              readOnly: true,
-              cursorColor: kPrimaryColor,
-              decoration: InputDecoration(
-                focusColor: ConstColors.buttonColors,
-                focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: kPrimaryColor)),
-                hintText: "Recherche...",
-                hintStyle: TextStyle(color: Colors.grey.shade600),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: Colors.grey.shade600,
-                  size: 20,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: EdgeInsets.all(8),
-                enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(color: Colors.grey.shade100)),
-              ),
-            ),
-          ),
-          Divider(),
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
+          SizedBox(height: 8),
+          TextButton(
+            onPressed: () => setState(() {}),
             child: Text(
-              "Enligne",
-              style: TextStyle(color: Colors.green),
+              "Réessayer",
+              style: TextStyle(color: primaryYellow),
             ),
-          ),
-          StreamBuilder<List<Friends>>(
-            //initialData: [],
-            stream: getFriendsData()!,
-
-            // key: _formKey,
-
-            builder: (context, AsyncSnapshot<List<Friends>> snapshot) {
-              if (snapshot.hasData) {
-                List<Friends>? friends = snapshot.data;
-                if (friends!.isEmpty) {
-                  return Container();
-                } else {
-                  return SizedBox(
-                    height: height * 0.1,
-                    width: width,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: snapshot.data!.length,
-
-                      shrinkWrap: true,
-                      // padding: EdgeInsets.only(top: 16),
-                      itemBuilder: (context, index) {
-                        return Monami(snapshot.data![index]!);
-                      },
-                    ),
-                  );
-                }
-              } else if (snapshot.hasError) {
-                printVm("${snapshot.error}");
-                return Center(
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/404.png',
-                        height: 200,
-                        width: 200,
-                      ),
-                      Text(
-                        "Erreurs lors du chargement",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      TextButton(
-                        child: Text(
-                          'Réessayer',
-                          style: TextStyle(color: Colors.green),
-                        ),
-                        onPressed: () {
-                          setState(() {});
-                          // Réessayez de charger la page.
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              } else {
-                // Utiliser les données de snapshot.data
-
-                return Skeletonizer(
-                  //enabled: _loading,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 30,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 30,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 30,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 30,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 30,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
-          ),
-          Divider(),
-          chatXiloWidget(),
-
-          StreamBuilder<List<Chat>>(
-            //initialData: [],
-            stream: getAllChatsData()!,
-
-            // key: _formKey,
-
-            builder: (context, AsyncSnapshot<List<Chat>> snapshot) {
-              if (snapshot.hasData) {
-                return ListView.builder(
-                  scrollDirection: Axis.vertical,
-                  itemCount: snapshot.data!.length,
-                  shrinkWrap: true,
-                  padding: EdgeInsets.only(top: 16),
-                  physics: NeverScrollableScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () async {
-                        CollectionReference friendCollect =
-                            await FirebaseFirestore.instance
-                                .collection('Messages');
-                        QuerySnapshot querySnapshotUser = await friendCollect
-                            .where("chat_id",
-                                isEqualTo: snapshot.data![index].docId)
-                            .get();
-                        // Afficher la liste
-                        List<Message> messages = querySnapshotUser.docs
-                            .map((doc) => Message.fromJson(
-                                doc.data() as Map<String, dynamic>))
-                            .toList();
-                        //snapshot.data![index].messages=messages;
-                        userProvider.chat.messages = messages;
-                        Navigator.push(
-                            context,
-                            PageTransition(
-                                type: PageTransitionType.fade,
-                                child: MyChat(
-                                  title: 'mon chat',
-                                  chat: snapshot.data![index],
-                                )));
-
-                        //  Navigator.pushNamed(context, '/basic_chat');
-                      },
-                      child: chatWidget(snapshot.data![index]!),
-                    );
-                  },
-                );
-              } else if (snapshot.hasError) {
-                printVm("erreur ${snapshot.error}");
-                return Center(
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/404.png',
-                        height: 200,
-                        width: 200,
-                      ),
-                      Text(
-                        "Erreurs lors du chargement",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      TextButton(
-                        child: Text(
-                          'Réessayer',
-                          style: TextStyle(color: Colors.green),
-                        ),
-                        onPressed: () {
-                          setState(() {});
-                          // Réessayez de charger la page.
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              } else {
-                // Utiliser les données de snapshot.data
-
-                return Skeletonizer(
-                  //enabled: _loading,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 25,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 25,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 25,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 25,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(
-                            left: 16, right: 16, top: 10, bottom: 10),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    backgroundImage:
-                                        AssetImage("assets/images/404.png"),
-                                    maxRadius: 25,
-                                  ),
-                                  SizedBox(
-                                    width: 16,
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(
-                                            "amigo!.friend!.pseudo!",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          SizedBox(
-                                            height: 6,
-                                          ),
-                                          Text(
-                                            ' abonne(s)',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.normal),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.send_sharp,
-                                    color: Colors.green,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
           ),
         ],
       ),
     );
   }
+
+  Widget _buildLoadingSkeleton() {
+    return ListView.builder(
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return ConversationList(
+          name: "Chargement...",
+          messageText: "Message en cours de chargement",
+          imageUrl: "",
+          time: "",
+          isMessageRead: true,
+          isOnline: false,
+          unreadCount: 0,
+          isTyping: false,
+          isLoading: true,
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, color: primaryYellow, size: 48),
+          SizedBox(height: 16),
+          Text(
+            "Aucune conversation",
+            style: TextStyle(color: Colors.white),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Commencez une conversation avec vos amis",
+            style: TextStyle(color: lightGrey, fontSize: 12),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/amis');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: primaryBlack,
+            ),
+            child: Text("Voir mes amis"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(int? timestamp) {
+    if (timestamp == null) return "";
+
+    final DateTime date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 7) {
+      return "${date.day}/${date.month}/${date.year}";
+    } else if (difference.inDays > 0) {
+      return "${difference.inDays}j";
+    } else if (difference.inHours > 0) {
+      return "${difference.inHours}h";
+    } else if (difference.inMinutes > 0) {
+      return "${difference.inMinutes}min";
+    } else {
+      return "À l'instant";
+    }
+  }
 }
 
 class ConversationList extends StatefulWidget {
-  String name;
-  String messageText;
-  String imageUrl;
-  String time;
-  bool isMessageRead;
-  ConversationList(
-      {required this.name,
-      required this.messageText,
-      required this.imageUrl,
-      required this.time,
-      required this.isMessageRead});
+  final String name;
+  final String messageText;
+  final String imageUrl;
+  final String time;
+  final bool isMessageRead;
+  final bool isOnline;
+  final int unreadCount;
+  final bool isTyping;
+  final bool isLoading;
+  final bool isSearchResult;
+
+  ConversationList({
+    required this.name,
+    required this.messageText,
+    required this.imageUrl,
+    required this.time,
+    required this.isMessageRead,
+    this.isOnline = false,
+    this.unreadCount = 0,
+    this.isTyping = false,
+    this.isLoading = false,
+    this.isSearchResult = false,
+  });
+
   @override
   _ConversationListState createState() => _ConversationListState();
 }
 
 class _ConversationListState extends State<ConversationList> {
+  // Couleurs de la palette
+  final Color primaryBlack = Colors.black;
+  final Color primaryGreen = Colors.green;
+  final Color primaryYellow = Colors.yellow;
+  final Color lightGrey = Colors.grey.shade300;
+  final Color darkGrey = Colors.grey.shade700;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
+      decoration: BoxDecoration(
+        color: primaryBlack,
+        border: Border(bottom: BorderSide(color: darkGrey, width: 0.5)),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: <Widget>[
+          // Avatar avec indicateur de statut
+          Stack(
+            children: [
+              widget.isLoading
+                  ? CircleAvatar(
+                backgroundColor: darkGrey,
+                radius: 24,
+              )
+                  : CircleAvatar(
+                backgroundImage: widget.imageUrl.isNotEmpty
+                    ? NetworkImage(widget.imageUrl)
+                    : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
+                backgroundColor: darkGrey,
+                radius: 24,
+              ),
+              if (!widget.isLoading)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: widget.isOnline ? primaryGreen : darkGrey,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: primaryBlack, width: 2),
+                    ),
+                  ),
+                )
+            ],
+          ),
+
+          SizedBox(width: 16),
+
           Expanded(
             child: Row(
               children: <Widget>[
-                CircleAvatar(
-                  backgroundImage: NetworkImage(widget.imageUrl),
-                  maxRadius: 30,
-                ),
-                SizedBox(
-                  width: 16,
-                ),
                 Expanded(
                   child: Container(
                     color: Colors.transparent,
@@ -1616,19 +810,38 @@ class _ConversationListState extends State<ConversationList> {
                       children: <Widget>[
                         Text(
                           widget.name,
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        SizedBox(
-                          height: 6,
-                        ),
-                        Text(
-                          widget.messageText,
                           style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: widget.isMessageRead
-                                  ? FontWeight.bold
-                                  : FontWeight.normal),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        SizedBox(height: 6),
+
+                        widget.isLoading
+                            ? Container(
+                          width: 150,
+                          height: 14,
+                          color: darkGrey,
+                        )
+                            : Text(
+                          widget.isTyping
+                              ? "écrit..."
+                              : widget.messageText,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: widget.isTyping
+                                ? primaryYellow
+                                : (widget.isMessageRead ? lightGrey : Colors.white),
+                            fontWeight: widget.isMessageRead
+                                ? FontWeight.normal
+                                : FontWeight.w500,
+                            fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ],
                     ),
@@ -1637,12 +850,44 @@ class _ConversationListState extends State<ConversationList> {
               ],
             ),
           ),
-          Text(
-            widget.time,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight:
-                    widget.isMessageRead ? FontWeight.bold : FontWeight.normal),
+
+          // Badge de messages non lus et heure
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (widget.time.isNotEmpty)
+                Text(
+                  widget.time,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: lightGrey,
+                    fontWeight: widget.isMessageRead
+                        ? FontWeight.normal
+                        : FontWeight.bold,
+                  ),
+                ),
+
+              if (widget.time.isNotEmpty) SizedBox(height: 6),
+
+              if (widget.unreadCount > 0)
+                Container(
+                  padding: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: primaryGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${widget.unreadCount}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: primaryBlack,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else if (widget.isSearchResult)
+                Icon(Icons.add_circle_outline, color: primaryGreen, size: 20),
+            ],
           ),
         ],
       ),

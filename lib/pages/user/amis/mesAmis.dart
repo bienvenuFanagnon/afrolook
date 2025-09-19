@@ -160,7 +160,7 @@ class _MesAmisState extends State<MesAmis> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16),),
+                              Text("@${amigo!.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: Colors.white),),
                               SizedBox(height: 6,),
                               Text('${formatNumber(amigo!.friend!.abonnes!)} abonné(s)',style: TextStyle(fontSize: 13,color: Colors.grey.shade600, fontWeight: FontWeight.normal),),
                             ],

@@ -10,6 +10,7 @@ import 'package:afrotok/pages/home/homeLooks.dart';
 import 'package:afrotok/pages/home/homeOffre.dart';
 import 'package:afrotok/pages/home/homeSport.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
+import 'package:afrotok/pages/home/topFiveModal.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
@@ -61,6 +62,8 @@ import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../user/amis/addListAmis.dart';
+import '../user/amis/pageMesInvitations.dart';
 import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
@@ -360,9 +363,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-
-
-  Widget menu(BuildContext context,double w,h) {
+  Widget menu(BuildContext context, double w, h) {
     bool onTap = false;
 
     return RefreshIndicator(
@@ -371,16 +372,14 @@ class _MyHomePageState extends State<MyHomePage>
       },
       child: Drawer(
         width: MediaQuery.of(context).size.width * 0.9,
+        backgroundColor: Colors.black, // Fond noir
         child: Column(
-          //padding: EdgeInsets.zero,
           children: <Widget>[
             DrawerHeader(
               decoration: BoxDecoration(
-                color: ConstColors.menuHeaderColors,
+                color: Colors.black, // Fond noir pour l'en-tête
               ),
               child: ListView(
-                // mainAxisAlignment: MainAxisAlignment.center,
-                // crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
@@ -392,8 +391,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   GestureDetector(
                     onTap: () {
-                      showUserDetailsModalDialog(authProvider.loginUserData, w, h,context);
-
+                      showUserDetailsModalDialog(authProvider.loginUserData, w, h, context);
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -410,42 +408,35 @@ class _MyHomePageState extends State<MyHomePage>
                                         "assets/icon/user-removebg-preview.png"),
                               ),
                             ),
-                            SizedBox(
-                              height: 2,
-                            ),
+                            SizedBox(height: 2),
                             Row(
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SizedBox(
-                                      //width: 100,
                                       child: TextCustomerUserTitle(
-                                        titre:
-                                        "@${authProvider.loginUserData.pseudo}",
+                                        titre: "@${authProvider.loginUserData.pseudo}",
                                         fontSize: SizeText.homeProfileTextSize,
-                                        couleur: ConstColors.textColors,
+                                        couleur: Colors.white, // Texte blanc
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     TextCustomerUserTitle(
-                                      titre:
-                                      "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
+                                      titre: "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
                                       fontSize: SizeText.homeProfileTextSize,
-                                      couleur: ConstColors.textColors,
+                                      couleur: Colors.white, // Texte blanc
                                       fontWeight: FontWeight.w400,
                                     ),
                                     TextCustomerUserTitle(
-                                      titre:
-                                      "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
+                                      titre: "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
                                       fontSize: SizeText.homeProfileTextSize,
                                       couleur: Colors.green,
                                       fontWeight: FontWeight.w700,
                                     ),
-
                                   ],
                                 ),
-                                SizedBox(width: 5,),
+                                SizedBox(width: 5),
                                 Visibility(
                                   visible: authProvider.loginUserData!.isVerify!,
                                   child: const Icon(
@@ -454,7 +445,6 @@ class _MyHomePageState extends State<MyHomePage>
                                     size: 20,
                                   ),
                                 ),
-
                               ],
                             ),
                           ],
@@ -466,19 +456,9 @@ class _MyHomePageState extends State<MyHomePage>
                               TextCustomerUserTitle(
                                 titre: "".toUpperCase(),
                                 fontSize: SizeText.homeProfileTextSize,
-                                couleur: ConstColors.textColors,
+                                couleur: Colors.white, // Texte blanc
                                 fontWeight: FontWeight.w400,
                               ),
-                              /*
-                              IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    Icons.monetization_on,
-                                    size: 20,
-                                    color: Colors.red,
-                                  )),
-
-                               */
                             ],
                           ),
                         ),
@@ -491,340 +471,298 @@ class _MyHomePageState extends State<MyHomePage>
             Expanded(
               child: ListView(
                 children: [
+                  // NOUVELLE OPTION: RECHERCHER UN UTILISATEUR
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.search, color: Colors.yellow), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Rechercher un utilisateur",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context); // Fermer le menu
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => AddListAmis(), // Page de recherche
+                      ));
+                    },
+                  ),
+
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/1.png',
                       height: 20,
                       width: 20,
+                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "Profile",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      // Add your navigation logic here
                       Navigator.pushNamed(context, '/home_profile_user');
                     },
                   ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/3.png',
                       height: 20,
                       width: 20,
+                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "Amis",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      // Add your navigation logic here
                       Navigator.pushNamed(context, '/amis');
                     },
                   ),
-                  ListTile(
-                    trailing: TextCustomerMenu(
-                      titre: "Discuter",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.blue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    leading: CircleAvatar(
-                      radius: 15, // Taille de l'avatar
-                      backgroundImage: AssetImage('assets/icon/X.png'),
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Xilo",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    subtitle: TextCustomerMenu(
-                      titre: "Votre ami(e)",
-                      fontSize: 9,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      setState(() {
-                        onTap = true;
-                      });
 
-                      await authProvider.getAppData().then(
-                            (appdata) async {
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-
-                          await authProvider
-                              .getUserIa(authProvider.loginUserData.id!)
-                              .then(
-                                (value) async {
-                              if (value.isNotEmpty) {
-                                await getIAChatsData(value.first).then((chat) {
-                                  setState(() {
-                                    onTap = false;
-                                  });
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => DeepSeepChat(instruction: '${authProvider.appDefaultData.ia_instruction!}'),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first, apiKey:'${authProvider.appDefaultData.geminiapiKey!}' ,),));
-
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
-                                    chat: chat,
-                                    user: authProvider.loginUserData,
-                                    userIACompte: value.first,
-                                    instruction:
-                                    '${authProvider.appDefaultData.ia_instruction!}', appDefaultData: authProvider.appDefaultData,
-                                  ),
-                                  ));
-                                });
-                              } else {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => IntroIaCompagnon(
-                                        instruction: authProvider
-                                            .appDefaultData.ia_instruction!,
-                                      ),
-                                    ));
-                              }
-                            },
-                          );
-                        },
-                      );
-
-                      // Navigator.pushNamed(context, '/intro_ia_compagnon');
-                    },
-                  ),
-
-                  /*
-                  ListTile(
-                    trailing: Icon(
-                      Icons.lock,
-                      color: Colors.red,
-                      size: 15,
-                    ),
-                    leading: Image.asset(
-                      'assets/menu/2.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Postes Entreprises",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      // Add your navigation logic here
-                      Navigator.pop(context);
-                    },
-                  ),
-
-
-
-
-                   */
-
+                  // ListTile(
+                  //   trailing: TextCustomerMenu(
+                  //     titre: "Discuter",
+                  //     fontSize: SizeText.homeProfileTextSize,
+                  //     couleur: Colors.blue,
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   leading: CircleAvatar(
+                  //     radius: 15,
+                  //     backgroundColor: Colors.yellow, // Fond jaune
+                  //     child: Image.asset(
+                  //       'assets/icon/X.png',
+                  //       color: Colors.black, // Icône noire
+                  //     ),
+                  //   ),
+                  //   title: TextCustomerMenu(
+                  //     titre: "Xilo",
+                  //     fontSize: SizeText.homeProfileTextSize,
+                  //     couleur: Colors.white, // Texte blanc
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   subtitle: TextCustomerMenu(
+                  //     titre: "Votre ami(e)",
+                  //     fontSize: 9,
+                  //     couleur: Colors.white, // Texte blanc
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   onTap: () async {
+                  //     setState(() {
+                  //       onTap = true;
+                  //     });
+                  //
+                  //     await authProvider.getAppData().then(
+                  //           (appdata) async {
+                  //         await authProvider
+                  //             .getUserIa(authProvider.loginUserData.id!)
+                  //             .then(
+                  //               (value) async {
+                  //             if (value.isNotEmpty) {
+                  //               await getIAChatsData(value.first).then((chat) {
+                  //                 setState(() {
+                  //                   onTap = false;
+                  //                 });
+                  //                 Navigator.push(context, MaterialPageRoute(
+                  //                   builder: (context) => IaChat(
+                  //                     chat: chat,
+                  //                     user: authProvider.loginUserData,
+                  //                     userIACompte: value.first,
+                  //                     instruction: '${authProvider.appDefaultData.ia_instruction!}',
+                  //                     appDefaultData: authProvider.appDefaultData,
+                  //                   ),
+                  //                 ));
+                  //               });
+                  //             } else {
+                  //               Navigator.push(
+                  //                   context,
+                  //                   MaterialPageRoute(
+                  //                     builder: (context) => IntroIaCompagnon(
+                  //                       instruction: authProvider.appDefaultData.ia_instruction!,
+                  //                     ),
+                  //                   ));
+                  //             }
+                  //           },
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
 
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(FontAwesome.forumbee,size: 30,color: Colors.green,),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(FontAwesome.forumbee, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Canaux",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false),));
-
-
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => CanalListPage(isUserCanals: false),
+                      ));
                     },
                   ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/images/trophee.png',
                       height: 20,
                       width: 20,
+                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "TOP 10 Afrolook Stars",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
-
                       await userProvider.getAllUsers().then(
                             (value) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => UserClassement(),));
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => UserClassement(),
+                          ));
                         },
                       );
-
                     },
                   ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green,),
-                    leading: Icon(Icons.history_toggle_off_sharp,size: 30,),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.history_toggle_off_sharp, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Mes chroniques",
-                      fontSize: SizeText.homeProfileTextSize+3,
-                      couleur: ConstColors.textColors,
+                      fontSize: SizeText.homeProfileTextSize + 3,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w900,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
-
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyStoriesPage(stories: authProvider.loginUserData.stories!, user: authProvider.loginUserData),));
-
-
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => MyStoriesPage(
+                            stories: authProvider.loginUserData.stories!,
+                            user: authProvider.loginUserData
+                        ),
+                      ));
                     },
                   ),
+
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.storefront_outlined, color: Colors.green),
+                    leading: Icon(Icons.storefront_outlined, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Afroshop MarketPlace",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-
-
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => HomeAfroshopPage(title: ''),
+                      ));
                     },
                   ),
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-
-                    leading:           AnimateIcon(
+                    leading: AnimateIcon(
                       key: UniqueKey(),
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
-
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => UserServiceListPage(),
+                        ));
                       },
                       iconType: IconType.continueAnimation,
                       height: 30,
                       width: 30,
-                      color: Colors.green,
+                      color: Colors.yellow, // Icône jaune
                       animateIcon: AnimateIcons.settings,
                     ),
                     title: TextCustomerMenu(
                       titre: "🛠️Services & Jobs 💼",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     subtitle: TextCustomerMenu(
                       titre: "Chercher des gens pour bosser",
                       fontSize: 9,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // setState(() {
-                      //   onTap = true;
-                      // });
-
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
-
-
-                      // Navigator.pushNamed(context, '/intro_ia_compagnon');
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => UserServiceListPage(),
+                      ));
                     },
                   ),
-                  ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/6.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Challenges Disponibles 🔥🎁  Gagnez un Prix 🏆",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      // Add your navigation logic here
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeListPage(),));
 
-                    },
-                  ),
-                  ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/6.png',
-                      height: 20,
-                      width: 20,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Mes Looks Challenges 🔥🎁🏆",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      // Add your navigation logic here
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => MesLookChallengeListPage(),));
-
-                    },
-                  ),
                   // ListTile(
-                  //   trailing:
-                  //       Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                   //   leading: Image.asset(
                   //     'assets/menu/6.png',
                   //     height: 20,
                   //     width: 20,
+                  //     color: Colors.yellow, // Icône jaune
                   //   ),
                   //   title: TextCustomerMenu(
-                  //     titre: "Gagner points Gratuitement",
+                  //     titre: "Challenges Disponibles 🔥🎁  Gagnez un Prix 🏆",
                   //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: ConstColors.textColors,
+                  //     couleur: Colors.white, // Texte blanc
                   //     fontWeight: FontWeight.w600,
                   //   ),
                   //   onTap: () async {
-                  //     // Add your navigation logic here
-                  //     await userProvider.getGratuitInfos().then(
-                  //       (value) {
-                  //         Navigator.pushNamed(context, '/gagner_point_infos');
-                  //       },
-                  //     );
+                  //     Navigator.push(context, MaterialPageRoute(
+                  //       builder: (context) => ChallengeListPage(),
+                  //     ));
                   //   },
                   // ),
+                  //
+                  // ListTile(
+                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   leading: Image.asset(
+                  //     'assets/menu/6.png',
+                  //     height: 20,
+                  //     width: 20,
+                  //     color: Colors.yellow, // Icône jaune
+                  //   ),
+                  //   title: TextCustomerMenu(
+                  //     titre: "Mes Looks Challenges 🔥🎁🏆",
+                  //     fontSize: SizeText.homeProfileTextSize,
+                  //     couleur: Colors.white, // Texte blanc
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   onTap: () async {
+                  //     Navigator.push(context, MaterialPageRoute(
+                  //       builder: (context) => MesLookChallengeListPage(),
+                  //     ));
+                  //   },
+                  // ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
                       'assets/menu/7.png',
                       height: 20,
                       width: 20,
+                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "Afrolook infos",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
                       await userProvider.getAllInfos().then(
                             (value) {
                           Navigator.pushNamed(context, '/app_info');
@@ -832,18 +770,17 @@ class _MyHomePageState extends State<MyHomePage>
                       );
                     },
                   ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.contact_mail, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.contact_mail, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Nos Contactes",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
                       await userProvider.getAllInfos().then(
                             (value) {
                           Navigator.pushNamed(context, '/contact');
@@ -851,87 +788,83 @@ class _MyHomePageState extends State<MyHomePage>
                       );
                     },
                   ),
+
                   ListTile(
-                    trailing:
-                    Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading:
-                    Icon(MaterialIcons.smartphone, color: Colors.green),
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.smartphone, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Partager l'application",
                       fontSize: SizeText.homeProfileTextSize,
-                      couleur: ConstColors.textColors,
+                      couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      // Add your navigation logic here
                       final box = context.findRenderObject() as RenderBox?;
 
                       await authProvider.getAppData().then(
                             (value) async {
                           await Share.shareUri(
-                            Uri.parse(
-                                '${authProvider.appDefaultData.app_link}'),
-                            sharePositionOrigin:
-                            box!.localToGlobal(Offset.zero) & box.size,
+                            Uri.parse('${authProvider.appDefaultData.app_link}'),
+                            sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
                           );
-
-                          //   if (result.status == ShareResultStatus.success) {
-                          //     printVm('Thank you for sharing my website!');
-                          //   }
-                          //   await FlutterShare.share(
-                          //       title: 'Partager Afrolook',
-                          //       linkUrl: '${authProvider.appDefaultData.app_link}',
-                          //       chooserTitle: 'Partager Afrolook'
-                          //   );
                         },
                       );
                     },
                   ),
-
                 ],
               ),
             ),
-            SizedBox(height: 5,),
-            Text('Version: 1.1.32 (${authProvider.appDefaultData.app_version_code!})',style: TextStyle(fontWeight: FontWeight.bold),),
+
+            SizedBox(height: 5),
+            Text(
+              'Version: 1.1.32 (${authProvider.appDefaultData.app_version_code!})',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white, // Texte blanc
+              ),
+            ),
+
             Container(
-                child: Align(
-                    alignment: FractionalOffset.bottomCenter,
-                    child: Column(
-                      children: <Widget>[
-                        Divider(),
-                        ListTile(
-                          leading: Icon(
-                            Icons.exit_to_app,
-                            color: ConstColors.regIconColors,
-                          ),
-                          title: TextCustomerMenu(
-                            titre: "Déconnecter",
-                            fontSize: 15,
-                            couleur: ConstColors.regIconColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          onTap: () {
-                            // Add your navigation logic here
-                            authProvider.loginUserData!.isConnected = false;
-                            userProvider.changeState(
-                                user: authProvider.loginUserData,
-                                state: UserState.OFFLINE.name);
-                            authProvider.storeToken('').then(
-                                  (value) {
-                                Navigator.pop(context);
-                                Navigator.pushReplacementNamed(
-                                    context, "/login");
-                              },
-                            );
+              child: Align(
+                alignment: FractionalOffset.bottomCenter,
+                child: Column(
+                  children: <Widget>[
+                    Divider(color: Colors.green), // Séparateur vert
+                    ListTile(
+                      leading: Icon(
+                        Icons.exit_to_app,
+                        color: Colors.yellow, // Icône jaune
+                      ),
+                      title: TextCustomerMenu(
+                        titre: "Déconnecter",
+                        fontSize: 15,
+                        couleur: Colors.yellow, // Texte jaune
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onTap: () {
+                        authProvider.loginUserData!.isConnected = false;
+                        userProvider.changeState(
+                            user: authProvider.loginUserData,
+                            state: UserState.OFFLINE.name
+                        );
+                        authProvider.storeToken('').then(
+                              (value) {
+                            Navigator.pop(context);
+                            Navigator.pushReplacementNamed(context, "/login");
                           },
-                        ),
-                      ],
-                    ))),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
 
 
   Stream<int> getNbrInvitation() async* {
@@ -1121,6 +1054,11 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    userProvider.getAllUsers().then((value) {
+      TopFiveModal.showTopFiveModal(context, value.take(5).toList());
+    });
+
+
     _tabController = TabController(length: _tabs.length, vsync: this);
 
     authProvider.checkAppVersionAndProceed(context, () {
@@ -1384,14 +1322,16 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Communauté
             GestureDetector(
               onTap: () async {
+                // Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context)));
 
-                authProvider.checkAppVersionAndProceed(context, () async {
-                  await userProvider
-                      .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
-                      .then((value) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
-                  });
-                });
+                // authProvider.checkAppVersionAndProceed(context, () async {
+                //   await userProvider
+                //       .getProfileUsers(authProvider.loginUserData!.id!, context, limiteUsers)
+                //       .then((value) {
+                //     Navigator.push(context, MaterialPageRoute(builder: (_) => UserCards()));
+                //   });
+                // });
 
               },
               child: StreamBuilder<int>(
@@ -1413,7 +1353,7 @@ class _MyHomePageState extends State<MyHomePage>
                         child: Icon(Icons.group, color: textColor, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Communauté', style: TextStyle(color: textColor, fontSize: 10)),
+                      Text('Invitations', style: TextStyle(color: textColor, fontSize: 10)),
                     ],
                   );
                 },
@@ -1447,7 +1387,13 @@ class _MyHomePageState extends State<MyHomePage>
             ),
             // Bouton Créer central
             GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
+              onTap: () {
+
+                authProvider.checkAppVersionAndProceed(context, () async {
+               Navigator.pushNamed(context, '/user_posts_form');
+
+                });
+              },
               child: Container(
                 width: 40,
                 height: 40,
@@ -1468,10 +1414,12 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Vidéos
             GestureDetector(
               onTap: () {
-                authProvider.checkAppVersionAndProceed(context, () async {
-                  Navigator.pushNamed(context, '/videos');
+                Navigator.pushNamed(context, '/videos');
 
-                });
+                // authProvider.checkAppVersionAndProceed(context, () async {
+                //   Navigator.pushNamed(context, '/videos');
+                //
+                // });
               },
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1490,10 +1438,12 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Menu
             GestureDetector(
               onTap: () {
-                authProvider.checkAppVersionAndProceed(context, () async {
-                  _scaffoldKey.currentState!.openDrawer();
+                _scaffoldKey.currentState!.openDrawer();
 
-                });
+                // authProvider.checkAppVersionAndProceed(context, () async {
+                //   _scaffoldKey.currentState!.openDrawer();
+                //
+                // });
               },
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

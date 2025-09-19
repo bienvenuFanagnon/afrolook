@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   emoji_picker_flutter
   encrypt_decrypt_plus
   file_selector_linux
+  record_linux
   rive_common
   smart_auth
   stories_for_flutter
