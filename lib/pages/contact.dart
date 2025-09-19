@@ -16,31 +16,24 @@ class _AidePageState extends State<ContactPage> {
   String _nom = '';
   String _email = 'mykeys@my-keys.com';
   String _message = '';
-  bool tap= false;
+  bool tap = false;
 
   final _formKey = GlobalKey<FormState>();
 
   bool isHTML = false;
 
-
-
   final _subjectController = TextEditingController(text: "Demande d'information");
 
   final _bodyController = TextEditingController();
-
-
 
   final _recipientController = TextEditingController(
     text: 'mykeys@my-keys.com',
   );
 
-
   Future sendEmail(String emailText) async {
-    //_bodyController.text = '${_nom},  ${_bodyController.text}';
     final Email email = Email(
       body: '${_bodyController.text}',
       subject: _subjectController.text,
-
       recipients: [emailText],
       attachmentPaths: attachments,
       isHTML: isHTML,
@@ -49,50 +42,58 @@ class _AidePageState extends State<ContactPage> {
     String platformResponse;
 
     try {
-      var response =await FlutterEmailSender.send(email);
-      //print('${response.toString()}');
+      var response = await FlutterEmailSender.send(email);
       platformResponse = 'success';
-      _bodyController.text='';
-      /*
+      _bodyController.text = '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          // duration: 2000,
-          content:
-          Text('Votre message a été envoyé.'),
+          content: Text('Votre message a été envoyé.', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.green[800],
         ),
       );
-
-       */
     } catch (error) {
       print(error);
       platformResponse = error.toString();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          // duration: 2000,
-          content:
-          Text('Message non envoyer',style: TextStyle(color: Colors.red),),
+          content: Text('Message non envoyé', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red,
         ),
       );
     }
 
     if (!mounted) return;
-
   }
 
   Future<void> launchWhatsApp(String phone) async {
     String url = "https://wa.me/$phone";
     if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
+      final snackBar = SnackBar(
+        duration: Duration(seconds: 2),
+        content: Text("Impossible d'ouvrir WhatsApp", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red,
+      );
 
-      // Afficher le SnackBar en bas de la page
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       throw Exception('Impossible d\'ouvrir WhatsApp');
     }
   }
 
+  Future<void> _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible d\'ouvrir le lien', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _email = 'mykeys@my-keys.com';
   }
@@ -103,195 +104,202 @@ class _AidePageState extends State<ContactPage> {
     double height = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aide'),
+        title: const Text('Contactez-nous', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.black,
+        iconTheme: IconThemeData(color: Colors.green),
       ),
+      backgroundColor: Colors.black,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Informations de contact',
-                style: TextStyle(fontSize: 18.0),
-              ),
-              SizedBox(height: 150),
-              TextButton(
-
-                onPressed: () {
-                  sendEmail('officiel.afrolook@gmail.com');
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  child: Container(
-
-                    color: Colors.black12,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 12.0,right: 12,top: 8,bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Icon(Icons.email,color: Colors.black,),
-
-                          Text(
-                            'Info générale, signaler un souci',
-                            style: TextStyle(fontSize: 16.0,color: Colors.black),
-                          ),
-
-                        ],
-                      ),
-                    ),
-                  ),
+              Center(
+                child: Text(
+                  'Comment pouvons-nous vous aider?',
+                  style: TextStyle(fontSize: 20.0, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
+              SizedBox(height: 20),
 
-              const SizedBox(height: 8.0),
-              SizedBox(height: 10),
-              TextButton(
-
-                onPressed: () {
-                  sendEmail('officiel.afrolook.investissement@gmail.com');
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  child: Container(
-
-                    color: Colors.black12,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 12.0,right: 12,top: 8,bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Icon(Icons.email,color: Colors.black,),
-
-                          Text(
-                            'Contact pour des infos investisseur',
-                            style: TextStyle(fontSize: 16.0,color: Colors.black),
-                          ),
-
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-
-
-              SizedBox(height: 10),
-              TextButton(
-
-                onPressed: () {
-                  sendEmail('officiel.afrolook.annonce@gmail.com');
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  child: Container(
-
-                    color: Colors.black12,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8,bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          const Icon(Icons.email,color: Colors.black,),
-
-                          Text(
-                            'Contact Afrolook Ads',
-                            style: TextStyle(fontSize: 16.0,color: Colors.green,fontWeight: FontWeight.w900),
-                          ),
-
-
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8.0),
-              /*
+              // NOUVEAU: Bouton Facebook en première position
               Container(
-                child: Card(
-                  color: Colors.white,
-                  elevation: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0,top: 2,bottom: 2),
-                    child: Form(
-                        key: _formKey,
-
-                        child: TextFormField(
-                        controller: _bodyController,
-                        decoration: InputDecoration(
-                            hintStyle: TextStyle(
-                              fontSize: 15,
-                              fontFamily: 'Inter',
-                              //fontWeight: FontWeight.w700,
-                              color: Colors.black54,
-                            ),
-                            hintText: 'Message',
-                            border: InputBorder.none
-                        ),
-                        minLines: 8,
-                        maxLines: 12,
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Le message est obligatoire.';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _message = value!;
-                        },
-                      ),
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.blue[900],
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Icon(FontAwesome.facebook, size: 40, color: Colors.white),
+                    SizedBox(height: 10),
+                    Text(
+                      'Vous préférez nous écrire sur Facebook?',
+                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Notre équipe répond rapidement à vos messages sur notre page Facebook',
+                      style: TextStyle(color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 15),
+                    ElevatedButton.icon(
+                      icon: Icon(FontAwesome.facebook, color: Colors.white),
+                      label: Text('Écrire sur Facebook'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white, backgroundColor: Colors.blue[700],
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        _launchURL('https://www.facebook.com/profile.php?id=61554481360821');
+                      },
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(
-                height: 15,
+
+              SizedBox(height: 30),
+              Text(
+                'Ou contactez-nous par email:',
+                style: TextStyle(fontSize: 16.0, color: Colors.grey),
               ),
-
-              TextButton(
-
-                onPressed:tap?(){}: () async {
-                  if (_formKey.currentState!.validate()) {
-                    // _formKey.currentState!.save();
-                    setState(() {
-                      tap=true;
-                    });
-                    try{
-                      await sendEmail();
-
-                    }catch(e){
-                      print("catch erreur : ${e}");
-                      setState(() {
-                        tap=false;
-                      });
-                    }
-
-
-                    setState(() {
-                      tap=false;
-                    });
-                  }
-                },
-                child: Container(
-
-                    alignment: Alignment.center,
-
-                    height: 56,
-                    width: 180,
-                    decoration: BoxDecoration(
-                        color: CustomConstants.kPrimaryColor,
-                        borderRadius: BorderRadius.all(Radius.circular(10))
+              SizedBox(height: 20),
+              // Option 1: Support général
+              Card(
+                color: Colors.green[900],
+                child: ListTile(
+                  leading: Icon(Icons.email, color: Colors.white),
+                  title: Text('Support général', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Informations générales, signaler un problème', style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    sendEmail('officiel.afrolook@gmail.com');
+                  },
+                ),
+              ),
+              SizedBox(height: 15),
+              // Option 2: Investissements
+              Card(
+                color: Colors.green[800],
+                child: ListTile(
+                  leading: Icon(Icons.attach_money, color: Colors.white),
+                  title: Text('Investissements', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Informations pour les investisseurs', style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    sendEmail('officiel.afrolook.investissement@gmail.com');
+                  },
+                ),
+              ),
+              SizedBox(height: 15),
+              // Option 3: Publicité
+              Card(
+                color: Colors.green[700],
+                child: ListTile(
+                  leading: Icon(Icons.campaign, color: Colors.white),
+                  title: Text('Publicité Afrolook Ads', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Pour vos campagnes publicitaires', style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    sendEmail('officiel.afrolook.annonce@gmail.com');
+                  },
+                ),
+              ),
+              SizedBox(height: 30),
+              // Section Réseaux sociaux
+              Center(
+                child: Text(
+                  'Rejoignez-nous sur les réseaux sociaux',
+                  style: TextStyle(fontSize: 18.0, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Groupe Facebook
+                  Column(
+                    children: [
+                      IconButton(
+                        icon: Icon(FontAwesome.facebook, color: Colors.blue, size: 40),
+                        onPressed: () {
+                          _launchURL('https://facebook.com/groups/28745647531687196/');
+                        },
+                      ),
+                      Text('Groupe Facebook', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                  // Page Facebook
+                  Column(
+                    children: [
+                      IconButton(
+                        icon: Icon(FontAwesome.facebook_square, color: Colors.blue, size: 40),
+                        onPressed: () {
+                          _launchURL('https://www.facebook.com/profile.php?id=61554481360821');
+                        },
+                      ),
+                      Text('Page Facebook', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                  // Twitter/X
+                  Column(
+                    children: [
+                      IconButton(
+                        icon: Icon(FontAwesome.twitter, color: Colors.lightBlue, size: 40),
+                        onPressed: () {
+                          _launchURL('https://x.com/Afrolook2?t=_Sv_PF1PnaE58CnlqiSKuQ&s=09');
+                        },
+                      ),
+                      Text('Twitter/X', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              // Section pour ceux qui ont des difficultés
+              Container(
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vous avez des difficultés?',
+                      style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.bold),
                     ),
-
-
-                    child:tap?CircularProgressIndicator(color: Colors.white,):Text('Envoyer',style: TextStyle(color: Colors.white),)),
+                    SizedBox(height: 10),
+                    Text(
+                      'Rejoignez notre communauté sur Facebook pour obtenir de l\'aide:',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      icon: Icon(FontAwesome.facebook, color: Colors.white),
+                      label: Text('Rejoindre le groupe Facebook'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white, backgroundColor: Colors.blue[800],
+                      ),
+                      onPressed: () {
+                        _launchURL('https://facebook.com/groups/28745647531687196/');
+                      },
+                    ),
+                  ],
+                ),
               ),
-
-               */
-
             ],
           ),
         ),
