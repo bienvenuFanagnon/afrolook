@@ -25,8 +25,8 @@ int genererNombreAleatoire() {
   final random = Random();
 
   // Générer un nombre aléatoire entre 0 et 8 (11 - 3)
-  final nombreAleatoire = random.nextInt(9);
+  final nombreAleatoire = random.nextInt(2);
 
   // Ajouter 3 pour obtenir un nombre entre 3 et 11
-  return nombreAleatoire + 3;
+  return nombreAleatoire + 1;
 }

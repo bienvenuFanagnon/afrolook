@@ -363,54 +363,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
 
 
-  void _showServiceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Mettez en ligne vos services'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 10,
-            children: [
-              AnimateIcon(
-                key: UniqueKey(),
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceListPage(),));
 
-                },
-                iconType: IconType.continueAnimation,
-                height: 70,
-                width: 70,
-                color: Colors.green,
-                animateIcon: AnimateIcons.settings,
-              ),
-
-              Text(
-                  'Il est désormais temps de mettre en ligne vos services et savoir-faire sur Afrolook afin qu\'une personne proposant un job puisse vous contacter.'),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Aller à la liste de services',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.green, // Couleur du bouton
-              ),
-              onPressed: () {
-                // Naviguer vers la page de liste de services
-                Navigator.pop(context);
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => UserServiceListPage()));
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
 
 
@@ -524,7 +477,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                               Icon(Icons.group, size: 10, color: accentYellow),
                               SizedBox(width: 2),
                               Text(
-                                '${user.abonnes}',
+                                '${user.userAbonnesIds!.length}',
                                 style: TextStyle(
                                   color: accentYellow,
                                   fontSize: 10,
@@ -1989,58 +1942,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
 
-  Widget _buildProfilesSection2() {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    return FutureBuilder<List<UserData>>(
-      future: userProvider.getProfileUsers(authProvider.loginUserData.id!, context, limiteUsers),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting || snapshot.hasError) {
-          return SizedBox(height: height * 0.35, child: _buildShimmerEffect(width, height));
-        } else {
-          List<UserData> list = snapshot.data!..shuffle();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
-                child: Text(
-                  'Profils à découvrir',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: height * 0.35,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: list.length,
-                  itemBuilder: (context, index) => Container(
-                    margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    width: width * 0.4,
-                    decoration: BoxDecoration(
-                      color: darkBackground.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: primaryGreen.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: homeProfileUsers(list[index], width, height),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-      },
-    );
-  }
 
   Widget _buildShimmerEffect(double width, double height) {
     return Shimmer.fromColors(

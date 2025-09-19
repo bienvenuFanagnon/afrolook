@@ -23,9 +23,38 @@ class AuthService {
   late int codeError=0;
 
 
-
-
   Future<AppDefaultData> getAppData() async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    // ID statique du document
+    const String staticId = "XgkSxKc10vWsJJ2uBraT";
+    final DocumentReference docRef = firestore.collection('AppData').doc(staticId);
+
+    AppDefaultData appData = AppDefaultData();
+
+    try {
+      // Vérifier si le document existe
+      DocumentSnapshot snapshot = await docRef.get();
+
+      if (snapshot.exists) {
+        // Si trouvé → on récupère
+        appData = AppDefaultData.fromJson(snapshot.data() as Map<String, dynamic>);
+        appData.id = snapshot.id;
+      } else {
+        // Sinon → on crée avec l’ID statique
+        appData.id = staticId;
+        await docRef.set(appData.toJson());
+        printVm("Nouveau AppData créé avec l’ID statique : $staticId");
+      }
+    } catch (e) {
+      printVm("Erreur lors de la récupération ou création du document : $e");
+    }
+
+    return appData;
+  }
+
+
+  Future<AppDefaultData> getAppData1() async {
 
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     CollectionReference collection =

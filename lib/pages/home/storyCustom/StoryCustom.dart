@@ -133,7 +133,7 @@ class StoryPreviewCustom extends StatelessWidget {
     !(story.vues?.contains(authProvider.loginUserData.id) ?? false)) ?? false;
 
     final firstStory = user.stories != null && user.stories!.isNotEmpty
-        ? user.stories![0]
+        ? user.stories!.last
         : null;
 
     return GestureDetector(
@@ -221,12 +221,12 @@ class StoryPreviewCustom extends StatelessWidget {
                 ),
               ),
               child: Text(
-                user.pseudo ?? user.nom ?? 'Utilisateur',
+                '@${user.pseudo ?? user.nom ?? 'Utilisateur'}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 10,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -619,7 +619,7 @@ class _StoryContent extends StatelessWidget {
     } else if (story.mediaType == MediaType.image) {
       return CachedNetworkImage(
         imageUrl: story.media ?? 'https://cdn.pixabay.com/photo/2019/05/14/21/50/storytelling-4203628_1280.jpg',
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
         placeholder: (context, url) => Center(child: CircularProgressIndicator()),

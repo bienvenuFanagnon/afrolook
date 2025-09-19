@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/home_view_model.dart';
@@ -41,11 +42,15 @@ import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
-import 'canaux/detailsCanal.dart';
-import 'canaux/listCanal.dart';
-import 'component/consoleWidget.dart';
-import 'component/showImage.dart';
-import 'component/showUserDetails.dart';
+
+
+// Couleurs AfroLook
+const _afroGreen = Color(0xFF2ECC71);
+const _afroDarkGreen = Color(0xFF27AE60);
+const _afroYellow = Color(0xFFF1C40F);
+const _afroBlack = Color(0xFF2C3E50);
+const _afroLightBg = Color(0xFFECF0F1);
+const _afroRed = Color(0xFFE74C3C);
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -55,37 +60,125 @@ class PostComments extends StatefulWidget {
   State<PostComments> createState() => _PostCommentsState();
 }
 
-class _PostCommentsState extends State<PostComments> with TickerProviderStateMixin{
-  String token = '';
-  bool dejaVuPub = true;
+class _PostCommentsState extends State<PostComments> {
+  late UserAuthProvider authProvider;
+  late UserProvider userProvider;
+  late PostProvider postProvider;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  GlobalKey btnKey = GlobalKey();
-  GlobalKey btnKey2 = GlobalKey();
-  GlobalKey btnKey3 = GlobalKey();
-  GlobalKey btnKey4 = GlobalKey();
-  final _formKey = GlobalKey<FormState>();
-  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late UserAuthProvider authProvider =
-      Provider.of<UserAuthProvider>(context, listen: false);
-  late UserProvider userProvider =
-      Provider.of<UserProvider>(context, listen: false);
-  int imageIndex = 0;
   PostComment commentSelectedToReply = PostComment();
-  late PostProvider postProviders =
-      Provider.of<PostProvider>(context, listen: false);
-  TextEditingController commentController = TextEditingController();
-  String formaterDateTime2(DateTime dateTime) {
-    DateTime now = DateTime.now();
+  UserData commentRecever = UserData();
+  bool replying = false;
+  String replyingTo = '';
+  String replyUser_pseudo = '';
+  String replyUser_id = '';
+  bool _isLoading = false;
+  bool sendMessageTap = false;
 
-    if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day) {
-      // Si la date est aujourd'hui, afficher seulement l'heure et la minute
-      return DateFormat.Hm().format(dateTime);
+  TextEditingController _textController = TextEditingController();
+  FocusNode _focusNode = FocusNode();
+  List<UserData> users = [];
+  List<PostComment> comments = [];
+  List<UserData> suggestedUsers = [];
+  bool showUserSuggestions = false;
+  String currentSearchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+    postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    _loadUsers();
+    _loadComments();
+
+    _textController.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _textController.removeListener(_onTextChanged);
+    _textController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final text = _textController.text;
+    final lastAtPos = text.lastIndexOf('@');
+
+    if (lastAtPos != -1) {
+      final query = text.substring(lastAtPos + 1).split(' ')[0];
+      if (query.isNotEmpty) {
+        setState(() {
+          currentSearchQuery = query;
+          showUserSuggestions = true;
+          _filterUsers(query);
+        });
+      } else {
+        setState(() {
+          showUserSuggestions = false;
+        });
+      }
     } else {
-      // Sinon, afficher la date complète
-      return DateFormat.yMd().add_Hms().format(dateTime);
+      setState(() {
+        showUserSuggestions = false;
+      });
     }
+  }
+
+  void _filterUsers(String query) {
+    setState(() {
+      suggestedUsers = users.where((user) {
+        return user.pseudo!.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+  }
+
+  void _selectUser(UserData user) {
+    final text = _textController.text;
+    final lastAtPos = text.lastIndexOf('@');
+
+    if (lastAtPos != -1) {
+      final newText = text.substring(0, lastAtPos) + '@${user.pseudo!} ';
+      _textController.text = newText;
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: newText.length),
+      );
+    }
+
+    setState(() {
+      showUserSuggestions = false;
+    });
+  }
+
+  Future<void> _loadUsers() async {
+    final usersList = await userProvider.getAllUsers();
+    setState(() {
+      users = usersList;
+    });
+  }
+
+  Future<void> _loadComments() async {
+    setState(() => _isLoading = true);
+    try {
+      final commentsList = await postProvider.getPostCommentsNoStream(widget.post);
+      setState(() {
+        comments = commentsList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('Erreur chargement commentaires: $e');
+    }
+  }
+
+  String formatNumber(int number) {
+    if (number < 1000) return number.toString();
+    if (number < 1000000) return "${(number / 1000).toStringAsFixed(1)} k";
+    if (number < 1000000000) return "${(number / 1000000).toStringAsFixed(1)} m";
+    return "${(number / 1000000000).toStringAsFixed(1)} b";
   }
 
   String formaterDateTime(DateTime dateTime) {
@@ -93,1649 +186,832 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     final difference = now.difference(dateTime);
 
     if (difference.inDays < 1) {
-      // Si c'est le même jour
       if (difference.inHours < 1) {
-        // Si moins d'une heure
-        if (difference.inMinutes < 1) {
-          return "publié il y a quelques secondes";
-        } else {
-          return "publié il y a ${difference.inMinutes} minutes";
-        }
+        if (difference.inMinutes < 1) return "à l'instant";
+        return "il y a ${difference.inMinutes} min";
       } else {
-        return "publié il y a ${difference.inHours} heures";
+        return "il y a ${difference.inHours} h";
       }
     } else if (difference.inDays < 7) {
-      // Si la semaine n'est pas passée
-      return "publié ${difference.inDays} jours plus tôt";
+      return "il y a ${difference.inDays} j";
     } else {
-      // Si le jour est passé
-      return "publié depuis ${DateFormat('dd MMMM yyyy').format(dateTime)}";
+      return DateFormat('dd MMM yyyy').format(dateTime);
     }
   }
 
-   _showPostMenuModalDialog(Post post) {
+  void _showCommentMenuModalDialog(PostComment postComment) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Menu'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Visibility(
-                  visible: post.user!.id != authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      post.status = PostStatus.SIGNALER.name;
-                      await postProviders.updateVuePost(post, context).then(
-                            (value) {
-                          if (value) {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'Post signalé !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          } else {
-                            SnackBar snackBar = SnackBar(
-                              content: Text(
-                                'échec !',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          }
-                          Navigator.pop(context);
-                        },
-                      );
-                      setState(() {});
-                    },
-                    leading: Icon(
-                      Icons.flag,
-                      color: Colors.blueGrey,
-                    ),
-                    title: Text(
-                      'Signaler',
-                    ),
-                  ),
-                ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                Visibility(
-                  visible: post.user!.id == authProvider.loginUserData.id,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        post.status = PostStatus.NONVALIDE.name;
-                        await postProviders.updateVuePost(post, context).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'Post bloqué !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else if (post.type == PostType.POST.name) {
-                        if (post.user!.id == authProvider.loginUserData.id) {
-                          post.status = PostStatus.SUPPRIMER.name;
-                          await postProviders.updateVuePost(post, context).then(
-                                (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'Post supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
-                      }
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                        ? Text('Bloquer')
-                        : Text('Supprimer'),
-                  ),
-                ),
-              ],
-            ),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Options',
+            style: TextStyle(color: _afroBlack, fontWeight: FontWeight.bold),
           ),
-        );
-      },
-    );
-  }
-
-  _showCommentMenuModalDialog(PostComment postComment) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                // Visibility(
-                //   visible: postComment.user!.id != authProvider.loginUserData.id,
-                //   child: ListTile(
-                //     onTap: () async {
-                //       postComment.status = PostStatus.SIGNALER.name;
-                //       await postProviders.updateComment(postComment).then(
-                //             (value) {
-                //           if (value) {
-                //             SnackBar snackBar = SnackBar(
-                //               content: Text(
-                //                 'Post signalé !',
-                //                 textAlign: TextAlign.center,
-                //                 style: TextStyle(color: Colors.green),
-                //               ),
-                //             );
-                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                //           } else {
-                //             SnackBar snackBar = SnackBar(
-                //               content: Text(
-                //                 'échec !',
-                //                 textAlign: TextAlign.center,
-                //                 style: TextStyle(color: Colors.red),
-                //               ),
-                //             );
-                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                //           }
-                //           Navigator.pop(context);
-                //         },
-                //       );
-                //       setState(() {});
-                //     },
-                //     leading: Icon(
-                //       Icons.flag,
-                //       color: Colors.blueGrey,
-                //     ),
-                //     title: Text(
-                //       'Signaler',
-                //     ),
-                //   ),
-                // ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                Visibility(
-                  visible: postComment.user!.id == authProvider.loginUserData.id||authProvider.loginUserData.role == UserRole.ADM.name,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        postComment.status = PostStatus.SUPPRIMER.name;
-                        await postProviders.updateComment(postComment).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'commentaire supprimé !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                              setState(() {
-
-                              });
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else
-                        if (postComment.user!.id == authProvider.loginUserData.id) {
-                          postComment.status = PostStatus.SUPPRIMER.name;
-                          await postProviders.updateComment(postComment).then(
-                                (value) {
-                              if (value) {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'commentaire supprimé !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                                setState(() {
-
-                                });
-                              } else {
-                                SnackBar snackBar = SnackBar(
-                                  content: Text(
-                                    'échec !',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(snackBar);
-                              }
-                            },
-                          );
-                        }
-
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                        // ? Text('Bloquer')
-                        ? Text('Supprimer')
-                        : Text('Supprimer'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  _showResponseCommentMenuModalDialog(PostComment postComment,ResponsePostComment response) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Menu'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                // Visibility(
-                //   visible: postComment.user!.id != authProvider.loginUserData.id,
-                //   child: ListTile(
-                //     onTap: () async {
-                //       postComment.status = PostStatus.SIGNALER.name;
-                //       await postProviders.updateComment(postComment).then(
-                //             (value) {
-                //           if (value) {
-                //             SnackBar snackBar = SnackBar(
-                //               content: Text(
-                //                 'Post signalé !',
-                //                 textAlign: TextAlign.center,
-                //                 style: TextStyle(color: Colors.green),
-                //               ),
-                //             );
-                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                //           } else {
-                //             SnackBar snackBar = SnackBar(
-                //               content: Text(
-                //                 'échec !',
-                //                 textAlign: TextAlign.center,
-                //                 style: TextStyle(color: Colors.red),
-                //               ),
-                //             );
-                //             ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                //           }
-                //           Navigator.pop(context);
-                //         },
-                //       );
-                //       setState(() {});
-                //     },
-                //     leading: Icon(
-                //       Icons.flag,
-                //       color: Colors.blueGrey,
-                //     ),
-                //     title: Text(
-                //       'Signaler',
-                //     ),
-                //   ),
-                // ),
-                /*
-                ListTile(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(Icons.edit,color: Colors.blue,),
-                  title: Text('Modifier'),
-                ),
-
-                 */
-                Visibility(
-                  visible: postComment.user!.id == authProvider.loginUserData.id||authProvider.loginUserData.role == UserRole.ADM.name,
-                  child: ListTile(
-                    onTap: () async {
-                      if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                        response.status = PostStatus.SUPPRIMER.name;
-                     int indexResponse=   postComment.responseComments!.indexOf(response);
-                        postComment.responseComments!.elementAt(indexResponse).status= PostStatus.SUPPRIMER.name;
-
-
-                        await postProviders.updateComment(postComment).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'commentaire supprimé !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      } else
-                      if (postComment.user!.id == authProvider.loginUserData.id) {
-                        response.status = PostStatus.SUPPRIMER.name;
-                        int indexResponse=   postComment.responseComments!.indexOf(response);
-                        // postComment.responseComments![indexResponse]=response;
-                        postComment.responseComments!.elementAt(indexResponse).status= PostStatus.SUPPRIMER.name;
-
-                        await postProviders.updateComment(postComment).then(
-                              (value) {
-                            if (value) {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'commentaire supprimé !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } else {
-                              SnackBar snackBar = SnackBar(
-                                content: Text(
-                                  'échec !',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            }
-                          },
-                        );
-                      }
-
-
-                      setState(() {
-                        Navigator.pop(context);
-                      });
-                    },
-                    leading: Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-                    title: authProvider.loginUserData.role == UserRole.ADM.name
-                    // ? Text('Bloquer')
-                        ? Text('Supprimer')
-                        : Text('Supprimer'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-
-
-
-
-
-
-  late bool replying = false;
-  late UserData commentRecever = UserData();
-  late String replyingTo = '';
-  late String replyUser_pseudo = '';
-  late String replyUser_id = '';
-  //late List<Widget> actions;
-  late TextEditingController _textController = TextEditingController();
-  Duration duration = new Duration();
-  Duration position = new Duration();
-  bool isPlaying = false;
-  bool isLoading = false;
-  bool isPause = false;
-  bool sendMessageTap = false;
-  double siveBoxLastmessage = 10;
-  String formatNumber(int number) {
-    if (number < 1000) {
-      return number.toString();
-    } else if (number < 1000000) {
-      return "${number / 1000} k";
-    } else if (number < 1000000000) {
-      return "${number / 1000000} m";
-    } else {
-      return "${number / 1000000000} b";
-    }
-  }
-
-  late AnimationController _animationController;
-  late Animation<Offset> _animation;
-
-  double overlayHeight = 380;
-
-  late final homeViewModel = HomeViewModel();
-  late final _controller = FlutterTaggerController(
-    //Initial text value with tag is formatted internally
-    //following the construction of FlutterTaggerController.
-    //After this controller is constructed, if you
-    //wish to update its text value with raw tag string,
-    //call (_controller.formatTags) after that.
-    text:
-    "",
-  );
-  late final _focusNode = FocusNode();
-
-  void _focusListener() {
-    if (!_focusNode.hasFocus) {
-      _controller.dismissOverlay();
-    }
-  }
-  // ScrollController _controller = ScrollController();
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  /// Declare
-  FlutterListViewController fluttercontroller = FlutterListViewController();
-  // FocusNode _focusNode = FocusNode();
-  Widget commentAndResponseListWidget(
-      List<PostComment> pcms,
-      double width,
-      double height,
-      ) {
-    return SingleChildScrollView(
-      child: Column(
-        children: pcms.map((pcm) {
-          return CommentTreeWidget<PostComment, ResponsePostComment>(
-            pcm,
-            pcm.responseComments!,
-            treeThemeData: TreeThemeData(
-              lineColor: Colors.green, // Ligne entre parent et enfant
-              lineWidth: 2,
-            ),
-            avatarRoot: (context, data) => PreferredSize(
-              preferredSize: Size.fromRadius(18),
-              child: GestureDetector(
-                onTap: () async {
-                  await  authProvider.getUserById(data.user!.id!).then((users) async {
-                    if(users.isNotEmpty){
-                      showUserDetailsModalDialog(users.first, width, height,context);
-
-                    }
-                  },);
-                },
-                child: CircleAvatar(
-                  radius: 15,
-                  backgroundImage: NetworkImage(data.user!.imageUrl ?? ''),
-                  onBackgroundImageError: (_, __) => AssetImage('assets/images/404.png'),
-                ),
-              ),
-            ),
-            contentRoot: (context, data) => _buildCommentContent(data, width, height),
-            avatarChild: (context, data) => PreferredSize(
-              preferredSize: Size.fromRadius(18),
-              child: GestureDetector(
-                onTap: () async {
-                  await  authProvider.getUserById(data.user_id!).then((users) async {
-                    if(users.isNotEmpty){
-                      showUserDetailsModalDialog(users.first, width, height,context);
-
-                    }
-                  },);
-                },
-                child: CircleAvatar(
-                  radius: 13,
-                  backgroundImage: NetworkImage(data.user_logo_url ?? ''),
-                ),
-              ),
-            ),
-            contentChild: (context, data) => _buildReplyContent(pcm,data, width, height),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  /// **Widget pour afficher un commentaire principal**
-  Widget _buildCommentContent(PostComment pcm, double width, double height) {
-    return Padding(
-      padding: const EdgeInsets.all(2.0),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                spacing: 2,
-                children: [
-                  Text("@${pcm.user!.pseudo!}", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Visibility(
-                    visible: pcm.user!.isVerify!,
-                    child: Card(
-                      child: const Icon(
-                        Icons.verified,
-                        color: Colors.green,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: width*0.5, // Définir la largeur maximale souhaitée
-                  ),
-                  child: HashTagText(
-
-                    text: "${pcm.status==PostStatus.SUPPRIMER.name?"Supprimé":pcm.message}",
-                    decoratedStyle: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-
-                      color: Colors.green,
-                      fontFamily: 'Nunito', // Définir la police Nunito
-                    ),
-                    basicStyle: TextStyle(
-                      fontSize: SizeText.homeProfileTextSize,
-                      color: pcm.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                      fontWeight: FontWeight.normal,
-                      fontFamily: 'Nunito', // Définir la police Nunito
-                    ),
-                    textAlign: TextAlign.left, // Centrage du texte
-                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                    onTap: (text) {
-                      _handleTagClick(text,width,height);
-                    },
-                    decorateAtSign: true,
-
+              if (postComment.user!.id == authProvider.loginUserData.id ||
+                  authProvider.loginUserData.role == UserRole.ADM.name)
+                ListTile(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _deleteComment(postComment);
+                  },
+                  leading: Icon(Icons.delete, color: _afroRed),
+                  title: Text(
+                    'Supprimer',
+                    style: TextStyle(color: _afroBlack),
                   ),
                 ),
-              ),
-              // HashTagText(
-              //   text: pcm.status == PostStatus.SUPPRIMER.name ? "Supprimé" : pcm.message!,
-              //   decoratedStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
-              //   basicStyle: TextStyle(color: Colors.black),
-              //   onTap: (text) => _handleTagClick(text),
-              // ),
-              Text(
-                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!))}",
-                style: TextStyle(fontSize: 1, color: Colors.grey),
-              ),
             ],
           ),
-          IconButton(onPressed: () {
-            setState(() {
-              commentSelectedToReply = PostComment();
-              commentSelectedToReply = pcm;
-              commentRecever=commentSelectedToReply.user!;
+        );
+      },
+    );
+  }
 
-              replyUser_id=commentSelectedToReply.user!.id!;
-              replyUser_pseudo=commentSelectedToReply.user!.pseudo!;
+  void _showResponseMenuModalDialog(PostComment parentComment, ResponsePostComment response) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            'Options',
+            style: TextStyle(color: _afroBlack, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (response.user_id == authProvider.loginUserData.id ||
+                  authProvider.loginUserData.role == UserRole.ADM.name)
+                ListTile(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _deleteResponse(parentComment, response);
+                  },
+                  leading: Icon(Icons.delete, color: _afroRed),
+                  title: Text(
+                    'Supprimer',
+                    style: TextStyle(color: _afroBlack),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-              replyingTo = "@${commentSelectedToReply.user!.pseudo}";
-              replying = true;
-            });
+  Future<void> _deleteComment(PostComment comment) async {
+    setState(() => _isLoading = true);
 
+    comment.status = PostStatus.SUPPRIMER.name;
+    bool success = await postProvider.updateComment(comment);
 
-          }, icon: Icon(Icons.reply_all,color: Colors.green,size: 15,)),
-          IconButton(onPressed: () {
-            setState(() {
+    setState(() => _isLoading = false);
 
-              _showCommentMenuModalDialog(pcm);
+    if (success) {
+      await _loadComments(); // Recharger seulement après suppression
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Commentaire supprimé'),
+          backgroundColor: _afroGreen,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression'),
+          backgroundColor: _afroRed,
+        ),
+      );
+    }
+  }
 
-            });
+  Future<void> _deleteResponse(PostComment parentComment, ResponsePostComment response) async {
+    setState(() => _isLoading = true);
 
+    response.status = PostStatus.SUPPRIMER.name;
+    bool success = await postProvider.updateComment(parentComment);
 
-          }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 15,)),
+    setState(() => _isLoading = false);
 
+    if (success) {
+      await _loadComments(); // Recharger seulement après suppression
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Réponse supprimée'),
+          backgroundColor: _afroGreen,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression'),
+          backgroundColor: _afroRed,
+        ),
+      );
+    }
+  }
+
+  Widget _buildUserHeader() {
+    final post = widget.post;
+    final isCanal = post.canal != null;
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _afroBlack.withOpacity(0.1),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _afroYellow, width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: 25,
+                  backgroundColor: _afroGreen,
+                  backgroundImage: NetworkImage(
+                    isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
+                  ),
+                  child: (isCanal ? post.canal!.urlImage : post.user!.imageUrl) == null
+                      ? Icon(Icons.person, color: Colors.white)
+                      : null,
+                ),
+              ),
+              if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.verified,
+                      color: _afroYellow,
+                      size: 16,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: _afroBlack,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  isCanal
+                      ? "${formatNumber(post.canal!.usersSuiviId?.length ?? 0)} abonnés"
+                      : "${formatNumber(post.user!.userAbonnesIds?.length ?? 0)} abonnés",
+                  style: TextStyle(
+                    color: _afroBlack.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// **Widget pour afficher une réponse à un commentaire**
-  Widget _buildReplyContent(PostComment pcm,ResponsePostComment rpc, double width, double height) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5.0),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              Text("@${rpc.user_pseudo}", style: TextStyle(fontWeight: FontWeight.bold)),
-              // HashTagText(
-              //   text: rpc.status == PostStatus.SUPPRIMER.name ? "Supprimé" : rpc.message!,
-              //   decoratedStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
-              //   basicStyle: TextStyle(color: Colors.black),
-              //   onTap: (text) => _handleTagClick(text),
-              // ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: width*0.45, // Définir la largeur maximale souhaitée
-                  ),
-                  child: HashTagText(
-
-                    text: "➡️ ${rpc.user_reply_pseudo??''} ${rpc.status==PostStatus.SUPPRIMER.name?"Supprimé":rpc.message}",
-                    decoratedStyle: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-
-                      color: Colors.green,
-                      fontFamily: 'Nunito', // Définir la police Nunito
-                    ),
-                    basicStyle: TextStyle(
-                      fontSize: SizeText.homeProfileTextSize,
-                      color: rpc.status==PostStatus.SUPPRIMER.name?Colors.red:ConstColors.textColors,
-                      fontWeight: FontWeight.normal,
-                      fontFamily: 'Nunito', // Définir la police Nunito
-                    ),
-                    textAlign: TextAlign.left, // Centrage du texte
-                    maxLines: null, // Permet d'afficher le texte sur plusieurs lignes si nécessaire
-                    softWrap: true, // Assure que le texte se découpe sur plusieurs lignes si nécessaire
-                    // overflow: TextOverflow.ellipsis, // Ajoute une ellipse si le texte dépasse
-                    onTap: (text) {
-                      _handleTagClick(text,width,height);
-                    },
-                    decorateAtSign: true,
-
-                  ),
-                ),
-              ),
-              Text(
-                "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!))}",
-                style: TextStyle(fontSize: 8, color: Colors.grey),
-              ),
-            ],
-          ),
-          IconButton(onPressed: () {
-            printVm("****** response pcm selected");
-
-            setState(() {
-              // printVm("****** response pcm **** : ${pcm.toJson()}");
-
-              commentSelectedToReply = PostComment();
-              commentSelectedToReply = pcm;
-              commentRecever=pcm.user!;
-
-              printVm('rpc data ${rpc.toJson()}');
-              replyUser_id=rpc.user_id!;
-              replyUser_pseudo=pcm.user!.pseudo!;
-
-              replyingTo = "@${rpc!.user_pseudo}";
-              replying = true;
-            });
-
-
-          }, icon: Icon(Icons.reply_all,color: Colors.green,size: 14,)),
-          IconButton(onPressed: () {
-
-            _showResponseCommentMenuModalDialog(pcm,rpc);
-
-
-
-          }, icon: Icon(Icons.more_horiz,color: Colors.green,size: 14,)),
-
-        ],
+  Widget _buildPostContent() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: _afroLightBg,
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  /// **Fonction pour gérer les interactions avec les hashtags et mentions**
-  Future<void> _handleTagClick(String text,double width, height) async {
-    print("Tag cliqué: ${text.replaceFirst('@', '')}");
-if(users.isNotEmpty){
-  var user= users.firstWhere((element) => element.pseudo==text.replaceFirst('@', ''),);
-  if(user!=null){
-    await  authProvider.getUserById(user.id!).then((users) async {
-      if(users.isNotEmpty){
-        showUserDetailsModalDialog(users.first, width, height,context);
-
-      }
-    },);
-  }
-}
-
-    // Recherchez l'utilisateur associé et affichez les détails si nécessaire
-  }
-
-List<UserData> users=[];
-  @override
-  void initState() {
-    userProvider.getAllUsers().then((users2) {
-      users=users2;
-    },);
-    super.initState();
-    _focusNode.addListener(_focusListener);
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-
-    _animation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-  Future<void> suivreCanal(Canal canal) async {
-    canal.usersSuiviId!.add(authProvider.loginUserData.id!);
-    await firestore.collection('Canaux').doc(canal.id).update({
-      'usersSuiviId': canal.usersSuiviId,
-    });
-    setState(() {
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Vous suivez maintenant ce canal.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.green),
+      child: HashTagText(
+        text: widget.post.description ?? "",
+        decoratedStyle: TextStyle(
+          fontSize: 15,
+          color: _afroDarkGreen,
+          fontWeight: FontWeight.w600,
+        ),
+        basicStyle: TextStyle(
+          fontSize: 14,
+          color: _afroBlack,
+          height: 1.4,
         ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _focusNode.removeListener(_focusListener);
-    _focusNode.dispose();
-    _controller.dispose();
-    super.dispose();
+  Widget _buildCommentContent(PostComment pcm) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _afroBlack.withOpacity(0.05),
+            blurRadius: 2,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () {
+              double w= MediaQuery.of(context).size.width;
+              double h= MediaQuery.of(context).size.height;
+              showUserDetailsModalDialog(pcm.user!!, w, h, context);
+              },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 15,
+                  backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
+                  backgroundColor: _afroGreen,
+                  child: pcm.user!.imageUrl == null
+                      ? Icon(Icons.person, size: 14, color: Colors.white)
+                      : null,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        "@${pcm.user!.pseudo!}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: _afroBlack,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      if (pcm.user!.isVerify ?? false)
+                        Icon(Icons.verified, size: 14, color: _afroYellow),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          commentSelectedToReply = pcm;
+                          commentRecever = pcm.user!;
+                          replyUser_id = pcm.user!.id!;
+                          replyUser_pseudo = pcm.user!.pseudo!;
+                          replyingTo = "@${pcm.user!.pseudo}";
+                          replying = true;
+                        });
+                        _focusNode.requestFocus();
+                      },
+                      icon: Icon(Icons.reply, size: 16, color: _afroGreen),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                    IconButton(
+                      onPressed: () => _showCommentMenuModalDialog(pcm),
+                      icon: Icon(Icons.more_vert, size: 16, color: _afroBlack),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 6),
+          HashTagText(
+
+            text: pcm.status == PostStatus.SUPPRIMER.name
+                ? "Commentaire supprimé"
+                : pcm.message!,
+            decoratedStyle: TextStyle(
+              fontSize: 12,
+              color: _afroDarkGreen,
+              fontWeight: FontWeight.w600,
+            ),
+            basicStyle: TextStyle(
+              fontSize: 13,
+              color: pcm.status == PostStatus.SUPPRIMER.name
+                  ? _afroRed
+                  : _afroBlack,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
+            style: TextStyle(
+              fontSize: 10,
+              color: _afroBlack.withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyContent(PostComment pcm, ResponsePostComment rpc) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      margin: EdgeInsets.only(left: 20, bottom: 6),
+      decoration: BoxDecoration(
+        color: _afroLightBg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () {
+              if(rpc.user!=null){
+                double w= MediaQuery.of(context).size.width;
+                double h= MediaQuery.of(context).size.height;
+                showUserDetailsModalDialog(rpc.user!, w, h, context);
+              }
+            },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 12,
+                  backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
+                  backgroundColor: _afroGreen,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  "@${rpc.user_pseudo}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: _afroBlack,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  "→ @${rpc.user_reply_pseudo ?? ''}",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _afroBlack.withOpacity(0.6),
+                  ),
+                ),
+                Spacer(),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          commentSelectedToReply = pcm;
+                          commentRecever = pcm.user!;
+                          replyUser_id = rpc.user_id!;
+                          replyUser_pseudo = rpc.user_pseudo!;
+                          replyingTo = "@${rpc.user_pseudo}";
+                          replying = true;
+                        });
+                        _focusNode.requestFocus();
+                      },
+                      icon: Icon(Icons.reply, size: 14, color: _afroGreen),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                    IconButton(
+                      onPressed: () => _showResponseMenuModalDialog(pcm, rpc),
+                      icon: Icon(Icons.more_vert, size: 14, color: _afroBlack),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 4),
+          HashTagText(
+            text: rpc.status == PostStatus.SUPPRIMER.name
+                ? "Réponse supprimée"
+                : rpc.message!,
+            decoratedStyle: TextStyle(
+              fontSize: 11,
+              color: _afroDarkGreen,
+              fontWeight: FontWeight.w600,
+            ),
+            basicStyle: TextStyle(
+              fontSize: 12,
+              color: rpc.status == PostStatus.SUPPRIMER.name
+                  ? _afroRed
+                  : _afroBlack,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
+            style: TextStyle(
+              fontSize: 9,
+              color: _afroBlack.withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsList() {
+    if (_isLoading) {
+      return Center(
+        child: LoadingAnimationWidget.fourRotatingDots(
+          color: _afroGreen,
+          size: 40,
+        ),
+      );
+    }
+
+    if (comments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.comment_outlined, color: _afroBlack.withOpacity(0.3), size: 50),
+            SizedBox(height: 12),
+            Text(
+              'Soyez le premier à commenter',
+              style: TextStyle(
+                color: _afroBlack.withOpacity(0.5),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: comments.length,
+      itemBuilder: (context, index) {
+        final comment = comments[index];
+        return Column(
+          children: [
+            _buildCommentContent(comment),
+            if (comment.responseComments != null && comment.responseComments!.isNotEmpty)
+              ...comment.responseComments!.map((reply) =>
+                  _buildReplyContent(comment, reply)
+              ).toList(),
+            Divider(height: 20, color: _afroLightBg),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUserSuggestions() {
+    if (!showUserSuggestions || suggestedUsers.isEmpty) {
+      return SizedBox();
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: _afroBlack.withOpacity(0.1),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        children: suggestedUsers.take(5).map((user) => ListTile(
+          leading: CircleAvatar(
+            radius: 16,
+            backgroundImage: NetworkImage(user.imageUrl ?? ''),
+            backgroundColor: _afroGreen,
+          ),
+          title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 14)),
+          onTap: () => _selectUser(user),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCommentInput() {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: _afroLightBg)),
+      ),
+      child: Column(
+        children: [
+          if (replying)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: _afroYellow.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.reply, color: _afroGreen, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Réponse à $replyingTo",
+                      style: TextStyle(
+                        color: _afroBlack,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 16, color: _afroRed),
+                    onPressed: () {
+                      setState(() {
+                        replying = false;
+                        replyingTo = "";
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          _buildUserSuggestions(),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _afroLightBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    decoration: InputDecoration(
+                      hintText: replying ? 'Répondre...' : 'Ajouter un commentaire...',
+                      hintStyle: TextStyle(color: _afroBlack.withOpacity(0.5)),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      suffixIcon: _textController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(Icons.send, color: _afroGreen),
+                        onPressed: _sendComment,
+                      )
+                          : null,
+                    ),
+                    onSubmitted: (value) => _sendComment(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendComment() async {
+    if (_textController.text.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+    final textComment = _textController.text.trim();
+    _textController.clear();
+    _focusNode.unfocus();
+
+    try {
+      bool success = false;
+
+      if (replying) {
+        // Envoyer une réponse
+        final response = ResponsePostComment(
+          user_id: authProvider.loginUserData.id,
+          user_logo_url: authProvider.loginUserData.imageUrl,
+          user_pseudo: authProvider.loginUserData.pseudo,
+          post_comment_id: commentSelectedToReply.id,
+          user_reply_pseudo: replyingTo,
+          message: textComment,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        commentSelectedToReply.responseComments ??= [];
+        commentSelectedToReply.responseComments!.add(response);
+
+        success = await postProvider.updateComment(commentSelectedToReply);
+
+        if (success) {
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+          await _sendNotification(replyUser_id, "répondu à votre commentaire", textComment);
+        }
+      } else {
+        // Envoyer un nouveau commentaire
+        final comment = PostComment(
+          user_id: authProvider.loginUserData.id,
+          user: authProvider.loginUserData,
+          post_id: widget.post.id,
+          users_like_id: [],
+          responseComments: [],
+          message: textComment,
+          loves: 0,
+          likes: 0,
+          comments: 0,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        success = await postProvider.newComment(comment);
+
+        if (success) {
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+          await _sendNotification(widget.post.user!.id!, "commenté votre look", textComment);
+        }
+      }
+
+      // Réinitialiser l'état de réponse
+      setState(() {
+        replying = false;
+        replyingTo = "";
+      });
+
+      // Recharger les commentaires seulement après succès
+      if (success) {
+        await _loadComments();
+      }
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: _afroRed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _sendNotification(String receiverId, String action, String message) async {
+    try {
+      // Notification au propriétaire du commentaire/post
+      final receiver = await authProvider.getUserById(receiverId);
+      if (receiver.isNotEmpty) {
+        final notif = NotificationData(
+          id: firestore.collection('Notifications').doc().id,
+          titre: "Nouvelle interaction",
+          media_url: authProvider.loginUserData.imageUrl,
+          type: NotificationType.POST.name,
+          description: "@${authProvider.loginUserData.pseudo!} a $action",
+          user_id: authProvider.loginUserData.id,
+          receiver_id: receiverId,
+          post_id: widget.post.id!,
+          post_data_type: PostDataType.COMMENT.name!,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+          status: PostStatus.VALIDE.name,
+        );
+
+        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+        await authProvider.sendNotification(
+            userIds: [receiver.first.oneIgnalUserid!],
+            smallImage: authProvider.loginUserData.imageUrl!,
+            send_user_id: authProvider.loginUserData.id!,
+            recever_user_id: receiverId,
+            message: "@${authProvider.loginUserData.pseudo!} a $action",
+            type_notif: NotificationType.POST.name,
+            post_id: widget.post.id!,
+            post_type: PostDataType.COMMENT.name,
+            chat_id: ''
+        );
+      }
+
+      // Notifications pour les utilisateurs tagués
+      final mentionedUsers = _extractMentionedUsers(message);
+      for (final username in mentionedUsers) {
+        final user = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
+        if (user.id != null && user.id != receiverId) {
+          final mentionNotif = NotificationData(
+            id: firestore.collection('Notifications').doc().id,
+            titre: "Vous avez été mentionné",
+            media_url: authProvider.loginUserData.imageUrl,
+            type: NotificationType.MESSAGE.name,
+            description: "@${authProvider.loginUserData.pseudo!} vous a mentionné dans un commentaire",
+            user_id: authProvider.loginUserData.id,
+            receiver_id: user.id!,
+            post_id: widget.post.id!,
+            post_data_type: PostDataType.COMMENT.name!,
+            createdAt: DateTime.now().microsecondsSinceEpoch,
+            updatedAt: DateTime.now().microsecondsSinceEpoch,
+            status: PostStatus.VALIDE.name,
+          );
+
+          await firestore.collection('Notifications').doc(mentionNotif.id).set(mentionNotif.toJson());
+
+          await authProvider.sendNotification(
+              userIds: [user.oneIgnalUserid!],
+              smallImage: authProvider.loginUserData.imageUrl!,
+              send_user_id: authProvider.loginUserData.id!,
+              recever_user_id: user.id!,
+              message: "@${authProvider.loginUserData.pseudo!} vous a mentionné dans un commentaire",
+              type_notif: NotificationType.MESSAGE.name,
+              post_id: widget.post.id!,
+              post_type: PostDataType.COMMENT.name,
+              chat_id: ''
+          );
+        }
+      }
+
+    } catch (e) {
+      print('Erreur envoi notification: $e');
+    }
+  }
+
+  List<String> _extractMentionedUsers(String message) {
+    final RegExp mentionRegex = RegExp(r'@(\w+)');
+    final matches = mentionRegex.allMatches(message);
+    return matches.map((match) => match.group(1)!).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    var insets = MediaQuery.of(context).viewInsets;
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(),
-      body: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-
-
-        child: Consumer<PostProvider>(builder: (context, postPro, _) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-
-              Container(
-                child: StatefulBuilder(builder:
-                        (BuildContext context, StateSetter setStateImages) {
-                        return Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                widget.post.canal!=null?GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
-
-                                  },
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 8.0),
-                                            child: CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                  '${widget.post.canal!.urlImage!}'),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 2,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  SizedBox(
-                                                    //width: 100,
-                                                    child: TextCustomerUserTitle(
-                                                      titre: "#${widget.post.canal!.titre!}",
-                                                      fontSize: SizeText.homeProfileTextSize,
-                                                      couleur: ConstColors.textColors,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  TextCustomerUserTitle(
-                                                    titre: "${formatNumber(widget.post.canal!.usersSuiviId!.length)} abonné(s)",
-                                                    fontSize: SizeText.homeProfileTextSize,
-                                                    couleur: ConstColors.textColors,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                                  // TextCustomerUserTitle(
-                                                  //   titre: "${formatNumber(post.user!.userlikes!)} like(s)",
-                                                  //   fontSize: SizeText.homeProfileTextSize,
-                                                  //   couleur: Colors.green,
-                                                  //   fontWeight: FontWeight.w700,
-                                                  // ),
-
-                                                ],
-                                              ),
-                                              /*
-                              IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    Icons.add_circle_outlined,
-                                    size: 20,
-                                    color: ConstColors.regIconColors,
-                                  )),
-
-                               */
-                                            ],
-                                          ),
-
-                                        ],
-                                      ),
-                                      Visibility(
-                                        visible: widget.post.canal!.isVerify!,
-                                        child: Card(
-                                          child: const Icon(
-                                            Icons.verified,
-                                            color: Colors.blue,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        child: widget.post.canal!.usersSuiviId!.contains(authProvider.loginUserData.id)
-                                            ? null
-                                            : TextButton(
-                                          onPressed: () {
-                                            suivreCanal(widget.post.canal!);
-                                          },
-                                          style: ElevatedButton.styleFrom(
-
-                                            backgroundColor: Colors.green, // Background color
-                                            // onPrimary: Colors.white, // Text color
-                                          ),
-                                          child: Text('Suivre', style: TextStyle(color: Colors.white)),
-                                        ),
-                                      ),
-                                      ElevatedButton(onPressed: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false,),));
-                                        // Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
-
-                                      }, child: Text('Voir plus',style: TextStyle(color: Colors.green),))
-                                      // IconButton(
-                                      //     onPressed: () {
-                                      //       _showModalDialog(post);
-                                      //     },
-                                      //     icon: Icon(
-                                      //       Icons.more_horiz,
-                                      //       size: 30,
-                                      //       color: ConstColors.blackIconColors,
-                                      //     )),
-                                    ],
-                                  ),
-                                ):     Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Align(
-                            //   alignment: Alignment.centerLeft,
-                            //   child: IconButton(onPressed: () {
-                            //
-                            //   }, icon: Icon(Icons.arrow_back_sharp,color: Colors.green,)),
-                            // ),
-                            Row(
-                              children: [
-                                Padding(
-                                  padding:
-                                  const EdgeInsets.only(right: 8.0),
-                                  child: CircleAvatar(
-                                    backgroundImage: NetworkImage(
-                                        '${widget.post.user!.imageUrl!}'),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 2,
-                                ),
-                                Row(
-                                  children: [
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                                      children: [
-                                        SizedBox(
-                                          //width: 100,
-                                          child: TextCustomerUserTitle(
-                                            titre:
-                                            "@${widget.post.user!.pseudo!}",
-                                            fontSize: SizeText
-                                                .homeProfileTextSize,
-                                            couleur:
-                                            ConstColors.textColors,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        TextCustomerUserTitle(
-                                          titre:
-                                          "${widget.post.user!.userAbonnesIds!.length!} abonné(s)",
-                                          fontSize: SizeText
-                                              .homeProfileTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                                onPressed: () {
-                                  _showPostMenuModalDialog(widget.post);
-                                },
-                                icon: Icon(
-                                  Icons.more_horiz,
-                                  size: 30,
-                                  color: ConstColors.blackIconColors,
-                                )),
-                          ],
-                        ),
-
-
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: SizedBox(
-                                    width: width * 0.9,
-                                    height: 80,
-                                    child:          InkWell(
-                                      borderRadius: BorderRadius.circular(25),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => DetailsPost(post: widget.post),
-                                        ),
-                                      ),
-                                      child: Container(
-                                        alignment: Alignment.centerLeft,
-                                        child: TextCustomerPostDescription(
-                                          titre: "${widget.post.description}",
-                                          fontSize: SizeText.homeProfileTextSize,
-                                          couleur: ConstColors.textColors,
-                                          fontWeight: FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: TextCustomerPostDescription(
-                                    titre:
-                                        "${formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!))}",
-                                    fontSize: SizeText.homeProfileDateTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                widget.post!.images!.isEmpty
-                                    ? Container()
-                                    : Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            showImageDetailsModalDialog(widget.post!.images!.first!, width, height,context);
-
-                                          },
-                                          child: Container(
-                                            width: 100,
-                                            height: 50,
-                                            child: ClipRRect(
-                                              borderRadius:
-                                              BorderRadius.all(
-                                                  Radius.circular(10)),
-                                              child: Container(
-                                                child: CachedNetworkImage(
-                                                  fit: BoxFit.cover,
-                                                  imageUrl:
-                                                  '${widget.post!.images!.first}',
-                                                  progressIndicatorBuilder: (context,
-                                                      url,
-                                                      downloadProgress) =>
-                                                  //  LinearProgressIndicator(),
-
-                                                  Skeletonizer(
-                                                      child: SizedBox(
-                                                          width: 400,
-                                                          height: 450,
-                                                          child: ClipRRect(
-                                                              borderRadius:
-                                                              BorderRadius.all(Radius.circular(
-                                                                  10)),
-                                                              child: Image
-                                                                  .asset(
-                                                                  'assets/images/404.png')))),
-                                                  errorWidget: (context,
-                                                      url, error) =>
-                                                      Skeletonizer(
-                                                          child: Container(
-                                                              width: 400,
-                                                              height: 450,
-                                                              child: Image
-                                                                  .asset(
-                                                                "assets/images/404.png",
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ))),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Provider<PostProvider>(
-                                  create: (context) => PostProvider(),
-                                  child: SizedBox(
-                                    height:widget.post!.images != null? height * 0.44:height * 0.45,
-                                    width: width,
-                                    child: FutureBuilder<List<PostComment>>(
-                                        future: postProviders
-                                            .getPostCommentsNoStream(
-                                            widget.post),
-                                        builder: (BuildContext context,
-                                            AsyncSnapshot snapshot) {
-                                          if (snapshot.hasData) {
-                                            return commentAndResponseListWidget(
-                                                snapshot.data!,
-                                                width,height);
-                                          } else if (snapshot.hasError) {
-                                            return Icon(Icons.error_outline);
-                                          } else {
-                                            return Center(child: Container( width: 50, height: 50, child: CircularProgressIndicator()));
-                                          }
-                                        }),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-              ),
-            ]),
-          );
-        }),
-      ),
-
-      bottomNavigationBar: FlutterTagger(
-        controller: _controller,
-        animationController: _animationController,
-        onSearch: (query, triggerChar) {
-          if (triggerChar == "@") {
-            searchViewModel.searchUser(query,users);
-          }
-          if (triggerChar == "#") {
-            searchViewModel.searchHashtag(query);
-          }
-        },
-        triggerCharacterAndStyles: const {
-          "@": TextStyle(color: Colors.pinkAccent),
-          "#": TextStyle(color: Colors.green),
-        },
-        tagTextFormatter: (id, tag, triggerCharacter) {
-          return "$triggerCharacter$id#$tag#";
-        },
-        overlayHeight: overlayHeight,
-        overlay: SearchResultOverlay(
-          animation: _animation,
-          tagController: _controller,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: _afroBlack),
+          onPressed: () => Navigator.pop(context),
         ),
-        builder: (context, containerKey) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (replying && replyingTo != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.reply, color: Colors.blueAccent),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Réponse à ${replyingTo!}",
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.redAccent),
-                        onPressed: () {
-                          setState(() {
-                            replying = false;
-                            replyingTo = "";
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-              CommentTextField(
-                focusNode: _focusNode,
-                containerKey: containerKey,
-                insets: insets,
-                controller: _controller,
-                onSend: () async {
-                  printVm("***************send comment;");
-                  setState(() {
-                    sendMessageTap = true;
-
-                  });
-
-                  String textComment=_controller.text;
-                  _controller.clear();
-                  FocusScope.of(context).unfocus();
-                  List<UserData> userNames=[];
-                  List<String> userOneSignalIds=[];
-
-                  if (textComment.isNotEmpty) {
-                    // _controller.text="";
-                    if (replying) {
-
-                      printVm("****** reply ++++response sended user id **** : ${replyUser_id}");
-                      printVm('monetisation reply 1');
-
-                      ResponsePostComment comment =
-                      ResponsePostComment(user_id: authProvider.loginUserData!.id);
-                      comment.user_id =
-                          authProvider.loginUserData!.id;
-                      comment.user_logo_url =
-                          authProvider.loginUserData!.imageUrl;
-                      comment.user_pseudo =
-                          authProvider.loginUserData!.pseudo;
-                      comment.post_comment_id =
-                          commentSelectedToReply.id;
-                      comment.user_reply_pseudo = replyingTo;
-
-                      comment.message =
-                          textComment;
-                      comment.createdAt = DateTime.now()
-                          .microsecondsSinceEpoch;
-                      comment.updatedAt = DateTime.now()
-                          .microsecondsSinceEpoch;
-                      commentSelectedToReply
-                          .responseComments!
-                          .add(comment);
-                      postProviders
-                          .updateComment(
-                          commentSelectedToReply)
-                          .then(
-                            (value) async {
-                          if (value) {
-                            // _textController.text = "";
-                            printVm("****** response sended user id **** : ${replyUser_id}");
-                            widget.post.comments =
-                                widget.post.comments! + 1;
-
-
-                            CollectionReference userCollect =
-                            FirebaseFirestore.instance.collection('Users');
-                            // Get docs from collection reference
-                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
-                            // Afficher la liste
-                            List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                            if (listUsers.isNotEmpty) {
-
-                              listUsers.first!.comments=listUsers.first!.comments!+1;
-                              postProviders.updatePost(widget.post, listUsers.first!!,context);
-                              await authProvider.getAppData();
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }else{
-                              widget.post.user!.comments=widget.post.user!.comments!+1;
-                              postProviders.updatePost(widget.post,widget.post.user!,context);
-                              await authProvider.getAppData();
-
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }
-                            await authProvider.getUserById(replyUser_id).then(
-                                  (users) async {
-                                if(users.isNotEmpty){
-
-                                  UserData receiver = users.first;
-                                  printVm("****** response sended user **** : ${receiver.toJson()}");
-                                  NotificationData notif=NotificationData();
-                                  notif.id=firestore
-                                      .collection('Notifications')
-                                      .doc()
-                                      .id;
-                                  notif.titre="Commentaire 💬";
-                                  notif.media_url=authProvider.loginUserData.imageUrl;
-                                  notif.type=NotificationType.POST.name;
-                                  notif.description="@${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬";
-                                  notif.users_id_view=[];
-                                  notif.user_id=authProvider.loginUserData.id;
-                                  notif.receiver_id=receiver!.id!;
-                                  notif.post_id=widget.post!.id!;
-                                  notif.post_data_type=PostDataType.COMMENT.name!;
-
-                                  notif.updatedAt =
-                                      DateTime.now().microsecondsSinceEpoch;
-                                  notif.createdAt =
-                                      DateTime.now().microsecondsSinceEpoch;
-                                  notif.status = PostStatus.VALIDE.name;
-
-                                  // users.add(pseudo.toJson());
-
-                                  await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-                                  await authProvider.sendNotification(
-                                      userIds: [receiver!.oneIgnalUserid!],
-                                      smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                      send_user_id: "${authProvider.loginUserData.id!}",
-                                      recever_user_id: "${receiver!.id!}",
-                                      message: "📢 @${authProvider.loginUserData.pseudo!} a repondu à votre commentaire 💬",
-                                      type_notif: NotificationType.POST.name,
-                                      post_id: "${widget.post!.id!}",
-                                      post_type: PostDataType.COMMENT.name, chat_id: ''
-                                  );
-                                  // Expression régulière pour trouver les noms commençant par @
-                                  RegExp regExp = RegExp(r'@\w+');
-
-                                  // Trouver toutes les correspondances
-                                  Iterable<Match> matches = regExp.allMatches(textComment);
-
-                                  // Extraire les noms trouvés
-                                  List<String> usernames = matches.map((match) => match.group(0)!).toList();
-
-
-                                  // Afficher les noms trouvés
-                                  if(usernames.isNotEmpty){
-                                    usernames.forEach((username) {
-                                      print("username @ : ${username}");
-                                      var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', '')),);
-                                      userNames.add(user);
-                                      userOneSignalIds.add(user.oneIgnalUserid!);
-                                    });
-
-                                    await authProvider.sendNotification(
-                                        userIds: userOneSignalIds,
-                                        smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                        send_user_id: "${authProvider.loginUserData.id!}",
-                                        recever_user_id: "",
-                                        message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
-                                        type_notif: NotificationType.POST.name,
-                                        post_id: "${widget.post!.id!}",
-                                        post_type: PostDataType.COMMENT.name, chat_id: ''
-                                    );
-                                    userNames.forEach((user) async {
-
-                                      NotificationData notif2=NotificationData();
-                                      notif.id=firestore
-                                          .collection('Notifications')
-                                          .doc()
-                                          .id;
-                                      notif.titre="Tagué 💬";
-                                      notif.media_url=authProvider.loginUserData.imageUrl;
-                                      notif.type=NotificationType.POST.name;
-                                      notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
-                                      notif.users_id_view=[];
-                                      notif.user_id=authProvider.loginUserData.id;
-                                      notif.receiver_id=user!.id!;
-                                      notif.post_id=widget.post!.id!;
-                                      notif.post_data_type=PostDataType.COMMENT.name!;
-
-                                      notif.updatedAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.createdAt =
-                                          DateTime.now().microsecondsSinceEpoch;
-                                      notif.status = PostStatus.VALIDE.name;
-
-                                      // users.add(pseudo.toJson());
-
-                                      await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
-
-
-                                    });
-                                  }
-
-
-
-                                }
-                              },
-                            );
-
-                            sendMessageTap = false;
-
-                            // _focusNode.unfocus();
-                            _textController.text = "";
-
-                            setState(() {
-                              replying = false;
-                            });
-                          } else {
-                            printVm(
-                                "erreru sender response");
-
-                            sendMessageTap = false;
-                          }
-
-                          sendMessageTap = false;
-                        },
-                      );
-                      await postProviders.interactWithPostAndIncrementSolde(widget.post.id!, authProvider.loginUserData.id!, "comment",widget.post.user_id!);
-
-                    } else {
-                      printVm('monetisation 2');
-                      PostComment comment = PostComment();
-                      comment.user_id =
-                          authProvider.loginUserData.id;
-                      comment.user =
-                          authProvider.loginUserData;
-                      comment.post_id = widget.post.id;
-                      comment.users_like_id = [];
-                      comment.responseComments = [];
-                      comment.message =
-                          textComment;
-                      comment.loves = 0;
-                      comment.likes = 0;
-                      comment.comments = 0;
-                      comment.createdAt = DateTime.now()
-                          .microsecondsSinceEpoch;
-                      comment.updatedAt = DateTime.now()
-                          .microsecondsSinceEpoch;
-
-                   await   postProviders.newComment(comment).then(
-                            (value) async {
-                          if (value) {
-
-                            widget.post.comments =
-                                widget.post.comments! + 1;
-
-
-                            CollectionReference userCollect =
-                            FirebaseFirestore.instance.collection('Users');
-                            // Get docs from collection reference
-                            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.post.user!.id!).get();
-                            // Afficher la liste
-                            List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
-                                UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-                            if (listUsers.isNotEmpty) {
-
-                              listUsers.first!.comments=listUsers.first!.comments!+1;
-                              postProviders.updatePost(widget.post, listUsers.first!!,context);
-                              await authProvider.getAppData();
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }else{
-                              widget.post.user!.comments=widget.post.user!.comments!+1;
-                              postProviders.updatePost(widget.post,widget.post.user!,context);
-                              await authProvider.getAppData();
-
-                              authProvider.appDefaultData.nbr_comments=authProvider.appDefaultData.nbr_comments!+1;
-                              authProvider.updateAppData(authProvider.appDefaultData);
-                            }
-
-                            await authProvider.sendNotification(
-                                userIds: [widget.post.user!.oneIgnalUserid!],
-                                smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                send_user_id: "${authProvider.loginUserData.id!}",
-                                recever_user_id: "",
-                                message: "📢 @${authProvider.loginUserData.pseudo!} a commenté 💬 votre look",
-                                type_notif: NotificationType.POST.name,
-                                post_id: "${widget.post!.id!}",
-                                post_type: PostDataType.COMMENT.name, chat_id: ''
-                            );
-
-                            NotificationData notif=NotificationData();
-                            notif.id=firestore
-                                .collection('Notifications')
-                                .doc()
-                                .id;
-                            notif.titre="Commentaire 💬";
-                            notif.media_url=authProvider.loginUserData.imageUrl;
-                            notif.type=NotificationType.POST.name;
-                            notif.description="@${authProvider.loginUserData.pseudo!} a commenté 💬 votre look";
-                            notif.users_id_view=[];
-                            notif.user_id=authProvider.loginUserData.id;
-                            notif.receiver_id=widget.post!.user!.id!;
-                            notif.post_id=widget.post!.id!;
-                            notif.post_data_type=PostDataType.COMMENT.name!;
-
-                            notif.updatedAt =
-                                DateTime.now().microsecondsSinceEpoch;
-                            notif.createdAt =
-                                DateTime.now().microsecondsSinceEpoch;
-                            notif.status = PostStatus.VALIDE.name;
-
-                            // users.add(pseudo.toJson());
-
-                            await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                            _textController.text = "";
-                            printVm("commment envoyer");
-                            _focusNode.unfocus();
-                            postProviders.listConstpostsComment
-                                .add(comment);
-
-                            postProviders.listConstpostsComment
-                                .sort((a, b) => b
-                                .createdAt!
-                                .compareTo(
-                                a.createdAt!));
-
-                            // Expression régulière pour trouver les noms commençant par @
-                            RegExp regExp = RegExp(r'@\w+');
-
-                            // Trouver toutes les correspondances
-                            Iterable<Match> matches = regExp.allMatches(textComment);
-
-                            // Extraire les noms trouvés
-                            List<String> usernames = matches.map((match) => match.group(0)!).toList();
-
-                            // Afficher les noms trouvés
-                            if(usernames.isNotEmpty){
-                              usernames.forEach((username) {
-                                print("username @ : ${username}");
-                                var user= users.firstWhere((element) => element.pseudo!.contains(username.replaceFirst('@', '')),);
-                                userNames.add(user);
-                                userOneSignalIds.add(user.oneIgnalUserid!);
-                              });
-
-                              await authProvider.sendNotification(
-                                  userIds: userOneSignalIds,
-                                  smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                  send_user_id: "${authProvider.loginUserData.id!}",
-                                  recever_user_id: "",
-                                  message: "📢 @${authProvider.loginUserData.pseudo!} a parlé de vous dans un look ! !💬",
-                                  type_notif: NotificationType.POST.name,
-                                  post_id: "${widget.post!.id!}",
-                                  post_type: PostDataType.COMMENT.name, chat_id: ''
-                              );
-                              if(userNames.isNotEmpty){
-                                for(var user in userNames){
-                                  NotificationData notif2=NotificationData();
-                                  notif.id=firestore
-                                      .collection('Notifications')
-                                      .doc()
-                                      .id;
-                                  notif.titre="Tagué 💬";
-                                  notif.media_url=authProvider.loginUserData.imageUrl;
-                                  notif.type=NotificationType.POST.name;
-                                  notif.description="@${authProvider.loginUserData.pseudo!} a parlé de vous dans un look !💬";
-                                  notif.users_id_view=[];
-                                  notif.user_id=authProvider.loginUserData.id;
-                                  notif.receiver_id=user!.id!;
-                                  notif.post_id=widget.post!.id!;
-                                  notif.post_data_type=PostDataType.COMMENT.name!;
-
-                                  notif.updatedAt =
-                                      DateTime.now().microsecondsSinceEpoch;
-                                  notif.createdAt =
-                                      DateTime.now().microsecondsSinceEpoch;
-                                  notif.status = PostStatus.VALIDE.name;
-
-                                  // users.add(pseudo.toJson());
-
-                                  await firestore.collection('Notifications').doc(notif2.id).set(notif2.toJson());
-
-                                }
-
-                              }
-                              // userNames.forEach((user) async {
-                              //
-                              //
-                              //
-                              // });
-                            }
-
-
-
-
-
-                            sendMessageTap = false;
-
-                            _focusNode.unfocus();
-
-                          } else {
-                            printVm("erreru commment");
-
-                            sendMessageTap = false;
-                          }
-
-                          sendMessageTap = false;
-                        },
-                      );
-                      postProviders.interactWithPostAndIncrementSolde(widget.post.id!, authProvider.loginUserData.id!, "comment",widget.post.user_id!);
-
-                    }
-                  }
-                  setState(() {
-                    sendMessageTap = false;
-
-                  });
-
-                  // _controller.clear();
-                },
-              ),
-            ],
-          );
-        },
+        title: Text(
+          'Commentaires',
+          style: TextStyle(
+            color: _afroBlack,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
       ),
-
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildUserHeader(),
+                  SizedBox(height: 12),
+                  _buildPostContent(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Commentaires (${widget.post.comments ?? 0})',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: _afroBlack,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  _buildCommentsList(),
+                ],
+              ),
+            ),
+          ),
+          _buildCommentInput(),
+        ],
+      ),
     );
   }
 }
