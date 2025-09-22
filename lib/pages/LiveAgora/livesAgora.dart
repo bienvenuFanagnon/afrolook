@@ -19,6 +19,7 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
 
 import '../../models/model_data.dart';
+import '../../services/linkService.dart';
 import '../paiement/newDepot.dart';
 
 class PostLive {
@@ -776,83 +777,6 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
-  Future<void> _initAgora2() async {
-    try {
-      print("🔊 Demande des permissions Agora...");
-      await [Permission.microphone, Permission.camera].request();
-
-      print("🚀 Création du moteur Agora...");
-      _engine = createAgoraRtcEngine();
-
-      await _engine.initialize(const RtcEngineContext(
-        appId: "957063f627aa471581a52d4160f7c054",
-        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-      ));
-
-      // Configuration des handlers d'événements
-      _engine.registerEventHandler(
-        RtcEngineEventHandler(
-          onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
-            setState(() {
-              _localUserJoined = true;
-            });
-          },
-          onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-            print("👤 Utilisateur rejoint: $remoteUid");
-            setState(() {
-              _remoteUid = remoteUid;
-            });
-          },
-          onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-            print("👋 Utilisateur parti: $remoteUid");
-            setState(() {
-              _remoteUid = null;
-            });
-          },
-          onError: (ErrorCodeType errorCode, String message) {
-            print("❌ Erreur Agora: $errorCode - $message");
-          },
-        ),
-      );
-
-      // Activer la vidéo
-      await _engine.enableVideo();
-
-      // Définir le rôle
-      final role = widget.isHost || _isParticipant
-          ? ClientRoleType.clientRoleBroadcaster
-          : ClientRoleType.clientRoleAudience;
-
-      await _engine.setClientRole(role: role);
-
-      // Démarrer le preview seulement pour les broadcasters
-      if (widget.isHost || _isParticipant) {
-        await _engine.startPreview();
-      }
-
-      // Rejoindre le canal avec les bonnes options
-      await _engine.joinChannel(
-        token: '007eJxTYDjU4rO1eLf/fyfT5S9fcQWds+bQfWczc3rb+b7o2cfzN2xVYLA0NTcwM04zMzJPTDQxNzS1MEw0NUoxMTQzSDNPNjA1cX5yPqMhkJFhrZUMIyMDBIL4IgwVBiWOAca+XoYuWT6eeRluJuUuZQwMAMK0JLY=',
-        channelId: widget.liveId,
-        uid: 0, // Laisser Agora générer l'UID
-        options: ChannelMediaOptions(
-          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-          clientRoleType: role,
-          publishCameraTrack: widget.isHost || _isParticipant,
-          publishMicrophoneTrack: widget.isHost || _isParticipant,
-          autoSubscribeAudio: true,
-          autoSubscribeVideo: true,
-        ),
-      );
-
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      print("💥 Erreur lors de l'initialisation Agora: $e");
-    }
-  }
 
   void _setupFirestoreListeners() {
     print("🔥 Configuration des listeners Firestore...");
@@ -1846,11 +1770,18 @@ class _LivePageState extends State<LivePage> {
                 ],
               ),
             ),
-            // SizedBox(width: 16),
-            // GestureDetector(
-            //   onTap: () {}, // Logique de partage
-            //   child: Icon(Icons.share, color: Colors.white, size: 28),
-            // ),
+            SizedBox(width: 16),
+            GestureDetector(
+              onTap: () {
+                final AppLinkService _appLinkService = AppLinkService();
+
+                _appLinkService.shareLink(
+                  AppLinkType.live,
+                  widget.liveId!,
+                  message: '🔥🎥 LIVE EN COURS ! 🎥🔥 ${widget.postLive.title} 💫 Ne rate pas ce direct exceptionnel sur Afrolook ! 🚀⭐️',                );
+              }, // Logique de partage
+              child: Icon(Icons.share, color: Colors.white, size: 28),
+            ),
           ],
         ),
       ),

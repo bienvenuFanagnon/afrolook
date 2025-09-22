@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -29,11 +30,7 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/socialVideos/afrolive/afrolookLive.dart';
-import 'package:afrotok/pages/socialVideos/afrovibes/afroVibes.dart';
-import 'package:afrotok/pages/socialVideos/afrovideos/afroFeedVideo.dart';
-import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
-import 'package:afrotok/pages/socialVideos/afrovideos/videoHorizontal.dart';
+
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
@@ -57,6 +54,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
+import 'package:afrotok/services/linkService.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -74,29 +72,26 @@ import 'package:upgrader/upgrader.dart';
 
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
+
+// Import du service App Links
+
 late List<CameraDescription> _cameras;
 
-
-
 Future<void> main() async {
-  //WidgetsFlutterBinding.ensureInitialized();
-  //await TikTokSDK.instance.setup(clientKey: 'aw95aeb86u1rqdhj');
   WidgetsFlutterBinding.ensureInitialized();
   _cameras = await availableCameras();
 
-
   await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Activate app check after initialization, but before
   // usage of any Firebase services.
-  await FirebaseAppCheck.instance
-  // Your personal reCaptcha public key goes here:
-      .activate(
+  await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
-    // webProvider: ReCaptchaV3Provider(kWebRecaptchaSiteKey),
   );
+
   // Vérifier l'état d'authentification au démarrage
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
@@ -105,43 +100,11 @@ Future<void> main() async {
       print('Utilisateur connecté: ${user.uid}');
     }
   });
+
   //Remove this method to stop OneSignal Debugging
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-
   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
-
-// The promptForPushNotificationsWithUserResponse function will show the iOS or Android push notification prompt. We recommend removing the following code and instead using an In-App Message to prompt for notification permission
   OneSignal.Notifications.requestPermission(true);
-  String _debugLabelString = "";
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-/*
-  OneSignal.Notifications.addClickListener((event) {
-   // print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
-    _debugLabelString =
-    "=======Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
-    navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
-
-    //print("${_debugLabelString}");
-    print("data: ${event.notification.jsonRepresentation()}");
-
-    /*
-    this.setState(() {
-      _debugLabelString =
-      "Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
-    });
-
-     */
-  });
-
- */
-
- // NotificationService().initNotification();
-
-
-
-
-
 
   runApp(const MyApp());
 }
@@ -154,379 +117,216 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // This widget is the root of your application.
   String _debugLabelString = "";
   final _deeplynks = Deeplynks();
-
+  final AppLinkService _appLinkService = AppLinkService();
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+
   Future<List<Post>> getPostsVideosById(String post_id) async {
-
     List<Post> posts = [];
-    //  UserData userData=UserData();
-
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
     QuerySnapshot querySnapshotPost = await postCollect
-    // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
-        .where("id",isEqualTo:'${post_id}')
-    // .orderBy('created_at', descending: true)
+        .where("id", isEqualTo: '${post_id}')
         .get();
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
-
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
-
-
-
-      //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
-
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id", isEqualTo: '${p.user_id}').get();
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-//get entreprise
-      if (p.type==PostType.PUB.name) {
+      if (p.type == PostType.PUB.name) {
         CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
-
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id", isEqualTo: '${p.entreprise_id}').get();
         List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
             EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        p.entrepriseData=entrepriseList.first;
+        p.entrepriseData = entrepriseList.first;
       }
 
+      p.user = userList.first;
 
-      p.user=userList.first;
-
-      if (p.status==PostStatus.NONVALIDE.name) {
-        // posts.add(p);
-      }else if (p.status==PostStatus.SUPPRIMER.name) {
-        // posts.add(p);
-      }   else{
+      if (p.status == PostStatus.NONVALIDE.name) {
+      } else if (p.status == PostStatus.SUPPRIMER.name) {
+      } else {
         posts.add(p);
       }
-
-
     }
 
     posts.shuffle();
-    //posts.shuffle();
-
-
     return posts;
-
   }
-  Future<List<Post>>
-  getPostsImagesById(String post_id) async {
 
-
+  Future<List<Post>> getPostsImagesById(String post_id) async {
     List<Post> posts = [];
-
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
     QuerySnapshot querySnapshotPost = await postCollect
-
-        .where("id",isEqualTo:'${post_id}')
-
-
+        .where("id", isEqualTo: '${post_id}')
         .get();
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
-
 
     for (Post p in postList) {
-      //  print("post : ${jsonDecode(post.toString())}");
-
-
-
-      //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
-
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id", isEqualTo: '${p.user_id}').get();
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-//get entreprise
-      if (p.type==PostType.PUB.name) {
+      if (p.type == PostType.PUB.name) {
         CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
-
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id", isEqualTo: '${p.entreprise_id}').get();
         List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
             EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        p.entrepriseData=entrepriseList.first;
+        p.entrepriseData = entrepriseList.first;
       }
 
-
-      p.user=userList.first;
-      if (p.status==PostStatus.NONVALIDE.name) {
-        // posts.add(p);
-      }else if (p.status==PostStatus.SUPPRIMER.name) {
-        // posts.add(p);
-      }   else{
+      p.user = userList.first;
+      if (p.status == PostStatus.NONVALIDE.name) {
+      } else if (p.status == PostStatus.SUPPRIMER.name) {
+      } else {
         posts.add(p);
       }
-
-
-
-
     }
 
     return posts;
-
   }
 
-  onClickNotification(){
-    try{
+  void onClickNotification() {
+    try {
       OneSignal.Notifications.addClickListener((event) async {
-        // print('NOTIFICATION CLICK LISTENER CALLED WITH EVENT: $event');
-        // print("data: ${jsonDecode(event.notification.jsonRepresentation().replaceAll("\\n", "\n"))}");
-        // print("data: ${jsonEncode(event.notification.additionalData)}");
         print("data: ${event.notification.additionalData}");
 
-        if (event.notification.additionalData!['type_notif']==NotificationType.MESSAGE.name) {
-
-
-          Chat usersChat=Chat();
+        if (event.notification.additionalData!['type_notif'] == NotificationType.MESSAGE.name) {
+          Chat usersChat = Chat();
           List<Chat> listChats = [];
 
           CollectionReference chatCollect = await FirebaseFirestore.instance.collection('Chats');
-          QuerySnapshot querySnapshotChat = await chatCollect.where("id",isEqualTo:event.notification.additionalData!['chat_id']).get();
+          QuerySnapshot querySnapshotChat = await chatCollect.where("id", isEqualTo: event.notification.additionalData!['chat_id']).get();
           List<Chat> chats = querySnapshotChat.docs.map((doc) =>
               Chat.fromJson(doc.data() as Map<String, dynamic>)).toList();
-          //print("chats:  /////////////////////  ${chats.first.toJson()}");
-          //  navigatorKey.currentState!.pushNamed('/mes_notifications');
 
           CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-          QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:event.notification.additionalData!["send_user_id"]).get();
-          // Afficher la liste
+          QuerySnapshot querySnapshotUser = await friendCollect.where("id", isEqualTo: event.notification.additionalData!["send_user_id"]).get();
           List<UserData> userList = querySnapshotUser.docs.map((doc) =>
               UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
           if (chats.isNotEmpty) {
-            usersChat=chats.first;
-
-
+            usersChat = chats.first;
             if (userList.isNotEmpty) {
-              // usersChat=Chat.fromJson(chatDoc.data());
-              usersChat.chatFriend=userList.first;
-              usersChat.receiver=userList.first;
-
-              // listChats.add(usersChat);
+              usersChat.chatFriend = userList.first;
+              usersChat.receiver = userList.first;
             }
 
             CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-            QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:event.notification.additionalData!['chat_id']).get();
-            // Afficher la liste
+            QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id", isEqualTo: event.notification.additionalData!['chat_id']).get();
             List<Message> messages = querySnapshotMessage.docs.map((doc) =>
                 Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-            //snapshot.data![index].messages=messages;
-            usersChat.messages=messages;
-            navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
+            usersChat.messages = messages;
 
+            navigatorKey.currentState!.pushNamed('/home');
             navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MyChat(title: 'mon chat', chat: usersChat,),));
-
           }
-
-
         }
-        else if (event.notification.additionalData!['type_notif']==NotificationType.INVITATION.name) {
-          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),)); // Assuming your route name is '/specific_page'
-
-
+        else if (event.notification.additionalData!['type_notif'] == NotificationType.INVITATION.name) {
+          navigatorKey.currentState!.pushNamed('/home');
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
         }
-        else if (event.notification.additionalData!['type_notif']==NotificationType.ARTICLE.name) {
-          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
-
-
+        else if (event.notification.additionalData!['type_notif'] == NotificationType.ARTICLE.name) {
+          navigatorKey.currentState!.pushNamed('/home');
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
         }
-
-        else if (event.notification.additionalData!['type_notif']==NotificationType.ACCEPTINVITATION.name) {
-          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),)); // Assuming your route name is '/specific_page'
-
-
+        else if (event.notification.additionalData!['type_notif'] == NotificationType.ACCEPTINVITATION.name) {
+          navigatorKey.currentState!.pushNamed('/home');
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),));
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.POST.name) {
-
-
           switch (event.notification.additionalData!['post_type']) {
             case "VIDEO":
               await getPostsVideosById(event.notification.additionalData!['post_id']!).then((videos_posts) {
-                if(videos_posts.isNotEmpty){
-
+                if (videos_posts.isNotEmpty) {
                   navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
-
                 }
               },);
-
               break;
             case "IMAGE":
               await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-                if(posts.isNotEmpty){
-
+                if (posts.isNotEmpty) {
                   navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-
                 }
-
               },);
               break;
             case 'COMMENT':
               getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-                if(posts.isNotEmpty){
-
-                  navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post:  posts.first),));
-
+                if (posts.isNotEmpty) {
+                  navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post: posts.first),));
                 }
-
               },);
               break;
             default:
-            // Handle unknown post type
-              navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-              navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
-
+              navigatorKey.currentState!.pushNamed('/home');
+              navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
               break;
           }
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.PARRAINAGE.name) {
-
           Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
-
         }
         else {
-          navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),)); // Assuming your route name is '/specific_page'
-
+          navigatorKey.currentState!.pushNamed('/home');
+          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
         }
 
-
-        /*
-      setState(() {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => MesNotification(),));
-
+        _debugLabelString = "=====Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
       });
-
-       */
-        _debugLabelString =
-        "=====Clicked notification: \n${event.notification.jsonRepresentation().replaceAll("\\n", "\n")}";
-/*
-      authProvider.getToken().then((token) async {
-        print("token: ${token}");
-
-        if (token==null||token=='') {
-          print("token: existe pas");
-          Navigator.pushNamed(context, '/welcome');
-
-
-
-
-        }else{
-          print("token: existe");
-          //Navigator.pushNamed(context, '/welcome');
-          navigatorKey.currentState!.pushNamed('/mes_notifications'); // Assuming your route name is '/specific_page'
-
-        }
-      },);
-
- */
-
-      });
-
-    }catch(e){
+    } catch (e) {
       printVm("erreur notification:  $e");
-      navigatorKey.currentState!.pushNamed('/home'); // Assuming your route name is '/specific_page'
-
-      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),)); // Assuming your route name is '/specific_page'
-
+      navigatorKey.currentState!.pushNamed('/home');
+      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
     }
-
   }
 
-  /// Initialize deeplynks & listen for link data
   Future<void> _init() async {
     final appId = await _deeplynks.init(
       context: context,
       metaData: MetaInfo(
         name: 'Afrolook',
-        description:
-        'Afrolook votre popularité à la une',
+        description: 'Afrolook votre popularité à la une',
       ),
       androidInfo: AndroidInfo(
         sha256: ['FD:0F:AD:CF:15:14:B1:F6:E7:F9:92:7F:CB:72:18:A1:58:56:0B:6C:20:EC:D8:3D:50:F0:61:DE:38:52:EB:8B'],
         playStoreURL: 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok',
         applicationId: 'com.afrotok.afrotok',
-        // applicationId: 'com.example.deeplynks',
       ),
-      // iosInfo: IOSInfo(
-      //   teamId: '',
-      //   appStoreURL: '',
-      //   bundleId: 'com.example.deeplynks',
-      // ),
     );
 
-    // Use this appId for Android platform setup
     printVm('*************Deeplynks App Id:**********************');
     printVm('Deeplynks App Id: $appId');
     log('Deeplynks App Id: $appId');
 
-    // Listen for link data
     _deeplynks.stream.listen((data) {
-      // Handle link data
       printVm('*******************Deeplynks Data:*********************');
       printVm('Deeplynks Data: $data');
       log('Deeplynks Data: $data');
-      // Listen for link data
-      // Handle link data
-
-      // After using the link data, mark it as completed
-      // in case you don't want it again next time
-      // _deeplynks.markCompleted();
     });
   }
+
   String? _linkMessage;
   bool _isCreatingLink = false;
-
   FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
-  final String _testString =
-      'To test: long press link and then copy and click from a non-browser '
-      "app. Make sure this isn't being tested on iOS simulator and iOS xcode "
-      'is properly setup. Look at firebase_dynamic_links/README.md for more '
-      'details.';
-
-  final String DynamicLink = 'https://example/helloworld';
-  final String Link = 'https://flutterfiretests.page.link/MEGs';
-  /// Create a new deep link
 
   Future<void> initDynamicLinks() async {
     dynamicLinks.onLink.listen((dynamicLinkData) async {
-      // printVm('onLink data: ${jsonEncode(dynamicLinkData}');
-      // printVm('onLink path: ${dynamicLinkData.link.path}');
-      // printVm('onLink data: ${dynamicLinkData.link.data}');
-
-      // Récupérer l'URL du lien dynamique
       print('onLink path: ${dynamicLinkData.link.path}');
       print('onLink data: ${dynamicLinkData.link.queryParameters}');
 
-      // Extraire les paramètres de l'URL
-      // String? userId = dynamicLinkData.link.queryParameters['userId'];
       String? postId = dynamicLinkData.link.queryParameters['postId'];
       String? postType = dynamicLinkData.link.queryParameters['postType'];
-      // String? postImage = dynamicLinkData.link.queryParameters['postImage'];
 
       navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!, postType: postType!,),));
-
-
-
     }).onError((error) {
       printVm('onLink error');
       printVm(error.message);
@@ -535,17 +335,25 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    // WidgetsBinding.instance.addPostFrameCallback((_) => _init());
     onClickNotification();
-    initDynamicLinks();
+    // initDynamicLinks();
+
+    // Initialiser le service App Links
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _appLinkService.initialize();
+    });
   }
+
+  @override
+  void dispose() {
+    _appLinkService.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // _createLink();
-
-    return  MultiProvider(
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
         ChangeNotifierProvider(create: (context) => CategorieProduitProvider()),
@@ -553,217 +361,213 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostProvider()),
         ChangeNotifierProvider(create: (_) => LiveProvider()),
-
-        // ChangeNotifierProvider(create: (context) => ContentProvider()),
-
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
           update: (context, authProvider, previous) => ContentProvider(authProvider: authProvider),
         ),
-
-
-
       ],
-
       child: MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'Afrotok',
-        debugShowCheckedModeBanner: false,
+          title: 'Afrolook',
+          debugShowCheckedModeBanner: false,
           theme: ThemeData.light().copyWith(
-          textTheme: ThemeData.light().textTheme.apply(
-            fontFamily: 'Nunito',
-
-
+            textTheme: ThemeData.light().textTheme.apply(
+              fontFamily: 'Nunito',
+            ),
+            primaryTextTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'Nunito',
+            ),
           ),
-          primaryTextTheme: ThemeData.dark().textTheme.apply(
-            fontFamily: 'Nunito',
-          ),
-          ),
-        /*
-        theme: ThemeData(
-          // This is the theme of your application.
+          initialRoute: '/splahs_chargement',
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/home':
+                return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
+              case '/ia_compagnon':
+                return PageTransition(child: IaCompagnon(), type: PageTransitionType.fade);
+              case '/intro_ia_compagnon':
+                return PageTransition(child: IntroIaCompagnon(instruction: '',), type: PageTransitionType.fade);
+              case '/videos':
+                return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+              case '/home_profile_user':
+                return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
+              case '/profile_entreprise':
+                return PageTransition(child: EntrepriseProfil(), type: PageTransitionType.fade);
+              case '/new_entreprise':
+                return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
+              case '/list_users_chat':
+                return PageTransition(child: ListUserChats(), type: PageTransitionType.fade);
+              case '/bon_a_savoir':
+                return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
+              case '/introduction':
+                return PageTransition(child: IntroductionPage(), type: PageTransitionType.fade);
+              case '/basic_chat':
+                return PageTransition(child: const WelcomeScreen(), type: PageTransitionType.fade);
+              case '/mes_notifications':
+                return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
+              case '/user_posts_form':
+                return PageTransition(child: UserPostForm(), type: PageTransitionType.fade);
+              case '/welcome':
+                return PageTransition(child: WelcomeScreen(), type: PageTransitionType.fade);
+              case '/amis':
+                return PageTransition(child: Amis(), type: PageTransitionType.fade);
+              case '/add_list_amis':
+                return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
+              case '/stories_form':
+                return PageTransition(child: StoriesForm(), type: PageTransitionType.fade);
+              case '/add_produit':
+                return PageTransition(child: AddProduit(), type: PageTransitionType.fade);
+              case '/create_live':
+                return PageTransition(child: CreateLivePage(), type: PageTransitionType.fade);
+              case '/list_live':
+                return PageTransition(child: LiveListPage(), type: PageTransitionType.fade);
+              case '/app_info':
+                return PageTransition(child: AppInfos(), type: PageTransitionType.fade);
+              case '/contact':
+                return PageTransition(child: ContactPage(), type: PageTransitionType.fade);
+              case '/gagner_point_infos':
+                return PageTransition(child: GagnerPointInfo(), type: PageTransitionType.fade);
+              case '/new_annonce':
+                return PageTransition(child: NewAppAnnonce(), type: PageTransitionType.fade);
+              case '/list_conversation_entreprise_user':
+                return PageTransition(child: ListUsersEntrepriseChats(), type: PageTransitionType.fade);
+              case '/list_conversation_user_entreprise':
+                return PageTransition(child: ListEntrepriseUserChats(), type: PageTransitionType.fade);
+              case '/profil_detail_user2':
+                return PageTransition(child: UserProfileDetails(), type: PageTransitionType.fade);
+              case '/profil_detail_user':
+                return PageTransition(child: ProfilePage(), type: PageTransitionType.fade);
+              case '/classemnent':
+                return PageTransition(child: UserClassement(), type: PageTransitionType.fade);
+              case '/splahs_chargement2':
+                return PageTransition(child: SplashVideo(), type: PageTransitionType.fade);
+              case '/splahs_chargement':
+                return PageTransition(child: AppLinkHandlerWidget(
+                  navigatorKey: navigatorKey,
+                  appLinkService: _appLinkService,
+                  child: SplahsChargement(postId: '', postType: '',),
+                ), type: PageTransitionType.fade);
+              case '/chargement':
+                return PageTransition(child: Chargement(), type: PageTransitionType.fade);
+              case '/login':
+                return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
+              default:
 
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
-          useMaterial3: true,
-        ),
-
-         */
-// home: UpgradeAlert(
-//   upgrader: Upgrader(),
-//   child: Scaffold(
-//     // body: PickImageExample(),
-//     // body: PhotoVideoEditorPage(),
-//     // body: UserPostForm(),
-//     body: SplahsChargement(),
-//   ),
-// ),
-
-      initialRoute: '/splahs_chargement',
-      //initialRoute: '/introduction',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/home':
-            return PageTransition(
-                child: MyHomePage(title: ""), type: PageTransitionType.fade);
-                // child: PostsPage(), type: PageTransitionType.fade);
-            break;
-          case '/ia_compagnon':
-            return PageTransition(
-                child: IaCompagnon(), type: PageTransitionType.fade);
-            break;
-          case '/intro_ia_compagnon':
-            return PageTransition(
-                child: IntroIaCompagnon(instruction: '',), type: PageTransitionType.fade);
-            break;
-          case '/videos':                // child: VideoCarousel(), type: PageTransitionType.fade);
-
-            return PageTransition(
-                // child: MainScreen(), type: PageTransitionType.fade);
-                child: AfroVideoThreads(), type: PageTransitionType.fade);
-                // child: AfroVideo(), type: PageTransitionType.fade);
-                // child: AfroVibesPage(), type: PageTransitionType.fade);
-                // child: LiveStreamPage(), type: PageTransitionType.fade);
-                // child: VideoFeedPage(), type: PageTransitionType.fade);
-            break;
-
-          case '/home_profile_user':
-            return PageTransition(
-                child: UserProfil(), type: PageTransitionType.fade);
-            break;
-          case '/profile_entreprise':
-            return PageTransition(
-                child: EntrepriseProfil(), type: PageTransitionType.fade);
-            break;
-          case '/new_entreprise':
-            return PageTransition(
-                child: NewEntreprise(), type: PageTransitionType.fade);
-            break;
-
-          case '/list_users_chat':
-            return PageTransition(
-                child: ListUserChats(), type: PageTransitionType.fade);
-            case '/bon_a_savoir':
-            return PageTransition(
-                child: BonASavoir(), type: PageTransitionType.fade);
-            case '/introduction':
-            return PageTransition(
-                child: IntroductionPage(), type: PageTransitionType.fade);
-            break;
-
-
-          case '/basic_chat':
-            return PageTransition(
-                child: const WelcomeScreen(), type: PageTransitionType.fade);
-            break;
-            case '/mes_notifications':
-            return PageTransition(
-                child: MesNotification(), type: PageTransitionType.fade);
-            break;
-
-
-          case '/user_posts_form':
-            return PageTransition(
-                child: UserPostForm(), type: PageTransitionType.fade);
-            break;
-          case '/welcome':
-            return PageTransition(
-                child: WelcomeScreen(), type: PageTransitionType.fade);
-            break;
-          case '/amis':
-            return PageTransition(
-                child: Amis(), type: PageTransitionType.fade);
-            break;
-          case '/add_list_amis':
-            return PageTransition(
-                child: AddListAmis(), type: PageTransitionType.fade);
-            break;
-          case '/stories_form':
-            return PageTransition(
-                child: StoriesForm(), type: PageTransitionType.fade);
-            break;
-          case '/add_produit':
-            return PageTransition(
-                child: AddProduit(), type: PageTransitionType.fade);
-            break;
-
-
-          case '/create_live':
-            return PageTransition(
-                child: CreateLivePage(), type: PageTransitionType.fade);
-            break;
-            case '/list_live':
-            return PageTransition(
-                child: LiveListPage(), type: PageTransitionType.fade);
-            break;
-            case '/live_page':
-            // return PageTransition(
-            //     child: LivePage(), type: PageTransitionType.fade);
-            // break;
-            // case '/payment_live':
-            // return PageTransition(
-            //     child: LivePaymentPage(), type: PageTransitionType.fade);
-            break;
-          case '/app_info':
-            return PageTransition(
-                child: AppInfos(), type: PageTransitionType.fade);
-            case '/contact':
-            return PageTransition(
-                child: ContactPage(), type: PageTransitionType.fade);
-            break;
-            case '/gagner_point_infos':
-            return PageTransition(
-                child: GagnerPointInfo(), type: PageTransitionType.fade);
-            break;
-          case '/new_annonce':
-            return PageTransition(
-                child: NewAppAnnonce(), type: PageTransitionType.fade);
-            break;
-          case '/list_conversation_entreprise_user':
-            return PageTransition(
-                child: ListUsersEntrepriseChats(), type: PageTransitionType.fade);
-            break;
-          case '/list_conversation_user_entreprise':
-            return PageTransition(
-                child: ListEntrepriseUserChats(), type: PageTransitionType.fade);
-            break;
-
-          case '/profil_detail_user2':
-            return PageTransition(
-                child: UserProfileDetails(), type: PageTransitionType.fade);
-            break;
-          case '/profil_detail_user':
-            return PageTransition(
-                child: ProfilePage(), type: PageTransitionType.fade);
-            break;
-          case '/classemnent':
-            return PageTransition(
-                child: UserClassement(), type: PageTransitionType.fade);
-            break;
-            case '/splahs_chargement2':
-            return PageTransition(
-                child: SplashVideo(), type: PageTransitionType.fade);
-            break;
-          case '/splahs_chargement':
-            return PageTransition(
-                child: SplahsChargement(postId: '', postType: '',), type: PageTransitionType.fade);
-            break;
-          case '/chargement':
-            return PageTransition(
-                child: Chargement(), type: PageTransitionType.fade);
-            break;
-          case '/login':
-            return PageTransition(
-                child: LoginPageUser(), type: PageTransitionType.fade);
-            break;
-
-          default:
-            return PageTransition(
-                child: LoginPageUser(), type: PageTransitionType.fade);
-        }
-      }
+                // return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
+            }
+          }
       ),
     );
   }
 }
 
+// Widget pour gérer les liens App Links entrants
+// Widget pour gérer les liens App Links entrants
+class AppLinkHandlerWidget extends StatefulWidget {
+  final AppLinkService appLinkService;
+  final Widget child;
+ final GlobalKey<NavigatorState> navigatorKey;
 
+  const AppLinkHandlerWidget({
+    required this.appLinkService,
+    required this.child,
+    required this.navigatorKey,
+  });
+
+  @override
+  _AppLinkHandlerWidgetState createState() => _AppLinkHandlerWidgetState();
+}
+
+class _AppLinkHandlerWidgetState extends State<AppLinkHandlerWidget> {
+  StreamSubscription<PendingLink>? _linkSubscription;
+  bool _ignoreInitialLinks = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Écouter les liens entrants
+    _linkSubscription = widget.appLinkService.linkStream.listen(_handleIncomingLink);
+
+    // Après 3 secondes, ignorer les liens initiaux (évite les doubles traitements)
+    // Future.delayed(Duration(seconds: 3), () {
+    //   setState(() {
+    //     _ignoreInitialLinks = true;
+    //   });
+    //   print('Ignorer les liens initiaux activé');
+    // });
+  }
+
+  void _handleIncomingLink(PendingLink link) {
+    print("=== DEBUG APP LINK ===");
+    print("Type: ${link.type}");
+    print("ID: ${link.id}");
+    print("IsInitial: ${link.isInitial}");
+    print("QueryParams: ${link.queryParams}");
+    print("IgnoreInitialLinks: $_ignoreInitialLinks");
+    print("=== FIN DEBUG ===");
+
+    // Ignorer les liens initiaux après le délai
+    if (link.isInitial && _ignoreInitialLinks) {
+      print("Lien initial ignoré (délai écoulé)");
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = widget.navigatorKey.currentContext;
+      print("Contexte de navigation: $context");
+
+      if (context != null) {
+        _safeNavigate(context, link);
+      } else {
+        print("Contexte null, retry dans 1 seconde");
+        // Retry après un délai
+        Future.delayed(Duration(seconds: 1), () {
+          final newContext = widget.navigatorKey!.currentContext;
+          if (newContext != null) {
+            _safeNavigate(newContext, link);
+          }
+        });
+      }
+    });
+  }
+
+  void _safeNavigate(BuildContext context, PendingLink link) async {
+    try {
+      print("🔄 Navigation vers: ${link.type} avec ID: ${link.id}");
+      await widget.appLinkService.handleNavigation(context, link);
+      print("✅ Navigation réussie pour: ${link.type}");
+    } catch (e) {
+      print("❌ Erreur lors de la navigation: $e");
+
+      // En cas d'erreur, réessayer une fois
+      try {
+        print("🔄 Retry navigation...");
+        await Future.delayed(Duration(seconds: 1));
+        await widget.appLinkService.handleNavigation(context, link);
+      } catch (e2) {
+        print("❌ Échec définitif de navigation: $e2");
+        // Naviguer vers la home en cas d'échec
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+              (route) => false,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // return widget.child;
+    return widget.child;
+  }
+}
+
+// Service de navigation global

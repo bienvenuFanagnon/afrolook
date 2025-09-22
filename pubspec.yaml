@@ -125,6 +125,7 @@ dependencies:
   webview_flutter: ^4.0.1
   tiktok_scraper: ^0.0.8
   cloud_functions: any
+  app_links: ^6.4.1
 
 
 #  image: ^2.1.4

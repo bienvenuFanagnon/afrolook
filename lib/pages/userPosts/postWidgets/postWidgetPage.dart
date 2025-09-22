@@ -26,6 +26,7 @@ import '../../../constant/constColors.dart';
 import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
 import '../../../models/model_data.dart';
+import '../../../services/linkService.dart';
 import '../../home/homeWidget.dart';
 import '../../postComments.dart';
 import '../../../providers/afroshop/categorie_produits_provider.dart';
@@ -787,6 +788,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
+  // Partager une publication
 
 // Construction des actions (likes, commentaires, vues)
   Widget _buildPostActions(BuildContext context) {
@@ -976,9 +978,24 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           onPressed: () {},
         ),
         _buildActionButton(
-          icon: FontAwesome.reply_all,
-          count: widget.post.users_republier_id!.length ?? 0,
-          onPressed: () {},
+          icon: Icons.share,
+          count: widget.post.partage! ?? 0,
+          onPressed: () async {
+            final AppLinkService _appLinkService = AppLinkService();
+
+            _appLinkService.shareLink(
+              AppLinkType.post,
+              widget.post.id!,
+              message: 'J\'ai trouvé cette publication géniale! 📸 : ${widget.post.description}',
+            );
+
+            await FirebaseFirestore.instance
+                .collection('Posts')
+                .doc(widget.post.id!)
+                .update({
+              'partage': FieldValue.increment(1),
+            });
+          },
         ),
         Icon(
           Icons.arrow_forward_ios,

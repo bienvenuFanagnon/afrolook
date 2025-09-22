@@ -406,7 +406,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       smallImage: "${widget.canal!.urlImage}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: "📢  ${getTabBarTypeMessage(_selectedPostType!,post)}",
+                      message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
                       type_notif: NotificationType.POST.name,
                       post_id: "${post!.id!}",
                       post_type: PostDataType.IMAGE.name, chat_id: ''
