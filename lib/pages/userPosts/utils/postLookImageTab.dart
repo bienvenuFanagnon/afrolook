@@ -401,11 +401,12 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                   (userIds) async {
                 if (userIds.isNotEmpty) {
                   await authProvider.sendNotification(
+                    appName: "#${widget.canal!.titre}",
                       userIds: userIds,
                       smallImage: "${widget.canal!.urlImage}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: "📢 Canal ${widget.canal!.titre} ${getTabBarTypeMessage(_selectedPostType!)}",
+                      message: "📢  ${getTabBarTypeMessage(_selectedPostType!,post)}",
                       type_notif: NotificationType.POST.name,
                       post_id: "${post!.id!}",
                       post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -430,7 +431,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!)}",
+                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!,post)}",
                       type_notif: NotificationType.CHALLENGE.name,
                       post_id: "${post!.id!}",
                       post_type: PostDataType.IMAGE.name, chat_id: ''

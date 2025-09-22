@@ -11,6 +11,7 @@ import 'package:afrotok/pages/home/homeOffre.dart';
 import 'package:afrotok/pages/home/homeSport.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/home/topFiveModal.dart';
+import 'package:afrotok/pages/home/unitePage.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
@@ -42,6 +43,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../LiveAgora/mesLives.dart';
 import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
 import '../UserServices/newUserService.dart';
@@ -118,11 +120,13 @@ class _MyHomePageState extends State<MyHomePage>
   // Liste des onglets avec texte et icônes
   final List<Tab> _tabs = [
     Tab(text: 'Accueil'),
+    Tab(text: 'Vidéos'),
     Tab(text: 'Looks'),
     // Tab(text: 'TikTok'),
     Tab(text: 'Actualités'),
     Tab(text: 'Sports'),
-    Tab(text: 'Offres'),];
+    // Tab(text: 'Offres'),
+  ];
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
   void _changeColor() {
@@ -597,6 +601,21 @@ class _MyHomePageState extends State<MyHomePage>
                   // ),
 
                   ListTile(
+                    trailing: Icon(Icons.live_tv, color: Colors.red),
+                    leading: Icon(FontAwesome.tv, size: 30, color: Colors.yellow), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Mes lives",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => UserLivesPage(),
+                      ));
+                    },
+                  ),
+                  ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(FontAwesome.forumbee, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
@@ -1055,7 +1074,9 @@ class _MyHomePageState extends State<MyHomePage>
     // _changeColor();
     super.initState();
     userProvider.getAllUsers().then((value) {
-      TopFiveModal.showTopFiveModal(context, value.take(5).toList());
+      // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
+      TopLiveGridModal.showTopLiveGridModal(context);
+
     });
 
 
@@ -1193,17 +1214,23 @@ class _MyHomePageState extends State<MyHomePage>
         backgroundColor: darkBackground,
         automaticallyImplyLeading: false,
         titleSpacing: 10,
+
         title: Row(
           children: [
-            // Container(
-            //   padding: EdgeInsets.all(6),
-            //   decoration: BoxDecoration(
-            //     color: primaryGreen,
-            //     shape: BoxShape.circle,
-            //   ),
-            //   child: Icon(Icons.people_alt_rounded, color: Colors.white, size: 24),
-            // ),
-            // SizedBox(width: 10),
+            GestureDetector(
+              onTap: () {
+                _scaffoldKey.currentState!.openDrawer();
+              },
+              child: Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  // color: primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.menu, color: Colors.white, size: 24),
+              ),
+            ),
+            SizedBox(width: 10),
             Text(
               'Afrolook',
               style: TextStyle(
@@ -1281,11 +1308,12 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: 'Accueil'),
+                Tab(text: 'Vidéos virales'),
                 Tab(text: 'Looks'),
                 // Tab(text: 'TikTok'),
                 Tab(text: 'Actualités'),
                 Tab(text: 'Sports'),
-                Tab(text: 'Offres'),
+                // Tab(text: 'Offres'),
               ],
             ),
           ),
@@ -1295,12 +1323,13 @@ class _MyHomePageState extends State<MyHomePage>
       body: TabBarView(
         controller: _tabController,
         children: [
+          UnifiedHomePage(),
           DashboardContentScreen(),
           LooksPage(type: TabBarType.LOOKS.name),
           // VideoFeedTiktokPage(fullPage: false),
           ActualitePage(type: TabBarType.ACTUALITES.name),
           SportPage(type: TabBarType.SPORT.name),
-          OffrePage(type: TabBarType.OFFRES.name),
+          // OffrePage(type: TabBarType.OFFRES.name),
         ],
       ),
 
@@ -1415,6 +1444,7 @@ class _MyHomePageState extends State<MyHomePage>
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/videos');
+                // Navigator.pushNamed(context, '/list_live');
 
                 // authProvider.checkAppVersionAndProceed(context, () async {
                 //   Navigator.pushNamed(context, '/videos');
@@ -1427,7 +1457,7 @@ class _MyHomePageState extends State<MyHomePage>
                   badges.Badge(
                     showBadge: true,
                     badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
-                    badgeContent: Text('9+', style: TextStyle(fontSize: 9, color: darkBackground)),
+                    badgeContent: Text('9+', style: TextStyle(fontSize: 8, color: darkBackground)),
                     child: Icon(Icons.video_library, color: textColor, size: 26),
                   ),
                   SizedBox(height: 4),
@@ -1438,7 +1468,7 @@ class _MyHomePageState extends State<MyHomePage>
             // Bouton Menu
             GestureDetector(
               onTap: () {
-                _scaffoldKey.currentState!.openDrawer();
+                Navigator.pushNamed(context, '/list_live');
 
                 // authProvider.checkAppVersionAndProceed(context, () async {
                 //   _scaffoldKey.currentState!.openDrawer();
@@ -1448,9 +1478,14 @@ class _MyHomePageState extends State<MyHomePage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.menu, color: textColor, size: 26),
+                  badges.Badge(
+                    showBadge: true,
+                    badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                    badgeContent: Text('5+', style: TextStyle(fontSize: 8, color: darkBackground)),
+                    child: Icon(Icons.live_tv, color: Colors.red, size: 26),
+                  ),
                   SizedBox(height: 4),
-                  Text('Menu', style: TextStyle(color: textColor, fontSize: 10)),
+                  Text('Lives', style: TextStyle(color: textColor, fontSize: 10)),
                 ],
               ),
             ),

@@ -39,13 +39,12 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertApiPasswordToken = 'Bbienvenu@_4';
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
-  late int? userId = 0;
-  late int app_version_code = 82;
+  // late String? userId = "";
+  late int app_version_code = 83;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
   //List<Pays>? listPays=[];
-  late UserData loginUserData2 = UserData();
   late UserData loginUserData = UserData();
   late UserData registerUser = UserData();
   late AppDefaultData appDefaultData = AppDefaultData();
@@ -53,10 +52,109 @@ class UserAuthProvider extends ChangeNotifier {
   late List<UserGlobalTag> listUserGlobalTag = [];
   late List<String> listUserGlobalTagString = [];
   late List<UserPseudo> listPseudo = [];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
   initializeData() {
     registerUser = UserData();
+  }
+
+  UserData? _userData;
+  List<UserData> _availableUsers = [];
+
+  UserData? get userData => _userData;
+  List<UserData> get availableUsers => _availableUsers;
+  String? get userId => _auth.currentUser?.uid;
+
+  Future<void> fetchUserData() async {
+    if (_auth.currentUser != null) {
+      final userDoc = await _firestore.collection('Users').doc(_auth.currentUser!.uid).get();
+      if (userDoc.exists) {
+        _userData = UserData.fromJson(userDoc.data()!);
+      }
+    }
+    await _fetchAvailableUsers();
+    notifyListeners();
+  }
+
+  Future<void> _fetchAvailableUsers() async {
+    try {
+      final usersSnapshot = await _firestore.collection('Users').get();
+      _availableUsers = usersSnapshot.docs
+          .map((doc) => UserData.fromJson(doc.data()))
+          .where((user) => user.id != _auth.currentUser?.uid)
+          .toList();
+    } catch (e) {
+      print("Erreur lors du chargement des utilisateurs: $e");
+    }
+  }
+
+  void _showPaymentRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
+        content: Text('Vous avez besoin de 100 FCFA pour participer au live.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK', style: TextStyle(color: Color(0xFFF9A825))),
+          ),
+        ],
+      ),
+    );
+  }
+  Future<bool> incrementAppGain(double amount) async {
+    try {
+      // Récupérer le document unique AppDefaultData
+      DocumentReference appRef = _firestore.collection('AppData').doc(appDefaultData.id!);
+      // Remplace 'APP_ID' par l'ID du document AppDefaultData dans Firestore
+
+      await appRef.update({
+        'solde_gain': FieldValue.increment(amount),
+      });
+
+      print("✅ Solde gain de l'application mis à jour avec succès");
+      return true;
+    } catch (e) {
+      print("Erreur lors de l'ajout au solde_gain de l'application: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deductFromBalance(BuildContext context, double amount) async {
+    _userData = loginUserData;
+    if (_userData == null || _userData!.votre_solde_principal! < amount) {
+      _showPaymentRequiredDialog(context);
+      return false;
+    }
+
+    try {
+      await _firestore.collection('Users').doc(_userData!.id).update({
+        'votre_solde_principal': FieldValue.increment(-amount),
+      });
+
+      _userData!.votre_solde_principal = _userData!.votre_solde_principal! - amount;
+
+      await _firestore.collection('TransactionSoldes').add({
+        'user_id': _userData!.id,
+        'montant': amount,
+        'type': TypeTransaction.DEPENSE.name,
+        'description': 'Participation à un live',
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+        'statut': StatutTransaction.VALIDER.name,
+      });
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print("Erreur lors de la déduction du solde: $e");
+      return false;
+    }
   }
 
   bool _isLoading = false;
@@ -1344,7 +1442,9 @@ class UserAuthProvider extends ChangeNotifier {
 //       'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
 
   // CHANGE THIS parameter to true if you want to test GDPR privacy consent
-  Future<void> sendNotification({required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async {
+  Future<void> sendNotification({  String? appName, // ✅ paramètre optionnel
+    required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async {
+    final String usedAppName = appName ?? "AfroLook"; // valeur par défaut
 
     String oneSignalUrl = '';
     String applogo = '';
@@ -1381,7 +1481,7 @@ class UserAuthProvider extends ChangeNotifier {
 
           "large_icon": smallImage.length>5?smallImage: applogo,
 
-          "headings": {"en": "Afrolook"},
+          "headings": {"en": usedAppName},
           //"included_segments": ["Active Users", "Inactive Users"],
           // "custom_data": {"order_id": 123, "currency": "USD", "amount": 25},
           "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}","chat_id": "${chat_id}"},
@@ -1795,3 +1895,5 @@ class UserAuthProvider extends ChangeNotifier {
 
 
 }
+
+

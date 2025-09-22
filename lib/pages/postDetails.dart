@@ -225,8 +225,8 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         ..description = description
         ..montant = montant
         ..methode_paiement = "cadeau"
-        ..createdAt = DateTime.now().microsecondsSinceEpoch
-        ..updatedAt = DateTime.now().microsecondsSinceEpoch;
+        ..createdAt = DateTime.now().millisecondsSinceEpoch
+        ..updatedAt = DateTime.now().millisecondsSinceEpoch;
 
       await firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
     } catch (e) {
@@ -348,9 +348,9 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         // Mettre à jour le post : ajouter l’utilisateur et remettre à jour la date
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_republier_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'created_at':DateTime.now().microsecondsSinceEpoch,
+          'created_at':DateTime.now().millisecondsSinceEpoch,
           // remet le post en haut du fil
-          'updated_at': DateTime.now().microsecondsSinceEpoch, // remet le post en haut du fil
+          'updated_at': DateTime.now().millisecondsSinceEpoch, // remet le post en haut du fil
         });
 
         // Créer la transaction
@@ -652,7 +652,7 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
                   ),
                   Text(
                     formaterDateTime(
-                      DateTime.fromMicrosecondsSinceEpoch(post.createdAt ?? 0),
+                      DateTime.fromMillisecondsSinceEpoch(post.createdAt ?? 0),
                     ),
                     style: TextStyle(
                       color: Colors.grey[400],
@@ -879,6 +879,7 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.yellow),
           onPressed: () => Navigator.pop(context),
@@ -888,8 +889,19 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
           style: TextStyle(
             color: Colors.yellow,
             fontWeight: FontWeight.bold,
+            fontSize: 20
           ),
         ),
+        actions: [
+          Text(
+            'Afrolook',
+            style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+                fontSize: 20
+            ),
+          )
+        ],
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(

@@ -103,11 +103,12 @@ class _AddImageStoryPageState extends State<AddImageStoryPage> with ExampleHelpe
                 if (userIds.isNotEmpty) {
 
                   await authProvider.sendNotification(
+                    appName: "@${authProvider.loginUserData.pseudo!}",
                       userIds: userIds,
                       smallImage: "${authProvider.loginUserData.imageUrl!}",
                       send_user_id: "${authProvider.loginUserData.id!}",
                       recever_user_id: "",
-                      message: "📢 @${authProvider.loginUserData.pseudo!} vient de partager une chronique 🎥✨ ! Découvrez-la dès maintenant 👀.",
+                      message: "📢 Vient de partager une chronique 🎥✨ ! : ${_captionController.text}.",
                       type_notif: NotificationType.CHRONIQUE.name,
                       post_id: "id",
                       post_type: PostDataType.TEXT.name, chat_id: ''

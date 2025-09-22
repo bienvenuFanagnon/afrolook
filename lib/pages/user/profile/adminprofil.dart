@@ -30,6 +30,13 @@ class _AppInfoPageState extends State<AppInfoPage> {
       appDataStream = appDataProvider.getAppDataStream();
     });
   }
+  Future<int> getUsersCount() async {
+    final aggregateQuery = await FirebaseFirestore.instance
+        .collection("Users")
+        .count()
+        .get();
+    return aggregateQuery.count ?? 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,12 +169,32 @@ class _AppInfoPageState extends State<AppInfoPage> {
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.2,
                     children: [
-                      _buildStatCard(
-                        title: "Utilisateurs",
-                        value: totalUsers.toString(),
-                        icon: Iconsax.profile_2user,
-                        color: Color(0xFF00CC66),
+                      FutureBuilder<int>(
+                        future: getUsersCount(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return _buildStatCard(
+                              title: "Utilisateurs",
+                              value: "...", // loading
+                              icon: Iconsax.profile_2user,
+                              color: Color(0xFF00CC66),
+                            );
+                          }
+                          return _buildStatCard(
+                            title: "Utilisateurs",
+                            value: snapshot.data.toString(),
+                            icon: Iconsax.profile_2user,
+                            color: Color(0xFF00CC66),
+                          );
+                        },
                       ),
+
+                      // _buildStatCard(
+                      //   title: "Utilisateurs",
+                      //   value: totalUsers.toString(),
+                      //   icon: Iconsax.profile_2user,
+                      //   color: Color(0xFF00CC66),
+                      // ),
                       _buildStatCard(
                         title: "Abonnés",
                         value: (appData.nbr_abonnes ?? 0).toString(),

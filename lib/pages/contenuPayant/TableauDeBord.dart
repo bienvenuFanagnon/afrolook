@@ -33,7 +33,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
   }
 
   Future<void> _preloadThumbnails() async {
-    final authProvider = Provider.of<UserAuthProvider>(context);
+    final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
 
     authProvider.checkAppVersionAndProceed(context, () {
     });

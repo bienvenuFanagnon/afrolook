@@ -421,11 +421,12 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                         (userIds) async {
                                       if (userIds.isNotEmpty) {
                                         await authProvider.sendNotification(
+                                          appName: '#${widget.canal!.titre} ',
                                             userIds: userIds,
                                             smallImage: "${widget.canal!.urlImage}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "",
-                                            message: "📢 Canal ${widget.canal!.titre} ${getTabBarTypeMessage(_selectedPostType!)}",
+                                            message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -444,11 +445,12 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                         (userIds) async {
                                       if (userIds.isNotEmpty) {
                                         await authProvider.sendNotification(
+                                          appName: '@${authProvider.loginUserData.pseudo!}',
                                             userIds: userIds,
                                             smallImage: "${authProvider.loginUserData.imageUrl!}",
                                             send_user_id: "${authProvider.loginUserData.id!}",
                                             recever_user_id: "",
-                                            message: "📢 ${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!)}",
+                                            message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
                                             type_notif: NotificationType.POST.name,
                                             post_id: "${post!.id!}",
                                             post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -907,7 +909,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                     .doc(postId)
                                     .set(post.toJson());
                                 listimages=[];
-                                _descriptionController.text='';
+                                // _descriptionController.text='';
                                 setState(() {
                                   onTap=false;
                                 });
@@ -950,7 +952,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                           smallImage: "${authProvider.loginUserData.imageUrl!}",
                                           send_user_id: "${authProvider.loginUserData.id!}",
                                           recever_user_id: "",
-                                          message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨",
+                                          message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look ✨ : ${post.description}",
                                           type_notif: NotificationType.POST.name,
                                           post_id: "${post!.id!}",
                                           post_type: PostDataType.IMAGE.name, chat_id: ''
@@ -1406,7 +1408,7 @@ bool onTap=false;
                                         smallImage: "${authProvider.loginUserData.imageUrl!}",
                                         send_user_id: "${authProvider.loginUserData.id!}",
                                         recever_user_id: "",
-                                        message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look video ✨",
+                                        message: "📢 ${authProvider.loginUserData.pseudo!} a posté un look video ✨ :${post.description}",
 
                                         type_notif: NotificationType.POST.name,
                                         post_id: "${post!.id!}",

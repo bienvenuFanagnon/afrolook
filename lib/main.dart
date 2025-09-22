@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/LiveAgora/create_live_page.dart';
+import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
+import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
 import 'package:afrotok/pages/admin/annonce.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Welcome/welcome_screen.dart';
@@ -549,6 +552,8 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => LiveProvider()),
+
         // ChangeNotifierProvider(create: (context) => ContentProvider()),
 
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
@@ -680,9 +685,23 @@ class _MyAppState extends State<MyApp> {
             return PageTransition(
                 child: AddProduit(), type: PageTransitionType.fade);
             break;
-          case '/add_pub':
+
+
+          case '/create_live':
             return PageTransition(
-                child: AddPubForm(), type: PageTransitionType.fade);
+                child: CreateLivePage(), type: PageTransitionType.fade);
+            break;
+            case '/list_live':
+            return PageTransition(
+                child: LiveListPage(), type: PageTransitionType.fade);
+            break;
+            case '/live_page':
+            // return PageTransition(
+            //     child: LivePage(), type: PageTransitionType.fade);
+            // break;
+            // case '/payment_live':
+            // return PageTransition(
+            //     child: LivePaymentPage(), type: PageTransitionType.fade);
             break;
           case '/app_info':
             return PageTransition(
