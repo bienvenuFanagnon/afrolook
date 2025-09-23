@@ -96,7 +96,7 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_owner!.pseudo ?? 'Utilisateur',
+                Text("@${_owner!.pseudo?? 'Utilisateur' }",
                     style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(height: 4),
                 Text('${_owner!.abonnes ?? 0} abonné(s)',

@@ -40,7 +40,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 83;
+  late int app_version_code = 84;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();

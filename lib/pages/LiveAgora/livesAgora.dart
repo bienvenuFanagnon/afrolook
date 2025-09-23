@@ -525,13 +525,7 @@ class _LivePageState extends State<LivePage> {
   StreamSubscription<QuerySnapshot>? _commentsSubscription;
   StreamSubscription<DocumentSnapshot>? _hostSubscription;
 
-  final List<Gift> _gifts = [
-    Gift(id: '1', name: 'Rose', price: 100.0, icon: '🌹', color: Colors.pink),
-    Gift(id: '2', name: 'Coeur', price: 500.0, icon: '❤️', color: Colors.red),
-    Gift(id: '3', name: 'Couronne', price: 1000.0, icon: '👑', color: Colors.yellow),
-    Gift(id: '4', name: 'Diamant', price: 5000.0, icon: '💎', color: Colors.blue),
-    Gift(id: '5', name: 'Ferrari', price: 10000.0, icon: '🏎️', color: Colors.redAccent),
-  ];
+
 
   @override
   void initState() {
@@ -1023,7 +1017,7 @@ class _LivePageState extends State<LivePage> {
           );
 
           _firestore.collection('lives').doc(widget.liveId).update({
-            'giftTotal': FieldValue.increment((gift.price*0.5)),
+            'giftTotal': FieldValue.increment((gift.price*0.7)),
             'giftCount': FieldValue.increment(1),
             'gifts': FieldValue.arrayUnion([{
               'giftId': gift.id,
@@ -1033,7 +1027,7 @@ class _LivePageState extends State<LivePage> {
               'price': gift.price,
             }])
           });
-          userProvider.incrementAppGain(gift.price*0.5);
+          userProvider.incrementAppGain(gift.price*0.3);
 
           // Ajouter l'effet de cadeau
           setState(() {
@@ -1202,7 +1196,33 @@ class _LivePageState extends State<LivePage> {
       ),
     );
   }
+
+  final List<Gift> _gifts = [
+    Gift(id: '1', name: 'Rose', price: 10, icon: '🌹', color: Colors.pink),
+    Gift(id: '2', name: 'Coeur', price: 25, icon: '❤️', color: Colors.red),
+    Gift(id: '3', name: 'Couronne', price: 50, icon: '👑', color: Colors.yellow),
+    Gift(id: '4', name: 'Diamant', price: 100, icon: '💎', color: Colors.blue),
+    Gift(id: '5', name: 'Ferrari', price: 200, icon: '🏎️', color: Colors.redAccent),
+    Gift(id: '6', name: 'Étoile', price: 300, icon: '⭐', color: Colors.orange),
+    Gift(id: '7', name: 'Chocolat', price: 500, icon: '🍫', color: Colors.brown),
+    Gift(id: '8', name: 'Coffre', price: 700, icon: '🧰', color: Colors.green),
+    Gift(id: '9', name: 'Cactus', price: 1500, icon: '🌵', color: Colors.teal),
+    Gift(id: '10', name: 'Pizza', price: 2000, icon: '🍕', color: Colors.deepOrange),
+    Gift(id: '11', name: 'Glace', price: 2500, icon: '🍦', color: Colors.lightBlue),
+    Gift(id: '12', name: 'Laptop', price: 5000, icon: '💻', color: Colors.blueGrey),
+    Gift(id: '13', name: 'Voiture', price: 7000, icon: '🚗', color: Colors.red),
+    Gift(id: '14', name: 'Maison', price: 10000, icon: '🏠', color: Colors.brown),
+    Gift(id: '15', name: 'Jet', price: 15000, icon: '🛩️', color: Colors.grey),
+    Gift(id: '16', name: 'Yacht', price: 20000, icon: '🛥️', color: Colors.blue),
+    Gift(id: '17', name: 'Château', price: 30000, icon: '🏰', color: Colors.deepPurple),
+    Gift(id: '18', name: 'Diamant Rare', price: 50000, icon: '💎', color: Colors.cyan),
+    Gift(id: '19', name: 'Ferrari Rouge', price: 75000, icon: '🏎️', color: Colors.redAccent),
+    Gift(id: '20', name: 'Lamborghini', price: 100000, icon: '🚗', color: Colors.orange),
+  ];
+
   Widget _buildGiftPanel() {
+    final height = MediaQuery.of(context).size.height * 0.6; // 60% de l'écran
+
     return Stack(
       children: [
         // Fond semi-transparent
@@ -1219,7 +1239,7 @@ class _LivePageState extends State<LivePage> {
           left: 0,
           right: 0,
           child: Container(
-            height: 260,
+            height: height,
             decoration: BoxDecoration(
               color: Colors.grey[900],
               borderRadius: BorderRadius.only(
@@ -1240,7 +1260,7 @@ class _LivePageState extends State<LivePage> {
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
                       IconButton(
@@ -1252,7 +1272,7 @@ class _LivePageState extends State<LivePage> {
                 ),
                 Expanded(
                   child: GridView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
                       crossAxisSpacing: 8,
@@ -1296,6 +1316,7 @@ class _LivePageState extends State<LivePage> {
       ],
     );
   }
+
   Widget _buildPaymentWarning() {
     return Container(
       color: Colors.black.withOpacity(0.9),
@@ -1774,12 +1795,19 @@ class _LivePageState extends State<LivePage> {
             GestureDetector(
               onTap: () {
                 final AppLinkService _appLinkService = AppLinkService();
-
-                _appLinkService.shareLink(
-                  AppLinkType.live,
-                  widget.liveId!,
-                  message: '🔥🎥 LIVE EN COURS ! 🎥🔥 ${widget.postLive.title} 💫 Ne rate pas ce direct exceptionnel sur Afrolook ! 🚀⭐️',                );
-              }, // Logique de partage
+                _appLinkService.shareContent(
+                  type: AppLinkType.live,
+                  id: widget.liveId!,
+                  message: " 🎥🔥 ${widget.postLive.title}",
+                  mediaUrl: "${widget.postLive.hostImage}",
+                );
+                //
+                // _appLinkService.shareLink(
+                //   AppLinkType.live,
+                //   widget.liveId!,
+                //   message: '🔥🎥 LIVE EN COURS ! 🎥🔥 ${widget.postLive.title} 💫 Ne rate pas ce direct exceptionnel sur Afrolook ! 🚀⭐️',                );
+                //
+                }, // Logique de partage
               child: Icon(Icons.share, color: Colors.white, size: 28),
             ),
           ],

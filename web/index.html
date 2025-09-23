@@ -1,64 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
+  <!-- ✅ Titre & Description -->
+  <title>Afrolook - Le réseau social africain des créateurs</title>
+  <meta name="description" content="Afrolook est le réseau social africain qui met en valeur les créateurs de contenus. Publie des vidéos payantes, fais des lives, et monétise ton audience depuis l'Afrique.">
 
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+  <!-- ✅ SEO -->
+  <meta name="keywords" content="Afrolook, réseau social africain, créateurs africains, contenu payant, live, monétisation Afrique, afro influenceur">
+  <meta name="author" content="Afrolook">
 
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
+  <!-- ✅ Base href pour Flutter -->
   <base href="$FLUTTER_BASE_HREF">
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="afrolook projet officiel">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="afrolook">
+  <!-- ✅ Favicon et icônes -->
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>afrolook</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- ✅ iOS Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Afrolook">
+
+  <!-- ✅ Open Graph (Facebook / WhatsApp / LinkedIn) -->
+  <meta property="og:title" content="Afrolook - Le réseau social africain des créateurs">
+  <meta property="og:description" content="Publie, vends, fais des lives et monétise ton audience en Afrique avec Afrolook. Rejoins la révolution des créateurs africains.">
+  <meta property="og:image" content="https://afrolooki.web.app/icons/Icon-maskable-512.png">
+  <meta property="og:url" content="https://afrolooki.web.app/">
+  <meta property="og:type" content="website">
+
+  <!-- ✅ Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Afrolook - Réseau Social Africain">
+  <meta name="twitter:description" content="Rejoins Afrolook pour publier, vendre tes contenus, faire des lives et monétiser ton audience en Afrique.">
+  <meta name="twitter:image" content="https://afrolooki.web.app/icons/Icon-maskable-512.png">
+
+  <!-- ✅ Script Flutter -->
   <script>
-    // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
   </script>
-  <!-- This script adds the flutter initialization JS code -->
-
   <script src="flutter.js" defer></script>
-
-
 </head>
 <body>
-
 <script>
-  window.addEventListener('load', function(ev) {
-    // Download main.dart.js
+  window.addEventListener('load', function () {
     _flutter.loader.loadEntrypoint({
       serviceWorker: {
         serviceWorkerVersion: serviceWorkerVersion,
       }
-    }).then(function(engineInitializer) {
+    }).then(function (engineInitializer) {
       return engineInitializer.initializeEngine();
-    }).then(function(appRunner) {
+    }).then(function (appRunner) {
       return appRunner.runApp();
     });
   });
-
 </script>
-
 </body>
 </html>

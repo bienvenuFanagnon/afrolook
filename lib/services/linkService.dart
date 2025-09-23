@@ -1,5 +1,6 @@
 // app_link_service.dart
 import 'dart:async';
+import 'package:afrotok/pages/home/homeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../models/model_data.dart';
 import '../pages/LiveAgora/livesAgora.dart';
 import '../pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import '../pages/component/consoleWidget.dart';
+import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/postDetails.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
@@ -141,7 +143,7 @@ class AppLinkService {
   // Génération des liens de partage
   String generateLink(AppLinkType type, String id, {Map<String, String>? params}) {
     final baseUrl = 'https://afrolooki.web.app/share';
-    final typePath = _getTypePath(type);
+    final typePath = getTypePath(type);
 
     var link = '$baseUrl/$typePath/$id';
 
@@ -153,7 +155,7 @@ class AppLinkService {
     return link;
   }
 
-  String _getTypePath(AppLinkType type) {
+  String getTypePath(AppLinkType type) {
     switch (type) {
       case AppLinkType.profil:
         return 'profil';
@@ -169,6 +171,47 @@ class AppLinkService {
         return 'service';
       default:
         return 'unknown';
+    }
+  }
+
+  Future<void> shareContent({
+    required AppLinkType type,
+    required String id,
+    String? message,
+    String? mediaUrl, // image ou vidéo
+    Map<String, String>? params,
+  })
+  async {
+    final link = generateLink(type, id, params: params);
+
+    final fullMessage = "${_getTypeMessage(type)}: ${message ?? ''}\n\n$link";
+
+    if (mediaUrl != null && mediaUrl.isNotEmpty) {
+      // Cas avec image/vidéo en local OU téléchargée
+      // ⚠️ SharePlus partage des fichiers locaux, pas directement des URLs
+      // Si ton mediaUrl est une URL, il faut le télécharger d’abord
+      await Share.share(fullMessage, subject: "AfroLook");
+    } else {
+      // Cas simple : juste message + lien
+      await Share.share(fullMessage, subject: "AfroLook");
+    }
+  }
+  String _getTypeMessage(AppLinkType type) {
+    switch (type) {
+      case AppLinkType.profil:
+        return "Découvrez ce profil unique sur AfroLook 👤 ";
+      case AppLinkType.contentpaie:
+        return "Accédez à ce contenu vidéo virale ";
+      case AppLinkType.live:
+        return "Rejoignez le live en cours 🎥 ";
+      case AppLinkType.post:
+        return "Regardez cette publication intéressante 📝 ";
+      case AppLinkType.article:
+        return "Lisez cet article captivant 📖 ";
+      case AppLinkType.service:
+        return "Découvrez ce service disponible 💼";
+      default:
+        return "Contenu AfroLook 🌍";
     }
   }
 
@@ -189,10 +232,10 @@ class AppLinkService {
   Stream<PendingLink> get linkStream => _linkController.stream;
 
   // Traitement de la navigation
-  Future<void> handleNavigation(BuildContext context, PendingLink link) async {
-    printVm("Lien handleNavigation PendingLink ${link.type}, isInitial: ${link.isInitial}");
+  Future<void> handleNavigation(BuildContext context, String id,String type) async {
+    printVm("Lien handleNavigation Id ${id}, type: ${type}");
 
-    if (link.id == null || link.type == AppLinkType.unknown) {
+    if (id == null || type ==null) {
       await _navigateToHome(context);
       return;
     }
@@ -216,45 +259,34 @@ class AppLinkService {
     // Toujours naviguer vers la home d'abord
     await _navigateToHome(context);
 
-    // Réinitialiser l'état après navigation réussie (surtout pour les liens initiaux)
-    if (link.isInitial) {
-      resetInitialLinkState();
-    }
 
     // Puis vers la page de détail selon le type
-    switch (link.type) {
-      case AppLinkType.profil:
-        await _navigateToProfile(context, link.id!);
+    switch (type) {
+      case 'profil':
+        await _navigateToProfile(context, id!);
         break;
-      case AppLinkType.contentpaie:
-        await _navigateToContentPaie(context, link.id!);
+      case 'contentpaie':
+        await _navigateToContentPaie(context, id!);
         break;
-      case AppLinkType.live:
-        await _navigateToLive(context, link.id!, link.queryParams);
+      case 'live':
+        await _navigateToLive(context, id!);
         break;
-      case AppLinkType.post:
-        await _navigateToPost(context, link.id!);
+      case 'post':
+        await _navigateToPost(context, id!);
         break;
-      case AppLinkType.article:
-        await _navigateToArticle(context, link.id!);
-        break;
-      case AppLinkType.service:
-        await _navigateToService(context, link.id!);
-        break;
+
       default:
         await _navigateToHome(context);
     }
   }
   // Navigation vers la home
   Future<void> _navigateToHome(BuildContext context) async {
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/home',
-          (route) => false,
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage(title: "",isOpenLink: true,),),
+          (route) => false,);
 
-    // Attendre que la navigation soit complète
-    await Future.delayed(const Duration(milliseconds: 100));
+
+    // // Attendre que la navigation soit complète
+    // await Future.delayed(const Duration(milliseconds: 100));
   }
 
   // Navigation vers le profil
@@ -287,20 +319,20 @@ class AppLinkService {
   Future<void> _navigateToContentPaie(BuildContext context, String contentId) async {
     try {
       final contentDoc = await FirebaseFirestore.instance
-          .collection('contentPaie')
+          .collection('ContentPaies')
           .doc(contentId)
           .get();
 
       if (contentDoc.exists) {
         // Convertir les données Firebase en objet ContentPaie
         final contentData = ContentPaie.fromJson(contentDoc.data() as Map<String, dynamic>);
-
-        // Naviguer vers la page ContentPaie (à adapter selon votre route)
-        Navigator.pushNamed(
-            context,
-            '/contentpaie',
-            arguments: {'contentData': contentData}
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContentDetailScreen(content: contentData),
+          ),
         );
+
       }
     } catch (e) {
       print('Erreur chargement ContentPaie: $e');
@@ -308,9 +340,7 @@ class AppLinkService {
   }
 
   // Navigation vers Live
-  Future<void> _navigateToLive(BuildContext context, String liveId,
-      Map<String, String> queryParams) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+  Future<void> _navigateToLive(BuildContext context, String liveId) async {
     final user = FirebaseAuth.instance.currentUser;
 
     try {
@@ -319,30 +349,60 @@ class AppLinkService {
           .doc(liveId)
           .get();
 
-      if (liveDoc.exists) {
-        // Convertir les données Firebase en objet PostLive
-        final liveData = PostLive.fromMap(liveDoc.data() as Map<String, dynamic>);
-        final isHost = liveData.hostId == user?.uid;
-        final isInvited = queryParams['invited'] == 'true';
-
-        // Naviguer vers la page Live
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LivePage(
-              liveId: liveId,
-              isHost: isHost,
-              hostName: liveData.hostName!,
-              hostImage: liveData.hostImage!,
-              isInvited: isHost?false:true,
-              postLive: liveData,
-            ),
-          ),
-        );
+      if (!liveDoc.exists) {
+        // Live non trouvé
+        _showLiveEndedDialog(context, "Ce live n'existe plus.");
+        return;
       }
+
+      final liveData = PostLive.fromMap(liveDoc.data() as Map<String, dynamic>);
+
+      // Vérifier si le live est encore encours
+      final now = DateTime.now();
+      final endTime = liveData.endTime; // Assure-toi d'avoir un champ DateTime endTime
+      if (!liveData.isLive||(endTime != null && now.isAfter(endTime))) {
+        _showLiveEndedDialog(context, "Ce live est terminé.");
+        return;
+      }
+
+      final isHost = liveData.hostId == user?.uid;
+
+      // Naviguer vers la page Live
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LivePage(
+            liveId: liveId,
+            isHost: isHost,
+            hostName: liveData.hostName!,
+            hostImage: liveData.hostImage!,
+            isInvited: false,
+            postLive: liveData,
+          ),
+        ),
+      );
     } catch (e) {
       print('Erreur chargement live: $e');
+      _showLiveEndedDialog(context, "Impossible de charger le live.");
     }
+  }
+
+// Modal simple et joli
+  void _showLiveEndedDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text("Live"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   // Navigation vers Post

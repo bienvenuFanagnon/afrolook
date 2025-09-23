@@ -11,17 +11,7 @@ import '../../providers/contenuPayantProvider.dart';
 import '../../providers/userProvider.dart';
 import '../../providers/authProvider.dart';
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
-import 'package:lottie/lottie.dart';
-
-import '../../models/model_data.dart';
-import '../../providers/contenuPayantProvider.dart';
-import '../../providers/userProvider.dart';
-import '../../providers/authProvider.dart';
+import '../../services/linkService.dart';
 
 class ContentDetailScreen extends StatefulWidget {
   final ContentPaie content;
@@ -705,6 +695,43 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                         children: [
                           // Bouton Like avec animation
                           GestureDetector(
+                            onTap: () {
+                              final AppLinkService _appLinkService = AppLinkService();
+                              if(widget.episode==null){
+                                _appLinkService.shareContent(
+                                  type: AppLinkType.contentpaie,
+                                  id: widget.content.id!,
+                                  message: " ${widget.content.description}",
+                                  mediaUrl: widget.content.thumbnailUrl!.isNotEmpty?"${widget.content.thumbnailUrl!}":"",
+                                );
+                              }else{
+                                _appLinkService.shareContent(
+                                  type: AppLinkType.contentpaie,
+                                  id: widget.content.id!,
+
+                                  // id: widget.episode!.id!,
+                                  message: " ${widget.episode!.description}",
+                                  mediaUrl: widget.episode!.thumbnailUrl!.isNotEmpty?"${widget.episode!.thumbnailUrl!}":"",
+                                );
+                              }
+
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _afroBlack.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.share,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(width: 8),
+                          GestureDetector(
                             onTap: _handleLike,
                             child: Container(
                               padding: EdgeInsets.all(8),
@@ -719,18 +746,18 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                               ),
                             ),
                           ),
-                          SizedBox(width: 12),
+                          SizedBox(width: 1),
                           Text(
                             widget.content.isSeries && _currentEpisode != null
                                 ? '${_currentEpisode!.likes}'
                                 : '${widget.content.likes}',
                             style: TextStyle(color: _afroWhite, fontSize: 16),
                           ),
-                          SizedBox(width: 24),
+                          SizedBox(width: 15),
 
                           // Affichage des vues
                           Icon(Icons.visibility, color: _afroWhite, size: 24),
-                          SizedBox(width: 8),
+                          SizedBox(width: 2),
                           Text(
                             widget.content.isSeries && _currentEpisode != null
                                 ? '${_currentEpisode!.views}'

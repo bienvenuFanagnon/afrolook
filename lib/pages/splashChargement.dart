@@ -19,6 +19,7 @@ import 'package:video_player/video_player.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
+import '../services/linkService.dart';
 import 'UserServices/detailsUserService.dart';
 import 'UserServices/listUserService.dart';
 import 'afroshop/marketPlace/acceuil/home_afroshop.dart';
@@ -122,103 +123,10 @@ class _ChargementState extends State<SplahsChargement> {
 
 
                         if(widget.postId!=null&&widget.postId.isNotEmpty){
+                          final AppLinkService _appLinkService = AppLinkService();
 
-                          switch (widget.postType) {
-                            case "POST":
-                              await postProvider.getPostsImagesById(widget.postId!).then((posts) {
-                                if(posts.isNotEmpty){
-                                  Navigator.pushNamed(
-                                      context,
-                                      '/home');
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                                }else{
-                                  Navigator.pushNamed(
-                                      context,
-                                      '/home');
-                                }
+                          _appLinkService.handleNavigation(context!, widget.postId!, widget.postType);
 
-                              },);
-                              break;
-                            case "ARTICLE":
-
-                              await    postProvider.getArticleById(widget.postId!).then((value) async {
-                                if (value.isNotEmpty) {
-                                  value.first.vues=value.first.vues!+1;
-                                  // article.vues=value.first.vues!+1;
-                                  categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                                    if (value) {
-
-
-                                    }
-                                  },);
-                                  await    authProvider.getUserById(value.first.user_id!).then((users) async {
-                                    if(users.isNotEmpty){
-                                      value.first.user=users.first;
-                                      await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
-                                        if(entreprises.isNotEmpty){
-                                          entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
-                                          // setState(() {
-                                          //   _isLoading=false;
-                                          // });
-                                          Navigator.pushNamed(
-                                              context,
-                                              '/home');
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    HomeAfroshopPage(title: ""),
-                                              ));
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
-                                              ));
-                                        }
-                                      },);
-                                    }
-                                  },);
-                                }
-                              },);
-
-                              break;
-
-                            case "SERVICE":
-
-                              await    postProvider.getUserServiceById(widget.postId!).then((value) async {
-                                if (value.isNotEmpty) {
-                                  UserServiceData  data=value.first;
-                                  data.vues=value.first.vues!+1;
-                                  Navigator.pushNamed(
-                                      context,
-                                      '/home');
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            UserServiceListPage(),
-                                      ));
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
-
-                                  if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
-                                    data.usersViewId!.add(authProvider.loginUserData!.id!) ;
-
-                                  }
-                                  postProvider.updateUserService(data,context).then((value) {
-                                    if (value) {
-
-
-                                    }
-                                  },);
-                                }
-                              },);
-
-                              break;
-                            default:
-                              Navigator.pushNamed(
-                                  context,
-                                  '/home');                          }
                         }
                         else{
                           Navigator.pushNamed(

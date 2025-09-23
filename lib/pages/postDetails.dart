@@ -47,6 +47,7 @@ import '../../constant/listItemsCarousel.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
 import '../../providers/authProvider.dart';
+import '../services/linkService.dart';
 import 'canaux/detailsCanal.dart';
 
 
@@ -67,8 +68,7 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
   bool _isLoading = false;
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
-  List<double> giftPrices = [100, 200, 500, 1000, 2000, 5000];
-  List<String> giftIcons = ['🎁', '💝', '💎', '💰', '💵', '🎉'];
+
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -430,81 +430,105 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
       },
     );
   }
+  List<double> giftPrices = [
+    10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
+    2500, 5000, 7000, 10000, 15000, 20000, 30000,
+    50000, 75000, 100000
+  ];
+
+  List<String> giftIcons = [
+    '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
+    '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
+  ];
 
   void _showGiftDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final height = MediaQuery.of(context).size.height * 0.6; // 60% de l'écran
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
+            return Dialog(
               backgroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: Colors.yellow, width: 2),
               ),
-              title: Text(
-                'Envoyer un Cadeau',
-                style: TextStyle(
-                  color: Colors.yellow,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              content: Container(
-                width: double.maxFinite,
+              child: Container(
+                height: height,
+                padding: EdgeInsets.all(16),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    Text(
+                      'Envoyer un Cadeau',
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 12),
                     Text(
                       'Choisissez le montant en FCFA',
                       style: TextStyle(color: Colors.white),
                     ),
-                    SizedBox(height: 20),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: List.generate(giftPrices.length, (index) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => _selectedGiftIndex = index);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _selectedGiftIndex == index
-                                  ? Colors.green
-                                  : Colors.grey[800],
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
+                    SizedBox(height: 12),
+                    // -----------------------------
+                    // Expanded pour GridView scrollable
+                    Expanded(
+                      child: GridView.builder(
+                        physics: BouncingScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3, // 3 colonnes
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: giftPrices.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedGiftIndex = index),
+                            child: Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
                                 color: _selectedGiftIndex == index
-                                    ? Colors.yellow
-                                    : Colors.transparent,
-                                width: 2,
+                                    ? Colors.green
+                                    : Colors.grey[800],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _selectedGiftIndex == index
+                                      ? Colors.yellow
+                                      : Colors.transparent,
+
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    giftIcons[index],
+                                    style: TextStyle(fontSize: 24),
+                                  ),
+                                  SizedBox(height: 5),
+                                  Text(
+                                    '${giftPrices[index].toInt()} FCFA',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  giftIcons[index],
-                                  style: TextStyle(fontSize: 24),
-                                ),
-                                SizedBox(height: 5),
-                                Text(
-                                  '${giftPrices[index].toInt()} FCFA',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
+                          );
+                        },
+                      ),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 12),
                     Text(
                       'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} FCFA',
                       style: TextStyle(
@@ -512,37 +536,42 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Annuler', style: TextStyle(color: Colors.white)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _sendGift(giftPrices[_selectedGiftIndex]);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            'Envoyer',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Annuler', style: TextStyle(color: Colors.white)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _sendGift(giftPrices[_selectedGiftIndex]);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Envoyer',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-              ],
             );
           },
         );
       },
     );
   }
+
 
   void _showRepostDialog() {
     showDialog(
@@ -752,11 +781,15 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
           count: post.vues ?? 0,
           label: 'Vues',
         ),
-        _buildStatItem(
-          icon: Icons.favorite,
-          count: post.loves ?? 0,
-          label: 'Likes',
-          isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
+        GestureDetector(
+          onTap: _handleLike,
+          child: _buildStatItem(
+            icon: Icons.favorite,
+            count: post.loves ?? 0,
+            label: 'Likes',
+            isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
+
+          ),
         ),
         GestureDetector(
           onTap: () {
@@ -773,15 +806,36 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
             label: 'Comments',
           ),
         ),
-        _buildStatItem(
-          icon: Icons.card_giftcard,
-          count: post.users_cadeau_id?.length ?? 0,
-          label: 'Cadeaux',
+    GestureDetector(
+    onTap: _showGiftDialog,
+          child: _buildStatItem(
+            icon: Icons.card_giftcard,
+            count: post.users_cadeau_id?.length ?? 0,
+            label: 'Cadeaux',
+          ),
         ),
-        _buildStatItem(
-          icon: Icons.repeat,
-          count: post.users_republier_id?.length ?? 0,
-          label: 'Reposts',
+        GestureDetector(
+          onTap: () async {
+            final AppLinkService _appLinkService = AppLinkService();
+            _appLinkService.shareContent(
+              type: AppLinkType.post,
+              id: widget.post.id!,
+              message: " ${widget.post.description}",
+              mediaUrl: widget.post.images!.isNotEmpty?"${widget.post.images!}":"",
+            );
+            await FirebaseFirestore.instance
+                .collection('Posts')
+                .doc(widget.post.id!)
+                .update({
+              'partage': FieldValue.increment(1),
+            });
+            // L
+          },
+          child: _buildStatItem(
+            icon: Icons.share,
+            count: post.partage ?? 0,
+            label: 'Partages',
+          ),
         ),
       ],
     );
@@ -863,7 +917,20 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
           // Bouton Partager
           IconButton(
             icon: Icon(Icons.share, color: Colors.white, size: 30),
-            onPressed: () {
+            onPressed: () async {
+              final AppLinkService _appLinkService = AppLinkService();
+              _appLinkService.shareContent(
+                type: AppLinkType.post,
+                id: widget.post.id!,
+                message: " ${widget.post.description}",
+                mediaUrl: widget.post.images!.isNotEmpty?"${widget.post.images!}":"",
+              );
+              await FirebaseFirestore.instance
+                  .collection('Posts')
+                  .doc(widget.post.id!)
+                  .update({
+                'partage': FieldValue.increment(1),
+              });
               // Logique de partage
             },
           ),

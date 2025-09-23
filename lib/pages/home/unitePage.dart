@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentSerie.dart';
 import 'package:afrotok/pages/home/storyCustom/StoryCustom.dart';
@@ -119,10 +120,11 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
   // Obtenir le nombre total de posts
   Future<void> _getTotalPostsCount() async {
+
     try {
       final query = FirebaseFirestore.instance.collection('Posts')
           .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
+          // .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
           .where("type", isEqualTo: PostType.POST.name);
 
       final snapshot = await query.count().get();

@@ -74,9 +74,11 @@ const Color darkBackground = Color(0xFF121212);
 const Color textColor = Colors.white;
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+   MyHomePage({super.key, required this.title,this.isOpenLink=false});
 
   final String title;
+   bool isOpenLink;
+
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -1075,7 +1077,10 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     userProvider.getAllUsers().then((value) {
       // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
-      TopLiveGridModal.showTopLiveGridModal(context);
+      if(!widget.isOpenLink){
+        TopLiveGridModal.showTopLiveGridModal(context);
+
+      }
 
     });
 

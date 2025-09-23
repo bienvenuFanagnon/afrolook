@@ -982,12 +982,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           count: widget.post.partage! ?? 0,
           onPressed: () async {
             final AppLinkService _appLinkService = AppLinkService();
-
-            _appLinkService.shareLink(
-              AppLinkType.post,
-              widget.post.id!,
-              message: 'J\'ai trouvé cette publication géniale! 📸 : ${widget.post.description}',
+            _appLinkService.shareContent(
+              type: AppLinkType.post,
+              id: widget.post.id!,
+              message: " ${widget.post.description}",
+              mediaUrl: widget.post.images!.isNotEmpty?"${widget.post.images!}":"",
             );
+            // _appLinkService.shareLink(
+            //   AppLinkType.post,
+            //   widget.post.id!,
+            //   message: 'J\'ai trouvé cette publication géniale! 📸 : ${widget.post.description}',
+            // );
 
             await FirebaseFirestore.instance
                 .collection('Posts')

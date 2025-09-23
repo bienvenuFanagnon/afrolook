@@ -55,6 +55,7 @@ import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/linkService.dart';
+import 'package:app_links/app_links.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -318,36 +319,109 @@ class _MyAppState extends State<MyApp> {
   bool _isCreatingLink = false;
   FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
 
-  Future<void> initDynamicLinks() async {
-    dynamicLinks.onLink.listen((dynamicLinkData) async {
-      print('onLink path: ${dynamicLinkData.link.path}');
-      print('onLink data: ${dynamicLinkData.link.queryParameters}');
+  StreamSubscription<Uri>? _linkSubscription;
+  Future<void> initDeepLinks() async {
+    // Handle links
+    _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
+      // print("onAppLink uri: ${uri}");
 
-      String? postId = dynamicLinkData.link.queryParameters['postId'];
-      String? postType = dynamicLinkData.link.queryParameters['postType'];
+      if (uri != null) {
+        // Exemple: https://afrolooki.web.app/share/post/123
+        final segments = uri.pathSegments; // ['share', 'post', '123']
 
-      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: postId!, postType: postType!,),));
-    }).onError((error) {
-      printVm('onLink error');
-      printVm(error.message);
+        if (segments.length >= 3 && segments[0] == 'share') {
+          final typeStr = segments[1]; // 'post'
+          final id = segments[2];      // '123'
+
+          // Convertir en AppLinkType si besoin
+          // final type = _getTypeFromString(typeStr);
+
+          print("Type1: $typeStr");
+          // print("Type: $type");
+          print("ID: $id");
+          // navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => SplahsChargement(postId: id, postType: postType),));
+          _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
+
+          // Ici tu peux naviguer vers la page correspondante
+          // Navigator.pushNamed(context, '/post', arguments: id);
+        }
+      }
+    }, onError: (err) {
+      print("Erreur de lien: $err");
     });
   }
 
+  Future<void> initDeepLinks2() async {
+    _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
+      if (uri != null) {
+        final segments = uri.pathSegments; // ex: ['share', 'post', '123']
+
+        if (segments.length >= 3 && segments[0] == 'share') {
+          final typeStr = segments[1]; // 'post'
+          final id = segments[2];      // '123'
+
+          print("Type: $typeStr");
+          print("ID: $id");
+
+          // 🔹 Navigation différée, évite _overlay == null
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = navigatorKey.currentContext;
+            if (ctx != null) {
+
+              _appLinkService.handleNavigation(ctx, id, typeStr);
+            } else {
+              debugPrint("⚠️ navigatorKey.currentContext est null");
+            }
+          });
+        }
+      }
+    }, onError: (err) {
+      print("Erreur de lien: $err");
+    });
+
+    // 🔹 Gérer aussi le lien initial quand l’app est lancée fermée
+    try {
+      final initialUri = await AppLinks().getInitialLink();
+      if (initialUri != null) {
+        final segments = initialUri.pathSegments;
+        if (segments.length >= 3 && segments[0] == 'share') {
+          final typeStr = segments[1];
+          final id = segments[2];
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = navigatorKey.currentContext;
+            if (ctx != null) {
+
+              _appLinkService.handleNavigation(ctx, id, typeStr);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print("Erreur getInitialAppLink: $e");
+    }
+  }
+
+
+  void openAppLink(Uri uri) {
+    // _navigatorKey.currentState?.pushNamed(uri.fragment);
+  }
   @override
   void initState() {
     super.initState();
     onClickNotification();
     // initDynamicLinks();
-
     // Initialiser le service App Links
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _appLinkService.initialize();
+      initDeepLinks();
     });
   }
 
   @override
   void dispose() {
     _appLinkService.dispose();
+    _linkSubscription?.cancel();
+
     super.dispose();
   }
 
@@ -442,132 +516,24 @@ class _MyAppState extends State<MyApp> {
               case '/splahs_chargement2':
                 return PageTransition(child: SplashVideo(), type: PageTransitionType.fade);
               case '/splahs_chargement':
-                return PageTransition(child: AppLinkHandlerWidget(
-                  navigatorKey: navigatorKey,
-                  appLinkService: _appLinkService,
-                  child: SplahsChargement(postId: '', postType: '',),
-                ), type: PageTransitionType.fade);
+                return PageTransition(child: SplahsChargement(postId: '', postType: '',),
+                // AppLinkHandlerWidget(
+                //   // navigatorKey: navigatorKey,
+                //   appLinkService: _appLinkService,
+                //   child: SplahsChargement(postId: '', postType: '',),
+                // ),
+                    type: PageTransitionType.fade);
               case '/chargement':
                 return PageTransition(child: Chargement(), type: PageTransitionType.fade);
               case '/login':
                 return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
               default:
 
-                // return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
+                return PageTransition(child: SplahsChargement(postId: '', postType: '',)
+                    , type: PageTransitionType.fade);
             }
           }
       ),
     );
   }
 }
-
-// Widget pour gérer les liens App Links entrants
-// Widget pour gérer les liens App Links entrants
-class AppLinkHandlerWidget extends StatefulWidget {
-  final AppLinkService appLinkService;
-  final Widget child;
- final GlobalKey<NavigatorState> navigatorKey;
-
-  const AppLinkHandlerWidget({
-    required this.appLinkService,
-    required this.child,
-    required this.navigatorKey,
-  });
-
-  @override
-  _AppLinkHandlerWidgetState createState() => _AppLinkHandlerWidgetState();
-}
-
-class _AppLinkHandlerWidgetState extends State<AppLinkHandlerWidget> {
-  StreamSubscription<PendingLink>? _linkSubscription;
-  bool _ignoreInitialLinks = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Écouter les liens entrants
-    _linkSubscription = widget.appLinkService.linkStream.listen(_handleIncomingLink);
-
-    // Après 3 secondes, ignorer les liens initiaux (évite les doubles traitements)
-    // Future.delayed(Duration(seconds: 3), () {
-    //   setState(() {
-    //     _ignoreInitialLinks = true;
-    //   });
-    //   print('Ignorer les liens initiaux activé');
-    // });
-  }
-
-  void _handleIncomingLink(PendingLink link) {
-    print("=== DEBUG APP LINK ===");
-    print("Type: ${link.type}");
-    print("ID: ${link.id}");
-    print("IsInitial: ${link.isInitial}");
-    print("QueryParams: ${link.queryParams}");
-    print("IgnoreInitialLinks: $_ignoreInitialLinks");
-    print("=== FIN DEBUG ===");
-
-    // Ignorer les liens initiaux après le délai
-    if (link.isInitial && _ignoreInitialLinks) {
-      print("Lien initial ignoré (délai écoulé)");
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = widget.navigatorKey.currentContext;
-      print("Contexte de navigation: $context");
-
-      if (context != null) {
-        _safeNavigate(context, link);
-      } else {
-        print("Contexte null, retry dans 1 seconde");
-        // Retry après un délai
-        Future.delayed(Duration(seconds: 1), () {
-          final newContext = widget.navigatorKey!.currentContext;
-          if (newContext != null) {
-            _safeNavigate(newContext, link);
-          }
-        });
-      }
-    });
-  }
-
-  void _safeNavigate(BuildContext context, PendingLink link) async {
-    try {
-      print("🔄 Navigation vers: ${link.type} avec ID: ${link.id}");
-      await widget.appLinkService.handleNavigation(context, link);
-      print("✅ Navigation réussie pour: ${link.type}");
-    } catch (e) {
-      print("❌ Erreur lors de la navigation: $e");
-
-      // En cas d'erreur, réessayer une fois
-      try {
-        print("🔄 Retry navigation...");
-        await Future.delayed(Duration(seconds: 1));
-        await widget.appLinkService.handleNavigation(context, link);
-      } catch (e2) {
-        print("❌ Échec définitif de navigation: $e2");
-        // Naviguer vers la home en cas d'échec
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-              (route) => false,
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _linkSubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // return widget.child;
-    return widget.child;
-  }
-}
-
-// Service de navigation global

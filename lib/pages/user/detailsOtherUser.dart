@@ -304,19 +304,6 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                 ),
               ),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.all(5.0),
-            //   child: Text(
-            //     "Taper deux fois pour liker",
-            //     style: const TextStyle(
-            //       color: Colors.black,
-            //       fontWeight: FontWeight.bold,
-            //       fontSize: 10,
-            //     ),
-            //   ),
-            // ),
-
-
 
 
             Padding(
@@ -381,28 +368,6 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
               ),
             ),
 
-            // Padding(
-            //   padding: const EdgeInsets.only(top: 4.0,bottom: 4),
-            //   child: SizedBox(
-            //     //width: 70,
-            //     child: Row(
-            //       mainAxisAlignment: MainAxisAlignment.center,
-            //       children: [
-            //         Container(
-            //           alignment: Alignment.center,
-            //           child: TextCustomerPostDescription(
-            //             titre: "${widget.user.userlikes}",
-            //             fontSize: 15,
-            //             couleur: Colors.green,
-            //             fontWeight: FontWeight.w700,
-            //           ),
-            //         ),
-            //         SizedBox(width: 5,),
-            //         Icon(AntDesign.heart,color: Colors.red,),
-            //       ],
-            //     ),
-            //   ),
-            // ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: 2,
@@ -440,9 +405,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                   countryFlag(widget.user!.countryData!['countryCode']??"", size: 20),
 
                   Text("Voir le profil"),
-                  IconButton(onPressed: () {
-
-                  }, icon: Icon(Icons.remove_red_eye)),
+                Icon(Icons.remove_red_eye),
                 ],
               ),
             ),
@@ -669,57 +632,6 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
               ),
             )
 
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //   children: [
-            //
-            //     RatingStars(
-            //       rating: 5*widget.user.popularite!,
-            //       editable: true,
-            //       iconSize: 35,
-            //       color: Colors.green,
-            //     ),
-            //     LikeButton(
-            //
-            //       isLiked: false,
-            //       size: 50,
-            //       circleColor:
-            //       CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-            //       bubblesColor: BubblesColor(
-            //         dotPrimaryColor: Color(0xff3b9ade),
-            //         dotSecondaryColor: Color(0xff027f19),
-            //       ),
-            //       countPostion: CountPostion.bottom,
-            //       likeBuilder: (bool isLiked) {
-            //         return Icon(
-            //           !isLiked ?AntDesign.like1:AntDesign.like1,
-            //           color: !isLiked ? Colors.black38 : Colors.blue,
-            //           size: 35,
-            //         );
-            //       },
-            //      // likeCount: 30,
-            //       countBuilder: (int? count, bool isLiked, String text) {
-            //         var color = isLiked ? Colors.black : Colors.black;
-            //         Widget result;
-            //         if (count == 0) {
-            //           result = Text(
-            //             "0",textAlign: TextAlign.center,
-            //             style: TextStyle(color: color),
-            //           );
-            //         } else
-            //           result = Text(
-            //             text,
-            //             style: TextStyle(color: color),
-            //           );
-            //         return result;
-            //       },
-            //
-            //     ),
-            //
-            //
-            //
-            //   ],
-            // )
 
           ],
         ),
