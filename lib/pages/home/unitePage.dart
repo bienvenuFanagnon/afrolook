@@ -155,7 +155,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     try {
       Query query = FirebaseFirestore.instance.collection('Posts')
           .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
+          // .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
           .where("type", isEqualTo: PostType.POST.name)
           .orderBy("status") // obligatoire si tu utilises isNotEqualTo
           .orderBy("created_at", descending: true);
