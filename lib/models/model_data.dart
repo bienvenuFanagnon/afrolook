@@ -711,7 +711,7 @@ class UserData {
     data['imageUrl'] = this.imageUrl;
     data['numero_de_telephone'] = this.numeroDeTelephone;
     data['adresse'] = this.adresse;
-    data['isVerify'] = this.isVerify;
+    // data['isVerify'] = this.isVerify;
     data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
     // data['mesTiktokPubs'] = this.mesTiktokPubs;
@@ -735,7 +735,7 @@ class UserData {
       data['user_pays'] = this.userPays!.toJson();
     }
 
-    data['isBlocked'] = this.isBlocked;
+    // data['isBlocked'] = this.isBlocked;
     data['complete_data'] = this.completeData;
     data['has_entreprise'] = this.hasEntreprise;
 
@@ -1732,7 +1732,7 @@ class Post {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['id'] = this.id;
-    data['comments'] = this.comments;
+    // data['comments'] = this.comments;
     data['user_id'] = this.user_id;
     data['entreprise_id'] = this.entreprise_id;
     data['status'] = this.status;
@@ -1755,9 +1755,9 @@ class Post {
     data['users_like_id'] = this.users_like_id;
     data['users_love_id'] = this.users_love_id;
     data['users_republier_id'] = this.users_republier_id;
-    data['users_cadeau_id'] = this.users_cadeau_id;
-    data['users_comments_id'] = this.users_comments_id;
-    data['users_partage_id'] = this.users_partage_id;
+    // data['users_cadeau_id'] = this.users_cadeau_id;
+    // data['users_comments_id'] = this.users_comments_id;
+    // data['users_partage_id'] = this.users_partage_id;
     data['likes'] = this.likes;
     data['partage'] = this.partage;
     data['users_vue_id'] = this.users_vue_id;
