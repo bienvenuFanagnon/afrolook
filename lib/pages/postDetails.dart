@@ -348,9 +348,9 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         // Mettre à jour le post : ajouter l’utilisateur et remettre à jour la date
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_republier_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'created_at':DateTime.now().millisecondsSinceEpoch,
+          'created_at':DateTime.now().microsecondsSinceEpoch,
           // remet le post en haut du fil
-          'updated_at': DateTime.now().millisecondsSinceEpoch, // remet le post en haut du fil
+          'updated_at': DateTime.now().microsecondsSinceEpoch, // remet le post en haut du fil
         });
 
         // Créer la transaction
