@@ -62,14 +62,18 @@ import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
+import 'package:visibility_detector/visibility_detector.dart';
+
 const Color primaryGreen = Color(0xFF25D366);
 const Color darkBackground = Color(0xFF121212);
 const Color lightBackground = Color(0xFF1E1E1E);
 const Color textColor = Colors.white;
+
 class HomeConstPostPage extends StatefulWidget {
-  const HomeConstPostPage({super.key, required this.type});
+  const HomeConstPostPage({super.key, required this.type, this.sortType});
 
   final String type;
+  final String? sortType; // 'recent', 'popular', ou null pour l'algorithme par défaut
 
   @override
   State<HomeConstPostPage> createState() => _HomeConstPostPageState();
@@ -82,7 +86,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool contact_whatsapp = false;
   bool contact_afrolook = false;
   double homeIconSize = 20;
-  // late int app_version_code=0;
 
   GlobalKey btnKey = GlobalKey();
   GlobalKey btnKey2 = GlobalKey();
@@ -111,6 +114,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
+
+  // Nouveaux paramètres pour l'algorithme de visibilité
+  final int _initialLimit = 7;
+  final int _loadMoreLimit = 7;
+  List<Post> _posts = [];
+  bool _isLoadingPosts = true;
+  bool _hasErrorPosts = false;
+  bool _isLoadingMorePosts = false;
+  bool _hasMorePosts = true;
+  int _totalPostsCount = 1000;
+  DocumentSnapshot? _lastPostDocument;
+
+  // Map pour suivre les posts vus pendant cette session
+  final Map<String, bool> _postsViewedInSession = {};
+  final Map<String, Timer> _visibilityTimers = {};
+
+  final Random _random = Random();
+  final ScrollController _scrollController = ScrollController();
+
   void _changeColor() {
     final List<Color> colors = [
       Colors.blue,
@@ -120,8 +142,596 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       Colors.red,
       Colors.yellow,
     ];
-    final random = Random();
-    _color = colors[random.nextInt(colors.length)];
+    _color = colors[_random.nextInt(colors.length)];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+    _initializeData();
+
+    _futureUsers = userProvider.getProfileUsers(
+      authProvider.loginUserData.id!,
+      context,
+      limiteUsers,
+    );
+    hasShownDialogToday().then((value) async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      // authProvider.getAppData().then((value) {
+      //   // setState(() {});
+      // });
+      categorieProduitProvider.getArticleBooster().then((value) {
+        articles = value;
+        // setState(() {});
+      });
+
+      postProvider.getAllUserServiceHome().then((value) {
+        userServices = value;
+        userServices.shuffle();
+        // setState(() {});
+      });
+      postProvider.getCanauxHome().then((value) {
+        canaux = value;
+        canaux.shuffle();
+        // setState(() {});
+      });
+
+      // if (value && mounted) {
+      //   showDialog(
+      //     context: context,
+      //     builder: (BuildContext context) {
+      //       return AlertDialog(
+      //         title: Text('Nouvelle offre sur Afrolook'),
+      //         content: SingleChildScrollView(
+      //           child: Column(
+      //             mainAxisSize: MainAxisSize.max,
+      //             children: [
+      //               Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
+      //               SizedBox(height: 5),
+      //               Icon(FontAwesome.money, size: 50, color: Colors.green),
+      //               SizedBox(height: 10),
+      //               Text('Vous avez la possibilité de'),
+      //               Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
+      //               Text(
+      //                 'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
+      //                 textAlign: TextAlign.center,
+      //               ),
+      //             ],
+      //           ),
+      //         ),
+      //         actions: [
+      //           TextButton(
+      //             child: Text('OK'),
+      //             onPressed: () {
+      //               Navigator.of(context).pop();
+      //               prefs.setString('lastShownDateKey', DateTime.now().toString());
+      //             },
+      //           ),
+      //         ],
+      //       );
+      //     },
+      //   );
+      // }
+      // _checkAndShowDialog();
+    });
+
+    authProvider.getToken().then((token) async {
+      printVm("token: ${token}");
+      postProvider.getPostsImages2(limitePosts,widget.type).listen((data) {
+        if (!_streamController.isClosed) {
+          _streamController.add(data);
+        }
+      });
+
+      if (token == null || token == '') {
+        printVm("token: existe pas");
+        Navigator.pushNamed(context, '/welcome');
+      }
+    });
+
+    WidgetsBinding.instance.addObserver(this);
+
+    SystemChannels.lifecycle.setMessageHandler((message) {
+      printVm('stategb:  --- ${message}');
+
+      if (message!.contains('resume')) {
+        printVm('state en ligne:  --- ${message}');
+        if (authProvider.loginUserData != null) {
+          authProvider.loginUserData!.isConnected = true;
+          userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
+        }
+      } else {
+        printVm('state hors ligne :  --- ${message}');
+        if (authProvider.loginUserData != null) {
+          authProvider.loginUserData!.isConnected = false;
+          userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE.name);
+        }
+        getAndUpdateChatsData();
+      }
+      return Future.value(message);
+    });
+    // postProvider.getPostsVideos3(limitePosts).then((value) {
+    //   postProvider.listvideos=value;
+    //   printVm('listVideos *****************************: ${postProvider.listvideos.length}');
+    // },);
+  }
+
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMorePosts && _hasMorePosts) {
+      _loadMorePosts();
+    }
+  }
+
+  void _initializeData() async {
+    // await _getTotalPostsCount();
+    await _loadInitialPosts();
+
+    // Charger les autres données comme avant
+    authProvider.getAppData().then((appdata) {});
+    categorieProduitProvider.getArticleBooster().then((value) {
+      articles = value;
+    });
+    postProvider.getAllUserServiceHome().then((value) {
+      userServices = value;
+      userServices.shuffle();
+    });
+    postProvider.getCanauxHome().then((value) {
+      canaux = value;
+      canaux.shuffle();
+    });
+  }
+
+  Future<void> _getTotalPostsCount() async {
+    try {
+      final query = FirebaseFirestore.instance.collection('Posts')
+          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+          .where("type", isEqualTo: widget.type);
+
+      final snapshot = await query.count().get();
+      _totalPostsCount = snapshot.count!;
+    } catch (e) {
+      print('Error getting total posts count: $e');
+      _totalPostsCount = 0;
+    }
+  }
+
+  Future<void> _loadInitialPosts() async {
+    try {
+      setState(() {
+        _isLoadingPosts = true;
+        _hasErrorPosts = false;
+        _postsViewedInSession.clear();
+      });
+
+      _lastPostDocument = null;
+
+      if (widget.sortType == 'recent') {
+        await _loadRecentPosts(isInitialLoad: true);
+      } else if (widget.sortType == 'popular') {
+        await _loadPopularPosts(isInitialLoad: true);
+      } else {
+        await _loadUnseenPostsFirst();
+      }
+
+      setState(() {
+        _isLoadingPosts = false;
+      });
+
+    } catch (e) {
+      print('Error loading initial posts: $e');
+      setState(() {
+        _isLoadingPosts = false;
+        _hasErrorPosts = true;
+      });
+    }
+  }
+
+  Future<void> _loadUnseenPostsFirst() async {
+    final currentUserId = authProvider.loginUserData.id;
+
+    if (currentUserId == null) {
+      await _loadRecentPosts(isInitialLoad: true);
+      return;
+    }
+
+    try {
+      final appData = await _getAppData();
+      final userData = await _getUserData(currentUserId);
+
+      final allPostIds = appData.allPostIds ?? [];
+      final viewedPostIds = userData.viewedPostIds ?? [];
+
+      final unseenPostIds = allPostIds.where((postId) => !viewedPostIds.contains(postId)).toList();
+
+      // Charger les posts non vus
+      final unseenPosts = await _loadPostsByIds(unseenPostIds, limit: _initialLimit, isSeen: false);
+
+      // Compléter avec des posts vus si nécessaire
+      if (unseenPosts.length < _initialLimit) {
+        final remainingLimit = _initialLimit - unseenPosts.length;
+        final seenPostsToLoad = viewedPostIds.take(remainingLimit).toList();
+        final seenPosts = await _loadPostsByIds(seenPostsToLoad, limit: remainingLimit, isSeen: true);
+        _posts = [...unseenPosts, ...seenPosts];
+      } else {
+        _posts = unseenPosts;
+      }
+
+      // Mettre à jour le dernier document pour la pagination
+      if (_posts.isNotEmpty) {
+        final lastPostId = _posts.last.id;
+        if (lastPostId != null) {
+          final lastDoc = await FirebaseFirestore.instance.collection('Posts').doc(lastPostId).get();
+          _lastPostDocument = lastDoc;
+        }
+      }
+
+      _hasMorePosts = _posts.length < _totalPostsCount;
+
+    } catch (e) {
+      print('Error loading unseen posts: $e');
+      await _loadRecentPosts(isInitialLoad: true);
+    }
+  }
+
+  Future<void> _loadRecentPosts({bool isInitialLoad = true}) async {
+    try {
+      Query query = FirebaseFirestore.instance.collection('Posts')
+          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+          .where("type", isEqualTo: PostType.POST.name)
+          .orderBy("created_at", descending: true);
+
+      if (_lastPostDocument != null && !isInitialLoad) {
+        query = query.startAfterDocument(_lastPostDocument!);
+      }
+
+      query = query.limit(isInitialLoad ? _initialLimit : _loadMoreLimit);
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        _lastPostDocument = snapshot.docs.last;
+      }
+
+      final newPosts = snapshot.docs.map((doc) {
+        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+        post.hasBeenSeenByCurrentUser = false;
+        return post;
+      }).toList();
+
+      if (isInitialLoad) {
+        _posts = newPosts;
+      } else {
+        final existingIds = _posts.map((p) => p.id).toSet();
+        final uniqueNewPosts = newPosts.where((post) =>
+        post.id != null && !existingIds.contains(post.id)).toList();
+        _posts.addAll(uniqueNewPosts);
+      }
+
+      _hasMorePosts = _posts.length < _totalPostsCount;
+
+    } catch (e) {
+      print('Error loading recent posts: $e');
+      setState(() {
+        _hasMorePosts = false;
+      });
+    }
+  }
+
+  Future<void> _loadPopularPosts({bool isInitialLoad = true}) async {
+    try {
+      Query query = FirebaseFirestore.instance.collection('Posts')
+          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+          .where("type", isEqualTo: PostType.POST.name);
+
+      if (!isInitialLoad && _lastPostDocument != null) {
+        query = query.startAfterDocument(_lastPostDocument!);
+      }
+
+      final snapshot = await query.get();
+
+      // Trier les posts par popularité (vues + likes + commentaires)
+      List<Post> allPosts = snapshot.docs.map((doc) {
+        return Post.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      allPosts.sort((a, b) {
+        final aScore = (a.vues ?? 0) + (a.users_love_id!.length ?? 0) + (a.comments ?? 0);
+        final bScore = (b.vues ?? 0) + (b.users_love_id!.length ?? 0) + (b.comments ?? 0);
+        return bScore.compareTo(aScore);
+      });
+
+      final limitedPosts = isInitialLoad
+          ? allPosts.take(_initialLimit).toList()
+          : allPosts.skip(_posts.length).take(_loadMoreLimit).toList();
+
+      if (isInitialLoad) {
+        _posts = limitedPosts;
+      } else {
+        _posts.addAll(limitedPosts);
+      }
+
+      _hasMorePosts = _posts.length < allPosts.length;
+
+    } catch (e) {
+      print('Error loading popular posts: $e');
+      setState(() {
+        _hasMorePosts = false;
+      });
+    }
+  }
+
+  Future<List<Post>> _loadPostsByIds(List<String> postIds, {required int limit, required bool isSeen}) async {
+    if (postIds.isEmpty) return [];
+
+    final posts = <Post>[];
+    final idsToLoad = postIds.take(limit).toList();
+
+    for (var i = 0; i < idsToLoad.length; i += 10) {
+      final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
+      if (batchIds.isEmpty) continue;
+
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('Posts')
+            .where(FieldPath.documentId, whereIn: batchIds)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          try {
+            final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+            post.hasBeenSeenByCurrentUser = isSeen;
+            posts.add(post);
+          } catch (e) {
+            print('Error parsing post ${doc.id}: $e');
+          }
+        }
+      } catch (e) {
+        print('Error batch loading posts: $e');
+      }
+    }
+
+    return posts;
+  }
+
+  Future<AppDefaultData> _getAppData() async {
+    try {
+      final appDataRef = FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      final appDataSnapshot = await appDataRef.get();
+
+      if (appDataSnapshot.exists) {
+        return AppDefaultData.fromJson(appDataSnapshot.data() ?? {});
+      }
+
+      return AppDefaultData(allPostIds: []);
+    } catch (e) {
+      print('Error getting AppData: $e');
+      return AppDefaultData(allPostIds: []);
+    }
+  }
+
+  Future<UserData> _getUserData(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+      if (userDoc.exists) {
+        return UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+      }
+
+      return UserData(viewedPostIds: []);
+    } catch (e) {
+      print('Error getting UserData: $e');
+      return UserData(viewedPostIds: []);
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMorePosts) return;
+
+    setState(() {
+      _isLoadingMorePosts = true;
+    });
+
+    try {
+      if (widget.sortType == 'recent') {
+        await _loadRecentPosts(isInitialLoad: false);
+      } else if (widget.sortType == 'popular') {
+        await _loadPopularPosts(isInitialLoad: false);
+      } else {
+        await _loadMoreUnseenPosts();
+      }
+    } catch (e) {
+      print('Error loading more posts: $e');
+    } finally {
+      setState(() {
+        _isLoadingMorePosts = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreUnseenPosts() async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) {
+      await _loadRecentPosts(isInitialLoad: false);
+      return;
+    }
+
+    try {
+      final appData = await _getAppData();
+      final userData = await _getUserData(currentUserId);
+
+      final allPostIds = appData.allPostIds ?? [];
+      final viewedPostIds = userData.viewedPostIds ?? [];
+
+      final alreadyLoadedPostIds = _posts.map((p) => p.id).toSet();
+      final unseenPostIds = allPostIds.where((postId) =>
+      !viewedPostIds.contains(postId) && !alreadyLoadedPostIds.contains(postId)).toList();
+
+      final unseenPosts = await _loadPostsByIds(unseenPostIds, limit: _loadMoreLimit, isSeen: false);
+
+      if (unseenPosts.length < _loadMoreLimit) {
+        final remainingLimit = _loadMoreLimit - unseenPosts.length;
+        final seenPostIdsToLoad = viewedPostIds
+            .where((postId) => !alreadyLoadedPostIds.contains(postId))
+            .take(remainingLimit)
+            .toList();
+
+        final seenPosts = await _loadPostsByIds(seenPostIdsToLoad, limit: remainingLimit, isSeen: true);
+        _posts.addAll([...unseenPosts, ...seenPosts]);
+      } else {
+        _posts.addAll(unseenPosts);
+      }
+
+      _hasMorePosts = _posts.length < _totalPostsCount;
+
+    } catch (e) {
+      print('Error loading more unseen posts: $e');
+      await _loadRecentPosts(isInitialLoad: false);
+    }
+  }
+
+  Future<void> _recordPostView(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    try {
+      // Mettre à jour UserData.viewedPostIds
+      final userRef = FirebaseFirestore.instance.collection('Users').doc(currentUserId);
+      await userRef.update({
+        'viewedPostIds': FieldValue.arrayUnion([post.id]),
+      });
+
+      // Mettre à jour le compteur de vues du post
+      await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(post.id)
+          .update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // Mettre à jour localement
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id ??= [];
+        post.users_vue_id!.add(currentUserId);
+
+        if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
+          authProvider.loginUserData.viewedPostIds ??= [];
+          authProvider.loginUserData.viewedPostIds!.add(post.id!);
+        }
+      });
+
+    } catch (e) {
+      print('Error recording post view: $e');
+    }
+  }
+
+  void _handleVisibilityChanged(Post post, VisibilityInfo info) {
+    final postId = post.id!;
+    _visibilityTimers[postId]?.cancel();
+
+    if (info.visibleFraction > 0.5) {
+      _visibilityTimers[postId] = Timer(Duration(milliseconds: 500), () {
+        if (mounted && info.visibleFraction > 0.5) {
+          _recordPostView(post);
+        }
+      });
+    } else {
+      _visibilityTimers.remove(postId);
+    }
+  }
+
+  // Widget qui encapsule chaque post avec le détecteur de visibilité
+  Widget _buildPostWithVisibilityDetection(Post post, double width, double height) {
+    final hasUserSeenPost = post.hasBeenSeenByCurrentUser ?? false;
+
+    return VisibilityDetector(
+      key: Key('post-${post.id}'),
+      onVisibilityChanged: (VisibilityInfo info) {
+        _handleVisibilityChanged(post, info);
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: darkBackground.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+          border: !hasUserSeenPost
+              ? Border.all(color: Colors.green, width: 2)
+              : null,
+        ),
+        child: Stack(
+          children: [
+            HomePostUsersWidget(
+              post: post,
+              color: _color,
+              height: height * 0.6,
+              width: width,
+              isDegrade: true,
+            ),
+
+            // Badge "Nouveau" pour les posts non vus
+            if (!hasUserSeenPost)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fiber_new, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Nouveau',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDetails(dynamic item, String type) {
+    if (type == 'post') {
+      if (item is Post) {
+        _recordPostView(item);
+      }
+      // Navigation vers les détails du post
+      // Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailsPage(post: item)));
+    } else {
+      // Navigation pour les autres types de contenu
+    }
   }
   Future<void> _launchUrl(Uri url) async {
     if (!await launchUrl(url)) {
@@ -204,7 +814,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _buttonEnabled = true;
   RandomColor _randomColor = RandomColor();
 
-  final ScrollController _scrollController = ScrollController();
 
   int postLenght = 8;
   int limitePosts = 100;
@@ -1517,117 +2126,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   List<Post> listVideos=[];
   late Future<List<UserData>> _futureUsers;
 
-  @override
-  void initState() {
-    // _changeColor();
-    super.initState();
 
-
-    _futureUsers = userProvider.getProfileUsers(
-      authProvider.loginUserData.id!,
-      context,
-      limiteUsers,
-    );
-    hasShownDialogToday().then((value) async {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      // authProvider.getAppData().then((value) {
-      //   // setState(() {});
-      // });
-      categorieProduitProvider.getArticleBooster().then((value) {
-        articles = value;
-        // setState(() {});
-      });
-
-      postProvider.getAllUserServiceHome().then((value) {
-        userServices = value;
-        userServices.shuffle();
-        // setState(() {});
-      });
-      postProvider.getCanauxHome().then((value) {
-        canaux = value;
-        canaux.shuffle();
-        // setState(() {});
-      });
-
-      // if (value && mounted) {
-      //   showDialog(
-      //     context: context,
-      //     builder: (BuildContext context) {
-      //       return AlertDialog(
-      //         title: Text('Nouvelle offre sur Afrolook'),
-      //         content: SingleChildScrollView(
-      //           child: Column(
-      //             mainAxisSize: MainAxisSize.max,
-      //             children: [
-      //               Image.asset("assets/images/bonus_afrolook.jpg", fit: BoxFit.cover),
-      //               SizedBox(height: 5),
-      //               Icon(FontAwesome.money, size: 50, color: Colors.green),
-      //               SizedBox(height: 10),
-      //               Text('Vous avez la possibilité de'),
-      //               Text('gagner 5 PubliCashs', style: TextStyle(color: Colors.green)),
-      //               Text(
-      //                 'chaque fois qu\'un nouveau s\'inscrit avec votre code de parrainage...',
-      //                 textAlign: TextAlign.center,
-      //               ),
-      //             ],
-      //           ),
-      //         ),
-      //         actions: [
-      //           TextButton(
-      //             child: Text('OK'),
-      //             onPressed: () {
-      //               Navigator.of(context).pop();
-      //               prefs.setString('lastShownDateKey', DateTime.now().toString());
-      //             },
-      //           ),
-      //         ],
-      //       );
-      //     },
-      //   );
-      // }
-      // _checkAndShowDialog();
-    });
-
-    authProvider.getToken().then((token) async {
-      printVm("token: ${token}");
-      postProvider.getPostsImages2(limitePosts,widget.type).listen((data) {
-        if (!_streamController.isClosed) {
-          _streamController.add(data);
-        }
-      });
-
-      if (token == null || token == '') {
-        printVm("token: existe pas");
-        Navigator.pushNamed(context, '/welcome');
-      }
-    });
-
-    WidgetsBinding.instance.addObserver(this);
-
-    SystemChannels.lifecycle.setMessageHandler((message) {
-      printVm('stategb:  --- ${message}');
-
-      if (message!.contains('resume')) {
-        printVm('state en ligne:  --- ${message}');
-        if (authProvider.loginUserData != null) {
-          authProvider.loginUserData!.isConnected = true;
-          userProvider.changeState(user: authProvider.loginUserData, state: UserState.ONLINE.name);
-        }
-      } else {
-        printVm('state hors ligne :  --- ${message}');
-        if (authProvider.loginUserData != null) {
-          authProvider.loginUserData!.isConnected = false;
-          userProvider.changeState(user: authProvider.loginUserData, state: UserState.OFFLINE.name);
-        }
-        getAndUpdateChatsData();
-      }
-      return Future.value(message);
-    });
-    // postProvider.getPostsVideos3(limitePosts).then((value) {
-    //   postProvider.listvideos=value;
-    //   printVm('listVideos *****************************: ${postProvider.listvideos.length}');
-    // },);
-  }
 
   @override
   void dispose() {
@@ -1635,6 +2134,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _cachedUsersWithStories = []; // Nettoyer le cache
 
     WidgetsBinding.instance.removeObserver(this);
+
+    _scrollController.dispose();
+    _visibilityTimers.forEach((key, timer) => timer.cancel());
+    _visibilityTimers.clear();
     super.dispose();
   }
 
@@ -1689,11 +2192,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     return RefreshIndicator(
       onRefresh: () async {
+        await _loadInitialPosts();
         setState(() {});
       },
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: darkBackground, // Utilisation de votre couleur de fond
+        backgroundColor: darkBackground,
         body: SafeArea(
           child: Container(
             decoration: BoxDecoration(
@@ -1708,19 +2212,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             ),
             child: CustomScrollView(
               slivers: [
+                // Section des chroniques (existant)
+                // SliverToBoxAdapter(
+                //   child: _buildChroniquesSection(context),
+                // ),
 
-
-                // Section des chroniques
-                SliverToBoxAdapter(
-                  child: _buildChroniquesSection(context),
-                ),
-
-                // Section des profils utilisateurs
+                // Section des profils utilisateurs (existant)
                 SliverToBoxAdapter(
                   child: _buildProfilesSection(),
                 ),
 
-                // Section des posts
+                // Section des posts (mis à jour)
                 SliverToBoxAdapter(
                   child: _buildPostsSection(context),
                 ),
@@ -1960,144 +2462,135 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 
-    return StreamBuilder<List<Post>>(
-      stream: _streamController.stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildPostsShimmerEffect(width, height);
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    if (_isLoadingPosts) {
+      return _buildPostsShimmerEffect(width, height);
+    } else if (_hasErrorPosts) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error, color: Colors.red, size: 40),
+            SizedBox(height: 10),
+            Text(
+              'Erreur de chargement',
+              style: TextStyle(color: textColor),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadInitialPosts,
+              child: Text('Réessayer'),
+            ),
+          ],
+        ),
+      );
+    } else if (_posts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.photo_library, color: Colors.grey, size: 40),
+            SizedBox(height: 10),
+            Text(
+              'Aucun look disponible',
+              style: TextStyle(color: Colors.grey),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                authProvider.checkAppVersionAndProceed(context, () {
+                  Navigator.pushNamed(context, '/user_posts_form');
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: darkBackground,
+              ),
+              child: Text('Créer le premier look'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    List<Widget> postWidgets = [];
+
+    // Construire la liste des posts avec les boosters et canaux intégrés
+    for (int i = 0; i < _posts.length; i++) {
+      // Ajouter un booster tous les 9 posts
+      if (i % 9 == 8 && articles.isNotEmpty) {
+        postWidgets.add(_buildBoosterPage(context));
+      }
+
+      // Ajouter un canal tous les 7 posts
+      if (i % 7 == 6 && canaux.isNotEmpty) {
+        postWidgets.add(_buildCanalPage(context));
+      }
+
+      // Ajouter le post normal avec détection de visibilité
+      postWidgets.add(
+        GestureDetector(
+          onTap: () => _navigateToDetails(_posts[i], 'post'),
+          child: _buildPostWithVisibilityDetection(_posts[i], width, height),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        children: [
+          // En-tête de section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.error, color: Colors.red, size: 40),
-                SizedBox(height: 10),
                 Text(
-                  'Erreur de chargement',
-                  style: TextStyle(color: textColor),
-                ),
-              ],
-            ),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.photo_library, color: Colors.grey, size: 40),
-                SizedBox(height: 10),
-                Text(
-                  'Aucun look disponible',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    // Action pour créer le premier post
-                    authProvider.checkAppVersionAndProceed(context, () {
-                      Navigator.pushNamed(context, '/user_posts_form');
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGreen,
-                    foregroundColor: darkBackground,
-                  ),
-                  child: Text('Créer le premier look'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        List<Post> posts = snapshot.data!;
-        List<Widget> postWidgets = [];
-
-        // Construire la liste des posts avec les boosters et canaux intégrés
-        for (int i = 0; i < posts.length; i++) {
-          // Ajouter un booster tous les 9 posts
-          if (i % 9 == 8 && articles.isNotEmpty) {
-            postWidgets.add(_buildBoosterPage(context));
-          }
-
-          // Ajouter un canal tous les 7 posts
-          if (i % 7 == 6 && canaux.isNotEmpty) {
-            postWidgets.add(_buildCanalPage(context));
-          }
-
-          // Ajouter le post normal
-          postWidgets.add(
-            Container(
-              margin: EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: darkBackground.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: HomePostUsersWidget(
-                post: posts[i],
-                color: _color,
-                height: height * 0.6, // Ajuster selon besoin
-                width: width,
-                isDegrade: true,
-              ),
-            ),
-          );
-        }
-
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              // En-tête de section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Derniers Looks',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.filter_list, color: primaryGreen),
-                      onPressed: () {
-                        // Action de filtrage
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Liste des posts
-              Column(children: postWidgets),
-
-              // Indicateur de fin
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Text(
-                  'Vous avez vu tous les looks',
+                  widget.sortType == 'recent' ? 'Looks Récents' :
+                  widget.sortType == 'popular' ? 'Looks Populaires' : 'Derniers Looks',
                   style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
                   ),
                 ),
-              ),
-            ],
+                if (widget.sortType == null)
+                  IconButton(
+                    icon: Icon(Icons.filter_list, color: primaryGreen),
+                    onPressed: () {
+                      // Action de filtrage
+                    },
+                  ),
+              ],
+            ),
           ),
-        );
-      },
+
+          // Liste des posts
+          Column(children: postWidgets),
+
+          // Indicateur de chargement ou de fin
+          if (_isLoadingMorePosts)
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: CircularProgressIndicator(color: primaryGreen),
+              ),
+            )
+          else if (!_hasMorePosts && _posts.isNotEmpty)
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                'Vous avez vu tous les looks',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
-
 // Effet de chargement type Shimmer
   Widget _buildPostsShimmerEffect(double width, double height) {
     return Column(

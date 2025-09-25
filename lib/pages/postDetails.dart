@@ -117,8 +117,11 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         // Mettre à jour dans Firestore
         await firestore.collection('Posts').doc(widget.post.id).update({
           'vues': FieldValue.increment(1),
-          'users_vue_id': FieldValue.arrayUnion([authProvider.loginUserData.id])
+          'users_vue_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(2), // pondération pour un commentaire
+
         });
+
       }
     } catch (e) {
       print("Erreur incrémentation vues: $e");
@@ -171,7 +174,9 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         // Mettre à jour dans Firestore
         await firestore.collection('Posts').doc(widget.post.id).update({
           'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id])
+          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(3), // pondération pour un commentaire
+
         });
         await authProvider.sendNotification(
             userIds: [widget.post.user!.oneIgnalUserid!],
@@ -203,7 +208,7 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '+2 points ajoutés à votre solde',
+              '+2 points ajoutés à votre compte',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.green),
             ),
@@ -272,7 +277,9 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
 
         // Ajouter l'expéditeur à la liste des cadeaux du post
         await firestore.collection('Posts').doc(widget.post.id).update({
-          'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id])
+          'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(5), // pondération pour un commentaire
+
         });
 
         // Créer les transactions
@@ -348,6 +355,8 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         // Mettre à jour le post : ajouter l’utilisateur et remettre à jour la date
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_republier_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(4), // pondération pour un commentaire
+
           'created_at':DateTime.now().microsecondsSinceEpoch,
           // remet le post en haut du fil
           'updated_at': DateTime.now().microsecondsSinceEpoch, // remet le post en haut du fil
@@ -681,7 +690,7 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
                   ),
                   Text(
                     formaterDateTime(
-                      DateTime.fromMillisecondsSinceEpoch(post.createdAt ?? 0),
+                      DateTime.fromMicrosecondsSinceEpoch(post.createdAt ?? 0),
                     ),
                     style: TextStyle(
                       color: Colors.grey[400],
@@ -793,6 +802,11 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
         ),
         GestureDetector(
           onTap: () {
+             firestore.collection('Posts').doc(widget.post.id).update({
+
+              'popularity': FieldValue.increment(1), // pondération pour un commentaire
+
+            });
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -892,7 +906,12 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
           // Bouton Commentaire
           IconButton(
             icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 30),
-            onPressed: () {
+            onPressed: () async {
+              await firestore.collection('Posts').doc(widget.post.id).update({
+
+                'popularity': FieldValue.increment(1), // pondération pour un commentaire
+
+              });
               Navigator.push(
                 context,
                 MaterialPageRoute(

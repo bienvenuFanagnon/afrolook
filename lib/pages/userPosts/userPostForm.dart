@@ -97,7 +97,7 @@ class _UserProfilState extends State<UserPostForm> {
                                   ),
                                 ),
                                 TextCustomerUserTitle(
-                                  titre: "${authProvider.loginUserData!.abonnes} abonné(s)",
+                                  titre: "${authProvider.loginUserData!.userAbonnesIds!.length} abonné(s)",
                                   fontSize: SizeText.homeProfileTextSize,
                                   couleur: ConstColors.textColors,
                                   fontWeight: FontWeight.w400,

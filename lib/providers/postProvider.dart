@@ -367,6 +367,23 @@ class PostProvider extends ChangeNotifier {
       }
     }
   }
+  Future<void> addPostIdToAppDefaultData(String postId) async {
+    if (postId.isEmpty) return;
+
+    try {
+      final appDefaultRef =
+      FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      // 🔹 remplace 'main' par l’ID de ton document AppDefaultData
+
+      await appDefaultRef.update({
+        'allPostIds': FieldValue.arrayUnion([postId]),
+      });
+
+      print("✅ Post $postId ajouté à AppDefaultData.allPostIds");
+    } catch (e) {
+      print("❌ Erreur lors de l'ajout du postId à AppDefaultData: $e");
+    }
+  }
 
   Future<PostMonetiser> getOrCreatePostMonetiser(String postId, String userId) async {
     // Référence à la collection 'PostsMonetiser'

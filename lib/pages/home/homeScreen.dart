@@ -1075,13 +1075,12 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    if(!widget.isOpenLink){
+      TopLiveGridModal.showTopLiveGridModal(context);
+
+    }
     userProvider.getAllUsers().then((value) {
       // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
-      if(!widget.isOpenLink){
-        TopLiveGridModal.showTopLiveGridModal(context);
-
-      }
-
     });
 
 
@@ -1312,14 +1311,15 @@ class _MyHomePageState extends State<MyHomePage>
               labelColor: accentYellow,
               unselectedLabelColor: Colors.grey[400],
               tabs: [
-                Tab(text: 'Accueil'),
-                Tab(text: 'Vidéos virales'),
-                Tab(text: 'Looks'),
-                // Tab(text: 'TikTok'),
-                Tab(text: 'Actualités'),
-                Tab(text: 'Sports'),
-                // Tab(text: 'Offres'),
+                Tab(text: '🏠 Accueil'),
+                Tab(text: '🎥 Vidéos virales'),
+                Tab(text: '🌟 Looks'),
+                // Tab(text: '🎵 TikTok'),
+                Tab(text: '🔥 Populaires'),
+                Tab(text: '🕒 Récents'),
+                // Tab(text: '💼 Offres'),
               ],
+
             ),
           ),
         ),
@@ -1331,9 +1331,12 @@ class _MyHomePageState extends State<MyHomePage>
           UnifiedHomePage(),
           DashboardContentScreen(),
           LooksPage(type: TabBarType.LOOKS.name),
+          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
+          LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+
           // VideoFeedTiktokPage(fullPage: false),
-          ActualitePage(type: TabBarType.ACTUALITES.name),
-          SportPage(type: TabBarType.SPORT.name),
+          // ActualitePage(type: TabBarType.ACTUALITES.name),
+          // SportPage(type: TabBarType.SPORT.name),
           // OffrePage(type: TabBarType.OFFRES.name),
         ],
       ),

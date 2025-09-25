@@ -61,10 +61,11 @@ class HomePostUsersWidget extends StatefulWidget {
   HomePostUsersWidget({
     required this.post,
     this.color,
-    this.isDegrade=false,
+    this.isDegrade = false,
     required this.height,
     required this.width,
-    Key? key, this.isPreview=true,
+    Key? key,
+    this.isPreview = true,
   }) : super(key: key);
 
   @override
@@ -73,10 +74,14 @@ class HomePostUsersWidget extends StatefulWidget {
 
 class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     with TickerProviderStateMixin {
-  late UserAuthProvider authProvider =Provider.of<UserAuthProvider>(context, listen: false);
-  late PostProvider postProvider=Provider.of<PostProvider>(context, listen: false);
-  late CategorieProduitProvider categorieProduitProvider =Provider.of<CategorieProduitProvider>(context, listen: false);
-  late UserProvider userProvider=Provider.of<UserProvider>(context, listen: false);
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
+  late CategorieProduitProvider categorieProduitProvider =
+  Provider.of<CategorieProduitProvider>(context, listen: false);
+  late UserProvider userProvider =
+  Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   Random random = Random();
@@ -94,16 +99,95 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   double baseFontSize = 20.0;
   late double fontSize;
   int limitePosts = 30;
-  bool _isLoading=false;
+  bool _isLoading = false;
+
+  // Variables pour stocker les données récupérées individuellement
+  UserData? _currentUser;
+  Canal? _currentCanal;
+  bool _isLoadingUser = false;
+  bool _isLoadingCanal = false;
 
   final List<AnimationController> _heartAnimations = [];
   final List<AnimationController> _giftAnimations = [];
   final List<AnimationController> _giftReplyAnimations = [];
 
-  final String imageCadeau='https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba74bc65?rik=vHxQSLwSFG2gAw&riu=http%3a%2f%2fwww.conseilsdefamille.com%2fwp-content%2fuploads%2f2013%2f03%2fCadeau-Fotolia_27171652CMYK_WB.jpg&ehk=vzUbV07%2fUgXnc1LdlIVCaD36qZGAxa7V8JtbqOFfoqY%3d&risl=&pid=ImgRaw&r=0';
+  final String imageCadeau =
+      'https://th.bing.com/th/id/R.07b0fcbd29597e76b66b50f7ba74bc65?rik=vHxQSLwSFG2gAw&riu=http%3a%2f%2fwww.conseilsdefamille.com%2fwp-content%2fuploads%2f2013%2f03%2fCadeau-Fotolia_27171652CMYK_WB.jpg&ehk=vzUbV07%2fUgXnc1LdlIVCaD36qZGAxa7V8JtbqOFfoqY%3d&risl=&pid=ImgRaw&r=0';
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadCanalData();
+  }
 
-  void showRepublishDialog(Post post, UserData userSendCadeau,AppDefaultData appdata ,BuildContext context) {
+  // Charger les données utilisateur individuellement
+  Future<void> _loadUserData() async {
+    if (widget.post.user_id == null) return;
+
+    setState(() {
+      _isLoadingUser = true;
+    });
+
+    try {
+      final userDoc =
+      await firestore.collection('Users').doc(widget.post.user_id!).get();
+      if (userDoc.exists) {
+        setState(() {
+          _currentUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+          widget.post.user=currentUser;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement de l\'utilisateur: $e');
+    } finally {
+      setState(() {
+        _isLoadingUser = false;
+      });
+    }
+  }
+
+  // Charger les données canal individuellement
+  Future<void> _loadCanalData() async {
+    if (widget.post.canal_id == null || widget.post.canal_id!.isEmpty) return;
+
+    setState(() {
+      _isLoadingCanal = true;
+    });
+
+    try {
+      final canalDoc = await firestore
+          .collection('Canaux')
+          .doc(widget.post.canal_id!)
+          .get();
+
+      if (canalDoc.exists) {
+        final canalData = canalDoc.data() as Map<String, dynamic>;
+        setState(() {
+          _currentCanal = Canal.fromJson(canalData);
+          widget.post.canal=_currentCanal;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement du canal: $e');
+    } finally {
+      setState(() {
+        _isLoadingCanal = false;
+      });
+    }
+  }
+
+  // Méthode pour obtenir l'utilisateur actuel (soit depuis le post, soit depuis le chargement individuel)
+  UserData? get currentUser {
+    return widget.post.user ?? _currentUser;
+  }
+
+  // Méthode pour obtenir le canal actuel (soit depuis le post, soit depuis le chargement individuel)
+  Canal? get currentCanal {
+    return widget.post.canal ?? _currentCanal;
+  }
+
+  void showRepublishDialog(Post post, UserData userSendCadeau, AppDefaultData appdata, BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
@@ -125,7 +209,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 style: TextStyle(color: Colors.black, fontSize: 16),
               ),
               SizedBox(height: 10),
-              Text("⚡ Plus de visibilité, plus d’interactions !", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              Text("⚡ Plus de visibilité, plus d'interactions !", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
@@ -154,29 +238,18 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     if (userSendCadeau.votre_solde_principal! >= 2) {
                       widget.post.users_republier_id ??= [];
                       widget.post.users_republier_id?.add(userSendCadeau.id!);
-                      double gain=0.0;
-                      double deduire=0.0;
+                      double gain = 0.0;
+                      double deduire = 0.0;
 
-//
-// // Ajouter le gain au solde cadeau
-//                       widget.post.user!.votre_solde_cadeau =
-//                           (widget.post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+                      userSendCadeau.votre_solde_principal = userSendCadeau.votre_solde_principal! - 2;
+                      appdata.solde_gain = appdata.solde_gain! + 2;
 
-// Ajouter le reste au solde principal
-                      userSendCadeau.votre_solde_principal =
-                          userSendCadeau.votre_solde_principal! - 2;
-                      appdata.solde_gain=appdata.solde_gain!+2;
+                      await postProvider.updateReplyPost(widget.post, context);
+                      await authProvider.updateUser(currentUser!).then((value) async {
+                        await authProvider.updateUser(userSendCadeau);
+                        await authProvider.updateAppData(appdata);
+                      });
 
-
-
-                      await  postProvider.updateReplyPost(widget.post, context);
-                      await authProvider.updateUser(widget.post!.user!).then((value) async {
-                        await  authProvider.updateUser(userSendCadeau);
-                        await  authProvider.updateAppData(appdata);
-
-                      },);
-                      printVm('update send user');
-                      printVm('update send user votre_solde_principal : ${userSendCadeau.votre_solde_principal}');
                       setState(() => _isLoading = false);
                       Navigator.of(context).pop();
                       _sendReplyGift('🔝');
@@ -199,7 +272,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   print("Erreur : $e");
                 }
               },
-
               style: TextButton.styleFrom(backgroundColor: Colors.green),
               child: Text("🚀 Republier", style: TextStyle(color: Colors.white)),
             ),
@@ -209,11 +281,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-
-  void showGiftDialog(Post post, UserData userSendCadeau,AppDefaultData appdata) {
+  void showGiftDialog(Post post, UserData userSendCadeau, AppDefaultData appdata) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Empêche la fermeture
+      barrierDismissible: false,
       builder: (BuildContext context) {
         String _selectedGift = '';
         double _selectedPrice = 0.0;
@@ -227,9 +298,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   onGiftSelected: (String gift, int price) async {
                     setState(() {
                       _isLoading = true;
-                      _selectedPrice=price.toDouble();
-                      _selectedGift=gift;
-                    },);
+                      _selectedPrice = price.toDouble();
+                      _selectedGift = gift;
+                    });
 
                     try {
                       CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
@@ -241,83 +312,69 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
                       if (listUsers.isNotEmpty) {
                         userSendCadeau = listUsers.first;
-                        printVm("envoyer cadeau");
-                        printVm("userSendCadeau.votre_solde_principal : ${userSendCadeau.votre_solde_principal}");
-                        printVm("_selectedPrice : ${_selectedPrice}");
                         userSendCadeau.votre_solde_principal ??= 0.0;
                         appdata.solde_gain ??= 0.0;
 
                         if (userSendCadeau.votre_solde_principal! >= _selectedPrice) {
                           widget.post.users_cadeau_id ??= [];
                           widget.post.users_cadeau_id?.add(userSendCadeau.id!);
-                          double gain=0.0;
-                          double deduire=0.0;
+                          double gain = 0.0;
+                          double deduire = 0.0;
 
                           if (_selectedPrice <= 2) {
                             gain = 1;
-                            // reste = _selectedPrice - gain;
                           } else {
                             gain = _selectedPrice * 0.25;
-                            // reste = _selectedPrice - gain;
                           }
-                          deduire=_selectedPrice+gain;
+                          deduire = _selectedPrice + gain;
 
-// Ajouter le gain au solde cadeau
-                          widget.post.user!.votre_solde_cadeau =
-                              (widget.post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+                          // Utiliser currentUser au lieu de widget.post.user
+                          if (currentUser != null) {
+                            currentUser!.votre_solde_cadeau = (currentUser!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
+                          }
 
-// Ajouter le reste au solde principal
-                          userSendCadeau.votre_solde_principal =
-                              userSendCadeau.votre_solde_principal! - deduire;
-                          appdata.solde_gain=appdata.solde_gain!+gain;
+                          userSendCadeau.votre_solde_principal = userSendCadeau.votre_solde_principal! - deduire;
+                          appdata.solde_gain = appdata.solde_gain! + gain;
 
-                          // widget.post.user!.votre_solde_cadeau = (widget.post.user!.votre_solde_cadeau ?? 0.0) + _selectedPrice;
-                          // userSendCadeau.votre_solde_principal = userSendCadeau.votre_solde_principal! - (_selectedPrice);
+                          if (currentUser != null) {
+                            NotificationData notif = NotificationData(
+                              id: firestore.collection('Notifications').doc().id,
+                              titre: "Nouveau Cadeau 🎁",
+                              media_url: imageCadeau,
+                              type: NotificationType.POST.name,
+                              description: "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
+                              user_id: post.user_id,
+                              receiver_id: currentUser!.id!,
+                              post_id: widget.post.id!,
+                              post_data_type: PostDataType.IMAGE.name!,
+                              createdAt: DateTime.now().microsecondsSinceEpoch,
+                              updatedAt: DateTime.now().microsecondsSinceEpoch,
+                              status: PostStatus.VALIDE.name,
+                            );
 
-                          NotificationData notif = NotificationData(
-                            id: firestore.collection('Notifications').doc().id,
-                            titre: "Nouveau Cadeau 🎁",
-                            media_url: imageCadeau,
-                            type: NotificationType.POST.name,
-                            description: "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
-                            user_id: post.user!.id,
-                            receiver_id: widget.post!.user_id!,
-                            post_id: widget.post!.id!,
-                            post_data_type: PostDataType.IMAGE.name!,
-                            createdAt: DateTime.now().microsecondsSinceEpoch,
-                            updatedAt: DateTime.now().microsecondsSinceEpoch,
-                            status: PostStatus.VALIDE.name,
-                          );
+                            await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-                          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                          await authProvider.sendNotification(
-                              userIds: [widget.post!.user!.oneIgnalUserid!],
-                              smallImage:
-                              // "${authProvider.loginUserData.imageUrl!}",
-                              "${imageCadeau}",
-                              send_user_id:
-                              "",
-                              // "${authProvider.loginUserData.id!}",
-                              recever_user_id: "${widget.post!.user_id!}",
-                              message:
-                              // "📢 @${authProvider.loginUserData
-                              //     .pseudo!} a aimé votre look",
-                              "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
-                              type_notif:
-                              NotificationType.POST.name,
-                              post_id: "${widget.post!.id!}",
-                              post_type: PostDataType.IMAGE.name,
-                              chat_id: '');
+                            if (currentUser!.oneIgnalUserid != null) {
+                              await authProvider.sendNotification(
+                                  userIds: [currentUser!.oneIgnalUserid!],
+                                  smallImage: imageCadeau,
+                                  send_user_id: "",
+                                  recever_user_id: currentUser!.id!,
+                                  message: "Vous avez un cadeau ${_selectedPrice} PC ${_selectedGift}",
+                                  type_notif: NotificationType.POST.name,
+                                  post_id: widget.post.id!,
+                                  post_type: PostDataType.IMAGE.name,
+                                  chat_id: '');
+                            }
+                          }
 
+                          await postProvider.updateVuePost(widget.post, context);
+                          if (currentUser != null) {
+                            await authProvider.updateUser(currentUser!);
+                          }
+                          await authProvider.updateUser(userSendCadeau);
+                          await authProvider.updateAppData(appdata);
 
-                          await  postProvider.updateVuePost(widget.post, context);
-                          await authProvider.updateUser(widget.post!.user!).then((value) async {
-                            await  authProvider.updateUser(userSendCadeau);
-                            await  authProvider.updateAppData(appdata);
-
-                          },);
-                          printVm('update send user');
-                          printVm('update send user votre_solde_principal : ${userSendCadeau.votre_solde_principal}');
                           setState(() => _isLoading = false);
                           Navigator.of(context).pop();
 
@@ -326,7 +383,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                             SnackBar(
                               backgroundColor: Colors.green,
                               content: Text(
-                                '🎁 Félicitations ! Vous avez envoyé un cadeau ${_selectedGift} à @${widget.post!.user!.pseudo}.',
+                                '🎁 Félicitations ! Vous avez envoyé un cadeau ${_selectedGift} à @${currentUser?.pseudo ?? 'utilisateur'}.',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -357,23 +414,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-
   String colorToHex(Color color) {
     return '#${color.value.toRadixString(16).padLeft(8, '0')}';
   }
 
-
-  // Couleurs du thème Afrolook
   final Color _afroGreen = Color(0xFF2ECC71);
   final Color _afroYellow = Color(0xFFF1C40F);
   final Color _afroRed = Color(0xFFE74C3C);
   final Color _afroBlack = Color(0xFF2C3E50);
+
   void _showUserDetailsModalDialog(UserData user, double w, double h) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-
           content: DetailsOtherUser(
             user: user,
             w: w,
@@ -384,8 +438,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-
-  // Fonction pour convertir une chaîne hex en Color
   Color colorFromHex(String? hexString) {
     if (hexString == null) return Colors.transparent;
     final buffer = StringBuffer();
@@ -393,10 +445,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     buffer.write(hexString.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
+
   Future<void> suivreCanal(Canal canal) async {
     final String userId = authProvider.loginUserData.id!;
 
-    // Vérifier si l'utilisateur suit déjà le canal
     if (canal.usersSuiviId!.contains(userId)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -410,24 +462,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       return;
     }
 
-    // Ajouter l'utilisateur à la liste des abonnés
     canal.usersSuiviId!.add(userId);
     await firestore.collection('Canaux').doc(canal.id).update({
       'usersSuiviId': canal.usersSuiviId,
     });
 
-    // setState(() {
-    //   isFollowing = true;
-    // });
-
-    // Création de la notification
     NotificationData notif = NotificationData(
       id: firestore.collection('Notifications').doc().id,
       titre: "Canal 📺",
       media_url: authProvider.loginUserData.imageUrl,
       type: NotificationType.ACCEPTINVITATION.name,
-      description:
-      "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
+      description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
       users_id_view: [],
       user_id: userId,
       receiver_id: canal.userId!,
@@ -440,19 +485,19 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-    // Envoi de la notification
-    await authProvider.sendNotification(
-      userIds: [canal.user!.oneIgnalUserid!],
-      smallImage: canal.urlImage!,
-      send_user_id: userId,
-      recever_user_id: canal.userId!,
-      message:
-      "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
-      type_notif: NotificationType.ACCEPTINVITATION.name,
-      post_id: "",
-      post_type: "",
-      chat_id: "",
-    );
+    if (canal.user != null && canal.user!.oneIgnalUserid != null) {
+      await authProvider.sendNotification(
+        userIds: [canal.user!.oneIgnalUserid!],
+        smallImage: canal.urlImage!,
+        send_user_id: userId,
+        recever_user_id: canal.userId!,
+        message: "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
+        type_notif: NotificationType.ACCEPTINVITATION.name,
+        post_id: "",
+        post_type: "",
+        chat_id: "",
+      );
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -494,6 +539,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       });
     });
   }
+
   void _sendReplyGift(String gift) {
     final controller = AnimationController(
       vsync: this,
@@ -513,18 +559,26 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     return Color.lerp(color1, color2, factor)!;
   }
 
-
   @override
   Widget build(BuildContext context) {
     final h = MediaQuery.of(context).size.height;
     final w = MediaQuery.of(context).size.width;
 
-    // Mélange des couleurs pour le dégradé d'arrière-plan
+    // Afficher un indicateur de chargement si les données sont en cours de chargement
+    if (_isLoadingUser || _isLoadingCanal) {
+      return Container(
+        margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        height: widget.height,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     Color blendedColor = mixColors(
         colorFromHex(widget.post.colorDomine),
         colorFromHex(widget.post.colorSecondaire),
-        0.5
-    );
+        0.5);
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -576,7 +630,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-// Construction de l'en-tête du post
+  // Construction de l'en-tête du post
   Widget _buildPostHeader(BuildContext context, double w, double h) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,10 +647,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 radius: 20,
                 backgroundColor: _afroGreen,
                 backgroundImage: _getProfileImage(),
-                child:  GestureDetector(
+                child: GestureDetector(
                   onTap: () {
-                    if (widget.post.canal == null)
-                      _showUserDetailsModalDialog(widget.post.user!, w, h);
+                    if (currentCanal == null && currentUser != null)
+                      _showUserDetailsModalDialog(currentUser!, w, h);
                   },
                   child: _getProfileImage() == null
                       ? Icon(Icons.person, color: Colors.white, size: 18)
@@ -648,14 +702,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       fontSize: 12,
                     ),
                   ),
-                  // SizedBox(width: 8),
-                  // Text(
-                  //   formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(widget.post.createdAt!)),
-                  //   style: TextStyle(
-                  //     color: _afroBlack.withOpacity(0.6),
-                  //     fontSize: 9,
-                  //   ),
-                  // ),
                 ],
               ),
             ],
@@ -666,12 +712,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.post.canal == null &&
-                !isUserAbonne(widget.post.user!.userAbonnesIds!, authProvider.loginUserData.id!))
+            if (currentCanal == null &&
+                currentUser != null &&
+                !isUserAbonne(currentUser!.userAbonnesIds ?? [], authProvider.loginUserData.id!))
               GestureDetector(
                 onTap: () {
-                  // Action d'abonnement
-                  _showUserDetailsModalDialog(widget.post.user!, w, h);
+                  if (currentUser != null) {
+                    _showUserDetailsModalDialog(currentUser!, w, h);
+                  }
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -694,7 +742,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(),
               onPressed: () {
-                showPostMenuModalDialog(widget.post!, context);
+
+                showPostMenuModalDialog(widget.post, context);
               },
               icon: Icon(
                 Icons.more_vert,
@@ -708,7 +757,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-// Construction du contenu texte
+  // Construction du contenu texte
   Widget _buildPostContent(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -733,7 +782,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-// Construction de l'aperçu d'image
+  // Construction de l'aperçu d'image
   Widget _buildImagePreview(BuildContext context, double h) {
     return Padding(
       padding: EdgeInsets.only(top: 12),
@@ -761,7 +810,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 ],
               ),
 
-              // Badge pour indiquer qu'il y a plusieurs images
               if (widget.post.images!.length > 1)
                 Positioned(
                   top: 8,
@@ -788,9 +836,65 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
-  // Partager une publication
+  Future<void> _handleLike() async {
+    try {
+      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+        // Mettre à jour localement
+        setState(() {
+          widget.post.loves = widget.post.loves! + 1;
+          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
+        });
 
-// Construction des actions (likes, commentaires, vues)
+        // Mettre à jour dans Firestore
+        await firestore.collection('Posts').doc(widget.post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(1), // pondération pour un commentaire
+
+        });
+        await authProvider.sendNotification(
+            userIds: [widget.post.user!.oneIgnalUserid!],
+            smallImage:
+            "${authProvider.loginUserData.imageUrl!}",
+            send_user_id:
+            "${authProvider.loginUserData.id!}",
+            recever_user_id: "${widget.post.user_id!}",
+            message:
+            "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
+            type_notif:
+            NotificationType.POST.name,
+            post_id: "${widget.post!.id!}",
+            post_type: PostDataType.IMAGE.name,
+            chat_id: '');
+        // Incrémenter le solde de l'utilisateur qui aime
+        await postProvider.interactWithPostAndIncrementSolde(
+            widget.post.id!,
+            authProvider.loginUserData.id!,
+            "like",
+            widget.post.user_id!
+        );
+
+        // Animation
+        // _animationController.forward().then((_) {
+        //   _animationController.reverse();
+        // });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+2 points ajoutés à votre solde',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Erreur like: $e");
+    }
+  }
+
+  // Construction des actions (likes, commentaires, vues)
   Widget _buildPostActions(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -802,159 +906,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           onPressed: () async {
             _sendLike();
 
-            postProvider.getPostsImagesById(widget.post!.id!).then((value) async {
-              if(value.isNotEmpty){
-                widget.post!=value.first;
-                if (!isIn(widget.post!.users_love_id!,
-                    authProvider.loginUserData.id!)) {
-                  setState(() {
-                    widget.post!.loves = widget.post!.loves! + 1;
-
-                    widget.post!.users_love_id!
-                        .add(authProvider!.loginUserData.id!);
-                    love = widget.post!.loves!;
-                    //loves.add(idUser);
-                  });
-                  printVm("share post");
-                  printVm("like poste monetisation 1 .....");
-                  postProvider.interactWithPostAndIncrementSolde(widget.post!.id!, authProvider.loginUserData.id!, "like",widget.post!.user_id!);
-
-                  CollectionReference userCollect =
-                  FirebaseFirestore.instance
-                      .collection('Users');
-                  // Get docs from collection reference
-                  QuerySnapshot querySnapshotUser =
-                  await userCollect
-                      .where("id",
-                      isEqualTo: widget.post!.user_id!)
-                      .get();
-                  // Afficher la liste
-                  List<UserData> listUsers = querySnapshotUser
-                      .docs
-                      .map((doc) => UserData.fromJson(
-                      doc.data() as Map<String, dynamic>))
-                      .toList();
-                  if (listUsers.isNotEmpty) {
-                    listUsers.first!.jaimes =
-                        listUsers.first!.jaimes! + 1;
-                    printVm("user trouver");
-                    if (widget.post!.user!.oneIgnalUserid != null &&
-                        widget.post!.user!.oneIgnalUserid!.length > 5) {
-
-
-                      NotificationData notif =
-                      NotificationData();
-                      notif.id = firestore
-                          .collection('Notifications')
-                          .doc()
-                          .id;
-                      notif.titre = "Nouveau j'aime ❤️";
-                      notif.media_url =
-                          authProvider.loginUserData.imageUrl;
-                      notif.type = NotificationType.POST.name;
-                      notif.description =
-                      "@${authProvider.loginUserData.pseudo!} a aimé votre look";
-                      notif.users_id_view = [];
-                      notif.user_id =
-                          authProvider.loginUserData.id;
-                      notif.receiver_id = widget.post!.user_id!;
-                      notif.post_id = widget.post!.id!;
-                      notif.post_data_type =
-                      PostDataType.IMAGE.name!;
-
-                      notif.updatedAt =
-                          DateTime.now().microsecondsSinceEpoch;
-                      notif.createdAt =
-                          DateTime.now().microsecondsSinceEpoch;
-                      notif.status = PostStatus.VALIDE.name;
-
-                      // users.add(pseudo.toJson());
-
-                      await firestore
-                          .collection('Notifications')
-                          .doc(notif.id)
-                          .set(notif.toJson());
-                      await authProvider.sendNotification(
-                          userIds: [widget.post!.user!.oneIgnalUserid!],
-                          smallImage:
-                          "${authProvider.loginUserData.imageUrl!}",
-                          send_user_id:
-                          "${authProvider.loginUserData.id!}",
-                          recever_user_id: "${widget.post!.user_id!}",
-                          message:
-                          "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look",
-                          type_notif:
-                          NotificationType.POST.name,
-                          post_id: "${widget.post!.id!}",
-                          post_type: PostDataType.IMAGE.name,
-                          chat_id: '');
-                    }
-                    // postProvider.updateVuePost(post, context);
-
-                    //userProvider.updateUser(listUsers.first);
-                    SnackBar snackBar = SnackBar(
-                      content: Text(
-                        '+2 points.  Voir le classement',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    );
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(snackBar);
-                    postProvider.updatePost(
-                        widget.post, listUsers.first, context);
-                    await authProvider.getAppData();
-                    authProvider.appDefaultData.nbr_loves =
-                        authProvider.appDefaultData.nbr_loves! +
-                            2;
-                    authProvider.updateAppData(
-                        authProvider.appDefaultData);
-                  } else {
-                    widget.post!.user!.jaimes = widget.post!.user!.jaimes! + 1;
-                    SnackBar snackBar = SnackBar(
-                      content: Text(
-                        '+2 points.  Voir le classement',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    );
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(snackBar);
-                    postProvider.updatePost(
-                        widget.post, widget.post!.user!, context);
-                    await authProvider.getAppData();
-                    authProvider.appDefaultData.nbr_loves =
-                        authProvider.appDefaultData.nbr_loves! +
-                            2;
-                    authProvider.updateAppData(
-                        authProvider.appDefaultData);
-                  }
-
-                  tapLove = true;
-                }
-                printVm("jaime");
-              }
-            },);
-            postProvider.getPostsImagesById(widget.post!.id!).then((value) {
-              if (value.isNotEmpty) {
-                final updatedPost = value.first;
-                if (authProvider.loginUserData.role ==
-                    UserRole.ADM.name){
-                  if (updatedPost.vues != null) {
-                    updatedPost.vues = (updatedPost.vues ?? 0) + genererNombreAleatoire();
-                  }
-                }
-                if (updatedPost.vues != null) {
-                  updatedPost.vues = (updatedPost.vues ?? 0) + 1;
-                }
-
-                if (updatedPost.user != null) {
-                  postProvider.updatePost(updatedPost, updatedPost.user!, context);
-                }
-              }
-            });
-
-          },
+            _handleLike();          },
         ),
         _buildActionButton(
           icon: FontAwesome.comment,
@@ -974,30 +926,22 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         Spacer(),
         _buildActionButton(
           icon: FontAwesome.gift,
-          count: widget.post.users_cadeau_id!.length ?? 0,
+          count: widget.post.users_cadeau_id?.length ?? 0,
           onPressed: () {},
         ),
         _buildActionButton(
           icon: Icons.share,
-          count: widget.post.partage! ?? 0,
+          count: widget.post.partage ?? 0,
           onPressed: () async {
             final AppLinkService _appLinkService = AppLinkService();
             _appLinkService.shareContent(
               type: AppLinkType.post,
               id: widget.post.id!,
               message: " ${widget.post.description}",
-              mediaUrl: widget.post.images!.isNotEmpty?"${widget.post.images!}":"",
+              mediaUrl: widget.post.images!.isNotEmpty ? widget.post.images!.first : "",
             );
-            // _appLinkService.shareLink(
-            //   AppLinkType.post,
-            //   widget.post.id!,
-            //   message: 'J\'ai trouvé cette publication géniale! 📸 : ${widget.post.description}',
-            // );
 
-            await FirebaseFirestore.instance
-                .collection('Posts')
-                .doc(widget.post.id!)
-                .update({
+            await FirebaseFirestore.instance.collection('Posts').doc(widget.post.id!).update({
               'partage': FieldValue.increment(1),
             });
           },
@@ -1011,7 +955,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-// Construction d'un bouton d'action
+  // Construction d'un bouton d'action
   Widget _buildActionButton({
     required IconData icon,
     required int count,
@@ -1048,47 +992,72 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-// Méthodes utilitaires
+  // Méthodes utilitaires
   ImageProvider? _getProfileImage() {
-    if (widget.post.canal != null) {
-      return widget.post.canal!.urlImage != null
-          ? NetworkImage(widget.post.canal!.urlImage!)
-          : null;
-    } else {
-      return widget.post.user?.imageUrl != null
-          ?
-      NetworkImage(
-          widget.post.user!.imageUrl!)
-          : null;
+    if (currentCanal != null) {
+      return currentCanal!.urlImage != null ? NetworkImage(currentCanal!.urlImage!) : null;
+    } else if (currentUser != null) {
+      return currentUser!.imageUrl != null ? NetworkImage(currentUser!.imageUrl!) : null;
     }
+    return null;
   }
 
   bool _isVerified() {
-    if (widget.post.canal != null) {
-      return widget.post.canal!.isVerify ?? false;
-    } else {
-      return widget.post.user?.isVerify ?? false;
+    if (currentCanal != null) {
+      return currentCanal!.isVerify ?? false;
+    } else if (currentUser != null) {
+      return currentUser!.isVerify ?? false;
     }
+    return false;
   }
 
   String _getDisplayName() {
-    if (widget.post.canal != null) {
-      return "#${widget.post.canal!.titre ?? 'canal'}";
-    } else {
-      return "@${widget.post.user?.pseudo ?? 'Afrolookeur'}";
+    if (currentCanal != null) {
+      return "#${currentCanal!.titre ?? 'canal'}";
+    } else if (currentUser != null) {
+      return "@${currentUser!.pseudo ?? 'Afrolookeur'}";
     }
+    return "@Utilisateur";
   }
 
   String _getFollowerCount() {
-    if (widget.post.canal != null) {
-      return "${widget.post.canal!.usersSuiviId?.length ?? 0} abonnés";
-    } else {
-      return "${widget.post.user!.userAbonnesIds?.length ?? 0} abonnés";
+    if (currentCanal != null) {
+      return "${currentCanal!.usersSuiviId?.length ?? 0} abonnés";
+    } else if (currentUser != null) {
+      return "${currentUser!.userAbonnesIds?.length ?? 0} abonnés";
     }
+    return "0 abonnés";
   }
 
-// [Conserver les autres méthodes existantes]
+  // Ajouter les constantes manquantes
+  final Color _afroLightBg = Color(0xFFF8F9FA);
+  final Color _afroDarkGreen = Color(0xFF27AE60);
 }
+
+// Vous devrez aussi ajouter ces méthodes utilitaires si elles n'existent pas déjà dans votre code
+bool isUserAbonne(List<String> abonnesIds, String userId) {
+  return abonnesIds.contains(userId);
+}
+
+bool isIn(List<String> list, String value) {
+  return list.contains(value);
+}
+
+String formatNumber(int number) {
+  if (number >= 1000000) {
+    return '${(number / 1000000).toStringAsFixed(1)}M';
+  } else if (number >= 1000) {
+    return '${(number / 1000).toStringAsFixed(1)}K';
+  }
+  return number.toString();
+}
+
+String truncateWords(String text, int maxWords) {
+  final words = text.split(' ');
+  if (words.length <= maxWords) return text;
+  return words.take(maxWords).join(' ') + '...';
+}
+
 
 class _ThoughtBubbleClipper extends CustomClipper<Path> {
   @override

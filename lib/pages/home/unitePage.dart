@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentSerie.dart';
@@ -15,6 +16,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
@@ -44,7 +46,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   bool _hasMoreContent = true;
 
   // Pour stocker le nombre total de documents
-  int _totalPostsCount = 0;
+  int _totalPostsCount = 1000;
   int _totalContentCount = 0;
 
   DocumentSnapshot? _lastPostDocument;
@@ -54,6 +56,11 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   final Random _random = Random();
   Color _color = Colors.blue;
 
+  // Map pour suivre quels posts ont été vus pendant cette session
+  final Map<String, bool> _postsViewedInSession = {};
+  // Map pour suivre les timers de visibilité
+  final Map<String, Timer> _visibilityTimers = {};
+
   @override
   void initState() {
     super.initState();
@@ -62,8 +69,16 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     _contentProvider = Provider.of<ContentProvider>(context, listen: false);
 
     _loadInitialData();
-
     _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    // Annuler tous les timers en cours
+    _visibilityTimers.forEach((key, timer) => timer.cancel());
+    _visibilityTimers.clear();
+    super.dispose();
   }
 
   void _scrollListener() {
@@ -92,6 +107,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _postsViewedInSession.clear();
       });
 
       _lastPostDocument = null;
@@ -99,7 +115,9 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
       // Charger les comptes totaux et les données initiales
       await Future.wait([
-        _getTotalPostsCount(),
+        // migrateSeenByUsersField(),
+        // _getTotalPostsCount(),
+        // updateAllPostIdsInAppData(),
         _getTotalContentCount(),
         _loadPostsWithStream(isInitialLoad: true),
         _loadContentWithStream(isInitialLoad: true),
@@ -120,11 +138,9 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
   // Obtenir le nombre total de posts
   Future<void> _getTotalPostsCount() async {
-
     try {
       final query = FirebaseFirestore.instance.collection('Posts')
           .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          // .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
           .where("type", isEqualTo: PostType.POST.name);
 
       final snapshot = await query.count().get();
@@ -153,69 +169,14 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
   Future<void> _loadPostsWithStream({bool isInitialLoad = false}) async {
     try {
-      Query query = FirebaseFirestore.instance.collection('Posts')
-          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          // .where("typeTabbar", isEqualTo: TabBarType.LOOKS.name)
-          .where("type", isEqualTo: PostType.POST.name)
-          .orderBy("status") // obligatoire si tu utilises isNotEqualTo
-          .orderBy("created_at", descending: true);
-
-      if (_lastPostDocument != null && !isInitialLoad) {
-        query = query.startAfterDocument(_lastPostDocument!);
-      }
-
-      query = query.limit(isInitialLoad ? _initialLimit : _loadMoreLimit);
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastPostDocument = snapshot.docs.last;
-      }
-
-      final newPosts = <Post>[];
-
-      for (var doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-
-        final userFuture = post.user_id != null && post.user_id!.isNotEmpty
-            ? FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: post.user_id)
-            .get()
-            .then((snapshot) {
-          if (snapshot.docs.isNotEmpty) {
-            post.user = UserData.fromJson(snapshot.docs.first.data());
-          }
-          return post;
-        })
-            : Future.value(post);
-
-        final canalFuture = post.canal_id != null && post.canal_id!.isNotEmpty
-            ? FirebaseFirestore.instance
-            .collection('Canaux')
-            .where("id", isEqualTo: post.canal_id)
-            .get()
-            .then((snapshot) {
-          if (snapshot.docs.isNotEmpty) {
-            post.canal = Canal.fromJson(snapshot.docs.first.data());
-          }
-          return post;
-        })
-            : Future.value(post);
-
-        final completedPost = await Future.wait([userFuture, canalFuture]).then((_) => post);
-        newPosts.add(completedPost);
-      }
+      final currentUserId = _authProvider.loginUserData.id;
 
       if (isInitialLoad) {
-        _posts = newPosts;
+        await _loadUnseenPostsFirst(currentUserId);
       } else {
-        final existingIds = _posts.map((p) => p.id).toSet();
-        final uniqueNewPosts = newPosts.where((post) => !existingIds.contains(post.id)).toList();
-        _posts.addAll(uniqueNewPosts);
+        await _loadMorePostsByDate(currentUserId);
       }
 
-      // Vérifier s'il reste des posts à charger basé sur le compte total
       _hasMorePosts = _posts.length < _totalPostsCount;
       _createMixedList();
 
@@ -226,6 +187,329 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       });
     }
   }
+
+  Future<void> _loadUnseenPostsFirst(String? currentUserId) async {
+    if (currentUserId == null) {
+      await _loadMorePostsByDate(currentUserId);
+      return;
+    }
+
+    try {
+      // 🔹 Étape 1: Récupérer les données nécessaires
+      final appData = await _getAppData();
+      final userData = await _getUserData(currentUserId);
+
+      final allPostIds = appData.allPostIds ?? [];
+      final viewedPostIds = userData.viewedPostIds ?? [];
+
+      print('🔹 Total posts dans AppData: ${allPostIds.length}');
+      print('🔹 Posts vus par l\'utilisateur: ${viewedPostIds.length}');
+
+      // 🔹 Étape 2: Identifier les posts non vus
+      final unseenPostIds = allPostIds.where((postId) => !viewedPostIds.contains(postId)).toList();
+      print('🔹 Posts non vus identifiés: ${unseenPostIds.length}');
+
+      // 🔹 Étape 3: Charger les posts non vus (équivalent à seen_by_users_map.$currentUserId = null)
+      final unseenPosts = await _loadPostsByIds(unseenPostIds, limit: _initialLimit, isSeen: false);
+      print('🔹 Posts non vus chargés: ${unseenPosts.length}');
+
+      // 🔹 Étape 4: Compléter avec des posts vus si nécessaire (équivalent à seen_by_users_map.$currentUserId = true)
+      if (unseenPosts.length < _initialLimit) {
+        final remainingLimit = _initialLimit - unseenPosts.length;
+        print('🔹 Complétion avec $remainingLimit posts vus');
+
+        // Les posts vus sont ceux qui sont dans viewedPostIds
+        final seenPostsToLoad = viewedPostIds.take(remainingLimit).toList();
+        final seenPosts = await _loadPostsByIds(seenPostsToLoad, limit: remainingLimit, isSeen: true);
+
+        _posts = [...unseenPosts, ...seenPosts];
+      } else {
+        _posts = unseenPosts;
+      }
+
+      // 🔹 Étape 5: Mettre à jour le dernier document pour la pagination
+      if (_posts.isNotEmpty) {
+        // Pour la pagination, nous utilisons le dernier post chargé
+        // Nous devons récupérer son document reference depuis Firestore
+        final lastPostId = _posts.last.id;
+        if (lastPostId != null) {
+          final lastDoc = await FirebaseFirestore.instance.collection('Posts').doc(lastPostId).get();
+          _lastPostDocument = lastDoc;
+        }
+      }
+
+      print('✅ Chargement initial terminé. Total posts: ${_posts.length}');
+      print('📊 Stats: ${_posts.where((p) => !p.hasBeenSeenByCurrentUser!).length} non vus');
+
+    } catch (e, stack) {
+      print('❌ Erreur lors du chargement des posts non vus: $e');
+      print(stack);
+    }
+  }
+
+  Future<void> _loadMorePostsByDate(String? currentUserId) async {
+    try {
+      if (currentUserId == null) {
+        // Pour les utilisateurs non connectés, charger normalement par date
+        await _loadMorePostsChronologically();
+        return;
+      }
+
+      // 🔹 Récupérer les données nécessaires
+      final appData = await _getAppData();
+      final userData = await _getUserData(currentUserId);
+
+      final allPostIds = appData.allPostIds ?? [];
+      final viewedPostIds = userData.viewedPostIds ?? [];
+
+      // 🔹 Identifier les posts non vus non encore chargés
+      final alreadyLoadedPostIds = _posts.map((p) => p.id).toSet();
+      final unseenPostIds = allPostIds.where((postId) =>
+      !viewedPostIds.contains(postId) && !alreadyLoadedPostIds.contains(postId)).toList();
+
+      print('🔹 Posts non vus restants: ${unseenPostIds.length}');
+
+      // 🔹 Charger les posts non vus suivants
+      final unseenPosts = await _loadPostsByIds(unseenPostIds, limit: _loadMoreLimit, isSeen: false);
+      print('🔹 Posts non vus supplémentaires chargés: ${unseenPosts.length}');
+
+      // 🔹 Compléter avec des posts vus si nécessaire
+      if (unseenPosts.length < _loadMoreLimit) {
+        final remainingLimit = _loadMoreLimit - unseenPosts.length;
+
+        // Charger des posts vus non encore chargés
+        final seenPostIdsToLoad = viewedPostIds
+            .where((postId) => !alreadyLoadedPostIds.contains(postId))
+            .take(remainingLimit)
+            .toList();
+
+        final seenPosts = await _loadPostsByIds(seenPostIdsToLoad, limit: remainingLimit, isSeen: true);
+
+        _posts.addAll([...unseenPosts, ...seenPosts]);
+      } else {
+        _posts.addAll(unseenPosts);
+      }
+
+      // 🔹 Mettre à jour le dernier document pour la pagination
+      if (_posts.isNotEmpty) {
+        final lastPostId = _posts.last.id;
+        if (lastPostId != null) {
+          final lastDoc = await FirebaseFirestore.instance.collection('Posts').doc(lastPostId).get();
+          _lastPostDocument = lastDoc;
+        }
+      }
+
+      print('✅ Chargement supplémentaire terminé. Nouveaux posts: ${unseenPosts.length}');
+
+    } catch (e, stack) {
+      print('❌ Erreur chargement supplémentaire des posts: $e');
+      print(stack);
+    }
+  }
+
+// 🔹 Méthode utilitaire pour charger des posts par leurs IDs
+  Future<List<Post>> _loadPostsByIds(List<String> postIds, {required int limit, required bool isSeen}) async {
+    if (postIds.isEmpty) return [];
+
+    final posts = <Post>[];
+    final idsToLoad = postIds.take(limit).toList();
+
+    print('🔹 Chargement de ${idsToLoad.length} posts par ID (isSeen: $isSeen)');
+
+    // Charger par batches de 10 (limite Firebase)
+    for (var i = 0; i < idsToLoad.length; i += 10) {
+      final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
+      if (batchIds.isEmpty) continue;
+
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('Posts')
+            .where(FieldPath.documentId, whereIn: batchIds)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          try {
+            final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+            post.hasBeenSeenByCurrentUser = isSeen;
+            posts.add(post);
+          } catch (e) {
+            print('⚠️ Erreur parsing post ${doc.id}: $e');
+          }
+        }
+      } catch (e) {
+        print('❌ Erreur batch chargement posts: $e');
+      }
+    }
+
+    return posts;
+  }
+
+// 🔹 Méthode de fallback pour le chargement chronologique (utilisateurs non connectés)
+  Future<void> _loadMorePostsChronologically() async {
+    try {
+      Query query = FirebaseFirestore.instance.collection('Posts')
+          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+          .where("type", isEqualTo: PostType.POST.name)
+          .orderBy("created_at", descending: true);
+
+      if (_lastPostDocument != null) {
+        query = query.startAfterDocument(_lastPostDocument!);
+      }
+
+      query = query.limit(_loadMoreLimit);
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isNotEmpty) {
+        _lastPostDocument = snapshot.docs.last;
+      }
+
+      final newPosts = <Post>[];
+
+      for (var doc in snapshot.docs) {
+        try {
+          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+          post.hasBeenSeenByCurrentUser = false; // Non connecté = non vu par défaut
+          newPosts.add(post);
+        } catch (e) {
+          print('⚠️ Erreur parsing post (chargement supplémentaire): ${doc.id} -> $e');
+        }
+      }
+
+      final existingIds = _posts.map((p) => p.id).toSet();
+      final uniqueNewPosts = newPosts.where((post) =>
+      post.id != null && !existingIds.contains(post.id)).toList();
+
+      _posts.addAll(uniqueNewPosts);
+
+      print('✅ Chargement chronologique terminé: ${uniqueNewPosts.length} nouveaux posts');
+
+    } catch (e, stack) {
+      print('❌ Erreur chargement chronologique: $e');
+      print(stack);
+    }
+  }
+
+// 🔹 Méthodes pour récupérer AppData et UserData
+  Future<AppDefaultData> _getAppData() async {
+    try {
+      final appDataRef = FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      final appDataSnapshot = await appDataRef.get();
+
+      if (appDataSnapshot.exists) {
+        return AppDefaultData.fromJson(appDataSnapshot.data() ?? {});
+      }
+
+      return AppDefaultData(allPostIds: []);
+    } catch (e) {
+      print('❌ Erreur récupération AppData: $e');
+      return AppDefaultData(allPostIds: []);
+    }
+  }
+
+  Future<UserData> _getUserData(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+      if (userDoc.exists) {
+        return UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+      }
+
+      return UserData(viewedPostIds: []);
+    } catch (e) {
+      print('❌ Erreur récupération UserData: $e');
+      return UserData(viewedPostIds: []);
+    }
+  }
+  Future<void> _recordPostView(Post post) async {
+    final currentUserId = _authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    try {
+      // ✅ Vérifier si déjà vu localement
+      if (post.hasBeenSeenByCurrentUser == true ||
+          (post.users_vue_id?.contains(currentUserId) ?? false) ||
+          (_authProvider.loginUserData.viewedPostIds?.contains(post.id) ?? false)) {
+        print("⚠️ Vue déjà comptée pour le post ${post.id}");
+        return;
+      }
+
+      // 🔹 Mettre à jour UserData.viewedPostIds
+      final userRef = FirebaseFirestore.instance.collection('Users').doc(currentUserId);
+      await userRef.update({
+        'viewedPostIds': FieldValue.arrayUnion([post.id]),
+      });
+
+      // 🔹 Mettre à jour le compteur de vues du post (atomic increment)
+      final postRef = FirebaseFirestore.instance.collection('Posts').doc(post.id);
+      await postRef.update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // 🔹 Mettre à jour localement
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+
+        if (post.users_vue_id == null) {
+          post.users_vue_id = [];
+        }
+        post.users_vue_id!.add(currentUserId);
+
+        if (!_authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
+          _authProvider.loginUserData.viewedPostIds!.add(post.id!);
+        }
+      });
+
+      print('✅ Vue enregistrée pour le post ${post.id}');
+    } catch (e) {
+      print('❌ Erreur enregistrement vue: $e');
+    }
+  }
+
+// 🔹 Méthode pour enregistrer une vue (à utiliser avec VisibilityDetector)
+  Future<void> _recordPostView2(Post post) async {
+    final currentUserId = _authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    try {
+      // 🔹 Mettre à jour UserData.viewedPostIds
+      final userRef = FirebaseFirestore.instance.collection('Users').doc(currentUserId);
+      await userRef.update({
+        'viewedPostIds': FieldValue.arrayUnion([post.id]),
+      });
+
+      // 🔹 Mettre à jour le compteur de vues du post
+      await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(post.id)
+          .update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // 🔹 Mettre à jour localement
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id!.add(currentUserId);
+
+
+        // Mettre à jour l'utilisateur local
+        if (!_authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
+          _authProvider.loginUserData.viewedPostIds!.add(post.id!);
+        }
+      });
+
+      print('✅ Vue enregistrée pour le post ${post.id}');
+
+    } catch (e) {
+      print('❌ Erreur enregistrement vue: $e');
+    }
+  }
+
+
+
 
   Future<void> _loadContentWithStream({bool isInitialLoad = false}) async {
     try {
@@ -363,55 +647,138 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       _hasMoreContent = true;
       _lastPostDocument = null;
       _lastContentDocument = null;
-      _totalPostsCount = 0;
+      _totalPostsCount = 1000;
       _totalContentCount = 0;
+      _postsViewedInSession.clear();
+      _visibilityTimers.forEach((key, timer) => timer.cancel());
+      _visibilityTimers.clear();
     });
 
     await _loadInitialData();
   }
 
-  void _navigateToDetails(dynamic item, _MixedItemType type) {
-    _authProvider.checkAppVersionAndProceed(context, () {
-      if (type == _MixedItemType.post) {
-        print('Navigate to post details: ${item.id}');
-      } else {
-        if (item.isSeries) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: item)),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ContentDetailScreen(content: item)),
-          );
+  // Méthode pour enregistrer qu'un post a été vu
+
+  // Gestionnaire de changement de visibilité
+  void _handleVisibilityChanged(Post post, VisibilityInfo info) {
+    final postId = post.id!;
+
+    // Annuler le timer existant pour ce post
+    _visibilityTimers[postId]?.cancel();
+
+    if (info.visibleFraction > 0.5) {
+      // Le post est visible à plus de 50%, démarrer un timer de 500ms
+      _visibilityTimers[postId] = Timer(Duration(milliseconds: 500), () {
+        if (mounted && info.visibleFraction > 0.5) {
+          _recordPostView(post);
         }
-      }
-    });
+      });
+    } else {
+      // Le post n'est plus suffisamment visible
+      _visibilityTimers.remove(postId);
+    }
   }
 
-  Widget _buildPostItem(Post post, double width) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: HomePostUsersWidget(
-        post: post,
-        color: _color,
-        height: MediaQuery.of(context).size.height * 0.6,
-        width: width,
-        isDegrade: true,
+  // Widget qui encapsule chaque post avec le détecteur de visibilité
+  Widget _buildPostWithVisibilityDetection(Post post, double width) {
+    final currentUserId = _authProvider.loginUserData.id;
+    // final hasUserSeenPost = post.seenByUsersMap?[currentUserId] ?? false;
+    final hasUserSeenPost = post.hasBeenSeenByCurrentUser;
+
+    return VisibilityDetector(
+      key: Key('post-${post.id}'),
+      onVisibilityChanged: (VisibilityInfo info) {
+        _handleVisibilityChanged(post, info);
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+          border: !hasUserSeenPost!
+              ? Border.all(color: Colors.green, width: 2)
+              : null,
+        ),
+        child: Stack(
+          children: [
+            HomePostUsersWidget(
+              post: post,
+              color: _color,
+              height: MediaQuery.of(context).size.height * 0.6,
+              width: width,
+              isDegrade: true,
+            ),
+
+            // Badge "Nouveau" pour les posts non vus
+            if (!hasUserSeenPost)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fiber_new, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Nouveau',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _navigateToDetails(dynamic item, _MixedItemType type) {
+    if (type == _MixedItemType.post) {
+      // S'assurer que la vue est enregistrée avant la navigation
+      if (item is Post) {
+        _recordPostView(item);
+      }
+      print('Navigate to post details: ${item.id}');
+      // Ici vous pouvez naviguer vers les détails du post
+      // Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailsPage(post: item)));
+    } else {
+      if (item.isSeries) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: item)),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ContentDetailScreen(content: item)),
+        );
+      }
+    }
   }
 
   Widget _buildContentGrid(List<ContentPaie> contents, double width) {
@@ -705,7 +1072,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
                   if (item.type == _MixedItemType.post) {
                     return GestureDetector(
                       onTap: () => _navigateToDetails(item.data, _MixedItemType.post),
-                      child: _buildPostItem(item.data, width),
+                      child: _buildPostWithVisibilityDetection(item.data, width),
                     );
                   } else if (item.type == _MixedItemType.contentGrid) {
                     return _buildContentGrid(
@@ -746,12 +1113,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 }
 

@@ -803,7 +803,7 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
-  Future<void> _sendComment() async {
+  Future<void> _sendComment2() async {
     if (_textController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
@@ -871,6 +871,101 @@ class _PostCommentsState extends State<PostComments> {
         await _loadComments();
       }
 
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: _afroRed,
+        ),
+      );
+    }
+  }
+  Future<void> _sendComment() async {
+    if (_textController.text.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+    final textComment = _textController.text.trim();
+    _textController.clear();
+    _focusNode.unfocus();
+
+    try {
+      bool success = false;
+
+      if (replying) {
+        // Envoyer une réponse
+        final response = ResponsePostComment(
+          user_id: authProvider.loginUserData.id,
+          user_logo_url: authProvider.loginUserData.imageUrl,
+          user_pseudo: authProvider.loginUserData.pseudo,
+          post_comment_id: commentSelectedToReply.id,
+          user_reply_pseudo: replyingTo,
+          message: textComment,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        commentSelectedToReply.responseComments ??= [];
+        commentSelectedToReply.responseComments!.add(response);
+
+        success = await postProvider.updateComment(commentSelectedToReply);
+
+        if (success) {
+          await FirebaseFirestore.instance
+              .collection("Posts")
+              .doc(widget.post.id)
+              .update({
+            "comments": FieldValue.increment(1),
+            'popularity': FieldValue.increment(3), // pondération pour un commentaire
+
+          });
+
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+          await _sendNotification(replyUser_id, "répondu à votre commentaire", textComment);
+        }
+      } else {
+        // Envoyer un nouveau commentaire
+        final comment = PostComment(
+          user_id: authProvider.loginUserData.id,
+          user: authProvider.loginUserData,
+          post_id: widget.post.id,
+          users_like_id: [],
+          responseComments: [],
+          message: textComment,
+          loves: 0,
+          likes: 0,
+          comments: 0,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        success = await postProvider.newComment(comment);
+
+        if (success) {
+          await FirebaseFirestore.instance
+              .collection("Posts")
+              .doc(widget.post.id)
+              .update({
+            "comments": FieldValue.increment(1),
+            'popularity': FieldValue.increment(3), // pondération pour un commentaire
+
+          });
+
+          widget.post.comments = (widget.post.comments ?? 0) + 1;
+          await _sendNotification(widget.post.user!.id!, "commenté votre look", textComment);
+        }
+      }
+
+      // Réinitialiser l'état de réponse
+      setState(() {
+        replying = false;
+        replyingTo = "";
+      });
+
+      // Recharger les commentaires seulement après succès
+      if (success) {
+        await _loadComments();
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(

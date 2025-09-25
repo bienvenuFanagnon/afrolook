@@ -381,10 +381,12 @@ class AppDefaultData {
   int? default_point_new_like = 1;
   int? default_point_new_love = 1;
   // int? default_point_new_comment=2;
+  List<String>? allPostIds = []; // Nouveau champ pour stocker les IDs de tous les posts
 
   AppDefaultData(
       {this.id,
       this.users_id,
+      this.allPostIds,
       this.nbr_abonnes = 0,
       this.ia_instruction = "",
       this.geminiapiKey = "",
@@ -446,12 +448,16 @@ class AppDefaultData {
         users_id!.add(v);
       });
     }
+    allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((v) => v.toString()).toList() ?? [];
+
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['id'] = this.id;
     data['nbr_comments'] = this.nbr_comments;
+    data['allPostIds'] = this.allPostIds;
+
     data['nbr_likes'] = this.nbr_likes;
     data['nbr_comments'] = this.nbr_comments;
     data['nbr_abonnes'] = this.nbr_abonnes;
@@ -553,11 +559,13 @@ class UserData {
   // List<Map<String, dynamic>>? stories = [];
   List<WhatsappStory>? stories = [];
   List<String> viewedVideos = []; // Liste des vidéos déjà vues
+  List<String>? viewedPostIds = []; // Nouveau champ pour stocker les posts vus
 
 
   UserData(
       {this.reference,
       this.pseudo,
+      this.viewedPostIds,
       this.nom,
       this.prenom,
       this.email,
@@ -698,6 +706,9 @@ class UserData {
         : {};
 
     viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
+    viewedPostIds = (json['viewedPostIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
   }
 
 
@@ -1610,6 +1621,9 @@ class Post {
   int? partage = 0;
   int? vues = 0;
   int? likes = 0;
+  int? seenByUsersCount = 0;
+  int? popularity = 0;
+
   UserData? user;
   EntrepriseData? entrepriseData;
   Canal? canal;
@@ -1622,8 +1636,12 @@ class Post {
   List<String>? users_partage_id = [];
   List<String>? users_cadeau_id = [];
   List<String>? users_republier_id = [];
-
   List<String>? users_vue_id = [];
+
+  /// 🔥 Nouveau champ : Map avec userId => true/false
+  Map<String, bool>? seenByUsersMap = {};
+
+  bool? hasBeenSeenByCurrentUser;
 
   Post({
     this.id,
@@ -1634,6 +1652,7 @@ class Post {
     this.status,
     this.url_media,
     this.nombreCollaborateur = 0,
+    this.popularity = 0,
     this.publiCashTotal = 0,
     this.nombreImage = 0,
     this.nombrePersonneParJour = 0,
@@ -1643,7 +1662,7 @@ class Post {
     this.users_like_id,
     this.users_love_id,
     this.loves,
-    this.partage=0,
+    this.partage = 0,
     this.users_vue_id,
     this.challenge_id,
     this.vues,
@@ -1662,6 +1681,9 @@ class Post {
     this.createdAt,
     this.updatedAt,
     this.user,
+    this.seenByUsersCount = 0,
+    this.seenByUsersMap,
+    this.hasBeenSeenByCurrentUser = false,
   });
 
   int compareTo(Post other) {
@@ -1680,99 +1702,85 @@ class Post {
     updatedAt = json['updated_at'];
     dataType = json['dataType'];
     url_media = json['url_media'];
-    contact_whatsapp =
-        json['contact_whatsapp'] == null ? "" : json['contact_whatsapp'];
-    typeTabbar =
-        json['typeTabbar'] == null ? "" : json['typeTabbar'];
-    isPostLink =
-        json['isPostLink'] == null ? "NON" : json['isPostLink'];
-
-    colorSecondaire =
-        json['colorSecondaire'] == null ? null : json['colorSecondaire'];
-
-    colorDomine =
-        json['colorDomine'] == null ? null : json['colorDomine'];
-    challenge_id =
-        json['challenge_id'] == null ? "" : json['challenge_id'];
-    categorie =
-        json['categorie'] == null ? "LOOK" : json['categorie'];
+    contact_whatsapp = json['contact_whatsapp'] ?? "";
+    typeTabbar = json['typeTabbar'] ?? "";
+    isPostLink = json['isPostLink'] ?? "NON";
+    colorSecondaire = json['colorSecondaire'];
+    colorDomine = json['colorDomine'];
+    challenge_id = json['challenge_id'] ?? "";
+    categorie = json['categorie'] ?? "LOOK";
     loves = json['loves'];
-    images = json['images'] == null ? [] : json['images'].cast<String>();
-    canal_id = json['canal_id'] == null ? "" : json['canal_id'];
+    images = json['images'] == null ? [] : List<String>.from(json['images']);
+    canal_id = json['canal_id'] ?? "";
     likes = json['likes'];
-    vues = json['vues'] == null ? 0 : json['vues'];
-    partage = json['partage'] == null ? 0 : json['partage'];
-    urlLink = json['urlLink'] == null ? "" : json['urlLink'];
-    users_like_id = json['users_like_id'] == null
-        ? []
-        : json['users_like_id'].cast<String>();
-    users_cadeau_id = json['users_cadeau_id'] == null
-        ? []
-        : json['users_cadeau_id'].cast<String>();
-    users_republier_id = json['users_republier_id'] == null
-        ? []
-        : json['users_republier_id'].cast<String>();
-    // users_comments_id = json['users_comments_id'] == null
-    //     ? []
-    //     : json['users_like_id'].cast<String>();
-    users_love_id = json['users_love_id'] == null
-        ? []
-        : json['users_love_id'].cast<String>();
-    // users_partage_id = json['users_partage_id'] == null
-    //     ? []
-    //     : json['users_partage_id'].cast<String>();
-    users_vue_id =
-        json['users_vue_id'] == null ? [] : json['users_vue_id'].cast<String>();
+    vues = json['vues'] ?? 0;
+    popularity = json['popularity'] ?? 0;
+    partage = json['partage'] ?? 0;
+    urlLink = json['urlLink'] ?? "";
+    users_like_id = json['users_like_id'] == null ? [] : List<String>.from(json['users_like_id']);
+    users_cadeau_id = json['users_cadeau_id'] == null ? [] : List<String>.from(json['users_cadeau_id']);
+    users_republier_id = json['users_republier_id'] == null ? [] : List<String>.from(json['users_republier_id']);
+    users_love_id = json['users_love_id'] == null ? [] : List<String>.from(json['users_love_id']);
+    users_vue_id = json['users_vue_id'] == null ? [] : List<String>.from(json['users_vue_id']);
     nombreCollaborateur = json['nombreCollaborateur'];
-    // publiCashTotal = json['publiCashTotal'];
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];
+
+    // 🔥 Nouveau champ : Map seenByUsersMap
+    seenByUsersCount = json['seen_by_users_count'] ?? 0;
+    if (json['seen_by_users_map'] != null) {
+      seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
+    } else {
+      seenByUsersMap = {};
+    }
+
+    hasBeenSeenByCurrentUser = false;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    // data['comments'] = this.comments;
-    data['user_id'] = this.user_id;
-    data['entreprise_id'] = this.entreprise_id;
-    data['status'] = this.status;
-    data['type'] = this.type;
-    data['description'] = this.description;
-    data['created_at'] = this.createdAt;
-    data['updated_at'] = this.updatedAt;
-    data['url_media'] = this.url_media;
-    data['colorDomine'] = this.colorDomine;
-    data['colorSecondaire'] = this.colorSecondaire;
+    final Map<String, dynamic> data = {};
+    data['id'] = id;
+    data['user_id'] = user_id;
+    data['entreprise_id'] = entreprise_id;
+    data['status'] = status;
+    data['popularity'] = popularity;
+    data['type'] = type;
+    data['description'] = description;
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
+    data['url_media'] = url_media;
+    data['colorDomine'] = colorDomine;
+    data['colorSecondaire'] = colorSecondaire;
+    data['loves'] = loves;
+    data['contact_whatsapp'] = contact_whatsapp;
+    data['challenge_id'] = challenge_id;
+    data['dataType'] = dataType;
+    data['categorie'] = categorie ?? 'LOOK';
+    data['urlLink'] = urlLink;
+    data['images'] = images;
+    data['isPostLink'] = isPostLink;
+    data['users_like_id'] = users_like_id;
+    data['users_love_id'] = users_love_id;
+    data['users_republier_id'] = users_republier_id;
+    data['likes'] = likes;
+    data['partage'] = partage;
+    data['users_vue_id'] = users_vue_id;
+    data['vues'] = vues;
+    data['typeTabbar'] = typeTabbar;
+    data['canal_id'] = canal_id;
+    data['nombreCollaborateur'] = nombreCollaborateur;
+    data['publiCashTotal'] = publiCashTotal;
+    data['nombreImage'] = nombreImage;
+    data['nombrePersonneParJour'] = nombrePersonneParJour;
+    data['comments'] = comments;
 
-    data['loves'] = this.loves;
-    data['contact_whatsapp'] = this.contact_whatsapp;
-    data['challenge_id'] = this.challenge_id;
-    data['dataType'] = this.dataType;
-    data['categorie'] = this.categorie==null?'LOOK':"CANAL";
-    data['urlLink'] = this.urlLink;
-    data['images'] = this.images;
-    data['isPostLink'] = this.isPostLink;
-    data['users_like_id'] = this.users_like_id;
-    data['users_love_id'] = this.users_love_id;
-    data['users_republier_id'] = this.users_republier_id;
-    // data['users_cadeau_id'] = this.users_cadeau_id;
-    // data['users_comments_id'] = this.users_comments_id;
-    // data['users_partage_id'] = this.users_partage_id;
-    data['likes'] = this.likes;
-    data['partage'] = this.partage;
-    data['users_vue_id'] = this.users_vue_id;
-    data['vues'] = this.vues;
-    data['typeTabbar'] = this.typeTabbar;
-    data['canal_id'] = this.canal_id;
-    data['nombreCollaborateur'] = this.nombreCollaborateur;
-    data['publiCashTotal'] = this.publiCashTotal;
-    data['nombreImage'] = this.nombreImage;
-    data['nombrePersonneParJour'] = this.nombrePersonneParJour;
+    // 🔥 Nouveau champ : Map seenByUsersMap
+    data['seen_by_users_count'] = seenByUsersCount;
+    data['seen_by_users_map'] = seenByUsersMap ?? {};
 
     return data;
   }
 }
-
 class PostImage {
   String? id;
   String? post_id;

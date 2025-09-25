@@ -913,9 +913,10 @@ class _UserPubImageState extends State<UserPubImage> {
                                 setState(() {
                                   onTap=false;
                                 });
-                                authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
-                                await userProvider.updateUser(authProvider.loginUserData!);
-                                postProvider.listConstposts.add(post);
+                                // authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
+                                // await userProvider.updateUser(authProvider.loginUserData!);
+                                // postProvider.listConstposts.add(post);
+                                postProvider.addPostIdToAppDefaultData(post.id!);
 
 
 
@@ -1140,7 +1141,8 @@ bool onTap=false;
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
+  late PostProvider postProvider =
+  Provider.of<PostProvider>(context, listen: false);
   void _checkVideoDuration( Duration videoDuration) {
     Duration videoDuration = _controller!.value.duration;
 
@@ -1374,8 +1376,9 @@ bool onTap=false;
                               setState(() {
                                 onTap=false;
                               });
-                              authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
-                             await userProvider.updateUser(authProvider.loginUserData!);
+                             //  authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
+                             // await userProvider.updateUser(authProvider.loginUserData!);
+                              postProvider.addPostIdToAppDefaultData(post.id!);
 
                               NotificationData notif=NotificationData();
                               notif.id=firestore

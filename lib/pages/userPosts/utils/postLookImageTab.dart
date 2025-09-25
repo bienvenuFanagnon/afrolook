@@ -359,12 +359,12 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         //   post.images!.add(fileURL);
 
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
-          await FirebaseFirestore.instance.collection('PostsMonetiser').doc(postMId).set(postMonetiser.toJson());
+          // await FirebaseFirestore.instance.collection('PostsMonetiser').doc(postMId).set(postMonetiser.toJson());
 
-          authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
-          await userProvider.updateUser(authProvider.loginUserData!);
+          // authProvider.loginUserData.mesPubs = authProvider.loginUserData.mesPubs! + 1;
+          // await userProvider.updateUser(authProvider.loginUserData!);
           // postProvider.listConstposts.add(post);
-
+        postProvider.addPostIdToAppDefaultData(postId);
 
           if(isChallenge){
             String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;

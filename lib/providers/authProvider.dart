@@ -40,7 +40,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 84;
+  late int app_version_code = 85;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -599,71 +599,29 @@ class UserAuthProvider extends ChangeNotifier {
     user.stories ??= [];
     user.stories!.add(story);
   }
-  Future<bool> deleteFileFromUrl(String fileUrl) async {
-    try {
-      // Obtenez une instance de FirebaseStorage
-      final FirebaseStorage storage = FirebaseStorage.instance;
-
-      // Vérifiez et extrayez le chemin du fichier de l'URL
-      final Uri uri = Uri.parse(fileUrl);
-      final String filePath = Uri.decodeComponent(uri.pathSegments.last); // Extraire le nom du fichier
-
-      // Référence au fichier
-      final Reference ref = storage.ref().child(filePath);
-
-      // Supprimez le fichier
-      await ref.delete();
-      print('Fichier supprimé avec succès.');
-
-      return true;
-    } catch (e) {
-      print('Erreur lors de la suppression du fichier : $e');
-      return false;
-    }
-  }
 
 
-  Future<bool> deleteFileFromUrl2(String fileUrl) async {
-    try {
-      // Obtenez une instance de FirebaseStorage
-      final FirebaseStorage storage = FirebaseStorage.instance;
-
-      // Extrayez le chemin du fichier à partir de l'URL
-      final Uri uri = Uri.parse(fileUrl);
-      final String filePath = uri.pathSegments.skip(1).join('/'); // Ignore 'v0/b/<bucket>'
-
-      // Référence au fichier
-      final Reference ref = storage.ref(filePath);
-
-      // Supprimez le fichier
-      await ref.delete();
-      print('Fichier supprimé avec succès.');
-
-      return true;
-    } catch (e) {
-      print('Erreur lors de la suppression du fichier : $e');
-
-      return false;
-
-    }
-  }
   Future<List<UserData>> verifierEtSupprimerStories(List<UserData> users) async {
     int maintenant = DateTime.now().millisecondsSinceEpoch;
     List<UserData> usersRestants = [];
 
     for (UserData user in users) {
-      user.stories?.removeWhere((story) {
-        // bool estExpiree = (maintenant - story['createdAt']) > 120000; // 2 minutes en millisecondes
-        bool estExpiree = (maintenant - story.createdAt!) > 86400000; // 24 heurs en millisecondes
-        if (estExpiree && story.media != null && story.media!.isNotEmpty) {
-          deleteFileFromUrl(story.media!).then((value) async {
-            if (value) {
-              await updateUser(user);
-            }
-          });
-        }
-        return estExpiree;
-      });
+      // Sélectionner les stories expirées
+      List<WhatsappStory> storiesExpirees = user.stories
+          ?.where((story) => (maintenant - story.createdAt!) > 86400000)
+          .toList() ?? [];
+
+      // Supprimer chaque story expirée directement depuis Firestore
+      for (WhatsappStory story in storiesExpirees) {
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user.id)
+            .update({
+          'stories': FieldValue.arrayRemove([story.toJson()])
+        });
+        // Retirer localement pour la suite
+        user.stories?.remove(story);
+      }
 
       if (user.stories != null && user.stories!.isNotEmpty) {
         usersRestants.add(user);
@@ -691,31 +649,36 @@ class UserAuthProvider extends ChangeNotifier {
   //   });
   // }
 
-  Future<bool> supprimerStories(UserData user,int index) async {
-    int maintenant = DateTime.now().millisecondsSinceEpoch;
+  Future<bool> supprimerStories(UserData user, int index) async {
+    if (index >= 0 && index < (user.stories?.length ?? 0)) {
+      var story = user.stories![index];
 
-    if (index >= 0 && index < user.stories!.length) {
-      var map=user.stories?.elementAt(index);
-      if(map!.media!.length>5){
-        await deleteFileFromUrl(map!.media!).then((value) async {
-          if(value){
-            user.stories?.removeAt(index);
-            await updateUser(user);
-          // Supprime l'élément à l'index donné
+      try {
+        // Supprime le fichier si besoin
+        if (story.media != null && story.media!.isNotEmpty && story.media!.length > 5) {
+          // await deleteFileFromUrl(story.media!);
+        }
 
-          }
+        // Supprimer directement l'objet story dans Firestore
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user.id)
+            .update({
+          'stories': FieldValue.arrayRemove([story.toJson()])
+        });
 
-        },);
-
-      }else{
+        // Supprimer localement pour garder les données à jour
         user.stories?.removeAt(index);
-        await updateUser(user);
+
+        print('Élément supprimé à l\'index $index');
+        return true;
+      } catch (e) {
+        print('Erreur lors de la suppression: $e');
+        return false;
       }
-      print('Élément supprimé à l\'index $index');
-      return true;
     } else {
-      return false;
       print('Index invalide');
+      return false;
     }
   }
   Future<bool> getLoginUser(String id) async {
@@ -843,12 +806,12 @@ class UserAuthProvider extends ChangeNotifier {
     try{
 
 
-
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user.id)
-          .update(user.toJson());
-      printVm("user update : ${user!.toJson()}");
+      //
+      // await FirebaseFirestore.instance
+      //     .collection('Users')
+      //     .doc(user.id)
+      //     .update(user.toJson());
+      // printVm("user update : ${user!.toJson()}");
       return true;
     }catch(e){
       printVm("erreur update post : ${e}");
