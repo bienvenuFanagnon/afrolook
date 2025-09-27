@@ -239,28 +239,28 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         );
         return;
       }
-      String? selectedPostLink='NON';
-      if(_selectedPostLink=='OUI'){
-        selectedPostLink=_selectedPostLink;
-        bool success = await processPublicashTransaction(
-          // userSendCadeau: authProvider.loginUserData,
-          context: context,
-          // authProvider: authProvider,
-          postProvider: postProvider,
-          appdata: authProvider.appDefaultData,
-        );
-
-        if (!success) {
-          print("Transaction échouée.");
-
-          return;
-
-        } else {
-          print("Transaction réussie !");
-
-        }
-
-      }
+      String? selectedPostLink='OUI';
+      // if(_selectedPostLink=='OUI'){
+      //   selectedPostLink=_selectedPostLink;
+      //   bool success = await processPublicashTransaction(
+      //     // userSendCadeau: authProvider.loginUserData,
+      //     context: context,
+      //     // authProvider: authProvider,
+      //     postProvider: postProvider,
+      //     appdata: authProvider.appDefaultData,
+      //   );
+      //
+      //   if (!success) {
+      //     print("Transaction échouée.");
+      //
+      //     return;
+      //
+      //   } else {
+      //     print("Transaction réussie !");
+      //
+      //   }
+      //
+      // }
 
 
 
@@ -740,50 +740,50 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                           return null;
                         },
                       ),
-                      SizedBox(
-                        height: 15.0,
-                      ),
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Le post contient-il un lien ? Si oui, coût : 2 PC.',
-                          labelStyle: TextStyle(fontSize: 13),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10.0), // Add rounded corners
-                            borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
-                          ),
-                        ),
-
-                        value: _selectedPostLink,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedPostLink = newValue;
-                            printVm('_selectedPostLink: ${_selectedPostLink}');
-                            // String? selectedLabel = _postTypes[_selectedPostType]?['label'];
-                            // _selectedPostTypeLibeller=selectedLabel;
-                            //
-                            // printVm('selectedLabel: ${selectedLabel}');
-
-                          });
-                        },
-                        items: _postLink.entries.map<DropdownMenuItem<String>>((entry) {
-                          return DropdownMenuItem<String>(
-                            value: entry.key, // Utilisez la clé (code) comme valeur
-                            child: Row(
-                              children: [
-                                Icon(entry.value['icon'], color: Colors.green), // Icône
-                                SizedBox(width: 10),
-                                Text(entry.value['label']), // Libellé
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez sélectionner';
-                          }
-                          return null;
-                        },
-                      ),
+                      // SizedBox(
+                      //   height: 15.0,
+                      // ),
+                      // DropdownButtonFormField<String>(
+                      //   decoration: InputDecoration(
+                      //     labelText: 'Le post contient-il un lien ? Si oui, coût : 2 PC.',
+                      //     labelStyle: TextStyle(fontSize: 13),
+                      //     border: OutlineInputBorder(
+                      //       borderRadius: BorderRadius.circular(10.0), // Add rounded corners
+                      //       borderSide: BorderSide(color: Colors.green, width: 2.0), // Customize color and thickness
+                      //     ),
+                      //   ),
+                      //
+                      //   value: _selectedPostLink,
+                      //   onChanged: (String? newValue) {
+                      //     setState(() {
+                      //       _selectedPostLink = newValue;
+                      //       printVm('_selectedPostLink: ${_selectedPostLink}');
+                      //       // String? selectedLabel = _postTypes[_selectedPostType]?['label'];
+                      //       // _selectedPostTypeLibeller=selectedLabel;
+                      //       //
+                      //       // printVm('selectedLabel: ${selectedLabel}');
+                      //
+                      //     });
+                      //   },
+                      //   items: _postLink.entries.map<DropdownMenuItem<String>>((entry) {
+                      //     return DropdownMenuItem<String>(
+                      //       value: entry.key, // Utilisez la clé (code) comme valeur
+                      //       child: Row(
+                      //         children: [
+                      //           Icon(entry.value['icon'], color: Colors.green), // Icône
+                      //           SizedBox(width: 10),
+                      //           Text(entry.value['label']), // Libellé
+                      //         ],
+                      //       ),
+                      //     );
+                      //   }).toList(),
+                      //   validator: (value) {
+                      //     if (value == null || value.isEmpty) {
+                      //       return 'Veuillez sélectionner';
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
                       SizedBox(
                         height: 15.0,
                       ),

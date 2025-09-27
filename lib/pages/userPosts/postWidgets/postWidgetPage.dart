@@ -88,6 +88,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+  bool _isExpanded = false;
 
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
@@ -655,6 +656,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             if (currentUser != null) {
               _showUserDetails(currentUser!, w, h);
             }
+
+            if(widget.post.canal!=null){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
+
+            }else{
+              double w= MediaQuery.of(context).size.width;
+              double h= MediaQuery.of(context).size.height;
+              showUserDetailsModalDialog(widget.post.user!, w, h, context);
+            }
           },
           child: Stack(
             children: [
@@ -748,23 +758,64 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   Widget _buildPostContent() {
     final text = widget.post.description ?? "";
-    return HashTagText(
-      text: text,
-      decoratedStyle: TextStyle(
-        fontSize: 15,
-        color: _twitterBlue,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-      ),
-      basicStyle: TextStyle(
-        fontSize: 15,
-        color: _twitterTextPrimary,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-      ),
-      onTap: (text) {
-        // Gestion des hashtags
-      },
+    final words = text.split(' ');
+    final isLong = words.length > 50;
+
+    // Texte à afficher selon l'état
+    final displayedText = _isExpanded || !isLong
+        ? text
+        : words.take(50).join(' ') + '...';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailsPost(post: widget.post),
+            ),
+          ),
+          child: HashTagText(
+
+            text: displayedText,
+            decoratedStyle: TextStyle(
+              fontSize: 15,
+              color: _twitterBlue,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
+            ),
+            basicStyle: TextStyle(
+              fontSize: 15,
+              color: _twitterTextPrimary,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
+            ),
+            onTap: (text) {
+              // Gestion des hashtags
+            },
+          ),
+        ),
+        if (isLong)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _isExpanded ? "Voir moins" : "Voir plus",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: _twitterBlue,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1170,9 +1221,23 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   String _getDisplayName() {
-    if (currentCanal != null) return '#${currentCanal!.titre}' ?? 'Canal';
-    if (currentUser != null) return '@${currentUser!.pseudo}' ?? 'Utilisateur';
-    return 'Utilisateur';
+    String name;
+
+    if (currentCanal != null) {
+      name = '#${currentCanal!.titre}';
+    } else if (currentUser != null) {
+      name = '@${currentUser!.pseudo}';
+    } else {
+      name = 'Utilisateur';
+    }
+
+    // Réduire la longueur si trop long (20 caractères ici)
+    const maxLength = 20;
+    if (name.length > maxLength) {
+      name = name.substring(0, maxLength) + '...';
+    }
+
+    return name;
   }
 
   String _getUserInfo() {

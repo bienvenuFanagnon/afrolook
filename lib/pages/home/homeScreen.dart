@@ -50,7 +50,6 @@ import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
-import '../chat/ia_Chat.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -60,7 +59,6 @@ import '../../providers/authProvider.dart';
 
 import '../component/consoleWidget.dart';
 import '../contenuPayant/TableauDeBord.dart';
-import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -635,12 +633,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/images/trophee.png',
-                      height: 20,
-                      width: 20,
-                      color: Colors.yellow, // Icône jaune
-                    ),
+                    leading: Icon(Entypo.trophy, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "TOP 10 Afrolook Stars",
                       fontSize: SizeText.homeProfileTextSize,

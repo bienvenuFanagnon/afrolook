@@ -22,8 +22,7 @@ import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
 import 'package:afrotok/pages/home/homeLooks.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
-import 'package:afrotok/pages/ia/compagnon/iaCompagnon.dart';
-import 'package:afrotok/pages/ia/compagnon/introIaCompagnon.dart';
+
 import 'package:afrotok/pages/info.dart';
 import 'package:afrotok/pages/infoGagnePoint.dart';
 import 'package:afrotok/pages/intro/introduction.dart';
@@ -457,11 +456,7 @@ class _MyAppState extends State<MyApp> {
             switch (settings.name) {
               case '/home':
                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
-              case '/ia_compagnon':
-                return PageTransition(child: IaCompagnon(), type: PageTransitionType.fade);
-              case '/intro_ia_compagnon':
-                return PageTransition(child: IntroIaCompagnon(instruction: '',), type: PageTransitionType.fade);
-              case '/videos':
+           case '/videos':
                 return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
               case '/home_profile_user':
                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);

@@ -12,6 +12,7 @@ import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postCadeau.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/userPosts/postWidgets/postUserWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -50,7 +51,15 @@ import '../../providers/authProvider.dart';
 import '../services/linkService.dart';
 import 'canaux/detailsCanal.dart';
 
-
+const _twitterDarkBg = Color(0xFF000000);
+const _twitterCardBg = Color(0xFF16181C);
+const _twitterTextPrimary = Color(0xFFFFFFFF);
+const _twitterTextSecondary = Color(0xFF71767B);
+const _twitterBlue = Color(0xFF1D9BF0);
+const _twitterRed = Color(0xFFF91880);
+const _twitterGreen = Color(0xFF00BA7C);
+const _twitterYellow = Color(0xFFFFD400);
+const _afroBlack = Color(0xFF000000);
 class DetailsPost extends StatefulWidget {
   final Post post;
 
@@ -701,15 +710,116 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {},
+          GestureDetector(
+            onTap: () => _showPostMenu(widget.post),
+            child: Icon(
+              Icons.more_horiz,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
+
         ],
       ),
     );
   }
+  void _showPostMenu(Post post) {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
 
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _twitterCardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // --- Signaler (si ce n’est pas ton post)
+            if (post.user_id != authProvider.loginUserData.id)
+              _buildMenuOption(
+                Icons.flag,
+                "Signaler",
+                _twitterTextPrimary,
+                    () async {
+                  post.status = PostStatus.SIGNALER.name;
+                  final value = await postProvider.updateVuePost(post, context);
+                  Navigator.pop(context);
+
+                  final snackBar = SnackBar(
+                    content: Text(
+                      value ? 'Post signalé !' : 'Échec du signalement !',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: value ? Colors.green : Colors.red),
+                    ),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+              ),
+
+            // --- Supprimer (si admin OU propriétaire)
+            if (post.user!.id == authProvider.loginUserData.id ||
+                authProvider.loginUserData.role == UserRole.ADM.name)
+              _buildMenuOption(
+                Icons.delete,
+                "Supprimer",
+                Colors.red,
+                    () async {
+                  if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                    await deletePost(post, context);
+                  } else {
+                    post.status = PostStatus.SUPPRIMER.name;
+                    await deletePost(post, context);
+                  }
+                  Navigator.pop(context);
+
+                  final snackBar = SnackBar(
+                    content: Text(
+                      'Post supprimé !',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+              ),
+
+            SizedBox(height: 8),
+            Container(height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
+            SizedBox(height: 8),
+
+            // --- Annuler
+            _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary, () {
+              Navigator.pop(context);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption(
+      IconData icon, String text, Color color, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              SizedBox(width: 12),
+              Text(text, style: TextStyle(color: color, fontSize: 16)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildPostContent(Post post) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -43,7 +43,6 @@ import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
 import '../auth/authTest/Screens/Welcome/welcome_screen.dart';
-import '../chat/ia_Chat.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -52,14 +51,11 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../component/consoleWidget.dart';
-import '../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import '../ia/gemini/geminibot.dart';
-import '../story/afroStory/storie/storyView.dart';
+
 import '../user/conponent.dart';
 import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
-import '../userPosts/postWidgets/postUserWidget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
 import 'package:visibility_detector/visibility_detector.dart';
@@ -593,7 +589,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Future<void> _recordPostView(Post post) async {
+  Future<void> _recordPostView2(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
 
@@ -630,6 +626,53 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       print('Error recording post view: $e');
     }
   }
+
+  Future<void> _recordPostView(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    try {
+      // Vérifier si l'utilisateur a déjà vu le post
+      final alreadyViewed = post.users_vue_id?.contains(currentUserId) ?? false;
+
+      if (alreadyViewed) {
+        // Rien à faire si déjà vu
+        return;
+      }
+
+      // Mettre à jour UserData.viewedPostIds
+      final userRef = FirebaseFirestore.instance.collection('Users').doc(currentUserId);
+      await userRef.update({
+        'viewedPostIds': FieldValue.arrayUnion([post.id]),
+      });
+
+      // Mettre à jour le compteur de vues du post uniquement si pas encore vu
+      await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(post.id)
+          .update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // Mettre à jour localement
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id ??= [];
+        post.users_vue_id!.add(currentUserId);
+
+        if (!(authProvider.loginUserData.viewedPostIds?.contains(post.id) ?? false)) {
+          authProvider.loginUserData.viewedPostIds ??= [];
+          authProvider.loginUserData.viewedPostIds!.add(post.id!);
+        }
+      });
+
+    } catch (e) {
+      print('Error recording post view: $e');
+    }
+  }
+
 
   void _handleVisibilityChanged(Post post, VisibilityInfo info) {
     final postId = post.id!;
@@ -1658,46 +1701,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                         onTap = true;
                       });
 
-                      await authProvider.getAppData().then(
-                            (appdata) async {
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => IntroIaCompagnon(instruction:authProvider.appDefaultData.ia_instruction! ,),));
-
-                          await authProvider
-                              .getUserIa(authProvider.loginUserData.id!)
-                              .then(
-                                (value) async {
-                              if (value.isNotEmpty) {
-                                await getIAChatsData(value.first).then((chat) {
-                                  setState(() {
-                                    onTap = false;
-                                  });
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiTextChat(),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => DeepSeepChat(instruction: '${authProvider.appDefaultData.ia_instruction!}'),));
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => GeminiChatBot(title: 'BOT XILO', instruction: '${authProvider.appDefaultData.ia_instruction!}', userIACompte: value.first, apiKey:'${authProvider.appDefaultData.geminiapiKey!}' ,),));
-
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => IaChat(
-                                    chat: chat,
-                                    user: authProvider.loginUserData,
-                                    userIACompte: value.first,
-                                    instruction:
-                                    '${authProvider.appDefaultData.ia_instruction!}', appDefaultData: authProvider.appDefaultData,
-                                  ),
-                                  ));
-                                });
-                              } else {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => IntroIaCompagnon(
-                                        instruction: authProvider
-                                            .appDefaultData.ia_instruction!,
-                                      ),
-                                    ));
-                              }
-                            },
-                          );
-                        },
-                      );
 
                       // Navigator.pushNamed(context, '/intro_ia_compagnon');
                     },

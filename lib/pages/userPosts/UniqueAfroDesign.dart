@@ -86,20 +86,20 @@ class _UniqueAfrolookDesignState extends State<UniqueAfrolookDesign>  with Examp
 
     List<String> assetPaths = [
 
-      'assets/frames/7.png',
-      'assets/frames/8.png',
-      'assets/frames/9.png',
-      'assets/frames/10.png',
-      'assets/frames/11.png',
-      'assets/frames/12.png',
-      'assets/frames/13.png',
-      'assets/frames/23.png',
-      'assets/frames/24.png',
-      'assets/frames/25.png',
-      'assets/frames/26.png',
-      'assets/frames/27.png',
-      'assets/frames/28.png',
-      'assets/frames/29.png',
+      // 'assets/frames/7.png',
+      // 'assets/frames/8.png',
+      // 'assets/frames/9.png',
+      // 'assets/frames/10.png',
+      // 'assets/frames/11.png',
+      // 'assets/frames/12.png',
+      // 'assets/frames/13.png',
+      // 'assets/frames/23.png',
+      // 'assets/frames/24.png',
+      // 'assets/frames/25.png',
+      // 'assets/frames/26.png',
+      // 'assets/frames/27.png',
+      // 'assets/frames/28.png',
+      // 'assets/frames/29.png',
     ];
 
     List<Uint8List> loadedImages = [];
