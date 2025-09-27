@@ -527,11 +527,20 @@ class _LivePageState extends State<LivePage> {
 
 
 
+  bool _isFrontCamera = true;
+  // Ajoutez cette variable pour le nombre de caméras disponibles
+  int _numberOfCameras = 0;
+  // Controller pour la configuration vidéo
+  late VideoEncoderConfiguration _videoConfig;
+
   @override
   void initState() {
     super.initState();
     print("🎬 Initialisation de LivePage - isHost: ${widget.isHost}");
- 
+
+    // Initialiser la configuration vidéo
+    _videoConfig = VideoEncoderConfiguration();
+    _setupCamera();
     _initAgora();
     _setupFirestoreListeners();
     _fetchHostData();
@@ -546,8 +555,288 @@ class _LivePageState extends State<LivePage> {
       });
     }
 
-    // Démarrer le timer pour les effets de like automatiques
     _startLikeEffectTimer();
+  }
+
+  // Nouvelle méthode pour configurer les caméras
+  Future<void> _setupCamera() async {
+    try {
+      // Obtenir le nombre de caméras disponibles
+      // _numberOfCameras = await _engine.getCameraCount();
+      _numberOfCameras = 2;
+      print("📷 Nombre de caméras disponibles: $_numberOfCameras");
+
+      if (_numberOfCameras > 1) {
+        // Configurer la caméra par défaut (front)
+        await _engine.startPreview();
+        _isFrontCamera = true;
+      }
+    } catch (e) {
+      print("❌ Erreur configuration caméra: $e");
+    }
+  }
+
+  // Nouvelle méthode pour basculer entre les caméras
+  Future<void> _switchCamera() async {
+    try {
+      if (_numberOfCameras < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Une seule caméra disponible'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Basculer la caméra
+      await _engine.switchCamera();
+
+      setState(() {
+        _isFrontCamera = !_isFrontCamera;
+      });
+
+      print("📸 Caméra basculée vers: ${_isFrontCamera ? 'Avant' : 'Arrière'}");
+    } catch (e) {
+      print("❌ Erreur basculement caméra: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du changement de caméra'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Modifiez votre méthode _initAgora pour inclure la configuration caméra
+  Future<void> _initAgora() async {
+    try {
+      print("🔊 Demande des permissions Agora...");
+      await [Permission.microphone, Permission.camera].request();
+
+      print("🚀 Création du moteur Agora...");
+      _engine = createAgoraRtcEngine();
+
+      await _engine.initialize(RtcEngineContext(
+        appId: "957063f627aa471581a52d4160f7c054",
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+      ));
+
+      // Configuration des handlers
+      _engine.registerEventHandler(
+        RtcEngineEventHandler(
+          onJoinChannelSuccess: (connection, elapsed) {
+            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
+            setState(() => _localUserJoined = true);
+          },
+          onUserJoined: (connection, remoteUid, elapsed) {
+            print("👤 Utilisateur rejoint: $remoteUid");
+            setState(() => _remoteUid = remoteUid);
+          },
+          onUserOffline: (connection, remoteUid, reason) {
+            print("👋 Utilisateur parti: $remoteUid");
+            setState(() => _remoteUid = null);
+          },
+          onCameraReady: () {
+            print("📷 Caméra prête");
+          },
+          // onCameraFocusAreaChanged: () {
+          //   print("🔍 Zone de focus caméra changée");
+          // },
+        ),
+      );
+
+      await _engine.enableVideo();
+
+      // Configuration vidéo améliorée
+      _videoConfig = const VideoEncoderConfiguration(
+        dimensions: VideoDimensions(width: 640, height: 360),
+        frameRate: 15,
+        bitrate: 0,
+        minBitrate: 0,
+        orientationMode: OrientationMode.orientationModeAdaptive,
+        degradationPreference: DegradationPreference.maintainQuality,
+        mirrorMode: VideoMirrorModeType.videoMirrorModeAuto,
+      );
+
+      await _engine.setVideoEncoderConfiguration(_videoConfig);
+
+      final role = widget.isHost || _isParticipant
+          ? ClientRoleType.clientRoleBroadcaster
+          : ClientRoleType.clientRoleAudience;
+
+      await _engine.setClientRole(role: role);
+
+      if (widget.isHost || _isParticipant) {
+        await _engine.startPreview();
+      }
+
+      final uid = 0;
+      final token = await _getAgoraToken(
+        channelName: widget.liveId,
+        uid: uid,
+        isHost: widget.isHost || _isParticipant,
+      );
+
+      if (token == null) {
+        throw Exception("Impossible de générer un token Agora");
+      }
+
+      await _engine.joinChannel(
+        token: token,
+        channelId: widget.liveId,
+        uid: uid,
+        options: ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          clientRoleType: role,
+          publishCameraTrack: widget.isHost || _isParticipant,
+          publishMicrophoneTrack: widget.isHost || _isParticipant,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+        ),
+      );
+
+      setState(() => _isInitialized = true);
+    } catch (e) {
+      print("💥 Erreur lors de l'initialisation Agora: $e");
+    }
+  }
+
+  // Ajoutez cette méthode pour gérer le mode miroir
+  Future<void> _toggleMirrorMode() async {
+    try {
+      final currentMode = _videoConfig.mirrorMode;
+      final newMode = currentMode == VideoMirrorModeType.videoMirrorModeEnabled
+          ? VideoMirrorModeType.videoMirrorModeDisabled
+          : VideoMirrorModeType.videoMirrorModeEnabled;
+
+      // _videoConfig.mirrorMode = newMode;
+      await _engine.setVideoEncoderConfiguration(_videoConfig);
+
+      print("🪞 Mode miroir: ${newMode == VideoMirrorModeType.videoMirrorModeEnabled ? 'Activé' : 'Désactivé'}");
+    } catch (e) {
+      print("❌ Erreur changement mode miroir: $e");
+    }
+  }
+
+  // Modifiez votre méthode _buildHostOverlay pour ajouter le bouton de basculement caméra
+  Widget _buildHostOverlay() {
+    return Positioned(
+      top: 50,
+      left: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info host
+          GestureDetector(
+            onTap: () {
+              double h = MediaQuery.of(context).size.height;
+              double w = MediaQuery.of(context).size.width;
+              showUserDetailsModalDialog(_hostData, w, h, context);
+            },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundImage: NetworkImage(widget.hostImage),
+                  radius: 20,
+                ),
+                SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "@${_hostData.pseudo}",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${_hostData.userAbonnesIds!.length} abonnés',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    if (widget.isHost)
+                      Text(
+                        'Hôte du live',
+                        style: TextStyle(color: Color(0xFFF9A825), fontSize: 12),
+                      ),
+                  ],
+                ),
+                SizedBox(width: 12),
+                if (!widget.isHost)
+                  GestureDetector(
+                    onTap: _toggleFollow,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _isFollowing ? 'Suivi' : 'Suivre',
+                        style: TextStyle(
+                          color: _isFollowing ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Boutons de contrôle caméra (seulement pour host/participant)
+          if (widget.isHost || _isParticipant) ...[
+            SizedBox(height: 10),
+            Row(
+              children: [
+                // Bouton bascule caméra
+                GestureDetector(
+                  onTap: _switchCamera,
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isFrontCamera ? Icons.camera_front : Icons.camera_rear,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          _isFrontCamera ? 'Avant' : 'Arrière',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SizedBox(width: 8),
+
+                // Bouton mode miroir
+                GestureDetector(
+                  onTap: _toggleMirrorMode,
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.flip,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _joinAsParticipant() async {
@@ -695,7 +984,7 @@ class _LivePageState extends State<LivePage> {
       return null;
     }
   }
-  Future<void> _initAgora() async {
+  Future<void> _initAgora2() async {
     try {
       print("🔊 Demande des permissions Agora...");
       await [Permission.microphone, Permission.camera].request();
@@ -1470,7 +1759,7 @@ class _LivePageState extends State<LivePage> {
     );
   }
 
-  Widget _buildHostOverlay() {
+  Widget _buildHostOverlay2() {
 
     return Positioned(
       top: 50,

@@ -325,131 +325,6 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
       setState(() => _isLoading = false);
     }
   }
-
-
-  Future<void> _repostForCash() async {
-    try {
-      setState(() => _isLoading = true);
-
-      final firestore = FirebaseFirestore.instance;
-
-      // Récupérer l'utilisateur connecté à jour
-      final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
-      final userData = userDoc.data();
-      if (userData == null) throw Exception("Utilisateur introuvable !");
-      final double soldeActuel = (userData['votre_solde_principal'] ?? 0.0).toDouble();
-
-      if (soldeActuel >= _selectedRepostPrice) {
-
-
-        // Débiter l’expéditeur
-        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_principal': FieldValue.increment(-_selectedRepostPrice),
-        });
-
-        // Créditer l’application
-        await firestore.collection('AppData').doc(authProvider.appDefaultData.id!).update({
-          'solde_gain': FieldValue.increment(_selectedRepostPrice),
-        });
-
-        // Mettre à jour le post : ajouter l’utilisateur et remettre à jour la date
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'users_republier_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(4), // pondération pour un commentaire
-
-          'created_at':DateTime.now().microsecondsSinceEpoch,
-          // remet le post en haut du fil
-          'updated_at': DateTime.now().microsecondsSinceEpoch, // remet le post en haut du fil
-        });
-
-        // Créer la transaction
-        await _createTransaction(
-          TypeTransaction.DEPENSE.name,
-          _selectedRepostPrice.toDouble(),
-          "Republication du post ${widget.post.id}",authProvider.loginUserData.id!,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text(
-              '🔝 Post republié pour $_selectedRepostPrice FCFA!',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        );
-      } else {
-        _showInsufficientBalanceDialog();
-      }
-    } catch (e) {
-      print("Erreur republication: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Erreur lors de la republication',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showInsufficientBalanceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.yellow, width: 2),
-          ),
-          title: Text(
-            'Solde Insuffisant',
-            style: TextStyle(
-              color: Colors.yellow,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.white)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Naviguer vers la page de recharge
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: Text('Recharger', style: TextStyle(color: Colors.black)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-  List<double> giftPrices = [
-    10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
-    2500, 5000, 7000, 10000, 15000, 20000, 30000,
-    50000, 75000, 100000
-  ];
-
-  List<String> giftIcons = [
-    '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
-    '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
-  ];
-
   void _showGiftDialog() {
     showDialog(
       context: context,
@@ -580,6 +455,131 @@ class _DetailsPostState extends State<DetailsPost> with SingleTickerProviderStat
       },
     );
   }
+
+
+  Future<void> _repostForCash() async {
+    try {
+      setState(() => _isLoading = true);
+
+      final firestore = FirebaseFirestore.instance;
+
+      // Récupérer l'utilisateur connecté à jour
+      final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
+      final userData = userDoc.data();
+      if (userData == null) throw Exception("Utilisateur introuvable !");
+      final double soldeActuel = (userData['votre_solde_principal'] ?? 0.0).toDouble();
+
+      if (soldeActuel >= _selectedRepostPrice) {
+
+
+        // Débiter l’expéditeur
+        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
+          'votre_solde_principal': FieldValue.increment(-_selectedRepostPrice),
+        });
+
+        // Créditer l’application
+        await firestore.collection('AppData').doc(authProvider.appDefaultData.id!).update({
+          'solde_gain': FieldValue.increment(_selectedRepostPrice),
+        });
+
+        // Mettre à jour le post : ajouter l’utilisateur et remettre à jour la date
+        await firestore.collection('Posts').doc(widget.post.id).update({
+          'users_republier_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(4), // pondération pour un commentaire
+
+          'created_at':DateTime.now().microsecondsSinceEpoch,
+          // remet le post en haut du fil
+          'updated_at': DateTime.now().microsecondsSinceEpoch, // remet le post en haut du fil
+        });
+
+        // Créer la transaction
+        await _createTransaction(
+          TypeTransaction.DEPENSE.name,
+          _selectedRepostPrice.toDouble(),
+          "Republication du post ${widget.post.id}",authProvider.loginUserData.id!,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              '🔝 Post republié pour $_selectedRepostPrice FCFA!',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        );
+      } else {
+        _showInsufficientBalanceDialog();
+      }
+    } catch (e) {
+      print("Erreur republication: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Erreur lors de la republication',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showInsufficientBalanceDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.yellow, width: 2),
+          ),
+          title: Text(
+            'Solde Insuffisant',
+            style: TextStyle(
+              color: Colors.yellow,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
+            style: TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Annuler', style: TextStyle(color: Colors.white)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Naviguer vers la page de recharge
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: Text('Recharger', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  List<double> giftPrices = [
+    10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
+    2500, 5000, 7000, 10000, 15000, 20000, 30000,
+    50000, 75000, 100000
+  ];
+
+  List<String> giftIcons = [
+    '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
+    '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
+  ];
+
 
 
   void _showRepostDialog() {

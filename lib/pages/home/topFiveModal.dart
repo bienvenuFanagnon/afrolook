@@ -2,6 +2,7 @@ import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/model_data.dart';
+import '../LiveAgora/create_live_page.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../classements/userClassement.dart';
 import 'package:flutter/material.dart';
@@ -520,7 +521,7 @@ class TopLiveGridModal {
             onPressed: () {
               Navigator.of(context).pop();
               // Naviguer vers la page de création de live
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => CreateLivePage()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CreateLivePage()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

@@ -226,7 +226,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       if (token == null || token == '') {
         printVm("token: existe pas");
-        Navigator.pushNamed(context, '/welcome');
+        Navigator.pushNamed(context, '/introduction');
       }
     });
 
