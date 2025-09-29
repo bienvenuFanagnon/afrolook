@@ -273,77 +273,149 @@ class _UserProfilState extends State<UserProfil> {
                               ),
                             ),
                             SizedBox(height: 10,),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
-                                  child: Container(
-                                    color: ConstColors.buttonsColors,
-                                    // alignment: Alignment.centerLeft,
-                                    width: 180,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 5.0),
-                                            child: Container(
-                                              child: Image.asset(
-                                                'assets/icon/entreprise.png',
-                                                height: 20,
-                                                width: 20,
-                                              ),
+                            GestureDetector(
+                              onTap: () async {
+                                  // Affiche une page de chargement temporaire
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => Scaffold(
+                                        backgroundColor: Colors.white,
+                                        body: Center(
+                                          child: CircularProgressIndicator(color: Color(0xFF2ECC71)),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+
+                                  try {
+                                    final value = await userProvider.getUserEntreprise(authProvider.loginUserData.id!);
+
+                                    // Ferme la page de chargement
+                                    Navigator.pop(context);
+
+                                    if (value) {
+                                      Navigator.pushNamed(context, '/profile_entreprise');
+                                    } else {
+                                      // Affiche un modal si pas d’entreprise
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => Dialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 30,
+                                                  backgroundColor: Color(0xFF2ECC71).withOpacity(0.1),
+                                                  child: Icon(Icons.store_mall_directory, color: Color(0xFF2ECC71), size: 32),
+                                                ),
+                                                SizedBox(height: 12),
+                                                Text(
+                                                  "Créez votre entreprise",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  "Pour vendre vos produits et services, créez gratuitement une entreprise avec un nom unique.",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                                                ),
+                                                SizedBox(height: 20),
+                                                ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Color(0xFF2ECC71),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.pop(context); // ferme le modal
+                                                    Navigator.pushNamed(context, '/new_entreprise');
+                                                  },
+                                                  child: Text("Créer maintenant", style: TextStyle(color: Colors.white)),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              if(authProvider.loginUserData!.hasEntreprise!){
-                                                userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
-                                                  if (value) {
-                                                    Navigator.pushNamed(context, '/profile_entreprise');
-                                                  }else{
-                                                    Navigator.pushNamed(context, '/new_entreprise');
-                                                  }
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    Navigator.pop(context); // Ferme le loader si erreur
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("Erreur lors du chargement")),
+                                    );
+                                  }
 
-                                                },);
-
-                                              }
-                                            },
-                                            child: Container(
-                                              child: TextCustomerMenu(
-                                                titre: "Mon Entreprise",
-                                                fontSize: SizeText.homeProfileTextSize,
-                                                couleur: ConstColors.textColors,
-                                                fontWeight: FontWeight.w600,
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                    child: Container(
+                                      color: ConstColors.buttonsColors,
+                                      // alignment: Alignment.centerLeft,
+                                      width: 180,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 5.0),
+                                              child: Container(
+                                                child: Image.asset(
+                                                  'assets/icon/entreprise.png',
+                                                  height: 20,
+                                                  width: 20,
+                                                ),
                                               ),
                                             ),
-                                          )
-                                        ],
+                                          Container(
+                                                child: TextCustomerMenu(
+                                                  titre: "Mon Entreprise",
+                                                  fontSize: SizeText.homeProfileTextSize,
+                                                  couleur: ConstColors.textColors,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
 
+                                          ],
+
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
 
 
-                                GestureDetector(
-                                  onTap: () {
-
-                                          Navigator.pushNamed(context, '/new_entreprise');
-
-
-                                  },
-                                  child:authProvider.loginUserData!.hasEntreprise!?Container(): Container(
-                                    child: TextCustomerMenu(
-                                      titre: "Creer",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: Colors.red,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                )
-                              ],
+                                  // GestureDetector(
+                                  //   onTap: () {
+                                  //
+                                  //           Navigator.pushNamed(context, '/new_entreprise');
+                                  //
+                                  //
+                                  //   },
+                                  //   child:authProvider.loginUserData!.hasEntreprise!?Container(): Container(
+                                  //     child: TextCustomerMenu(
+                                  //       titre: "Creer",
+                                  //       fontSize: SizeText.homeProfileTextSize,
+                                  //       couleur: Colors.red,
+                                  //       fontWeight: FontWeight.w600,
+                                  //     ),
+                                  //   ),
+                                  // )
+                                ],
+                              ),
                             ),
                             SizedBox(height: 10,),
                             GestureDetector(

@@ -2316,8 +2316,8 @@ class PostProvider extends ChangeNotifier {
       FirebaseFirestore.instance.collection('Canaux');
       // Get docs from collection reference
       QuerySnapshot querySnapshotUser = await userCollect
-          .orderBy('updatedAt', descending: true)
-          .limit(10)
+          // .orderBy('updatedAt', descending: true)
+          .limit(7)
           .get();
 
       // Afficher la liste
@@ -2523,6 +2523,8 @@ class PostProvider extends ChangeNotifier {
       // }   else{
       //   posts.add(p);
       // }
+
+      printVm("Entrprise : ${p.titre}");
       posts.add(p);
 
 

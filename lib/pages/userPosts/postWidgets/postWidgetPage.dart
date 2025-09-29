@@ -647,22 +647,28 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   Widget _buildPostHeader(double w, double h) {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+
+    // Déterminer si c'est un post de canal ou d'utilisateur
+    final isCanalPost = widget.post.canal != null;
+    final postOwner = isCanalPost ? widget.post.canal! : widget.post.user!;
+    final isCurrentUser = currentUserId == widget.post.user?.id;
+
+    // Vérifier si déjà abonné
+    final isAbonne = isCanalPost
+        ? widget.post.canal?.usersSuiviId?.contains(currentUserId) ?? false
+        : widget.post.user?.userAbonnesIds?.contains(currentUserId) ?? false;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Avatar
         GestureDetector(
           onTap: () {
-            if (currentUser != null) {
-              _showUserDetails(currentUser!, w, h);
-            }
-
-            if(widget.post.canal!=null){
-              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!),));
-
-            }else{
-              double w= MediaQuery.of(context).size.width;
-              double h= MediaQuery.of(context).size.height;
+            if(widget.post.canal != null){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!)));
+            } else {
               showUserDetailsModalDialog(widget.post.user!, w, h, context);
             }
           },
@@ -673,7 +679,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 backgroundColor: _twitterBlue,
                 backgroundImage: _getProfileImage(),
                 child: _getProfileImage() == null
-                    ? Icon(Icons.person, color: Colors.white, size: 20)
+                    ? Icon(
+                    isCanalPost ? Icons.group : Icons.person,
+                    color: Colors.white,
+                    size: 20
+                )
                     : null,
               ),
               if (_isVerified())
@@ -718,10 +728,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         ),
                         SizedBox(width: 4),
                         if (_isVerified()) Icon(Icons.verified, color: _twitterBlue, size: 16),
-
                       ],
                     ),
                   ),
+
+                  // Bouton S'abonner ou menu
+                  if (!isCurrentUser && !isAbonne)
+                    _buildFollowButton(isCanalPost, postOwner),
+                  SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => _showPostMenu(widget.post),
                     child: Icon(
@@ -732,18 +746,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ],
               ),
-              // SizedBox(height: 2),
-              // Text(
-              //   _getUserInfo(),
-              //   style: TextStyle(
-              //     color: _twitterTextSecondary,
-              //     fontSize: 15,
-              //   ),
-              // ),
               SizedBox(height: 2),
               Text(
                 _getFollowerCount(),
-                // _getPostTime(),
                 style: TextStyle(
                   color: _twitterTextSecondary,
                   fontSize: 12,
@@ -756,6 +761,65 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
+  Widget _buildFollowButton(bool isCanalPost, dynamic postOwner) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isLoading = false;
+        final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+
+        return Container(
+          height: 28,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: isLoading ? null : () async {
+              setState(() => isLoading = true);
+
+              if (isCanalPost) {
+                // Abonnement au canal
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: widget.post.canal!)));
+                // Mettre à jour l'état local après l'abonnement
+                if (mounted) {
+                  setState(() {});
+                }
+              } else {
+                // Abonnement à l'utilisateur
+                await authProvider.abonner(postOwner as UserData, context);
+                // Mettre à jour l'état local après l'abonnement
+                if (mounted) {
+                  setState(() {});
+                }
+              }
+
+              setState(() => isLoading = false);
+            },
+            child: isLoading
+                ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+                : Text(
+              'Suivre',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
   Widget _buildPostContent() {
     final text = widget.post.description ?? "";
     final words = text.split(' ');

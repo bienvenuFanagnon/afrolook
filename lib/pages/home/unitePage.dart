@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/UserServices/ServiceWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
@@ -13,11 +14,17 @@ import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../providers/afroshop/categorie_produits_provider.dart';
+import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
+import '../afroshop/marketPlace/component.dart';
+import '../auth/authTest/Screens/Login/loginPageUser.dart';
+import '../canaux/listCanal.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
 class UnifiedHomePage extends StatefulWidget {
@@ -32,9 +39,9 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   final int _loadMoreLimit = 5;
 
   late UserAuthProvider _authProvider;
-  late PostProvider _postProvider;
+  late PostProvider postProvider;
   late ContentProvider _contentProvider;
-
+  late CategorieProduitProvider categorieProduitProvider;
   List<Post> _posts = [];
   List<ContentPaie> _contents = [];
   List<dynamic> _mixedItems = [];
@@ -65,9 +72,10 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   void initState() {
     super.initState();
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    _postProvider = Provider.of<PostProvider>(context, listen: false);
+    postProvider = Provider.of<PostProvider>(context, listen: false);
     _contentProvider = Provider.of<ContentProvider>(context, listen: false);
-
+    categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+    _loadAdditionalData();
     _loadInitialData();
     _scrollController.addListener(_scrollListener);
   }
@@ -82,6 +90,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   }
 
   void _scrollListener() {
+    printVm("_scrollListener");
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
@@ -149,7 +158,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
     } catch (e) {
       print('Error getting total posts count: $e');
-      _totalPostsCount = 0;
+      _totalPostsCount = 1000;
     }
   }
 
@@ -195,7 +204,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     }
 
     try {
-      // 🔹 Étape 1: Récupérer les données nécessaires
+      // 🔹 1. Récupérer AppData et UserData
       final appData = await _getAppData();
       final userData = await _getUserData(currentUserId);
 
@@ -205,40 +214,51 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       print('🔹 Total posts dans AppData: ${allPostIds.length}');
       print('🔹 Posts vus par l\'utilisateur: ${viewedPostIds.length}');
 
-      // 🔹 Étape 2: Identifier les posts non vus
-      final unseenPostIds = allPostIds.where((postId) => !viewedPostIds.contains(postId)).toList();
+      // 🔹 2. Identifier les posts non vus
+      final unseenPostIds = allPostIds
+          .where((postId) => !viewedPostIds.contains(postId))
+          .toList();
+
       print('🔹 Posts non vus identifiés: ${unseenPostIds.length}');
 
-      // 🔹 Étape 3: Charger les posts non vus (équivalent à seen_by_users_map.$currentUserId = null)
-      final unseenPosts = await _loadPostsByIds(unseenPostIds, limit: _initialLimit, isSeen: false);
-      print('🔹 Posts non vus chargés: ${unseenPosts.length}');
+      if (unseenPostIds.isEmpty) {
+        print('ℹ️ Aucun post non vu à charger');
+        await _loadMorePostsByDate(currentUserId);
 
-      // 🔹 Étape 4: Compléter avec des posts vus si nécessaire (équivalent à seen_by_users_map.$currentUserId = true)
-      if (unseenPosts.length < _initialLimit) {
-        final remainingLimit = _initialLimit - unseenPosts.length;
-        print('🔹 Complétion avec $remainingLimit posts vus');
-
-        // Les posts vus sont ceux qui sont dans viewedPostIds
-        final seenPostsToLoad = viewedPostIds.take(remainingLimit).toList();
-        final seenPosts = await _loadPostsByIds(seenPostsToLoad, limit: remainingLimit, isSeen: true);
-
-        _posts = [...unseenPosts, ...seenPosts];
-      } else {
-        _posts = unseenPosts;
+        return;
       }
 
-      // 🔹 Étape 5: Mettre à jour le dernier document pour la pagination
+      // 🔹 3. Trier les IDs selon leur ordre d'insertion dans allPostIds (dernier élément ajouté à la fin)
+      // Optionnel : inverser si tu veux dernier élément ajouté en premier
+      final orderedUnseenIds = List<String>.from(unseenPostIds.reversed);
+
+      // 🔹 4. Charger les posts non vus
+      final unseenPosts = await _loadPostsByIds(
+        orderedUnseenIds,
+        limit: _initialLimit,
+        isSeen: false,
+      );
+
+      print('🔹 Posts non vus chargés: ${unseenPosts.length}');
+
+      // 🔹 5. Tri final côté client par récence
+      unseenPosts.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+
+      // 🔹 6. Mettre à jour la liste de posts
+      _posts = unseenPosts;
+
+      // 🔹 7. Mettre à jour le dernier document pour pagination
       if (_posts.isNotEmpty) {
-        // Pour la pagination, nous utilisons le dernier post chargé
-        // Nous devons récupérer son document reference depuis Firestore
         final lastPostId = _posts.last.id;
         if (lastPostId != null) {
-          final lastDoc = await FirebaseFirestore.instance.collection('Posts').doc(lastPostId).get();
-          _lastPostDocument = lastDoc;
+          _lastPostDocument = await FirebaseFirestore.instance
+              .collection('Posts')
+              .doc(lastPostId)
+              .get();
         }
       }
 
-      print('✅ Chargement initial terminé. Total posts: ${_posts.length}');
+      print('✅ Chargement terminé. Total posts non vus: ${_posts.length}');
       print('📊 Stats: ${_posts.where((p) => !p.hasBeenSeenByCurrentUser!).length} non vus');
 
     } catch (e, stack) {
@@ -251,7 +271,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     try {
       if (currentUserId == null) {
         // Pour les utilisateurs non connectés, charger normalement par date
-        await _loadMorePostsChronologically();
+        // await _loadMorePostsChronologically();
         return;
       }
 
@@ -308,6 +328,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   }
 
 // 🔹 Méthode utilitaire pour charger des posts par leurs IDs
+
   Future<List<Post>> _loadPostsByIds(List<String> postIds, {required int limit, required bool isSeen}) async {
     if (postIds.isEmpty) return [];
 
@@ -316,7 +337,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
     print('🔹 Chargement de ${idsToLoad.length} posts par ID (isSeen: $isSeen)');
 
-    // Charger par batches de 10 (limite Firebase)
     for (var i = 0; i < idsToLoad.length; i += 10) {
       final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
       if (batchIds.isEmpty) continue;
@@ -329,7 +349,8 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
         for (var doc in snapshot.docs) {
           try {
-            final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+            final post = Post.fromJson(doc.data());
+            post.id = doc.id;
             post.hasBeenSeenByCurrentUser = isSeen;
             posts.add(post);
           } catch (e) {
@@ -341,9 +362,17 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       }
     }
 
+    // 🔹 TRI par date la plus récente
+    posts.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+
+    // 🔹 Affichage des dates dans la console
+    for (var post in posts) {
+      final date = DateTime.fromMicrosecondsSinceEpoch(post.createdAt!);
+      print('Post trie ${post.id} → ${date.toLocal()}');
+    }
+
     return posts;
   }
-
 // 🔹 Méthode de fallback pour le chargement chronologique (utilisateurs non connectés)
   Future<void> _loadMorePostsChronologically() async {
     try {
@@ -510,6 +539,23 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
 
 
+  Future<void> _loadAdditionalData() async {
+    try {
+      // await authProvider.getAppData();
+
+      final articleResults = await categorieProduitProvider.getArticleBooster();
+      final canalResults = await postProvider.getCanauxHome();
+
+      setState(() {
+        articles = articleResults;
+        canaux = canalResults;
+        articles.shuffle();
+        canaux.shuffle();
+      });
+    } catch (e) {
+      print('Error loading additional data: $e');
+    }
+  }
 
   Future<void> _loadContentWithStream({bool isInitialLoad = false}) async {
     try {
@@ -556,61 +602,261 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     }
   }
 
+// Variables pour les articles et canaux (à initialiser dans votre code)
+  List<ArticleData> articles = []; // Vos articles boosters
+  List<Canal> canaux = []; // Vos canaux
+
+// Remplacer la méthode _createMixedList() par celle-ci :
   void _createMixedList() {
     _mixedItems = [];
+
     int postIndex = 0;
     int contentIndex = 0;
-    int cycle = 0;
+    int boosterIndex = 0;
+    int canalIndex = 0;
 
-    while (postIndex < _posts.length && contentIndex < _contents.length) {
-      if (cycle % 2 == 0) {
-        if (postIndex < _posts.length) {
-          _mixedItems.add(_MixedItem(type: _MixedItemType.post, data: _posts[postIndex]));
-          postIndex++;
-        }
+    final random = Random();
+    int postsSinceLastInsertion = 0;
+    bool nextInsertionIsBooster = true;
+    bool lastWasContentGrid = false;
 
-        if (contentIndex < _contents.length) {
-          final contentsToAdd = [];
-          for (int i = 0; i < 2 && contentIndex < _contents.length; i++) {
-            contentsToAdd.add(_contents[contentIndex]);
-            contentIndex++;
+    // Limiteur de sécurité pour éviter les boucles infinies
+    int maxIterations = (_posts.length + _contents.length) * 2;
+    int currentIteration = 0;
+
+    while ((postIndex < _posts.length || contentIndex < _contents.length) &&
+        currentIteration < maxIterations) {
+
+      currentIteration++;
+
+      // Insérer du contenu supplémentaire après 2-4 posts
+      if (postsSinceLastInsertion >= 2 + random.nextInt(3) && !lastWasContentGrid) {
+        if (nextInsertionIsBooster && boosterIndex < articles.length) {
+          final nextBoosters = _getNextBoosters(refIndex: boosterIndex);
+          if (nextBoosters.isNotEmpty) {
+            _mixedItems.add(_MixedItem(
+                type: _MixedItemType.booster,
+                data: nextBoosters
+            ));
+            boosterIndex += nextBoosters.length;
+            nextInsertionIsBooster = false;
+            lastWasContentGrid = false;
+            postsSinceLastInsertion = 0;
+            continue; // Passer à l'itération suivante après insertion
           }
-          _mixedItems.add(_MixedItem(type: _MixedItemType.contentGrid, data: contentsToAdd));
-        }
-      } else {
-        for (int i = 0; i < 2 && postIndex < _posts.length; i++) {
-          _mixedItems.add(_MixedItem(type: _MixedItemType.post, data: _posts[postIndex]));
-          postIndex++;
-        }
-
-        if (contentIndex < _contents.length) {
-          final contentsToAdd = [];
-          for (int i = 0; i < 2 && contentIndex < _contents.length; i++) {
-            contentsToAdd.add(_contents[contentIndex]);
-            contentIndex++;
+        } else if (!nextInsertionIsBooster && canalIndex < canaux.length) {
+          final nextCanaux = _getNextCanaux(refIndex: canalIndex);
+          if (nextCanaux.isNotEmpty) {
+            _mixedItems.add(_MixedItem(
+                type: _MixedItemType.canal,
+                data: nextCanaux
+            ));
+            canalIndex += nextCanaux.length;
+            nextInsertionIsBooster = true;
+            lastWasContentGrid = false;
+            postsSinceLastInsertion = 0;
+            continue; // Passer à l'itération suivante après insertion
           }
-          _mixedItems.add(_MixedItem(type: _MixedItemType.contentGrid, data: contentsToAdd));
         }
       }
-      cycle++;
-    }
 
-    while (postIndex < _posts.length) {
-      _mixedItems.add(_MixedItem(type: _MixedItemType.post, data: _posts[postIndex]));
-      postIndex++;
-    }
-
-    while (contentIndex < _contents.length) {
-      final contentsToAdd = [];
-      for (int i = 0; i < 2 && contentIndex < _contents.length; i++) {
-        contentsToAdd.add(_contents[contentIndex]);
-        contentIndex++;
+      // Priorité aux posts
+      if (postIndex < _posts.length) {
+        _mixedItems.add(_MixedItem(type: _MixedItemType.post, data: _posts[postIndex]));
+        postIndex++;
+        postsSinceLastInsertion++;
+        lastWasContentGrid = false;
       }
-      _mixedItems.add(_MixedItem(type: _MixedItemType.contentGrid, data: contentsToAdd));
+      // Ensuite les contenus
+      else if (contentIndex < _contents.length && !lastWasContentGrid) {
+        final contentsToAdd = [];
+        for (int i = 0; i < 2 && contentIndex < _contents.length; i++) {
+          contentsToAdd.add(_contents[contentIndex]);
+          contentIndex++;
+        }
+        if (contentsToAdd.isNotEmpty) {
+          _mixedItems.add(_MixedItem(type: _MixedItemType.contentGrid, data: contentsToAdd));
+          lastWasContentGrid = true;
+          postsSinceLastInsertion = 0;
+        }
+      }
+      // Si on ne peut plus rien ajouter, sortir de la boucle
+      else {
+        break;
+      }
     }
+
+    // Ajouter les sections restantes à la fin (sécurité)
+    if (boosterIndex < articles.length) {
+      final remainingBoosters = _getRemainingBoosters(refIndex: boosterIndex);
+      if (remainingBoosters.isNotEmpty) {
+        _mixedItems.add(_MixedItem(
+            type: _MixedItemType.booster,
+            data: remainingBoosters
+        ));
+      }
+    }
+
+    if (canalIndex < canaux.length) {
+      final remainingCanaux = _getRemainingCanaux(refIndex: canalIndex);
+      if (remainingCanaux.isNotEmpty) {
+        _mixedItems.add(_MixedItem(
+            type: _MixedItemType.canal,
+            data: remainingCanaux
+        ));
+      }
+    }
+
+    // Log pour debug
+    print('Mixed list created: ${_mixedItems.length} items');
+    print('Posts: $postIndex/${_posts.length}, Contents: $contentIndex/${_contents.length}');
+    print('Boosters: $boosterIndex/${articles.length}, Canaux: $canalIndex/${canaux.length}');
 
     setState(() {});
   }
+
+// Méthodes sécurisées pour obtenir les articles et canaux
+  List<ArticleData> _getNextBoosters({required int refIndex}) {
+    if (articles.isEmpty || refIndex >= articles.length) return [];
+    final endIndex = refIndex + 3 <= articles.length ? refIndex + 3 : articles.length;
+    return articles.sublist(refIndex, endIndex);
+  }
+
+  List<Canal> _getNextCanaux({required int refIndex}) {
+    if (canaux.isEmpty || refIndex >= canaux.length) return [];
+    final endIndex = refIndex + 3 <= canaux.length ? refIndex + 3 : canaux.length;
+    return canaux.sublist(refIndex, endIndex);
+  }
+
+  List<ArticleData> _getRemainingBoosters({required int refIndex}) {
+    if (articles.isEmpty || refIndex >= articles.length) return [];
+    return articles.sublist(refIndex);
+  }
+
+  List<Canal> _getRemainingCanaux({required int refIndex}) {
+    if (canaux.isEmpty || refIndex >= canaux.length) return [];
+    return canaux.sublist(refIndex);
+  }
+
+// Modifier les méthodes de construction des widgets
+  Widget _buildBoosterItem(List<ArticleData> articles, double width,double height) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      height: height * 0.32, // Hauteur fixe pour la section horizontale
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Produits boostés 🔥",
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeAfroshopPage(title: ''))),
+                  child: Row(
+                    children: [
+                      Text('Boutiques', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryGreen)),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward, color: primaryGreen, size: 16),
+                    ],
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              itemCount: articles.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: width * 0.4,
+                  margin: EdgeInsets.symmetric(horizontal: 4),
+                  child: ProductWidget(
+                    article: articles[index],
+                    width: width * 0.28,
+                    height: height * 0.2,
+                    isOtherPage: false,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCanalItem(List<Canal> canaux, double width,double h) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      height: h * 0.23, // Hauteur fixe pour la section horizontale
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Canaux à suivre 📺",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPage(isUserCanals: false))),
+                  child: Row(
+                    children: [
+                      Text('Voir plus', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryGreen)),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward, color: primaryGreen, size: 16),
+                    ],
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              itemCount: canaux.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: width * 0.3,
+                  margin: EdgeInsets.symmetric(horizontal: 4),
+                  child: channelWidget(
+                    canaux[index],
+                    h * 0.28,
+                    width * 0.28,
+                    context,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   Future<void> _loadMoreData() async {
     if (_isLoadingMore) return;
@@ -653,6 +899,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       _visibilityTimers.forEach((key, timer) => timer.cancel());
       _visibilityTimers.clear();
     });
+     _loadAdditionalData();
 
     await _loadInitialData();
   }
@@ -1065,22 +1312,29 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
+// Modifier le builder pour gérer les listes
             SliverList(
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
                   final item = _mixedItems[index];
-                  if (item.type == _MixedItemType.post) {
-                    return GestureDetector(
-                      onTap: () => _navigateToDetails(item.data, _MixedItemType.post),
-                      child: _buildPostWithVisibilityDetection(item.data, width),
-                    );
-                  } else if (item.type == _MixedItemType.contentGrid) {
-                    return _buildContentGrid(
-                      (item.data as List<dynamic>).map((e) => e as ContentPaie).toList(),
-                      width,
-                    );
+                  switch (item.type) {
+                    case _MixedItemType.post:
+                      return GestureDetector(
+                        onTap: () => _navigateToDetails(item.data, _MixedItemType.post),
+                        child: _buildPostWithVisibilityDetection(item.data, width),
+                      );
+                    case _MixedItemType.contentGrid:
+                      return _buildContentGrid(
+                        (item.data as List<dynamic>).map((e) => e as ContentPaie).toList(),
+                        width,
+                      );
+                    case _MixedItemType.booster:
+                      return _buildBoosterItem(articles, width,MediaQuery.of(context).size.height);
+                    case _MixedItemType.canal:
+                      return _buildCanalItem(canaux, width,MediaQuery.of(context).size.height,);
+                    default:
+                      return SizedBox.shrink();
                   }
-                  return SizedBox.shrink();
                 },
                 childCount: _mixedItems.length,
               ),
@@ -1116,7 +1370,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   }
 }
 
-enum _MixedItemType { post, content, contentGrid }
+enum _MixedItemType { post, content, contentGrid, booster, canal }
 
 class _MixedItem {
   final _MixedItemType type;

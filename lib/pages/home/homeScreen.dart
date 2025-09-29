@@ -68,7 +68,7 @@ import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
-const Color darkBackground = Color(0xFF121212);
+const Color darkBackground = Colors.black;
 const Color textColor = Colors.white;
 
 class MyHomePage extends StatefulWidget {
@@ -1069,12 +1069,24 @@ class _MyHomePageState extends State<MyHomePage>
     // _changeColor();
     super.initState();
     if(!widget.isOpenLink){
-      TopLiveGridModal.showTopLiveGridModal(context);
+      // TopLiveGridModal.showTopLiveGridModal(context);
+      // TopProductsGridModal.showTopProductsGridModal(context);
+
+      // Remplacer l'appel direct par le gestionnaire de modals
+      //
+      //   WidgetsBinding.instance.addPostFrameCallback((_) {
+      //     // Utiliser la version avancée pour plus de contrôle
+      //     AdvancedModalManager.showModalsWithSmartDelay(context);
+      //   });
+
+      AdvancedModalManager.showModalsWithSmartDelay(context);
+
+
 
     }
-    userProvider.getAllUsers().then((value) {
-      // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
-    });
+    // userProvider.getAllUsers().then((value) {
+    //   // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
+    // });
 
 
     _tabController = TabController(length: _tabs.length, vsync: this);
@@ -1160,7 +1172,6 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-
     switch (state) {
       case AppLifecycleState.detached:
       // _onDetached();
@@ -1306,10 +1317,12 @@ class _MyHomePageState extends State<MyHomePage>
               tabs: [
                 Tab(text: '🏠 Accueil'),
                 Tab(text: '🎥 Vidéos virales'),
+                Tab(text: '🕒 Récents'),
+
                 Tab(text: '🌟 Looks'),
                 // Tab(text: '🎵 TikTok'),
                 Tab(text: '🔥 Populaires'),
-                Tab(text: '🕒 Récents'),
+
                 // Tab(text: '💼 Offres'),
               ],
 
@@ -1323,9 +1336,11 @@ class _MyHomePageState extends State<MyHomePage>
         children: [
           UnifiedHomePage(),
           DashboardContentScreen(),
-          LooksPage(type: TabBarType.LOOKS.name),
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          LooksPage(type: TabBarType.LOOKS.name),
+
+          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
+
 
           // VideoFeedTiktokPage(fullPage: false),
           // ActualitePage(type: TabBarType.ACTUALITES.name),

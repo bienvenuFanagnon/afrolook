@@ -147,8 +147,8 @@ class CategorieProduitProvider extends ChangeNotifier {
       // Get docs from collection reference
       QuerySnapshot querySnapshotUser = await userCollect
           .where("disponible",isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-        .limit(10)
+          // .orderBy('createdAt', descending: true)
+        .limit(7)
           .get();
 
       // Afficher la liste

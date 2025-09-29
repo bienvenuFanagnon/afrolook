@@ -51,10 +51,8 @@ import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../../chat/entrepriseChat.dart';
-import '../../chat/ia_Chat.dart';
 import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
-import '../../ia/compagnon/introIaCompagnon.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 

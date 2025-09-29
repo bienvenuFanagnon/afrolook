@@ -218,6 +218,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     // Navigator.push(context, MaterialPageRoute(builder: (context) =>  paiment(double.parse(calculatedPrice.toStringAsFixed(0)))
                     // ,));
 
+                    showContactSubscriptionModal(context);
+
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                   child: Text('Confirmer'),
@@ -229,4 +231,62 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       },
     );
   }
+
+  void showContactSubscriptionModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Color(0xFFF1C40F).withOpacity(0.1),
+                child: Icon(Icons.contact_support, color: Color(0xFFF1C40F), size: 32),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "Abonnement requis",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Pour profiter de cette fonctionnalité, veuillez nous contacter pour souscrire à un abonnement.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2ECC71),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/contact');
+
+                  // Ici tu peux ouvrir WhatsApp ou un mail pour le contact
+                  // par exemple : launchUrl(Uri.parse('https://wa.me/+22896198801'));
+                },
+                child: Text("Nous contacter", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }
