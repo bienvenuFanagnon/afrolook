@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/pages/postComments.dart';
-import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:afrotok/services/linkService.dart';
 
 const _twitterDarkBg = Color(0xFF000000);
@@ -45,6 +46,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Paramètres de chargement
   final int _initialLimit = 5;
@@ -65,11 +67,18 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   int _totalVideoCount = 1000;
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
+
+  // Variables pour le vote
+  bool _hasVoted = false;
+  bool _isVoting = false;
+  List<String> _votersList = [];
+  Challenge? _challenge;
+  bool _loadingChallenge = false;
+
   // Données pour la pagination intelligente
   List<String> _allVideoPostIds = [];
   List<String> _viewedVideoPostIds = [];
   DocumentSnapshot? _lastDocument;
-
 
   List<double> giftPrices = [
     10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
@@ -81,51 +90,14 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
     '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
   ];
-  void _showInsufficientBalanceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.yellow, width: 2),
-          ),
-          title: Text(
-            'Solde Insuffisant',
-            style: TextStyle(
-              color: Colors.yellow,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.white)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Naviguer vers la page de recharge
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: Text('Recharger', style: TextStyle(color: Colors.black)),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   // Stream pour les mises à jour en temps réel
   final Map<String, StreamSubscription<DocumentSnapshot>> _postSubscriptions = {};
+
+  // Vérifier si c'est un Look Challenge
+  bool get _isLookChallenge {
+    return widget.initialPost.type == 'CHALLENGEPARTICIPATION';
+  }
 
   @override
   void initState() {
@@ -134,6 +106,12 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
     _pageController = PageController();
+
+    // Initialiser les fonctionnalités de challenge
+    if (_isLookChallenge && widget.initialPost.challenge_id != null) {
+      _loadChallengeData();
+    }
+    _checkIfUserHasVoted();
     _loadInitialVideos();
   }
 
@@ -152,6 +130,494 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       _isVideoInitialized = false;
     });
   }
+
+  // ==================== FONCTIONNALITÉS CHALLENGE ET VOTE ====================
+
+  Future<void> _checkIfUserHasVoted() async {
+    try {
+      final postDoc = await _firestore.collection('Posts').doc(widget.initialPost.id).get();
+      if (postDoc.exists) {
+        final data = postDoc.data() as Map<String, dynamic>;
+        final voters = List<String>.from(data['users_votes_ids'] ?? []);
+        setState(() {
+          _hasVoted = voters.contains(authProvider.loginUserData.id);
+          _votersList = voters;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification du vote: $e');
+    }
+  }
+
+  Future<void> _loadChallengeData() async {
+    if (widget.initialPost.challenge_id == null) return;
+
+    setState(() {
+      _loadingChallenge = true;
+    });
+
+    try {
+      final challengeDoc = await _firestore
+          .collection('Challenges')
+          .doc(widget.initialPost.challenge_id)
+          .get();
+      if (challengeDoc.exists) {
+        setState(() {
+          _challenge = Challenge.fromJson(challengeDoc.data()!)
+            ..id = challengeDoc.id;
+        });
+      }
+    } catch (e) {
+      print('Erreur chargement challenge: $e');
+    } finally {
+      setState(() {
+        _loadingChallenge = false;
+      });
+    }
+  }
+
+  Future<void> _reloadChallengeData() async {
+    try {
+      if (widget.initialPost.challenge_id == null) return;
+
+      if (mounted) {
+        setState(() {
+          _loadingChallenge = true;
+        });
+      }
+
+      final challengeDoc = await _firestore
+          .collection('Challenges')
+          .doc(widget.initialPost.challenge_id)
+          .get();
+
+      if (challengeDoc.exists) {
+        if (mounted) {
+          setState(() {
+            _challenge = Challenge.fromJson(challengeDoc.data()!)
+              ..id = challengeDoc.id;
+          });
+        }
+      } else {
+        print('Challenge non trouvé: ${widget.initialPost.challenge_id}');
+        if (mounted) {
+          setState(() {
+            _challenge = null;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur rechargement challenge: $e');
+      if (mounted) {
+        setState(() {
+          _challenge = null;
+        });
+      }
+      rethrow;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingChallenge = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _voteForLook() async {
+    if (_hasVoted || _isVoting) return;
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showError('CONNECTEZ-VOUS POUR POUVOIR VOTER\nVotre vote compte pour élire le gagnant !');
+      return;
+    }
+
+    setState(() {
+      _isVoting = true;
+    });
+
+    try {
+      // Si c'est un look challenge, recharger les données d'abord
+      if (_isLookChallenge && widget.initialPost.challenge_id != null) {
+        await _reloadChallengeData();
+
+        // Vérifier à nouveau après rechargement
+        if (_challenge == null) {
+          _showError('Impossible de charger les données du challenge. Veuillez réessayer.');
+          return;
+        }
+
+        final now = DateTime.now().microsecondsSinceEpoch;
+
+        // Vérifier si le challenge est terminé
+        if (_challenge!.isTermine || now > (_challenge!.finishedAt ?? 0)) {
+          _showError('CE CHALLENGE EST TERMINÉ\nMerci pour votre intérêt !');
+          return;
+        }
+
+        if (_challenge!.aVote(user.uid)) {
+          _showError('VOUS AVEZ DÉJÀ VOTÉ DANS CE CHALLENGE\nMerci pour votre participation !');
+          return;
+        }
+
+        if (!_challenge!.isEnCours) {
+          _showError('CE CHALLENGE N\'EST PLUS ACTIF\nLe vote n\'est pas possible actuellement.');
+          return;
+        }
+
+        // Vérifier le solde si vote payant
+        if (!_challenge!.voteGratuit!) {
+          final solde = await _getSoldeUtilisateur(user.uid);
+          if (solde < _challenge!.prixVote!) {
+            _showSoldeInsuffisant(_challenge!.prixVote! - solde.toInt());
+            return;
+          }
+        }
+
+        // Afficher la confirmation de vote
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: Text('Confirmer votre vote', style: TextStyle(color: Colors.white)),
+            content: Text(
+              !_challenge!.voteGratuit!
+                  ? 'Êtes-vous sûr de vouloir voter pour ce look ?\n\nCe vote vous coûtera ${_challenge!.prixVote} FCFA.'
+                  : 'Voulez-vous vraiment voter pour ce look ?\n\nVotre vote est gratuit et ne peut être changé.',
+              style: TextStyle(color: Colors.grey[300]),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _isVoting = false;
+                  });
+                },
+                child: Text('ANNULER', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _processVoteWithChallenge(user.uid);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: Text('CONFIRMER MON VOTE', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Vote normal (sans challenge)
+        await _processVoteNormal(user.uid);
+      }
+    } catch (e) {
+      print("Erreur lors de la préparation du vote: $e");
+      _showError('Erreur lors de la préparation du vote: $e');
+    }
+  }
+
+  Future<void> _processVoteWithChallenge(String userId) async {
+    try {
+      // Recharger une dernière fois avant le vote pour être sûr
+      await _reloadChallengeData();
+
+      if (_challenge == null) {
+        throw Exception('Données du challenge non disponibles');
+      }
+
+      await _firestore.runTransaction((transaction) async {
+        // Vérifier à nouveau le challenge avec les données fraîches
+        final challengeRef = _firestore.collection('Challenges').doc(_challenge!.id!);
+        final challengeDoc = await transaction.get(challengeRef);
+
+        if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
+
+        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
+
+        // Vérifications finales
+        if (!currentChallenge.isEnCours) {
+          throw Exception('Le challenge n\'est plus actif');
+        }
+
+        if (currentChallenge.aVote(userId)) {
+          throw Exception('Vous avez déjà voté dans ce challenge');
+        }
+
+        final postRef = _firestore.collection('Posts').doc(widget.initialPost.id);
+        final postDoc = await transaction.get(postRef);
+
+        if (!postDoc.exists) throw Exception('Post non trouvé');
+
+        // Débiter si vote payant
+        if (!_challenge!.voteGratuit!) {
+          await _debiterUtilisateur(userId, _challenge!.prixVote!,
+              'Vote pour le challenge ${_challenge!.titre}');
+        }
+
+        // Mettre à jour le post
+        transaction.update(postRef, {
+          'votes_challenge': FieldValue.increment(1),
+          'users_votes_ids': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(3),
+        });
+
+        // Mettre à jour le challenge
+        transaction.update(challengeRef, {
+          'users_votants_ids': FieldValue.arrayUnion([userId]),
+          'total_votes': FieldValue.increment(1),
+          'updated_at': DateTime.now().microsecondsSinceEpoch
+        });
+      });
+
+      // Mettre à jour l'état local
+      if (mounted) {
+        setState(() {
+          _hasVoted = true;
+          _votersList.add(userId);
+          widget.initialPost.votesChallenge = (widget.initialPost.votesChallenge ?? 0) + 1;
+        });
+      }
+
+      // Envoyer une notification
+      await authProvider.sendNotification(
+        userIds: [widget.initialPost.user!.oneIgnalUserid!],
+        smallImage: authProvider.loginUserData.imageUrl!,
+        send_user_id: authProvider.loginUserData.id!,
+        recever_user_id: widget.initialPost.user_id!,
+        message:
+        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
+        type_notif: NotificationType.POST.name,
+        post_id: widget.initialPost.id!,
+        post_type: PostDataType.VIDEO.name,
+        chat_id: '',
+      );
+
+      // Récompense pour le vote
+      await postProvider.interactWithPostAndIncrementSolde(widget.initialPost.id!,
+          authProvider.loginUserData.id!, "vote_look", widget.initialPost.user_id!);
+
+      _showSuccess('VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+    } catch (e) {
+      print("Erreur lors du vote avec challenge: $e");
+      _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVoting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _processVoteNormal(String userId) async {
+    try {
+      // Mettre à jour Firestore
+      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+        'votes_challenge': FieldValue.increment(1),
+        'users_votes_ids': FieldValue.arrayUnion([userId]),
+        'popularity': FieldValue.increment(3),
+      });
+
+      // Mettre à jour l'état local
+      if (mounted) {
+        setState(() {
+          _hasVoted = true;
+          _votersList.add(userId);
+          widget.initialPost.votesChallenge = (widget.initialPost.votesChallenge ?? 0) + 1;
+        });
+      }
+
+      // Envoyer une notification au propriétaire du look
+      await authProvider.sendNotification(
+        userIds: [widget.initialPost.user!.oneIgnalUserid!],
+        smallImage: authProvider.loginUserData.imageUrl!,
+        send_user_id: authProvider.loginUserData.id!,
+        recever_user_id: widget.initialPost.user_id!,
+        message: "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
+        type_notif: NotificationType.POST.name,
+        post_id: widget.initialPost.id!,
+        post_type: PostDataType.VIDEO.name,
+        chat_id: '',
+      );
+
+      // Récompense pour le vote
+      await postProvider.interactWithPostAndIncrementSolde(widget.initialPost.id!,
+          authProvider.loginUserData.id!, "vote_look", widget.initialPost.user_id!);
+
+      _showSuccess('🎉 Vote enregistré !');
+    } catch (e) {
+      print("Erreur lors du vote normal: $e");
+      _showError('Erreur lors du vote: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVoting = false;
+        });
+      }
+    }
+  }
+
+  // Méthodes utilitaires pour le vote
+  Future<double> _getSoldeUtilisateur(String userId) async {
+    final doc = await _firestore.collection('Users').doc(userId).get();
+    return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
+  }
+
+  Future<void> _debiterUtilisateur(String userId, int montant, String raison) async {
+    await _firestore.collection('Users').doc(userId).update({
+      'votre_solde_principal': FieldValue.increment(-montant)
+    });
+
+    await _createTransaction(
+        TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showSoldeInsuffisant(int montantManquant) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
+        content: Text(
+          'Il vous manque $montantManquant FCFA pour pouvoir voter.\n\n'
+              'Rechargez votre compte pour soutenir votre look préféré !',
+          style: TextStyle(color: Colors.grey[300]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('PLUS TARD', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => DepositScreen()));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('RECHARGER MAINTENANT', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVoteConfirmationDialog() {
+    final user = _auth.currentUser;
+
+    // Si c'est un look challenge avec vote payant
+    if (_isLookChallenge && _challenge != null && !_challenge!.voteGratuit!) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: _twitterCardBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: _twitterGreen, width: 2),
+            ),
+            title: Text(
+              '🎉 Voter pour ce Look',
+              style: TextStyle(
+                color: _twitterGreen,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            content: Text(
+              'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.\n\n'
+                  'Voulez-vous continuer ?',
+              style: TextStyle(color: _twitterTextPrimary),
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler', style: TextStyle(color: _twitterTextSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _voteForLook();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _twitterGreen,
+                ),
+                child: Text('Voter ${_challenge!.prixVote} FCFA',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Dialogue de confirmation normal
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: _twitterCardBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: _twitterGreen, width: 2),
+            ),
+            title: Text(
+              '🎉 Voter pour ce Look',
+              style: TextStyle(
+                color: _twitterGreen,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            content: Text(
+              'Vous allez voter pour ce look${_isLookChallenge ? ' challenge' : ''}. Cette action est irréversible${_isLookChallenge && _challenge != null ? ' et vous rapportera 3 points' : ''}!',
+              style: TextStyle(color: _twitterTextPrimary),
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler', style: TextStyle(color: _twitterTextSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _voteForLook();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _twitterGreen,
+                ),
+                child: Text('Voter', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  // ==================== GESTION DES VIDÉOS ====================
 
   Future<void> _loadInitialVideos() async {
     try {
@@ -206,7 +672,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
 
       if (appDataSnapshot.exists) {
         final appData = AppDefaultData.fromJson(appDataSnapshot.data() ?? {});
-        // Filtrer pour garder seulement les IDs des posts vidéo
         _allVideoPostIds = appData.allPostIds?.where((id) => id.isNotEmpty).toList() ?? [];
         print('IDs vidéo disponibles: ${_allVideoPostIds.length}');
       }
@@ -242,10 +707,8 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       final currentUserId = authProvider.loginUserData.id;
 
       if (currentUserId != null && _allVideoPostIds.isNotEmpty) {
-        // Utiliser l'algorithme de priorité aux non vus
         await _loadVideosWithPriority(currentUserId, isInitialLoad);
       } else {
-        // Fallback: chargement chronologique simple
         await _loadVideosChronologically();
       }
 
@@ -259,13 +722,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   }
 
   Future<void> _loadVideosWithPriority(String currentUserId, bool isInitialLoad) async {
-    // Identifier les vidéos non vues
     final unseenVideoIds = _allVideoPostIds.where((postId) =>
     !_viewedVideoPostIds.contains(postId) &&
         !_videoPosts.any((post) => post.id == postId)
     ).toList();
 
-    // Identifier les vidéos déjà vues
     final seenVideoIds = _allVideoPostIds.where((postId) =>
     _viewedVideoPostIds.contains(postId) &&
         !_videoPosts.any((post) => post.id == postId)
@@ -274,13 +735,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     print('📊 Vidéos non vues disponibles: ${unseenVideoIds.length}');
     print('📊 Vidéos déjà vues disponibles: ${seenVideoIds.length}');
 
-    final limit = isInitialLoad ? _initialLimit - 1 : _loadMoreLimit; // -1 car on a déjà la vidéo initiale
+    final limit = isInitialLoad ? _initialLimit - 1 : _loadMoreLimit;
 
-    // Charger d'abord les non vues
     final unseenVideos = await _loadVideosByIds(unseenVideoIds, limit: limit, isSeen: false);
     print('✅ Vidéos non vues chargées: ${unseenVideos.length}');
 
-    // Compléter avec des vidéos vues si nécessaire
     if (unseenVideos.length < limit) {
       final remainingLimit = limit - unseenVideos.length;
       final seenVideos = await _loadVideosByIds(seenVideoIds, limit: remainingLimit, isSeen: true);
@@ -291,7 +750,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       _videoPosts.addAll(unseenVideos);
     }
 
-    // Souscrire aux mises à jour pour toutes les nouvelles vidéos
     for (final post in _videoPosts) {
       _subscribeToPostUpdates(post);
     }
@@ -305,7 +763,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
 
     print('🔹 Chargement de ${idsToLoad.length} vidéos par ID');
 
-    // Charger par batches de 10 (limite Firebase)
     for (var i = 0; i < idsToLoad.length; i += 10) {
       final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
       if (batchIds.isEmpty) continue;
@@ -328,7 +785,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         }
       } catch (e) {
         print('❌ Erreur batch chargement vidéos: $e');
-        // Fallback: charger les vidéos une par une
         for (final id in batchIds) {
           try {
             final doc = await _firestore.collection('Posts').doc(id).get();
@@ -371,7 +827,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         return post;
       }).toList();
 
-      // Éviter les doublons
       final existingIds = _videoPosts.map((v) => v.id).toSet();
       final uniqueNewVideos = newVideos.where((video) =>
       video.id != null && !existingIds.contains(video.id)).toList();
@@ -393,7 +848,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         setState(() {
           final index = _videoPosts.indexWhere((p) => p.id == post.id);
           if (index != -1) {
-            // Conserver les données utilisateur/canal et l'état "vu"
             updatedPost.user = _videoPosts[index].user;
             updatedPost.canal = _videoPosts[index].canal;
             updatedPost.hasBeenSeenByCurrentUser = _videoPosts[index].hasBeenSeenByCurrentUser;
@@ -424,7 +878,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         videoPlayerController: _currentVideoController!,
         autoPlay: true,
         looping: true,
-        // mute: true, // Lecture sans son par défaut
         showControls: false,
         allowFullScreen: false,
         allowMuting: true,
@@ -451,18 +904,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       );
 
       setState(() => _isVideoInitialized = true);
-
-      // Enregistrer la vue immédiatement
       await _recordPostView(post);
 
     } catch (e) {
       print('❌ Erreur initialisation vidéo: $e');
       setState(() => _isVideoInitialized = false);
-
-      // Fallback: afficher une image de preview si disponible
-      if (post.images != null && post.images!.isNotEmpty) {
-        // Vous pourriez afficher la première image comme fallback
-      }
     }
   }
 
@@ -476,12 +922,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       if (!_viewedVideoPostIds.contains(post.id)) {
         _viewedVideoPostIds.add(post.id!);
 
-        // Mettre à jour Firestore
         await _firestore.collection('Users').doc(currentUserId).update({
           'viewedPostIds': FieldValue.arrayUnion([post.id]),
         });
 
-        // Mettre à jour localement
         post.hasBeenSeenByCurrentUser = true;
       }
     } catch (e) {
@@ -495,14 +939,12 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     try {
       await _markPostAsSeen(post);
 
-      // Incrémenter le compteur de vues seulement si pas déjà vu
       if (!post.users_vue_id!.contains(authProvider.loginUserData.id)) {
         await _firestore.collection('Posts').doc(post.id).update({
           'vues': FieldValue.increment(1),
           'users_vue_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
         });
 
-        // Mettre à jour localement
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id!.add(authProvider.loginUserData.id!);
       }
@@ -511,7 +953,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     }
   }
 
-  // ... (les méthodes _handleLike, _showCommentsModal, _showPostMenu, etc. restent les mêmes)
+  // ==================== WIDGETS ====================
 
   Widget _buildVideoPlayer(Post post) {
     if (!_isVideoInitialized) {
@@ -522,7 +964,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       children: [
         Chewie(controller: _chewieController!),
 
-        // Overlay de contrôle personnalisé
         Positioned.fill(
           child: GestureDetector(
             onTap: () {
@@ -555,28 +996,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             ),
           ),
         ),
-
-        // Indicateur "Nouveau" pour les vidéos non vues
-        if (!post.hasBeenSeenByCurrentUser!)
-          Positioned(
-            top: 50,
-            left: 16,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _afroGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Nouveau',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -586,7 +1005,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       color: _afroBlack,
       child: Stack(
         children: [
-          // Afficher une image de preview si disponible
           if (post.images != null && post.images!.isNotEmpty)
             CachedNetworkImage(
               imageUrl: post.images!.first,
@@ -620,303 +1038,93 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _afroBlack,
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: _afroGreen))
-          : PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: _videoPosts.length + (_hasMoreVideos ? 1 : 0),
-        onPageChanged: (index) async {
-          // Précharger les vidéos suivantes
-          if (index >= _videoPosts.length - 2 && _hasMoreVideos && !_isLoadingMore) {
-            await _loadMoreVideos();
-          }
+  Widget _buildLookChallengeSection(Post post) {
+    if (!_isLookChallenge) return SizedBox();
 
-          if (index < _videoPosts.length) {
-            setState(() => _currentPage = index);
-            _initializeVideo(_videoPosts[index]);
-          }
-        },
-        itemBuilder: (context, index) {
-          if (index >= _videoPosts.length) {
-            return Center(
-              child: CircularProgressIndicator(color: _afroGreen),
-            );
-          }
-
-          final post = _videoPosts[index];
-          return _buildVideoPage(post);
-        },
-      ),
-    );
-  }
-
-  Widget _buildVideoPage(Post post) {
-    return Stack(
-      children: [
-        // Lecteur vidéo
-        _buildVideoPlayer(post),
-
-        // Informations utilisateur
-        _buildUserInfo(post),
-
-        // Boutons d'action
-        _buildActionButtons(post),
-
-        // En-tête avec logo Afrolook
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
-          left: 16,
-          child: Text(
-            'Afrolook',
-            style: TextStyle(
-              color: _afroGreen,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
-        // Indicateur de son
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
-          right: 16,
-          child: IconButton(
-            icon: Icon(
-              _chewieController?.isPlaying ?? false ? Icons.volume_off : Icons.volume_up,
-              color: Colors.white,
-              size: 30,
-            ),
-            onPressed: () {
-              final isMuted = _chewieController?.isPlaying ?? false;
-              _chewieController?.setVolume(isMuted ? 1.0 : 0.0);
-            },
-          ),
-        ),
-
-        // Indicateur de chargement suivant
-        if (_isLoadingMore)
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: CircularProgressIndicator(color: _afroGreen),
-            ),
-          ),
-      ],
-    );
-  }
-
-
-  Future<void> _handleLike(Post post) async {
-    try {
-      if (!post.users_love_id!.contains(authProvider.loginUserData.id)) {
-        await _firestore.collection('Posts').doc(post.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
-        });
-
-        // Notification et incrémentation du solde
-        await postProvider.interactWithPostAndIncrementSolde(
-            post.id!,
-            authProvider.loginUserData.id!,
-            "like",
-            post.user_id!
-        );
-      }
-    } catch (e) {
-      print('Erreur like: $e');
-    }
-  }
-
-  void _showCommentsModal(Post post) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+    return Positioned(
+      bottom: 250,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _afroBlack,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _twitterGreen),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Commentaires',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Icon(Icons.emoji_events, color: _twitterGreen, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'LOOK CHALLENGE',
+                  style: TextStyle(
+                    color: _twitterGreen,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${post.votesChallenge ?? 0} votes',
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                if (!_hasVoted && _challenge != null && _challenge!.isEnCours)
+                  ElevatedButton(
+                    onPressed: _isVoting ? null : _showVoteConfirmationDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _twitterGreen,
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    child: _isVoting
+                        ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                        : Text(
+                      'VOTER',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                else if (_hasVoted)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _twitterGreen.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _twitterGreen),
+                    ),
+                    child: Text(
+                      'DÉJÀ VOTÉ',
+                      style: TextStyle(
+                        color: _twitterGreen,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: PostComments(post: post),
+              ],
             ),
           ],
         ),
       ),
     );
   }
-  Future<void> deletePost(Post post, BuildContext context) async {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
-    late PostProvider postProvider =
-    Provider.of<PostProvider>(context, listen: false);
-    try {
-      // Vérifie les droits
-      final canDelete = authProvider.loginUserData.role == UserRole.ADM.name ||
-          (post.type == PostType.POST.name &&
-              post.user?.id == authProvider.loginUserData.id);
-
-      if (!canDelete) return;
-
-      // Supprime le document dans Firestore
-      await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(post.id)
-          .delete();
-
-      // SnackBar de succès
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Post supprimé !',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.green),
-          ),
-        ),
-      );
-    } catch (e) {
-      // SnackBar d'erreur
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Échec de la suppression !',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-      print('Erreur suppression post: $e');
-    }
-  }
-
-  void _showPostMenu(Post post) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _twitterCardBg,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // --- Signaler (si ce n’est pas ton post)
-            if (post.user_id != authProvider.loginUserData.id)
-              _buildMenuOption(
-                Icons.flag,
-                "Signaler",
-                _twitterTextPrimary,
-                    () async {
-                  post.status = PostStatus.SIGNALER.name;
-                  final value = await postProvider.updateVuePost(post, context);
-                  Navigator.pop(context);
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      value ? 'Post signalé !' : 'Échec du signalement !',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: value ? Colors.green : Colors.red),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
-              ),
-
-            // --- Supprimer (si admin OU propriétaire)
-            if (post.user!.id == authProvider.loginUserData.id ||
-                authProvider.loginUserData.role == UserRole.ADM.name)
-              _buildMenuOption(
-                Icons.delete,
-                "Supprimer",
-                Colors.red,
-                    () async {
-                  if (authProvider.loginUserData.role == UserRole.ADM.name) {
-                    await deletePost(post, context);
-                  } else {
-                    post.status = PostStatus.SUPPRIMER.name;
-                    await deletePost(post, context);
-                  }
-                  Navigator.pop(context);
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      'Post supprimé !',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
-              ),
-
-            SizedBox(height: 8),
-            Container(height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
-            SizedBox(height: 8),
-
-            // --- Annuler
-            _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary, () {
-              Navigator.pop(context);
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuOption(
-      IconData icon, String text, Color color, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              SizedBox(width: 12),
-              Text(text, style: TextStyle(color: color, fontSize: 16)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
 
   Widget _buildUserInfo(Post post) {
     final user = post.user;
@@ -1018,6 +1226,26 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           ),
           SizedBox(height: 10),
 
+          // Vote (uniquement pour les challenges)
+          if (_isLookChallenge)
+            Column(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+                    color: _hasVoted ? _twitterGreen : Colors.white,
+                    size: 35,
+                  ),
+                  onPressed: _voteForLook,
+                ),
+                Text(
+                  _formatCount(post.votesChallenge ?? 0),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          if (_isLookChallenge) SizedBox(height: 10),
+
           // Commentaires
           Column(
             children: [
@@ -1033,7 +1261,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           ),
           SizedBox(height: 10),
 
-
           // Cadeaux
           Column(
             children: [
@@ -1048,14 +1275,13 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             ],
           ),
           SizedBox(height: 10),
+
           // Vue
           Column(
             children: [
               IconButton(
                 icon: Icon(Icons.remove_red_eye_rounded, color: Colors.white, size: 35),
-                onPressed: () {
-
-                },
+                onPressed: () {},
               ),
               Text(
                 _formatCount(post.vues ?? 0),
@@ -1082,104 +1308,117 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     );
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count.toString();
-  }
+  // ==================== MÉTHODES D'INTERACTION ====================
 
-
-
-  Future<void> _sendGift(double amount) async {
+  Future<void> _handleLike(Post post) async {
     try {
-      setState(() => _isLoading = true);
-
-      final firestore = FirebaseFirestore.instance;
-      await authProvider.getAppData();
-      // Récupérer l'utilisateur expéditeur à jour
-      final senderSnap = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
-      if (!senderSnap.exists) {
-        throw Exception("Utilisateur expéditeur introuvable");
-      }
-      final senderData = senderSnap.data() as Map<String, dynamic>;
-      final double senderBalance = (senderData['votre_solde_principal'] ?? 0.0).toDouble();
-
-      // Vérifier le solde
-      if (senderBalance >= amount) {
-        final double gainDestinataire = amount * 0.5;
-        final double gainApplication = amount * 0.5;
-
-        // Débiter l’expéditeur
-        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_principal': FieldValue.increment(-amount),
+      if (!post.users_love_id!.contains(authProvider.loginUserData.id)) {
+        await _firestore.collection('Posts').doc(post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
         });
 
-        // Créditer le destinataire
-        await firestore.collection('Users').doc(widget.initialPost.user!.id).update({
-          'votre_solde_principal': FieldValue.increment(gainDestinataire),
-        });
-
-        // Créditer l'application
-        String appDataId = authProvider.appDefaultData.id!;
-        await firestore.collection('AppData').doc(appDataId).update({
-          'solde_gain': FieldValue.increment(gainApplication),
-        });
-
-        // Ajouter l'expéditeur à la liste des cadeaux du post
-        await firestore.collection('Posts').doc(widget.initialPost.id).update({
-          'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(5), // pondération pour un commentaire
-
-        });
-
-        // Créer les transactions
-        // Créer les transactions
-        await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${widget.initialPost.user!.pseudo}",authProvider.loginUserData.id!);
-        await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}",widget.initialPost.user_id!);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text(
-              '🎁 Cadeau de ${amount.toInt()} FCFA envoyé avec succès!',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
+        await postProvider.interactWithPostAndIncrementSolde(
+            post.id!,
+            authProvider.loginUserData.id!,
+            "like",
+            post.user_id!
         );
-        await authProvider.sendNotification(
-          userIds: [widget.initialPost.user!.oneIgnalUserid!],
-          smallImage: "", // pas besoin de montrer l'image de l'expéditeur
-          send_user_id: "", // pas besoin de l'expéditeur
-          recever_user_id: "${widget.initialPost.user_id!}",
-          message: "🎁 Vous avez reçu un cadeau de ${amount.toInt()} FCFA !",
-          type_notif: NotificationType.POST.name,
-          post_id: "${widget.initialPost!.id!}",
-          post_type: PostDataType.IMAGE.name,
-          chat_id: '',
-        );
-      } else {
-        _showInsufficientBalanceDialog();
       }
     } catch (e) {
-      print("Erreur envoi cadeau: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Erreur lors de l\'envoi du cadeau',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      print('Erreur like: $e');
     }
   }
+
+  void _showCommentsModal(Post post) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: _afroBlack,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Commentaires',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: PostComments(post: post),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInsufficientBalanceDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.yellow, width: 2),
+          ),
+          title: Text(
+            'Solde Insuffisant',
+            style: TextStyle(
+              color: Colors.yellow,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Votre solde est insuffisant pour effectuer cette action. Veuillez recharger votre compte.',
+            style: TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Annuler', style: TextStyle(color: Colors.white)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: Text('Recharger', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showGiftDialog(Post post) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final height = MediaQuery.of(context).size.height * 0.6; // 60% de l'écran
+        final height = MediaQuery.of(context).size.height * 0.6;
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
@@ -1208,13 +1447,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                       style: TextStyle(color: Colors.white),
                     ),
                     SizedBox(height: 12),
-                    // -----------------------------
-                    // Expanded pour GridView scrollable
                     Expanded(
                       child: GridView.builder(
                         physics: BouncingScrollPhysics(),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3, // 3 colonnes
+                          crossAxisCount: 3,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                           childAspectRatio: 0.8,
@@ -1234,7 +1471,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                                   color: _selectedGiftIndex == index
                                       ? Colors.yellow
                                       : Colors.transparent,
-
                                   width: 1,
                                 ),
                               ),
@@ -1281,7 +1517,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                         ElevatedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            _sendGift(giftPrices[_selectedGiftIndex]);
+                            _sendGift(giftPrices[_selectedGiftIndex], post);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
@@ -1305,13 +1541,92 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       },
     );
   }
-  Future<void> _createTransaction(String type, double montant, String description,String userid) async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  Future<void> _sendGift(double amount, Post post) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final firestore = FirebaseFirestore.instance;
+      await authProvider.getAppData();
+
+      final senderSnap = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
+      if (!senderSnap.exists) {
+        throw Exception("Utilisateur expéditeur introuvable");
+      }
+
+      final senderData = senderSnap.data() as Map<String, dynamic>;
+      final double senderBalance = (senderData['votre_solde_principal'] ?? 0.0).toDouble();
+
+      if (senderBalance >= amount) {
+        final double gainDestinataire = amount * 0.5;
+        final double gainApplication = amount * 0.5;
+
+        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
+          'votre_solde_principal': FieldValue.increment(-amount),
+        });
+
+        await firestore.collection('Users').doc(post.user!.id).update({
+          'votre_solde_principal': FieldValue.increment(gainDestinataire),
+        });
+
+        String appDataId = authProvider.appDefaultData.id!;
+        await firestore.collection('AppData').doc(appDataId).update({
+          'solde_gain': FieldValue.increment(gainApplication),
+        });
+
+        await firestore.collection('Posts').doc(post.id).update({
+          'users_cadeau_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(5),
+        });
+
+        await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${post.user!.pseudo}", authProvider.loginUserData.id!);
+        await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}", post.user_id!);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              '🎁 Cadeau de ${amount.toInt()} FCFA envoyé avec succès!',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        );
+
+        await authProvider.sendNotification(
+          userIds: [post.user!.oneIgnalUserid!],
+          smallImage: "",
+          send_user_id: "",
+          recever_user_id: "${post.user_id!}",
+          message: "🎁 Vous avez reçu un cadeau de ${amount.toInt()} FCFA !",
+          type_notif: NotificationType.POST.name,
+          post_id: "${post.id!}",
+          post_type: PostDataType.VIDEO.name,
+          chat_id: '',
+        );
+      } else {
+        _showInsufficientBalanceDialog();
+      }
+    } catch (e) {
+      print("Erreur envoi cadeau: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Erreur lors de l\'envoi du cadeau',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _createTransaction(String type, double montant, String description, String userid) async {
     try {
       final transaction = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id =userid
+        ..id = _firestore.collection('TransactionSoldes').doc().id
+        ..user_id = userid
         ..type = type
         ..statut = StatutTransaction.VALIDER.name
         ..description = description
@@ -1320,7 +1635,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         ..createdAt = DateTime.now().millisecondsSinceEpoch
         ..updatedAt = DateTime.now().millisecondsSinceEpoch;
 
-      await firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
+      await _firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
     } catch (e) {
       print("Erreur création transaction: $e");
     }
@@ -1336,4 +1651,245 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     );
   }
 
+  void _showPostMenu(Post post) {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _twitterCardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (post.user_id != authProvider.loginUserData.id)
+              _buildMenuOption(
+                Icons.flag,
+                "Signaler",
+                _twitterTextPrimary,
+                    () async {
+                  post.status = PostStatus.SIGNALER.name;
+                  final value = await postProvider.updateVuePost(post, context);
+                  Navigator.pop(context);
+
+                  final snackBar = SnackBar(
+                    content: Text(
+                      value ? 'Post signalé !' : 'Échec du signalement !',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: value ? Colors.green : Colors.red),
+                    ),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+              ),
+
+            if (post.user!.id == authProvider.loginUserData.id ||
+                authProvider.loginUserData.role == UserRole.ADM.name)
+              _buildMenuOption(
+                Icons.delete,
+                "Supprimer",
+                Colors.red,
+                    () async {
+                  if (authProvider.loginUserData.role == UserRole.ADM.name) {
+                    await _deletePost(post, context);
+                  } else {
+                    post.status = PostStatus.SUPPRIMER.name;
+                    await _deletePost(post, context);
+                  }
+                  Navigator.pop(context);
+
+                  final snackBar = SnackBar(
+                    content: Text(
+                      'Post supprimé !',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+              ),
+
+            SizedBox(height: 8),
+            Container(height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
+            SizedBox(height: 8),
+
+            _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary, () {
+              Navigator.pop(context);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption(IconData icon, String text, Color color, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              SizedBox(width: 12),
+              Text(text, style: TextStyle(color: color, fontSize: 16)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deletePost(Post post, BuildContext context) async {
+    try {
+      final canDelete = authProvider.loginUserData.role == UserRole.ADM.name ||
+          (post.type == PostType.POST.name &&
+              post.user?.id == authProvider.loginUserData.id);
+
+      if (!canDelete) return;
+
+      await _firestore.collection('Posts').doc(post.id).delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Post supprimé !',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Échec de la suppression !',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+      print('Erreur suppression post: $e');
+    }
+  }
+
+  String _formatCount(int count) {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return count.toString();
+  }
+
+  // ==================== BUILD PRINCIPAL ====================
+
+  Widget _buildVideoPage(Post post) {
+    return Stack(
+      children: [
+        // Lecteur vidéo
+        _buildVideoPlayer(post),
+
+        // Section Look Challenge
+        _buildLookChallengeSection(post),
+
+        // Informations utilisateur
+        _buildUserInfo(post),
+
+        // Boutons d'action
+        _buildActionButtons(post),
+
+        // En-tête avec logo Afrolook
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 16,
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: Icon(Icons.arrow_back, color: Colors.yellow),
+              ),
+              Text(
+                'Afrolook',
+                style: TextStyle(
+                  color: _afroGreen,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Indicateur de son
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          right: 16,
+          child: IconButton(
+            icon: Icon(
+              _chewieController?.videoPlayerController?.value?.volume == 0
+                  ? Icons.volume_off
+                  : Icons.volume_up,
+              color: Colors.white,
+              size: 30,
+            ),
+            onPressed: () {
+              final currentVolume = _chewieController?.videoPlayerController?.value?.volume ?? 1.0;
+              final newVolume = currentVolume == 0.0 ? 1.0 : 0.0;
+              _chewieController?.setVolume(newVolume);
+            },
+          ),
+        ),
+
+        // Indicateur de chargement suivant
+        if (_isLoadingMore)
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: CircularProgressIndicator(color: _afroGreen),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _afroBlack,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: _afroGreen))
+          : PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _videoPosts.length + (_hasMoreVideos ? 1 : 0),
+        onPageChanged: (index) async {
+          if (index >= _videoPosts.length - 2 && _hasMoreVideos && !_isLoadingMore) {
+            await _loadMoreVideos();
+          }
+
+          if (index < _videoPosts.length) {
+            setState(() => _currentPage = index);
+            _initializeVideo(_videoPosts[index]);
+          }
+        },
+        itemBuilder: (context, index) {
+          if (index >= _videoPosts.length) {
+            return Center(
+              child: CircularProgressIndicator(color: _afroGreen),
+            );
+          }
+
+          final post = _videoPosts[index];
+          return _buildVideoPage(post);
+        },
+      ),
+    );
+  }
 }

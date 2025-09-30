@@ -572,7 +572,11 @@ class _DetailsPostState extends State<DetailsPost>
         .collection('Users')
         .doc(userId)
         .update({'votre_solde_principal': FieldValue.increment(-montant)});
+    String appDataId = authProvider.appDefaultData.id!;
 
+    await firestore.collection('AppData').doc(appDataId).set({
+      'solde_gain': FieldValue.increment(montant)
+    }, SetOptions(merge: true));
     // Créer une transaction
     await _createTransaction(
         TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
