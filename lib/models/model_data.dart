@@ -930,6 +930,11 @@ class Challenge {
 
   String? postChallengeId; // Utilisateurs qui ont voté
 
+  // NOUVEAUX CHAMPS POUR GESTION PRIX
+  String? userGagnantId; // ID de l'utilisateur qui a gagné
+  bool? prixDejaEncaisser = false; // Si le prix a déjà été encaissé
+  int? dateEncaissement; // Date d'encaissement
+
   Challenge();
 
   Challenge.fromJson(Map<String, dynamic> json) {
@@ -968,6 +973,11 @@ class Challenge {
     postsIds = json['posts_ids'] != null ? List<String>.from(json['posts_ids']) : [];
     usersInscritsIds = json['users_inscrits_ids'] != null ? List<String>.from(json['users_inscrits_ids']) : [];
     usersVotantsIds = json['users_votants_ids'] != null ? List<String>.from(json['users_votants_ids']) : [];
+
+    // NOUVEAUX CHAMPS
+    userGagnantId = json['user_gagnant_id'];
+    prixDejaEncaisser = json['prix_deja_encaisser'] ?? false;
+    dateEncaissement = json['date_encaissement'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1008,6 +1018,11 @@ class Challenge {
     data['users_inscrits_ids'] = usersInscritsIds;
     data['users_votants_ids'] = usersVotantsIds;
 
+    // NOUVEAUX CHAMPS
+    data['user_gagnant_id'] = userGagnantId;
+    data['prix_deja_encaisser'] = prixDejaEncaisser;
+    data['date_encaissement'] = dateEncaissement;
+
     return data;
   }
 
@@ -1024,10 +1039,18 @@ class Challenge {
         now <= (endInscriptionAt ?? 0);
   }
 
+
   bool get peutParticiper {
-    // return inscriptionsOuvertes && !isInscrit(null); // null sera remplacé par l'user ID réel
-    return inscriptionsOuvertes; // null sera remplacé par l'user ID réel
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return isEnCours &&
+        now >= (endInscriptionAt ?? 0) &&
+        now <= (finishedAt ?? 0);
   }
+
+  // bool get peutParticiper {
+  //   // return inscriptionsOuvertes && !isInscrit(null); // null sera remplacé par l'user ID réel
+  //   return inscriptionsOuvertes; // null sera remplacé par l'user ID réel
+  // }
 
   bool isInscrit(String? userId) {
     if (userId == null) return false;

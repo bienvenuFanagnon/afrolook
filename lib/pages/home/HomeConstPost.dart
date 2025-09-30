@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
+import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
@@ -266,7 +267,9 @@ printVm('widget.sortType : ${widget.sortType}');
 
       Query query = FirebaseFirestore.instance.collection('Posts')
           // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          .where("type", isEqualTo: PostType.POST.name)
+          // .where("type", isEqualTo: PostType.POST.name)
+          .where("type", whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
+
           .orderBy("created_at", descending: true);
 
       if (_lastPostDocument != null && !isInitialLoad) {
@@ -313,7 +316,9 @@ printVm('widget.sortType : ${widget.sortType}');
     try {
       final limit = isInitialLoad ? _initialLimit : _loadMoreLimit;
       Query query = FirebaseFirestore.instance.collection('Posts')
-          .where("type", isEqualTo: PostType.POST.name)
+          // .where("type", isEqualTo: PostType.POST.name)
+          .where("type", whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
+
           .orderBy("vues", descending: true)
           .orderBy("created_at", descending: true);
 
@@ -755,14 +760,14 @@ printVm('widget.sortType : ${widget.sortType}');
         ),
         child: Stack(
           children: [
-            HomePostUsersWidget(
+            post.type==PostType.CHALLENGEPARTICIPATION.name? LookChallengePostWidget(post: post, height: height, width: width)
+           : HomePostUsersWidget(
               post: post,
               color: _color,
               height: height * 0.6,
               width: width,
               isDegrade: true,
             ),
-
             if (!hasUserSeenPost)
               Positioned(
                 top: 10,

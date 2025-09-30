@@ -50,6 +50,7 @@ import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
 import '../challenge/challengeDashbord.dart';
+import '../challenge/listChallengePost.dart';
 import '../challenge/main_challenge_integration.dart';
 import '../challenge/newChallenge.dart';
 import '../component/showUserDetails.dart';
@@ -124,6 +125,7 @@ class _MyHomePageState extends State<MyHomePage>
     Tab(text: 'Vidéos'),
     Tab(text: 'Looks'),
     // Tab(text: 'TikTok'),
+    Tab(text: 'Actualités'),
     Tab(text: 'Actualités'),
     Tab(text: 'Sports'),
     // Tab(text: 'Offres'),
@@ -1334,6 +1336,8 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: '🏠 Accueil'),
+                Tab(text: '🏆 Challenges'),
+
                 Tab(text: '🎥 Vidéos virales'),
                 Tab(text: '🕒 Récents'),
 
@@ -1353,9 +1357,11 @@ class _MyHomePageState extends State<MyHomePage>
         controller: _tabController,
         children: [
           UnifiedHomePage(),
+          ChallengesListPage(),
           DashboardContentScreen(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
           LooksPage(type: TabBarType.LOOKS.name),
+
 
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
 

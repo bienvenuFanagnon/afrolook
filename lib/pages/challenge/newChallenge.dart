@@ -418,6 +418,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         'total_participants': FieldValue.increment(1), // Si vous voulez compter les posts comme participants
       });
     });
+    postProvider.addPostIdToAppDefaultData(postId);
 
     _showSuccess('Votre participation a été publiée avec succès!');
     Navigator.of(context).pop();

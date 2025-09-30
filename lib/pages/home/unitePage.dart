@@ -25,6 +25,7 @@ import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../auth/authTest/Screens/Login/loginPageUser.dart';
 import '../canaux/listCanal.dart';
+import '../challenge/postChallengeWidget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
 class UnifiedHomePage extends StatefulWidget {
@@ -955,7 +956,8 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         ),
         child: Stack(
           children: [
-            HomePostUsersWidget(
+            post.type==PostType.CHALLENGEPARTICIPATION.name? LookChallengePostWidget(post: post, height: MediaQuery.of(context).size.height, width: width)
+                :HomePostUsersWidget(
               post: post,
               color: _color,
               height: MediaQuery.of(context).size.height * 0.6,
