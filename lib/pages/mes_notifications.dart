@@ -7,7 +7,6 @@ import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
-import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -221,7 +220,7 @@ class _MesNotificationState extends State<MesNotification> {
 
       else if (notification.type == NotificationType.CHALLENGE.name) {
 
-        Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeListPage(),));
+        // Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeListPage(),));
 
       }
 

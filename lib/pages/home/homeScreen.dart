@@ -16,7 +16,6 @@ import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
 import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
 import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
-import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:auto_animated/auto_animated.dart';
@@ -50,6 +49,9 @@ import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
+import '../challenge/challengeDashbord.dart';
+import '../challenge/main_challenge_integration.dart';
+import '../challenge/newChallenge.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -64,7 +66,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
-import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
@@ -719,6 +720,23 @@ class _MyHomePageState extends State<MyHomePage>
                       ));
                     },
                   ),
+// Dans votre menu principal
+                  if (authProvider.loginUserData.role == UserRole.ADM.name)
+                    ListTile(
+                      leading: Icon(Icons.emoji_events),
+                      title: Text('Challenge Accuiel'),
+                      onTap: () {
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(builder: (context) => ChallengePostPage(isParticipation: false)),
+                        // );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ChallengeDashboardPage()),
+                        );
+                      },
+                    ),
 
                   // ListTile(
                   //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -740,7 +758,7 @@ class _MyHomePageState extends State<MyHomePage>
                   //     ));
                   //   },
                   // ),
-                  //
+
                   // ListTile(
                   //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                   //   leading: Image.asset(
@@ -1078,8 +1096,8 @@ class _MyHomePageState extends State<MyHomePage>
       //     // Utiliser la version avancée pour plus de contrôle
       //     AdvancedModalManager.showModalsWithSmartDelay(context);
       //   });
-
-      AdvancedModalManager.showModalsWithSmartDelay(context);
+        ChallengeIntegration.initialize();
+      // AdvancedModalManager.showModalsWithSmartDelay(context);
 
 
 

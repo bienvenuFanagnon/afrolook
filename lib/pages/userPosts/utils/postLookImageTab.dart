@@ -366,32 +366,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           // postProvider.listConstposts.add(post);
         postProvider.addPostIdToAppDefaultData(postId);
 
-          if(isChallenge){
-            String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;
-            final startTime = startDate.millisecondsSinceEpoch;
-            final endTime = endDate.millisecondsSinceEpoch;
-            final giftType = selectedGiftType;
-            final amount = int.parse(amountController.text);
-            final description = descriptionController.text;
-            final descriptionCadeaux = descriptionCadeauxController.text;
-            // Créer un objet Challenge
-            Challenge challenge = Challenge()
-              ..id = challengeId  // Ajoutez un titre au challenge
-              ..titre = _titreController.text  // Ajoutez un titre au challenge
-              ..description = description
-              ..typeCadeaux = giftType
-              ..postChallengeId = postId
-              ..descriptionCadeaux = descriptionCadeaux
-              ..statut = StatutData.ATTENTE.name
-              ..prix = amount
-              ..startAt = startTime
-              ..finishedAt = endTime
-              ..createdAt = DateTime.now().millisecondsSinceEpoch
-              ..updatedAt = DateTime.now().millisecondsSinceEpoch;
 
-
-            await FirebaseFirestore.instance.collection('Challenges').doc(challengeId).set(challenge.toJson());
-          }
 
 
           if(widget.canal!=null){

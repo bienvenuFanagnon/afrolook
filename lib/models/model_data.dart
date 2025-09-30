@@ -883,13 +883,12 @@ class ArticleData {
   Map<String, dynamic> toJson() => _$ArticleDataToJson(this);
 }
 
-@JsonSerializable()
+// challenge_model.dart
 class Challenge {
   String? id;
   String? user_id;
-  String? postChallengeId;
   String? titre;
-  String? statut;
+  String? statut; // 'en_attente', 'en_cours', 'termine', 'annule'
   String? description;
   String? typeCadeaux;
   String? descriptionCadeaux;
@@ -901,30 +900,144 @@ class Challenge {
   int? jaime;
   int? partage;
 
+  // Nouveaux champs pour la gestion des frais
+  bool? participationGratuite = true;
+  int? prixParticipation = 0;
+  bool? voteGratuit = true;
+  int? prixVote = 0;
+
+  // Gestion des dates
   int? createdAt;
   int? updatedAt;
-  int? startAt;
-  int? finishedAt;
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  int? startInscriptionAt; // Date début inscription
+  int? endInscriptionAt;   // Date fin inscription = date début challenge
+  int? finishedAt;         // Date fin challenge
+
+  // Type de contenu autorisé
+  String? typeContenu; // 'image', 'video', 'les_deux'
+
+  // Statistiques
+  int? totalVotes = 0;
+  int? totalParticipants = 0;
+
+  // Références
   UserData? user;
-  @JsonKey(includeFromJson: false, includeToJson: false)
   Post? postWinner;
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  Post? postChallenge;
-
   List<String>? postsWinnerIds = [];
   List<String>? postsIds = [];
   List<String>? usersInscritsIds = [];
-  List<String>? usersChallengersIds = [];
+  List<String>? usersVotantsIds = [];
+
+  String? postChallengeId; // Utilisateurs qui ont voté
+
   Challenge();
 
-  // Add a factory constructor that creates a new instance from a JSON map
-  factory Challenge.fromJson(Map<String, dynamic> json) =>
-      _$ChallengeFromJson(json);
+  Challenge.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    user_id = json['user_id'];
+    titre = json['titre'];
+    statut = json['statut'];
+    postChallengeId = json['postChallengeId'];
+    description = json['description'];
+    typeCadeaux = json['typeCadeaux'];
+    descriptionCadeaux = json['descriptionCadeaux'];
+    prix = json['prix'];
+    countryData = json['countryData'] != null ? Map<String, String>.from(json['countryData']) : null;
+    vues = json['vues'];
+    disponible = json['disponible'];
+    isAprouved = json['isAprouved'];
+    jaime = json['jaime'];
+    partage = json['partage'];
 
-  // Add a method that converts this instance to a JSON map
-  Map<String, dynamic> toJson() => _$ChallengeToJson(this);
+    participationGratuite = json['participationGratuite'] ?? true;
+    prixParticipation = json['prixParticipation'] ?? 0;
+    voteGratuit = json['voteGratuit'] ?? true;
+    prixVote = json['prixVote'] ?? 0;
+
+    createdAt = json['created_at'];
+    updatedAt = json['updated_at'];
+    startInscriptionAt = json['start_inscription_at'];
+    endInscriptionAt = json['end_inscription_at'];
+    finishedAt = json['finished_at'];
+
+    typeContenu = json['type_contenu'] ?? 'les_deux';
+    totalVotes = json['total_votes'] ?? 0;
+    totalParticipants = json['total_participants'] ?? 0;
+
+    postsWinnerIds = json['posts_winner_ids'] != null ? List<String>.from(json['posts_winner_ids']) : [];
+    postsIds = json['posts_ids'] != null ? List<String>.from(json['posts_ids']) : [];
+    usersInscritsIds = json['users_inscrits_ids'] != null ? List<String>.from(json['users_inscrits_ids']) : [];
+    usersVotantsIds = json['users_votants_ids'] != null ? List<String>.from(json['users_votants_ids']) : [];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    data['id'] = id;
+    data['user_id'] = user_id;
+    data['titre'] = titre;
+    data['statut'] = statut;
+    data['postChallengeId'] = postChallengeId;
+    data['description'] = description;
+    data['typeCadeaux'] = typeCadeaux;
+    data['descriptionCadeaux'] = descriptionCadeaux;
+    data['prix'] = prix;
+    data['countryData'] = countryData;
+    data['vues'] = vues;
+    data['disponible'] = disponible;
+    data['isAprouved'] = isAprouved;
+    data['jaime'] = jaime;
+    data['partage'] = partage;
+
+    data['participationGratuite'] = participationGratuite;
+    data['prixParticipation'] = prixParticipation;
+    data['voteGratuit'] = voteGratuit;
+    data['prixVote'] = prixVote;
+
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
+    data['start_inscription_at'] = startInscriptionAt;
+    data['end_inscription_at'] = endInscriptionAt;
+    data['finished_at'] = finishedAt;
+
+    data['type_contenu'] = typeContenu;
+    data['total_votes'] = totalVotes;
+    data['total_participants'] = totalParticipants;
+
+    data['posts_winner_ids'] = postsWinnerIds;
+    data['posts_ids'] = postsIds;
+    data['users_inscrits_ids'] = usersInscritsIds;
+    data['users_votants_ids'] = usersVotantsIds;
+
+    return data;
+  }
+
+  // Méthodes utilitaires
+  bool get isEnAttente => statut == 'en_attente';
+  bool get isEnCours => statut == 'en_cours';
+  bool get isTermine => statut == 'termine';
+  bool get isAnnule => statut == 'annule';
+
+  bool get inscriptionsOuvertes {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return isEnAttente &&
+        now >= (startInscriptionAt ?? 0) &&
+        now <= (endInscriptionAt ?? 0);
+  }
+
+  bool get peutParticiper {
+    // return inscriptionsOuvertes && !isInscrit(null); // null sera remplacé par l'user ID réel
+    return inscriptionsOuvertes; // null sera remplacé par l'user ID réel
+  }
+
+  bool isInscrit(String? userId) {
+    if (userId == null) return false;
+    return usersInscritsIds?.contains(userId) ?? false;
+  }
+
+  bool aVote(String? userId) {
+    if (userId == null) return false;
+    return usersVotantsIds?.contains(userId) ?? false;
+  }
 }
 
 @JsonSerializable()
@@ -1591,6 +1704,199 @@ class Chat {
   }
 }
 
+// class Post {
+//   String? id;
+//   String? user_id;
+//   String? challenge_id;
+//   String? entreprise_id;
+//   String? canal_id;
+//   String? type;
+//   String? categorie;
+//   String? status;
+//   String? urlLink;
+//   String? dataType;
+//   String? typeTabbar;
+//   String? colorDomine;
+//   String? colorSecondaire;
+//   String? description;
+//   String? isPostLink;
+//   String? contact_whatsapp;
+//   int? nombreCollaborateur;
+//   double? publiCashTotal;
+//   int? nombreImage;
+//   int? nombrePersonneParJour;
+//   String? url_media;
+//   int? createdAt;
+//   int? updatedAt;
+//
+//   int? comments = 0;
+//   int? loves = 0;
+//   int? partage = 0;
+//   int? vues = 0;
+//   int? likes = 0;
+//   int? seenByUsersCount = 0;
+//   int? popularity = 0;
+//
+//   UserData? user;
+//   EntrepriseData? entrepriseData;
+//   Canal? canal;
+//
+//   List<PostComment>? commentaires = [];
+//   List<String>? images = [];
+//   List<String>? users_like_id = [];
+//   List<String>? users_love_id = [];
+//   List<String>? users_comments_id = [];
+//   List<String>? users_partage_id = [];
+//   List<String>? users_cadeau_id = [];
+//   List<String>? users_republier_id = [];
+//   List<String>? users_vue_id = [];
+//
+//   /// 🔥 Nouveau champ : Map avec userId => true/false
+//   Map<String, bool>? seenByUsersMap = {};
+//
+//   bool? hasBeenSeenByCurrentUser;
+//
+//   Post({
+//     this.id,
+//     this.comments,
+//     this.dataType,
+//     this.user_id,
+//     this.entreprise_id,
+//     this.status,
+//     this.url_media,
+//     this.nombreCollaborateur = 0,
+//     this.popularity = 0,
+//     this.publiCashTotal = 0,
+//     this.nombreImage = 0,
+//     this.nombrePersonneParJour = 0,
+//     this.type,
+//     this.images,
+//     this.isPostLink,
+//     this.users_like_id,
+//     this.users_love_id,
+//     this.loves,
+//     this.partage = 0,
+//     this.users_vue_id,
+//     this.challenge_id,
+//     this.vues,
+//     this.likes,
+//     this.commentaires,
+//     this.users_partage_id,
+//     this.users_republier_id,
+//     this.users_cadeau_id,
+//     this.users_comments_id,
+//     this.contact_whatsapp,
+//     this.colorDomine,
+//     this.colorSecondaire,
+//     this.description,
+//     this.typeTabbar,
+//     this.urlLink,
+//     this.createdAt,
+//     this.updatedAt,
+//     this.user,
+//     this.seenByUsersCount = 0,
+//     this.seenByUsersMap,
+//     this.hasBeenSeenByCurrentUser = false,
+//   });
+//
+//   int compareTo(Post other) {
+//     return other.createdAt!.compareTo(createdAt!);
+//   }
+//
+//   Post.fromJson(Map<String, dynamic> json) {
+//     id = json['id'];
+//     comments = json['comments'];
+//     user_id = json['user_id'];
+//     entreprise_id = json['entreprise_id'];
+//     status = json['status'];
+//     type = json['type'];
+//     description = json['description'];
+//     createdAt = json['created_at'];
+//     updatedAt = json['updated_at'];
+//     dataType = json['dataType'];
+//     url_media = json['url_media'];
+//     contact_whatsapp = json['contact_whatsapp'] ?? "";
+//     typeTabbar = json['typeTabbar'] ?? "";
+//     isPostLink = json['isPostLink'] ?? "NON";
+//     colorSecondaire = json['colorSecondaire'];
+//     colorDomine = json['colorDomine'];
+//     challenge_id = json['challenge_id'] ?? "";
+//     categorie = json['categorie'] ?? "LOOK";
+//     loves = json['loves'];
+//     images = json['images'] == null ? [] : List<String>.from(json['images']);
+//     canal_id = json['canal_id'] ?? "";
+//     likes = json['likes'];
+//     vues = json['vues'] ?? 0;
+//     popularity = json['popularity'] ?? 0;
+//     partage = json['partage'] ?? 0;
+//     urlLink = json['urlLink'] ?? "";
+//     users_like_id = json['users_like_id'] == null ? [] : List<String>.from(json['users_like_id']);
+//     users_cadeau_id = json['users_cadeau_id'] == null ? [] : List<String>.from(json['users_cadeau_id']);
+//     users_republier_id = json['users_republier_id'] == null ? [] : List<String>.from(json['users_republier_id']);
+//     users_love_id = json['users_love_id'] == null ? [] : List<String>.from(json['users_love_id']);
+//     users_vue_id = json['users_vue_id'] == null ? [] : List<String>.from(json['users_vue_id']);
+//     nombreCollaborateur = json['nombreCollaborateur'];
+//     nombreImage = json['nombreImage'];
+//     nombrePersonneParJour = json['nombrePersonneParJour'];
+//
+//     // 🔥 Nouveau champ : Map seenByUsersMap
+//     seenByUsersCount = json['seen_by_users_count'] ?? 0;
+//     if (json['seen_by_users_map'] != null) {
+//       seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
+//     } else {
+//       seenByUsersMap = {};
+//     }
+//
+//     hasBeenSeenByCurrentUser = false;
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = {};
+//     data['id'] = id;
+//     data['user_id'] = user_id;
+//     data['entreprise_id'] = entreprise_id;
+//     data['status'] = status;
+//     data['popularity'] = popularity;
+//     data['type'] = type;
+//     data['description'] = description;
+//     data['created_at'] = createdAt;
+//     data['updated_at'] = updatedAt;
+//     data['url_media'] = url_media;
+//     data['colorDomine'] = colorDomine;
+//     data['colorSecondaire'] = colorSecondaire;
+//     data['loves'] = loves;
+//     data['contact_whatsapp'] = contact_whatsapp;
+//     data['challenge_id'] = challenge_id;
+//     data['dataType'] = dataType;
+//     data['categorie'] = categorie ?? 'LOOK';
+//     data['urlLink'] = urlLink;
+//     data['images'] = images;
+//     data['isPostLink'] = isPostLink;
+//     data['users_like_id'] = users_like_id;
+//     data['users_love_id'] = users_love_id;
+//     data['users_republier_id'] = users_republier_id;
+//     data['likes'] = likes;
+//     data['partage'] = partage;
+//     data['users_vue_id'] = users_vue_id;
+//     data['vues'] = vues;
+//     data['typeTabbar'] = typeTabbar;
+//     data['canal_id'] = canal_id;
+//     data['nombreCollaborateur'] = nombreCollaborateur;
+//     data['publiCashTotal'] = publiCashTotal;
+//     data['nombreImage'] = nombreImage;
+//     data['nombrePersonneParJour'] = nombrePersonneParJour;
+//     data['comments'] = comments;
+//
+//     // 🔥 Nouveau champ : Map seenByUsersMap
+//     data['seen_by_users_count'] = seenByUsersCount;
+//     data['seen_by_users_map'] = seenByUsersMap ?? {};
+//
+//     return data;
+//   }
+// }
+
+
+// post_model.dart (mis à jour)
 class Post {
   String? id;
   String? user_id;
@@ -1624,6 +1930,10 @@ class Post {
   int? seenByUsersCount = 0;
   int? popularity = 0;
 
+  // Nouveaux champs pour les challenges
+  int? votesChallenge = 0; // Nombre de votes spécifiques au challenge
+  List<String>? usersVotesIds = []; // Utilisateurs qui ont voté pour ce post
+
   UserData? user;
   EntrepriseData? entrepriseData;
   Canal? canal;
@@ -1638,9 +1948,7 @@ class Post {
   List<String>? users_republier_id = [];
   List<String>? users_vue_id = [];
 
-  /// 🔥 Nouveau champ : Map avec userId => true/false
   Map<String, bool>? seenByUsersMap = {};
-
   bool? hasBeenSeenByCurrentUser;
 
   Post({
@@ -1684,6 +1992,8 @@ class Post {
     this.seenByUsersCount = 0,
     this.seenByUsersMap,
     this.hasBeenSeenByCurrentUser = false,
+    this.votesChallenge = 0,
+    this.usersVotesIds,
   });
 
   int compareTo(Post other) {
@@ -1726,7 +2036,10 @@ class Post {
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];
 
-    // 🔥 Nouveau champ : Map seenByUsersMap
+    // Champs challenge
+    votesChallenge = json['votes_challenge'] ?? 0;
+    usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
+
     seenByUsersCount = json['seen_by_users_count'] ?? 0;
     if (json['seen_by_users_map'] != null) {
       seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
@@ -1774,11 +2087,19 @@ class Post {
     data['nombrePersonneParJour'] = nombrePersonneParJour;
     data['comments'] = comments;
 
-    // 🔥 Nouveau champ : Map seenByUsersMap
+    // Champs challenge
+    data['votes_challenge'] = votesChallenge;
+    data['users_votes_ids'] = usersVotesIds;
+
     data['seen_by_users_count'] = seenByUsersCount;
     data['seen_by_users_map'] = seenByUsersMap ?? {};
 
     return data;
+  }
+
+  // Méthode pour vérifier si un utilisateur a voté pour ce post
+  bool aVote(String userId) {
+    return usersVotesIds?.contains(userId) ?? false;
   }
 }
 class PostImage {
@@ -2451,7 +2772,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB,ARTICLE,CHALLENGE,SERVICE }
+enum PostType { POST, PUB,ARTICLE,CHALLENGE,CHALLENGEPARTICIPATION,SERVICE }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
 

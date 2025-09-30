@@ -1,19 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
-import 'package:afrotok/pages/chat/chatXilo.dart';
-import 'package:afrotok/pages/chat/deepseek.dart';
-import 'package:afrotok/pages/classements/userClassement.dart';
-import 'package:afrotok/pages/home/slive/utils.dart';
-import 'package:afrotok/pages/home/storyCustom/StoryCustom.dart';
-import 'package:afrotok/pages/story/afroStory/repository.dart';
-import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
-import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
-import 'package:afrotok/pages/userPosts/challenge/listChallenge.dart';
-import 'package:animated_icon/animated_icon.dart';
-import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
-import 'package:auto_animated/auto_animated.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -53,7 +41,6 @@ import 'package:shimmer/shimmer.dart';
 import '../component/consoleWidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../user/conponent.dart';
-import '../userPosts/challenge/lookChallenge/mesLookChallenge.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
