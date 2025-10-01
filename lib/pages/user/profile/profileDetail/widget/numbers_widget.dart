@@ -43,7 +43,7 @@ class NumbersWidget extends StatelessWidget {
           children: <Widget>[
             Text(
               value,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24,color: Colors.yellow),
             ),
             SizedBox(height: 2),
             Text(
