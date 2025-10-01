@@ -443,6 +443,11 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   Future<void> _encaisserPrix() async {
+
+    //    _showError(
+    //         "⚠️ Ceci est une version de test.\n"
+    //             "La fonctionnalité d'encaissement sera disponible dans la version complète."
+    //     );
     final user = _auth.currentUser;
     if (user == null || _postGagnant == null || _challenge == null) {
       _showError('Données manquantes pour l\'encaissement');
