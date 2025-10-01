@@ -147,21 +147,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   }
 
   // Obtenir le nombre total de posts
-  Future<void> _getTotalPostsCount() async {
-    try {
-      final query = FirebaseFirestore.instance.collection('Posts')
-          .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
-          .where("type", isEqualTo: PostType.POST.name);
-
-      final snapshot = await query.count().get();
-      _totalPostsCount = snapshot.count!;
-      print('_totalPostsCount content count: $_totalPostsCount');
-
-    } catch (e) {
-      print('Error getting total posts count: $e');
-      _totalPostsCount = 1000;
-    }
-  }
 
   // Obtenir le nombre total de contenus
   Future<void> _getTotalContentCount() async {
@@ -496,48 +481,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       print('❌ Erreur enregistrement vue: $e');
     }
   }
-
-// 🔹 Méthode pour enregistrer une vue (à utiliser avec VisibilityDetector)
-  Future<void> _recordPostView2(Post post) async {
-    final currentUserId = _authProvider.loginUserData.id;
-    if (currentUserId == null || post.id == null) return;
-
-    try {
-      // 🔹 Mettre à jour UserData.viewedPostIds
-      final userRef = FirebaseFirestore.instance.collection('Users').doc(currentUserId);
-      await userRef.update({
-        'viewedPostIds': FieldValue.arrayUnion([post.id]),
-      });
-
-      // 🔹 Mettre à jour le compteur de vues du post
-      await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(post.id)
-          .update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      // 🔹 Mettre à jour localement
-      setState(() {
-        post.hasBeenSeenByCurrentUser = true;
-        post.vues = (post.vues ?? 0) + 1;
-        post.users_vue_id!.add(currentUserId);
-
-
-        // Mettre à jour l'utilisateur local
-        if (!_authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
-          _authProvider.loginUserData.viewedPostIds!.add(post.id!);
-        }
-      });
-
-      print('✅ Vue enregistrée pour le post ${post.id}');
-
-    } catch (e) {
-      print('❌ Erreur enregistrement vue: $e');
-    }
-  }
-
 
 
   Future<void> _loadAdditionalData() async {

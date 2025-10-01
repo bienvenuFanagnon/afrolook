@@ -25,6 +25,7 @@ import '../../UserServices/listUserService.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
+import '../../postDetailsVideoListe.dart';
 import '../../user/detailsOtherUser.dart';
 import '../../userPosts/postWidgets/postUserWidget.dart';
 import '../video_details.dart';
@@ -599,7 +600,8 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OnlyPostVideo(videos: [post],),
+        builder: (context) => VideoTikTokPageDetails(initialPost: post,),
+        // builder: (context) => OnlyPostVideo(videos: [post],),
       ),
     );
   }

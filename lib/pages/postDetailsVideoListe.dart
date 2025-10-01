@@ -32,16 +32,16 @@ const _afroRed = Color(0xFFE74C3C);
 const _afroDarkGrey = Color(0xFF16181C);
 const _afroLightGrey = Color(0xFF71767B);
 
-class VideoTikTokPage extends StatefulWidget {
+class VideoTikTokPageDetails extends StatefulWidget {
   final Post initialPost;
 
-  const VideoTikTokPage({Key? key, required this.initialPost}) : super(key: key);
+  const VideoTikTokPageDetails({Key? key, required this.initialPost}) : super(key: key);
 
   @override
-  _VideoTikTokPageState createState() => _VideoTikTokPageState();
+  _VideoTikTokPageDetailsState createState() => _VideoTikTokPageDetailsState();
 }
 
-class _VideoTikTokPageState extends State<VideoTikTokPage> {
+class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   late PageController _pageController;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
@@ -1036,38 +1036,38 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       children: [
         Chewie(controller: _chewieController!),
 
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: () {
-              if (_chewieController?.isPlaying ?? false) {
-                _chewieController?.pause();
-              } else {
-                _chewieController?.play();
-              }
-            },
-            child: Container(
-              color: Colors.transparent,
-              child: Center(
-                child: AnimatedOpacity(
-                  opacity: _chewieController?.isPlaying ?? false ? 0.0 : 1.0,
-                  duration: Duration(milliseconds: 300),
-                  child: Container(
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 60,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        // Positioned.fill(
+        //   child: GestureDetector(
+        //     onTap: () {
+        //       if (_chewieController?.isPlaying ?? false) {
+        //         _chewieController?.pause();
+        //       } else {
+        //         _chewieController?.play();
+        //       }
+        //     },
+        //     child: Container(
+        //       color: Colors.transparent,
+        //       child: Center(
+        //         child: AnimatedOpacity(
+        //           opacity: _chewieController?.isPlaying ?? false ? 0.0 : 1.0,
+        //           duration: Duration(milliseconds: 300),
+        //           child: Container(
+        //             padding: EdgeInsets.all(20),
+        //             decoration: BoxDecoration(
+        //               color: Colors.black.withOpacity(0.5),
+        //               shape: BoxShape.circle,
+        //             ),
+        //             child: Icon(
+        //               Icons.play_arrow,
+        //               color: Colors.white,
+        //               size: 60,
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }
@@ -1879,51 +1879,51 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
 
         // Boutons d'action
         _buildActionButtons(post),
-        if (!_isLookChallenge)
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
-          left: 16,
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                icon: Icon(Icons.arrow_back, color: Colors.yellow),
-              ),
-              Text(
-                'Afrolook',
-                style: TextStyle(
-                  color: _afroGreen,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Indicateur de son
-        if (!_isLookChallenge)
-
-          Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
-          right: 16,
-          child: IconButton(
-            icon: Icon(
-              _chewieController?.videoPlayerController?.value?.volume == 0
-                  ? Icons.volume_off
-                  : Icons.volume_up,
-              color: Colors.white,
-              size: 30,
-            ),
-            onPressed: () {
-              final currentVolume = _chewieController?.videoPlayerController?.value?.volume ?? 1.0;
-              final newVolume = currentVolume == 0.0 ? 1.0 : 0.0;
-              _chewieController?.setVolume(newVolume);
-            },
-          ),
-        ),      // En-tête avec logo Afrolook
+        // if (!_isLookChallenge)
+        // Positioned(
+        //   top: MediaQuery.of(context).padding.top + 16,
+        //   left: 16,
+        //   child: Row(
+        //     children: [
+        //       IconButton(
+        //         onPressed: () {
+        //           Navigator.pop(context);
+        //         },
+        //         icon: Icon(Icons.arrow_back, color: Colors.yellow),
+        //       ),
+        //       Text(
+        //         'Afrolook',
+        //         style: TextStyle(
+        //           color: _afroGreen,
+        //           fontSize: 24,
+        //           fontWeight: FontWeight.bold,
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        //
+        // // Indicateur de son
+        // if (!_isLookChallenge)
+        //
+        //   Positioned(
+        //   top: MediaQuery.of(context).padding.top + 16,
+        //   right: 16,
+        //   child: IconButton(
+        //     icon: Icon(
+        //       _chewieController?.videoPlayerController?.value?.volume == 0
+        //           ? Icons.volume_off
+        //           : Icons.volume_up,
+        //       color: Colors.white,
+        //       size: 30,
+        //     ),
+        //     onPressed: () {
+        //       final currentVolume = _chewieController?.videoPlayerController?.value?.volume ?? 1.0;
+        //       final newVolume = currentVolume == 0.0 ? 1.0 : 0.0;
+        //       _chewieController?.setVolume(newVolume);
+        //     },
+        //   ),
+        // ),      // En-tête avec logo Afrolook
 
 
         // Indicateur de chargement suivant

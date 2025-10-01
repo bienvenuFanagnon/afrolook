@@ -461,7 +461,7 @@ class _UserChallengesPageState extends State<UserChallengesPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => VideoTikTokPage(initialPost: post),
+                builder: (context) => VideoTikTokPageDetails(initialPost: post),
               ),
             );
           } else {

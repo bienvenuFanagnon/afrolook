@@ -29,6 +29,7 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/socialVideos/thread/afrolookVideoOriginal.dart';
 
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
@@ -459,7 +460,8 @@ class _MyAppState extends State<MyApp> {
               case '/home':
                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
            case '/videos':
-                return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+                // return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+                return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
               case '/home_profile_user':
                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
               case '/profile_entreprise':

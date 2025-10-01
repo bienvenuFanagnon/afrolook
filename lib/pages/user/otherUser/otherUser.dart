@@ -154,7 +154,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   void _navigateToPostDetails(Post post) {
     if (post.dataType == PostDataType.VIDEO.name) {
       Navigator.push(context, MaterialPageRoute(
-        builder: (context) => VideoTikTokPage(initialPost: post,),
+        builder: (context) => VideoTikTokPageDetails(initialPost: post,),
       ));
     } else {
       Navigator.push(context, MaterialPageRoute(

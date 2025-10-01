@@ -443,11 +443,11 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   Future<void> _encaisserPrix() async {
-
-    //    _showError(
-    //         "⚠️ Ceci est une version de test.\n"
-    //             "La fonctionnalité d'encaissement sera disponible dans la version complète."
-    //     );
+       //
+       // _showError(
+       //      "⚠️ Ceci est une version de test.\n"
+       //          "La fonctionnalité d'encaissement sera disponible dans la version complète."
+       //  );
     final user = _auth.currentUser;
     if (user == null || _postGagnant == null || _challenge == null) {
       _showError('Données manquantes pour l\'encaissement');
@@ -490,78 +490,6 @@ await  _checkPrixEncaisser();
         ),
       );
 
-      // TRANSACTION ROBUSTE
-      // await _firestore.runTransaction((transaction) async {
-      //   // 1. Vérifier que le prix n'a pas été encaissé entre-temps
-      //   final challengeDoc = await transaction.get(_firestore.collection('Challenges').doc(_challenge!.id!));
-      //   if (!challengeDoc.exists) {
-      //     throw Exception('Challenge non trouvé');
-      //   }
-      //
-      //   final challengeData = challengeDoc.data()!;
-      //   final prixDejaEncaisser = challengeData['prix_deja_encaisser'] ?? false;
-      //   final userGagnantId = challengeData['user_gagnant_id'];
-      //
-      //   if (prixDejaEncaisser) {
-      //     throw Exception('Le prix a déjà été encaissé');
-      //   }
-      //   printVm('_postGagnant userGagnantId user_id : ${_postGagnant!.user_id}');
-      //   printVm('user.uid: userGagnantId: ${user.uid}');
-      //   if (userGagnantId != user.uid) {
-      //     throw Exception('Vous n\'êtes pas le gagnant de ce challenge');
-      //   }
-      //
-      //   final now = DateTime.now().microsecondsSinceEpoch;
-      //
-      //   // 2. Mettre à jour le challenge
-      //   transaction.update(_firestore.collection('Challenges').doc(_challenge!.id!), {
-      //     'prix_deja_encaisser': true,
-      //     'date_encaissement': now,
-      //     'updated_at': now,
-      //   });
-      //
-      //   // 3. Enregistrer le paiement (sécurité)
-      //   final paiementRef = _firestore.collection('ChallengePaiements').doc();
-      //   transaction.set(paiementRef, {
-      //     'id': paiementRef.id,
-      //     'challenge_id': _challenge!.id,
-      //     'user_id': user.uid,
-      //     'post_id': _postGagnant!.id,
-      //     'montant': _challenge!.prix,
-      //     'statut': 'paye',
-      //     'created_at': now,
-      //     'updated_at': now,
-      //   });
-      //
-      //   // 4. Enregistrer la transaction solde
-      //   final transactionRef = _firestore.collection('TransactionSoldes').doc();
-      //   transaction.set(transactionRef, {
-      //     'id': transactionRef.id,
-      //     'user_id': user.uid,
-      //     'montant': _challenge!.prix,
-      //     'type': TypeTransaction.GAIN.name,
-      //     'description': 'Gain challenge: ${_challenge!.titre}',
-      //     'createdAt': DateTime.now().millisecondsSinceEpoch,
-      //     'statut': StatutTransaction.VALIDER.name,
-      //   });
-      //
-      //   // 5. Créditer l'utilisateur
-      //   final userDoc = await transaction.get(_firestore.collection('Users').doc(user.uid));
-      //   if (!userDoc.exists) {
-      //     throw Exception('Utilisateur non trouvé');
-      //   }
-      //
-      //   final ancienSolde = (userDoc.data()!['votre_solde_principal'] ?? 0).toDouble();
-      //   final nouveauSolde = ancienSolde + (_challenge!.prix ?? 0);
-      //
-      //   transaction.update(_firestore.collection('Users').doc(user.uid), {
-      //     'votre_solde_principal': nouveauSolde,
-      //   });
-      //
-      //   debugPrint("💰 Encaissement réussi - Ancien solde: $ancienSolde, Nouveau solde: $nouveauSolde");
-      // });
-
-      // Mettre à jour l'état local
 
 
       await _firestore.runTransaction((transaction) async {
@@ -642,6 +570,7 @@ await  _checkPrixEncaisser();
       debugPrint('❌ Erreur transaction encaissement: $e');
     }
   }
+
 
   Future<void> _loadParticipants() async {
     try {
@@ -1834,7 +1763,7 @@ await  _checkPrixEncaisser();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoTikTokPage(initialPost: post),
+                    builder: (context) => VideoTikTokPageDetails(initialPost: post),
                   ),
                 );
               }else {
@@ -3104,7 +3033,7 @@ await  _checkPrixEncaisser();
       onTap: () {
         if (post.dataType == 'VIDEO') {
           Navigator.push(context,
-              MaterialPageRoute(builder: (_) => VideoTikTokPage(initialPost: post)));
+              MaterialPageRoute(builder: (_) => VideoTikTokPageDetails(initialPost: post)));
         } else {
           Navigator.push(
               context, MaterialPageRoute(builder: (_) => DetailsPost(post: post)));
@@ -3463,7 +3392,7 @@ await  _checkPrixEncaisser();
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VideoTikTokPage(initialPost: post),
+          builder: (context) => VideoTikTokPageDetails(initialPost: post),
         ),
       );
     }else {

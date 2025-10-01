@@ -1005,7 +1005,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VideoTikTokPage(initialPost: widget.post),
+                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
                     ),
                   );
                 },

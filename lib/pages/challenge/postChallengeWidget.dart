@@ -829,7 +829,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VideoTikTokPage(initialPost: widget.post),
+                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
                     ),
                   );
                 },
