@@ -279,11 +279,11 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     );
 
     await batch.commit();
-
-    // Envoyer les notifications
-    // await _envoyerNotificationsChallenge(challenge, post);
-
     _showSuccess('Challenge créé avec succès!');
+    // Envoyer les notifications
+     _envoyerNotificationsChallenge(challenge, post);
+
+
     Navigator.of(context).pop();
   }
 
@@ -421,6 +421,8 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     postProvider.addPostIdToAppDefaultData(postId);
 
     _showSuccess('Votre participation a été publiée avec succès!');
+     _envoyerNotificationParticipation(challenge, post);
+
     Navigator.of(context).pop();
   }
 
@@ -483,7 +485,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
             smallImage: authProvider.loginUserData.imageUrl ?? '',
             send_user_id: authProvider.loginUserData.id!,
             recever_user_id: "",
-            message: "🎉 Nouveau challenge: ${challenge.titre}! 🎁 Prix: ${challenge.prix} FCFA",
+            message: "🎉 Nouveau challenge: ${challenge.description}! 🎁 Prix: ${challenge.prix} FCFA",
             type_notif: 'CHALLENGE',
             post_id: post.id!,
             post_type: post.dataType ?? 'IMAGE',
@@ -494,6 +496,34 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       print('Erreur envoi notification: $e');
     }
   }
+
+  Future<void> _envoyerNotificationParticipation(
+      Challenge challenge, Post post) async {
+    try {
+      final userIds = await authProvider.getAllUsersOneSignaUserId();
+
+      if (userIds.isNotEmpty) {
+        final userName = authProvider.loginUserData.pseudo ?? "Un participant";
+        final userImage = authProvider.loginUserData.imageUrl ?? "";
+
+        await authProvider.sendNotification(
+          userIds: userIds,
+          smallImage: userImage,
+          send_user_id: authProvider.loginUserData.id!,
+          recever_user_id: "",
+          message:
+          "🔥 $userName participe au challenge '${challenge.titre}' ! 🎯 Venez voter 💚🟨⬛",
+          type_notif: 'PARTICIPATION_CHALLENGE',
+          post_id: post.id!,
+          post_type: post.dataType ?? 'IMAGE',
+          chat_id: '',
+        );
+      }
+    } catch (e) {
+      print('Erreur envoi notification participation: $e');
+    }
+  }
+
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

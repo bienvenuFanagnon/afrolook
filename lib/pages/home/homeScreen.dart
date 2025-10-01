@@ -53,6 +53,7 @@ import '../challenge/challengeDashbord.dart';
 import '../challenge/listChallengePost.dart';
 import '../challenge/main_challenge_integration.dart';
 import '../challenge/newChallenge.dart';
+import '../challenge/userlistchallenge.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -620,6 +621,21 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.emoji_events, size: 30, color: Colors.yellow), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Mes challenges",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => UserChallengesPage(),
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(FontAwesome.forumbee, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Canaux",
@@ -659,7 +675,7 @@ class _MyHomePageState extends State<MyHomePage>
                     leading: Icon(Icons.history_toggle_off_sharp, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Mes chroniques",
-                      fontSize: SizeText.homeProfileTextSize + 3,
+                      fontSize: SizeText.homeProfileTextSize,
                       couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w900,
                     ),
@@ -723,22 +739,8 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
 // Dans votre menu principal
-                  if (authProvider.loginUserData.role == UserRole.ADM.name)
-                    ListTile(
-                      leading: Icon(Icons.emoji_events),
-                      title: Text('Challenge Accuiel'),
-                      onTap: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(builder: (context) => ChallengePostPage(isParticipation: false)),
-                        // );
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ChallengeDashboardPage()),
-                        );
-                      },
-                    ),
+
 
                   // ListTile(
                   //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),

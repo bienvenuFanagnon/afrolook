@@ -20,6 +20,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
+import '../../challenge/challengeDashbord.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
 import 'adminprofil.dart';
 
@@ -495,6 +496,44 @@ class _UserProfilState extends State<UserProfil> {
                                 ),
                               ),
                             ),
+                            if(authProvider.loginUserData.role==UserRole.ADM.name)
+                              SizedBox(height: 10,),
+                            if (authProvider.loginUserData.role == UserRole.ADM.name)
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => ChallengeDashboardPage(),));
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                  child: Container(
+                                    color: ConstColors.buttonsColors,
+                                    // alignment: Alignment.centerLeft,
+                                    width: 180,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Row(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 5.0),
+                                            child: Container(
+                                              child: Icon(Icons.emoji_events,color: Colors.yellow,),
+                                            ),
+                                          ),
+                                          Container(
+                                            child: TextCustomerMenu(
+                                              titre: "Challenge Accuiel",
+                                              fontSize: SizeText.homeProfileTextSize,
+                                              couleur: ConstColors.textColors,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          )
+                                        ],
+
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
 
                             // SizedBox(height: 10,),
                             // GestureDetector(

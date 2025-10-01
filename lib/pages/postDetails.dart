@@ -83,6 +83,39 @@ class _DetailsPostState extends State<DetailsPost>
   final FirebaseAuth _auth = FirebaseAuth.instance;
   Challenge? _challenge;
   bool _loadingChallenge = false;
+
+  Future<void> _loadPostRelations() async {
+    try {
+      // Vérifier qu'on a des IDs
+      final post = widget.post;
+      if (post.user_id == null || post.canal_id == null) return;
+
+      // Récupérer l'utilisateur
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(post.user_id)
+          .get();
+
+      if (userDoc.exists) {
+        post.user = UserData.fromJson(userDoc.data()!); // Assurez-vous que User.fromJson existe
+      }
+
+      // Récupérer le canal
+      final canalDoc = await FirebaseFirestore.instance
+          .collection('Canaux')
+          .doc(post.canal_id)
+          .get();
+
+      if (canalDoc.exists) {
+        post.canal = Canal.fromJson(canalDoc.data()!); // Assurez-vous que Canal.fromJson existe
+      }
+
+      // Rebuild UI avec les données chargées
+      if (mounted) setState(() {});
+    } catch (e, stack) {
+      debugPrint('❌ Erreur récupération user/canal: $e\n$stack');
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -98,9 +131,11 @@ class _DetailsPostState extends State<DetailsPost>
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
+    _loadPostRelations();
 
     // Initialiser le stream pour les mises à jour en temps réel
     _postStream = firestore.collection('Posts').doc(widget.post.id).snapshots();
+
 
     // Charger le challenge si c'est un look challenge
     if (_isLookChallenge && widget.post.challenge_id != null) {
@@ -164,74 +199,6 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   // FONCTIONNALITÉ DE VOTE
-  Future<void> _voteForLook2() async {
-    if (_hasVoted || _isVoting) return;
-
-    setState(() {
-      _isVoting = true;
-    });
-
-    try {
-      final userId = authProvider.loginUserData.id!;
-
-      // Mettre à jour Firestore
-      await firestore.collection('Posts').doc(widget.post.id).update({
-        'votes_challenge': FieldValue.increment(1),
-        'users_votes_ids': FieldValue.arrayUnion([userId]),
-        'popularity': FieldValue.increment(3),
-      });
-
-      // Mettre à jour l'état local
-      setState(() {
-        _hasVoted = true;
-        _votersList.add(userId);
-        widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
-      });
-
-      // Envoyer une notification au propriétaire du look
-      await authProvider.sendNotification(
-        userIds: [widget.post.user!.oneIgnalUserid!],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: widget.post.user_id!,
-        message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
-        type_notif: NotificationType.POST.name,
-        post_id: widget.post.id!,
-        post_type: PostDataType.IMAGE.name,
-        chat_id: '',
-      );
-
-      // Récompense pour le vote
-      await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
-          authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.green,
-          content: Text(
-            '🎉 Vote enregistré !',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } catch (e) {
-      print("Erreur lors du vote: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Erreur lors du vote',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } finally {
-      setState(() {
-        _isVoting = false;
-      });
-    }
-  }
 // Ajoutez ces variables au début de votre classe _DetailsPostState
 
 // Méthode pour charger les données du challenge
@@ -493,11 +460,12 @@ class _DetailsPostState extends State<DetailsPost>
       );
 
       // Récompense pour le vote
-      await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
+       postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
           authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
 
       _showSuccess(
           'VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+      _envoyerNotificationVote(userVotant:  authProvider.loginUserData!, userVote:widget.post!.user!);
     } catch (e) {
       print("Erreur lors du vote avec challenge: $e");
       _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
@@ -507,6 +475,40 @@ class _DetailsPostState extends State<DetailsPost>
           _isVoting = false;
         });
       }
+    }
+  }
+  Future<void> _envoyerNotificationVote({
+    required UserData userVotant,   // celui qui a voté
+    required UserData userVote,     // celui qui reçoit le vote
+  }) async
+  {
+    try {
+      // Récupérer tous les IDs OneSignal des utilisateurs
+      final userIds = await authProvider.getAllUsersOneSignaUserId();
+
+      if (userIds.isEmpty) {
+        debugPrint("⚠️ Aucun utilisateur à notifier.");
+        return;
+      }
+
+      // Construire le message
+      final message = "👏 ${userVotant.pseudo} a voté pour ${userVote.pseudo}!";
+
+      await authProvider.sendNotification(
+        userIds: userIds,
+        smallImage: userVotant.imageUrl ?? '', // image de l'utilisateur qui a voté
+        send_user_id: userVotant.id!,
+        recever_user_id: userVote.id ?? "",
+        message: message,
+        type_notif: 'VOTE',
+        post_id: '',      // optionnel si tu n’as pas de post associé
+        post_type: '',    // optionnel
+        chat_id: '',      // optionnel
+      );
+
+      debugPrint("✅ Notification envoyée: $message");
+    } catch (e, stack) {
+      debugPrint("❌ Erreur envoi notification vote: $e\n$stack");
     }
   }
 
@@ -1353,6 +1355,7 @@ class _DetailsPostState extends State<DetailsPost>
                 radius: 25,
               ),
               // Badge vérifié
+              // if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
               if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
                 Positioned(
                   bottom: 0,
@@ -1779,7 +1782,8 @@ class _DetailsPostState extends State<DetailsPost>
                       ),
                       _buildChallengeStatItem(
                         icon: Icons.people,
-                        value: '${challenge.totalParticipants ?? 0}',
+                        // value: '${challenge.totalParticipants ?? 0}',
+                        value: '${challenge.usersInscritsIds!.length ?? 0}',
                         label: 'Participants',
                         color: _twitterBlue,
                       ),
@@ -2721,6 +2725,8 @@ class _DetailsPostState extends State<DetailsPost>
               Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
           updatedPost.user =
               widget.post.user; // Conserver les données utilisateur
+   updatedPost.canal =
+              widget.post.canal; // Conserver les données utilisateur
 
           return _isLoading
               ? Center(child: CircularProgressIndicator(color: Colors.yellow))

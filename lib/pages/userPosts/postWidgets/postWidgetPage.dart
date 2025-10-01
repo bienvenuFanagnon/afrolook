@@ -170,9 +170,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     } catch (e) {
       print('Erreur lors du chargement de l\'utilisateur: $e');
     } finally {
-      setState(() {
-        _isLoadingUser = false;
-      });
+      // setState(() {
+      //   _isLoadingUser = false;
+      // });
+      _isLoadingUser = false;
+
     }
   }
 

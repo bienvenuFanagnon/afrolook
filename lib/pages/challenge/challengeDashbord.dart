@@ -1,4 +1,3 @@
-// challenge_dashboard_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,8 +8,17 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'challengeDetails.dart';
-
 import 'newChallenge.dart';
+
+// Couleurs pour le thème
+const _afroBlack = Color(0xFF000000);
+const _afroGreen = Color(0xFF00BA7C);
+const _afroYellow = Color(0xFFFFD400);
+const _afroRed = Color(0xFFF91880);
+const _afroBlue = Color(0xFF1D9BF0);
+const _afroCardBg = Color(0xFF16181C);
+const _afroTextPrimary = Color(0xFFFFFFFF);
+const _afroTextSecondary = Color(0xFF71767B);
 
 class ChallengeDashboardPage extends StatefulWidget {
   const ChallengeDashboardPage({Key? key}) : super(key: key);
@@ -39,7 +47,7 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadStats();
   }
 
@@ -120,14 +128,23 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     final bool isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     return Scaffold(
+      backgroundColor: _afroBlack,
       appBar: AppBar(
-        title: Text('Dashboard Challenges'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: Text(
+          'Dashboard Challenges',
+          style: TextStyle(
+            color: _afroTextPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: _afroBlack,
+        foregroundColor: _afroTextPrimary,
+        elevation: 0,
         actions: [
           if (isAdmin)
             IconButton(
-              icon: Icon(Icons.add),
+              icon: Icon(Icons.add, color: _afroGreen),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -140,10 +157,14 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: _afroGreen,
+          labelColor: _afroGreen,
+          unselectedLabelColor: _afroTextSecondary,
           tabs: [
             Tab(text: 'En Cours'),
             Tab(text: 'À Venir'),
             Tab(text: 'Historique'),
+            Tab(text: 'Annulé'),
           ],
         ),
       ),
@@ -157,9 +178,10 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildChallengesList('en_cours'),
-                _buildChallengesList('en_attente'),
-                _buildChallengesList('termine'),
+                _buildChallengesGrid('en_cours'),
+                _buildChallengesGrid('en_attente'),
+                _buildChallengesGrid('termine'),
+                _buildChallengesGrid('annule'),
               ],
             ),
           ),
@@ -177,8 +199,8 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
             ),
           );
         },
-        child: Icon(Icons.emoji_events),
-        backgroundColor: Colors.blue,
+        child: Icon(Icons.emoji_events, color: _afroBlack),
+        backgroundColor: _afroGreen,
       )
           : null,
     );
@@ -188,26 +210,30 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        color: _afroCardBg,
+        border: Border(bottom: BorderSide(color: _afroTextSecondary.withOpacity(0.3))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Statistiques des Challenges',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            '📊 Statistiques des Challenges',
+            style: TextStyle(
+              color: _afroTextPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 16),
 
           // Ligne 1: Challenges
           Row(
             children: [
-              _buildStatCard('Total', _totalChallenges.toString(), Colors.blue),
+              _buildStatCard('Total', _totalChallenges.toString(), _afroBlue, Icons.emoji_events),
               SizedBox(width: 8),
-              _buildStatCard('En Cours', _challengesEnCours.toString(), Colors.green),
+              _buildStatCard('En Cours', _challengesEnCours.toString(), _afroGreen, Icons.play_arrow),
               SizedBox(width: 8),
-              _buildStatCard('Terminés', _challengesTermines.toString(), Colors.orange),
+              _buildStatCard('Terminés', _challengesTermines.toString(), _afroYellow, Icons.check_circle),
             ],
           ),
           SizedBox(height: 8),
@@ -215,11 +241,11 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
           // Ligne 2: Participations et Revenus
           Row(
             children: [
-              _buildStatCard('Participants', _totalParticipants.toString(), Colors.purple),
+              _buildStatCard('Participants', _totalParticipants.toString(), _afroBlue, Icons.people),
               SizedBox(width: 8),
-              _buildStatCard('Votes', _totalVotes.toString(), Colors.red),
+              _buildStatCard('Votes', _totalVotes.toString(), _afroGreen, Icons.how_to_vote),
               SizedBox(width: 8),
-              _buildStatCard('Revenus', '${_revenusTotaux.toInt()} FCFA', Colors.green),
+              _buildStatCard('Revenus', '${_revenusTotaux.toInt()} FCFA', _afroYellow, Icons.attach_money),
             ],
           ),
         ],
@@ -227,32 +253,39 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color color) {
+  Widget _buildStatCard(String title, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: color),
+                SizedBox(width: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 4),
             Text(
               title,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+                fontSize: 10,
+                color: _afroTextSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -262,171 +295,300 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     );
   }
 
-  Widget _buildChallengesList(String statut) {
+  Widget _buildChallengesGrid(String statut) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
           .collection('Challenges')
           .where('disponible', isEqualTo: true)
-          // .where('isAprouved', isEqualTo: true)
           .where('statut', isEqualTo: statut)
           .orderBy('created_at', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: _afroGreen));
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.emoji_events, size: 64, color: Colors.grey[400]),
-                SizedBox(height: 16),
-                Text(
-                  statut == 'en_cours'
-                      ? 'Aucun challenge en cours'
-                      : statut == 'en_attente'
-                      ? 'Aucun challenge à venir'
-                      : 'Aucun challenge terminé',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState(statut);
         }
 
         final challenges = snapshot.data!.docs.map((doc) {
           return Challenge.fromJson(doc.data() as Map<String,dynamic>)..id = doc.id;
         }).toList();
 
-        return ListView.builder(
+        return GridView.builder(
+          padding: EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.75,
+          ),
           itemCount: challenges.length,
           itemBuilder: (context, index) {
-            return _buildChallengeItem(challenges[index]);
+            return _buildChallengeCard(challenges[index]);
           },
         );
       },
     );
   }
 
-  Widget _buildChallengeItem(Challenge challenge) {
-    final now = DateTime.now().microsecondsSinceEpoch;
+  Widget _buildChallengeCard(Challenge challenge) {
     final bool isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: _getStatusColor(challenge.statut!),
-            borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
           ),
-          child: Icon(
-            _getStatusIcon(challenge.statut!),
-            color: Colors.white,
-          ),
-        ),
-        title: Text(
-          challenge.titre ?? 'Sans titre',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              challenge.description ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+        );
+      },
+      onLongPress: isAdmin ? () {
+        _showAdminOptions(challenge);
+      } : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: _afroCardBg,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 8,
+              offset: Offset(0, 4),
             ),
-            SizedBox(height: 4),
-            _buildChallengeInfo(challenge),
+          ],
+          border: Border.all(
+            color: _getStatusColor(challenge.statut!).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header avec statut
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(challenge.statut!).withOpacity(0.1),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _getStatusText(challenge.statut!),
+                          style: TextStyle(
+                            color: _getStatusColor(challenge.statut!),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _getStatusIcon(challenge.statut!),
+                        color: _getStatusColor(challenge.statut!),
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Contenu principal
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Titre
+                        Text(
+                          challenge.titre ?? 'Challenge sans titre',
+                          style: TextStyle(
+                            color: _afroTextPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 8),
+
+                        // Prix
+                        Row(
+                          children: [
+                            Icon(Icons.attach_money, size: 14, color: _afroYellow),
+                            SizedBox(width: 4),
+                            Text(
+                              '${challenge.prix ?? 0} FCFA',
+                              style: TextStyle(
+                                color: _afroYellow,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Participants et votes
+                        Row(
+                          children: [
+                            Icon(Icons.people, size: 12, color: _afroTextSecondary),
+                            SizedBox(width: 4),
+                            Text(
+                              '${challenge.totalParticipants ?? 0}',
+                              style: TextStyle(
+                                color: _afroTextSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.how_to_vote, size: 12, color: _afroTextSecondary),
+                            SizedBox(width: 4),
+                            Text(
+                              '${challenge.totalVotes ?? 0}',
+                              style: TextStyle(
+                                color: _afroTextSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Date
+                        Text(
+                          _getDateInfo(challenge),
+                          style: TextStyle(
+                            color: _afroTextSecondary,
+                            fontSize: 10,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        Spacer(),
+
+                        // Bouton d'action
+                        Container(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _afroGreen,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              minimumSize: Size(0, 0),
+                            ),
+                            child: Text(
+                              'VOIR CHALLENGE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Badge admin pour suppression
+            if (isAdmin)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () => _confirmDeleteChallenge(challenge),
+                  child: Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _afroRed.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
-            ),
-          );
-        },
-        onLongPress: isAdmin ? () {
-          _showAdminOptions(challenge);
-        } : null,
       ),
     );
   }
 
-  Widget _buildChallengeInfo(Challenge challenge) {
-    final now = DateTime.now().microsecondsSinceEpoch;
+  Widget _buildEmptyState(String statut) {
+    String message = '';
+    IconData icon = Icons.emoji_events;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Prix et participants
-        Row(
-          children: [
-            Icon(Icons.attach_money, size: 12, color: Colors.green),
-            SizedBox(width: 4),
-            Text('${challenge.prix ?? 0} FCFA', style: TextStyle(fontSize: 12)),
-            SizedBox(width: 16),
-            Icon(Icons.people, size: 12, color: Colors.blue),
-            SizedBox(width: 4),
-            Text('${challenge.totalParticipants ?? 0}', style: TextStyle(fontSize: 12)),
-            SizedBox(width: 16),
-            Icon(Icons.how_to_vote, size: 12, color: Colors.orange),
-            SizedBox(width: 4),
-            Text('${challenge.totalVotes ?? 0}', style: TextStyle(fontSize: 12)),
-          ],
-        ),
-        SizedBox(height: 4),
+    switch (statut) {
+      case 'en_cours':
+        message = 'Aucun challenge en cours';
+        icon = Icons.play_arrow;
+        break;
+      case 'en_attente':
+        message = 'Aucun challenge à venir';
+        icon = Icons.schedule;
+        break;
+      case 'termine':
+        message = 'Aucun challenge terminé';
+        icon = Icons.check_circle;
+        break;
+    }
 
-        // Dates et statut
-        Text(
-          _getDateInfo(challenge, now),
-          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-        ),
-
-        // Badge de statut
-        Container(
-          margin: EdgeInsets.only(top: 4),
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: _getStatusColor(challenge.statut!).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: _getStatusColor(challenge.statut!)),
-          ),
-          child: Text(
-            _getStatusText(challenge.statut!),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: _afroTextSecondary),
+          SizedBox(height: 16),
+          Text(
+            message,
             style: TextStyle(
-              fontSize: 10,
-              color: _getStatusColor(challenge.statut!),
-              fontWeight: FontWeight.bold,
+              color: _afroTextSecondary,
+              fontSize: 16,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Color _getStatusColor(String statut) {
     switch (statut) {
       case 'en_attente':
-        return Colors.orange;
+        return _afroYellow;
       case 'en_cours':
-        return Colors.green;
+        return _afroGreen;
       case 'termine':
-        return Colors.blue;
+        return _afroBlue;
       case 'annule':
-        return Colors.red;
+        return _afroRed;
       default:
-        return Colors.grey;
+        return _afroTextSecondary;
     }
   }
 
@@ -448,7 +610,7 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
   String _getStatusText(String statut) {
     switch (statut) {
       case 'en_attente':
-        return 'EN ATTENTE';
+        return 'À VENIR';
       case 'en_cours':
         return 'EN COURS';
       case 'termine':
@@ -460,24 +622,25 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     }
   }
 
-  String _getDateInfo(Challenge challenge, int now) {
-    final dateFormat = DateFormat('dd/MM/yyyy');
+  String _getDateInfo(Challenge challenge) {
+    final dateFormat = DateFormat('dd/MM/yy');
+    final now = DateTime.now().microsecondsSinceEpoch;
 
     if (challenge.statut == 'en_attente') {
       final startInscription = challenge.startInscriptionAt ?? 0;
       if (now < startInscription) {
         final startDate = DateTime.fromMicrosecondsSinceEpoch(startInscription);
-        return 'Début inscriptions: ${dateFormat.format(startDate)}';
+        return 'Début: ${dateFormat.format(startDate)}';
       } else {
         final endDate = DateTime.fromMicrosecondsSinceEpoch(challenge.endInscriptionAt ?? 0);
         return 'Fin inscriptions: ${dateFormat.format(endDate)}';
       }
     } else if (challenge.statut == 'en_cours') {
       final endDate = DateTime.fromMicrosecondsSinceEpoch(challenge.finishedAt ?? 0);
-      return 'Fin du challenge: ${dateFormat.format(endDate)}';
+      return 'Fin: ${dateFormat.format(endDate)}';
     } else if (challenge.statut == 'termine') {
       final endDate = DateTime.fromMicrosecondsSinceEpoch(challenge.finishedAt ?? 0);
-      return 'Terminé le: ${dateFormat.format(endDate)}';
+      return 'Terminé: ${dateFormat.format(endDate)}';
     }
 
     return '';
@@ -486,57 +649,80 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
   void _showAdminOptions(Challenge challenge) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: _afroCardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return Container(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Options Admin - ${challenge.titre}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _afroTextSecondary.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
               SizedBox(height: 16),
-
-              // Statistiques détaillées
-              _buildAdminStats(challenge),
-              SizedBox(height: 16),
+              Text(
+                'Options Admin',
+                style: TextStyle(
+                  color: _afroTextPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                challenge.titre ?? 'Challenge',
+                style: TextStyle(
+                  color: _afroTextSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              SizedBox(height: 20),
 
               // Actions admin
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
-                  if (challenge.statut == 'en_attente')
-                    ElevatedButton(
-                      onPressed: () => _demarrerChallenge(challenge),
-                      child: Text('Démarrer'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    ),
-
-                  if (challenge.statut == 'en_cours')
-                    ElevatedButton(
-                      onPressed: () => _terminerChallenge(challenge),
-                      child: Text('Terminer'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                    ),
-
-                  if (challenge.statut != 'annule')
-                    ElevatedButton(
-                      onPressed: () => _annulerChallenge(challenge),
-                      child: Text('Annuler'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    ),
-
-                  ElevatedButton(
-                    onPressed: () => _voirDetails(challenge),
-                    child: Text('Détails'),
+                  _buildAdminActionButton(
+                    'Démarrer',
+                    Icons.play_arrow,
+                    _afroGreen,
+                    challenge.statut == 'en_attente' ? () => _demarrerChallenge(challenge) : null,
                   ),
-
-                  ElevatedButton(
-                    onPressed: () => _encaisserRevenus(challenge),
-                    child: Text('Encaisser'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  _buildAdminActionButton(
+                    'Terminer',
+                    Icons.check_circle,
+                    _afroBlue,
+                    challenge.statut == 'en_cours' ? () => _terminerChallenge(challenge) : null,
+                  ),
+                  _buildAdminActionButton(
+                    'Annuler',
+                    Icons.cancel,
+                    _afroRed,
+                    challenge.statut != 'annule' ? () => _annulerChallenge(challenge) : null,
+                  ),
+                  _buildAdminActionButton(
+                    'Supprimer',
+                    Icons.delete,
+                    _afroRed,
+                        () => _confirmDeleteChallenge(challenge),
+                  ),
+                  _buildAdminActionButton(
+                    'Détails',
+                    Icons.visibility,
+                    _afroBlue,
+                        () => _voirDetails(challenge),
                   ),
                 ],
               ),
@@ -547,57 +733,212 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     );
   }
 
-  Widget _buildAdminStats(Challenge challenge) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildAdminActionButton(String text, IconData icon, Color color, VoidCallback? onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color.withOpacity(0.1),
+        foregroundColor: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: color.withOpacity(0.3)),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Statistiques détaillées:', style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              _buildMiniStat('Participants', '${challenge.totalParticipants ?? 0}'),
-              _buildMiniStat('Votes', '${challenge.totalVotes ?? 0}'),
-              _buildMiniStat('Posts', '${challenge.postsIds?.length ?? 0}'),
-            ],
-          ),
-          SizedBox(height: 4),
+          Icon(icon, size: 16),
+          SizedBox(width: 4),
           Text(
-            'Revenus estimés: ${_calculerRevenusChallenge(challenge)} FCFA',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+            text,
+            style: TextStyle(fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniStat(String label, String value) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey)),
+  void _confirmDeleteChallenge(Challenge challenge) {
+    // Navigator.pop(context); // Fermer le bottom sheet si ouvert
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _afroCardBg,
+        title: Text(
+          'Confirmer la suppression',
+          style: TextStyle(color: _afroTextPrimary),
+        ),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer ce challenge et tous les posts associés ?\n\nCette action est irréversible !',
+          style: TextStyle(color: _afroTextSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'ANNULER',
+              style: TextStyle(color: _afroTextSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _confirmDeleteChallengeFinal(challenge),
+            child: Text(
+              'SUPPRIMER',
+              style: TextStyle(color: _afroRed),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  int _calculerRevenusChallenge(Challenge challenge) {
-    int revenus = 0;
-    if (!challenge.participationGratuite!) {
-      revenus += (challenge.prixParticipation ?? 0) * (challenge.totalParticipants ?? 0);
-    }
-    if (!challenge.voteGratuit!) {
-      revenus += (challenge.prixVote ?? 0) * (challenge.totalVotes ?? 0);
-    }
-    return revenus;
+  void _confirmDeleteChallengeFinal(Challenge challenge) {
+    Navigator.pop(context); // Fermer la première boîte de dialogue
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _afroCardBg,
+        title: Text(
+          '⚠️ DERNIÈRE CONFIRMATION',
+          style: TextStyle(color: _afroRed),
+        ),
+        content: Text(
+          'ATTENTION ! Vous allez supprimer :\n\n'
+              '• Le challenge "${challenge.titre}"\n'
+              '• Tous les posts de participation\n'
+              '• Toutes les données associées\n\n'
+              'Cette action ne peut pas être annulée !\n\n'
+              'Tapez "SUPPRIMER" pour confirmer :',
+          style: TextStyle(color: _afroTextSecondary),
+        ),
+        contentPadding: EdgeInsets.all(20),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: _afroTextSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => _deleteChallengeAndPosts(challenge),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _afroRed,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Confirmer la suppression'),
+          ),
+        ],
+      ),
+    );
   }
 
+  Future<void> _deleteChallengeAndPosts(Challenge challenge) async {
+    try {
+      Navigator.pop(context); // Fermer la boîte de dialogue
+
+      // Afficher un indicateur de chargement avec progression
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: _afroCardBg,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: _afroGreen),
+                  SizedBox(height: 16),
+                  Text(
+                    'Suppression en cours...',
+                    style: TextStyle(color: _afroTextPrimary),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Cette opération peut prendre quelques secondes',
+                    style: TextStyle(
+                      color: _afroTextSecondary,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+
+      // 1. Récupérer tous les posts associés au challenge (posts de participation)
+      final postsParticipationSnapshot = await _firestore
+          .collection('Posts')
+          .where('challenge_id', isEqualTo: challenge.id)
+          .get();
+
+      // 2. Récupérer le post du challenge (celui qui contient les détails du challenge)
+      Post? postChallenge;
+      if (challenge.postChallengeId != null && challenge.postChallengeId!.isNotEmpty) {
+        try {
+          final postChallengeDoc = await _firestore
+              .collection('Posts')
+              .doc(challenge.postChallengeId!)
+              .get();
+
+          if (postChallengeDoc.exists) {
+            postChallenge = Post.fromJson(postChallengeDoc.data()!)..id = postChallengeDoc.id;
+          }
+        } catch (e) {
+          debugPrint('Erreur récupération post challenge: $e');
+        }
+      }
+
+      // 3. Supprimer tous les posts dans une batch
+      final batch = _firestore.batch();
+
+      // Supprimer tous les posts de participation
+      for (final postDoc in postsParticipationSnapshot.docs) {
+        batch.delete(postDoc.reference);
+      }
+
+      // Supprimer le post du challenge s'il existe
+      if (postChallenge != null && postChallenge.id != null) {
+        batch.delete(_firestore.collection('Posts').doc(postChallenge.id!));
+      }
+
+      // 4. Supprimer le challenge
+      batch.delete(_firestore.collection('Challenges').doc(challenge.id!));
+
+      // 5. Exécuter la batch
+      await batch.commit();
+
+      // 6. Compter le nombre total de posts supprimés
+      int totalPostsSupprimes = postsParticipationSnapshot.docs.length;
+      if (postChallenge != null) {
+        totalPostsSupprimes += 1;
+      }
+
+      // 7. Fermer le dialog et montrer le succès
+      Navigator.pop(context);
+      _showSuccess(
+          '✅ Suppression réussie !\n'
+              '• Challenge supprimé\n'
+              '• ${totalPostsSupprimes} posts supprimés '
+              '(${postsParticipationSnapshot.docs.length} participations + '
+              '${postChallenge != null ? 1 : 0} post challenge)'
+      );
+
+      // 8. Recharger les stats
+      await _calculateStats();
+
+    } catch (e) {
+      Navigator.pop(context);
+      _showError('❌ Erreur lors de la suppression: $e');
+    }
+  }
   Future<void> _demarrerChallenge(Challenge challenge) async {
     try {
       await _firestore.collection('Challenges').doc(challenge.id!).update({
@@ -619,9 +960,6 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
         'updated_at': DateTime.now().microsecondsSinceEpoch,
       });
 
-      // Déterminer le gagnant
-      await _determinerGagnant(challenge.id!);
-
       Navigator.pop(context);
       _showSuccess('Challenge terminé avec succès!');
     } catch (e) {
@@ -633,12 +971,16 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Annuler le challenge'),
-        content: Text('Êtes-vous sûr de vouloir annuler ce challenge? Cette action est irréversible.'),
+        backgroundColor: _afroCardBg,
+        title: Text('Annuler le challenge', style: TextStyle(color: _afroTextPrimary)),
+        content: Text(
+          'Êtes-vous sûr de vouloir annuler ce challenge?',
+          style: TextStyle(color: _afroTextSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Non'),
+            child: Text('Non', style: TextStyle(color: _afroTextSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -655,32 +997,11 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
                 _showError('Erreur: $e');
               }
             },
-            child: Text('Oui, annuler'),
+            child: Text('Oui, annuler', style: TextStyle(color: _afroRed)),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _determinerGagnant(String challengeId) async {
-    try {
-      // Récupérer le post avec le plus de votes
-      final postsSnapshot = await _firestore
-          .collection('Posts')
-          .where('challenge_id', isEqualTo: challengeId)
-          .orderBy('votes_challenge', descending: true)
-          .limit(1)
-          .get();
-
-      if (postsSnapshot.docs.isNotEmpty) {
-        final postGagnant = postsSnapshot.docs.first;
-        await _firestore.collection('Challenges').doc(challengeId).update({
-          'posts_winner_ids': FieldValue.arrayUnion([postGagnant.id]),
-        });
-      }
-    } catch (e) {
-      print('Erreur détermination gagnant: $e');
-    }
   }
 
   void _voirDetails(Challenge challenge) {
@@ -693,33 +1014,12 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
     );
   }
 
-  Future<void> _encaisserRevenus(Challenge challenge) async {
-    try {
-      final revenus = _calculerRevenusChallenge(challenge);
-
-      // Mettre à jour le solde de l'application
-      await _firestore.collection('app_default_data').doc('solde').set({
-        'solde_gain': FieldValue.increment(revenus)
-      }, SetOptions(merge: true));
-
-      // Marquer le challenge comme encaissé
-      await _firestore.collection('Challenges').doc(challenge.id!).update({
-        'revenus_encaisses': true,
-        'updated_at': DateTime.now().microsecondsSinceEpoch,
-      });
-
-      Navigator.pop(context);
-      _showSuccess('Revenus encaissés: $revenus FCFA');
-    } catch (e) {
-      _showError('Erreur encaissement: $e');
-    }
-  }
-
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: _afroGreen,
+        duration: Duration(seconds: 4),
       ),
     );
   }
@@ -727,8 +1027,9 @@ class _ChallengeDashboardPageState extends State<ChallengeDashboardPage> with Si
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: _afroRed,
+        duration: Duration(seconds: 4),
       ),
     );
   }

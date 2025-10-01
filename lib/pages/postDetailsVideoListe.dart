@@ -98,13 +98,79 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   bool get _isLookChallenge {
     return widget.initialPost.type == 'CHALLENGEPARTICIPATION';
   }
+  Future<void> _envoyerNotificationVote({
+    required UserData userVotant,   // celui qui a voté
+    required UserData userVote,     // celui qui reçoit le vote
+  }) async
+  {
+    try {
+      // Récupérer tous les IDs OneSignal des utilisateurs
+      final userIds = await authProvider.getAllUsersOneSignaUserId();
+
+      if (userIds.isEmpty) {
+        debugPrint("⚠️ Aucun utilisateur à notifier.");
+        return;
+      }
+
+      // Construire le message
+      final message = "👏 ${userVotant.pseudo} a voté pour ${userVote.pseudo}!";
+
+      await authProvider.sendNotification(
+        userIds: userIds,
+        smallImage: userVotant.imageUrl ?? '', // image de l'utilisateur qui a voté
+        send_user_id: userVotant.id!,
+        recever_user_id: userVote.id ?? "",
+        message: message,
+        type_notif: 'VOTE',
+        post_id: '',      // optionnel si tu n’as pas de post associé
+        post_type: '',    // optionnel
+        chat_id: '',      // optionnel
+      );
+
+      debugPrint("✅ Notification envoyée: $message");
+    } catch (e, stack) {
+      debugPrint("❌ Erreur envoi notification vote: $e\n$stack");
+    }
+  }
+  Future<void> _loadPostRelations() async {
+    try {
+      // Vérifier qu'on a des IDs
+      final post = widget.initialPost;
+      if (post.user_id == null || post.canal_id == null) return;
+
+      // Récupérer l'utilisateur
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(post.user_id)
+          .get();
+
+      if (userDoc.exists) {
+        post.user = UserData.fromJson(userDoc.data()!); // Assurez-vous que User.fromJson existe
+      }
+
+      // Récupérer le canal
+      final canalDoc = await FirebaseFirestore.instance
+          .collection('Canaux')
+          .doc(post.canal_id)
+          .get();
+
+      if (canalDoc.exists) {
+        post.canal = Canal.fromJson(canalDoc.data()!); // Assurez-vous que Canal.fromJson existe
+      }
+
+      // Rebuild UI avec les données chargées
+      if (mounted) setState(() {});
+    } catch (e, stack) {
+      debugPrint('❌ Erreur récupération user/canal: $e\n$stack');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-
+    _loadPostRelations();
     _pageController = PageController();
 
     // Initialiser les fonctionnalités de challenge
@@ -309,7 +375,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         );
       } else {
         // Vote normal (sans challenge)
-        await _processVoteNormal(user.uid);
+        // await _processVoteNormal(user.uid);
       }
     } catch (e) {
       print("Erreur lors de la préparation du vote: $e");
@@ -398,6 +464,8 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           authProvider.loginUserData.id!, "vote_look", widget.initialPost.user_id!);
 
       _showSuccess('VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+      _envoyerNotificationVote(userVotant:  authProvider.loginUserData!, userVote:widget.initialPost!.user!);
+
     } catch (e) {
       print("Erreur lors du vote avec challenge: $e");
       _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
@@ -468,7 +536,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     await _firestore.collection('Users').doc(userId).update({
       'votre_solde_principal': FieldValue.increment(-montant)
     });
+    String appDataId = authProvider.appDefaultData.id!;
 
+    await _firestore.collection('AppData').doc(appDataId).set({
+      'solde_gain': FieldValue.increment(montant)
+    }, SetOptions(merge: true));
     await _createTransaction(
         TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
   }
@@ -1042,7 +1114,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     if (!_isLookChallenge) return SizedBox();
 
     return Positioned(
-      bottom: 250,
+      top: 0,
       left: 16,
       right: 16,
       child: Container(
@@ -1063,7 +1135,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                   'LOOK CHALLENGE',
                   style: TextStyle(
                     color: _twitterGreen,
-                    fontSize: 14,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1073,6 +1145,13 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(Icons.arrow_back, color: Colors.yellow),
+                ),
+
                 Text(
                   '${post.votesChallenge ?? 0} votes',
                   style: TextStyle(color: Colors.white, fontSize: 12),
@@ -1087,7 +1166,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                     child: _isVoting
                         ? SizedBox(
                       width: 16,
-                      height: 16,
+                      height: 10,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -1096,8 +1175,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                         : Text(
                       'VOTER',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white
                       ),
                     ),
                   )
@@ -1188,7 +1268,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       child: Column(
         children: [
           // Avatar utilisateur
-          GestureDetector(
+          post.type == PostType.CHALLENGE.name?SizedBox.shrink():  GestureDetector(
             onTap: () {
               // Navigation vers le profil
             },
@@ -1205,11 +1285,29 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               ),
             ),
           ),
-          SizedBox(height: 20),
+          post.type == PostType.CHALLENGE.name?SizedBox.shrink(): SizedBox(height: 20),
 
           // Like
           Column(
+    spacing: 5,
             children: [
+              if (_isLookChallenge)
+                Column(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined,
+                        color: _hasVoted ? _twitterGreen : Colors.white,
+                        size: 35,
+                      ),
+                      onPressed: _voteForLook,
+                    ),
+                    Text(
+                      _formatCount(post.votesChallenge ?? 0),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               IconButton(
                 icon: Icon(
                   isLiked ? Icons.favorite : Icons.favorite_border,
@@ -1224,27 +1322,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               ),
             ],
           ),
-          SizedBox(height: 10),
 
           // Vote (uniquement pour les challenges)
-          if (_isLookChallenge)
-            Column(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    _hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined,
-                    color: _hasVoted ? _twitterGreen : Colors.white,
-                    size: 35,
-                  ),
-                  onPressed: _voteForLook,
-                ),
-                Text(
-                  _formatCount(post.votesChallenge ?? 0),
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          if (_isLookChallenge) SizedBox(height: 10),
+
+          // if (_isLookChallenge) SizedBox(height: 10),
 
           // Commentaires
           Column(
@@ -1259,7 +1340,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               ),
             ],
           ),
-          SizedBox(height: 10),
 
           // Cadeaux
           Column(
@@ -1274,7 +1354,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               ),
             ],
           ),
-          SizedBox(height: 10),
 
           // Vue
           Column(
@@ -1289,14 +1368,12 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               ),
             ],
           ),
-          SizedBox(height: 10),
 
           // Partager
           IconButton(
             icon: Icon(Icons.share, color: Colors.white, size: 35),
             onPressed: () => _sharePost(post),
           ),
-          SizedBox(height: 10),
 
           // Menu
           IconButton(
@@ -1792,16 +1869,17 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         // Lecteur vidéo
         _buildVideoPlayer(post),
 
-        // Section Look Challenge
-        _buildLookChallengeSection(post),
+
 
         // Informations utilisateur
         _buildUserInfo(post),
 
+        // Section Look Challenge
+        _buildLookChallengeSection(post),
+
         // Boutons d'action
         _buildActionButtons(post),
-
-        // En-tête avec logo Afrolook
+        if (!_isLookChallenge)
         Positioned(
           top: MediaQuery.of(context).padding.top + 16,
           left: 16,
@@ -1826,7 +1904,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         ),
 
         // Indicateur de son
-        Positioned(
+        if (!_isLookChallenge)
+
+          Positioned(
           top: MediaQuery.of(context).padding.top + 16,
           right: 16,
           child: IconButton(
@@ -1843,7 +1923,8 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               _chewieController?.setVolume(newVolume);
             },
           ),
-        ),
+        ),      // En-tête avec logo Afrolook
+
 
         // Indicateur de chargement suivant
         if (_isLoadingMore)

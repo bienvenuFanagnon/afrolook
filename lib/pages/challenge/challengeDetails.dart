@@ -644,6 +644,8 @@ await  _checkPrixEncaisser();
         final usersSnapshot = await _firestore
             .collection('Users')
             .where(FieldPath.documentId, whereIn: _challenge!.usersInscritsIds!)
+        .limit(4)
+        
             .get();
 
         setState(() {
@@ -663,6 +665,7 @@ await  _checkPrixEncaisser();
           .collection('Posts')
           .where('challenge_id', isEqualTo: widget.challengeId)
           .orderBy('votes_challenge', descending: true)
+      .limit(4)
           .get();
 
       List<Post> posts = postsSnapshot.docs.map((doc) {
@@ -1677,7 +1680,7 @@ await  _checkPrixEncaisser();
     }
   }
 
-  Widget _buildTabNavigation() {
+  Widget _buildTabNavigation2() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[900],
@@ -2158,11 +2161,12 @@ await  _checkPrixEncaisser();
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 2.2,
+              crossAxisSpacing: 2,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1.5,
               children: [
-                _buildStatCard(Icons.people_alt, 'Participants', '${_challenge!.totalParticipants ?? 0}', Colors.green),
+                _buildStatCard(Icons.people_alt, 'Participants', '${_challenge!.usersInscritsIds!.length
+                    ?? 0}', Colors.green),
                 _buildStatCard(Icons.how_to_vote, 'Votes totaux', '${_challenge!.totalVotes ?? 0}', Colors.blue),
                 _buildStatCard(Icons.post_add, 'Publications', '${_posts.length}', Colors.orange),
                 _buildStatCard(Icons.visibility, 'Vues', '${_challenge!.vues ?? 0}', Colors.purple),
@@ -2366,7 +2370,7 @@ await  _checkPrixEncaisser();
     );
   }
 
-  Widget _buildParticipantsTab() {
+  Widget _buildParticipantsTab2() {
     return _participants.isEmpty
         ? _buildEmptyState(
         Icons.people_outline,
@@ -2421,19 +2425,606 @@ await  _checkPrixEncaisser();
     );
   }
 
+
+// Dans la section _buildTabNavigation(), remplacez le widget existant par :
+  Widget _buildTabNavigation() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        border: Border(bottom: BorderSide(color: Colors.grey[800]!)),
+      ),
+      child: Row(
+        children: [
+          _buildTabItem(0, Icons.info, 'DÉTAILS'),
+          _buildTabItemWithModal(1, Icons.people, 'PARTICIPANTS', _participants.length),
+          _buildTabItemWithModal(2, Icons.photo_library, 'POSTS', _posts.length),
+        ],
+      ),
+    );
+  }
+
+// Nouvelle méthode pour les onglets avec modal
+  Widget _buildTabItemWithModal(int tabIndex, IconData icon, String label, [int? count]) {
+    final isSelected = _currentTab == tabIndex;
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() { _currentTab = tabIndex; }),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: isSelected ? Colors.green : Colors.transparent,
+                  width: 3,
+                ),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(icon,
+                        size: 20,
+                        color: isSelected ? Colors.green : Colors.grey[400]
+                    ),
+                    if (count != null && count > 0)
+                      Positioned(
+                        right: -5,
+                        top: -5,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            count > 99 ? '99+' : count.toString(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isSelected ? Colors.green : Colors.grey[400],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (count != null && count > 5)
+                      GestureDetector(
+                        onTap: () {
+                          if (tabIndex == 1) {
+                            _showAllParticipantsModal();
+                          } else if (tabIndex == 2) {
+                            _showAllPostsModal();
+                          }
+                        },
+                        child: Container(
+                          margin: EdgeInsets.only(left: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green, width: 1),
+                          ),
+                          child: Text(
+                            'Voir tout',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+// Méthode pour afficher le modal de tous les participants
+  void _showAllParticipantsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Header du modal
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.people, color: Colors.green, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    'TOUS LES PARTICIPANTS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.grey),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _buildAllParticipantsContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Méthode pour afficher le modal de tous les posts
+  void _showAllPostsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Header du modal
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.photo_library, color: Colors.green, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    'TOUTES LES PUBLICATIONS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.grey),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _buildAllPostsContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Contenu du modal participants
+  Widget _buildAllParticipantsContent() {
+    // Charger tous les participants (méthode à implémenter)
+    return FutureBuilder<List<UserData>>(
+      future: _loadAllParticipants(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: Colors.green),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyModalState(
+              Icons.people_outline,
+              'Aucun participant',
+              'Aucun utilisateur ne participe à ce challenge pour le moment.'
+          );
+        }
+
+        final allParticipants = snapshot.data!;
+
+        return GridView.builder(
+          padding: EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3, // 3 colonnes pour une belle grille
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.8, // ratio pour les cartes utilisateur
+          ),
+          itemCount: allParticipants.length,
+          itemBuilder: (context, index) {
+            return _buildParticipantGridItem(allParticipants[index]);
+          },
+        );
+      },
+    );
+  }
+
+// Contenu du modal posts
+  Widget _buildAllPostsContent() {
+    // Charger tous les posts (méthode à implémenter)
+    return FutureBuilder<List<Post>>(
+      future: _loadAllPosts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: Colors.green),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyModalState(
+              Icons.photo_library,
+              'Aucune publication',
+              'Aucune publication pour ce challenge pour le moment.'
+          );
+        }
+
+        final allPosts = snapshot.data!;
+
+        return GridView.builder(
+          padding: EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // 2 colonnes pour les posts
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: allPosts.length,
+          itemBuilder: (context, index) {
+            return _buildPostGridItem(allPosts[index], index);
+          },
+        );
+      },
+    );
+  }
+
+// Widget pour un participant dans la grille du modal
+  Widget _buildParticipantGridItem(UserData participant) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey[800],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Avatar
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.green, width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 28,
+              backgroundImage: participant.imageUrl != null
+                  ? NetworkImage(participant.imageUrl!)
+                  : null,
+              backgroundColor: Colors.grey[700],
+              child: participant.imageUrl == null
+                  ? Icon(Icons.person, color: Colors.white, size: 24)
+                  : null,
+            ),
+          ),
+          SizedBox(height: 8),
+          // Pseudo
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              participant.pseudo ?? 'Utilisateur',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: 4),
+          // Badge participant
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green),
+            ),
+            child: Text(
+              'PARTICIPANT',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// État vide pour les modals
+  Widget _buildEmptyModalState(IconData icon, String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 80, color: Colors.grey[600]),
+            SizedBox(height: 20),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Méthodes pour charger toutes les données (à ajouter à votre classe)
+  Future<List<UserData>> _loadAllParticipants() async {
+    try {
+      if (_challenge?.usersInscritsIds?.isNotEmpty ?? false) {
+        final usersSnapshot = await _firestore
+            .collection('Users')
+            .where(FieldPath.documentId, whereIn: _challenge!.usersInscritsIds!)
+            .get();
+
+        return usersSnapshot.docs
+            .map((doc) => UserData.fromJson(doc.data()))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('❌ Erreur chargement tous les participants: $e');
+      return [];
+    }
+  }
+
+  Future<List<Post>> _loadAllPosts() async {
+    try {
+      final postsSnapshot = await _firestore
+          .collection('Posts')
+          .where('challenge_id', isEqualTo: widget.challengeId)
+          .orderBy('votes_challenge', descending: true)
+          .get();
+
+      List<Post> posts = postsSnapshot.docs.map((doc) {
+        final post = Post.fromJson(doc.data())..id = doc.id;
+        return post;
+      }).toList();
+
+      // Charger les données utilisateur pour chaque post
+      for (var post in posts) {
+        if (post.user_id != null) {
+          final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
+          if (userDoc.exists) {
+            post.user = UserData.fromJson(userDoc.data()!);
+          }
+        }
+      }
+
+      return posts;
+    } catch (e) {
+      debugPrint('❌ Erreur chargement tous les posts: $e');
+      return [];
+    }
+  }
+
+// Dans vos méthodes _buildParticipantsTab() et _buildPostsTab(), limitez à 5 éléments
+  Widget _buildParticipantsTab() {
+    final displayedParticipants = _participants.take(4).toList();
+
+    return displayedParticipants.isEmpty
+        ? _buildEmptyState(
+        Icons.people_outline,
+        'Aucun participant',
+        'Soyez le premier à participer à ce challenge !'
+    )
+        : Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.all(16),
+            itemCount: displayedParticipants.length,
+            itemBuilder: (context, index) {
+              final participant = displayedParticipants[index];
+              return _buildParticipantListItem(participant);
+            },
+          ),
+        ),
+        // if (_participants.length > 5)
+          Container(
+            padding: EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: _showAllParticipantsModal,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.visibility, size: 20),
+                  SizedBox(width: 8),
+                  Text('VOIR TOUS LES PARTICIPANTS (${_participants.length})'),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Ajoutez cette fonction dans votre classe _ChallengeDetailPageState
+  Widget _buildParticipantListItem(UserData participant) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.green, width: 2),
+          ),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundImage: participant.imageUrl != null
+                ? NetworkImage(participant.imageUrl!)
+                : null,
+            backgroundColor: Colors.grey[800],
+            child: participant.imageUrl == null
+                ? Icon(Icons.person, color: Colors.white, size: 18)
+                : null,
+          ),
+        ),
+        title: Text(
+          "@${participant.pseudo ?? 'Utilisateur'}",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: participant.email != null
+            ? Text(
+          participant.email!,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 12,
+          ),
+        )
+            : null,
+        trailing: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green),
+          ),
+          child: Text(
+            'INSCRIT',
+            style: TextStyle(
+              color: Colors.green,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostsTab() {
     final user = _auth.currentUser;
     final aVote = _challenge!.aVote(user?.uid);
+    final displayedPosts = _posts.take(5).toList();
 
-    if (_posts.isEmpty) {
+    if (displayedPosts.isEmpty) {
       return _buildEmptyState(
-          _challenge!.isEnCours ? Icons.photo_library : Icons.schedule,
-          _challenge!.isEnCours
-              ? 'Aucune publication'
-              : 'En attente du début du challenge',
-          _challenge!.isEnCours
-              ? 'Les participants publieront bientôt leurs contenus'
-              : 'Revenez quand le challenge aura débuté'
+        _challenge!.isEnCours ? Icons.photo_library : Icons.schedule,
+        _challenge!.isEnCours
+            ? 'Aucune publication'
+            : 'En attente du début du challenge',
+        _challenge!.isEnCours
+            ? 'Les participants publieront bientôt leurs contenus'
+            : 'Revenez quand le challenge aura débuté',
       );
     }
 
@@ -2453,25 +3044,274 @@ await  _checkPrixEncaisser();
                 Expanded(
                   child: Text(
                     'Votez pour votre participant préféré !',
-                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
             ),
           ),
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: _posts.length,
+          child: GridView.builder(
+            padding: EdgeInsets.all(12),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: displayedPosts.length,
             itemBuilder: (context, index) {
-              return _buildPostItem(_posts[index], index);
+              return _buildPostGridItem(displayedPosts[index], index);
             },
           ),
         ),
+        // if (_posts.length > 5)
+          Container(
+            padding: EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: _showAllPostsModal,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.photo_library, size: 20),
+                  SizedBox(width: 8),
+                  Text('VOIR TOUTES LES PUBLICATIONS (${_posts.length})'),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
+  Widget _buildPostGridItem(Post post, int index) {
+    final estGagnant = _challenge!.postsWinnerIds?.contains(post.id) ?? false;
 
+    return GestureDetector(
+      onTap: () {
+        if (post.dataType == 'VIDEO') {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => VideoTikTokPage(initialPost: post)));
+        } else {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (_) => DetailsPost(post: post)));
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.green.withOpacity(0.3),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Image en arrière-plan qui occupe tout l'espace
+              Container(
+                height: double.infinity,
+                width: double.infinity,
+                child: (post.dataType == 'VIDEO' && post.url_media != null)
+                    ? _buildVideoPreview(post)
+                    : (post.images != null && post.images!.isNotEmpty)
+                    ? _buildImagePreview(post)
+                    : _buildDefaultPreview2(post),
+              ),
+
+              // Overlay sombre pour améliorer la lisibilité du texte
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Badge gagnant
+              if (estGagnant)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.yellow,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.emoji_events, size: 16, color: Colors.black),
+                        SizedBox(width: 4),
+                        Text(
+                          "Gagnant",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Contenu texte superposé en bas
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.9),
+                        Colors.black.withOpacity(0.4),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nom utilisateur avec ombre
+                      Text(
+                        post.user?.pseudo ?? "Utilisateur",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.8),
+                              blurRadius: 4,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      SizedBox(height: 4),
+
+                      // Description avec ombre
+                      if (post.description != null && post.description!.isNotEmpty)
+                        Text(
+                          post.description!,
+                          style: TextStyle(
+                            color: Colors.grey[300],
+                            fontSize: 12,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.8),
+                                blurRadius: 4,
+                                offset: Offset(1, 1),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                      SizedBox(height: 8),
+
+                      // Stats en bas
+                      Row(
+                        children: [
+                          // Votes
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.how_to_vote, size: 14, color: Colors.green),
+                                SizedBox(width: 4),
+                                Text(
+                                  "${post.votesChallenge ?? 0}",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(width: 8),
+
+                          // Commentaires
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.comment, size: 14, color: Colors.yellow),
+                                SizedBox(width: 4),
+                                Text(
+                                  "${post.comments ?? 0}",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildPostItem(Post post, int index) {
     final user = _auth.currentUser;
     final aVotePourCePost = post.aVote(user?.uid ?? '');
@@ -2851,48 +3691,6 @@ await  _checkPrixEncaisser();
     );
   }
 
-  Widget _buildVideoPreview2(Post post) {
-    return Container(
-      width: double.infinity,
-      height: 200,
-      color: Colors.black,
-      child: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.play_circle_filled, size: 50, color: Colors.white.withOpacity(0.7)),
-                SizedBox(height: 8),
-                Text('VIDÉO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
-                Text('Cliquez pour regarder', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.play_arrow, size: 12, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text('VIDÉO', style: TextStyle(color: Colors.white, fontSize: 10)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildImagePreview(Post post) {
     return Container(
@@ -2904,33 +3702,33 @@ await  _checkPrixEncaisser();
           fit: BoxFit.cover,
         ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.3),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.photo, size: 40, color: Colors.white.withOpacity(0.8)),
-              SizedBox(height: 8),
-              Text(
-                'IMAGE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Cliquez pour voir',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ),
+      // child: Container(
+      //   decoration: BoxDecoration(
+      //     color: Colors.black.withOpacity(0.3),
+      //   ),
+      //   child: Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         Icon(Icons.photo, size: 40, color: Colors.white.withOpacity(0.8)),
+      //         SizedBox(height: 8),
+      //         Text(
+      //           'IMAGE',
+      //           style: TextStyle(
+      //             color: Colors.white,
+      //             fontWeight: FontWeight.bold,
+      //             fontSize: 16,
+      //           ),
+      //         ),
+      //         SizedBox(height: 4),
+      //         Text(
+      //           'Cliquez pour voir',
+      //           style: TextStyle(color: Colors.white70, fontSize: 12),
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // ),
     );
   }
 
@@ -3082,11 +3880,46 @@ await  _checkPrixEncaisser();
 
       _showSuccess('VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
       await _loadPosts();
+      _envoyerNotificationVote(userVotant:  authProvider.loginUserData!, userVote:post!.user!);
+
     } catch (e) {
       _showError('ERREUR LORS DU VOTE: $e\nVeuillez réessayer.');
     }
   }
+  Future<void> _envoyerNotificationVote({
+    required UserData userVotant,   // celui qui a voté
+    required UserData userVote,     // celui qui reçoit le vote
+  }) async
+  {
+    try {
+      // Récupérer tous les IDs OneSignal des utilisateurs
+      final userIds = await authProvider.getAllUsersOneSignaUserId();
 
+      if (userIds.isEmpty) {
+        debugPrint("⚠️ Aucun utilisateur à notifier.");
+        return;
+      }
+
+      // Construire le message
+      final message = "👏 ${userVotant.pseudo} a voté pour ${userVote.pseudo}!";
+
+      await authProvider.sendNotification(
+        userIds: userIds,
+        smallImage: userVotant.imageUrl ?? '', // image de l'utilisateur qui a voté
+        send_user_id: userVotant.id!,
+        recever_user_id: userVote.id ?? "",
+        message: message,
+        type_notif: 'VOTE',
+        post_id: '',      // optionnel si tu n’as pas de post associé
+        post_type: '',    // optionnel
+        chat_id: '',      // optionnel
+      );
+
+      debugPrint("✅ Notification envoyée: $message");
+    } catch (e, stack) {
+      debugPrint("❌ Erreur envoi notification vote: $e\n$stack");
+    }
+  }
   // Méthodes utilitaires
   Color _getStatusColor() {
     switch (_challenge!.statut) {
