@@ -818,6 +818,22 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
+  Future<bool> updateUserCountryCode(UserData user) async {
+    try{
+
+
+
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.id)
+          .update(user.toJson());
+      printVm("user update : ${user!.toJson()}");
+      return true;
+    }catch(e){
+      printVm("erreur update post : ${e}");
+      return false;
+    }
+  }
 
   Future<bool> updateTransactionSolde(TransactionSolde trans) async {
     try{

@@ -50,7 +50,7 @@ setState(() {
         "countryCode": countryCode!,
       };
       authProvider.loginUserData.countryData=userData;
-      await authProvider.updateUser(authProvider.loginUserData).then((value) async {
+      await authProvider.updateUserCountryCode(authProvider.loginUserData).then((value) async {
         if(value){
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

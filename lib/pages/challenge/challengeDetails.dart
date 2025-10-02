@@ -13,24 +13,9 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import '../postDetailsVideoListe.dart';
 import 'newChallenge.dart';
-
-// challenge_detail_page.dart (version complète améliorée)
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
-import 'package:afrotok/pages/paiement/newDepot.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'dart:async';
 import 'dart:typed_data';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'newChallenge.dart';
 
 class ChallengeDetailPage extends StatefulWidget {
   final String challengeId;
@@ -443,7 +428,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   Future<void> _encaisserPrix() async {
-       //
+
        // _showError(
        //      "⚠️ Ceci est une version de test.\n"
        //          "La fonctionnalité d'encaissement sera disponible dans la version complète."
