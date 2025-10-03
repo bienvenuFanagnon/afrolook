@@ -58,6 +58,10 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   void _initializeChallenge() async {
+    // Mettre à jour dans Firestore
+    await _firestore.collection('Challenges').doc(widget.challengeId).update({
+      'vues': FieldValue.increment(1),
+    });
     await _loadChallenge();
     _startStatusMonitoring();
     _listenToChallengeUpdates();
@@ -2355,7 +2359,7 @@ await  _checkPrixEncaisser();
       child: Row(
         children: [
           _buildTabItem(0, Icons.info, 'DÉTAILS'),
-          _buildTabItemWithModal(1, Icons.people, 'PARTICIPANTS', _participants.length),
+          _buildTabItemWithModal(1, Icons.people, 'PARTICIPANTS', _challenge!.usersInscritsIds!.length),
           _buildTabItemWithModal(2, Icons.photo_library, 'POSTS', _posts.length),
         ],
       ),
@@ -2812,7 +2816,7 @@ await  _checkPrixEncaisser();
 
 // Dans vos méthodes _buildParticipantsTab() et _buildPostsTab(), limitez à 5 éléments
   Widget _buildParticipantsTab() {
-    final displayedParticipants = _participants.take(4).toList();
+    final displayedParticipants = _participants.take(10).toList();
 
     return displayedParticipants.isEmpty
         ? _buildEmptyState(
@@ -2850,7 +2854,7 @@ await  _checkPrixEncaisser();
                 children: [
                   Icon(Icons.visibility, size: 20),
                   SizedBox(width: 8),
-                  Text('VOIR TOUS LES PARTICIPANTS (${_participants.length})'),
+                  Text('VOIR TOUS LES PARTICIPANTS (${_challenge!.usersInscritsIds!.length})'),
                 ],
               ),
             ),

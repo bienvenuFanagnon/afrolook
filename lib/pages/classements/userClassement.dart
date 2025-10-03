@@ -13,7 +13,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../auth/authTest/constants.dart';
-import '../home/topFiveModal.dart';
+import '../home/listTopModal.dart';
 import '../user/detailsOtherUser.dart';
 
 class UserClassement extends StatefulWidget {

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 import '../pages/story/afroStory/repository.dart';
 import 'chatmodels/message.dart';
@@ -1475,7 +1476,7 @@ enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 
 enum TypeTransaction{
-  DEPOT,RETRAIT,GAIN,DEPENSE
+  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE
 }
 enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 
@@ -2832,4 +2833,106 @@ enum TabBarType {
   EVENEMENT,
   OFFRES,
   GAMER,
+}
+
+
+// models/transaction_retrait_model.dart
+class TransactionRetrait {
+  String? id;
+  String? userId;
+  String? userPseudo;
+  String? userEmail;
+  String? userPhone;
+  double? montant;
+  String? typeTransaction; // RETRAIT
+  String? statut; // EN_ATTENTE, VALIDER, ANNULE
+  String? description;
+  String? motifAnnulation;
+  String? numeroTransaction;
+  int? createdAt;
+  int? updatedAt;
+  String? processedBy; // ID de l'admin qui a traité
+  String? methodPaiement; // Orange Money, Wave, etc.
+  String? numeroCompte; // Numéro de téléphone ou compte
+
+  TransactionRetrait({
+    this.id,
+    required this.userId,
+    this.userPseudo,
+    this.userEmail,
+    this.userPhone,
+    required this.montant,
+    this.typeTransaction = 'RETRAIT',
+    this.statut = 'EN_ATTENTE',
+    this.description = 'Demande de retrait',
+    this.motifAnnulation,
+    this.numeroTransaction,
+    this.createdAt,
+    this.updatedAt,
+    this.processedBy,
+    this.methodPaiement,
+    this.numeroCompte,
+  });
+
+  TransactionRetrait.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    userId = json['user_id'];
+    userPseudo = json['user_pseudo'];
+    userEmail = json['user_email'];
+    userPhone = json['user_phone'];
+    montant = (json['montant'] as num?)?.toDouble() ?? 0.0;
+    typeTransaction = json['type_transaction'];
+    statut = json['statut'];
+    description = json['description'];
+    motifAnnulation = json['motif_annulation'];
+    numeroTransaction = json['numero_transaction'];
+    createdAt = json['created_at'];
+    updatedAt = json['updated_at'];
+    processedBy = json['processed_by'];
+    methodPaiement = json['method_paiement'];
+    numeroCompte = json['numero_compte'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    data['user_id'] = userId;
+    data['user_pseudo'] = userPseudo;
+    data['user_email'] = userEmail;
+    data['user_phone'] = userPhone;
+    data['montant'] = montant;
+    data['type_transaction'] = typeTransaction;
+    data['statut'] = statut;
+    data['description'] = description;
+    data['motif_annulation'] = motifAnnulation;
+    data['numero_transaction'] = numeroTransaction;
+    data['created_at'] = createdAt ?? DateTime.now().millisecondsSinceEpoch;
+    data['updated_at'] = updatedAt ?? DateTime.now().millisecondsSinceEpoch;
+    data['processed_by'] = processedBy;
+    data['method_paiement'] = methodPaiement;
+    data['numero_compte'] = numeroCompte;
+    return data;
+  }
+
+  // Getters utiles
+  bool get isEnAttente => statut == 'EN_ATTENTE';
+  bool get isValide => statut == 'VALIDER';
+  bool get isAnnule => statut == 'ANNULE';
+
+  String get statutText {
+    switch (statut) {
+      case 'EN_ATTENTE': return 'En attente';
+      case 'VALIDER': return 'Validé';
+      case 'ANNULE': return 'Annulé';
+      default: return 'Inconnu';
+    }
+  }
+
+  Color get statutColor {
+    switch (statut) {
+      case 'EN_ATTENTE': return Colors.orange;
+      case 'VALIDER': return Colors.green;
+      case 'ANNULE': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
 }

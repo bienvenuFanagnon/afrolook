@@ -123,7 +123,120 @@ class _AidePageState extends State<ContactPage> {
               ),
               SizedBox(height: 20),
 
-              // NOUVEAU: Bouton Facebook en première position
+              // NOUVEAU: WhatsApp Support en première position
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green[800]!, Colors.green[600]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Icon(FontAwesome.whatsapp, size: 40, color: Colors.white),
+                    SizedBox(height: 10),
+                    Text(
+                      'Support WhatsApp Direct',
+                      style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      '+228 71 64 54 03',
+                      style: TextStyle(fontSize: 16, color: Colors.yellow[700], fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Contactez-nous directement sur WhatsApp pour une assistance rapide',
+                      style: TextStyle(color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 15),
+                    ElevatedButton.icon(
+                      icon: Icon(FontAwesome.whatsapp, color: Colors.white),
+                      label: Text('Écrire sur WhatsApp'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.green[700],
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        launchWhatsApp('22871645403');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Canal WhatsApp Officiel
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.green[900],
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.notifications, size: 35, color: Colors.white),
+                    SizedBox(height: 10),
+                    Text(
+                      'Canal WhatsApp Officiel',
+                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Restez informé des dernières actualités',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      icon: Icon(FontAwesome.whatsapp, color: Colors.white, size: 18),
+                      label: Text('Rejoindre le Canal'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.green[700],
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        _launchURL('https://whatsapp.com/channel/0029VaxfuwYISTkF3o42e60V');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Bouton Facebook
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(15),
@@ -158,7 +271,8 @@ class _AidePageState extends State<ContactPage> {
                       icon: Icon(FontAwesome.facebook, color: Colors.white),
                       label: Text('Écrire sur Facebook'),
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white, backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.blue[700],
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -173,11 +287,65 @@ class _AidePageState extends State<ContactPage> {
               ),
 
               SizedBox(height: 30),
+
+              // Section YouTube
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.red[900],
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Icon(FontAwesome.youtube_play, size: 40, color: Colors.white),
+                    SizedBox(height: 10),
+                    Text(
+                      'Chaîne YouTube Officielle',
+                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Regardez nos tutoriels et guides vidéo',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      icon: Icon(FontAwesome.youtube_play, color: Colors.white, size: 18),
+                      label: Text('Voir les Tutoriels'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.red[700],
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        _launchURL('https://youtube.com/@afrolookstudioofficiel?si=3wWf802tZbGVEeC_');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 30),
+
               Text(
                 'Ou contactez-nous par email:',
                 style: TextStyle(fontSize: 16.0, color: Colors.grey),
               ),
               SizedBox(height: 20),
+
               // Option 1: Support général
               Card(
                 color: Colors.green[900],
@@ -191,6 +359,7 @@ class _AidePageState extends State<ContactPage> {
                 ),
               ),
               SizedBox(height: 15),
+
               // Option 2: Investissements
               Card(
                 color: Colors.green[800],
@@ -204,6 +373,7 @@ class _AidePageState extends State<ContactPage> {
                 ),
               ),
               SizedBox(height: 15),
+
               // Option 3: Publicité
               Card(
                 color: Colors.green[700],
@@ -217,6 +387,7 @@ class _AidePageState extends State<ContactPage> {
                 ),
               ),
               SizedBox(height: 30),
+
               // Section Réseaux sociaux
               Center(
                 child: Text(
@@ -225,6 +396,7 @@ class _AidePageState extends State<ContactPage> {
                 ),
               ),
               SizedBox(height: 15),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -267,6 +439,7 @@ class _AidePageState extends State<ContactPage> {
                 ],
               ),
               SizedBox(height: 20),
+
               // Section pour ceux qui ont des difficultés
               Container(
                 padding: EdgeInsets.all(15),
@@ -291,7 +464,8 @@ class _AidePageState extends State<ContactPage> {
                       icon: Icon(FontAwesome.facebook, color: Colors.white),
                       label: Text('Rejoindre le groupe Facebook'),
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white, backgroundColor: Colors.blue[800],
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.blue[800],
                       ),
                       onPressed: () {
                         _launchURL('https://facebook.com/groups/28745647531687196/');
@@ -300,6 +474,8 @@ class _AidePageState extends State<ContactPage> {
                   ],
                 ),
               ),
+
+              SizedBox(height: 20),
             ],
           ),
         ),

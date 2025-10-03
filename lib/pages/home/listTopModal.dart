@@ -1,5 +1,7 @@
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
+import 'package:afrotok/pages/challenge/challengeDetails.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constant/custom_theme.dart';
@@ -1173,7 +1175,759 @@ class _ProductGridItem extends StatelessWidget {
 ///////////
 
 
+
+// Ajoutez cette classe après les autres modals
+// Modifiez la partie contenu principal du ChallengeModal
+class ChallengeModal {
+  static Future<void> showChallengeModal(BuildContext context, Challenge challenge) async {
+    final authProvider = context.read<UserAuthProvider>();
+    final currentUserId = authProvider.userId;
+
+    final isInscrit = challenge.isInscrit(currentUserId);
+    final aVote = challenge.aVote(currentUserId);
+    final inscriptionsOuvertes = challenge.inscriptionsOuvertes;
+    final peutParticiper = challenge.peutParticiper;
+    final isEnCours = challenge.isEnCours;
+    final isEnAttente = challenge.isEnAttente;
+
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Container(
+            width: double.infinity,
+            constraints: BoxConstraints(maxWidth: 500, maxHeight: MediaQuery.of(context).size.height * 0.8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.purple, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.withOpacity(0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // En-tête avec titre accrocheur
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.purple, Colors.deepPurple],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              "🏆 CHALLENGE EN COURS 🏆",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "Participez et gagnez des prix!",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Contenu principal du challenge avec SingleChildScrollView
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Titre du challenge
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            challenge.titre ?? 'Challenge',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+
+                        // Description avec limitation
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Description:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                challenge.description ?? 'Aucune description',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[300],
+                                  height: 1.4,
+                                ),
+                                maxLines: 3, // Limite à 3 lignes
+                                overflow: TextOverflow.ellipsis, // Points de suspension si trop long
+                              ),
+                              if ((challenge.description?.length ?? 0) > 150) // Si description trop longue
+                                GestureDetector(
+                                  onTap: () {
+                                    // Afficher la description complète dans un dialog
+                                    _showFullDescription(context, challenge.description ?? '');
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      'Voir plus...',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.purple,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Prix et récompense
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.purple),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.card_giftcard, color: Colors.amber, size: 24),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Prix à gagner',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                    Text(
+                                      '${challenge.prix ?? 0} FCFA',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber,
+                                      ),
+                                    ),
+                                    // if (challenge.typeCadeaux != null)
+                                    //   Text(
+                                    //     challenge.typeCadeaux!,
+                                    //     style: TextStyle(
+                                    //       fontSize: 12,
+                                    //       color: Colors.white,
+                                    //     ),
+                                    //     maxLines: 1,
+                                    //     overflow: TextOverflow.ellipsis,
+                                    //   ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Statistiques
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatItem(
+                                Icons.people,
+                                'Participants',
+                                '${challenge.totalParticipants ?? 0}',
+                              ),
+                              _buildStatItem(
+                                Icons.how_to_vote,
+                                'Votes',
+                                '${challenge.totalVotes ?? 0}',
+                              ),
+                              _buildStatItem(
+                                Icons.visibility,
+                                'Vues',
+                                '${challenge.vues ?? 0}',
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // État du challenge et dates
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.info, color: Colors.purple, size: 16),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'État: ${_getStatusText(challenge.statut)}',
+                                    style: TextStyle(
+                                      color: _getStatusColor(challenge.statut),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              if (challenge.endInscriptionAt != null)
+                                _buildDateItem(
+                                  'Fin des inscriptions:',
+                                  _formatDate(challenge.endInscriptionAt!),
+                                ),
+                              if (challenge.finishedAt != null)
+                                _buildDateItem(
+                                  'Fin du challenge:',
+                                  _formatDate(challenge.finishedAt!),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bouton d'action principal (toujours visible)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: _buildActionButton(context, challenge, isInscrit, aVote, inscriptionsOuvertes, peutParticiper),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Méthode pour afficher la description complète
+  static void _showFullDescription(BuildContext context, String description) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.purple, width: 2),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.description, color: Colors.purple),
+                  SizedBox(width: 8),
+                  Text(
+                    'Description complète',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[300],
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildStatItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.purple, size: 20),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[400],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  static Widget _buildDateItem(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(width: 24), // Alignement avec le texte d'état
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Les autres méthodes restent inchangées...
+  static String _getStatusText(String? status) {
+    switch (status) {
+      case 'en_attente':
+        return 'Inscriptions ouvertes';
+      case 'en_cours':
+        return 'Votes en cours';
+      case 'termine':
+        return 'Terminé';
+      case 'annule':
+        return 'Annulé';
+      default:
+        return 'Inconnu';
+    }
+  }
+
+  static Color _getStatusColor(String? status) {
+    switch (status) {
+      case 'en_attente':
+        return Colors.orange;
+      case 'en_cours':
+        return Colors.green;
+      case 'termine':
+        return Colors.blue;
+      case 'annule':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static String _formatDate(int microseconds) {
+    final date = DateTime.fromMicrosecondsSinceEpoch(microseconds);
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  static Widget _buildActionButton(
+      BuildContext context,
+      Challenge challenge,
+      bool isInscrit,
+      bool aVote,
+      bool inscriptionsOuvertes,
+      bool peutParticiper,
+      ) {
+    String buttonText;
+    VoidCallback onPressed;
+    Color backgroundColor;
+
+    if (challenge.isEnAttente) {
+      if (isInscrit) {
+        buttonText = "✅ DÉJÀ INSCRIT";
+        onPressed = () {
+          Navigator.of(context).pop();
+          _navigateToChallengeDetails(context, challenge);
+        };
+        backgroundColor = Colors.green;
+      } else {
+        buttonText = "🎯 S'INSCRIRE AU CHALLENGE";
+        onPressed = () {
+          Navigator.of(context).pop();
+          _navigateToChallengeDetails(context, challenge);
+        };
+        backgroundColor = Colors.purple;
+      }
+    } else if (challenge.isEnCours) {
+      if (isInscrit) {
+        if (aVote) {
+          buttonText = "📊 VOIR LES VOTES";
+          onPressed = () {
+            Navigator.of(context).pop();
+            _navigateToChallengeDetails(context, challenge);
+          };
+          backgroundColor = Colors.blue;
+        } else {
+          buttonText = "🗳️ ALLER VOTER";
+          onPressed = () {
+            Navigator.of(context).pop();
+            _navigateToChallengeDetails(context, challenge);
+          };
+          backgroundColor = Colors.orange;
+        }
+      } else {
+        buttonText = "👀 VOTER POUR LES PARTICIPANTS";
+        onPressed = () {
+          Navigator.of(context).pop();
+          _navigateToChallengeDetails(context, challenge);
+        };
+        backgroundColor = Colors.deepPurple;
+      }
+    } else {
+      buttonText = "📋 VOIR LES RÉSULTATS";
+      onPressed = () {
+        Navigator.of(context).pop();
+        _navigateToChallengeDetails(context, challenge);
+      };
+      backgroundColor = Colors.grey;
+    }
+
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        buttonText,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  static void _navigateToChallengeDetails(BuildContext context, Challenge challenge) {
+    // Votre navigation vers la page de détails
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
+      ),
+    );
+  }
+}
+
+// Modifiez la classe AdvancedModalManager pour inclure les challenges
 class AdvancedModalManager {
+  static const String _lastProductModalKey = 'last_product_modal2';
+  static const String _lastLiveModalKey = 'last_live_modal2';
+  static const String _lastChallengeModalKey = 'last_challenge_modal2';
+  static const String _lastModalTypeKey = 'last_modal_type';
+  static const int _modalIntervalHours = 4;
+  static bool _isShowingModal = false;
+
+  static Future<void> showModalsWithSmartDelay(BuildContext context) async {
+    if (_isShowingModal) {
+      return;
+    }
+
+    _isShowingModal = true;
+
+    try {
+      await Future.delayed(Duration(milliseconds: 1500));
+
+      // 🔥 NOUVELLE LOGIQUE : Toujours vérifier les challenges en premier
+      final activeChallenge = await _getActiveChallenge();
+
+      if (activeChallenge != null && context.mounted) {
+        // 🎯 IL Y A UN CHALLENGE ACTIF - On l'affiche sans vérifier l'intervalle
+        print('🏆 Challenge actif trouvé: ${activeChallenge.titre}');
+
+        await _showChallengeModal(context, activeChallenge);
+        return; // On s'arrête ici, pas d'autres modals
+      }
+
+      // 🚫 AUCUN CHALLENGE ACTIF - On continue avec les autres modals
+      print('❌ Aucun challenge actif, affichage des autres modals');
+      final prefs = await SharedPreferences.getInstance();
+      final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'live';
+
+      if (lastModalType == 'products') {
+        await _tryShowLiveModal(context, prefs);
+      } else {
+        await _tryShowProductModal(context, prefs);
+      }
+
+    } finally {
+      _isShowingModal = false;
+    }
+  }
+
+  static Future<Challenge?> _getActiveChallenge() async {
+    try {
+      // Récupération directe depuis Firebase
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Challenges')
+          .where('statut', whereIn: ['en_attente', 'en_cours'])
+          .where('disponible', isEqualTo: true)
+          .where('isAprouved', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final challengeData = snapshot.docs.first.data();
+        challengeData['id'] = snapshot.docs.first.id;
+        FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
+          'vues': FieldValue.increment(1),
+        });
+
+        return Challenge.fromJson(challengeData);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Erreur lors de la récupération du challenge: $e');
+      return null;
+    }
+  }
+
+  static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
+
+    print('🏆 Affichage du modal du challenge: ${challenge.titre}');
+    await ChallengeModal.showChallengeModal(context, challenge);
+
+    // On marque quand même l'affichage pour le debug, mais sans bloquer les prochains
+    await _markModalShown(_lastChallengeModalKey);
+  }
+
+  // 🚫 LES AUTRES MODALS NE S'AFFICHENT QUE SI PAS DE CHALLENGE
+  static Future<void> _tryShowProductModal(BuildContext context, SharedPreferences prefs) async {
+    final shouldShowProducts = await _shouldShowModal(_lastProductModalKey);
+    if (shouldShowProducts && context.mounted) {
+      await _showProductModal(context);
+      await prefs.setString(_lastModalTypeKey, 'products');
+    } else {
+      print('⏰ Modal produits non affiché (intervalle pas encore écoulé)');
+    }
+  }
+
+  static Future<void> _tryShowLiveModal(BuildContext context, SharedPreferences prefs) async {
+    final shouldShowLives = await _shouldShowModal(_lastLiveModalKey);
+    if (shouldShowLives && context.mounted) {
+      await _showLiveModal(context);
+      await prefs.setString(_lastModalTypeKey, 'lives');
+    } else {
+      print('⏰ Modal lives non affiché (intervalle pas encore écoulé)');
+    }
+  }
+
+  static Future<void> _showProductModal(BuildContext context) async {
+    print('🛒 Affichage du modal des produits boostés');
+    await TopProductsGridModal.showTopProductsGridModal(context);
+    await _markModalShown(_lastProductModalKey);
+  }
+
+  static Future<void> _showLiveModal(BuildContext context) async {
+    print('🎥 Affichage du modal des lives');
+    await TopLiveGridModal.showTopLiveGridModal(context);
+    await _markModalShown(_lastLiveModalKey);
+  }
+
+  static Future<bool> _shouldShowModal(String modalKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(modalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _modalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+
+  static Future<void> _markModalShown(String modalKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
+    print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
+  }
+
+  static Future<void> debugModalStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final productTime = prefs.getInt(_lastProductModalKey) ?? 0;
+    final liveTime = prefs.getInt(_lastLiveModalKey) ?? 0;
+    final challengeTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
+    final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'aucun';
+
+    final now = DateTime.now();
+    final productShown = productTime > 0 ? DateTime.fromMillisecondsSinceEpoch(productTime) : null;
+    final liveShown = liveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(liveTime) : null;
+    final challengeShown = challengeTime > 0 ? DateTime.fromMillisecondsSinceEpoch(challengeTime) : null;
+
+    // Vérifier les challenges actifs
+    final activeChallenge = await _getActiveChallenge();
+
+    print('🔍 État des modals:');
+    print('   - Dernier modal: $lastModalType');
+    print('   - Challenge actif: ${activeChallenge != null ? "OUI (" + activeChallenge.titre! + ")" : "NON"}');
+    print('   - Produits affichés: ${productShown ?? "jamais"}');
+    print('   - Lives affichés: ${liveShown ?? "jamais"}');
+    print('   - Challenges affichés: ${challengeShown ?? "jamais"}');
+
+    if (activeChallenge != null) {
+      print('   🎯 PRIORITÉ: Les challenges bloquent les autres modals');
+    } else {
+      print('   🚫 Aucun challenge actif - les autres modals peuvent s\'afficher');
+    }
+  }
+
+  static Future<void> resetAllModals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastProductModalKey);
+    await prefs.remove(_lastLiveModalKey);
+    await prefs.remove(_lastChallengeModalKey);
+    await prefs.remove(_lastModalTypeKey);
+    print('🔄 Tous les modals ont été réinitialisés');
+  }
+
+  // 🔥 NOUVELLE MÉTHODE : Vérifier rapidement s'il y a des challenges
+  static Future<bool> hasActiveChallenges() async {
+    final challenge = await _getActiveChallenge();
+    return challenge != null;
+  }
+}
+
+class AdvancedModalManager2 {
   static const String _lastProductModalKey = 'last_product_modal2';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastModalTypeKey = 'last_modal_type'; // Pour alterner

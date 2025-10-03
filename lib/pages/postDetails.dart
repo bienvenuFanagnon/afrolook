@@ -185,6 +185,12 @@ class _DetailsPostState extends State<DetailsPost>
           widget.post.users_vue_id!.add(authProvider.loginUserData.id!);
         });
 
+        // // 🔹 Mettre à jour UserData.viewedPostIds
+        // final userRef = FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id!);
+        // await userRef.update({
+        //   'viewedPostIds': FieldValue.arrayUnion([widget.post.id]),
+        // });
+
         // Mettre à jour dans Firestore
         await firestore.collection('Posts').doc(widget.post.id).update({
           'vues': FieldValue.increment(1),
@@ -197,6 +203,9 @@ class _DetailsPostState extends State<DetailsPost>
       print("Erreur incrémentation vues: $e");
     }
   }
+
+
+
 
   // FONCTIONNALITÉ DE VOTE
 // Ajoutez ces variables au début de votre classe _DetailsPostState

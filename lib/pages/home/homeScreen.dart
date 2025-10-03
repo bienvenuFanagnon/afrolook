@@ -10,7 +10,7 @@ import 'package:afrotok/pages/home/homeLooks.dart';
 import 'package:afrotok/pages/home/homeOffre.dart';
 import 'package:afrotok/pages/home/homeSport.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
-import 'package:afrotok/pages/home/topFiveModal.dart';
+import 'package:afrotok/pages/home/listTopModal.dart';
 import 'package:afrotok/pages/home/unitePage.dart';
 import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
@@ -1100,8 +1100,12 @@ class _MyHomePageState extends State<MyHomePage>
       //     // Utiliser la version avancée pour plus de contrôle
       //     AdvancedModalManager.showModalsWithSmartDelay(context);
       //   });
-        ChallengeIntegration.initialize();
+      //   ChallengeIntegration.initialize();
       // AdvancedModalManager.showModalsWithSmartDelay(context);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AdvancedModalManager.showModalsWithSmartDelay(context);
+        });
 
 
 

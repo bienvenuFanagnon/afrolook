@@ -441,8 +441,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
     try {
       // ✅ Vérifier si déjà vu localement
-      if (post.hasBeenSeenByCurrentUser == true ||
-          (post.users_vue_id?.contains(currentUserId) ?? false) ||
+      if (
           (_authProvider.loginUserData.viewedPostIds?.contains(post.id) ?? false)) {
         print("⚠️ Vue déjà comptée pour le post ${post.id}");
         return;

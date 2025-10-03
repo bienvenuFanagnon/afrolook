@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import '../../../providers/postProvider.dart';
 import '../../models/model_data.dart';
 import '../paiement/depotPageTranaction.dart';
 import '../paiement/newDepot.dart';
+import 'UserRetrait/userRetraitListe.dart';
 
 class MonetisationPage extends StatefulWidget {
   @override
@@ -148,6 +150,11 @@ class _MonetisationPageState extends State<MonetisationPage> {
                               child: ElevatedButton(
                                 onPressed: () {
                                   // Dialogue retrait
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => UserRetraitListPage()),
+                                  );
                                 },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
