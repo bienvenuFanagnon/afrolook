@@ -942,7 +942,7 @@ class Challenge {
     id = json['id'];
     user_id = json['user_id'];
     titre = json['titre'];
-    statut = json['statut'];
+    statut = json['statut'] ?? 'en_attente';
     postChallengeId = json['postChallengeId'];
     description = json['description'];
     typeCadeaux = json['typeCadeaux'];
@@ -986,7 +986,7 @@ class Challenge {
     data['id'] = id;
     data['user_id'] = user_id;
     data['titre'] = titre;
-    data['statut'] = statut;
+    // data['statut'] = statut;
     data['postChallengeId'] = postChallengeId;
     data['description'] = description;
     data['typeCadeaux'] = typeCadeaux;

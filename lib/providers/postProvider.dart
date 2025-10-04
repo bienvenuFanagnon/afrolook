@@ -2743,23 +2743,6 @@ class PostProvider extends ChangeNotifier {
   }
 
 
-  Future<bool> updateChallenge(Challenge challenge) async {
-    try{
-
-
-      // challenge.updatedAt=DateTime.now().microsecondsSinceEpoch;
-
-      await FirebaseFirestore.instance
-          .collection('Challenges')
-          .doc(challenge.id)
-          .update(challenge.toJson());
-
-      return true;
-    }catch(e){
-      printVm("erreur update post : ${e}");
-      return false;
-    }
-  }
 
   Future<bool> updateVuePost(Post post,BuildContext context) async {
     try{

@@ -14,6 +14,7 @@ import '../pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import '../pages/component/consoleWidget.dart';
 import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/postDetails.dart';
+import '../pages/postDetailsVideoListe.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
@@ -412,12 +413,24 @@ class AppLinkService {
     try {
       await postProvider.getPostsImagesById(postId).then((posts) {
         if (posts.isNotEmpty) {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => DetailsPost(post: posts.first)
-              )
-          );
+
+          if(posts.first.dataType ==PostDataType.VIDEO.name){
+
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => VideoTikTokPageDetails(initialPost: posts.first,isIn: true,)
+                )
+            );
+          }else{
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => DetailsPost(post: posts.first)
+                )
+            );
+          }
+
         }
       });
     } catch (e) {

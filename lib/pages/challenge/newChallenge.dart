@@ -568,27 +568,44 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
   }
 
   // Sélecteurs de date
-  Future<void> _selectDate2(BuildContext context, bool isStart, bool isInscription) async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _selectDate(BuildContext context, bool isStart, bool isInscription) async {
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: isStart ? _dateDebutInscription : (isInscription ? _dateFinInscription : _dateFinChallenge),
-      firstDate: DateTime.now(),
+      initialDate: isStart
+          ? _dateDebutInscription
+          : (isInscription ? _dateFinInscription : _dateFinChallenge),
+      firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
 
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _dateDebutInscription = picked;
-        } else if (isInscription) {
-          _dateFinInscription = picked;
-        } else {
-          _dateFinChallenge = picked;
-        }
-      });
+    if (pickedDate != null) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(pickedDate),
+      );
+
+      if (pickedTime != null) {
+        final DateTime fullDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        setState(() {
+          if (isStart) {
+            _dateDebutInscription = fullDateTime;
+          } else if (isInscription) {
+            _dateFinInscription = fullDateTime;
+          } else {
+            _dateFinChallenge = fullDateTime;
+          }
+        });
+      }
     }
   }
-  Future<void> _selectDate(BuildContext context, bool isStart, bool isInscription) async {
+  Future<void> _selectDate3(BuildContext context, bool isStart, bool isInscription) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isStart

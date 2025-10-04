@@ -124,7 +124,10 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 
     // Mise à jour normale du statut
     if (newStatus != null && newStatus != _challenge!.statut) {
-      await _updateChallengeStatus(newStatus);
+      if (newStatus != 'annule' && _challenge?.statut != 'annule') {
+        await _updateChallengeStatus(newStatus);
+      }
+
     }
   }
 
@@ -1613,7 +1616,7 @@ await  _checkPrixEncaisser();
         children: [
           _buildTabItem(0, Icons.info, 'DÉTAILS'),
           _buildTabItem(1, Icons.people, 'PARTICIPANTS', _participants.length),
-          _buildTabItem(2, Icons.photo_library, 'POSTS', _posts.length),
+          _buildTabItem(2, Icons.photo_library, 'POSTS', _challenge!.postsIds!.length),
         ],
       ),
     );
@@ -2091,7 +2094,7 @@ await  _checkPrixEncaisser();
                 _buildStatCard(Icons.people_alt, 'Participants', '${_challenge!.usersInscritsIds!.length
                     ?? 0}', Colors.green),
                 _buildStatCard(Icons.how_to_vote, 'Votes totaux', '${_challenge!.totalVotes ?? 0}', Colors.blue),
-                _buildStatCard(Icons.post_add, 'Publications', '${_posts.length}', Colors.orange),
+                _buildStatCard(Icons.post_add, 'Publications', '${_challenge!.postsIds!.length}', Colors.orange),
                 _buildStatCard(Icons.visibility, 'Vues', '${_challenge!.vues ?? 0}', Colors.purple),
               ],
             ),
@@ -2360,7 +2363,7 @@ await  _checkPrixEncaisser();
         children: [
           _buildTabItem(0, Icons.info, 'DÉTAILS'),
           _buildTabItemWithModal(1, Icons.people, 'PARTICIPANTS', _challenge!.usersInscritsIds!.length),
-          _buildTabItemWithModal(2, Icons.photo_library, 'POSTS', _posts.length),
+          _buildTabItemWithModal(2, Icons.photo_library, 'POSTS', _challenge!.postsIds!.length),
         ],
       ),
     );
@@ -3007,7 +3010,7 @@ await  _checkPrixEncaisser();
                 children: [
                   Icon(Icons.photo_library, size: 20),
                   SizedBox(width: 8),
-                  Text('VOIR TOUTES LES PUBLICATIONS (${_posts.length})'),
+                  Text('VOIR TOUTES LES PUBLICATIONS (${_challenge!.postsIds!.length})'),
                 ],
               ),
             ),

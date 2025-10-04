@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -291,6 +292,8 @@ class _UserLivesPageState extends State<UserLivesPage> {
     final canWithdraw = !isLive && live.giftTotal > 0 && !earningsWithdrawn;
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
+    printVm('Live love account: ${live.toMap()}');
+
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -333,7 +336,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
                     SizedBox(width: 12),
                     Icon(Icons.favorite, size: 14, color: Colors.grey),
                     SizedBox(width: 4),
-                    Text('${live.giftCount ?? 0}', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text('${live.likeCount ?? 0}', style: TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
               ],
@@ -434,9 +437,9 @@ class _UserLivesPageState extends State<UserLivesPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatItem(Icons.schedule, 'Durée', _calculateDuration(live)),
-                  _buildStatItem(Icons.card_giftcard, 'Cadeaux', '${live.gifts.length}'),
+                  _buildStatItem(Icons.card_giftcard, 'Cadeaux', '${live.giftCount}'),
                   _buildStatItem(Icons.people, 'Audiences', '${live.viewerCount}'),
-                  // _buildStatItem(AntDesign.heart, 'Likes', '${live.}'),
+                  _buildStatItem(AntDesign.heart, 'Likes', '${live.likeCount}'),
                 ],
               ),
             ),

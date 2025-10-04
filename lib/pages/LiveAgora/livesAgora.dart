@@ -30,6 +30,7 @@ class PostLive {
   final String title;
   int viewerCount;
   int? giftCount;
+  int? likeCount;
   final DateTime startTime;
   DateTime? endTime;
   bool isLive;
@@ -60,6 +61,7 @@ class PostLive {
     this.endTime,
     this.isLive = true,
     this.giftTotal = 0,
+    this.likeCount = 0,
     this.gifts = const [],
     this.paymentRequired = false,
     this.paymentRequestTime,
@@ -76,6 +78,7 @@ class PostLive {
       'hostName': hostName,
       'hostImage': hostImage,
       'title': title,
+      'likeCount': likeCount,
       'viewerCount': viewerCount,
       'startTime': startTime,
       'endTime': endTime,
@@ -128,6 +131,7 @@ class PostLive {
       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
       withdrawalDate: map['withdrawalDate']?.toDate(),
       withdrawalTransactionId: map['withdrawalTransactionId'],
+      likeCount: map['likeCount'],
     );
   }
 }

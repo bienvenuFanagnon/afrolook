@@ -29,6 +29,7 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/postDetailsVideoListe.dart';
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoOriginal.dart';
 
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
@@ -200,7 +201,7 @@ class _MyAppState extends State<MyApp> {
   void onClickNotification() {
     try {
       OneSignal.Notifications.addClickListener((event) async {
-        print("data: ${event.notification.additionalData}");
+        print("notif additionalData: ${event.notification.additionalData}");
 
         if (event.notification.additionalData!['type_notif'] == NotificationType.MESSAGE.name) {
           Chat usersChat = Chat();
@@ -229,35 +230,41 @@ class _MyAppState extends State<MyApp> {
                 Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
             usersChat.messages = messages;
 
-            navigatorKey.currentState!.pushNamed('/home');
+            // navigatorKey.currentState!.pushNamed('/home');
             navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MyChat(title: 'mon chat', chat: usersChat,),));
           }
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.INVITATION.name) {
-          navigatorKey.currentState!.pushNamed('/home');
+          // navigatorKey.currentState!.pushNamed('/home');
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.ARTICLE.name) {
-          navigatorKey.currentState!.pushNamed('/home');
+          // navigatorKey.currentState!.pushNamed('/home');
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.ACCEPTINVITATION.name) {
-          navigatorKey.currentState!.pushNamed('/home');
+          // navigatorKey.currentState!.pushNamed('/home');
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),));
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.POST.name) {
           switch (event.notification.additionalData!['post_type']) {
-            case "VIDEO":
-              await getPostsVideosById(event.notification.additionalData!['post_id']!).then((videos_posts) {
-                if (videos_posts.isNotEmpty) {
-                  navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
-                }
-              },);
-              break;
+            // case "VIDEO":
+            //   await getPostsVideosById(event.notification.additionalData!['post_id']!).then((videos_posts) {
+            //     if (videos_posts.isNotEmpty) {
+            //       navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => OnlyPostVideo(videos: videos_posts,),));
+            //     }
+            //   },);
+            //   break;
             case "IMAGE":
               await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
                 if (posts.isNotEmpty) {
-                  navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+                  if(posts.first.dataType ==PostDataType.VIDEO.name){
+                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
+
+                  }else{
+                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+
+                  }
                 }
               },);
               break;

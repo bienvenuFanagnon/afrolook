@@ -22,18 +22,6 @@ import '../../chat/myChat.dart';
 import '../../component/consoleWidget.dart';
 import '../detailsOtherUser.dart';
 
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-// Modèles et providers (gardez vos imports existants)
-import 'package:afrotok/models/chatmodels/message.dart';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/constant/constColors.dart';
-
 class ListUserChats extends StatefulWidget {
   const ListUserChats({super.key});
 
@@ -49,6 +37,14 @@ class _ListUserChatsState extends State<ListUserChats> {
   bool _isSearching = false;
   List<Chat> _searchResults = [];
 
+  // Pagination
+  int _currentLimit = 2;
+  final int _maxLimit = 100;
+  final int _incrementStep = 2;
+  bool _hasMoreChats = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+
   // Couleurs de la palette
   final Color primaryBlack = Colors.black;
   final Color primaryGreen = Colors.green;
@@ -61,11 +57,46 @@ class _ListUserChatsState extends State<ListUserChats> {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    // Écouter le scroll pour le chargement progressif
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent &&
+        _hasMoreChats &&
+        !_isLoadingMore &&
+        !_isSearching) {
+      _loadMoreChats();
+    }
+  }
+
+  Future<void> _loadMoreChats() async {
+    if (_currentLimit >= _maxLimit) {
+      setState(() {
+        _hasMoreChats = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    // Simuler un délai de chargement
+    await Future.delayed(Duration(milliseconds: 500));
+
+    setState(() {
+      _currentLimit += _incrementStep;
+      _isLoadingMore = false;
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -84,7 +115,6 @@ class _ListUserChatsState extends State<ListUserChats> {
     });
 
     try {
-      // Recherche dans les conversations existantes
       final chatsQuery = FirebaseFirestore.instance
           .collection('Chats')
           .where(Filter.or(
@@ -94,7 +124,6 @@ class _ListUserChatsState extends State<ListUserChats> {
           .where("type", isEqualTo: ChatType.USER.name)
           .get();
 
-      // Recherche dans les utilisateurs pour trouver des correspondances
       final usersQuery = FirebaseFirestore.instance
           .collection('Users')
           .where('pseudo', isGreaterThanOrEqualTo: query)
@@ -107,11 +136,9 @@ class _ListUserChatsState extends State<ListUserChats> {
 
       List<Chat> foundChats = [];
 
-      // Traiter les conversations existantes
       for (var chatDoc in chatsSnapshot.docs) {
         Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
 
-        // Récupérer les informations de l'utilisateur correspondant
         CollectionReference friendCollect = FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await friendCollect
             .where("id",
@@ -125,26 +152,21 @@ class _ListUserChatsState extends State<ListUserChats> {
               querySnapshotUser.docs.first.data() as Map<String, dynamic>);
           chat.chatFriend = userData;
 
-          // Vérifier si le pseudo correspond à la recherche
           if (userData.pseudo!.toLowerCase().contains(query.toLowerCase())) {
             foundChats.add(chat);
           }
         }
       }
 
-      // Vérifier si on a trouvé des utilisateurs qui ne sont pas encore dans les conversations
       for (var userDoc in usersSnapshot.docs) {
         UserData userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
 
-        // Éviter de s'ajouter soi-même
         if (userData.id == authProvider.loginUserData.id) continue;
 
-        // Vérifier si cet utilisateur n'est pas déjà dans les résultats
         bool alreadyInResults = foundChats.any((chat) =>
         chat.chatFriend != null && chat.chatFriend!.id == userData.id);
 
         if (!alreadyInResults) {
-          // Créer une conversation fictive pour l'affichage
           Chat newChat = Chat(
             id: 'search_${userData.id}',
             senderId: authProvider.loginUserData.id!,
@@ -198,6 +220,7 @@ class _ListUserChatsState extends State<ListUserChats> {
     ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
+        .limit(_currentLimit)
         .snapshots();
 
     List<Chat> listChats = [];
@@ -231,9 +254,7 @@ class _ListUserChatsState extends State<ListUserChats> {
 
   // Créer ou récupérer une conversation
   Future<void> _openChat(Chat chat) async {
-    // Si c'est une conversation de recherche (non existante)
     if (chat.id!.startsWith('search_')) {
-      // Vérifier si une conversation existe déjà
       final existingChats = await FirebaseFirestore.instance
           .collection('Chats')
           .where(Filter.or(
@@ -243,13 +264,17 @@ class _ListUserChatsState extends State<ListUserChats> {
           .get();
 
       if (existingChats.docs.isNotEmpty) {
-        // Conversation existe déjà, l'ouvrir
         Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
         existingChat.chatFriend = chat.chatFriend;
-        // Navigation vers le chat existant
-        // Navigator.push(...);
+        Navigator.push(
+            context,
+            PageTransition(
+                type: PageTransitionType.fade,
+                child: MyChat(
+                  title: 'mon chat',
+                  chat: existingChat,
+                )));
       } else {
-        // Créer une nouvelle conversation
         String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
         Chat newChat = Chat(
           docId: '${chat.senderId}${chat.receiverId}',
@@ -268,18 +293,16 @@ class _ListUserChatsState extends State<ListUserChats> {
             .doc(chatId)
             .set(newChat.toJson());
 
-        // Navigation vers le nouveau chat
         Navigator.push(
             context,
             PageTransition(
                 type: PageTransitionType.fade,
                 child: MyChat(
                   title: 'mon chat',
-                  chat: chat,
-                )));      }
+                  chat: newChat,
+                )));
+      }
     } else {
-      // Conversation existante, l'ouvrir normalement
-      // Navigation vers le chat
       Navigator.push(
           context,
           PageTransition(
@@ -291,134 +314,45 @@ class _ListUserChatsState extends State<ListUserChats> {
     }
   }
 
-  Future<Chat> getChatsData(Friends amigo) async {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId', isEqualTo: '${amigo.friendId}${amigo.currentUserId}'),
-      Filter('docId', isEqualTo: '${amigo.currentUserId}${amigo.friendId}'),
-    ))
-        .snapshots();
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-      Chat chat = Chat(
-        docId: '${amigo.friendId}${amigo.currentUserId}',
-        id: chatId,
-        senderId: authProvider.loginUserData.id == amigo.friendId
-            ? '${amigo.friendId}'
-            : '${amigo.currentUserId}',
-        receiverId: authProvider.loginUserData.id == amigo.friendId
-            ? '${amigo.currentUserId}'
-            : '${amigo.friendId}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now()
-            .millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .set(chat.toJson());
-      usersChat = chat;
-    } else {
-      printVm("le chat existe  ");
-      printVm("stream :${friendsStream}");
-      usersChat = await friendsStream.first.then((value) async {
-        printVm("stream value l :${value.docs.length}");
-        if (value.docs.length <= 0) {
-          printVm("pas de chat ");
-          String chatId =
-              FirebaseFirestore.instance.collection('Chats').doc().id;
-          Chat chat = Chat(
-            docId: '${amigo.friendId}${amigo.currentUserId}',
-            id: chatId,
-            senderId: authProvider.loginUserData.id == amigo.friendId
-                ? '${amigo.friendId}'
-                : '${amigo.currentUserId}',
-            receiverId: authProvider.loginUserData.id == amigo.friendId
-                ? '${amigo.currentUserId}'
-                : '${amigo.friendId}',
-            lastMessage: 'hi',
-
-            type: ChatType.USER.name,
-            createdAt: DateTime.now()
-                .millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance
-              .collection('Chats')
-              .doc(chatId)
-              .set(chat.toJson());
-          usersChat = chat;
-          return chat;
-        } else {
-          return Chat.fromJson(value.docs.first.data());
-        }
-      });
-      CollectionReference messageCollect =
-      await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      if (messageList.isEmpty) {
-        usersChat.messages = [];
-        userProvider.chat = usersChat;
-        printVm("messgae vide ");
-      } else {
-        printVm("have messages");
-        usersChat.messages = messageList;
-        userProvider.chat = usersChat;
-      }
-
-      /////////////ami//////////
-      CollectionReference friendCollect =
-      await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.friendId
-              ? '${amigo.friendId}'
-              : '${amigo.currentUserId}')
-          .get();
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.friendId
-              ? '${amigo.currentUserId}'
-              : '${amigo.friendId}')
-          .get();
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.receiver = receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.sender = senderUserList.first;
-    }
-
-    return usersChat;
+  // Méthode pour déterminer si le dernier message vient de l'utilisateur actuel ou de son ami
+  bool _isLastMessageFromCurrentUser(Chat chat) {
+    // Vérifier si le dernier message a été envoyé par l'utilisateur actuel
+    return chat.messages!.last.sendBy == authProvider.loginUserData.id;
   }
 
+  // Méthode pour obtenir l'état du message à afficher
+  Widget _getMessageStatus(Chat chat) {
+    if (!_isLastMessageFromCurrentUser(chat)) {
+      // Si le dernier message vient de l'ami, on n'affiche rien de spécial
+      return SizedBox.shrink();
+    }
 
-
-
+    // Si le dernier message vient de l'utilisateur actuel, afficher l'état
+    switch (chat.lastMessageIsRead) {
+      case true:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.done_all, color: primaryGreen, size: 16),
+            SizedBox(width: 2),
+            Icon(Icons.done_all, color: primaryGreen, size: 16),
+          ],
+        );
+      case true:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.done_all, color: lightGrey, size: 16),
+            SizedBox(width: 2),
+            Icon(Icons.done_all, color: lightGrey, size: 16),
+          ],
+        );
+      case false:
+        return Icon(Icons.done, color: lightGrey, size: 16);
+      default:
+        return Icon(Icons.access_time, color: lightGrey, size: 16);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -469,7 +403,6 @@ class _ListUserChatsState extends State<ListUserChats> {
                   });
                 },
               ),
-              // Bouton pour aller à la liste d'amis
               IconButton(
                 icon: Icon(Icons.people, color: primaryYellow),
                 onPressed: () {
@@ -482,12 +415,8 @@ class _ListUserChatsState extends State<ListUserChats> {
       ),
       body: Column(
         children: [
-          // Section XILO
           if (!_isSearching) chatXiloWidget(),
-
           if (!_isSearching) Divider(height: 1, color: darkGrey),
-
-          // En-tête des conversations
           if (!_isSearching)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -513,8 +442,6 @@ class _ListUserChatsState extends State<ListUserChats> {
                 ],
               ),
             ),
-
-          // Liste des conversations ou résultats de recherche
           Expanded(
             child: _isSearching
                 ? _buildSearchResults()
@@ -570,6 +497,7 @@ class _ListUserChatsState extends State<ListUserChats> {
     }
 
     return ListView.builder(
+      controller: _scrollController,
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         final Chat chat = _searchResults[index];
@@ -577,6 +505,7 @@ class _ListUserChatsState extends State<ListUserChats> {
         final int unreadCount = isSearchResult ? 0 :
         (authProvider.loginUserData.id == chat.senderId ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0));
         final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
+        final bool isLastMessageFromMe = _isLastMessageFromCurrentUser(chat);
 
         return GestureDetector(
           onTap: () => _openChat(chat),
@@ -590,6 +519,8 @@ class _ListUserChatsState extends State<ListUserChats> {
             unreadCount: unreadCount,
             isTyping: false,
             isSearchResult: isSearchResult,
+            isLastMessageFromMe: isLastMessageFromMe,
+            messageStatus: _getMessageStatus(chat),
           ),
         );
       },
@@ -597,28 +528,63 @@ class _ListUserChatsState extends State<ListUserChats> {
   }
 
   Widget _buildChatList(List<Chat> chats) {
-    return ListView.builder(
-      itemCount: chats.length,
-      itemBuilder: (context, index) {
-        final Chat chat = chats[index];
-        final bool isCurrentUserSender = authProvider.loginUserData.id == chat.senderId;
-        final int unreadCount = isCurrentUserSender ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0);
-        final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
-
-        return GestureDetector(
-          onTap: () => _openChat(chat),
-          child: ConversationList(
-            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
-            messageText: chat.lastMessage ?? '',
-            imageUrl: chat.chatFriend?.imageUrl ?? '',
-            time: _formatTime(chat.updatedAt),
-            isMessageRead: unreadCount == 0,
-            isOnline: isOnline,
-            unreadCount: unreadCount,
-            isTyping: false,
-          ),
-        );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollNotification) {
+        if (scrollNotification is ScrollEndNotification) {
+          _onScroll();
+        }
+        return false;
       },
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: chats.length + (_hasMoreChats ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == chats.length) {
+            return _buildLoadMoreIndicator();
+          }
+
+          final Chat chat = chats[index];
+          final bool isCurrentUserSender = authProvider.loginUserData.id == chat.senderId;
+          final int unreadCount = isCurrentUserSender ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0);
+          final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
+          final bool isLastMessageFromMe = _isLastMessageFromCurrentUser(chat);
+
+          return GestureDetector(
+            onTap: () => _openChat(chat),
+            child: ConversationList(
+              name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
+              messageText: chat.lastMessage ?? '',
+              imageUrl: chat.chatFriend?.imageUrl ?? '',
+              time: _formatTime(chat.updatedAt),
+              isMessageRead: unreadCount == 0,
+              isOnline: isOnline,
+              unreadCount: unreadCount,
+              isTyping: false,
+              isLastMessageFromMe: isLastMessageFromMe,
+              messageStatus: _getMessageStatus(chat),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _isLoadingMore
+            ? CircularProgressIndicator(color: primaryGreen)
+            : _hasMoreChats
+            ? Text(
+          "Charger plus de conversations...",
+          style: TextStyle(color: lightGrey),
+        )
+            : Text(
+          "Toutes les conversations sont chargées",
+          style: TextStyle(color: lightGrey, fontSize: 12),
+        ),
+      ),
     );
   }
 
@@ -729,6 +695,8 @@ class ConversationList extends StatefulWidget {
   final bool isTyping;
   final bool isLoading;
   final bool isSearchResult;
+  final bool isLastMessageFromMe;
+  final Widget messageStatus;
 
   ConversationList({
     required this.name,
@@ -741,6 +709,8 @@ class ConversationList extends StatefulWidget {
     this.isTyping = false,
     this.isLoading = false,
     this.isSearchResult = false,
+    this.isLastMessageFromMe = false,
+    this.messageStatus = const SizedBox.shrink(),
   });
 
   @override
@@ -748,7 +718,6 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends State<ConversationList> {
-  // Couleurs de la palette
   final Color primaryBlack = Colors.black;
   final Color primaryGreen = Colors.green;
   final Color primaryYellow = Colors.yellow;
@@ -765,7 +734,6 @@ class _ConversationListState extends State<ConversationList> {
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: <Widget>[
-          // Avatar avec indicateur de statut
           Stack(
             children: [
               widget.isLoading
@@ -826,22 +794,37 @@ class _ConversationListState extends State<ConversationList> {
                           height: 14,
                           color: darkGrey,
                         )
-                            : Text(
-                          widget.isTyping
-                              ? "écrit..."
-                              : widget.messageText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: widget.isTyping
-                                ? primaryYellow
-                                : (widget.isMessageRead ? lightGrey : Colors.white),
-                            fontWeight: widget.isMessageRead
-                                ? FontWeight.normal
-                                : FontWeight.w500,
-                            fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                            : Row(
+                          children: [
+                            if (widget.isLastMessageFromMe)
+                              Text(
+                                "Vous: ",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: primaryGreen,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                widget.isTyping
+                                    ? "écrit..."
+                                    : widget.messageText,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: widget.isTyping
+                                      ? primaryYellow
+                                      : (widget.isMessageRead ? lightGrey : Colors.white),
+                                  fontWeight: widget.isMessageRead
+                                      ? FontWeight.normal
+                                      : FontWeight.w500,
+                                  fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -851,7 +834,6 @@ class _ConversationListState extends State<ConversationList> {
             ),
           ),
 
-          // Badge de messages non lus et heure
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -886,7 +868,9 @@ class _ConversationListState extends State<ConversationList> {
                   ),
                 )
               else if (widget.isSearchResult)
-                Icon(Icons.add_circle_outline, color: primaryGreen, size: 20),
+                Icon(Icons.add_circle_outline, color: primaryGreen, size: 20)
+              else if (widget.isLastMessageFromMe)
+                  widget.messageStatus,
             ],
           ),
         ],

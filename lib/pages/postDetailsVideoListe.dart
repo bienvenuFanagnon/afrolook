@@ -34,8 +34,9 @@ const _afroLightGrey = Color(0xFF71767B);
 
 class VideoTikTokPageDetails extends StatefulWidget {
   final Post initialPost;
+  final bool isIn;
 
-  const VideoTikTokPageDetails({Key? key, required this.initialPost}) : super(key: key);
+  const VideoTikTokPageDetails({Key? key, required this.initialPost,  this.isIn = false}) : super(key: key);
 
   @override
   _VideoTikTokPageDetailsState createState() => _VideoTikTokPageDetailsState();
@@ -1879,31 +1880,31 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
 
         // Boutons d'action
         _buildActionButtons(post),
-        // if (!_isLookChallenge)
-        // Positioned(
-        //   top: MediaQuery.of(context).padding.top + 16,
-        //   left: 16,
-        //   child: Row(
-        //     children: [
-        //       IconButton(
-        //         onPressed: () {
-        //           Navigator.pop(context);
-        //         },
-        //         icon: Icon(Icons.arrow_back, color: Colors.yellow),
-        //       ),
-        //       Text(
-        //         'Afrolook',
-        //         style: TextStyle(
-        //           color: _afroGreen,
-        //           fontSize: 24,
-        //           fontWeight: FontWeight.bold,
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
-        //
-        // // Indicateur de son
+        if (widget.isIn)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 16,
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: Icon(Icons.arrow_back, color: Colors.yellow),
+              ),
+              Text(
+                'Afrolook',
+                style: TextStyle(
+                  color: _afroGreen,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Indicateur de son
         // if (!_isLookChallenge)
         //
         //   Positioned(
