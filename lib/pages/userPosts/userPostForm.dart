@@ -177,7 +177,7 @@ class _UserProfilState extends State<UserPostForm> {
                     ),
                     Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: UserPubVideo()),
+                        child: UserPubVideo(canal: null,)),
                   ],
                   onChange: (index) => printVm(index),
                 ),

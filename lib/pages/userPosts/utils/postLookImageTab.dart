@@ -300,19 +300,6 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..id = postId
         ..images = [];
 
-
-      PostMonetiser postMonetiser = PostMonetiser(
-        id: postMId,
-        user_id: authProvider.loginUserData.id,
-        post_id: postId,
-        users_like_id: [],
-        users_love_id: [],
-        users_comments_id: [],
-        users_partage_id: [],
-        solde: 0.1,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      );
       if(widget.canal!=null){
         post.canal_id=widget.canal!.id;
         post.categorie="CANAL";
@@ -370,7 +357,9 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
 
           if(widget.canal!=null){
-            await authProvider
+
+
+             authProvider
                 .getAllUsersOneSignaUserId()
                 .then(
                   (userIds) async {
@@ -390,9 +379,26 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                 }
               },
             );
-            widget.canal!.updatedAt =
-                DateTime.now().microsecondsSinceEpoch;
-            postProvider.updateCanal( widget.canal!, context);
+             // 🔹 Mise à jour du canal
+             widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
+
+             // 🔹 Incrémentation du nombre de publications
+             widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;
+
+             // 🔹 Sauvegarde de la mise à jour dans Firestore
+             await FirebaseFirestore.instance
+                 .collection('Canaux')
+                 .doc(widget.canal!.id)
+                 .update({
+               'updatedAt': widget.canal!.updatedAt,
+               'publication': widget.canal!.publication,
+             });
+
+             // 🔹 Mise à jour locale via ton provider (si nécessaire)
+            //  postProvider.updateCanal(widget.canal!, context);
+            // widget.canal!.updatedAt =
+            //     DateTime.now().microsecondsSinceEpoch;
+            // postProvider.updateCanal( widget.canal!, context);
           }
           else{
             await authProvider

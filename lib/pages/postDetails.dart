@@ -27,12 +27,14 @@ import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 
 import 'package:intl/intl.dart';
 
 import 'package:provider/provider.dart';
 
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/authProvider.dart';
 import '../services/linkService.dart';
@@ -50,6 +52,7 @@ const _twitterRed = Color(0xFFF91880);
 const _twitterGreen = Color(0xFF00BA7C);
 const _twitterYellow = Color(0xFFFFD400);
 const _afroBlack = Color(0xFF000000);
+
 
 class DetailsPost extends StatefulWidget {
   final Post post;
@@ -69,6 +72,7 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isLoading = false;
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
+  bool _isExpanded = false;
 
   // Variables pour le vote
   bool _hasVoted = false;
@@ -84,38 +88,49 @@ class _DetailsPostState extends State<DetailsPost>
   Challenge? _challenge;
   bool _loadingChallenge = false;
 
-  Future<void> _loadPostRelations() async {
-    try {
-      // Vérifier qu'on a des IDs
-      final post = widget.post;
-      if (post.user_id == null || post.canal_id == null) return;
+  // Vérifier si l'utilisateur a accès au contenu
+  bool _hasAccessToContent() {
+    // Si c'est un post de canal privé
+    if (widget.post.canal != null) {
+      final isPrivate = widget.post.canal!.isPrivate == true;
+      final isSubscribed = widget.post.canal!.usersSuiviId?.contains(authProvider.loginUserData.id) ?? false;
+      final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+      final isCurrentUser = authProvider.loginUserData.id == widget.post.user_id;
 
-      // Récupérer l'utilisateur
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(post.user_id)
-          .get();
-
-      if (userDoc.exists) {
-        post.user = UserData.fromJson(userDoc.data()!); // Assurez-vous que User.fromJson existe
+      // Accès autorisé si :
+      // - Le canal n’est pas privé
+      // - OU l’utilisateur est abonné
+      // - OU c’est un admin
+      if (!isPrivate || isSubscribed || isAdmin|| isCurrentUser) {
+        return true;
       }
 
-      // Récupérer le canal
-      final canalDoc = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .doc(post.canal_id)
-          .get();
-
-      if (canalDoc.exists) {
-        post.canal = Canal.fromJson(canalDoc.data()!); // Assurez-vous que Canal.fromJson existe
-      }
-
-      // Rebuild UI avec les données chargées
-      if (mounted) setState(() {});
-    } catch (e, stack) {
-      debugPrint('❌ Erreur récupération user/canal: $e\n$stack');
+      // Sinon, accès refusé
+      return false;
     }
+
+    // Si ce n’est pas un post de canal → accès libre
+    return true;
   }
+
+  // Vérifier si c'est un post de canal privé non accessible
+  bool _isLockedContent() {
+    if (widget.post.canal != null) {
+      final isPrivate = widget.post.canal!.isPrivate == true;
+      final isSubscribed = widget.post.canal!.usersSuiviId?.contains(authProvider.loginUserData.id) ?? false;
+      final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+      final isCurrentUser = authProvider.loginUserData.id == widget.post.user_id;
+
+      // Le contenu est verrouillé uniquement si :
+      // - Le canal est privé
+      // - L'utilisateur n'est pas abonné
+      // - Et ce n'est pas un administrateur
+      return isPrivate && !isSubscribed && !isAdmin&& !isCurrentUser;
+    }
+    return false;
+  }
+
+
   @override
   void initState() {
     super.initState();
@@ -135,7 +150,6 @@ class _DetailsPostState extends State<DetailsPost>
 
     // Initialiser le stream pour les mises à jour en temps réel
     _postStream = firestore.collection('Posts').doc(widget.post.id).snapshots();
-
 
     // Charger le challenge si c'est un look challenge
     if (_isLookChallenge && widget.post.challenge_id != null) {
@@ -159,10 +173,43 @@ class _DetailsPostState extends State<DetailsPost>
     return widget.post.type == 'CHALLENGEPARTICIPATION';
   }
 
+  Future<void> _loadPostRelations() async {
+    try {
+      // Vérifier qu'on a des IDs
+      final post = widget.post;
+      if (post.user_id == null || post.canal_id == null) return;
+
+      // Récupérer l'utilisateur
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(post.user_id)
+          .get();
+
+      if (userDoc.exists) {
+        post.user = UserData.fromJson(userDoc.data()!);
+      }
+
+      // Récupérer le canal
+      final canalDoc = await FirebaseFirestore.instance
+          .collection('Canaux')
+          .doc(post.canal_id)
+          .get();
+
+      if (canalDoc.exists) {
+        post.canal = Canal.fromJson(canalDoc.data()!);
+      }
+
+      // Rebuild UI avec les données chargées
+      if (mounted) setState(() {});
+    } catch (e, stack) {
+      debugPrint('❌ Erreur récupération user/canal: $e\n$stack');
+    }
+  }
+
   Future<void> _checkIfUserHasVoted() async {
     try {
       final postDoc =
-          await firestore.collection('Posts').doc(widget.post.id).get();
+      await firestore.collection('Posts').doc(widget.post.id).get();
       if (postDoc.exists) {
         final data = postDoc.data() as Map<String, dynamic>;
         final voters = List<String>.from(data['users_votes_ids'] ?? []);
@@ -185,17 +232,11 @@ class _DetailsPostState extends State<DetailsPost>
           widget.post.users_vue_id!.add(authProvider.loginUserData.id!);
         });
 
-        // // 🔹 Mettre à jour UserData.viewedPostIds
-        // final userRef = FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id!);
-        // await userRef.update({
-        //   'viewedPostIds': FieldValue.arrayUnion([widget.post.id]),
-        // });
-
         // Mettre à jour dans Firestore
         await firestore.collection('Posts').doc(widget.post.id).update({
           'vues': FieldValue.increment(1),
           'users_vue_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(2),
         });
       }
@@ -204,13 +245,7 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-
-
-
   // FONCTIONNALITÉ DE VOTE
-// Ajoutez ces variables au début de votre classe _DetailsPostState
-
-// Méthode pour charger les données du challenge
   Future<void> _loadChallengeData() async {
     if (widget.post.challenge_id == null) return;
 
@@ -335,18 +370,13 @@ class _DetailsPostState extends State<DetailsPost>
     } catch (e) {
       print("Erreur lors de la préparation du vote: $e");
       _showError('Erreur lors de la préparation du vote: $e');
-    } finally {
-      // Ne pas reset _isVoting ici car on veut le garder pendant le processus de vote
-      // Il sera reset dans _processVoteWithChallenge ou _processVoteNormal
     }
   }
 
-// Nouvelle méthode pour recharger les données du challenge
   Future<void> _reloadChallengeData() async {
     try {
       if (widget.post.challenge_id == null) return;
 
-      // Afficher un indicateur de chargement si nécessaire
       if (mounted) {
         setState(() {
           _loadingChallenge = true;
@@ -390,10 +420,8 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-// Mettre à jour _processVoteWithChallenge pour gérer les erreurs de rechargement
   Future<void> _processVoteWithChallenge(String userId) async {
     try {
-      // Recharger une dernière fois avant le vote pour être sûr
       await _reloadChallengeData();
 
       if (_challenge == null) {
@@ -401,16 +429,14 @@ class _DetailsPostState extends State<DetailsPost>
       }
 
       await firestore.runTransaction((transaction) async {
-        // Vérifier à nouveau le challenge avec les données fraîches
         final challengeRef =
-            firestore.collection('Challenges').doc(_challenge!.id!);
+        firestore.collection('Challenges').doc(_challenge!.id!);
         final challengeDoc = await transaction.get(challengeRef);
 
         if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
 
         final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
 
-        // Vérifications finales
         if (!currentChallenge.isEnCours) {
           throw Exception('Le challenge n\'est plus actif');
         }
@@ -424,20 +450,17 @@ class _DetailsPostState extends State<DetailsPost>
 
         if (!postDoc.exists) throw Exception('Post non trouvé');
 
-        // Débiter si vote payant
         if (!_challenge!.voteGratuit!) {
           await _debiterUtilisateur(userId, _challenge!.prixVote!,
               'Vote pour le challenge ${_challenge!.titre}');
         }
 
-        // Mettre à jour le post
         transaction.update(postRef, {
           'votes_challenge': FieldValue.increment(1),
           'users_votes_ids': FieldValue.arrayUnion([userId]),
           'popularity': FieldValue.increment(3),
         });
 
-        // Mettre à jour le challenge
         transaction.update(challengeRef, {
           'users_votants_ids': FieldValue.arrayUnion([userId]),
           'total_votes': FieldValue.increment(1),
@@ -445,7 +468,6 @@ class _DetailsPostState extends State<DetailsPost>
         });
       });
 
-      // Mettre à jour l'état local
       if (mounted) {
         setState(() {
           _hasVoted = true;
@@ -454,22 +476,20 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
 
-      // Envoyer une notification
       await authProvider.sendNotification(
         userIds: [widget.post.user!.oneIgnalUserid!],
         smallImage: authProvider.loginUserData.imageUrl!,
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: widget.post.user_id!,
         message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
+        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
         type_notif: NotificationType.POST.name,
         post_id: widget.post.id!,
         post_type: PostDataType.IMAGE.name,
         chat_id: '',
       );
 
-      // Récompense pour le vote
-       postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
+      postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
           authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
 
       _showSuccess(
@@ -486,13 +506,12 @@ class _DetailsPostState extends State<DetailsPost>
       }
     }
   }
+
   Future<void> _envoyerNotificationVote({
-    required UserData userVotant,   // celui qui a voté
-    required UserData userVote,     // celui qui reçoit le vote
-  }) async
-  {
+    required UserData userVotant,
+    required UserData userVote,
+  }) async {
     try {
-      // Récupérer tous les IDs OneSignal des utilisateurs
       final userIds = await authProvider.getAllUsersOneSignaUserId();
 
       if (userIds.isEmpty) {
@@ -500,19 +519,18 @@ class _DetailsPostState extends State<DetailsPost>
         return;
       }
 
-      // Construire le message
       final message = "👏 ${userVotant.pseudo} a voté pour ${userVote.pseudo}!";
 
       await authProvider.sendNotification(
         userIds: userIds,
-        smallImage: userVotant.imageUrl ?? '', // image de l'utilisateur qui a voté
+        smallImage: userVotant.imageUrl ?? '',
         send_user_id: userVotant.id!,
         recever_user_id: userVote.id ?? "",
         message: message,
         type_notif: 'VOTE',
-        post_id: '',      // optionnel si tu n’as pas de post associé
-        post_type: '',    // optionnel
-        chat_id: '',      // optionnel
+        post_id: '',
+        post_type: '',
+        chat_id: '',
       );
 
       debugPrint("✅ Notification envoyée: $message");
@@ -521,17 +539,14 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-// Mettre à jour _processVoteNormal également
   Future<void> _processVoteNormal(String userId) async {
     try {
-      // Mettre à jour Firestore
       await firestore.collection('Posts').doc(widget.post.id).update({
         'votes_challenge': FieldValue.increment(1),
         'users_votes_ids': FieldValue.arrayUnion([userId]),
         'popularity': FieldValue.increment(3),
       });
 
-      // Mettre à jour l'état local
       if (mounted) {
         setState(() {
           _hasVoted = true;
@@ -540,21 +555,19 @@ class _DetailsPostState extends State<DetailsPost>
         });
       }
 
-      // Envoyer une notification au propriétaire du look
       await authProvider.sendNotification(
         userIds: [widget.post.user!.oneIgnalUserid!],
         smallImage: authProvider.loginUserData.imageUrl!,
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: widget.post.user_id!,
         message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
+        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
         type_notif: NotificationType.POST.name,
         post_id: widget.post.id!,
         post_type: PostDataType.IMAGE.name,
         chat_id: '',
       );
 
-      // Récompense pour le vote
       await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
           authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
 
@@ -571,7 +584,6 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-// Méthodes utilitaires nécessaires
   Future<double> _getSoldeUtilisateur(String userId) async {
     final doc = await firestore.collection('Users').doc(userId).get();
     return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
@@ -588,7 +600,6 @@ class _DetailsPostState extends State<DetailsPost>
     await firestore.collection('AppData').doc(appDataId).set({
       'solde_gain': FieldValue.increment(montant)
     }, SetOptions(merge: true));
-    // Créer une transaction
     await _createTransaction(
         TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
   }
@@ -619,10 +630,10 @@ class _DetailsPostState extends State<DetailsPost>
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title:
-            Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
+        Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
         content: Text(
           'Il vous manque $montantManquant FCFA pour pouvoir voter.\n\n'
-          'Rechargez votre compte pour soutenir votre look préféré !',
+              'Rechargez votre compte pour soutenir votre look préféré !',
           style: TextStyle(color: Colors.grey[300]),
         ),
         actions: [
@@ -633,7 +644,6 @@ class _DetailsPostState extends State<DetailsPost>
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // Naviguer vers la page de recharge
               Navigator.push(context,
                   MaterialPageRoute(builder: (context) => DepositScreen()));
             },
@@ -646,11 +656,9 @@ class _DetailsPostState extends State<DetailsPost>
     );
   }
 
-// Mettre à jour la méthode _showVoteConfirmationDialog
   void _showVoteConfirmationDialog() {
     final user = _auth.currentUser;
 
-    // Si c'est un look challenge avec vote payant
     if (_isLookChallenge && _challenge != null && !_challenge!.voteGratuit!) {
       showDialog(
         context: context,
@@ -671,7 +679,7 @@ class _DetailsPostState extends State<DetailsPost>
             ),
             content: Text(
               'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.\n\n'
-              'Voulez-vous continuer ?',
+                  'Voulez-vous continuer ?',
               style: TextStyle(color: _twitterTextPrimary),
               textAlign: TextAlign.center,
             ),
@@ -697,7 +705,6 @@ class _DetailsPostState extends State<DetailsPost>
         },
       );
     } else {
-      // Dialogue de confirmation normal
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -743,51 +750,6 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-  void _showVoteConfirmationDialog2() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: _twitterCardBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: _twitterGreen, width: 2),
-          ),
-          title: Text(
-            '🎉 Voter pour ce Look',
-            style: TextStyle(
-              color: _twitterGreen,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            'Vous allez voter pour ce look challenge. Cette action est irréversible',
-            style: TextStyle(color: _twitterTextPrimary),
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler',
-                  style: TextStyle(color: _twitterTextSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _voteForLook();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _twitterGreen,
-              ),
-              child: Text('Voter', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   String formatNumber(int number) {
     if (number >= 1000) {
       double nombre = number / 1000;
@@ -825,17 +787,15 @@ class _DetailsPostState extends State<DetailsPost>
   Future<void> _handleLike() async {
     try {
       if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-        // Mettre à jour localement
         setState(() {
           widget.post.loves = widget.post.loves! + 1;
           widget.post.users_love_id!.add(authProvider.loginUserData.id!);
         });
 
-        // Mettre à jour dans Firestore
         await firestore.collection('Posts').doc(widget.post.id).update({
           'loves': FieldValue.increment(1),
           'users_love_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(3),
         });
         await authProvider.sendNotification(
@@ -844,16 +804,14 @@ class _DetailsPostState extends State<DetailsPost>
             send_user_id: "${authProvider.loginUserData.id!}",
             recever_user_id: "${widget.post.user_id!}",
             message:
-                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+            "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
             type_notif: NotificationType.POST.name,
             post_id: "${widget.post!.id!}",
             post_type: PostDataType.IMAGE.name,
             chat_id: '');
-        // Incrémenter le solde de l'utilisateur qui aime
         await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
             authProvider.loginUserData.id!, "like", widget.post.user_id!);
 
-        // Animation
         _animationController.forward().then((_) {
           _animationController.reverse();
         });
@@ -902,7 +860,6 @@ class _DetailsPostState extends State<DetailsPost>
 
       final firestore = FirebaseFirestore.instance;
       await authProvider.getAppData();
-      // Récupérer l'utilisateur expéditeur à jour
       final senderSnap = await firestore
           .collection('Users')
           .doc(authProvider.loginUserData.id)
@@ -912,14 +869,12 @@ class _DetailsPostState extends State<DetailsPost>
       }
       final senderData = senderSnap.data() as Map<String, dynamic>;
       final double senderBalance =
-          (senderData['votre_solde_principal'] ?? 0.0).toDouble();
+      (senderData['votre_solde_principal'] ?? 0.0).toDouble();
 
-      // Vérifier le solde
       if (senderBalance >= amount) {
         final double gainDestinataire = amount * 0.5;
         final double gainApplication = amount * 0.5;
 
-        // Débiter l'expéditeur
         await firestore
             .collection('Users')
             .doc(authProvider.loginUserData.id)
@@ -927,25 +882,21 @@ class _DetailsPostState extends State<DetailsPost>
           'votre_solde_principal': FieldValue.increment(-amount),
         });
 
-        // Créditer le destinataire
         await firestore.collection('Users').doc(widget.post.user!.id).update({
           'votre_solde_principal': FieldValue.increment(gainDestinataire),
         });
 
-        // Créditer l'application
         String appDataId = authProvider.appDefaultData.id!;
         await firestore.collection('AppData').doc(appDataId).update({
           'solde_gain': FieldValue.increment(gainApplication),
         });
 
-        // Ajouter l'expéditeur à la liste des cadeaux du post
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_cadeau_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(5),
         });
 
-        // Créer les transactions
         await _createTransaction(
             TypeTransaction.DEPENSE.name,
             amount,
@@ -1127,49 +1078,14 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   List<double> giftPrices = [
-    10,
-    25,
-    50,
-    100,
-    200,
-    300,
-    500,
-    700,
-    1500,
-    2000,
-    2500,
-    5000,
-    7000,
-    10000,
-    15000,
-    20000,
-    30000,
-    50000,
-    75000,
-    100000
+    10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
+    2500, 5000, 7000, 10000, 15000, 20000, 30000,
+    50000, 75000, 100000
   ];
 
   List<String> giftIcons = [
-    '🌹',
-    '❤️',
-    '👑',
-    '💎',
-    '🏎️',
-    '⭐',
-    '🍫',
-    '🧰',
-    '🌵',
-    '🍕',
-    '🍦',
-    '💻',
-    '🚗',
-    '🏠',
-    '🛩️',
-    '🛥️',
-    '🏰',
-    '💎',
-    '🏎️',
-    '🚗'
+    '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
+    '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
   ];
 
   Future<void> _repostForCash() async {
@@ -1178,7 +1094,6 @@ class _DetailsPostState extends State<DetailsPost>
 
       final firestore = FirebaseFirestore.instance;
 
-      // Récupérer l'utilisateur connecté à jour
       final userDoc = await firestore
           .collection('Users')
           .doc(authProvider.loginUserData.id)
@@ -1186,10 +1101,9 @@ class _DetailsPostState extends State<DetailsPost>
       final userData = userDoc.data();
       if (userData == null) throw Exception("Utilisateur introuvable !");
       final double soldeActuel =
-          (userData['votre_solde_principal'] ?? 0.0).toDouble();
+      (userData['votre_solde_principal'] ?? 0.0).toDouble();
 
       if (soldeActuel >= _selectedRepostPrice) {
-        // Débiter l'expéditeur
         await firestore
             .collection('Users')
             .doc(authProvider.loginUserData.id)
@@ -1197,7 +1111,6 @@ class _DetailsPostState extends State<DetailsPost>
           'votre_solde_principal': FieldValue.increment(-_selectedRepostPrice),
         });
 
-        // Créditer l'application
         await firestore
             .collection('AppData')
             .doc(authProvider.appDefaultData.id!)
@@ -1205,16 +1118,14 @@ class _DetailsPostState extends State<DetailsPost>
           'solde_gain': FieldValue.increment(_selectedRepostPrice),
         });
 
-        // Mettre à jour le post : ajouter l'utilisateur et remettre à jour la date
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_republier_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(4),
           'created_at': DateTime.now().microsecondsSinceEpoch,
           'updated_at': DateTime.now().microsecondsSinceEpoch,
         });
 
-        // Créer la transaction
         await _createTransaction(
           TypeTransaction.DEPENSE.name,
           _selectedRepostPrice.toDouble(),
@@ -1338,6 +1249,7 @@ class _DetailsPostState extends State<DetailsPost>
   Widget _buildUserHeader(Post post) {
     final canal = post.canal;
     final user = post.user;
+    final isLocked = _isLockedContent();
 
     return GestureDetector(
       onTap: () {
@@ -1363,8 +1275,6 @@ class _DetailsPostState extends State<DetailsPost>
                 ),
                 radius: 25,
               ),
-              // Badge vérifié
-              // if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
               if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
                 Positioned(
                   bottom: 0,
@@ -1382,7 +1292,6 @@ class _DetailsPostState extends State<DetailsPost>
                     ),
                   ),
                 ),
-              // Badge Look Challenge
               if (_isLookChallenge)
                 Positioned(
                   top: -2,
@@ -1396,6 +1305,23 @@ class _DetailsPostState extends State<DetailsPost>
                     child: Icon(
                       Icons.emoji_events,
                       color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
+                ),
+              if (isLocked)
+                Positioned(
+                  bottom: -2,
+                  left: -2,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _twitterYellow,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.lock,
+                      color: Colors.black,
                       size: 12,
                     ),
                   ),
@@ -1421,6 +1347,8 @@ class _DetailsPostState extends State<DetailsPost>
                       SizedBox(width: 4),
                       if (canal.isVerify ?? false)
                         Icon(Icons.verified, color: _twitterBlue, size: 16),
+                      if (isLocked)
+                        Icon(Icons.lock, color: _twitterYellow, size: 16),
                     ],
                   ),
                   Text(
@@ -1448,7 +1376,7 @@ class _DetailsPostState extends State<DetailsPost>
                       if (_isLookChallenge)
                         Container(
                           padding:
-                              EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _twitterGreen.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
@@ -1518,7 +1446,7 @@ class _DetailsPostState extends State<DetailsPost>
                 Icons.flag,
                 "Signaler",
                 _twitterTextPrimary,
-                () async {
+                    () async {
                   post.status = PostStatus.SIGNALER.name;
                   final value = await postProvider.updateVuePost(post, context);
                   Navigator.pop(context);
@@ -1528,7 +1456,7 @@ class _DetailsPostState extends State<DetailsPost>
                       value ? 'Post signalé !' : 'Échec du signalement !',
                       textAlign: TextAlign.center,
                       style:
-                          TextStyle(color: value ? Colors.green : Colors.red),
+                      TextStyle(color: value ? Colors.green : Colors.red),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -1540,7 +1468,7 @@ class _DetailsPostState extends State<DetailsPost>
                 Icons.delete,
                 "Supprimer",
                 Colors.red,
-                () async {
+                    () async {
                   if (authProvider.loginUserData.role == UserRole.ADM.name) {
                     await deletePost(post, context);
                   } else {
@@ -1564,9 +1492,9 @@ class _DetailsPostState extends State<DetailsPost>
                 height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
             SizedBox(height: 8),
             _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary,
-                () {
-              Navigator.pop(context);
-            }),
+                    () {
+                  Navigator.pop(context);
+                }),
           ],
         ),
       ),
@@ -1594,80 +1522,230 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Widget _buildPostContent(Post post) {
+    final isLocked = _isLockedContent();
+    final text = post.description ?? "";
+
+    // Pour le contenu verrouillé, limiter l'affichage
+    if (isLocked) {
+      final words = text.split(' ');
+      final limitedText = words.length > 50
+          ? words.take(50).join(' ') + '...'
+          : text;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTextContent(limitedText, isLocked: true),
+                  SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _twitterYellow.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _twitterYellow),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock, color: _twitterYellow, size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Contenu réservé aux abonnés du canal',
+                            style: TextStyle(
+                              color: _twitterYellow,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (post.images != null && post.images!.isNotEmpty)
+            _buildLockedMediaContent(),
+        ],
+      );
+    }
+
+    // Contenu déverrouillé
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (post.description != null && post.description!.isNotEmpty)
+        if (text.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              post.description!,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
-            ),
+            child: _buildTextContent(text),
           ),
         if (post.images != null && post.images!.isNotEmpty)
-          Container(
-            height: 300,
-            margin: EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+          _buildMediaContent(post),
+      ],
+    );
+  }
+
+  Widget _buildTextContent(String text, {bool isLocked = false}) {
+    final words = text.split(' ');
+    final isLong = words.length > 100;
+    final displayedText = _isExpanded || !isLong || isLocked
+        ? text
+        : words.take(100).join(' ') + '...';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Utilisation de Linkify pour les liens et HashTagText pour les hashtags
+        Linkify(
+          onOpen: (link) async {
+            if (!await launchUrl(Uri.parse(link.url))) {
+              throw Exception('Could not launch ${link.url}');
+            }
+          },
+          text: displayedText,
+          style: TextStyle(
+            color: isLocked ? _twitterTextSecondary : _twitterTextPrimary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+          linkStyle: TextStyle(
+            color: _twitterBlue,
+            fontWeight: FontWeight.w500,
+          ),
+          options: LinkifyOptions(humanize: false),
+        ),
+        if (isLong && !isLocked)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _isExpanded ? "Voir moins" : "Voir plus",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: _twitterBlue,
                 ),
-              ],
-              border: _isLookChallenge
-                  ? Border.all(color: _twitterGreen.withOpacity(0.3))
-                  : null,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: ImageSlideshow(
-                initialPage: 0,
-                indicatorColor:
-                    _isLookChallenge ? _twitterGreen : Colors.yellow,
-                indicatorBackgroundColor: Colors.grey,
-                onPageChanged: (value) {
-                  print('Page changed: $value');
-                },
-                isLoop: true,
-                children: post!.images!
-                    .map((imageUrl) => GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    FullScreenImage(imageUrl: imageUrl),
-                              ),
-                            );
-                          },
-                          child: Hero(
-                            tag: imageUrl,
-                            child: CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              fit: BoxFit.contain,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey[800],
-                                child: Center(
-                                    child: CircularProgressIndicator(
-                                        color: Colors.yellow)),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  Icon(Icons.error, color: Colors.red),
-                            ),
-                          ),
-                        ))
-                    .toList(),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildLockedMediaContent() {
+    return Container(
+      height: 300,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: _twitterCardBg,
+      ),
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: _twitterTextSecondary.withOpacity(0.1),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock, color: _twitterYellow, size: 50),
+                  SizedBox(height: 16),
+                  Text(
+                    'Contenu verrouillé',
+                    style: TextStyle(
+                      color: _twitterYellow,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Abonnez-vous au canal pour voir ce contenu',
+                    style: TextStyle(
+                      color: _twitterTextSecondary,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaContent(Post post) {
+    return Container(
+      height: 300,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+        border: _isLookChallenge
+            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: ImageSlideshow(
+          initialPage: 0,
+          indicatorColor: _isLookChallenge ? _twitterGreen : Colors.yellow,
+          indicatorBackgroundColor: Colors.grey,
+          onPageChanged: (value) {
+            print('Page changed: $value');
+          },
+          isLoop: true,
+          children: post.images!
+              .map((imageUrl) => GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FullScreenImage(imageUrl: imageUrl),
+                ),
+              );
+            },
+            child: Hero(
+              tag: imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[800],
+                  child: Center(
+                      child:
+                      CircularProgressIndicator(color: Colors.yellow)),
+                ),
+                errorWidget: (context, url, error) =>
+                    Icon(Icons.error, color: Colors.red),
+              ),
+            ),
+          ))
+              .toList(),
+        ),
+      ),
     );
   }
 
@@ -1678,9 +1756,9 @@ class _DetailsPostState extends State<DetailsPost>
     return FutureBuilder<DocumentSnapshot>(
       future: widget.post.challenge_id != null
           ? firestore
-              .collection('Challenges')
-              .doc(widget.post.challenge_id)
-              .get()
+          .collection('Challenges')
+          .doc(widget.post.challenge_id)
+          .get()
           : null,
       builder: (context, challengeSnapshot) {
         if (challengeSnapshot.connectionState == ConnectionState.waiting) {
@@ -1704,27 +1782,26 @@ class _DetailsPostState extends State<DetailsPost>
           return _buildBasicChallengeSection(post);
         }
 
-        // Récupérer le challenge
         final challengeData =
-            challengeSnapshot.data!.data() as Map<String, dynamic>;
+        challengeSnapshot.data!.data() as Map<String, dynamic>;
         final challenge = Challenge.fromJson(challengeData);
-// Vérifier l'état du challenge
         final bool challengeTermine = challenge.isTermine ||
             DateTime.now().microsecondsSinceEpoch > (challenge.finishedAt ?? 0);
         final bool peutVoter = challenge.peutParticiper && !_hasVoted;
+
         return FutureBuilder<DocumentSnapshot>(
           future: challenge.postChallengeId != null
               ? firestore
-                  .collection('Posts')
-                  .doc(challenge.postChallengeId)
-                  .get()
+              .collection('Posts')
+              .doc(challenge.postChallengeId)
+              .get()
               : null,
           builder: (context, postChallengeSnapshot) {
             Post? postChallenge;
             if (postChallengeSnapshot.hasData &&
                 postChallengeSnapshot.data!.exists) {
               final postData =
-                  postChallengeSnapshot.data!.data() as Map<String, dynamic>;
+              postChallengeSnapshot.data!.data() as Map<String, dynamic>;
               postChallenge = Post.fromJson(postData);
             }
 
@@ -1739,7 +1816,6 @@ class _DetailsPostState extends State<DetailsPost>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // En-tête du challenge avec titre
                   Row(
                     children: [
                       Icon(Icons.emoji_events, color: _twitterGreen, size: 24),
@@ -1775,11 +1851,9 @@ class _DetailsPostState extends State<DetailsPost>
                   ),
                   SizedBox(height: 12),
 
-                  // Aperçu du post du challenge
                   if (postChallenge != null)
                     _buildChallengePostPreview(challenge, postChallenge),
 
-                  // Statistiques du look
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -1791,7 +1865,6 @@ class _DetailsPostState extends State<DetailsPost>
                       ),
                       _buildChallengeStatItem(
                         icon: Icons.people,
-                        // value: '${challenge.totalParticipants ?? 0}',
                         value: '${challenge.usersInscritsIds!.length ?? 0}',
                         label: 'Participants',
                         color: _twitterBlue,
@@ -1812,7 +1885,6 @@ class _DetailsPostState extends State<DetailsPost>
                   ),
                   SizedBox(height: 16),
 
-                  // Description du challenge
                   if (challenge.description != null &&
                       challenge.description!.isNotEmpty)
                     Container(
@@ -1848,7 +1920,6 @@ class _DetailsPostState extends State<DetailsPost>
                   SizedBox(height: 12),
                   Column(
                     children: [
-                      // Message d'incitation
                       if (!challengeTermine)
                         Container(
                           padding: EdgeInsets.all(12),
@@ -1907,10 +1978,8 @@ class _DetailsPostState extends State<DetailsPost>
                         ),
                       SizedBox(height: 16),
 
-                      // Boutons d'action
                       Row(
                         children: [
-                          // Bouton de vote
                           if (peutVoter)
                             Expanded(
                               child: ElevatedButton(
@@ -1926,28 +1995,28 @@ class _DetailsPostState extends State<DetailsPost>
                                 ),
                                 child: _isVoting
                                     ? SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
                                     : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.how_to_vote, size: 18),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'VOTER',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.how_to_vote, size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'VOTER',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             )
                           else
@@ -1982,7 +2051,6 @@ class _DetailsPostState extends State<DetailsPost>
 
                           SizedBox(width: 12),
 
-                          // Bouton pour voir le challenge
                           ElevatedButton(
                             onPressed: () {
                               if (challenge.id != null) {
@@ -1993,8 +2061,6 @@ class _DetailsPostState extends State<DetailsPost>
                                         challengeId: challenge.id!),
                                   ),
                                 );
-                                print(
-                                    'Navigation vers le challenge: ${challenge.id}');
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -2025,158 +2091,6 @@ class _DetailsPostState extends State<DetailsPost>
                     ],
                   ),
 
-                  // // Message d'incitation au vote
-                  // Container(
-                  //   padding: EdgeInsets.all(12),
-                  //   decoration: BoxDecoration(
-                  //     color: Colors.black.withOpacity(0.3),
-                  //     borderRadius: BorderRadius.circular(12),
-                  //   ),
-                  //   child: Column(
-                  //     children: [
-                  //       Text(
-                  //         '🎯 VOTER POUR CE LOOK',
-                  //         style: TextStyle(
-                  //           color: _twitterGreen,
-                  //           fontSize: 16,
-                  //           fontWeight: FontWeight.bold,
-                  //         ),
-                  //         textAlign: TextAlign.center,
-                  //       ),
-                  //       SizedBox(height: 8),
-                  //       Text(
-                  //         'Votre vote aide ce participant à gagner le challenge !',
-                  //         style: TextStyle(
-                  //           color: _twitterTextSecondary,
-                  //           fontSize: 14,
-                  //         ),
-                  //         textAlign: TextAlign.center,
-                  //       ),
-                  //       if (!challenge.voteGratuit!)
-                  //         Text(
-                  //           'Coût du vote: ${challenge.prixVote} FCFA',
-                  //           style: TextStyle(
-                  //             color: _twitterYellow,
-                  //             fontSize: 12,
-                  //             fontWeight: FontWeight.bold,
-                  //           ),
-                  //           textAlign: TextAlign.center,
-                  //         ),
-                  //     ],
-                  //   ),
-                  // ),
-                  // SizedBox(height: 16),
-                  //
-                  // // Boutons d'action
-                  // Row(
-                  //   children: [
-                  //     // Bouton de vote
-                  //     if (!_hasVoted)
-                  //       Expanded(
-                  //         child: ElevatedButton(
-                  //           onPressed: _isVoting ? null : _showVoteConfirmationDialog,
-                  //           style: ElevatedButton.styleFrom(
-                  //             backgroundColor: _twitterGreen,
-                  //             shape: RoundedRectangleBorder(
-                  //               borderRadius: BorderRadius.circular(20),
-                  //             ),
-                  //             padding: EdgeInsets.symmetric(vertical: 12),
-                  //           ),
-                  //           child: _isVoting
-                  //               ? SizedBox(
-                  //             width: 20,
-                  //             height: 20,
-                  //             child: CircularProgressIndicator(
-                  //               strokeWidth: 2,
-                  //               color: Colors.white,
-                  //             ),
-                  //           )
-                  //               : Row(
-                  //             mainAxisAlignment: MainAxisAlignment.center,
-                  //             children: [
-                  //               Icon(Icons.how_to_vote, size: 18),
-                  //               SizedBox(width: 8),
-                  //               Text(
-                  //                 'VOTER',
-                  //                 style: TextStyle(
-                  //                   fontSize: 14,
-                  //                   fontWeight: FontWeight.bold,
-                  //                 ),
-                  //               ),
-                  //             ],
-                  //           ),
-                  //         ),
-                  //       )
-                  //     else
-                  //       Expanded(
-                  //         child: Container(
-                  //           padding: EdgeInsets.all(12),
-                  //           decoration: BoxDecoration(
-                  //             color: _twitterGreen.withOpacity(0.1),
-                  //             borderRadius: BorderRadius.circular(12),
-                  //             border: Border.all(color: _twitterGreen),
-                  //           ),
-                  //           child: Row(
-                  //             mainAxisAlignment: MainAxisAlignment.center,
-                  //             children: [
-                  //               Icon(Icons.check_circle, color: _twitterGreen, size: 16),
-                  //               SizedBox(width: 6),
-                  //               Text(
-                  //                 'DÉJÀ VOTÉ',
-                  //                 style: TextStyle(
-                  //                   color: _twitterGreen,
-                  //                   fontSize: 12,
-                  //                   fontWeight: FontWeight.bold,
-                  //                 ),
-                  //               ),
-                  //             ],
-                  //           ),
-                  //         ),
-                  //       ),
-                  //
-                  //     SizedBox(width: 12),
-                  //
-                  //     // Bouton pour voir le challenge
-                  //     ElevatedButton(
-                  //       onPressed: () {
-                  //         if (challenge.id != null) {
-                  //           // Naviguer vers la page du challenge
-                  //           Navigator.push(
-                  //             context,
-                  //             MaterialPageRoute(
-                  //               builder: (context) => ChallengeDetailPage(challengeId: challenge.id!),
-                  //             ),
-                  //           );
-                  //           print('Navigation vers le challenge: ${challenge.id}');
-                  //           // TODO: Implémenter la navigation vers la page du challenge
-                  //         }
-                  //       },
-                  //       style: ElevatedButton.styleFrom(
-                  //         backgroundColor: _twitterBlue,
-                  //         shape: RoundedRectangleBorder(
-                  //           borderRadius: BorderRadius.circular(20),
-                  //         ),
-                  //         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  //       ),
-                  //       child: Row(
-                  //         mainAxisSize: MainAxisSize.min,
-                  //         children: [
-                  //           Icon(Icons.visibility, size: 16),
-                  //           SizedBox(width: 6),
-                  //           Text(
-                  //             'Voir',
-                  //             style: TextStyle(
-                  //               fontSize: 12,
-                  //               fontWeight: FontWeight.bold,
-                  //             ),
-                  //           ),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-
-                  // Liste des votants récents
                   if (_votersList.isNotEmpty) ...[
                     SizedBox(height: 16),
                     Text(
@@ -2238,8 +2152,6 @@ class _DetailsPostState extends State<DetailsPost>
   Widget _buildChallengePostPreview(Challenge challenge, Post postChallenge) {
     final hasImages =
         postChallenge.images != null && postChallenge.images!.isNotEmpty;
-    final hasVideo =
-        postChallenge.url_media != null && postChallenge.url_media!.isNotEmpty;
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -2253,7 +2165,6 @@ class _DetailsPostState extends State<DetailsPost>
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              // Naviguer vers le post du challenge
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -2265,7 +2176,6 @@ class _DetailsPostState extends State<DetailsPost>
               padding: EdgeInsets.all(8),
               child: Row(
                 children: [
-                  // Miniature
                   Container(
                     width: 60,
                     height: 60,
@@ -2276,8 +2186,6 @@ class _DetailsPostState extends State<DetailsPost>
                     child: _buildChallengePreviewThumbnail(postChallenge),
                   ),
                   SizedBox(width: 12),
-
-                  // Informations
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2323,7 +2231,6 @@ class _DetailsPostState extends State<DetailsPost>
 
   Widget _buildChallengePreviewThumbnail(Post post) {
     final hasImages = post.images != null && post.images!.isNotEmpty;
-    final hasVideo = post.url_media != null && post.url_media!.isNotEmpty;
 
     if (hasImages) {
       return ClipRRect(
@@ -2339,14 +2246,6 @@ class _DetailsPostState extends State<DetailsPost>
               Icon(Icons.error, color: Colors.red, size: 20),
         ),
       );
-    } else if (hasVideo) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          color: _twitterTextSecondary.withOpacity(0.2),
-          child: Icon(Icons.videocam, color: _twitterTextSecondary, size: 20),
-        ),
-      );
     } else {
       return Container(
         color: _twitterTextSecondary.withOpacity(0.2),
@@ -2356,7 +2255,6 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Widget _buildBasicChallengeSection(Post post) {
-    // Section de fallback si le challenge n'est pas trouvé
     return Container(
       margin: EdgeInsets.symmetric(vertical: 15),
       padding: EdgeInsets.all(16),
@@ -2383,8 +2281,6 @@ class _DetailsPostState extends State<DetailsPost>
             ],
           ),
           SizedBox(height: 12),
-
-          // Statistiques de base
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -2409,8 +2305,6 @@ class _DetailsPostState extends State<DetailsPost>
             ],
           ),
           SizedBox(height: 16),
-
-          // Bouton de vote de base
           if (!_hasVoted)
             Container(
               width: double.infinity,
@@ -2425,27 +2319,27 @@ class _DetailsPostState extends State<DetailsPost>
                 ),
                 child: _isVoting
                     ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
                     : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.how_to_vote, size: 20),
-                          SizedBox(width: 10),
-                          Text(
-                            'VOTER POUR CE LOOK',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.how_to_vote, size: 20),
+                    SizedBox(width: 10),
+                    Text(
+                      'VOTER POUR CE LOOK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ],
+                ),
               ),
             )
           else
@@ -2479,9 +2373,9 @@ class _DetailsPostState extends State<DetailsPost>
 
   Widget _buildChallengeStatItem(
       {required IconData icon,
-      required String value,
-      required String label,
-      required Color color}) {
+        required String value,
+        required String label,
+        required Color color}) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
@@ -2506,6 +2400,8 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Widget _buildStatsRow(Post post) {
+    final hasAccess = _hasAccessToContent();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -2515,16 +2411,17 @@ class _DetailsPostState extends State<DetailsPost>
           label: 'Vues',
         ),
         GestureDetector(
-          onTap: _handleLike,
+          onTap: hasAccess ? _handleLike : null,
           child: _buildStatItem(
             icon: Icons.favorite,
             count: post.loves ?? 0,
             label: 'Likes',
             isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
+            isLocked: !hasAccess,
           ),
         ),
         GestureDetector(
-          onTap: () {
+          onTap: hasAccess ? () {
             firestore.collection('Posts').doc(widget.post.id).update({
               'popularity': FieldValue.increment(1),
             });
@@ -2534,23 +2431,25 @@ class _DetailsPostState extends State<DetailsPost>
                 builder: (context) => PostComments(post: widget.post),
               ),
             );
-          },
+          } : null,
           child: _buildStatItem(
             icon: Icons.comment,
             count: widget.post.comments ?? 0,
             label: 'Comments',
+            isLocked: !hasAccess,
           ),
         ),
         GestureDetector(
-          onTap: _showGiftDialog,
+          onTap: hasAccess ? _showGiftDialog : null,
           child: _buildStatItem(
             icon: Icons.card_giftcard,
             count: post.users_cadeau_id?.length ?? 0,
             label: 'Cadeaux',
+            isLocked: !hasAccess,
           ),
         ),
         GestureDetector(
-          onTap: () async {
+          onTap: hasAccess ? () async {
             final AppLinkService _appLinkService = AppLinkService();
             _appLinkService.shareContent(
               type: AppLinkType.post,
@@ -2566,30 +2465,39 @@ class _DetailsPostState extends State<DetailsPost>
                 .update({
               'partage': FieldValue.increment(1),
             });
-          },
+          } : null,
           child: _buildStatItem(
             icon: Icons.share,
             count: post.partage ?? 0,
             label: 'Partages',
+            isLocked: !hasAccess,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatItem(
-      {required IconData icon,
-      required int count,
-      required String label,
-      bool isLiked = false}) {
+  Widget _buildStatItem({
+    required IconData icon,
+    required int count,
+    required String label,
+    bool isLiked = false,
+    bool isLocked = false,
+  }) {
     return Column(
       children: [
-        Icon(icon, color: isLiked ? Colors.red : Colors.yellow, size: 20),
+        Icon(
+          icon,
+          color: isLocked
+              ? _twitterTextSecondary.withOpacity(0.3)
+              : (isLiked ? Colors.red : Colors.yellow),
+          size: 20,
+        ),
         SizedBox(height: 5),
         Text(
           formatNumber(count),
           style: TextStyle(
-            color: Colors.white,
+            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -2597,7 +2505,7 @@ class _DetailsPostState extends State<DetailsPost>
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey[400],
+            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.grey[400],
             fontSize: 10,
           ),
         ),
@@ -2606,6 +2514,8 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Widget _buildActionButtons(Post post) {
+    final hasAccess = _hasAccessToContent();
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 15),
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -2620,20 +2530,25 @@ class _DetailsPostState extends State<DetailsPost>
                 isIn(post.users_love_id!, authProvider.loginUserData.id!)
                     ? Icons.favorite
                     : Icons.favorite_border,
-                color: isIn(post.users_love_id!, authProvider.loginUserData.id!)
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
                     ? Colors.red
-                    : Colors.white,
+                    : Colors.white),
                 size: 30,
               ),
-              onPressed: _handleLike,
+              onPressed: hasAccess ? _handleLike : null,
             ),
           ),
 
           // Bouton Commentaire
           IconButton(
-            icon:
-                Icon(Icons.chat_bubble_outline, color: Colors.white, size: 30),
-            onPressed: () async {
+            icon: Icon(
+                Icons.chat_bubble_outline,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+                size: 30
+            ),
+            onPressed: hasAccess ? () async {
               await firestore.collection('Posts').doc(widget.post.id).update({
                 'popularity': FieldValue.increment(1),
               });
@@ -2643,25 +2558,37 @@ class _DetailsPostState extends State<DetailsPost>
                   builder: (context) => PostComments(post: widget.post),
                 ),
               );
-            },
+            } : null,
           ),
 
           // Bouton Cadeau
           IconButton(
-            icon: Icon(Icons.card_giftcard, color: Colors.yellow, size: 30),
-            onPressed: _showGiftDialog,
+            icon: Icon(
+                Icons.card_giftcard,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow,
+                size: 30
+            ),
+            onPressed: hasAccess ? _showGiftDialog : null,
           ),
 
           // Bouton Republier
           IconButton(
-            icon: Icon(Icons.repeat, color: Colors.green, size: 30),
-            onPressed: _showRepostDialog,
+            icon: Icon(
+                Icons.repeat,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.green,
+                size: 30
+            ),
+            onPressed: hasAccess ? _showRepostDialog : null,
           ),
 
           // Bouton Partager
           IconButton(
-            icon: Icon(Icons.share, color: Colors.white, size: 30),
-            onPressed: () async {
+            icon: Icon(
+                Icons.share,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+                size: 30
+            ),
+            onPressed: hasAccess ? () async {
               final AppLinkService _appLinkService = AppLinkService();
               _appLinkService.shareContent(
                 type: AppLinkType.post,
@@ -2677,7 +2604,7 @@ class _DetailsPostState extends State<DetailsPost>
                   .update({
                 'partage': FieldValue.increment(1),
               });
-            },
+            } : null,
           ),
         ],
       ),
@@ -2686,6 +2613,8 @@ class _DetailsPostState extends State<DetailsPost>
 
   @override
   Widget build(BuildContext context) {
+    final isLocked = _isLockedContent();
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -2729,102 +2658,149 @@ class _DetailsPostState extends State<DetailsPost>
                     style: TextStyle(color: Colors.white)));
           }
 
-          // Mettre à jour le post avec les données du stream
           final updatedPost =
-              Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
-          updatedPost.user =
-              widget.post.user; // Conserver les données utilisateur
-   updatedPost.canal =
-              widget.post.canal; // Conserver les données utilisateur
+          Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
+          updatedPost.user = widget.post.user;
+          updatedPost.canal = widget.post.canal;
 
           return _isLoading
               ? Center(child: CircularProgressIndicator(color: Colors.yellow))
               : SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildUserHeader(updatedPost),
-                      SizedBox(height: 20),
-                      _buildPostContent(updatedPost),
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildUserHeader(updatedPost),
+                SizedBox(height: 20),
+                _buildPostContent(updatedPost),
 
-                      // SECTION LOOK CHALLENGE (uniquement pour les challenges)
-                      if (_isLookChallenge)
-                        _buildLookChallengeSection(updatedPost),
+                if (_isLookChallenge)
+                  _buildLookChallengeSection(updatedPost),
 
-                      SizedBox(height: 20),
-                      Divider(color: Colors.grey[700]),
-                      _buildStatsRow(updatedPost),
-                      Divider(color: Colors.grey[700]),
-                      _buildActionButtons(updatedPost),
+                // Bouton d'abonnement si contenu verrouillé
+                if (isLocked) _buildSubscribeButton(),
 
-                      // Section des cadeaux récents
-                      if (updatedPost.users_cadeau_id != null &&
-                          updatedPost.users_cadeau_id!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Derniers cadeaux',
-                                style: TextStyle(
-                                  color: Colors.yellow,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              Container(
-                                height: 60,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount:
-                                      updatedPost.users_cadeau_id!.length,
-                                  itemBuilder: (context, index) {
-                                    return FutureBuilder<DocumentSnapshot>(
-                                      future: firestore
-                                          .collection('Users')
-                                          .doc(updatedPost
-                                              .users_cadeau_id![index])
-                                          .get(),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.hasData &&
-                                            snapshot.data!.exists) {
-                                          var userData = UserData.fromJson(
-                                              snapshot.data!.data()
-                                                  as Map<String, dynamic>);
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 10),
-                                            child: Column(
-                                              children: [
-                                                CircleAvatar(
-                                                  backgroundImage: NetworkImage(
-                                                      userData.imageUrl ?? ''),
-                                                  radius: 15,
-                                                ),
-                                                SizedBox(height: 2),
-                                                Text('🎁',
-                                                    style:
-                                                        TextStyle(fontSize: 8)),
-                                              ],
-                                            ),
-                                          );
-                                        }
-                                        return SizedBox();
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                SizedBox(height: 20),
+                Divider(color: Colors.grey[700]),
+                _buildStatsRow(updatedPost),
+                Divider(color: Colors.grey[700]),
+                _buildActionButtons(updatedPost),
+
+                // Section des cadeaux récents
+                if (updatedPost.users_cadeau_id != null &&
+                    updatedPost.users_cadeau_id!.isNotEmpty &&
+                    _hasAccessToContent())
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Derniers cadeaux',
+                          style: TextStyle(
+                            color: Colors.yellow,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                    ],
+                        SizedBox(height: 10),
+                        Container(
+                          height: 60,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount:
+                            updatedPost.users_cadeau_id!.length,
+                            itemBuilder: (context, index) {
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: firestore
+                                    .collection('Users')
+                                    .doc(updatedPost
+                                    .users_cadeau_id![index])
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData &&
+                                      snapshot.data!.exists) {
+                                    var userData = UserData.fromJson(
+                                        snapshot.data!.data()
+                                        as Map<String, dynamic>);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 10),
+                                      child: Column(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundImage: NetworkImage(
+                                                userData.imageUrl ?? ''),
+                                            radius: 15,
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text('🎁',
+                                              style:
+                                              TextStyle(fontSize: 8)),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  return SizedBox();
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
+              ],
+            ),
+          );
         },
+      ),
+    );
+  }
+
+  Widget _buildSubscribeButton() {
+    final isCanalPost = widget.post.canal != null;
+    final isPrivate = widget.post.canal?.isPrivate == true;
+    final subscriptionPrice = widget.post.canal?.subscriptionPrice ?? 0;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(vertical: 12),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _twitterYellow,
+          foregroundColor: Colors.black,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+        onPressed: () {
+          if (isCanalPost) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CanalDetails(canal: widget.post.canal!),
+              ),
+            );
+          }
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_open, size: 18),
+            SizedBox(width: 8),
+            Text(
+              isPrivate
+                  ? 'S\'ABONNER - ${subscriptionPrice.toInt()} FCFA'
+                  : 'SUIVRE LE CANAL',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2862,4 +2838,5 @@ class FullScreenImage extends StatelessWidget {
     );
   }
 }
+
 

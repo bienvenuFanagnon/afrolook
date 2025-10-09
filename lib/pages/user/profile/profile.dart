@@ -174,55 +174,55 @@ class _UserProfilState extends State<UserProfil> {
 
                 ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        Container(
-                          child: TextCustomerUserTitle(
-                            titre: "${authProvider.loginUserData!.mesPubs}",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Container(
-                          child: TextCustomerUserTitle(
-                            titre: "Mes Publications ",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Container(
-                          child: TextCustomerUserTitle(
-                            titre: "${authProvider.loginUserData!.pubEntreprise}",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Container(
-                          child: TextCustomerUserTitle(
-                            titre: "Publications Entreprises ",
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: ConstColors.textColors,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 30,
-
-                ),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                //   children: [
+                //     Column(
+                //       children: [
+                //         Container(
+                //           child: TextCustomerUserTitle(
+                //             titre: "${authProvider.loginUserData!.mesPubs}",
+                //             fontSize: SizeText.homeProfileTextSize,
+                //             couleur: ConstColors.textColors,
+                //             fontWeight: FontWeight.w600,
+                //           ),
+                //         ),
+                //         Container(
+                //           child: TextCustomerUserTitle(
+                //             titre: "Mes Publications ",
+                //             fontSize: SizeText.homeProfileTextSize,
+                //             couleur: ConstColors.textColors,
+                //             fontWeight: FontWeight.w500,
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //     Column(
+                //       children: [
+                //         Container(
+                //           child: TextCustomerUserTitle(
+                //             titre: "${authProvider.loginUserData!.pubEntreprise}",
+                //             fontSize: SizeText.homeProfileTextSize,
+                //             couleur: ConstColors.textColors,
+                //             fontWeight: FontWeight.w600,
+                //           ),
+                //         ),
+                //         Container(
+                //           child: TextCustomerUserTitle(
+                //             titre: "Publications Entreprises ",
+                //             fontSize: SizeText.homeProfileTextSize,
+                //             couleur: ConstColors.textColors,
+                //             fontWeight: FontWeight.w500,
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ],
+                // ),
+                // SizedBox(
+                //   height: 30,
+                //
+                // ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Row(

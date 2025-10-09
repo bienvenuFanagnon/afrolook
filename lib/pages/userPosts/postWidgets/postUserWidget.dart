@@ -69,6 +69,13 @@ Future<void> deletePost(Post post, BuildContext context) async {
         .doc(post.id)
         .delete();
 
+    // 🔹 Retirer l'ID de allPostIds
+    final appDefaultRef = FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT'); // Remplace par ton docId réel
+
+    await appDefaultRef.update({
+      'allPostIds': FieldValue.arrayRemove([post.id]),
+    });
+
     // SnackBar de succès
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

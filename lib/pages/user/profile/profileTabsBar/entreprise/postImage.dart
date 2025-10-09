@@ -180,7 +180,7 @@ class _ProfileUserEntrepriseImageTabState extends State<ProfileUserEntrepriseIma
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: CircleAvatar(
                                   backgroundImage: NetworkImage(
-                                      '${post.entrepriseData!.urlImage!}'),
+                                      '${post.entrepriseData!=null?post.entrepriseData!.urlImage!:''}'),
                                 ),
                               ),
                               SizedBox(
@@ -193,14 +193,14 @@ class _ProfileUserEntrepriseImageTabState extends State<ProfileUserEntrepriseIma
                                       SizedBox(
                                         //width: 100,
                                         child: TextCustomerUserTitle(
-                                          titre: "${post.entrepriseData!.titre!}",
+                                          titre: "${post.entrepriseData==null?'':post.entrepriseData!.titre!}",
                                           fontSize: SizeText.homeProfileTextSize,
                                           couleur: ConstColors.textColors,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       TextCustomerUserTitle(
-                                        titre: "${post.entrepriseData!.suivi!} suivi(s)",
+                                        titre: "${post.entrepriseData==null?'':post.entrepriseData!.suivi!} suivi(s)",
                                         fontSize: 10,
                                         couleur: ConstColors.textColors,
                                         fontWeight: FontWeight.w400,

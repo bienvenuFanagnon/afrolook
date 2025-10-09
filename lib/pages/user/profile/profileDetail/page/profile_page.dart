@@ -287,14 +287,14 @@ bool change_profil_loading= false;
           ),
               const SizedBox(height: 24),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Center(child: buildUpgradeButton()),
-                  Center(child: buildUpgradeButtonTarif(authProvider.loginUserData)),
-                ],
-              ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //   crossAxisAlignment: CrossAxisAlignment.center,
+              //   children: [
+              //     // Center(child: buildUpgradeButton()),
+              //     Center(child: buildUpgradeButtonTarif(authProvider.loginUserData)),
+              //   ],
+              // ),
               const SizedBox(height: 10),
               NumbersWidget(followers: authProvider.loginUserData!.userAbonnesIds!.length!, taux: authProvider.loginUserData!.popularite!*100, points: authProvider.loginUserData!.pointContribution!,),
               const SizedBox(height: 10),

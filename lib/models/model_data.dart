@@ -986,7 +986,7 @@ class Challenge {
     data['id'] = id;
     data['user_id'] = user_id;
     data['titre'] = titre;
-    // data['statut'] = statut;
+    data['statut'] = statut;
     data['postChallengeId'] = postChallengeId;
     data['description'] = description;
     data['typeCadeaux'] = typeCadeaux;
@@ -1342,11 +1342,54 @@ class Transaction {
   }
 }
 
-@JsonSerializable()
-class Canal {
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  List<UserData>? usersSuivi = [];
+// @JsonSerializable()
+// class Canal {
+//   @JsonKey(includeFromJson: false, includeToJson: false)
+//   List<UserData>? usersSuivi = [];
+//
+//   List<String>? usersSuiviId = [];
+//   String? titre;
+//   String? type;
+//   String? id;
+//   String? description;
+//   int? suivi = 0;
+//   int? publication = 0;
+//   double? publicash = 0;
+//   String? urlImage;
+//   String? urlCouverture;
+//   bool? isVerify;
+//   String? userId;
+//   int? createdAt;
+//   int? updatedAt;
+//   @JsonKey(includeFromJson: false, includeToJson: false)
+//
+//   UserData? user;
+//
+//   Canal({
+//     this.user,
+//     this.titre,
+//     this.type,
+//     this.description,
+//     this.urlImage,
+//     this.usersSuiviId,
+//     this.userId,
+//     this.suivi = 0,
+//     this.publicash = 0.0,
+//     this.publication = 0,
+//     this.id,
+//   });
+//
+//   // Add a factory constructor that creates a new instance from a JSON map
+//   factory Canal.fromJson(Map<String, dynamic> json) =>
+//       _$CanalFromJson(json);
+//
+//   // Add a method that converts this instance to a JSON map
+//   Map<String, dynamic> toJson() => _$CanalToJson(this);
+//
+// }
 
+class Canal {
+  List<UserData>? usersSuivi = [];
   List<String>? usersSuiviId = [];
   String? titre;
   String? type;
@@ -1361,9 +1404,12 @@ class Canal {
   String? userId;
   int? createdAt;
   int? updatedAt;
-  @JsonKey(includeFromJson: false, includeToJson: false)
-
   UserData? user;
+
+  // Nouveaux champs pour canal privé
+  bool isPrivate;
+  double subscriptionPrice;
+  List<String>? subscribersId;
 
   Canal({
     this.user,
@@ -1376,50 +1422,59 @@ class Canal {
     this.suivi = 0,
     this.publicash = 0.0,
     this.publication = 0,
+    this.createdAt = 0,
+    this.updatedAt = 0,
     this.id,
+    this.isPrivate = false,
+    this.isVerify = false,
+    this.subscriptionPrice = 0.0,
+    this.subscribersId,
+    this.urlCouverture = "",
   });
 
-  // Add a factory constructor that creates a new instance from a JSON map
-  factory Canal.fromJson(Map<String, dynamic> json) =>
-      _$CanalFromJson(json);
+  Map<String, dynamic> toJson() {
+    return {
+      'usersSuiviId': usersSuiviId,
+      'titre': titre,
+      'type': type,
+      'id': id,
+      'description': description,
+      'suivi': suivi,
+      'publication': publication,
+      'publicash': publicash,
+      'urlImage': urlImage,
+      'urlCouverture': urlCouverture,
+      'isVerify': isVerify,
+      'userId': userId,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'isPrivate': isPrivate,
+      'subscriptionPrice': subscriptionPrice,
+      'subscribersId': subscribersId,
+    };
+  }
 
-  // Add a method that converts this instance to a JSON map
-  Map<String, dynamic> toJson() => _$CanalToJson(this);
-  //
-  // Canal.fromJson(Map<String, dynamic> json) {
-  //   titre = json['titre'];
-  //   type = json['type'];
-  //   id = json['id'];
-  //   publicash = json['publicash'];
-  //   publication = json['publication'];
-  //
-  //   if (json['usersSuiviId'] != null) {
-  //     usersSuiviId = <String>[];
-  //     json['usersSuiviId'].forEach((v) {
-  //       usersSuiviId!.add(v);
-  //     });
-  //   }
-  //
-  //
-  //   description = json['description'];
-  //   urlImage = json['urlImage'];
-  //   suivi = json['suivi'];
-  //   userId = json['userId'];
-  //   user = UserData();
-  // }
-  //
-  // Map<String, dynamic> toJson() => {
-  //   'titre': titre,
-  //   'description': description,
-  //   'urlImage': urlImage,
-  //   'userId': userId,
-  //   'suivi': suivi,
-  //   'type': type,
-  //   'publication': publication,
-  //
-  //   'publicash': publicash,
-  //   'id': id,
-  // };
+  factory Canal.fromJson(Map<String, dynamic> json) {
+    return Canal(
+      usersSuiviId: List<String>.from(json['usersSuiviId'] ?? []),
+      titre: json['titre'],
+      type: json['type'],
+      id: json['id'],
+      description: json['description'],
+      suivi: json['suivi'],
+      publication: json['publication'],
+      publicash: (json['publicash'] ?? 0).toDouble(),
+      urlImage: json['urlImage'],
+      urlCouverture: json['urlCouverture'],
+      isVerify: json['isVerify'],
+      userId: json['userId'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      isPrivate: json['isPrivate'] ?? false,
+      subscriptionPrice: (json['subscriptionPrice'] ?? 0).toDouble(),
+      subscribersId: List<String>.from(json['subscribersId'] ?? []),
+    );
+  }
 }
 
 

@@ -1137,6 +1137,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         children: [
           Expanded(
             child: TextField(
+              onChanged: (value) {
+                setState(() {
+                   canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
+
+                });
+
+              },
               controller: _textController,
               focusNode: _focusNode,
               maxLines: null,
@@ -1153,7 +1160,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       ),
     );
   }
-
+  bool canSend =false;
   Widget _buildSendButton() {
     if (_isSendingImage || _isSendingAudio) {
       return Container(
@@ -1166,7 +1173,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       );
     }
 
-    bool canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
+     canSend = _textController.text.trim().isNotEmpty || _image != null || _isRecording;
 
     return IconButton(
       icon: Icon(

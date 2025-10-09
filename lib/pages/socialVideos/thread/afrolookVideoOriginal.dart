@@ -195,8 +195,8 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           final uniqueNewVideos = newVideos.where((post) => !existingIds.contains(post.id)).toList();
           _allVideoPosts.addAll(uniqueNewVideos);
         }
-        _allVideoPosts.shuffle();
-        _allVideoPosts.shuffle();
+        // _allVideoPosts.shuffle();
+        // _allVideoPosts.shuffle();
         _hasMoreVideos = snapshot.docs.length == _pageSize;
 
         print('📹 Lot de ${newVideos.length} vidéos chargées (${newVideos.where((p) => !p.hasBeenSeenByCurrentUser!).length} non vues)');

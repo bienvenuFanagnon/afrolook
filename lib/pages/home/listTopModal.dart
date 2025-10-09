@@ -1805,16 +1805,16 @@ class AdvancedModalManager {
           .collection('Challenges')
           .where('statut', whereIn: ['en_attente', 'en_cours'])
           .where('disponible', isEqualTo: true)
-          .where('isAprouved', isEqualTo: true)
+          // .where('isAprouved', isEqualTo: true)
           .limit(1)
           .get();
 
       if (snapshot.docs.isNotEmpty) {
         final challengeData = snapshot.docs.first.data();
         challengeData['id'] = snapshot.docs.first.id;
-        FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
-          'vues': FieldValue.increment(1),
-        });
+        // FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
+        //   'vues': FieldValue.increment(1),
+        // });
 
         return Challenge.fromJson(challengeData);
       }

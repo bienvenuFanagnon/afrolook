@@ -147,14 +147,14 @@ class _UserProfilState extends State<CanalPostForm> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    // Container(
-                    //   child: TextCustomerMenu(
-                    //     titre: "Vidéo",
-                    //     fontSize: SizeText.homeProfileTextSize,
-                    //     couleur: ConstColors.textColors,
-                    //     fontWeight: FontWeight.w600,
-                    //   ),
-                    // ),
+                    Container(
+                      child: TextCustomerMenu(
+                        titre: "Vidéo",
+                        fontSize: SizeText.homeProfileTextSize,
+                        couleur: ConstColors.textColors,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                   tabBarProperties: TabBarProperties(
                     height: 32.0,
@@ -175,9 +175,9 @@ class _UserProfilState extends State<CanalPostForm> {
                       // child: UserPubImage(),
                       child: PostPhotoEditor(canal: widget.canal,),
                     ),
-                    // Padding(
-                    //     padding: const EdgeInsets.only(top: 8.0),
-                    //     child: UserPubVideo()),
+                    Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: UserPubVideo(canal: widget.canal,)),
                   ],
                   onChange: (index) => printVm(index),
                 ),

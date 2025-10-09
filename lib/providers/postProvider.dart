@@ -3012,7 +3012,43 @@ class PostProvider extends ChangeNotifier {
     }
   }
 
+// Dans PostProvider
+  Future<List<Canal>> getCanauxLimited(int limit) async {
+    try {
+      QuerySnapshot snapshot = await firestore
+          .collection('Canaux')
+          .orderBy('updatedAt', descending: true)
+          // .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
 
+      return snapshot.docs.map((doc) {
+        return Canal.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      print('Erreur getCanauxLimited: $e');
+      return [];
+    }
+  }
+
+// Dans PostProvider
+  Future<List<Post>> getCanalPostsLimited(int limit, Canal canal) async {
+    try {
+      QuerySnapshot snapshot = await firestore
+          .collection('Posts')
+          .where('canal_id', isEqualTo: canal.id)
+          .orderBy('created_at', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return Post.fromJson(doc.data() as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      print('Erreur getCanalPostsLimited: $e');
+      return [];
+    }
+  }
 
 
 

@@ -15,6 +15,41 @@ import '../home/slive/utils.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'followers.dart';
 
+
+import 'dart:async';
+import 'dart:math';
+import 'package:afrotok/pages/canaux/canalPostNew.dart';
+import 'package:afrotok/pages/canaux/editCanal.dart';
+import 'package:afrotok/providers/postProvider.dart';
+import 'package:auto_animated/auto_animated.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../../providers/userProvider.dart';
+import 'package:afrotok/models/model_data.dart';
+import '../component/showImage.dart';
+import '../home/slive/utils.dart';
+import '../userPosts/postWidgets/postWidgetPage.dart';
+import 'followers.dart';
+
+
+import 'dart:async';
+import 'package:afrotok/pages/canaux/canalPostNew.dart';
+import 'package:afrotok/pages/canaux/editCanal.dart';
+import 'package:afrotok/providers/postProvider.dart';
+import 'package:auto_animated/auto_animated.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../../providers/userProvider.dart';
+import 'package:afrotok/models/model_data.dart';
+import '../component/showImage.dart';
+import '../home/slive/utils.dart';
+import '../userPosts/postWidgets/postWidgetPage.dart';
+import 'followers.dart';
+
 class CanalDetails extends StatefulWidget {
   final Canal canal;
 
@@ -25,40 +60,112 @@ class CanalDetails extends StatefulWidget {
 }
 
 class _CanalDetailsState extends State<CanalDetails> {
-  late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-  late UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
-  late PostProvider postProvider = Provider.of<PostProvider>(context, listen: false);
+  // Couleurs du thème
+  final Color _backgroundColor = Color(0xFF0A0A0A);
+  final Color _cardColor = Color(0xFF1A1A1A);
+  final Color _primaryGreen = Color(0xFF2E7D32);
+  final Color _primaryYellow = Color(0xFFFFD600);
+  final Color _accentGreen = Color(0xFF4CAF50);
+  final Color _accentYellow = Color(0xFFFFEB3B);
+  final Color _textColor = Colors.white;
+  final Color _subtextColor = Colors.grey[400]!;
+  final Color _verifiedColor = Color(0xFF1DA1F2);
+
+  // CONFIGURATION - Paiement pour abonnés existants
+  final bool _requirePaymentForExistingSubscribers = false;
+
+  late UserAuthProvider authProvider;
+  late UserProvider userProvider;
+  late PostProvider postProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  StreamController<List<Post>> _streamController = StreamController<List<Post>>();
-  Color _color =Colors.green;
+
+  final StreamController<List<Post>> _streamController = StreamController<List<Post>>();
   final ScrollController _scrollController = ScrollController();
 
-  DocumentSnapshot? lastDocument;
-  bool isLoading = false;
-  void _changeColor() {
-    final List<Color> colors = [
-      Colors.green,
-      Colors.green,
-      Colors.brown,
-      Colors.greenAccent,
-      Colors.red,
-      Colors.yellow,
-    ];
-    final random = Random();
-    _color = colors[random.nextInt(colors.length)];
-  }
+  List<Post> _allPosts = [];
+  int _currentPostLimit = 10;
+  final int _postsLoadMoreLimit = 5;
+  bool _isLoadingPosts = false;
+  bool _isLoadingMorePosts = false;
+  bool _hasMorePosts = true;
+
   bool isFollowing = false;
+  bool _isProcessingSubscription = false;
+  bool _isProcessingUnfollow = false;
 
   @override
   void initState() {
     super.initState();
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+    postProvider = Provider.of<PostProvider>(context, listen: false);
+
     checkIfFollowing();
-    postProvider.getCanalPosts(100,widget.canal).listen((data) {
-      if (!_streamController.isClosed) {
-        _streamController.add(data);
-      }
+    _loadInitialPosts();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _streamController.close();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent &&
+        _hasMorePosts &&
+        !_isLoadingMorePosts) {
+      _loadMorePosts();
+    }
+  }
+
+  Future<void> _loadInitialPosts() async {
+    setState(() {
+      _isLoadingPosts = true;
     });
 
+    try {
+      final posts = await postProvider.getCanalPostsLimited(_currentPostLimit, widget.canal);
+      setState(() {
+        _allPosts = posts;
+        _hasMorePosts = posts.length == _currentPostLimit;
+        _isLoadingPosts = false;
+      });
+      _streamController.add(_allPosts);
+    } catch (e) {
+      print('Erreur chargement posts: $e');
+      setState(() {
+        _isLoadingPosts = false;
+      });
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMorePosts || !_hasMorePosts) return;
+
+    setState(() {
+      _isLoadingMorePosts = true;
+    });
+
+    try {
+      final newLimit = _currentPostLimit + _postsLoadMoreLimit;
+      final morePosts = await postProvider.getCanalPostsLimited(newLimit, widget.canal);
+
+      setState(() {
+        _allPosts = morePosts;
+        _currentPostLimit = newLimit;
+        _hasMorePosts = morePosts.length == newLimit;
+        _isLoadingMorePosts = false;
+      });
+      _streamController.add(_allPosts);
+    } catch (e) {
+      print('Erreur chargement posts supplémentaires: $e');
+      setState(() {
+        _isLoadingMorePosts = false;
+      });
+    }
   }
 
   void checkIfFollowing() {
@@ -69,44 +176,352 @@ class _CanalDetailsState extends State<CanalDetails> {
     }
   }
 
-  Future<void> suivreCanal(Canal canal) async {
-    final String userId = authProvider.loginUserData.id!;
+  Future<void> _handleFollowAction() async {
+    final isPrivate = widget.canal.isPrivate == true;
 
-    // Vérifier si l'utilisateur suit déjà le canal
-    if (canal.usersSuiviId!.contains(userId)) {
+    if (isFollowing) {
+      // Si déjà abonné, proposer de se désabonner
+      await _handleUnfollowCanal();
+    } else {
+      // Si pas abonné, proposer de s'abonner
+      if (isPrivate) {
+        await _handlePrivateCanalSubscription();
+      } else {
+        await _followPublicCanal();
+      }
+    }
+  }
+
+  Future<void> _handleUnfollowCanal() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        final isPrivate = widget.canal.isPrivate == true;
+        final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
+
+        return AlertDialog(
+          backgroundColor: _cardColor,
+          title: Text(
+            'Se désabonner',
+            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Êtes-vous sûr de vouloir vous désabonner de ce canal?',
+                style: TextStyle(color: _subtextColor),
+              ),
+              SizedBox(height: 8),
+              if (isPrivate)
+                Text(
+                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${subscriptionPrice}FCFA pour y accéder à nouveau.',
+                  style: TextStyle(
+                    color: _primaryYellow,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Annuler', style: TextStyle(color: _subtextColor)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text('Se désabonner', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _processUnfollow();
+    }
+  }
+
+  Future<void> _processUnfollow() async {
+    setState(() {
+      _isProcessingUnfollow = true;
+    });
+
+    try {
+      final String userId = authProvider.loginUserData.id!;
+
+      // Retirer l'utilisateur des abonnés
+      widget.canal.usersSuiviId!.remove(userId);
+      await firestore.collection('Canaux').doc(widget.canal.id).update({
+        'usersSuiviId': widget.canal.usersSuiviId,
+      });
+
+      // Mettre à jour l'état local
+      setState(() {
+        isFollowing = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Vous suivez déjà ce canal.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.orange),
+            '✅ Vous vous êtes désabonné de ce canal.',
+            style: TextStyle(color: Colors.white),
           ),
+          backgroundColor: _accentGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+    } catch (e) {
+      print('Erreur désabonnement: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ Erreur lors du désabonnement',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessingUnfollow = false;
+      });
+    }
+  }
+
+  Future<void> _handlePrivateCanalSubscription() async {
+    final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
+    final isAlreadySubscribed = widget.canal.usersSuiviId!.contains(authProvider.loginUserData.id);
+
+    // Vérifier si l'utilisateur est déjà abonné (cas où le canal est devenu privé après)
+    if (isAlreadySubscribed && !_requirePaymentForExistingSubscribers) {
+      // L'utilisateur garde l'accès gratuit
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ Vous avez déjà accès à ce canal privé!',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: _accentGreen,
         ),
       );
       return;
     }
 
-    // Ajouter l'utilisateur à la liste des abonnés
-    canal.usersSuiviId!.add(userId);
-    await firestore.collection('Canaux').doc(canal.id).update({
-      'usersSuiviId': canal.usersSuiviId,
-    });
+    // Vérifier le solde de l'utilisateur
+    if (authProvider.loginUserData.votre_solde_principal! < subscriptionPrice) {
+      _showInsufficientBalanceDialog();
+      return;
+    }
 
+    // Message de confirmation différent selon la configuration
+    String confirmationMessage = '';
+    if (isAlreadySubscribed && _requirePaymentForExistingSubscribers) {
+      confirmationMessage = 'Ce canal est devenu privé. Pour continuer à y accéder, '
+          'vous devez payer l\'abonnement de ${subscriptionPrice}FCFA.\n\n'
+          'Confirmez-vous le paiement?';
+    } else {
+      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${subscriptionPrice}FCFA.\n\n'
+          'Confirmez-vous l\'abonnement?';
+    }
+
+    // Demander confirmation pour l'abonnement payant
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: _cardColor,
+          title: Text(
+            isAlreadySubscribed && _requirePaymentForExistingSubscribers
+                ? 'Mise à jour d\'abonnement'
+                : 'Abonnement Privé',
+            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            confirmationMessage,
+            style: TextStyle(color: _subtextColor),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Annuler', style: TextStyle(color: _subtextColor)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: _primaryGreen),
+              child: Text('Confirmer', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _processPrivateSubscription(subscriptionPrice, isAlreadySubscribed);
+    }
+  }
+
+  Future<void> _processPrivateSubscription(double price, bool isAlreadySubscribed) async {
     setState(() {
-      isFollowing = true;
+      _isProcessingSubscription = true;
     });
 
-    // Création de la notification
-    NotificationData notif = NotificationData(
+    try {
+      // Déduire le montant du solde utilisateur
+      final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
+
+      if (!deductionSuccess) {
+        throw Exception('Échec de la déduction du solde');
+      }
+
+      // Diviser le montant (50% créateur, 50% application)
+      final double creatorShare = price / 2;
+      final double appShare = price / 2;
+
+      // Créditer le créateur du canal
+      await _creditCreator(creatorShare);
+
+      // Créditer l'application
+      await authProvider.incrementAppGain(appShare);
+
+      // Enregistrer les transactions
+      await _recordTransactions(price, creatorShare, appShare, isAlreadySubscribed);
+
+      // Suivre le canal (ou maintenir l'abonnement)
+      if (!isAlreadySubscribed) {
+        await _followCanal();
+      }
+
+      String successMessage = isAlreadySubscribed && _requirePaymentForExistingSubscribers
+          ? '✅ Paiement accepté! Vous conservez l\'accès au canal privé.'
+          : '✅ Abonnement réussi! Canal privé ajouté.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            successMessage,
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: _accentGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+    } catch (e) {
+      print('Erreur abonnement privé: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ Erreur lors de l\'abonnement',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessingSubscription = false;
+      });
+    }
+  }
+
+  Future<void> _creditCreator(double amount) async {
+    try {
+      await firestore.collection('Users').doc(widget.canal.userId).update({
+        'votre_solde_principal': FieldValue.increment(amount),
+      });
+
+      // Enregistrer la transaction pour le créateur
+      await firestore.collection('TransactionSoldes').add({
+        'user_id': widget.canal.userId!,
+        'montant': amount,
+        'type': TypeTransaction.GAIN.name,
+        'description': 'Revenu abonnement canal ${widget.canal.id}',
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+        'statut': StatutTransaction.VALIDER.name,
+        'canal_id': widget.canal.id,
+      });
+    } catch (e) {
+      print('Erreur crédit créateur: $e');
+      throw e;
+    }
+  }
+
+  Future<void> _recordTransactions(double totalAmount, double creatorShare, double appShare, bool isAlreadySubscribed) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    String description = isAlreadySubscribed && _requirePaymentForExistingSubscribers
+        ? 'Maintien accès canal privé devenu payant: ${widget.canal.titre}'
+        : 'Abonnement canal privé: ${widget.canal.titre}';
+
+    // Transaction pour l'utilisateur qui paye
+    await firestore.collection('TransactionSoldes').add({
+      'user_id': authProvider.loginUserData.id!,
+      'montant': totalAmount,
+      'type': TypeTransaction.DEPENSE.name,
+      'description': description,
+      'createdAt': timestamp,
+      'statut': StatutTransaction.VALIDER.name,
+      'canal_id': widget.canal.id,
+      'is_existing_subscriber': isAlreadySubscribed,
+    });
+
+    // Transaction pour l'application
+    await firestore.collection('AppTransactions').add({
+      'montant': appShare,
+      'type': 'GAIN_ABONNEMENT',
+      'description': 'Commission $description',
+      'user_id': authProvider.loginUserData.id!,
+      'canal_id': widget.canal.id,
+      'createdAt': timestamp,
+      'is_existing_subscriber': isAlreadySubscribed,
+    });
+  }
+
+  Future<void> _followPublicCanal() async {
+    await _followCanal();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '✅ Vous suivez maintenant ce canal!',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: _accentGreen,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _followCanal() async {
+    final String userId = authProvider.loginUserData.id!;
+
+    if (widget.canal.usersSuiviId!.contains(userId)) {
+      return;
+    }
+
+    // Ajouter l'utilisateur aux abonnés
+    widget.canal.usersSuiviId!.add(userId);
+    await firestore.collection('Canaux').doc(widget.canal.id).update({
+      'usersSuiviId': widget.canal.usersSuiviId,
+    });
+
+    // Créer la notification
+    final NotificationData notif = NotificationData(
       id: firestore.collection('Notifications').doc().id,
       titre: "Canal 📺",
       media_url: authProvider.loginUserData.imageUrl,
       type: NotificationType.ACCEPTINVITATION.name,
-      description:
-      "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
+      description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!",
       users_id_view: [],
       user_id: userId,
-      receiver_id: canal.userId!,
+      receiver_id: widget.canal.userId!,
       post_id: "",
       post_data_type: "",
       updatedAt: DateTime.now().microsecondsSinceEpoch,
@@ -116,277 +531,622 @@ class _CanalDetailsState extends State<CanalDetails> {
 
     await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-    // Envoi de la notification
-    await authProvider.sendNotification(
-      userIds: [canal.user!.oneIgnalUserid!],
-      smallImage: canal.urlImage!,
-      send_user_id: userId,
-      recever_user_id: canal.userId!,
-      message:
-      "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
-      type_notif: NotificationType.ACCEPTINVITATION.name,
-      post_id: "",
-      post_type: "",
-      chat_id: "",
-    );
+    // Envoyer notification push
+    if (widget.canal.user != null && widget.canal.user!.oneIgnalUserid != null) {
+      await authProvider.sendNotification(
+        userIds: [widget.canal.user!.oneIgnalUserid!],
+        smallImage: widget.canal.urlImage!,
+        send_user_id: userId,
+        recever_user_id: widget.canal.userId!,
+        message: "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!",
+        type_notif: NotificationType.ACCEPTINVITATION.name,
+        post_id: "",
+        post_type: "",
+        chat_id: "",
+      );
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Vous suivez maintenant ce canal.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.green),
-        ),
-      ),
+    setState(() {
+      isFollowing = true;
+    });
+  }
+
+  void _showInsufficientBalanceDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: _cardColor,
+          title: Text(
+            'Solde Insuffisant',
+            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Votre solde est insuffisant pour vous abonner à ce canal privé.',
+            style: TextStyle(color: _subtextColor),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK', style: TextStyle(color: _primaryGreen)),
+            ),
+          ],
+        );
+      },
     );
   }
-  @override
-  Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-    _changeColor();
-    return Scaffold(
-      appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text(widget.canal.titre!, style: TextStyle(color: Colors.white)),
-        actions: [
-          IconButton(onPressed: () {
-            setState(() {
-              checkIfFollowing();
-              postProvider.getCanalPosts(100,widget.canal).listen((data) {
-                if (!_streamController.isClosed) {
-                  _streamController.add(data);
-                }
-              });
-            });
 
-          }, icon: Icon(Icons.refresh))
-        ],
-        backgroundColor: Colors.green,
-      ),
-      body:SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: <Widget>[
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              sliver: SliverToBoxAdapter(
+  Widget _buildHeaderSection() {
+    final isPrivate = widget.canal.isPrivate == true;
+    final isOwner = authProvider.loginUserData.id == widget.canal.userId;
+
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      sliver: SliverToBoxAdapter(
+        child: Stack(
+          children: [
+            // Image de couverture
+            GestureDetector(
+              onTap: () {
+                showImageDetailsModalDialog(widget.canal.urlCouverture!,
+                    MediaQuery.of(context).size.width,
+                    MediaQuery.of(context).size.height,
+                    context
+                );
+              },
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: widget.canal.urlCouverture != null
+                        ? NetworkImage(widget.canal.urlCouverture!)
+                        : AssetImage('assets/default_cover.png') as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Avatar du canal
+            Positioned(
+              bottom: 10,
+              left: 16,
+              child: GestureDetector(
+                onTap: () {
+                  showImageDetailsModalDialog(widget.canal.urlImage!,
+                      MediaQuery.of(context).size.width,
+                      MediaQuery.of(context).size.height,
+                      context
+                  );
+                },
                 child: Stack(
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        showImageDetailsModalDialog(widget.canal.urlCouverture!, width, height,context);
-
-                      },
-                      child: Container(
-                        height: 200,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: widget.canal.urlCouverture != null
-                                ? NetworkImage(widget.canal.urlCouverture!)
-                                : AssetImage('assets/default_cover.png') as ImageProvider,
-                            fit: BoxFit.cover,
+                    Container(
+                      padding: EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: _cardColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 45,
+                        backgroundImage: widget.canal.urlImage != null
+                            ? NetworkImage(widget.canal.urlImage!)
+                            : AssetImage('assets/default_profile.png') as ImageProvider,
+                      ),
+                    ),
+                    if (isPrivate)
+                      Positioned(
+                        bottom: 5,
+                        right: 5,
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: _primaryYellow,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.lock,
+                            color: Colors.black,
+                            size: 16,
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      left: 16,
-                      child: GestureDetector(
-                        onTap: () {
-                          showImageDetailsModalDialog(widget.canal.urlImage!, width, height,context);
-
-                        },
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: widget.canal.urlImage != null
-                              ? NetworkImage(widget.canal.urlImage!)
-                              : AssetImage('assets/default_profile.png') as ImageProvider,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              sliver: SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+
+            // Badge propriétaire
+            if (isOwner)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _primaryGreen,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Propriétaire',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoSection() {
+    final isPrivate = widget.canal.isPrivate == true;
+    final isOwner = authProvider.loginUserData.id == widget.canal.userId;
+    final subscribersCount = widget.canal.usersSuiviId?.length ?? 0;
+    final postsCount = widget.canal.publication ?? 0;
+
+    return SliverPadding(
+      padding: EdgeInsets.all(16),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Titre et badges
+            Row(
+              children: [
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          SizedBox(
-                            width: 170,
+                          Expanded(
                             child: Text(
                               "#${widget.canal.titre!}",
-                              style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Visibility(
-                            visible: widget.canal.isVerify == null || widget.canal.isVerify == false ? false : true,
-                            child: Card(
-                              child: const Icon(
-                                Icons.verified,
-                                color: Colors.blue,
-                                size: 30,
+                              style: TextStyle(
+                                color: _textColor,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-
+                          SizedBox(width: 8),
+                          if (widget.canal.isVerify == true)
+                            Icon(Icons.verified, color: _verifiedColor, size: 24),
                         ],
                       ),
                       SizedBox(height: 8),
+
+                      // Statistiques
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
                         children: [
-                          Text(
-                            'Abonnés: ${widget.canal.usersSuiviId!.length}',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          _buildStatItem(
+                            icon: Icons.people,
+                            value: subscribersCount.toString(),
+                            label: 'Abonnés',
                           ),
-
-                          authProvider.loginUserData!.id!=widget.canal.userId?SizedBox.shrink(): ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!)),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                            ),
-                            child: Row(
-                              children: [
-                                Text('Voir mes abonnés', style: TextStyle(fontSize: 16, color: Colors.white)),
-                                SizedBox(width: 10),
-                                Icon(Icons.remove_red_eye_rounded, color: Colors.white),
-                              ],
-                            ),
+                          SizedBox(width: 16),
+                          _buildStatItem(
+                            icon: Icons.post_add,
+                            value: postsCount.toString(),
+                            label: 'Publications',
                           ),
-
+                          if (isPrivate) ...[
+                            SizedBox(width: 16),
+                            _buildStatItem(
+                              icon: Icons.attach_money,
+                              value: '${widget.canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'}',
+                              label: 'FCFA',
+                              color: _primaryYellow,
+                            ),
+                          ],
                         ],
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          isFollowing
-                              ? SizedBox.shrink()
-                              : ElevatedButton(
-                            onPressed: () {
-                              suivreCanal(widget.canal);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                            ),
-                            child: Text('Suivre', style: TextStyle(fontSize: 16, color: Colors.white)),
-                          ),
-                         authProvider.loginUserData!.id!=widget.canal.userId?SizedBox.shrink(): ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => EditCanal(canal: widget.canal)),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.brown,
-                            ),
-                            child: Row(
-                              children: [
-                                Text('Modifier', style: TextStyle(fontSize: 16, color: Colors.white)),
-                                SizedBox(width: 10),
-                                Icon(Icons.edit, color: Colors.white),
-                              ],
-                            ),
-                          ),
-                          authProvider.loginUserData!.id!=widget.canal.userId?SizedBox.shrink(): ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                            ),
-                            child: Row(
-                              children: [
-                                Text('Poster', style: TextStyle(fontSize: 16, color: Colors.white)),
-                                SizedBox(width: 10),
-                                Icon(Icons.add, color: Colors.white),
-                              ],
-                            ),
-                          ),
-
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      ExpansionTile(
-                        title: Text("Description"),
-                        children: [
-                          Text(
-                            widget.canal.description!,
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Posts',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+
+            SizedBox(height: 16),
+
+            // Boutons d'action
+            Row(
+              children: [
+                if (!isOwner)
+                  Expanded(
+                    child: Container(
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isFollowing
+                              ? Colors.red // Rouge pour se désabonner
+                              : (isPrivate ? _primaryYellow : _primaryGreen),
+                          foregroundColor: isFollowing
+                              ? Colors.white // Blanc pour le texte de désabonnement
+                              : (isPrivate ? Colors.black : Colors.white),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: (_isProcessingSubscription || _isProcessingUnfollow)
+                            ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isFollowing ? Colors.white : (isPrivate ? Colors.black : Colors.white),
+                          ),
+                        )
+                            : Text(
+                          isFollowing
+                              ? 'SE DÉSABONNER'
+                              : (isPrivate ? 'S\'ABONNER' : 'SUIVRE'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                if (isOwner) ...[
+                  Expanded(
+                    child: Container(
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => EditCanal(canal: widget.canal)),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _cardColor,
+                          foregroundColor: _textColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                            side: BorderSide(color: _primaryGreen),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit, size: 18),
+                            SizedBox(width: 6),
+                            Text('MODIFIER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryGreen,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, size: 18),
+                            SizedBox(width: 6),
+                            Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
+            // if (isOwner) ...[
+            //   SizedBox(height: 12),
+            //   Container(
+            //     width: double.infinity,
+            //     height: 45,
+            //     child: ElevatedButton(
+            //       onPressed: () {
+            //         Navigator.push(
+            //           context,
+            //           MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!)),
+            //         );
+            //       },
+            //       style: ElevatedButton.styleFrom(
+            //         backgroundColor: _primaryYellow,
+            //         foregroundColor: Colors.black,
+            //         shape: RoundedRectangleBorder(
+            //           borderRadius: BorderRadius.circular(25),
+            //         ),
+            //       ),
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.center,
+            //         children: [
+            //           Icon(Icons.people, size: 18),
+            //           SizedBox(width: 6),
+            //           Text('VOIR MES ABONNÉS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
+            // ],
+
+            SizedBox(height: 16),
+
+            // Description
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _primaryGreen.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.description, color: _primaryGreen, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Description',
+                        style: TextStyle(
+                          color: _textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    widget.canal.description ?? 'Aucune description',
+                    style: TextStyle(
+                      color: _subtextColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
-            StreamBuilder<List<Post>>(
-              stream: _streamController.stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                } else if (snapshot.hasError) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: Icon(Icons.error)),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: Text('Pas de looks')),
-                  );
-                }else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  List<Post> listConstposts = snapshot.data!;
-                  return LiveSliverList(
-                    controller: _scrollController,
-                    showItemInterval: Duration(milliseconds: 10),
-                    showItemDuration: Duration(milliseconds: 30),
-                    itemCount: listConstposts.length,
-                    itemBuilder: animationItemBuilder(
-                          (index) {
-                        return HomePostUsersWidget(
-                          post: listConstposts[index], color: _color, height: height, width: width,
-                        );
-                      },
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  );
-                }
-                return SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator()),
-                );
 
-              },
+            SizedBox(height: 20),
+
+            // Section Posts
+            Row(
+              children: [
+                Icon(Icons.dynamic_feed, color: _primaryYellow, size: 24),
+                SizedBox(width: 8),
+                Text(
+                  'Publications',
+                  style: TextStyle(
+                    color: _textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+    Color? color,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color ?? _subtextColor, size: 16),
+            SizedBox(width: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: _textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: _subtextColor,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostsSection() {
+    return StreamBuilder<List<Post>>(
+      stream: _streamController.stream,
+      builder: (context, snapshot) {
+        if (_isLoadingPosts) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(
+                child: CircularProgressIndicator(color: _primaryGreen),
+              ),
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error, color: Colors.red, size: 50),
+                    SizedBox(height: 16),
+                    Text(
+                      'Erreur de chargement',
+                      style: TextStyle(color: _subtextColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.feed, color: _subtextColor, size: 50),
+                    SizedBox(height: 16),
+                    Text(
+                      'Aucune publication',
+                      style: TextStyle(color: _subtextColor, fontSize: 16),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Soyez le premier à publier dans ce canal!',
+                      style: TextStyle(color: _subtextColor, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final posts = snapshot.data!;
+          return SliverList(
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                if (index == posts.length) {
+                  return _buildLoadMoreIndicator();
+                }
+
+                final post = posts[index];
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: HomePostUsersWidget(
+                    post: post,
+                    color: _primaryGreen,
+                    height: MediaQuery.of(context).size.height,
+                    width: MediaQuery.of(context).size.width,
+                  ),
+                );
+              },
+              childCount: posts.length + (_isLoadingMorePosts ? 1 : 0),
+            ),
+          );
+        }
+
+        return SliverToBoxAdapter(
+          child: SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Center(
+        child: _isLoadingMorePosts
+            ? CircularProgressIndicator(color: _primaryGreen)
+            : _hasMorePosts
+            ? Text(
+          'Charger plus...',
+          style: TextStyle(color: _subtextColor),
+        )
+            : Container(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            '🎉 Vous avez vu toutes les publications!',
+            style: TextStyle(
+              color: _subtextColor,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _backgroundColor,
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: _textColor),
+        title: Text(
+          'Détails du Canal',
+          style: TextStyle(
+            color: _textColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: _backgroundColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: _primaryGreen),
+            onPressed: _loadInitialPosts,
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          _buildHeaderSection(),
+          _buildInfoSection(),
+          _buildPostsSection(),
+        ],
+      ),
+    );
+  }
 }
+
+
