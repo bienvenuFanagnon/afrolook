@@ -239,36 +239,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
 
-  Future<void> _generateVideoThumbnail() async {
-    if (!_isVideoPost(widget.post) || widget.post.url_media == null) return;
-
-    setState(() {
-      _isGeneratingThumbnail = true;
-    });
-
-    try {
-      final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: widget.post.url_media!,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 400,
-        quality: 75,
-        timeMs: 1000,
-      );
-
-      if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
-        setState(() {
-          _videoThumbnailPath = thumbnailPath;
-          _isGeneratingThumbnail = false;
-        });
-      }
-    } catch (e) {
-      print('Erreur génération thumbnail: $e');
-      setState(() {
-        _isGeneratingThumbnail = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -556,6 +526,36 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
+  Future<void> _generateVideoThumbnail() async {
+    if (!_isVideoPost(widget.post) || widget.post.url_media == null) return;
+
+    setState(() {
+      _isGeneratingThumbnail = true;
+    });
+
+    try {
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: widget.post.url_media!,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 400,
+        quality: 75,
+        timeMs: 1000,
+      );
+
+      if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
+        setState(() {
+          _videoThumbnailPath = thumbnailPath;
+          _isGeneratingThumbnail = false;
+        });
+      }
+    } catch (e) {
+      print('Erreur génération thumbnail: $e');
+      setState(() {
+        _isGeneratingThumbnail = false;
+      });
+    }
+  }
   Widget _buildPostContent(bool isLocked) {
     final text = widget.post.description ?? "";
 
@@ -661,117 +661,98 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Widget _buildMediaContent(double h, bool isLocked) {
     final images = widget.post.images!;
 
-    if (isLocked) {
-      // Contenu verrouillé - afficher un overlay
-      return Stack(
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: _afroCardBg,
+    return Stack(
+      children: [
+        // Image ou vidéo en arrière-plan
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: images.isNotEmpty
+              ? Opacity(
+            opacity: isLocked ? 0.15 : 1.0, // réduit la visibilité si verrouillé
+            child: CachedNetworkImage(
+              imageUrl: images.first,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: h * 0.4,
+              placeholder: (context, url) =>
+                  Container(color: _afroTextSecondary.withOpacity(0.1)),
+              errorWidget: (context, url, error) =>
+                  Container(color: _afroTextSecondary.withOpacity(0.1)),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                height: h * 0.4,
-                width: double.infinity,
-                color: _afroTextSecondary.withOpacity(0.1),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock, color: _afroYellow, size: 50),
-                      SizedBox(height: 8),
-                      Text(
-                        'Contenu verrouillé',
-                        style: TextStyle(
-                          color: _afroYellow,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+          )
+              : Container(color: _afroTextSecondary.withOpacity(0.1)),
+        ),
+
+        // Overlay pour contenu verrouillé
+        if (isLocked)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock, color: _afroYellow, size: 50),
+                    SizedBox(height: 8),
+                    Text(
+                      'Contenu verrouillé',
+                      style: TextStyle(
+                        color: _afroYellow,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Abonnez-vous pour voir ce contenu',
-                        style: TextStyle(
-                          color: _afroTextSecondary,
-                          fontSize: 12,
-                        ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Abonnez-vous pour voir ce contenu',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
-      );
-    }
-
-    // Contenu déverrouillé
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DetailsPost(post: widget.post),
-        ),
-      ),
-      child: Container(
-        margin: EdgeInsets.only(top: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: _afroCardBg,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: images.length == 1
-              ? CachedNetworkImage(
-            imageUrl: images.first,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: h * 0.4,
-            placeholder: (context, url) => Container(
-              color: _afroTextSecondary.withOpacity(0.1),
-              height: h * 0.4,
-              child: Center(child: CircularProgressIndicator(color: _afroBlue)),
-            ),
-            errorWidget: (context, url, error) => Container(
-              color: _afroTextSecondary.withOpacity(0.1),
-              height: h * 0.4,
-              child: Icon(Icons.error, color: _afroTextSecondary),
-            ),
-          )
-              : ImageSlideshow(
-            height: h * 0.4,
-            children: images.map((image) => CachedNetworkImage(
-              imageUrl: image,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            )).toList(),
-          ),
-        ),
-      ),
+      ],
     );
   }
 
   Widget _buildVideoContent(double h, bool isLocked) {
-    if (isLocked) {
-      // Vidéo verrouillée
-      return Stack(
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: _afroCardBg,
-            ),
+    return Stack(
+      children: [
+        // Thumbnail vidéo ou fallback
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: _isGeneratingThumbnail
+              ? Center(
+            child: CircularProgressIndicator(color: _afroBlue),
+          )
+              : (_videoThumbnailPath != null &&
+              File(_videoThumbnailPath!).existsSync())
+              ? Opacity(
+            opacity: isLocked ? 0.6 : 1.0, // réduit la visibilité si verrouillé
+                child: Image.file(
+                            File(_videoThumbnailPath!),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: h * 0.4,
+                          ),
+              )
+              : _buildFallbackThumbnail(),
+        ),
+
+        // Overlay verrouillage
+        if (isLocked)
+          Positioned.fill(
             child: Container(
-              height: h * 0.4,
-              width: double.infinity,
               decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(16),
-                color: _afroTextSecondary.withOpacity(0.1),
               ),
               child: Center(
                 child: Column(
@@ -791,7 +772,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     Text(
                       'Abonnez-vous pour voir cette vidéo',
                       style: TextStyle(
-                        color: _afroTextSecondary,
+                        color: Colors.white70,
                         fontSize: 12,
                       ),
                     ),
@@ -800,102 +781,53 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               ),
             ),
           ),
-        ],
-      );
-    }
 
-    // Vidéo déverrouillée
-    return Container(
-      margin: EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: _afroCardBg,
-      ),
-      child: Stack(
-        children: [
-          // Thumbnail de la vidéo
-          Container(
-            height: h * 0.4,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: _afroTextSecondary.withOpacity(0.1),
+        // Overlay play si déverrouillé
+        if (!isLocked)
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.play_arrow, color: Colors.white, size: 40),
+              ),
             ),
-            child: _buildThumbnailContent(h),
           ),
 
-          // Overlay de lecture
-          Positioned.fill(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
-                    ),
-                  );
-                },
-                child: Center(
-                  child: AnimatedOpacity(
-                    opacity: _isGeneratingThumbnail ? 0.3 : 1.0,
-                    duration: Duration(milliseconds: 300),
-                    child: Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: _isGeneratingThumbnail
-                          ? CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      )
-                          : Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
+        // Badge vidéo en haut à gauche
+        Positioned(
+          top: 8,
+          left: 8,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.videocam, color: Colors.white, size: 12),
+                SizedBox(width: 4),
+                Text(
+                  'Vidéo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-
-          // Badge "Vidéo" en haut à gauche
-          Positioned(
-            top: 8,
-            left: 8,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.videocam, color: Colors.white, size: 12),
-                  SizedBox(width: 4),
-                  Text(
-                    'Vidéo',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+
 
   Widget _buildThumbnailContent(double h) {
     if (_isGeneratingThumbnail) {
