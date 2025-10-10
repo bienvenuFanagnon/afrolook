@@ -33,10 +33,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
   }
 
   Future<void> _preloadThumbnails() async {
-    final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
 
-    authProvider.checkAppVersionAndProceed(context, () {
-    });
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     await contentProvider.loadInitialData();
   }
@@ -165,12 +162,8 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
           IconButton(
             icon: Icon(Icons.person, color: Colors.white),
             onPressed: () {
-              final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu()));
 
-              authProvider.checkAppVersionAndProceed(context, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu()));
-
-              });
             },
           ),
         ],
@@ -178,12 +171,8 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.red,
         onPressed: () {
-          final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen()));
 
-          authProvider.checkAppVersionAndProceed(context, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen()));
-
-          });
         },
         child: Icon(Icons.add, size: 28),
       ),
@@ -323,16 +312,12 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
         final content = seriesContent[index];
         return GestureDetector(
           onTap: () {
-            final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
-
-            authProvider.checkAppVersionAndProceed(context, () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SeriesEpisodesScreen(series: content),
-                ),
-              );
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SeriesEpisodesScreen(series: content),
+              ),
+            );
 
           },
           child: Column(
@@ -553,41 +538,21 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
           final content = contents[index];
           return GestureDetector(
             onTap: () {
-
-              final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
-
-              authProvider.checkAppVersionAndProceed(context, () {
-                if (content.isSeries) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SeriesEpisodesScreen(series: content),
-                    ),
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ContentDetailScreen(content: content),
-                    ),
-                  );
-                }
-              });
-              // if (content.isSeries) {
-              //   Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (_) => SeriesEpisodesScreen(series: content),
-              //     ),
-              //   );
-              // } else {
-              //   Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (_) => ContentDetailScreen(content: content),
-              //     ),
-              //   );
-              // }
+              if (content.isSeries) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SeriesEpisodesScreen(series: content),
+                  ),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ContentDetailScreen(content: content),
+                  ),
+                );
+              }
             },
             child: Container(
               width: 320,
@@ -713,25 +678,21 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 6),
                   child: GestureDetector(
                     onTap: () {
-                      final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
-
-                      authProvider.checkAppVersionAndProceed(context, () {
-                        if (content.isSeries) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SeriesEpisodesScreen(series: content),
-                            ),
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ContentDetailScreen(content: content),
-                            ),
-                          );
-                        }
-                      });
+                      if (content.isSeries) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SeriesEpisodesScreen(series: content),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ContentDetailScreen(content: content),
+                          ),
+                        );
+                      }
 
                     },
                     child: Column(
@@ -902,16 +863,12 @@ class _CategoryContentScreenState extends State<CategoryContentScreen> {
             final content = widget.contents[index];
             return GestureDetector(
               onTap: () {
-                final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
-
-                authProvider.checkAppVersionAndProceed(context, () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ContentDetailScreen(content: content),
-                    ),
-                  );
-                });
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ContentDetailScreen(content: content),
+                  ),
+                );
 
               },
               child: _buildThumbnail(content),
@@ -1025,16 +982,12 @@ class ContentSearchDelegate extends SearchDelegate {
                   style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                 ),
                 onTap: () {
-                  final authProvider = Provider.of<UserAuthProvider>(context,listen: false);
-
-                  authProvider.checkAppVersionAndProceed(context, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ContentDetailScreen(content: content),
-                      ),
-                    );
-                  });
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ContentDetailScreen(content: content),
+                    ),
+                  );
 
                 },
               );

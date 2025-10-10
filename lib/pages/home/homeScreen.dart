@@ -1104,7 +1104,11 @@ class _MyHomePageState extends State<MyHomePage>
       // AdvancedModalManager.showModalsWithSmartDelay(context);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          AdvancedModalManager.showModalsWithSmartDelay(context);
+          authProvider.checkAppVersionAndProceed(context, () {
+            AdvancedModalManager.showModalsWithSmartDelay(context);
+
+          });
+
         });
 
 
@@ -1117,8 +1121,6 @@ class _MyHomePageState extends State<MyHomePage>
 
     _tabController = TabController(length: _tabs.length, vsync: this);
 
-    authProvider.checkAppVersionAndProceed(context, () {
-    });
     // hasShownDialogToday().then((value) async {
     //   final SharedPreferences prefs = await SharedPreferences.getInstance();
     //   authProvider.getAppData().then((value) {

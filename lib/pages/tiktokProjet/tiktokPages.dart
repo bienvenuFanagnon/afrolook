@@ -152,14 +152,10 @@ class VideoFeedTiktokPage extends StatelessWidget {
         backgroundColor: Colors.pink,
 
         onPressed:() {
-          late UserAuthProvider authProvider =
-          Provider.of<UserAuthProvider>(context, listen: false);
-          authProvider.checkAppVersionAndProceed(context, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => UploadVideoPage()),
-            );
-          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => UploadVideoPage()),
+          );
         },
         child: Icon(Icons.add, color: Colors.white),
       ),

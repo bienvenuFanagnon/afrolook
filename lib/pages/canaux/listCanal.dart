@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../providers/postProvider.dart';
+import '../paiement/newDepot.dart';
 import 'detailsCanal.dart';
 import 'newCanal.dart';
 
@@ -214,8 +215,12 @@ class _CanalListPageState extends State<CanalListPage> {
     }
 
     // Vérifier le solde de l'utilisateur
-    if (authProvider.loginUserData.votre_solde_principal! < subscriptionPrice) {
-      _showInsufficientBalanceDialog();
+
+    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
+    final currentBalance = userDoc.data()?['votre_solde_principal'] ?? 0;
+
+    if (currentBalance < subscriptionPrice) {
+      _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
 
@@ -450,26 +455,107 @@ class _CanalListPageState extends State<CanalListPage> {
     setState(() {});
   }
 
-  void _showInsufficientBalanceDialog() {
+  void _showInsufficientBalanceDialog({
+    required double userBalance,
+    required double subscriptionPrice,
+  }) {
+    final double missingAmount = (subscriptionPrice - userBalance).clamp(0, double.infinity);
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: _cardColor,
-          title: Text(
-            'Solde Insuffisant',
-            style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Votre solde est insuffisant pour vous abonner à ce canal privé.',
-            style: TextStyle(color: _subtextColor),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK', style: TextStyle(color: _primaryColor)),
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.black,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [Colors.black, Colors.grey.shade900],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🟡 Icône en haut
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow.shade600,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.warning_amber_rounded, color: Colors.black, size: 40),
+                ),
+                const SizedBox(height: 16),
+
+                // 🟢 Titre
+                Text(
+                  'Solde insuffisant 💰',
+                  style: TextStyle(
+                    color: Colors.greenAccent.shade400,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 🖤 Message
+                Text(
+                  'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} FCFA.\n'
+                      'Il vous manque ${missingAmount.toStringAsFixed(0)} FCFA pour vous abonner '
+                      'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} FCFA.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 15),
+                ),
+                const SizedBox(height: 20),
+
+                // 🔘 Boutons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Plus tard',
+                        style: TextStyle(color: Colors.yellow.shade600, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent.shade400,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        elevation: 3,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.account_balance_wallet, color: Colors.black),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Recharger',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

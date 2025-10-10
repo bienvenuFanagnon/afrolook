@@ -276,6 +276,101 @@ class LiveProvider extends ChangeNotifier {
   List<PostLive> get allLives => _allLives;
   List<PostLive> get activeLives => _activeLives;
 
+  // Pagination batch
+  static const int batchSize = 8;
+  static const int maxLives = 30;
+
+  DocumentSnapshot? _lastAllLiveDoc;
+  DocumentSnapshot? _lastActiveLiveDoc;
+
+  bool _allLivesFinished = false;
+  bool _activeLivesFinished = false;
+
+  // ----------------- BATCH FETCH -----------------
+  Future<void> fetchAllLivesBatch({bool reset = false}) async {
+    if (reset) {
+      _allLives = [];
+      _lastAllLiveDoc = null;
+      _allLivesFinished = false;
+    }
+    if (_allLivesFinished) return;
+
+    Query query = _firestore
+        .collection('lives')
+        .orderBy('giftTotal', descending: true) // Trier par montant gagné
+        .limit(batchSize);
+
+    if (_lastAllLiveDoc != null) query = query.startAfterDocument(_lastAllLiveDoc!);
+
+    try {
+      QuerySnapshot snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        _allLivesFinished = true;
+        return;
+      }
+
+      for (var doc in snapshot.docs) {
+        try {
+          final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+          _allLives.add(live);
+        } catch (e) {
+          print("Impossible de convertir le live ${doc.id}: $e");
+        }
+      }
+
+      _lastAllLiveDoc = snapshot.docs.last;
+
+      if (_allLives.length >= maxLives) _allLivesFinished = true;
+
+      notifyListeners();
+    } catch (e) {
+      print("Erreur lors du chargement des lives par batch: $e");
+    }
+  }
+
+  Future<void> fetchActiveLivesBatch({bool reset = false}) async {
+    if (reset) {
+      _activeLives = [];
+      _lastActiveLiveDoc = null;
+      _activeLivesFinished = false;
+    }
+    if (_activeLivesFinished) return;
+
+    Query query = _firestore
+        .collection('lives')
+        .where('isLive', isEqualTo: true)
+        .orderBy('giftTotal', descending: true) // Trier par montant gagné
+        .limit(batchSize);
+
+    if (_lastActiveLiveDoc != null) query = query.startAfterDocument(_lastActiveLiveDoc!);
+
+    try {
+      QuerySnapshot snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        _activeLivesFinished = true;
+        return;
+      }
+
+      for (var doc in snapshot.docs) {
+        try {
+          final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+          _activeLives.add(live);
+        } catch (e) {
+          print("Impossible de convertir le live actif ${doc.id}: $e");
+        }
+      }
+
+      _lastActiveLiveDoc = snapshot.docs.last;
+
+      if (_activeLives.length >= maxLives) _activeLivesFinished = true;
+
+      notifyListeners();
+    } catch (e) {
+      print("Erreur lors du chargement des lives actifs par batch: $e");
+    }
+  }
+
+
   // Récupérer tous les lives, peu importe leur statut
   Future<void> fetchAllLives() async {
     _allLives = [];
@@ -528,7 +623,8 @@ class _LivePageState extends State<LivePage> {
   StreamSubscription<DocumentSnapshot>? _liveSubscription;
   StreamSubscription<QuerySnapshot>? _commentsSubscription;
   StreamSubscription<DocumentSnapshot>? _hostSubscription;
-
+  late UserAuthProvider authProvider =
+  Provider.of<UserAuthProvider>(context, listen: false);
 
 
   bool _isFrontCamera = true;
@@ -1888,7 +1984,7 @@ class _LivePageState extends State<LivePage> {
               ],
             ),
           ),
-          if (widget.isHost) ...[
+          if (widget.isHost||authProvider.loginUserData.role==UserRole.ADM.name) ...[
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: _confirmEndLive,

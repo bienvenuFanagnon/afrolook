@@ -1,16 +1,11 @@
-// models/live_models.dart
+// pages/lives/live_list_page.dart
 import 'dart:async';
-import 'dart:math';
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/component/showUserDetails.dart';
-import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:intl/intl.dart';
-
 import '../../models/model_data.dart';
-import '../paiement/newDepot.dart';
+import '../../providers/authProvider.dart';
 import 'create_live_page.dart';
 import 'livesAgora.dart';
 import 'mesLives.dart';
@@ -21,73 +16,63 @@ class LiveListPage extends StatefulWidget {
 }
 
 class _LiveListPageState extends State<LiveListPage> {
-  final RefreshController _refreshController = RefreshController(initialRefresh: false);
   final RefreshController _allLivesController = RefreshController(initialRefresh: false);
   final RefreshController _activeLivesController = RefreshController(initialRefresh: false);
 
-  int _selectedTab = 0; // 0 pour tous les lives, 1 pour les lives actifs
+  int _selectedTab = 0; // 0 = tous, 1 = actifs
   bool _isLoading = true;
-  List<PostLive> _allLives = [];
-  List<PostLive> _activeLives = [];
 
   @override
   void initState() {
     super.initState();
-    printVm('Page liste lives');
-    _loadLives();
+    _loadLives(reset: true);
   }
 
-  Future<void> _loadLives() async {
+  Future<void> _loadLives({bool reset = false}) async {
     final liveProvider = context.read<LiveProvider>();
+    setState(() => _isLoading = true);
 
     if (_selectedTab == 0) {
-      await liveProvider.fetchAllLives();
-      setState(() {
-        _allLives = liveProvider.allLives;
-        // Trier: lives en cours d'abord
-        _allLives.sort((a, b) {
-          if (a.isLive && !b.isLive) return -1;
-          if (!a.isLive && b.isLive) return 1;
-          return b.startTime.compareTo(a.startTime);
-        });
-      });
+      await liveProvider.fetchAllLivesBatch(reset: reset);
     } else {
-      await liveProvider.fetchActiveLives();
-      setState(() {
-        _activeLives = liveProvider.activeLives;
-      });
+      await liveProvider.fetchActiveLivesBatch(reset: reset);
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
   }
 
-  void _onRefreshAll() async {
-    await _loadLives();
-    _allLivesController.refreshCompleted();
-  }
-
-  void _onRefreshActive() async {
-    await _loadLives();
-    _activeLivesController.refreshCompleted();
+  Future<void> _loadMoreLives() async {
+    final liveProvider = context.read<LiveProvider>();
+    if (_selectedTab == 0) {
+      await liveProvider.fetchAllLivesBatch();
+      _allLivesController.loadComplete();
+    } else {
+      await liveProvider.fetchActiveLivesBatch();
+      _activeLivesController.loadComplete();
+    }
   }
 
   void _onRefresh() async {
-    await _loadLives();
-    _refreshController.refreshCompleted();
+    await _loadLives(reset: true);
+    if (_selectedTab == 0) {
+      _allLivesController.refreshCompleted();
+    } else {
+      _activeLivesController.refreshCompleted();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<UserAuthProvider>();
-    final displayedLives = _selectedTab == 0 ? _allLives : _activeLives;
+    final liveProvider = context.watch<LiveProvider>();
+    final displayedLives = _selectedTab == 0 ? liveProvider.allLives : liveProvider.activeLives;
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          title: Text('Lives Afrolook', style: TextStyle(fontSize: 20,color: Color(0xFFF9A825))),
+          title: Text('Lives Afrolook', style: TextStyle(fontSize: 20, color: Color(0xFFF9A825))),
           backgroundColor: Colors.black,
           bottom: TabBar(
             onTap: (index) {
@@ -95,7 +80,7 @@ class _LiveListPageState extends State<LiveListPage> {
                 _selectedTab = index;
                 _isLoading = true;
               });
-              _loadLives();
+              _loadLives(reset: true);
             },
             tabs: [
               Tab(text: 'Tous les lives'),
@@ -106,7 +91,6 @@ class _LiveListPageState extends State<LiveListPage> {
             unselectedLabelColor: Colors.grey,
           ),
           actions: [
-            // Icon de profil pour accéder aux lives de l'utilisateur
             IconButton(
               icon: CircleAvatar(
                 radius: 16,
@@ -116,61 +100,94 @@ class _LiveListPageState extends State<LiveListPage> {
                     : AssetImage('assets/default_avatar.png') as ImageProvider,
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UserLivesPage()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage()));
               },
             ),
             IconButton(
               icon: Icon(Icons.refresh, color: Color(0xFFF9A825)),
-              onPressed: _loadLives,
+              onPressed: () => _loadLives(reset: true),
             ),
             IconButton(
               icon: Icon(Icons.add, color: Color(0xFFF9A825)),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CreateLivePage()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage()));
               },
             ),
           ],
         ),
-        backgroundColor: Colors.black,
         body: _isLoading
             ? Center(child: CircularProgressIndicator(color: Color(0xFFF9A825)))
-            : TabBarView(
+            : Column(
           children: [
-            // Onglet "Tous les lives"
-            SmartRefresher(
-              controller: _allLivesController,
-              onRefresh: _onRefreshAll,
-              enablePullDown: true,
-              header: WaterDropHeader(
-                waterDropColor: Color(0xFFF9A825),
-                complete: Icon(Icons.check, color: Color(0xFFF9A825)),
+            // Message accrocheur
+// Message accrocheur
+            Container(
+              width: double.infinity,
+              color: Colors.yellow[800],
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: Text(
+                "🎥 Créez votre live pour présenter vos produits, formations ou sujets ! "
+                    "Gagnez jusqu’à 50 000 FCFA par cadeaux et 70% des montants récoltés grâce aux cadeaux. "
+                    "Le secret ? Créez votre live et partagez le lien sur vos réseaux pour attirer le maximum de monde ! "
+                    "Pas besoin d’abonnés pour commencer.",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-              child: displayedLives.isEmpty
-                  ? _buildEmptyState()
-                  : _buildLiveGrid(displayedLives, authProvider, showAll: true),
             ),
-
-            // Onglet "Lives en cours"
-            SmartRefresher(
-              controller: _activeLivesController,
-              onRefresh: _onRefreshActive,
-              enablePullDown: true,
-              header: WaterDropHeader(
-                waterDropColor: Color(0xFFF9A825),
-                complete: Icon(Icons.check, color: Color(0xFFF9A825)),
+            Expanded(
+              child: TabBarView(
+                physics: NeverScrollableScrollPhysics(),
+                children: [
+                  _buildLivesTab(displayedLives, authProvider, _allLivesController),
+                  _buildLivesTab(displayedLives, authProvider, _activeLivesController),
+                ],
               ),
-              child: displayedLives.isEmpty
-                  ? _buildEmptyState()
-                  : _buildLiveGrid(displayedLives, authProvider, showAll: false),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLivesTab(List<PostLive> lives, UserAuthProvider authProvider, RefreshController controller) {
+    if (lives.isEmpty) return _buildEmptyState();
+
+    return SmartRefresher(
+      controller: controller,
+      enablePullDown: true,
+      enablePullUp: lives.length < 30,
+      onRefresh: _onRefresh,
+      onLoading: _loadMoreLives,
+      header: WaterDropHeader(
+        waterDropColor: Color(0xFFF9A825),
+        complete: Icon(Icons.check, color: Color(0xFFF9A825)),
+      ),
+      footer: CustomFooter(
+        builder: (context, mode) {
+          if (mode == LoadStatus.loading) {
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFF9A825))),
+            );
+          } else {
+            return SizedBox.shrink();
+          }
+        },
+      ),
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(16),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.8),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildLiveGridItem(lives[index], authProvider),
+                childCount: lives.length,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -196,10 +213,7 @@ class _LiveListPageState extends State<LiveListPage> {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateLivePage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage()));
             },
             child: Text('Créer un live', style: TextStyle(color: Colors.black)),
             style: ElevatedButton.styleFrom(
@@ -209,86 +223,6 @@ class _LiveListPageState extends State<LiveListPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLiveGrid(List<PostLive> lives, UserAuthProvider authProvider, {bool showAll = true}) {
-    // Séparer les lives en cours et terminés pour l'onglet "Tous les lives"
-    final activeLives = showAll ? lives.where((live) => live.isLive).toList() : lives;
-    final endedLives = showAll ? lives.where((live) => !live.isLive).toList() : [];
-
-    return CustomScrollView(
-      slivers: [
-        // Section des lives en cours
-        if (activeLives.isNotEmpty) ...[
-          SliverPadding(
-            padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Lives en cours',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.all(16),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final live = activeLives[index];
-                  return _buildLiveGridItem(live, authProvider);
-                },
-                childCount: activeLives.length,
-              ),
-            ),
-          ),
-        ],
-
-        // Section des lives terminés (seulement pour l'onglet "Tous les lives")
-        if (showAll && endedLives.isNotEmpty) ...[
-          SliverPadding(
-            padding: EdgeInsets.only(top: 24, left: 16, right: 16),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Lives terminés',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.all(16),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final live = endedLives[index];
-                  return _buildLiveGridItem(live, authProvider);
-                },
-                childCount: endedLives.length,
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -304,7 +238,7 @@ class _LiveListPageState extends State<LiveListPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => LivePage(
+              builder: (_) => LivePage(
                 liveId: live.liveId!,
                 isHost: isHost,
                 hostName: live.hostName!,
@@ -322,21 +256,11 @@ class _LiveListPageState extends State<LiveListPage> {
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(12),
-          border: isLive
-              ? Border.all(color: Colors.red, width: 2)
-              : Border.all(color: Colors.grey[700]!, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: isLive ? Colors.red.withOpacity(0.3) : Colors.transparent,
-              blurRadius: 8,
-              spreadRadius: 2,
-            ),
-          ],
+          border: isLive ? Border.all(color: Colors.red, width: 2) : Border.all(color: Colors.grey[700]!, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image de preview avec badge live
             Expanded(
               child: Stack(
                 children: [
@@ -355,25 +279,27 @@ class _LiveListPageState extends State<LiveListPage> {
                       left: 8,
                       child: Container(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(12)),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.circle, color: Colors.white, size: 8),
                             SizedBox(width: 4),
-                            Text(
-                              'LIVE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('LIVE',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                           ],
                         ),
+                      ),
+                    ),
+                  if (!isLive)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.grey[700], borderRadius: BorderRadius.circular(12)),
+                        child: Text('TERMINÉ',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   if (isInvited)
@@ -382,59 +308,32 @@ class _LiveListPageState extends State<LiveListPage> {
                       right: 8,
                       child: Container(
                         padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFF9A825),
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: BoxDecoration(color: Color(0xFFF9A825), shape: BoxShape.circle),
                         child: Icon(Icons.mail, color: Colors.black, size: 12),
-                      ),
-                    ),
-                  // Overlay sombre pour les lives terminés
-                  if (!isLive)
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                        color: Colors.black54,
-                      ),
-                      child: Center(
-                        child: Icon(Icons.play_circle_filled, color: Colors.white, size: 40),
                       ),
                     ),
                 ],
               ),
             ),
-
-            // Informations du live
             Padding(
               padding: EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    live.title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(live.title,
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 10,
-                        backgroundImage: NetworkImage(live.hostImage!),
-                      ),
+                      CircleAvatar(radius: 10, backgroundImage: NetworkImage(live.hostImage!)),
                       SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          live.hostName!,
-                          style: TextStyle(color: Colors.grey, fontSize: 10),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(live.hostName!,
+                            style: TextStyle(color: Colors.grey, fontSize: 10),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ),
@@ -446,15 +345,12 @@ class _LiveListPageState extends State<LiveListPage> {
                         children: [
                           Icon(Icons.people, size: 12, color: Colors.grey),
                           SizedBox(width: 4),
-                          Text(
-                            '${live.viewerCount}',
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
-                          ),
+                          Text('${live.viewerCount}', style: TextStyle(color: Colors.grey, fontSize: 10)),
                         ],
                       ),
                       Text(
-                        isLive ? 'Maintenant' : dateFormat.format(live.startTime),
-                        style: TextStyle(color: Colors.grey, fontSize: 10),
+                        isLive ? 'Maintenant' : '${live.giftTotal.toStringAsFixed(0)} FCFA',
+                        style: TextStyle(color: Colors.yellowAccent, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -467,28 +363,49 @@ class _LiveListPageState extends State<LiveListPage> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
   void _showLiveEndedDialog(PostLive live) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Live terminé', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Ce live s\'est terminé le ${_formatDate(live.startTime)}.\n\n'
-              '${live.viewerCount} personnes y ont assisté.',
-          style: TextStyle(color: Colors.white70),
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Center(
+          child: Text('🎉 Live terminé !', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(live.title, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            SizedBox(height: 15),
+            Text('📅 Terminé le: ${_formatDate(live.startTime)}', style: TextStyle(color: Colors.yellowAccent)),
+            SizedBox(height: 10),
+            Text('👥 Spectateurs: ${live.viewerCount}', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 5),
+            Text('💝 Cadeaux reçus: ${live.gifts.length}', style: TextStyle(color: Colors.pinkAccent)),
+            SizedBox(height: 5),
+            Text('❤️ Likes: ${live.likeCount ?? 0}', style: TextStyle(color: Colors.redAccent)),
+            SizedBox(height: 10),
+            Text('💰 Montant gagné: ${live.giftTotal.toStringAsFixed(0)} FCFA',
+                style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Fermer', style: TextStyle(color: Color(0xFFF9A825))),
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10)),
+              child: Text('Fermer', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
           ),
+          SizedBox(height: 5),
         ],
       ),
     );
   }
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }

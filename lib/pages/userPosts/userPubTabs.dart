@@ -379,18 +379,18 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                     .collection('PostsMonetiser')
                                     .doc()
                                     .id;
-                                PostMonetiser postMonetiser = PostMonetiser(
-                                  id: postMId,
-                                  user_id: authProvider.loginUserData.id,
-                                  post_id: postId,
-                                  users_like_id: [],
-                                  users_love_id: [],
-                                  users_comments_id: [],
-                                  users_partage_id: [],
-                                  solde: 0.1,
-                                  createdAt: DateTime.now().millisecondsSinceEpoch,
-                                  updatedAt: DateTime.now().millisecondsSinceEpoch,
-                                );
+                                // PostMonetiser postMonetiser = PostMonetiser(
+                                //   id: postMId,
+                                //   user_id: authProvider.loginUserData.id,
+                                //   post_id: postId,
+                                //   users_like_id: [],
+                                //   users_love_id: [],
+                                //   users_comments_id: [],
+                                //   users_partage_id: [],
+                                //   solde: 0.1,
+                                //   createdAt: DateTime.now().millisecondsSinceEpoch,
+                                //   updatedAt: DateTime.now().millisecondsSinceEpoch,
+                                // );
 
                                 if(widget.canal!=null){
                                   post.canal_id=widget.canal!.id;
@@ -401,18 +401,19 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                     .collection('Posts')
                                     .doc(postId)
                                     .set(post.toJson());
-                                await FirebaseFirestore.instance
-                                    .collection('PostsMonetiser')
-                                    .doc(postMId)
-                                    .set(postMonetiser.toJson());
+                                // await FirebaseFirestore.instance
+                                //     .collection('PostsMonetiser')
+                                //     .doc(postMId)
+                                //     .set(postMonetiser.toJson());
                                 listimages=[];
                                 _descriptionController.text='';
                                 setState(() {
                                   onTap=false;
                                 });
-                                authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
-                                await userProvider.updateUser(authProvider.loginUserData!);
-                                postProvider.listConstposts.add(post);
+                                // authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
+                                // await userProvider.updateUser(authProvider.loginUserData!);
+                                // postProvider.listConstposts.add(post);
+                                postProvider.addPostIdToAppDefaultData(postId);
 
                                 if(widget.canal!=null){
                                   await authProvider
@@ -921,7 +922,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                 // authProvider.loginUserData.mesPubs=authProvider.loginUserData.mesPubs!+1;
                                 // await userProvider.updateUser(authProvider.loginUserData!);
                                 // postProvider.listConstposts.add(post);
-                                postProvider.addPostIdToAppDefaultData(post.id!);
+                                postProvider.addPostIdToAppDefaultData(postId!);
 
 
 
@@ -976,12 +977,12 @@ class _UserPubImageState extends State<UserPubImage> {
                                 );
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
-                                postProvider.getPostsImages(limitePosts).then((value) {
-                                  // value.forEach((element) {
-                                  //   print(element.toJson());
-                                  // },);
-
-                                },);
+                                // postProvider.getPostsImages(limitePosts).then((value) {
+                                //   // value.forEach((element) {
+                                //   //   print(element.toJson());
+                                //   // },);
+                                //
+                                // },);
 
                               } catch (e) {
 
@@ -1408,22 +1409,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
                               }
 
                               // Création du post monétisé
-                              String postMId = FirebaseFirestore.instance
-                                  .collection('PostsMonetiser')
-                                  .doc()
-                                  .id;
-                              PostMonetiser postMonetiser = PostMonetiser(
-                                id: postMId,
-                                user_id: authProvider.loginUserData.id,
-                                post_id: postId,
-                                users_like_id: [],
-                                users_love_id: [],
-                                users_comments_id: [],
-                                users_partage_id: [],
-                                solde: 0.1,
-                                createdAt: DateTime.now().millisecondsSinceEpoch,
-                                updatedAt: DateTime.now().millisecondsSinceEpoch,
-                              );
+                              // String postMId = FirebaseFirestore.instance
+                              //     .collection('PostsMonetiser')
+                              //     .doc()
+                              //     .id;
+                              // PostMonetiser postMonetiser = PostMonetiser(
+                              //   id: postMId,
+                              //   user_id: authProvider.loginUserData.id,
+                              //   post_id: postId,
+                              //   users_like_id: [],
+                              //   users_love_id: [],
+                              //   users_comments_id: [],
+                              //   users_partage_id: [],
+                              //   solde: 0.1,
+                              //   createdAt: DateTime.now().millisecondsSinceEpoch,
+                              //   updatedAt: DateTime.now().millisecondsSinceEpoch,
+                              // );
 
                               // Upload de la vidéo vers Firebase Storage
                               Reference storageReference = FirebaseStorage.instance
@@ -1449,18 +1450,18 @@ class _UserPubVideoState extends State<UserPubVideo> {
                                   .doc(postId)
                                   .set(post.toJson());
 
-                              await FirebaseFirestore.instance
-                                  .collection('PostsMonetiser')
-                                  .doc(postMId)
-                                  .set(postMonetiser.toJson());
+                              // await FirebaseFirestore.instance
+                              //     .collection('PostsMonetiser')
+                              //     .doc(postMId)
+                              //     .set(postMonetiser.toJson());
 
                               // Mise à jour des données utilisateur
-                              authProvider.loginUserData.mesPubs = (authProvider.loginUserData.mesPubs ?? 0) + 1;
-                              await userProvider.updateUser(authProvider.loginUserData!);
+                              // authProvider.loginUserData.mesPubs = (authProvider.loginUserData.mesPubs ?? 0) + 1;
+                              // await userProvider.updateUser(authProvider.loginUserData!);
 
                               // Ajout à la liste des posts
                               postProvider.addPostIdToAppDefaultData(post.id!);
-                              postProvider.listConstposts.add(post);
+                              // postProvider.listConstposts.add(post);
 
                               // Mise à jour du canal si nécessaire
                               if (widget.canal != null) {

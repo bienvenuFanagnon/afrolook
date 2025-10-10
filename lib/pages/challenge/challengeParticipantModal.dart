@@ -1,4 +1,5 @@
 // participation_modal.dart
+import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -225,6 +226,7 @@ class _ParticipationModalState extends State<ParticipationModal> {
               onPressed: () {
                 Navigator.of(context).pop();
                 // Naviguer vers la page de recharge
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
               },
               child: Text('Recharger'),
             ),
