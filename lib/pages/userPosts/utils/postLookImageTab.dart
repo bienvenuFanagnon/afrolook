@@ -358,27 +358,38 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
           if(widget.canal!=null){
 
-
-             authProvider
-                .getAllUsersOneSignaUserId()
-                .then(
-                  (userIds) async {
-                if (userIds.isNotEmpty) {
-                  await authProvider.sendNotification(
-                    appName: "#${widget.canal!.titre}",
-                      userIds: userIds,
-                      smallImage: "${widget.canal!.urlImage}",
-                      send_user_id: "${authProvider.loginUserData.id!}",
-                      recever_user_id: "",
-                      message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
-                      type_notif: NotificationType.POST.name,
-                      post_id: "${post!.id!}",
-                      post_type: PostDataType.IMAGE.name, chat_id: ''
-                  );
-
-                }
-              },
+            authProvider.sendPushNotificationToUsers(
+              sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
+              message: "📢 ${getTabBarTypeMessage(_selectedPostType!, post)}", // Message dynamique
+              typeNotif: NotificationType.POST.name,                       // Type de notification
+              postId: post!.id!,                                           // ID du post
+              postType: PostDataType.IMAGE.name,                           // Type de post
+              chatId: '',                                                   // Vide si pas de chat
+              smallImage: widget.canal!.urlImage,                           // Image de notification (optionnelle)
+              isChannel: true,                                              // Indique que c’est un canal
+              channelTitle: widget.canal!.titre,                            // Titre du canal
             );
+
+            //  authProvider
+            //     .getAllUsersOneSignaUserId()
+            //     .then(
+            //       (userIds) async {
+            //     if (userIds.isNotEmpty) {
+            //       await authProvider.sendNotification(
+            //         appName: "#${widget.canal!.titre}",
+            //           userIds: userIds,
+            //           smallImage: "${widget.canal!.urlImage}",
+            //           send_user_id: "${authProvider.loginUserData.id!}",
+            //           recever_user_id: "",
+            //           message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
+            //           type_notif: NotificationType.POST.name,
+            //           post_id: "${post!.id!}",
+            //           post_type: PostDataType.IMAGE.name, chat_id: ''
+            //       );
+            //
+            //     }
+            //   },
+            // );
              // 🔹 Mise à jour du canal
              widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
 
@@ -401,26 +412,37 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
             // postProvider.updateCanal( widget.canal!, context);
           }
           else{
-            await authProvider
-                .getAllUsersOneSignaUserId()
-                .then(
-                  (userIds) async {
-                if (userIds.isNotEmpty) {
 
-                  await authProvider.sendNotification(
-                      userIds: userIds,
-                      smallImage: "${authProvider.loginUserData.imageUrl!}",
-                      send_user_id: "${authProvider.loginUserData.id!}",
-                      recever_user_id: "",
-                      message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!,post)}",
-                      type_notif: NotificationType.CHALLENGE.name,
-                      post_id: "${post!.id!}",
-                      post_type: PostDataType.IMAGE.name, chat_id: ''
-                  );
-
-                }
-              },
+            authProvider
+                .sendPushNotificationToUsers(
+              sender: authProvider.loginUserData,        // L'utilisateur qui envoie la notification
+              message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!,post)}",
+              typeNotif: NotificationType.POST.name,     // Type de notification
+              postId: post!.id!,                         // ID du post
+              postType: PostDataType.IMAGE.name,         // Type de post
+              chatId: '',                                // Vide si pas de chat
+              smallImage: "${authProvider.loginUserData.imageUrl!}",
             );
+            // await authProvider
+            //     .getAllUsersOneSignaUserId()
+            //     .then(
+            //       (userIds) async {
+            //     if (userIds.isNotEmpty) {
+            //
+            //       await authProvider.sendNotification(
+            //           userIds: userIds,
+            //           smallImage: "${authProvider.loginUserData.imageUrl!}",
+            //           send_user_id: "${authProvider.loginUserData.id!}",
+            //           recever_user_id: "",
+            //           message: isChallenge?"📢 🎉 Nouveau challenge en ligne ! 🎉 ":"📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!,post)}",
+            //           type_notif: NotificationType.CHALLENGE.name,
+            //           post_id: "${post!.id!}",
+            //           post_type: PostDataType.IMAGE.name, chat_id: ''
+            //       );
+            //
+            //     }
+            //   },
+            // );
           }
 
 

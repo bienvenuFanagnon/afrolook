@@ -416,55 +416,57 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 postProvider.addPostIdToAppDefaultData(postId);
 
                                 if(widget.canal!=null){
-                                  await authProvider
-                                      .getAllUsersOneSignaUserId()
-                                      .then(
-                                        (userIds) async {
-                                      if (userIds.isNotEmpty) {
-                                        await authProvider.sendNotification(
-                                          appName: '#${widget.canal!.titre} ',
-                                            userIds: userIds,
-                                            smallImage: "${widget.canal!.urlImage}",
-                                            send_user_id: "${authProvider.loginUserData.id!}",
-                                            recever_user_id: "",
-                                            // message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
-                                            message: " ${post.description}",
 
-                                            type_notif: NotificationType.POST.name,
-                                            post_id: "${post!.id!}",
-                                            post_type: PostDataType.IMAGE.name, chat_id: ''
-                                        );
-
-                                      }
-                                    },
-                                  );
                                   widget.canal!.updatedAt =
                                       DateTime.now().microsecondsSinceEpoch;
                                   widget.canal!.publicash =  widget.canal!.publicash??0 +1;
                                   postProvider.updateCanal( widget.canal!, context);
-                                }else{
-                                  await authProvider
-                                      .getAllUsersOneSignaUserId()
-                                      .then(
-                                        (userIds) async {
-                                      if (userIds.isNotEmpty) {
-                                        await authProvider.sendNotification(
-                                          appName: '@${authProvider.loginUserData.pseudo!}',
-                                            userIds: userIds,
-                                            smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                            send_user_id: "${authProvider.loginUserData.id!}",
-                                            recever_user_id: "",
-                                            // message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
-                                            message: " ${post.description}",
-
-                                            type_notif: NotificationType.POST.name,
-                                            post_id: "${post!.id!}",
-                                            post_type: PostDataType.IMAGE.name, chat_id: ''
-                                        );
-
-                                      }
-                                    },
+                                  await authProvider.sendPushNotificationToUsers(
+                                    sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
+                                    message: " ${post.description}",                              // Message dynamique
+                                    typeNotif: NotificationType.POST.name,                       // Type de notification
+                                    postId: post!.id!,                                           // ID du post
+                                    postType: PostDataType.IMAGE.name,                           // Type de post
+                                    chatId: '',                                                   // Vide si pas de chat
+                                    smallImage: widget.canal!.urlImage,                           // Image de notification (optionnelle)
+                                    isChannel: true,                                              // Indique que c’est un canal
+                                    channelTitle: widget.canal!.titre,                            // Titre du canal
                                   );
+
+                                }else{
+                                  await authProvider.sendPushNotificationToUsers(
+                                    sender: authProvider.loginUserData,        // L'utilisateur qui envoie la notification
+                                    message: " ${post.description}",           // Message dynamique
+                                    typeNotif: NotificationType.POST.name,     // Type de notification
+                                    postId: post!.id!,                         // ID du post
+                                    postType: PostDataType.IMAGE.name,         // Type de post
+                                    chatId: '',                                // Vide si pas de chat
+                                    smallImage: authProvider.loginUserData.imageUrl, // Image de notification (optionnelle)
+                                    isChannel: false,                           // Ce n’est pas un canal
+                                  );
+
+                                  // await authProvider
+                                  //     .getAllUsersOneSignaUserId()
+                                  //     .then(
+                                  //       (userIds) async {
+                                  //     if (userIds.isNotEmpty) {
+                                  //       await authProvider.sendNotification(
+                                  //         appName: '@${authProvider.loginUserData.pseudo!}',
+                                  //           userIds: userIds,
+                                  //           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                  //           send_user_id: "${authProvider.loginUserData.id!}",
+                                  //           recever_user_id: "",
+                                  //           // message: "📢 ${getTabBarTypeMessage(_selectedPostType!,post)}",
+                                  //           message: " ${post.description}",
+                                  //
+                                  //           type_notif: NotificationType.POST.name,
+                                  //           post_id: "${post!.id!}",
+                                  //           post_type: PostDataType.IMAGE.name, chat_id: ''
+                                  //       );
+                                  //
+                                  //     }
+                                  //   },
+                                  // );
                                 }
 
 
@@ -948,26 +950,38 @@ class _UserPubImageState extends State<UserPubImage> {
                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                                 print("///////////-- save notification --///////////////");
 
-                                await authProvider
-                                    .getAllUsersOneSignaUserId()
-                                    .then(
-                                      (userIds) async {
-                                    if (userIds.isNotEmpty) {
-
-                                      await authProvider.sendNotification(
-                                          userIds: userIds,
-                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id: "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "",
-                                          message: " ${post.description}",
-                                          type_notif: NotificationType.POST.name,
-                                          post_id: "${post!.id!}",
-                                          post_type: PostDataType.IMAGE.name, chat_id: ''
-                                      );
-
-                                    }
-                                  },
+                                await authProvider.sendPushNotificationToUsers(
+                                  sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
+                                  message: " ${post.description}",                              // Message dynamique
+                                  typeNotif: NotificationType.POST.name,                       // Type de notification
+                                  postId: post!.id!,                                           // ID du post
+                                  postType: PostDataType.IMAGE.name,                           // Type de post
+                                  chatId: '',                                                   // Vide si pas de chat
+                                  smallImage: authProvider.loginUserData.imageUrl,             // Image de notification (optionnelle)
+                                  isChannel: false,                                             // C’est un utilisateur
                                 );
+
+
+                                // await authProvider
+                                //     .getAllUsersOneSignaUserId()
+                                //     .then(
+                                //       (userIds) async {
+                                //     if (userIds.isNotEmpty) {
+                                //
+                                //       await authProvider.sendNotification(
+                                //           userIds: userIds,
+                                //           smallImage: "${authProvider.loginUserData.imageUrl!}",
+                                //           send_user_id: "${authProvider.loginUserData.id!}",
+                                //           recever_user_id: "",
+                                //           message: " ${post.description}",
+                                //           type_notif: NotificationType.POST.name,
+                                //           post_id: "${post!.id!}",
+                                //           post_type: PostDataType.IMAGE.name, chat_id: ''
+                                //       );
+                                //
+                                //     }
+                                //   },
+                                // );
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'Le post a été validé avec succès !',
@@ -1562,68 +1576,53 @@ class _UserPubVideoState extends State<UserPubVideo> {
   Future<void> _sendNotifications(Post post) async {
     try {
       if (widget.canal != null) {
-        // Notification pour les posts de canal
-        await authProvider.getAllUsersOneSignaUserId().then((userIds) async {
-          if (userIds.isNotEmpty) {
-            await authProvider.sendNotification(
-              appName: '#${widget.canal!.titre}',
-              userIds: userIds,
-              smallImage: widget.canal!.urlImage ?? "",
-              send_user_id: authProvider.loginUserData.id!,
-              recever_user_id: "",
-              // message: "📢 ${getTabBarTypeMessage(_selectedPostType ?? 'LOOKS', post)}",
-              message: " ${post.description}",
-
-              type_notif: NotificationType.POST.name,
-              post_id: post.id!,
-              post_type: PostDataType.VIDEO.name,
-              chat_id: '',
-            );
-          }
-        });
+        // 🔹 Notification pour les posts de canal
+        await authProvider.sendPushNotificationToUsers(
+          sender: authProvider.loginUserData,         // L'utilisateur qui publie
+          message: " ${post.description}",            // Message dynamique
+          typeNotif: NotificationType.POST.name,      // Type de notification
+          postId: post.id!,                           // ID du post
+          postType: PostDataType.VIDEO.name,          // Type de post
+          chatId: '',                                 // Vide si pas de chat
+          smallImage: widget.canal!.urlImage,         // Image de notification
+          isChannel: true,                            // C’est un canal
+          channelTitle: widget.canal!.titre,          // Titre du canal
+        );
 
         // Mise à jour du canal
         widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
-        widget.canal!.publicash =  widget.canal!.publicash??0 +1;
-
-        postProvider.updateCanal(widget.canal!, context);
+        widget.canal!.publicash = (widget.canal!.publicash ?? 0) + 1;
+        await postProvider.updateCanal(widget.canal!, context);
       } else {
-        // Notification pour les posts d'utilisateur
-        await authProvider.getAllUsersOneSignaUserId().then((userIds) async {
-          if (userIds.isNotEmpty) {
-            await authProvider.sendNotification(
-              appName: '@${authProvider.loginUserData.pseudo!}',
-              userIds: userIds,
-              smallImage: authProvider.loginUserData.imageUrl ?? "",
-              send_user_id: authProvider.loginUserData.id!,
-              recever_user_id: "",
-              // message: "📢 ${getTabBarTypeMessage(_selectedPostType ?? 'LOOKS', post)}",
-              message: "📢 ${post.description}",
-              type_notif: NotificationType.POST.name,
-              post_id: post.id!,
-              post_type: PostDataType.VIDEO.name,
-              chat_id: '',
-            );
-          }
-        });
+        // 🔹 Notification pour les posts d'utilisateur
+        await authProvider.sendPushNotificationToUsers(
+          sender: authProvider.loginUserData,         // L'utilisateur qui publie
+          message: "📢 ${post.description}",          // Message dynamique
+          typeNotif: NotificationType.POST.name,      // Type de notification
+          postId: post.id!,                           // ID du post
+          postType: PostDataType.VIDEO.name,          // Type de post
+          chatId: '',                                 // Vide si pas de chat
+          smallImage: authProvider.loginUserData.imageUrl, // Image de notification
+          isChannel: false,                           // C’est un utilisateur
+        );
       }
 
-      // Création d'une notification dans la base de données
-      NotificationData notif = NotificationData();
-      notif.id = firestore.collection('Notifications').doc().id;
-      notif.titre = "Nouvelle vidéo";
-      notif.description = "Une nouvelle vidéo a été publiée !";
-      notif.users_id_view = [];
-      notif.receiver_id = "";
-      notif.user_id = authProvider.loginUserData.id;
-      notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-      notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-      notif.status = PostStatus.VALIDE.name;
+      // 🔹 Création d'une notification dans Firestore
+      NotificationData notif = NotificationData(
+        id: firestore.collection('Notifications').doc().id,
+        titre: "Nouvelle vidéo",
+        description: "Une nouvelle vidéo a été publiée !",
+        users_id_view: [],
+        receiver_id: "",
+        user_id: authProvider.loginUserData.id,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        status: PostStatus.VALIDE.name,
+      );
 
       await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
       print("✅ Notification envoyée avec succès");
-
     } catch (e) {
       print("❌ Erreur lors de l'envoi des notifications: $e");
     }

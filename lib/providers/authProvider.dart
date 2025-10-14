@@ -40,7 +40,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 97;
+  late int app_version_code = 98;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -922,6 +922,176 @@ class UserAuthProvider extends ChangeNotifier {
 
     return listOSUserid;
   }
+
+  Future<void> sendPushNotificationToUsers({
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+    bool isChannel = false,       // Indique si c’est un canal
+    String? channelTitle,         // Titre du canal si applicable
+  }) async {
+    try {
+      // 🔹 Étape 1 : Déterminer les cibles selon le rôle
+      List<UserData> targets = [];
+
+      if (sender.role == UserRole.ADM.name) {
+        // Admin → tous les utilisateurs
+        targets = await getAllUsers();
+      } else {
+        // Utilisateur simple → seulement ses abonnés
+        if (sender.userAbonnesIds != null && sender.userAbonnesIds!.isNotEmpty) {
+          targets = await getUsersByIds(sender.userAbonnesIds!);
+        } else {
+          print("⚠️ L'utilisateur ${sender.pseudo} n’a aucun abonné.");
+          return;
+        }
+      }
+
+      if (targets.isEmpty) {
+        print("📭 Aucun utilisateur cible trouvé.");
+        return;
+      }
+
+      // 🔹 Étape 2 : Filtrer les utilisateurs éligibles
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      const oneHour = 60 * 60 * 1000;
+
+      final List<String> validUserIds = [];
+
+      for (final user in targets) {
+        final lastNotif = user.lastNotificationTime ?? 0;
+        final timeSinceLast = currentTime - lastNotif;
+
+        final canReceive = sender.role == 'ADM' || timeSinceLast >= oneHour;
+
+        if (canReceive &&
+            user.oneIgnalUserid != null &&
+            user.oneIgnalUserid!.isNotEmpty &&
+            user.oneIgnalUserid!.length > 5) {
+          validUserIds.add(user.oneIgnalUserid!);
+
+          // Mettre à jour la date de dernière notification
+          await updateUserLastNotifTime(user.id!, currentTime);
+        }
+      }
+
+      if (validUserIds.isEmpty) {
+        print("📭 Aucun utilisateur éligible à recevoir la notification.");
+        return;
+      }
+
+      // 🔹 Étape 3 : Déterminer l'appName dynamiquement
+      String appName;
+      if (isChannel && channelTitle != null && channelTitle.isNotEmpty) {
+        appName = "#$channelTitle";   // Notification venant d’un canal
+      } else {
+        appName = "@${sender.pseudo}"; // Notification venant d’un utilisateur
+      }
+
+      // 🔹 Étape 4 : Envoi via OneSignal
+      await sendNotification(
+        appName: appName,
+        userIds: validUserIds,
+        smallImage: smallImage ?? "",
+        send_user_id: sender.id!,
+        recever_user_id: "", // multiple, donc vide
+        message: message,
+        type_notif: typeNotif,
+        post_id: postId ?? "",
+        post_type: postType ?? "",
+        chat_id: chatId ?? "",
+      );
+
+      print("✅ Notification envoyée à ${validUserIds.length} utilisateurs !");
+    } catch (e) {
+      print("❌ Erreur lors de l’envoi de la notification : $e");
+    }
+  }
+
+
+  Future<void> updateUserLastNotifTime(String userId, int time) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .update({'lastNotificationTime': time});
+    } catch (e) {
+      print("⚠️ Erreur maj lastNotificationTime : $e");
+    }
+  }
+// Récupère tous les utilisateurs (réservé à l'admin)
+  Future<List<UserData>> getAllUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('Users').get();
+    return snapshot.docs.map((doc) => UserData.fromJson(doc.data())).toList();
+  }
+
+// Récupère uniquement les utilisateurs dont l’ID est dans la liste
+  Future<List<UserData>> getUsersByIds(List<String> ids) async {
+    // ⚠️ Firebase limite les requêtes whereIn à 10 éléments max
+    final List<UserData> users = [];
+
+    for (var i = 0; i < ids.length; i += 10) {
+      final chunk = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+
+      users.addAll(snapshot.docs.map((doc) => UserData.fromJson(doc.data())));
+    }
+
+    return users;
+  }
+
+
+
+  Future<void> sendSingleNotification({
+    required UserData sender,
+    required UserData receiver,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+  }) async {
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    const oneHour = 60 * 60 * 1000;
+    final lastNotif = receiver.lastNotificationTime ?? 0;
+    final canReceive = sender.role == 'ADM' || (currentTime - lastNotif) >= oneHour;
+
+    if (!canReceive) {
+      print("🚫 ${receiver.pseudo} a déjà reçu une notif il y a moins d’une heure");
+      return;
+    }
+
+    if (receiver.oneIgnalUserid == null || receiver.oneIgnalUserid!.length < 5) {
+      print("⚠️ Pas d’ID OneSignal valide pour ${receiver.pseudo}");
+      return;
+    }
+
+    await sendNotification(
+      appName: "#${sender.pseudo}",
+      userIds: [receiver.oneIgnalUserid!],
+      smallImage: smallImage ?? "",
+      send_user_id: sender.id!,
+      recever_user_id: receiver.id!,
+      message: message,
+      type_notif: typeNotif,
+      post_id: postId ?? "",
+      post_type: postType ?? "",
+      chat_id: chatId ?? "",
+    );
+
+    await updateUserLastNotifTime(receiver.id!, currentTime);
+    print("✅ Notification envoyée à ${receiver.pseudo}");
+  }
+
+
   Future<bool> updateNotif(NotificationData notif) async {
     try{
 

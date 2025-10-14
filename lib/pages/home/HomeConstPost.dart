@@ -800,8 +800,129 @@ printVm('widget.sortType : ${widget.sortType}');
       ),
     );
   }
+  String? _lastDisplayedUserId;
 
   Widget _buildContentScroll(BuildContext context) {
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
+
+    // GESTION DES ÉTATS DE CHARGEMENT
+    if (_isLoadingPosts && _posts.isEmpty) {
+      return _buildLoadingShimmer(width, height);
+    }
+
+    if (_hasErrorPosts && _posts.isEmpty) {
+      return _buildErrorWidget();
+    }
+
+    if (_posts.isEmpty) {
+      return _buildEmptyWidget();
+    }
+
+    // Réinitialiser le dernier utilisateur affiché
+    _lastDisplayedUserId = null;
+
+    // Construire les posts en évitant les successions du même utilisateur
+    List<Widget> postWidgets = [];
+    List<Post> remainingPosts = List.from(_posts);
+
+    while (remainingPosts.isNotEmpty) {
+      // Trouver le prochain post d'un utilisateur différent
+      Post? nextPost;
+      int foundIndex = -1;
+
+      for (int i = 0; i < remainingPosts.length; i++) {
+        if (remainingPosts[i].user_id != _lastDisplayedUserId) {
+          nextPost = remainingPosts[i];
+          foundIndex = i;
+          break;
+        }
+      }
+
+      // Si aucun post d'utilisateur différent n'est trouvé, prendre le premier disponible
+      if (nextPost == null && remainingPosts.isNotEmpty) {
+        nextPost = remainingPosts.first;
+        foundIndex = 0;
+      }
+
+      if (nextPost != null && foundIndex != -1) {
+        // Ajouter le post actuel
+        postWidgets.add(
+          GestureDetector(
+            onTap: () => _navigateToPostDetails(nextPost!),
+            child: _buildPostWithVisibilityDetection(nextPost!, width, height),
+          ),
+        );
+
+        // Mettre à jour le dernier utilisateur affiché
+        _lastDisplayedUserId = nextPost.user_id;
+
+        // Retirer le post de la liste des posts restants
+        remainingPosts.removeAt(foundIndex);
+
+        // Ajouter des boosters et canaux selon le rythme
+        final currentIndex = postWidgets.length;
+
+        // Après chaque 3 posts, alterner entre articles et canaux
+        if (currentIndex % 3 == 0) {
+          final cycleIndex = currentIndex ~/ 3;
+
+          if (cycleIndex % 2 == 1 && articles.isNotEmpty) {
+            // Articles après 3, 9, 15... posts
+            postWidgets.add(_buildBoosterPage(context));
+          } else if (cycleIndex % 2 == 0 && canaux.isNotEmpty) {
+            // Canaux après 6, 12, 18... posts
+            postWidgets.add(_buildCanalPage(context));
+          }
+        }
+      } else {
+        break;
+      }
+    }
+
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        // Section profils utilisateurs
+        SliverToBoxAdapter(
+          child: _buildProfilesSection(),
+        ),
+
+        // Section posts (liste principale)
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+                (context, index) => postWidgets[index],
+            childCount: postWidgets.length,
+          ),
+        ),
+
+        // Indicateur de chargement
+        if (_isLoadingMorePosts)
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.green),
+              ),
+            ),
+          )
+        // Indicateur de fin
+        else if (!_hasMorePosts || _totalPostsLoaded >= _totalPostsLimit)
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'Vous avez vu tous les contenus',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+  Widget _buildContentScroll2(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
 

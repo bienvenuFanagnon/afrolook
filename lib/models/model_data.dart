@@ -561,7 +561,7 @@ class UserData {
   List<WhatsappStory>? stories = [];
   List<String> viewedVideos = []; // Liste des vidéos déjà vues
   List<String>? viewedPostIds = []; // Nouveau champ pour stocker les posts vus
-
+  int? lastNotificationTime;
 
   UserData(
       {this.reference,
@@ -581,6 +581,7 @@ class UserData {
       this.mesPubs = 0,
       this.mesTiktokPubs,
       this.pointContribution = 0,
+      this.lastNotificationTime = 0,
       this.likes = 0,
       this.jaimes = 0,
       this.userlikes = 0,
@@ -612,6 +613,7 @@ class UserData {
       this.stories,
       this.state = "OFFLINE",
         this.viewedVideos = const [],
+        this.userAbonnesIds = const [],
 
       //this.genreId,
       this.role,
@@ -710,6 +712,8 @@ class UserData {
     viewedPostIds = (json['viewedPostIds'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
+    lastNotificationTime = json['lastNotificationTime'] ?? 0;
+
   }
 
 
@@ -784,6 +788,7 @@ class UserData {
     data['last_time_active'] = this.last_time_active;
     //data['user_global_tags'] = this.userGlobalTags;
     data['viewedVideos'] = this.viewedVideos;
+    data['lastNotificationTime'] = lastNotificationTime;
 
     return data;
   }

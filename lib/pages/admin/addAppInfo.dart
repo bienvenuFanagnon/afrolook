@@ -169,7 +169,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
             smallImage: mediaUrl!,
             send_user_id: authProvider.loginUserData!.id!,
             recever_user_id: '',
-            message: "🚨 NOUVEAUTÉ Afrolook ! Découvrez : ${_titreController.text}",
+            message: "🚨 NOUVEAUTÉ Afrolook ! Découvrez : ${info.titre}",
             type_notif: NotificationType.POST.name,
             post_id: info.id ?? '',
             post_type: PostDataType.IMAGE.name,

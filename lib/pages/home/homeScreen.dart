@@ -1341,7 +1341,8 @@ class _MyHomePageState extends State<MyHomePage>
                 Tab(text: '🏠 Accueil'),
                 Tab(text: '🏆 Challenges'),
 
-                Tab(text: '🎥 Vidéos virales'),
+                Tab(text: '🪙 Zone VIP'),
+                // Tab(text: '🎥 Vidéos virales'),
                 Tab(text: '🕒 Récents'),
 
                 Tab(text: '🌟 Looks'),
