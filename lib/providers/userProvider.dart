@@ -29,7 +29,7 @@ class UserProvider extends ChangeNotifier {
   late int countInvitations=0;
   late int mes_msg_non_lu=0;
   late List<UserData> listUsers = [];
-  List<Information> listInfos = [];
+  // List<Information> listInfos = [];
   List<Annonce> listAnnonces = [];
   late List<UserData> listUserAnnonces = [];
   late List<UserData> listAllUsers = [];
@@ -90,27 +90,158 @@ setMessageNonLu(int nbr){
     notifyListeners();
     return resp;
   }
-  Future<List<Information>> getAllInfos() async {
 
+  List<Information> _listInfos = [];
+  List<Information> get listInfos => _listInfos;
 
-    listInfos =[];
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Informations');
-    QuerySnapshot querySnapshotPost = await postCollect
+  Future<List<Information>> getAllInfos({bool loadMore = false, int limit = 5}) async {
+    if (_isLoading) return _listInfos;
 
-        .where("type",isEqualTo:'${InfoType.APPINFO.name}')
-        .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
-        .orderBy('created_at', descending: true)
-        .get();
+    _isLoading = true;
+    if (!loadMore) {
+      _listInfos = [];
+      _lastDocument = null;
+      _hasMore = true;
+    }
 
-    listInfos = querySnapshotPost.docs.map((doc) =>
-        Information.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
+    try {
+      CollectionReference infoCollection = FirebaseFirestore.instance.collection('Informations');
+      Query query = infoCollection
+          .where("type", isEqualTo: InfoType.APPINFO.name)
+          .where("status", isEqualTo: PostStatus.VALIDE.name)
+          .orderBy('is_featured', descending: true)
+          .orderBy('featured_at', descending: true)
+          .orderBy('created_at', descending: true)
+          .limit(limit);
 
+      if (_lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
 
+      QuerySnapshot querySnapshot = await query.get();
 
-    return listInfos;
+      if (querySnapshot.docs.isEmpty) {
+        _hasMore = false;
+      } else {
+        _lastDocument = querySnapshot.docs.last;
+        List<Information> newInfos = querySnapshot.docs.map((doc) {
+          return Information.fromJson(doc.data() as Map<String, dynamic>);
+        }).toList();
 
+        if (loadMore) {
+          _listInfos.addAll(newInfos);
+        } else {
+          _listInfos = newInfos;
+        }
+
+        _hasMore = newInfos.length == limit;
+      }
+    } catch (e) {
+      print('Error loading infos: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return _listInfos;
+  }
+
+  Future<void> incrementViews(String infoId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Informations')
+          .doc(infoId)
+          .update({
+        'views': FieldValue.increment(1),
+      });
+    } catch (e) {
+      print('Error incrementing views: $e');
+    }
+  }
+
+  Future<void> toggleLike(String infoId, String userId) async {
+    try {
+      final docRef = FirebaseFirestore.instance.collection('Informations').doc(infoId);
+      final likeDoc = await FirebaseFirestore.instance
+          .collection('InformationLikes')
+          .doc('${infoId}_$userId')
+          .get();
+
+      if (likeDoc.exists) {
+        // Unlike
+        await likeDoc.reference.delete();
+        await docRef.update({
+          'likes': FieldValue.increment(-1),
+        });
+      } else {
+        // Like
+        await likeDoc.reference.set({
+          'info_id': infoId,
+          'user_id': userId,
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+        });
+        await docRef.update({
+          'likes': FieldValue.increment(1),
+        });
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+    }
+  }
+
+  Future<bool> isLiked(String infoId, String userId) async {
+    try {
+      final likeDoc = await FirebaseFirestore.instance
+          .collection('InformationLikes')
+          .doc('${infoId}_$userId')
+          .get();
+      return likeDoc.exists;
+    } catch (e) {
+      print('Error checking like: $e');
+      return false;
+    }
+  }
+
+  // Fonctions admin
+  Future<void> deleteInfo(String infoId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Informations')
+          .doc(infoId)
+          .delete();
+
+      _listInfos.removeWhere((info) => info.id == infoId);
+      notifyListeners();
+    } catch (e) {
+      print('Error deleting info: $e');
+      throw e;
+    }
+  }
+
+  Future<void> toggleFeatured(String infoId, bool featured) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Informations')
+          .doc(infoId)
+          .update({
+        'is_featured': featured,
+        'featured_at': featured ? DateTime.now().millisecondsSinceEpoch : 0,
+      });
+    } catch (e) {
+      print('Error toggling featured: $e');
+      throw e;
+    }
+  }
+
+  void resetPagination() {
+    _lastDocument = null;
+    _hasMore = true;
+    _isLoading = false;
   }
 
   Future<List<Annonce>> getAllAnnonces() async {
@@ -156,7 +287,7 @@ setMessageNonLu(int nbr){
   Future<List<Information>> getGratuitInfos() async {
 
 
-    listInfos =[];
+    // listInfos =[];
 
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Informations');
     QuerySnapshot querySnapshotPost = await postCollect
@@ -166,9 +297,9 @@ setMessageNonLu(int nbr){
         .orderBy('created_at', descending: true)
         .get();
 
-    listInfos = querySnapshotPost.docs.map((doc) =>
-        Information.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
+    // listInfos = querySnapshotPost.docs.map((doc) =>
+    //     Information.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    // //  UserData userData=UserData();
 
 
 

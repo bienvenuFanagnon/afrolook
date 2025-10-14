@@ -15,6 +15,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/models/model_data.dart';
+
+import '../info.dart';
 class TopFiveModal {
   static Future<void> showTopFiveModal(
       BuildContext context, List<UserData> topUsers) async {
@@ -1752,8 +1754,710 @@ class ChallengeModal {
   }
 }
 
+
+
+// Ajoutez cette classe après les autres modals
+class AfrolookInfoModal {
+  static const String _lastInfoModalKey = 'last_info_modal';
+  static const int _modalIntervalHours = 24; // Une fois par jour
+
+  static Future<void> showAfrolookInfoModal(BuildContext context) async {
+    final shouldShow = await _shouldShowModal();
+
+    if (!shouldShow) {
+      return; // Ne pas afficher si l'intervalle n'est pas écoulé
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          child: Container(
+            width: double.infinity,
+            constraints: BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.red, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // En-tête avec icône d'alerte
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.red, Colors.redAccent],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Icône d'alerte principale
+                      Column(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.notifications_active,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            "🚨 NE MANQUEZ PAS ÇA ! 🚨",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Votre dose quotidienne d'Afrolook",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                      // Bouton fermer
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _markModalShown();
+                            _showChallengeModalAfterInfo(context);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Contenu informatif
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _buildInfoItem(
+                          icon: Icons.live_tv,
+                          title: "📡 ACTUALITÉS EN TEMPS RÉEL",
+                          description: "Ne ratez plus jamais les annonces importantes ! Suivez en direct l'évolution de la plateforme, les nouvelles fonctionnalités et les événements exclusifs.",
+                          color: Colors.red,
+                          emoji: "🔥",
+                        ),
+                        SizedBox(height: 16),
+
+                        _buildInfoItem(
+                          icon: Icons.trending_up,
+                          title: "💎 LES COULISSES AFROLOOK",
+                          description: "Découvrez les secrets de notre succès ! Notre vision révolutionnaire, nos projets ambitieux et comment nous redéfinissons le digital africain.",
+                          color: Colors.orange,
+                          emoji: "🌟",
+                        ),
+                        SizedBox(height: 16),
+
+                        _buildInfoItem(
+                          icon: Icons.rocket_launch,
+                          title: "💰 OPPORTUNITÉS EXCLUSIVES",
+                          description: "Soyez parmi les premiers informés ! Investissements stratégiques, partenariats gagnants et opportunités réservées à notre communauté.",
+                          color: Colors.green,
+                          emoji: "💸",
+                        ),
+                        SizedBox(height: 16),
+
+                        _buildInfoItem(
+                          icon: Icons.celebration,
+                          title: "🚀 PROJETS SECRETS EN PRÉPARATION",
+                          description: "L'avenir s'écrit maintenant ! Découvrez en avant-première les innovations qui vont bouleverser votre expérience digitale.",
+                          color: Colors.blue,
+                          emoji: "🎯",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Section d'appel à l'action urgente
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    border: Border(
+                      top: BorderSide(color: Colors.red.withOpacity(0.3)),
+                      bottom: BorderSide(color: Colors.red.withOpacity(0.3)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "⚠️ Ces informations peuvent expirer bientôt !",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Boutons d'action
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(18),
+                      bottomRight: Radius.circular(18),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Message d'incitation
+                      Container(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          "🎁 Des surprises attendent les plus curieux !",
+                          style: TextStyle(
+                            color: Colors.yellow,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                      // Bouton principal URGENT
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _markModalShown();
+                            _navigateToInfoPage(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            elevation: 6,
+                            shadowColor: Colors.red.withOpacity(0.5),
+                          ),
+                          icon: Icon(Icons.bolt, size: 24),
+                          label: Text(
+                            "🚀 DÉCOUVRIR MAINTENANT !",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+
+                      // Sous-titre du bouton
+                      Text(
+                        "Rejoignez les initiés qui connaissent déjà ces informations exclusives",
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 12),
+
+                      // Bouton secondaire avec message incitatif
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _markModalShown();
+                              _showChallengeModalAfterInfo(context);
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey[500],
+                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.schedule, size: 16),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Plus tard",
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Compteur social
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.green.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people, size: 12, color: Colors.green),
+                                SizedBox(width: 4),
+                                Text(
+                                  "2.4K ont déjà vu",
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildInfoItem({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+    required String emoji,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Emoji et icône
+          Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                emoji,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[300],
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 8),
+                // Badge d'urgence
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    "INFORMATION EXCLUSIVE",
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Future<bool> _shouldShowModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(_lastInfoModalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _modalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+
+  static Future<void> _markModalShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lastInfoModalKey, DateTime.now().millisecondsSinceEpoch);
+    print('✅ Modal info Afrolook marqué comme affiché');
+  }
+
+  static void _navigateToInfoPage(BuildContext context) {
+    // Navigation vers votre page d'information Afrolook
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AppInfos(), // Votre page d'information existante
+      ),
+    );
+  }
+
+  static void _showChallengeModalAfterInfo(BuildContext context) {
+    // Afficher le modal challenge après la fermeture du modal info
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AdvancedModalManager.showModalsWithSmartDelay(context);
+    });
+  }
+
+  // Méthode pour forcer l'affichage du modal (pour test)
+  static Future<void> forceShowModal(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastInfoModalKey);
+    await showAfrolookInfoModal(context);
+  }
+
+  // Méthode pour vérifier le statut
+  static Future<void> debugInfoModalStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(_lastInfoModalKey) ?? 0;
+    final lastShown = lastShowTime > 0
+        ? DateTime.fromMillisecondsSinceEpoch(lastShowTime)
+        : 'jamais';
+
+    final shouldShow = await _shouldShowModal();
+
+    print('🔍 État du modal info Afrolook:');
+    print('   - Dernier affichage: $lastShown');
+    print('   - Doit être affiché: ${shouldShow ? "OUI" : "NON"}');
+    print('   - Intervalle: $_modalIntervalHours heures');
+  }
+}
 // Modifiez la classe AdvancedModalManager pour inclure les challenges
+
+// Modifiez la classe AdvancedModalManager pour inclure le modal info en premier
 class AdvancedModalManager {
+  static const String _lastProductModalKey = 'last_product_modal2';
+  static const String _lastLiveModalKey = 'last_live_modal2';
+  static const String _lastChallengeModalKey = 'last_challenge_modal2';
+  static const String _lastInfoModalKey = 'last_info_modal';
+  static const String _lastModalTypeKey = 'last_modal_type';
+  static const int _modalIntervalHours = 4;
+  static const int _infoModalIntervalHours = 24; // Une fois par jour
+  static const int _challengeModalIntervalHours = 12; // 2 fois par jour
+  static bool _isShowingModal = false;
+
+  static Future<void> showModalsWithSmartDelay(BuildContext context) async {
+    if (_isShowingModal) {
+      return;
+    }
+
+    _isShowingModal = true;
+
+    try {
+      await Future.delayed(Duration(milliseconds: 1500));
+
+      // 🆕 ÉTAPE 1: Vérifier et afficher le modal info Afrolook
+      final shouldShowInfo = await _shouldShowInfoModal();
+      if (shouldShowInfo && context.mounted) {
+        print('📢 Affichage du modal info Afrolook');
+        await AfrolookInfoModal.showAfrolookInfoModal(context);
+        return; // On s'arrête ici, le modal challenge viendra après
+      }
+
+      // 🎯 ÉTAPE 2: Vérifier les challenges
+      final shouldShowChallenge = await _shouldShowChallengeModal();
+      final activeChallenge = await _getActiveChallenge();
+
+      if (activeChallenge != null && shouldShowChallenge && context.mounted) {
+        print('🏆 Challenge actif trouvé: ${activeChallenge.titre}');
+        await _showChallengeModal(context, activeChallenge);
+        return;
+      }
+
+      // 🚫 ÉTAPE 3: Aucun modal prioritaire, afficher les autres modals
+      print('❌ Aucun modal prioritaire, affichage des modals secondaires');
+      final lastModalType = await _getLastModalType();
+
+      if (lastModalType == 'products') {
+        await _tryShowLiveModal(context);
+      } else {
+        await _tryShowProductModal(context);
+      }
+
+    } finally {
+      _isShowingModal = false;
+    }
+  }
+
+  // Nouvelle méthode pour le modal info
+  static Future<bool> _shouldShowInfoModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(_lastInfoModalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _infoModalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+
+  // Nouvelle méthode pour le modal challenge (2 fois par jour)
+  static Future<bool> _shouldShowChallengeModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _challengeModalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+
+  static Future<String> _getLastModalType() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastModalTypeKey) ?? 'live';
+  }
+
+  // Les autres méthodes restent similaires mais avec mise à jour des intervalles...
+  static Future<void> _tryShowProductModal(BuildContext context) async {
+    final shouldShowProducts = await _shouldShowModal(_lastProductModalKey);
+    if (shouldShowProducts && context.mounted) {
+      await _showProductModal(context);
+      await _setLastModalType('products');
+    } else {
+      print('⏰ Modal produits non affiché');
+    }
+  }
+
+  static Future<void> _tryShowLiveModal(BuildContext context) async {
+    final shouldShowLives = await _shouldShowModal(_lastLiveModalKey);
+    if (shouldShowLives && context.mounted) {
+      await _showLiveModal(context);
+      await _setLastModalType('lives');
+    } else {
+      print('⏰ Modal lives non affiché');
+    }
+  }
+
+  static Future<void> _setLastModalType(String type) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastModalTypeKey, type);
+  }
+  static Future<Challenge?> _getActiveChallenge() async {
+    try {
+      // Récupération directe depuis Firebase
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Challenges')
+          .where('statut', whereIn: ['en_attente', 'en_cours'])
+          .where('disponible', isEqualTo: true)
+      // .where('isAprouved', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final challengeData = snapshot.docs.first.data();
+        challengeData['id'] = snapshot.docs.first.id;
+        // FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
+        //   'vues': FieldValue.increment(1),
+        // });
+
+        return Challenge.fromJson(challengeData);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Erreur lors de la récupération du challenge: $e');
+      return null;
+    }
+  }
+  static Future<void> _showProductModal(BuildContext context) async {
+    print('🛒 Affichage du modal des produits boostés');
+    await TopProductsGridModal.showTopProductsGridModal(context);
+    await _markModalShown(_lastProductModalKey);
+  }
+  static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
+
+    print('🏆 Affichage du modal du challenge: ${challenge.titre}');
+    await ChallengeModal.showChallengeModal(context, challenge);
+
+    // On marque quand même l'affichage pour le debug, mais sans bloquer les prochains
+    await _markModalShown(_lastChallengeModalKey);
+  }
+
+  static Future<void> _showLiveModal(BuildContext context) async {
+    print('🎥 Affichage du modal des lives');
+    await TopLiveGridModal.showTopLiveGridModal(context);
+    await _markModalShown(_lastLiveModalKey);
+  }
+  static Future<void> _markModalShown(String modalKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
+    print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
+  }
+  static Future<bool> _shouldShowModal(String modalKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(modalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _modalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+  // Méthode pour marquer l'affichage du modal challenge
+  static Future<void> _markChallengeModalShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lastChallengeModalKey, DateTime.now().millisecondsSinceEpoch);
+    print('✅ Modal challenge marqué comme affiché');
+  }
+
+  static Future<void> debugModalStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final productTime = prefs.getInt(_lastProductModalKey) ?? 0;
+    final liveTime = prefs.getInt(_lastLiveModalKey) ?? 0;
+    final challengeTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
+    final infoTime = prefs.getInt(_lastInfoModalKey) ?? 0;
+    final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'aucun';
+
+    final now = DateTime.now();
+    final productShown = productTime > 0 ? DateTime.fromMillisecondsSinceEpoch(productTime) : null;
+    final liveShown = liveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(liveTime) : null;
+    final challengeShown = challengeTime > 0 ? DateTime.fromMillisecondsSinceEpoch(challengeTime) : null;
+    final infoShown = infoTime > 0 ? DateTime.fromMillisecondsSinceEpoch(infoTime) : null;
+
+    final activeChallenge = await _getActiveChallenge();
+    final shouldShowInfo = await _shouldShowInfoModal();
+    final shouldShowChallenge = await _shouldShowChallengeModal();
+
+    print('🔍 État des modals:');
+    print('   - Dernier modal: $lastModalType');
+    print('   - Modal Info: ${shouldShowInfo ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${infoShown ?? "jamais"})');
+    print('   - Modal Challenge: ${shouldShowChallenge ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${challengeShown ?? "jamais"})');
+    print('   - Challenge actif: ${activeChallenge != null ? "OUI" : "NON"}');
+    print('   - Produits affichés: ${productShown ?? "jamais"}');
+    print('   - Lives affichés: ${liveShown ?? "jamais"}');
+
+    if (shouldShowInfo) {
+      print('   📢 PRIORITÉ: Modal Info Afrolook');
+    } else if (activeChallenge != null && shouldShowChallenge) {
+      print('   🎯 PRIORITÉ: Modal Challenge');
+    } else {
+      print('   🚫 Aucun modal prioritaire - modals secondaires');
+    }
+  }
+
+  static Future<void> resetAllModals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastProductModalKey);
+    await prefs.remove(_lastLiveModalKey);
+    await prefs.remove(_lastChallengeModalKey);
+    await prefs.remove(_lastInfoModalKey);
+    await prefs.remove(_lastModalTypeKey);
+    print('🔄 Tous les modals ont été réinitialisés');
+  }
+}
+class AdvancedModalManager2 {
   static const String _lastProductModalKey = 'last_product_modal2';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';
@@ -1927,144 +2631,3 @@ class AdvancedModalManager {
   }
 }
 
-class AdvancedModalManager2 {
-  static const String _lastProductModalKey = 'last_product_modal2';
-  static const String _lastLiveModalKey = 'last_live_modal2';
-  static const String _lastModalTypeKey = 'last_modal_type'; // Pour alterner
-  static const int _modalIntervalHours = 4;
-  static bool _isShowingModal = false;
-
-  static Future<void> showModalsWithSmartDelay(BuildContext context) async {
-    if (_isShowingModal) {
-      return;
-    }
-
-    _isShowingModal = true;
-
-    try {
-      await Future.delayed(Duration(milliseconds: 1500));
-
-      final prefs = await SharedPreferences.getInstance();
-      final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'live';
-
-      // Déterminer quel modal montrer en fonction du dernier affiché
-      if (lastModalType == 'products') {
-        // La dernière fois c'était les produits, donc cette fois ce sera les lives
-        await _tryShowLiveModal(context, prefs);
-      } else {
-        // La dernière fois c'était les lives, donc cette fois ce sera les produits
-        await _tryShowProductModal(context, prefs);
-      }
-
-    } finally {
-      _isShowingModal = false;
-    }
-  }
-
-  static Future<void> _tryShowProductModal(BuildContext context, SharedPreferences prefs) async {
-    final shouldShowProducts = await _shouldShowModal(_lastProductModalKey);
-
-    if (shouldShowProducts && context.mounted) {
-      await _showProductModal(context);
-      await prefs.setString(_lastModalTypeKey, 'products');
-    } else {
-      print('❌ Modal produits non affiché (intervalle pas encore écoulé)');
-      // 👉 On NE rappelle plus _tryShowLiveModal ici
-    }
-  }
-
-  static Future<void> _tryShowLiveModal(BuildContext context, SharedPreferences prefs) async {
-    final shouldShowLives = await _shouldShowModal(_lastLiveModalKey);
-
-    if (shouldShowLives && context.mounted) {
-      await _showLiveModal(context);
-      await prefs.setString(_lastModalTypeKey, 'lives');
-    } else {
-      print('❌ Modal lives non affiché (intervalle pas encore écoulé)');
-      // 👉 On NE rappelle plus _tryShowProductModal ici
-    }
-  }
-
-  // static Future<void> _tryShowLiveModal(BuildContext context, SharedPreferences prefs) async {
-  //   final shouldShowLives = await _shouldShowModal(_lastLiveModalKey);
-  //
-  //   if (shouldShowLives && context.mounted) {
-  //     await _showLiveModal(context);
-  //     await prefs.setString(_lastModalTypeKey, 'lives');
-  //   } else if (context.mounted) {
-  //     // Si les lives ne doivent pas être montrés, essayer les produits
-  //     await _tryShowProductModal(context, prefs);
-  //   }
-  // }
-
-  static Future<void> _showProductModal(BuildContext context) async {
-    print('🛒 Affichage du modal des produits boostés');
-    await TopProductsGridModal.showTopProductsGridModal(context);
-    await _markModalShown(_lastProductModalKey);
-  }
-
-  static Future<void> _showLiveModal(BuildContext context) async {
-    print('🎥 Affichage du modal des lives');
-    await TopLiveGridModal.showTopLiveGridModal(context);
-    await _markModalShown(_lastLiveModalKey);
-  }
-
-  static Future<bool> _shouldShowModal(String modalKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastShowTime = prefs.getInt(modalKey) ?? 0;
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-    final intervalMs = _modalIntervalHours * 60 * 60 * 1000;
-
-    final shouldShow = currentTime - lastShowTime > intervalMs;
-
-    if (!shouldShow) {
-      final nextShowTime = DateTime.fromMillisecondsSinceEpoch(lastShowTime + intervalMs);
-      final remainingTime = nextShowTime.difference(DateTime.now());
-      print('⏰ Modal $modalKey: Prochaine ouverture dans ${remainingTime.inHours}h ${remainingTime.inMinutes.remainder(60)}min');
-    }
-
-    return shouldShow;
-  }
-
-  static Future<void> _markModalShown(String modalKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
-  }
-
-  // Méthode pour debuguer l'état actuel
-  static Future<void> debugModalStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final productTime = prefs.getInt(_lastProductModalKey) ?? 0;
-    final liveTime = prefs.getInt(_lastLiveModalKey) ?? 0;
-    final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'aucun';
-
-    final now = DateTime.now();
-    final productShown = productTime > 0 ? DateTime.fromMillisecondsSinceEpoch(productTime) : null;
-    final liveShown = liveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(liveTime) : null;
-
-    print('🔍 État des modals:');
-    print('   - Dernier modal: $lastModalType');
-    print('   - Produits affichés: ${productShown ?? "jamais"}');
-    print('   - Lives affichés: ${liveShown ?? "jamais"}');
-
-    if (productShown != null) {
-      final nextProduct = productShown.add(Duration(hours: _modalIntervalHours));
-      print('   - Prochains produits: $nextProduct');
-    }
-
-    if (liveShown != null) {
-      final nextLive = liveShown.add(Duration(hours: _modalIntervalHours));
-      print('   - Prochains lives: $nextLive');
-    }
-  }
-
-  // Méthode pour réinitialiser (pour les tests)
-  static Future<void> resetAllModals() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_lastProductModalKey);
-    await prefs.remove(_lastLiveModalKey);
-    await prefs.remove(_lastModalTypeKey);
-    print('🔄 Tous les modals ont été réinitialisés');
-  }
-}

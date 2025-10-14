@@ -40,6 +40,225 @@ class PostProvider extends ChangeNotifier {
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+
+  List<UserServiceData> _userServices = [];
+  DocumentSnapshot? _lastServiceDocument;
+  bool _hasMoreServices = true;
+  bool _isLoadingServices = false;
+  String? _selectedCategory;
+  String? _selectedCountry;
+  String? _selectedCity;
+  String _searchQuery = '';
+
+  List<UserServiceData> get userServices => _userServices;
+  bool get hasMoreServices => _hasMoreServices;
+  bool get isLoadingServices => _isLoadingServices;
+  String? get selectedCategory => _selectedCategory;
+  String? get selectedCountry => _selectedCountry;
+  String? get selectedCity => _selectedCity;
+
+  Future<List<UserServiceData>> getUserServices({
+    bool loadMore = false,
+    int limit = 6,
+    String? category,
+    String? country,
+    String? city,
+    String searchQuery = '',
+  }) async {
+    if (_isLoadingServices) return _userServices;
+
+    _isLoadingServices = true;
+
+    if (!loadMore) {
+      _userServices = [];
+      _lastServiceDocument = null;
+      _hasMoreServices = true;
+      _selectedCategory = category;
+      _selectedCountry = country;
+      _selectedCity = city;
+      _searchQuery = searchQuery;
+    }
+
+    try {
+      CollectionReference servicesCollection =
+      FirebaseFirestore.instance.collection('UserServices');
+
+      Query query = servicesCollection
+          .where("disponible", isEqualTo: true);
+
+      // Appliquer les filtres
+      if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+        query = query.where("category", isEqualTo: _selectedCategory);
+      }
+
+      if (_selectedCountry != null && _selectedCountry!.isNotEmpty) {
+        query = query.where("country", isEqualTo: _selectedCountry);
+      }
+
+      if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+        query = query.where("city", isEqualTo: _selectedCity);
+      }
+
+      query = query.orderBy('createdAt', descending: true).limit(limit);
+
+      if (_lastServiceDocument != null) {
+        query = query.startAfterDocument(_lastServiceDocument!);
+      }
+
+      QuerySnapshot querySnapshot = await query.get();
+
+      if (querySnapshot.docs.isEmpty) {
+        _hasMoreServices = false;
+      } else {
+        _lastServiceDocument = querySnapshot.docs.last;
+
+        List<UserServiceData> newServices = [];
+
+        for (var doc in querySnapshot.docs) {
+          UserServiceData service = UserServiceData.fromJson(
+              doc.data() as Map<String, dynamic>
+          );
+
+          // Récupérer les données utilisateur
+          try {
+            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(service.userId)
+                .get();
+
+            if (userSnapshot.exists) {
+              UserData user = UserData.fromJson(
+                  userSnapshot.data() as Map<String, dynamic>
+              );
+              service.user = user;
+            }
+          } catch (e) {
+            print('Erreur récupération user: $e');
+          }
+
+          newServices.add(service);
+        }
+
+        // Filtrage côté client pour la recherche texte
+        if (_searchQuery.isNotEmpty) {
+          newServices = newServices.where((service) {
+            final titleLower = service.titre?.toLowerCase() ?? '';
+            final descriptionLower = service.description?.toLowerCase() ?? '';
+            final categoryLower = service.category?.toLowerCase() ?? '';
+            final cityLower = service.city?.toLowerCase() ?? '';
+            final countryLower = service.country?.toLowerCase() ?? '';
+            final searchLower = _searchQuery.toLowerCase();
+
+            return titleLower.contains(searchLower) ||
+                descriptionLower.contains(searchLower) ||
+                categoryLower.contains(searchLower) ||
+                cityLower.contains(searchLower) ||
+                countryLower.contains(searchLower);
+          }).toList();
+        }
+
+        if (loadMore) {
+          _userServices.addAll(newServices);
+        } else {
+          _userServices = newServices;
+        }
+
+        _hasMoreServices = newServices.length == limit;
+      }
+    } catch (e) {
+      print('Erreur chargement services: $e');
+    }
+
+    _isLoadingServices = false;
+    notifyListeners();
+    return _userServices;
+  }
+
+  Future<List<UserServiceData>> getUserServiceById2(String id) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('UserServices')
+          .where("id", isEqualTo: id)
+          .get();
+
+      List<UserServiceData> services = querySnapshot.docs.map((doc) =>
+          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+      for (var service in services) {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(service.userId)
+            .get();
+
+        if (userSnapshot.exists) {
+          UserData user = UserData.fromJson(
+              userSnapshot.data() as Map<String, dynamic>
+          );
+          service.user = user;
+        }
+      }
+
+      return services;
+    } catch (e) {
+      print('Erreur récupération service: $e');
+      return [];
+    }
+  }
+
+  Future<bool> updateUserService2(UserServiceData service, BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('UserServices')
+          .doc(service.id)
+          .update(service.toJson());
+      return true;
+    } catch (e) {
+      print('Erreur mise à jour service: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la mise à jour'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+  }
+
+  Future<List<String>> getServiceCities() async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('UserServices')
+          .where("disponible", isEqualTo: true)
+          .where("city", isNotEqualTo: null)
+          .where("city", isNotEqualTo: "")
+          .get();
+
+      Set<String> cities = {};
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['city'] != null) {
+          cities.add(data['city']);
+        }
+      }
+
+      return cities.toList()..sort();
+    } catch (e) {
+      print('Erreur récupération villes: $e');
+      return [];
+    }
+  }
+
+  void resetServicePagination() {
+    _lastServiceDocument = null;
+    _hasMoreServices = true;
+    _isLoadingServices = false;
+    _selectedCategory = null;
+    _selectedCountry = null;
+    _selectedCity = null;
+    _searchQuery = '';
+    notifyListeners();
+  }
+
   Stream<List<Post>> getPostsImagesByUser(String userId) async* {
     var postStream = FirebaseFirestore.instance.collection('Posts')
         .where("user_id",isEqualTo:'${userId}')

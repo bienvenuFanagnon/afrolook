@@ -1568,21 +1568,22 @@ class UserIACompte {
 }
 
 
-@JsonSerializable()
 class UserServiceData {
   String? id;
   String? userId;
-  @JsonKey(includeFromJson: false, includeToJson: false)
   UserData? user;
   String? titre;
   String? description;
-  bool? disponible=true;
+  String? category;
+  String? country;
+  String? city;
+  bool? disponible = true;
   String? contact;
   String? imageCourverture;
-  int? vues=0;
-  int? like=0;
-  int? contactWhatsapp=0;
-  int? partage=0;
+  int? vues = 0;
+  int? like = 0;
+  int? contactWhatsapp = 0;
+  int? partage = 0;
   List<String>? usersViewId = [];
   List<String>? usersLikeId = [];
   List<String>? usersPartageId = [];
@@ -1590,16 +1591,150 @@ class UserServiceData {
   int? createdAt;
   int? updatedAt;
 
-
   UserServiceData();
 
-  factory UserServiceData.fromJson(Map<String, dynamic> json) =>
-      _$UserServiceDataFromJson(json);
+  factory UserServiceData.fromJson(Map<String, dynamic> json) {
+    return UserServiceData()
+    // Champs de base existants
+      ..id = json['id'] as String?
+      ..userId = _getStringValue(json, ['userId', 'user_id'])
+      ..titre = json['titre'] as String?
+      ..description = json['description'] as String?
+      ..disponible = json['disponible'] as bool? ?? true
 
-  // Add a method that converts this instance to a JSON map
-  Map<String, dynamic> toJson() => _$UserServiceDataToJson(this);
+    // Nouveaux champs avec valeurs par défaut pour anciennes données
+      ..category = json['category'] as String? ?? 'Autre'
+      ..country = json['country'] as String? ?? 'Non spécifié'
+      ..city = json['city'] as String? ?? ''
+
+    // Contact
+      ..contact = json['contact'] as String?
+
+    // Image - gestion des deux noms possibles
+      ..imageCourverture = _getStringValue(json, ['imageCourverture', 'image_courverture'])
+
+    // Statistiques avec conversion sécurisée
+      ..vues = _safeToInt(json['vues'])
+      ..like = _safeToInt(json['like'])
+      ..contactWhatsapp = _safeToInt(json['contactWhatsapp'])
+      ..partage = _safeToInt(json['partage'])
+
+    // Listes avec gestion des nulls
+      ..usersViewId = _safeStringList(json['usersViewId'])
+      ..usersLikeId = _safeStringList(json['usersLikeId'])
+      ..usersPartageId = _safeStringList(json['usersPartageId'])
+      ..usersContactId = _safeStringList(json['usersContactId'])
+
+    // Timestamps avec conversion sécurisée
+      ..createdAt = _safeToInt(json['createdAt'])
+      ..updatedAt = _safeToInt(json['updatedAt']);
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      // Champs de base
+      'id': id,
+      'userId': userId,
+      'titre': titre,
+      'description': description,
+      'disponible': disponible,
+
+      // Nouveaux champs
+      'category': category,
+      'country': country,
+      'city': city,
+
+      // Contact
+      'contact': contact,
+
+      // Image - utiliser le nom standard pour nouvelles données
+      'imageCourverture': imageCourverture,
+
+      // Statistiques
+      'vues': vues,
+      'like': like,
+      'contactWhatsapp': contactWhatsapp,
+      'partage': partage,
+
+      // Listes
+      'usersViewId': usersViewId,
+      'usersLikeId': usersLikeId,
+      'usersPartageId': usersPartageId,
+      'usersContactId': usersContactId,
+
+      // Timestamps
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+
+  // Méthodes helpers pour la conversion sécurisée
+
+  static String? _getStringValue(Map<String, dynamic> json, List<String> possibleKeys) {
+    for (String key in possibleKeys) {
+      if (json.containsKey(key) && json[key] != null) {
+        return json[key] as String?;
+      }
+    }
+    return null;
+  }
+
+  static int? _safeToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      try {
+        return int.tryParse(value);
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  static List<String> _safeStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List<String>) return value;
+    if (value is List<dynamic>) {
+      try {
+        return value.whereType<String>().toList();
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  // Méthode pour migrer les anciennes données si nécessaire
+  void migrateFromOldStructure() {
+    // Si category n'est pas définie mais qu'on a des anciennes données, on peut essayer de déduire
+    if ((category == null || category == 'Autre') && titre != null) {
+      final titreLower = titre!.toLowerCase();
+
+      if (titreLower.contains('menuisi') || titreLower.contains('bois')) {
+        category = 'Menuiserie';
+      } else if (titreLower.contains('plomb') || titreLower.contains('eau')) {
+        category = 'Plomberie';
+      } else if (titreLower.contains('électri') || titreLower.contains('electric')) {
+        category = 'Électricité';
+      } else if (titreLower.contains('maçon') || titreLower.contains('macon')) {
+        category = 'Maçonnerie';
+      } else if (titreLower.contains('peintre') || titreLower.contains('peinture')) {
+        category = 'Peinture';
+      } else if (titreLower.contains('décor') || titreLower.contains('decor')) {
+        category = 'Décoration';
+      } else if (titreLower.contains('informati') || titreLower.contains('informatique')) {
+        category = 'Informatique';
+      } else if (titreLower.contains('répar') || titreLower.contains('repar')) {
+        category = 'Réparation';
+      } else if (titreLower.contains('frigo') || titreLower.contains('climat')) {
+        category = 'Frigoriste';
+      }
+      // ... autres catégories
+    }
+  }
 }
-
 
 class UserGlobalTag {
   int? id;
@@ -2341,7 +2476,10 @@ class Information {
   String? titre;
   String? status;
   String? description;
-
+  int? views;
+  int? likes;
+  bool? isFeatured;
+  int? featuredAt;
   int? createdAt;
   int? updatedAt;
 
@@ -2352,6 +2490,10 @@ class Information {
     this.titre = '',
     this.status = '',
     this.media_url = '',
+    this.views = 0,
+    this.likes = 0,
+    this.isFeatured = false,
+    this.featuredAt = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
   });
@@ -2365,6 +2507,10 @@ class Information {
     description = json['description'];
     titre = json['titre'];
     media_url = json['media_url'];
+    views = json['views'] ?? 0;
+    likes = json['likes'] ?? 0;
+    isFeatured = json['is_featured'] ?? false;
+    featuredAt = json['featured_at'] ?? 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -2377,11 +2523,13 @@ class Information {
     data['description'] = this.description;
     data['titre'] = this.titre;
     data['media_url'] = this.media_url;
-
+    data['views'] = this.views;
+    data['likes'] = this.likes;
+    data['is_featured'] = this.isFeatured;
+    data['featured_at'] = this.featuredAt;
     return data;
   }
 }
-
 class NotificationData {
   String? id;
   String? media_url;

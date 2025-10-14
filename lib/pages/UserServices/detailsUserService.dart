@@ -11,8 +11,12 @@ import '../../providers/postProvider.dart';
 import '../component/consoleWidget.dart';
 import '../component/showUserDetails.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
+import 'newUserService.dart';
+
 class DetailUserServicePage extends StatefulWidget {
-   UserServiceData data;
+  final UserServiceData data;
 
   DetailUserServicePage({required this.data});
 
@@ -21,19 +25,39 @@ class DetailUserServicePage extends StatefulWidget {
 }
 
 class _DetailUserServicePageState extends State<DetailUserServicePage> {
-  late PostProvider postProvider =
-  Provider.of<PostProvider>(context, listen: false);
-  late UserAuthProvider authProvider =
-  Provider.of<UserAuthProvider>(context, listen: false);
-  bool isIn(List<String> users_id, String userIdToCheck) {
+  late PostProvider postProvider;
+  late UserAuthProvider authProvider;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    postProvider = Provider.of<PostProvider>(context, listen: false);
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    _incrementViews();
+  }
+
+  void _incrementViews() async {
+    await postProvider.getUserServiceById(widget.data.id!).then((value) async {
+      if (value.isNotEmpty) {
+        final service = value.first;
+        service.vues = (service.vues ?? 0) + 1;
+
+        if (!_isIn(service.usersViewId!, authProvider.loginUserData.id!)) {
+          service.usersViewId!.add(authProvider.loginUserData.id!);
+        }
+
+        await postProvider.updateUserService(service, context);
+      }
+    });
+  }
+
+  bool _isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-
-  Future<void> launchWhatsApp(String phone,UserServiceData data,String urlService) async {
-    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
-    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+  Future<void> _launchWhatsApp(String phone, UserServiceData data, String urlService) async {
     String url = "whatsapp://send?phone=" + phone + "&text="
         + "Bonjour *${data.user!.nom!}*,\n\n"
         + "Je m'appelle *@${authProvider.loginUserData!.pseudo!.toUpperCase()}* et je suis sur Afrolook.\n"
@@ -43,713 +67,675 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         + "Je suis très intéressé(e) par ce que vous proposez et j'aimerais en savoir plus.\n"
         + "Vous pouvez voir le service ici : ${urlService}\n\n"
         + "Merci et à bientôt !";
-    // String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}* \n *Voir le service* ${urlService}";
+
     if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
-
-      // Afficher le SnackBar en bas de la page
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text(
+            "Impossible d'ouvrir WhatsApp",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
       throw Exception('Impossible d\'ouvrir WhatsApp');
-    }else{
-      await    postProvider.getUserServiceById(data.id!).then((value) async {
+    } else {
+      await postProvider.getUserServiceById(data.id!).then((value) async {
         if (value.isNotEmpty) {
-          data=value.first;
-          if(data.contactWhatsapp==null){
-            data.contactWhatsapp=1;
-          }else{
-            if(value.first.contactWhatsapp==null){
-              data.contactWhatsapp=1;
-            }else{
-              data.contactWhatsapp=value.first.contactWhatsapp!+1;
+          final updatedService = value.first;
+          updatedService.contactWhatsapp = (updatedService.contactWhatsapp ?? 0) + 1;
 
-            }
-
+          if (!_isIn(updatedService.usersContactId!, authProvider.loginUserData.id!)) {
+            updatedService.usersContactId!.add(authProvider.loginUserData.id!);
           }
-          if(!isIn(data.usersContactId!, authProvider.loginUserData!.id!)){
-            data.usersContactId!.add(authProvider.loginUserData!.id!) ;
 
-          }
-          postProvider.updateUserService(data,context).then((value) {
-            if (value) {
-
-              setState(() {
-
-              });
-            }
-          },);
+          await postProvider.updateUserService(updatedService, context);
+          setState(() {
+            widget.data.contactWhatsapp = updatedService.contactWhatsapp;
+          });
         }
-      },);
-
+      });
     }
   }
 
+  void _showFullScreenImage() {
+    if (widget.data.imageCourverture == null ||
+        !widget.data.imageCourverture!.startsWith('http')) return;
 
-
-  @override
-  Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.data.titre ?? 'Titre'),
-      ),
-      body: SingleChildScrollView(
-        child: Card(
-          child: ListTile(
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    await  authProvider.getUserById(widget.data.userId!).then((users) async {
-                      if(users.isNotEmpty){
-                        showUserDetailsModalDialog(users.first, width, height,context);
-
-                      }
-                    },);
-                  },
-                  child: Row(
-                    // mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(widget.data.user!.imageUrl ?? ''),
-                        radius: 30,
-                      ),
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '@${widget.data.user!.pseudo ?? 'Pseudo'}',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                            Text(
-                              '${widget.data.user!.abonnes ?? '0'} abonné(s)',
-                              style: TextStyle(fontSize: 11, color: Colors.green),
-                            ),
-                          ],
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(0),
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Hero(
+                    tag: 'service_image_${widget.data.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: widget.data.imageCourverture!,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SizedBox(
-                    // height: height * 0.25,
-                    // width: width,
-                    child: Image.network(
-                      widget.data.imageCourverture ?? '',
-                      // fit: BoxFit.cover,
-                      // height: height * 0.25,
-                      // width: w
+                      errorWidget: (context, url, error) => Icon(
+                        Icons.error,
+                        color: Colors.red,
+                        size: 50,
+                      ),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _contactService() async {
+    setState(() { _isLoading = true; });
+
+    try {
+      await authProvider.createServiceLink(true, widget.data).then((url) async {
+        await _launchWhatsApp(widget.data.contact!, widget.data, url);
+
+        // Notification au créateur du service
+        CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+        QuerySnapshot querySnapshotUser = await userCollect
+            .where("id", isEqualTo: widget.data.user!.id!)
+            .get();
+
+        List<UserData> listUsers = querySnapshotUser.docs
+            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+            .toList();
+
+        if (listUsers.isNotEmpty && listUsers.first.oneIgnalUserid != null) {
+          NotificationData notif = NotificationData();
+          notif.id = firestore.collection('Notifications').doc().id;
+          notif.titre = "🛠️ Nouvelle demande de service";
+          notif.media_url = authProvider.loginUserData.imageUrl;
+          notif.type = NotificationType.SERVICE.name;
+          notif.description = "@${authProvider.loginUserData.pseudo!} est intéressé(e) par votre service";
+          notif.users_id_view = [];
+          notif.user_id = authProvider.loginUserData.id;
+          notif.receiver_id = widget.data.user!.id!;
+          notif.post_id = widget.data.id!;
+          notif.post_data_type = PostDataType.IMAGE.name!;
+          notif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+          notif.createdAt = DateTime.now().millisecondsSinceEpoch;
+          notif.status = PostStatus.VALIDE.name;
+
+          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+          await authProvider.sendNotification(
+            userIds: [widget.data.user!.oneIgnalUserid!],
+            smallImage: authProvider.loginUserData.imageUrl!,
+            send_user_id: authProvider.loginUserData.id!,
+            recever_user_id: widget.data.user!.id!,
+            message: "📢 @${authProvider.loginUserData.pseudo!} veut votre service 💼",
+            type_notif: NotificationType.SERVICE.name,
+            post_id: widget.data.id!,
+            post_type: PostDataType.IMAGE.name,
+            chat_id: '',
+          );
+        }
+      });
+    } catch (e) {
+      print('Error contacting service: $e');
+    } finally {
+      setState(() { _isLoading = false; });
+    }
+  }
+
+  void _deleteService() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.yellow),
+            SizedBox(width: 10),
+            Text(
+              'Confirmer',
+              style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer définitivement ce service ?',
+          style: TextStyle(color: Colors.white, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'ANNULER',
+              style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'SUPPRIMER',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() { _isLoading = true; });
+
+      try {
+        widget.data.disponible = false;
+        await postProvider.updateUserService(widget.data, context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Service supprimé avec succès !'),
+          ),
+        );
+
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('Erreur lors de la suppression'),
+          ),
+        );
+      } finally {
+        setState(() { _isLoading = false; });
+      }
+    }
+  }
+
+  void _editService() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserServiceForm(
+          existingService: widget.data,
+          isEditing: true,
+        ),
+      ),
+    );
+  }
+
+  void _toggleLike() async {
+    await postProvider.getUserServiceById(widget.data.id!).then((value) async {
+      if (value.isNotEmpty) {
+        final service = value.first;
+        service.like = (service.like ?? 0) + 1;
+
+        if (!_isIn(service.usersLikeId!, authProvider.loginUserData.id!)) {
+          service.usersLikeId!.add(authProvider.loginUserData.id!);
+        }
+
+        await postProvider.updateUserService(service, context);
+        setState(() {
+          widget.data.like = service.like;
+        });
+      }
+    });
+  }
+
+  bool get _canEditOrDelete {
+    return authProvider.loginUserData.id == widget.data.userId ||
+        authProvider.loginUserData.role == UserRole.ADM.name;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: _isLoading
+          ? _buildLoadingState()
+          : CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: Colors.black,
+            expandedHeight: 300,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: _buildHeroImage(),
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.yellow),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              if (_canEditOrDelete) _buildActionMenu(),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildServiceHeader(),
+                  SizedBox(height: 20),
+                  _buildServiceStats(),
+                  SizedBox(height: 20),
+                  _buildServiceDetails(),
+                  SizedBox(height: 20),
+                  _buildContactSection(),
+                  SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Chargement...',
+            style: TextStyle(color: Colors.yellow),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroImage() {
+    return GestureDetector(
+      onTap: _showFullScreenImage,
+      child: Stack(
+        children: [
+          Hero(
+            tag: 'service_image_${widget.data.id}',
+            child: Container(
+              width: double.infinity,
+              child: widget.data.imageCourverture != null &&
+                  widget.data.imageCourverture!.startsWith('http')
+                  ? CachedNetworkImage(
+                imageUrl: widget.data.imageCourverture!,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[800],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[800],
+                  child: Icon(Icons.work_outline, color: Colors.green, size: 60),
+                ),
+              )
+                  : Container(
+                color: Colors.grey[800],
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      LikeButton(
-                        isLiked: false,
-                        size: 15,
-                        circleColor: CircleColor(
-                          start: Color(0xff00ddff),
-                          end: Color(0xff0099cc),
+                      Icon(Icons.work_outline, color: Colors.green, size: 60),
+                      SizedBox(height: 8),
+                      Text(
+                        'SERVICE',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        bubblesColor: BubblesColor(
-                          dotPrimaryColor: Color(0xff3b9ade),
-                          dotSecondaryColor: Color(0xff027f19),
-                        ),
-                        countPostion: CountPostion.bottom,
-                        likeBuilder: (bool isLiked) {
-                          return Icon(
-                            FontAwesome.eye,
-                            color: isLiked ? Colors.black : Colors.brown,
-                            size: 15,
-                          );
-                        },
-                        likeCount: widget.data.vues,
-                        countBuilder: (int? count, bool isLiked, String text) {
-                          var color = isLiked ? Colors.black : Colors.black;
-                          Widget result;
-                          if (count == 0) {
-                            result = Text(
-                              "0",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: color, fontSize: 8),
-                            );
-                          } else {
-                            result = Text(
-                              text,
-                              style: TextStyle(color: color, fontSize: 8),
-                            );
-                          }
-                          return result;
-                        },
-                      ),
-                      LikeButton(
-                        isLiked: false,
-                        size: 15,
-                        circleColor:
-                        CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                        bubblesColor: BubblesColor(
-                          dotPrimaryColor: Color(0xff3b9ade),
-                          dotSecondaryColor: Color(0xff027f19),
-                        ),
-                        countPostion: CountPostion.bottom,
-                        likeBuilder: (bool isLiked) {
-                          return Icon(
-                            FontAwesome.whatsapp,
-                            color: isLiked ? Colors.green : Colors.green,
-                            size: 15,
-                          );
-                        },
-                        likeCount:    widget.data.contactWhatsapp,
-                        countBuilder: (int? count, bool isLiked, String text) {
-                          var color = isLiked ? Colors.black : Colors.black;
-                          Widget result;
-                          if (count == 0) {
-                            result = Text(
-                              "0",textAlign: TextAlign.center,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          } else
-                            result = Text(
-                              text,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          return result;
-                        },
-
-                      ),
-                      LikeButton(
-                        onTap: (isLiked) async {
-                          await    postProvider.getUserServiceById( widget.data.id!).then((value) async {
-                            if (value.isNotEmpty) {
-                              widget.data=value.first;
-                              widget.data.like=value.first.like!+1;
-
-                              if(!isIn( widget.data.usersViewId!, authProvider.loginUserData!.id!)){
-                                widget.data.usersLikeId!.add(authProvider.loginUserData!.id!) ;
-
-                              }
-                              postProvider.updateUserService( widget.data,context).then((value) {
-                                if (value) {
-
-
-                                }
-                              },);
-                            }
-                          },);
-                          // await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                          //   if (value.isNotEmpty) {
-                          //     value.first.jaime=value.first.jaime!+1;
-                          //     widget.article.jaime=value.first.jaime!+1;
-                          //     categorieProduitProvider.updateArticle(value.first,context).then((value) async {
-                          //       if (value) {
-                          //         await authProvider.sendNotification(
-                          //             userIds: [widget.article.user!.oneIgnalUserid!],
-                          //             smallImage:
-                          //             "${widget.article.images!.first}",
-                          //             send_user_id:
-                          //             "${authProvider.loginUserData.id!}",
-                          //             recever_user_id: "${widget.article.user!.id!}",
-                          //             message:
-                          //             "📢 🛒 Un afrolookeur aime ❤️ votre produit 🛒",
-                          //             type_notif:
-                          //             NotificationType.ARTICLE.name,
-                          //             post_id: "${widget.article!.id!}",
-                          //             post_type: PostDataType.IMAGE.name,
-                          //             chat_id: '');
-                          //
-                          //         NotificationData notif =
-                          //         NotificationData();
-                          //         notif.id = firestore
-                          //             .collection('Notifications')
-                          //             .doc()
-                          //             .id;
-                          //         notif.titre = " 🛒Boutique 🛒";
-                          //         notif.media_url =
-                          //         "${widget.article.images!.first}";
-                          //         notif.type = NotificationType.ARTICLE.name;
-                          //         notif.description =
-                          //         "Un afrolookeur aime ❤️ votre produit 🛒";
-                          //         notif.users_id_view = [];
-                          //         notif.user_id =
-                          //             authProvider.loginUserData.id;
-                          //         notif.receiver_id = widget.article.user!.id!;
-                          //         notif.post_id = widget.article.id!;
-                          //         notif.post_data_type =
-                          //         PostDataType.IMAGE.name!;
-                          //
-                          //         notif.updatedAt =
-                          //             DateTime.now().microsecondsSinceEpoch;
-                          //         notif.createdAt =
-                          //             DateTime.now().microsecondsSinceEpoch;
-                          //         notif.status = PostStatus.VALIDE.name;
-                          //
-                          //         // users.add(pseudo.toJson());
-                          //
-                          //         await firestore
-                          //             .collection('Notifications')
-                          //             .doc(notif.id)
-                          //             .set(notif.toJson());
-                          //
-                          //       }
-                          //     },);
-                          //
-                          //   }
-                          // },);
-
-                          return Future.value(true);
-
-                        },
-                        isLiked: false,
-                        size: 15,
-                        circleColor:
-                        CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                        bubblesColor: BubblesColor(
-                          dotPrimaryColor: Color(0xff3b9ade),
-                          dotSecondaryColor: Color(0xff027f19),
-                        ),
-                        countPostion: CountPostion.bottom,
-                        likeBuilder: (bool isLiked) {
-                          return Icon(
-                            FontAwesome.heart,
-                            color: isLiked ? Colors.red : Colors.redAccent,
-                            size: 15,
-                          );
-                        },
-                        likeCount:    widget.data.like,
-                        countBuilder: (int? count, bool isLiked, String text) {
-                          var color = isLiked ? Colors.black : Colors.black;
-                          Widget result;
-                          if (count == 0) {
-                            result = Text(
-                              "0",textAlign: TextAlign.center,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          } else
-                            result = Text(
-                              text,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          return result;
-                        },
-
-                      ),
-                      LikeButton(
-                        onTap: (isLiked) async {
-
-                          // await authProvider.createArticleLink(true,widget.article).then((url) async {
-                          //   final box = context.findRenderObject() as RenderBox?;
-                          //
-                          //   await Share.shareUri(
-                          //     Uri.parse(
-                          //         '${url}'),
-                          //     sharePositionOrigin:
-                          //     box!.localToGlobal(Offset.zero) & box.size,
-                          //   );
-                          //
-                          //   // printVm("widget.article : ${widget.article.toJson()}");
-                          //   setState(() {
-                          //     widget.article.partage = widget.article.partage! + 1;
-                          //     // post.users_love_id!
-                          //     //     .add(authProvider!.loginUserData.id!);
-                          //     // love = post.loves!;
-                          //     // //loves.add(idUser);
-                          //   });
-                          //
-                          //   await    categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-                          //     if (value.isNotEmpty) {
-                          //       value.first.partage=value.first.partage!+1;
-                          //       // widget.article.partage=value.first.partage!+1;
-                          //       categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                          //         if (value) {
-                          //           setState(() {
-                          //
-                          //           });
-                          //
-                          //         }
-                          //       },);
-                          //
-                          //     }
-                          //   },);
-                          //
-                          //   CollectionReference userCollect =
-                          //   FirebaseFirestore.instance
-                          //       .collection('Users');
-                          //   // Get docs from collection reference
-                          //   QuerySnapshot querySnapshotUser =
-                          //   await userCollect
-                          //       .where("id",
-                          //       isEqualTo: widget.article.user!.id!)
-                          //       .get();
-                          //   // Afficher la liste
-                          //   List<UserData> listUsers = querySnapshotUser
-                          //       .docs
-                          //       .map((doc) => UserData.fromJson(
-                          //       doc.data() as Map<String, dynamic>))
-                          //       .toList();
-                          //   if (listUsers.isNotEmpty) {
-                          //     // listUsers.first!.partage =
-                          //     //     listUsers.first!.partage! + 1;
-                          //     printVm("user trouver");
-                          //     if (widget.article.user!.oneIgnalUserid != null &&
-                          //         widget.article.user!.oneIgnalUserid!.length > 5) {
-                          //       await authProvider.sendNotification(
-                          //           userIds: [widget.article.user!.oneIgnalUserid!],
-                          //           smallImage:
-                          //           "${widget.article.images!.first}",
-                          //           send_user_id:
-                          //           "${authProvider.loginUserData.id!}",
-                          //           recever_user_id: "${widget.article.user!.id!}",
-                          //           message:
-                          //           "📢 🛒 Un afrolookeur a partagé votre produit 🛒",
-                          //           type_notif:
-                          //           NotificationType.ARTICLE.name,
-                          //           post_id: "${widget.article!.id!}",
-                          //           post_type: PostDataType.IMAGE.name,
-                          //           chat_id: '');
-                          //
-                          //       NotificationData notif =
-                          //       NotificationData();
-                          //       notif.id = firestore
-                          //           .collection('Notifications')
-                          //           .doc()
-                          //           .id;
-                          //       notif.titre = " 🛒Boutique 🛒";
-                          //       notif.media_url =
-                          //       "${widget.article.images!.first}"
-                          //       ;
-                          //       notif.type = NotificationType.ARTICLE.name;
-                          //       notif.description =
-                          //       "Un afrolookeur a partagé votre produit 🛒";
-                          //       notif.users_id_view = [];
-                          //       notif.user_id =
-                          //           authProvider.loginUserData.id;
-                          //       notif.receiver_id = widget.article.user!.id!;
-                          //       notif.post_id = widget.article.id!;
-                          //       notif.post_data_type =
-                          //       PostDataType.IMAGE.name!;
-                          //
-                          //       notif.updatedAt =
-                          //           DateTime.now().microsecondsSinceEpoch;
-                          //       notif.createdAt =
-                          //           DateTime.now().microsecondsSinceEpoch;
-                          //       notif.status = PostStatus.VALIDE.name;
-                          //
-                          //       // users.add(pseudo.toJson());
-                          //
-                          //       await firestore
-                          //           .collection('Notifications')
-                          //           .doc(notif.id)
-                          //           .set(notif.toJson());
-                          //     }
-                          //     // postProvider.updateVuePost(post, context);
-                          //
-                          //     //userProvider.updateUser(listUsers.first);
-                          //     // SnackBar snackBar = SnackBar(
-                          //     //   content: Text(
-                          //     //     '+2 points.  Voir le classement',
-                          //     //     textAlign: TextAlign.center,
-                          //     //     style: TextStyle(color: Colors.green),
-                          //     //   ),
-                          //     // );
-                          //     // ScaffoldMessenger.of(context)
-                          //     //     .showSnackBar(snackBar);
-                          //     // categorieProduitProvider.updateArticle(
-                          //     //     widget.article, context);
-                          //     // await authProvider.getAppData();
-                          //     // authProvider.appDefaultData.nbr_loves =
-                          //     //     authProvider.appDefaultData.nbr_loves! +
-                          //     //         2;
-                          //     // authProvider.updateAppData(
-                          //     //     authProvider.appDefaultData);
-                          //
-                          //
-                          //   }
-                          //
-                          // },);
-
-
-                          return Future.value(true);
-
-                        },
-                        isLiked: false,
-                        size: 15,
-                        circleColor:
-                        CircleColor(start: Color(0xffffc400), end: Color(
-                            0xffcc7a00)),
-                        bubblesColor: BubblesColor(
-                          dotPrimaryColor: Color(0xffffc400),
-                          dotSecondaryColor: Color(0xff07f629),
-                        ),
-                        countPostion: CountPostion.bottom,
-                        likeBuilder: (bool isLiked) {
-                          return Icon(
-                            Entypo.share,
-                            color: isLiked ? Colors.blue : Colors.blueAccent,
-                            size: 15,
-                          );
-                        },
-                        likeCount:    widget.data.usersPartageId!.length,
-                        countBuilder: (int? count, bool isLiked, String text) {
-                          var color = isLiked ? Colors.black : Colors.black;
-                          Widget result;
-                          if (count == 0) {
-                            result = Text(
-                              "0",textAlign: TextAlign.center,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          } else
-                            result = Text(
-                              text,
-                              style: TextStyle(color: color,fontSize: 8),
-                            );
-                          return result;
-                        },
-
                       ),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(Icons.zoom_in, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                Text(widget.data.titre ?? 'Titre',style: TextStyle(fontSize: 18,fontWeight: FontWeight.w900),),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildActionMenu() {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, color: Colors.yellow),
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            _editService();
+            break;
+          case 'delete':
+            _deleteService();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, color: Colors.yellow),
+              SizedBox(width: 8),
+              Text('Modifier'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Supprimer', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServiceHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Catégorie et badge
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.yellow.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.yellow),
+              ),
+              child: Text(
+                widget.data.category ?? 'Autre',
+                style: TextStyle(
+                  color: Colors.yellow,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Spacer(),
+            // Like button
+            GestureDetector(
+              onTap: _toggleLike,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red),
+                ),
+                child: Row(
                   children: [
-                    IconText(icon: Icons.contact_phone, text: widget.data.contact ?? 'Contact'),
-                    Container(
-
-                      child: TextButton(
-                        onPressed: () async {
-
-                          await authProvider.createServiceLink(true, widget.data).then((url) async {
-
-// printVm("data : ${data.toJson()}");
-
-                            setState(() {
-                              launchWhatsApp(widget.data .contact!, widget.data!,url);
-
-
-
-                              // post.users_love_id!
-                              //     .add(authProvider!.loginUserData.id!);
-                              // love = post.loves!;
-                              // //loves.add(idUser);
-                            });
-                            CollectionReference userCollect =
-                            FirebaseFirestore.instance
-                                .collection('Users');
-                            // Get docs from collection reference
-                            QuerySnapshot querySnapshotUser =
-                            await userCollect
-                                .where("id",
-                                isEqualTo: widget.data.user!.id!)
-                                .get();
-                            // Afficher la liste
-                            List<UserData> listUsers = querySnapshotUser
-                                .docs
-                                .map((doc) => UserData.fromJson(
-                                doc.data() as Map<String, dynamic>))
-                                .toList();
-                            if (listUsers.isNotEmpty) {
-                              // listUsers.first!.partage =
-                              //     listUsers.first!.partage! + 1;
-                              printVm("user trouver");
-                              if (widget.data.user!.oneIgnalUserid != null &&
-                                  widget.data.user!.oneIgnalUserid!.length > 5) {
-
-
-                                NotificationData notif =
-                                NotificationData();
-                                notif.id = firestore
-                                    .collection('Notifications')
-                                    .doc()
-                                    .id;
-                                notif.titre = " 🛠️Services && Jobs 💼";
-                                notif.media_url =
-                                    authProvider.loginUserData.imageUrl;
-                                notif.type = NotificationType.SERVICE.name;
-                                notif.description =
-                                "@${authProvider.loginUserData.pseudo!} veut votre service 💼";
-                                notif.users_id_view = [];
-                                notif.user_id =
-                                    authProvider.loginUserData.id;
-                                notif.receiver_id = widget.data.user!.id!;
-                                notif.post_id = widget.data.id!;
-                                notif.post_data_type =
-                                PostDataType.IMAGE.name!;
-
-                                notif.updatedAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.createdAt =
-                                    DateTime.now().microsecondsSinceEpoch;
-                                notif.status = PostStatus.VALIDE.name;
-
-                                // users.add(pseudo.toJson());
-
-                                await firestore
-                                    .collection('Notifications')
-                                    .doc(notif.id)
-                                    .set(notif.toJson());
-
-                                await authProvider.sendNotification(
-                                    userIds: [widget.data.user!.oneIgnalUserid!],
-                                    smallImage:
-                                    "${authProvider.loginUserData.imageUrl!}",
-                                    send_user_id:
-                                    "${authProvider.loginUserData.id!}",
-                                    recever_user_id: "${widget.data.user!.id!}",
-                                    message:
-                                    "📢 💼 @${authProvider.loginUserData.pseudo!} est intéressé(e) par votre service 💼",
-                                    type_notif:
-                                    NotificationType.SERVICE.name,
-                                    post_id: "${widget.data!.id!}",
-                                    post_type: PostDataType.IMAGE.name,
-                                    chat_id: '');
-                              }
-                              // postProvider.updateVuePost(post, context);
-
-                              //userProvider.updateUser(listUsers.first);
-                              // SnackBar snackBar = SnackBar(
-                              //   content: Text(
-                              //     '+2 points.  Voir le classement',
-                              //     textAlign: TextAlign.center,
-                              //     style: TextStyle(color: Colors.green),
-                              //   ),
-                              // );
-                              // ScaffoldMessenger.of(context)
-                              //     .showSnackBar(snackBar);
-                              // categorieProduitProvider.updateArticle(
-                              //     data, context);
-                              // await authProvider.getAppData();
-                              // authProvider.appDefaultData.nbr_loves =
-                              //     authProvider.appDefaultData.nbr_loves! +
-                              //         2;
-                              // authProvider.updateAppData(
-                              //     authProvider.appDefaultData);
-
-
-                            }
-
-                          },);
-
-
-
-
-
-                        },
-
-                        child: Center(
-                          child: Container(
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                  color: Colors.brown,
-                                  borderRadius: BorderRadius.all(Radius.circular(5))
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8.0,right: 8),
-                                child: Row(
-                                  children: [
-                                    Text('Contacter',style: TextStyle(color: Colors.white),),
-                                    IconButton(
-                                      icon: Icon(FontAwesome.whatsapp,color: Colors.green,size: 30,),
-                                      onPressed: () async {
-
-                                        // Fonction pour ouvrir WhatsApp
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              )),
-                        ),
+                    Icon(FontAwesome.heart, color: Colors.red, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      '${widget.data.like ?? 0}',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                Visibility(
-                  visible: authProvider.loginUserData!.id==widget.data!.userId||authProvider.loginUserData!.role==UserRole.ADM.name,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        // Titre
+        Text(
+          widget.data.titre?.toUpperCase() ?? 'TITRE DU SERVICE',
+          style: TextStyle(
+            color: Colors.yellow,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            height: 1.3,
+          ),
+        ),
+        SizedBox(height: 8),
+        // Localisation
+        Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.green, size: 16),
+            SizedBox(width: 6),
+            Text(
+              '${widget.data.city ?? ''}${widget.data.city != null && widget.data.country != null ? ', ' : ''}${widget.data.country ?? ''}',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-                        child: TextButton(
-                          onPressed: () async {
-                            widget.data.disponible=false;
+  Widget _buildServiceStats() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            icon: Icons.remove_red_eye,
+            value: widget.data.vues ?? 0,
+            label: 'Vues',
+            color: Colors.green,
+          ),
+          _buildStatItem(
+            icon: FontAwesome.whatsapp,
+            value: widget.data.contactWhatsapp ?? 0,
+            label: 'Contacts',
+            color: Colors.green,
+          ),
+          _buildStatItem(
+            icon: FontAwesome.heart,
+            value: widget.data.like ?? 0,
+            label: 'Likes',
+            color: Colors.red,
+          ),
+          _buildStatItem(
+            icon: Icons.share,
+            value: widget.data.usersPartageId?.length ?? 0,
+            label: 'Partages',
+            color: Colors.blue,
+          ),
+        ],
+      ),
+    );
+  }
 
-                            await      postProvider.updateUserService( widget.data,context).then((value) {
-                              if (value) {
+  Widget _buildStatItem({
+    required IconData icon,
+    required int value,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        SizedBox(height: 6),
+        Text(
+          value.toString(),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
 
-                  setState(() {
-                    SnackBar snackBar = SnackBar(
-                      content: Text(
-                        "le service supprimé avec success !",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    );
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(snackBar);
-                    Navigator.pop(context);
-                  });
-                              }
-                            },);
+  Widget _buildServiceDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description du service',
+          style: TextStyle(
+            color: Colors.yellow,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            widget.data.description ?? 'Aucune description disponible',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-
-
-                          },
-                          child: Center(
-                            child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.all(Radius.circular(5))
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 8.0,right: 8),
-                                  child: Row(
-                                    children: [
-                                      Text('Supprimer',style: TextStyle(color: Colors.white),),
-                                      IconButton(
-                                        icon: Icon(FontAwesome.remove,color: Colors.green,size: 30,),
-                                        onPressed: () async {
-
-                                          // Fonction pour ouvrir WhatsApp
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                )),
-                          ),
-                        ),
-                      ),
-                    ],
+  Widget _buildContactSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Contact',
+          style: TextStyle(
+            color: Colors.yellow,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        // Bouton de contact principal
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _contactService,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: Icon(FontAwesome.whatsapp, size: 24),
+            label: Text(
+              'CONTACTER SUR WHATSAPP',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        // Numéro de contact
+        if (widget.data.contact != null)
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.phone, color: Colors.green, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.data.contact!,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-
-                Text(
-                  widget.data.description ?? 'Description',
-                  // maxLines: 2,
-                  overflow: TextOverflow.fade,
+                IconButton(
+                  icon: Icon(Icons.content_copy, color: Colors.yellow, size: 16),
+                  onPressed: () {
+                    // Copier le numéro
+                  },
                 ),
               ],
             ),
-            onTap: () {
-              // Action lors du clic sur un élément de la liste
-            },
           ),
-        ),
-      ),
+      ],
     );
   }
 }

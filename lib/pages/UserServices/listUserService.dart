@@ -13,602 +13,917 @@ import '../component/consoleWidget.dart';
 import '../component/showUserDetails.dart';
 import 'newUserService.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
+
 class UserServiceListPage extends StatefulWidget {
   @override
   State<UserServiceListPage> createState() => _UserServiceListPageState();
 }
 
 class _UserServiceListPageState extends State<UserServiceListPage> {
-  late PostProvider postProvider =
-  Provider.of<PostProvider>(context, listen: false);
-  late UserAuthProvider authProvider =
-  Provider.of<UserAuthProvider>(context, listen: false);
-  String searchQuery = '';
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isLoadingMore = false;
+  bool _showFilters = false;
 
-  bool onSaveTap=false;
-  bool isIn(List<String> users_id, String userIdToCheck) {
-    return users_id.any((item) => item == userIdToCheck);
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialServices();
+    _scrollController.addListener(_scrollListener);
   }
-  Future<void> launchWhatsApp(String phone,UserServiceData data,String urlService) async {
-    //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
-    // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadInitialServices() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+      postProvider.getUserServices();
+    });
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreServices();
+    }
+  }
+
+  void _loadMoreServices() async {
+    if (_isLoadingMore) return;
+
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    if (!postProvider.hasMoreServices || postProvider.isLoadingServices) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    await postProvider.getUserServices(loadMore: true);
+
+    setState(() {
+      _isLoadingMore = false;
+    });
+  }
+
+  void _performSearch() {
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    postProvider.getUserServices(searchQuery: _searchController.text.trim());
+  }
+
+  void _applyFilters({
+    String? category,
+    String? country,
+    String? city,
+  }) {
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    postProvider.getUserServices(
+      category: category,
+      country: country,
+      city: city,
+      searchQuery: _searchController.text.trim(),
+    );
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    postProvider.resetServicePagination();
+    postProvider.getUserServices();
+    setState(() {
+      _showFilters = false;
+    });
+  }
+
+  Future<void> launchWhatsApp(String phone, UserServiceData data, String urlService) async {
     String url = "whatsapp://send?phone=" + phone + "&text="
         + "Bonjour *${data.user!.nom!}*,\n\n"
-        + "Je m'appelle *@${authProvider.loginUserData!.pseudo!.toUpperCase()}* et je suis sur Afrolook.\n"
+        + "Je m'appelle *@${Provider.of<UserAuthProvider>(context, listen: false).loginUserData!.pseudo!.toUpperCase()}* et je suis sur Afrolook.\n"
         + "Je vous contacte concernant votre service :\n\n"
         + "*Titre* : *${data.titre!.toUpperCase()}*\n"
         + "*Description* : *${data.description}*\n\n"
         + "Je suis très intéressé(e) par ce que vous proposez et j'aimerais en savoir plus.\n"
         + "Vous pouvez voir le service ici : ${urlService}\n\n"
         + "Merci et à bientôt !";
-    // String url = "whatsapp://send?phone="+phone+"&text=Salut *${data.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n je vous contact à propos de votre service:\n\n*Titre*:  *${data.titre!.toUpperCase()}*\n *Description*: *${data.description}* \n *Voir le service* ${urlService}";
+
     if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
-
-      // Afficher le SnackBar en bas de la page
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text(
+            "Impossible d'ouvrir WhatsApp",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
       throw Exception('Impossible d\'ouvrir WhatsApp');
-    }else{
-      await    postProvider.getUserServiceById(data.id!).then((value) async {
+    } else {
+      // Incrémenter le compteur WhatsApp
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+
+      await postProvider.getUserServiceById(data.id!).then((value) async {
         if (value.isNotEmpty) {
-          data=value.first;
-          if(data.contactWhatsapp==null){
-            data.contactWhatsapp=1;
-          }else{
-            if(value.first.contactWhatsapp==null){
-              data.contactWhatsapp=1;
-            }else{
-              data.contactWhatsapp=value.first.contactWhatsapp!+1;
+          data = value.first;
+          data.contactWhatsapp = (data.contactWhatsapp ?? 0) + 1;
 
-            }
-
+          if (!_isIn(data.usersContactId!, authProvider.loginUserData.id!)) {
+            data.usersContactId!.add(authProvider.loginUserData.id!);
           }
-          if(!isIn(data.usersContactId!, authProvider.loginUserData!.id!)){
-            data.usersContactId!.add(authProvider.loginUserData!.id!) ;
 
-          }
-          postProvider.updateUserService(data,context).then((value) {
-            if (value) {
-
-setState(() {
-
-});
-            }
-          },);
+          await postProvider.updateUserService(data, context);
         }
-      },);
-
+      });
     }
   }
 
-  // Future<void> launchWhatsApp(String phone,ArticleData articleData,String urlArticle) async {
-  //   //  var whatsappURl_android = "whatsapp://send?phone="+whatsapp+"&text=hello";
-  //   // String url = "https://wa.me/?tel:+228$phone&&text=YourTextHere";
-  //   String url = "whatsapp://send?phone="+phone+"&text=Salut *${articleData.user!.nom!}*,\n*Moi c'est*: *@${authProvider.loginUserData!.pseudo!.toUpperCase()} Sur Afrolook*,\n j'ai vu votre service sur *${"Afroshop".toUpperCase()}*\n à propos de l'article:\n\n*Titre*:  *${articleData.titre!.toUpperCase()}*\n *Prix*: *${articleData.prix}* fcfa\n *Voir l'article* ${urlArticle}";
-  //   if (!await launchUrl(Uri.parse(url))) {
-  //     final snackBar = SnackBar(duration: Duration(seconds: 2),content: Text("Impossible d\'ouvrir WhatsApp",textAlign: TextAlign.center, style: TextStyle(color: Colors.red),));
-  //
-  //     // Afficher le SnackBar en bas de la page
-  //     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  //     throw Exception('Impossible d\'ouvrir WhatsApp');
-  //   }
-  // }
+  bool _isIn(List<String> users_id, String userIdToCheck) {
+    return users_id.any((item) => item == userIdToCheck);
+  }
 
+  void _navigateToDetail(UserServiceData service) async {
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+
+    await postProvider.getUserServiceById(service.id!).then((value) async {
+      if (value.isNotEmpty) {
+        service = value.first;
+        service.vues = (service.vues ?? 0) + 1;
+
+        if (!_isIn(service.usersViewId!, authProvider.loginUserData.id!)) {
+          service.usersViewId!.add(authProvider.loginUserData.id!);
+        }
+
+        await postProvider.updateUserService(service, context);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailUserServicePage(data: service),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<UserAuthProvider>(context);
+    final postProvider = Provider.of<PostProvider>(context);
 
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        titleSpacing: 0,
-        title: Text('Trouver des services 🛠️ ou jobs 💼',style: TextStyle(color: Colors.white,fontSize: 18),),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: Icon(Icons.refresh,size: 30,),
-              color: Colors.white,
-              onPressed: () {
-                setState(() {
-
-                });
-                // Action lors du clic sur le bouton
-              },
-            ),
+        backgroundColor: Colors.black,
+        title: Text(
+          'Services & Jobs 🛠️',
+          style: TextStyle(
+            color: Colors.yellow,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: Icon(Icons.add_box,size: 30,),
-              color: Colors.white,
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => UserServiceForm(),));
-
-                // Action lors du clic sur le bouton
-              },
-            ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.filter_list, color: Colors.yellow),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.add, color: Colors.yellow),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => UserServiceForm()),
+              );
+            },
           ),
         ],
-        backgroundColor: Colors.green,
+        elevation: 0,
       ),
-      body: RefreshIndicator(
-        onRefresh: () async{
-          setState(() {
-
-          });
-        },
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher un service 🛠️ ou un job 💼',
-                    hintStyle: TextStyle(color: Colors.black),
-                    // border: InputBorder.,
+      body: Column(
+        children: [
+          // Barre de recherche
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: '🔍 Rechercher services, villes, métiers...',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.search, color: Colors.green),
+                    onPressed: _performSearch,
                   ),
-                  style: TextStyle(color: Colors.black),
-                  onChanged: (query) {
-                    setState(() {
-                      searchQuery = query;
-                    });
-                  },
                 ),
-              ),              FutureBuilder<List<UserServiceData>>(
-                future:postProvider.getAllUserService(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Erreur : ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('Aucun service trouvé'));
-                  } else {
-                    final filteredData = snapshot.data!.where((data) {
-                      final titleLower = data.titre?.toLowerCase() ?? '';
-                      final descriptionLower = data.description?.toLowerCase() ?? '';
-                      final searchLower = searchQuery.toLowerCase();
-                      return titleLower.contains(searchLower) || descriptionLower.contains(searchLower);
-                    }).toList();
-                    return SizedBox(
-                      height: height*0.8,
-                      width: width,
-                      child: ListView.builder(
-                        itemCount: filteredData!.length,
-                        itemBuilder: (context, index) {
-                          var data = filteredData![index];
-                          return Card(
-                            child: ListTile(
-                              subtitle: Column(
-                                spacing: 5,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
+                onSubmitted: (_) => _performSearch(),
+              ),
+            ),
+          ),
 
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+          // Filtres
+          if (_showFilters) _buildFiltersSection(postProvider),
 
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundImage: NetworkImage(data.user?.imageUrl ?? ''),
-                                          radius: 20,
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+          // Indicateur de chargement initial
+          if (postProvider.isLoadingServices && postProvider.userServices.isEmpty)
+            _buildLoadingIndicator(),
 
-                                          children: [
-                                            Text('@${data.user?.pseudo ?? 'Pseudo'}',style: TextStyle(fontWeight: FontWeight.w900),),
-                                            Text('${data.user?.abonnes ?? '0'} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
-                                          ],
-                                        )
-                                      ],
-                                    ),
-                                    onTap: () async {
-                                      await  authProvider.getUserById(data.userId!).then((users) async {
-                                        if(users.isNotEmpty){
-                                          showUserDetailsModalDialog(users.first, width, height,context);
+          // Grille des services
+          Expanded(
+            child: postProvider.userServices.isEmpty && !postProvider.isLoadingServices
+                ? _buildEmptyState()
+                : _buildServicesGrid(authProvider, postProvider),
+          ),
+        ],
+      ),
+    );
+  }
 
-                                        }
-                                      },);
-
-                                    },
-                                  ),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      await    postProvider.getUserServiceById(data.id!).then((value) async {
-                                        if (value.isNotEmpty) {
-                                          data=value.first;
-                                          data.vues=value.first.vues!+1;
-                                          Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
-
-                                          if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
-                                            data.usersViewId!.add(authProvider.loginUserData!.id!) ;
-
-                                          }
-                                          postProvider.updateUserService(data,context).then((value) {
-                                            if (value) {
-
-
-                                            }
-                                          },);
-                                        }
-                                      },);
-
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-
-                                            child: Image.network(data.imageCourverture ?? '',fit: BoxFit.cover,),
-                                          height: height*0.3,
-                                          width: width,
-                                        ),
-                                        Text(data.titre ?? 'Titre',style: TextStyle(fontSize: 18,fontWeight: FontWeight.w900),),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            IconText(icon: Icons.contact_phone, text: data.contact ?? 'Contact'),
-                                            Container(
-
-                                              child: TextButton(
-                                                onPressed: () async {
-
-                                                  await authProvider.createServiceLink(true,data).then((url) async {
-
-// printVm("data : ${data.toJson()}");
-
-                                                    setState(() {
-                                                      launchWhatsApp(data .contact!, data!,url);
-
-                                             
-
-                                                      // post.users_love_id!
-                                                      //     .add(authProvider!.loginUserData.id!);
-                                                      // love = post.loves!;
-                                                      // //loves.add(idUser);
-                                                    });
-                                                    CollectionReference userCollect =
-                                                    FirebaseFirestore.instance
-                                                        .collection('Users');
-                                                    // Get docs from collection reference
-                                                    QuerySnapshot querySnapshotUser =
-                                                    await userCollect
-                                                        .where("id",
-                                                        isEqualTo: data.user!.id!)
-                                                        .get();
-                                                    // Afficher la liste
-                                                    List<UserData> listUsers = querySnapshotUser
-                                                        .docs
-                                                        .map((doc) => UserData.fromJson(
-                                                        doc.data() as Map<String, dynamic>))
-                                                        .toList();
-                                                    if (listUsers.isNotEmpty) {
-                                                      // listUsers.first!.partage =
-                                                      //     listUsers.first!.partage! + 1;
-                                                      printVm("user trouver");
-                                                      if (data.user!.oneIgnalUserid != null &&
-                                                          data.user!.oneIgnalUserid!.length > 5) {
-
-
-                                                        NotificationData notif =
-                                                        NotificationData();
-                                                        notif.id = firestore
-                                                            .collection('Notifications')
-                                                            .doc()
-                                                            .id;
-                                                        notif.titre = " 🛠️Services && Jobs 💼";
-                                                        notif.media_url =
-                                                            authProvider.loginUserData.imageUrl;
-                                                        notif.type = NotificationType.SERVICE.name;
-                                                        notif.description =
-                                                        "@${authProvider.loginUserData.pseudo!} veut votre service ou jobs 💼";
-                                                        notif.users_id_view = [];
-                                                        notif.user_id =
-                                                            authProvider.loginUserData.id;
-                                                        notif.receiver_id = data.user!.id!;
-                                                        notif.post_id = data.id!;
-                                                        notif.post_data_type =
-                                                        PostDataType.IMAGE.name!;
-
-                                                        notif.updatedAt =
-                                                            DateTime.now().microsecondsSinceEpoch;
-                                                        notif.createdAt =
-                                                            DateTime.now().microsecondsSinceEpoch;
-                                                        notif.status = PostStatus.VALIDE.name;
-
-                                                        // users.add(pseudo.toJson());
-
-                                                        await firestore
-                                                            .collection('Notifications')
-                                                            .doc(notif.id)
-                                                            .set(notif.toJson());
-
-                                                        await authProvider.sendNotification(
-                                                            userIds: [data.user!.oneIgnalUserid!],
-                                                            smallImage:
-                                                            "${authProvider.loginUserData.imageUrl!}",
-                                                            send_user_id:
-                                                            "${authProvider.loginUserData.id!}",
-                                                            recever_user_id: "${data.user!.id!}",
-                                                            message:
-                                                            "📢 💼 @${authProvider.loginUserData.pseudo!} est intéressé(e) par votre service 💼",
-                                                            type_notif:
-                                                            NotificationType.SERVICE.name,
-                                                            post_id: "${data!.id!}",
-                                                            post_type: PostDataType.IMAGE.name,
-                                                            chat_id: '');
-                                                      }
-
-
-                                                    }
-
-                                                  },);
-
-
-
-
-
-                                                },
-                                                child: Center(
-                                                      child: Container(
-                                                      alignment: Alignment.center,
-                                                      decoration: BoxDecoration(
-                                                          color: Colors.brown,
-                                                          borderRadius: BorderRadius.all(Radius.circular(5))
-                                                      ),
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.only(left: 8.0,right: 8),
-                                                        child: Row(
-                                                          children: [
-                                                            Text('Contacter',style: TextStyle(color: Colors.white),),
-                                                            IconButton(
-                                                              icon: Icon(FontAwesome.whatsapp,color: Colors.green,size: 30,),
-                                                              onPressed: () async {
-
-                                                                // Fonction pour ouvrir WhatsApp
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        Text(
-                                          data.description ?? 'Description',
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8.0,right: 8,top: 8),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment: CrossAxisAlignment.center,
-
-                                            children: [
-                                              LikeButton(
-                                                isLiked: false,
-                                                size: 15,
-                                                circleColor:
-                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                bubblesColor: BubblesColor(
-                                                  dotPrimaryColor: Color(0xff3b9ade),
-                                                  dotSecondaryColor: Color(0xff027f19),
-                                                ),
-                                                countPostion: CountPostion.bottom,
-                                                likeBuilder: (bool isLiked) {
-                                                  return Icon(
-                                                    FontAwesome.eye,
-                                                    color: isLiked ? Colors.black : Colors.brown,
-                                                    size: 15,
-                                                  );
-                                                },
-                                                likeCount:  data.vues,
-                                                countBuilder: (int? count, bool isLiked, String text) {
-                                                  var color = isLiked ? Colors.black : Colors.black;
-                                                  Widget result;
-                                                  if (count == 0) {
-                                                    result = Text(
-                                                      "0",textAlign: TextAlign.center,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  } else
-                                                    result = Text(
-                                                      text,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  return result;
-                                                },
-
-                                              ),
-                                              LikeButton(
-                                                isLiked: false,
-                                                size: 15,
-                                                circleColor:
-                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                bubblesColor: BubblesColor(
-                                                  dotPrimaryColor: Color(0xff3b9ade),
-                                                  dotSecondaryColor: Color(0xff027f19),
-                                                ),
-                                                countPostion: CountPostion.bottom,
-                                                likeBuilder: (bool isLiked) {
-                                                  return Icon(
-                                                    FontAwesome.whatsapp,
-                                                    color: isLiked ? Colors.green : Colors.green,
-                                                    size: 15,
-                                                  );
-                                                },
-                                                likeCount:   data.contactWhatsapp,
-                                                countBuilder: (int? count, bool isLiked, String text) {
-                                                  var color = isLiked ? Colors.black : Colors.black;
-                                                  Widget result;
-                                                  if (count == 0) {
-                                                    result = Text(
-                                                      "0",textAlign: TextAlign.center,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  } else
-                                                    result = Text(
-                                                      text,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  return result;
-                                                },
-
-                                              ),
-                                              LikeButton(
-                                                onTap: (isLiked) async {
-                                                  await    postProvider.getUserServiceById(data.id!).then((value) async {
-                                                    if (value.isNotEmpty) {
-                                                      data=value.first;
-                                                      data.like=value.first.like!+1;
-
-                                                      if(!isIn(data.usersLikeId!, authProvider.loginUserData!.id!)){
-                                                        data.usersLikeId!.add(authProvider.loginUserData!.id!) ;
-
-                                                      }
-                                                      postProvider.updateUserService(data,context).then((value) {
-                                                        if (value) {
-setState(() {
-
-});
-
-                                                        }
-                                                      },);
-                                                    }
-                                                  },);
-
-                                                  return Future.value(true);
-
-                                                },
-                                                isLiked: false,
-                                                size: 15,
-                                                circleColor:
-                                                CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-                                                bubblesColor: BubblesColor(
-                                                  dotPrimaryColor: Color(0xff3b9ade),
-                                                  dotSecondaryColor: Color(0xff027f19),
-                                                ),
-                                                countPostion: CountPostion.bottom,
-                                                likeBuilder: (bool isLiked) {
-                                                  return Icon(
-                                                    FontAwesome.heart,
-                                                    color: isLiked ? Colors.red : Colors.redAccent,
-                                                    size: 15,
-                                                  );
-                                                },
-                                                likeCount:   data.like,
-                                                countBuilder: (int? count, bool isLiked, String text) {
-                                                  var color = isLiked ? Colors.black : Colors.black;
-                                                  Widget result;
-                                                  if (count == 0) {
-                                                    result = Text(
-                                                      "0",textAlign: TextAlign.center,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  } else
-                                                    result = Text(
-                                                      text,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  return result;
-                                                },
-
-                                              ),
-                                              LikeButton(
-                                                onTap: (isLiked) async {
-
-
-
-                                                  return Future.value(true);
-
-                                                },
-                                                isLiked: false,
-                                                size: 15,
-                                                circleColor:
-                                                CircleColor(start: Color(0xffffc400), end: Color(
-                                                    0xffcc7a00)),
-                                                bubblesColor: BubblesColor(
-                                                  dotPrimaryColor: Color(0xffffc400),
-                                                  dotSecondaryColor: Color(0xff07f629),
-                                                ),
-                                                countPostion: CountPostion.bottom,
-                                                likeBuilder: (bool isLiked) {
-                                                  return Icon(
-                                                    Entypo.share,
-                                                    color: isLiked ? Colors.blue : Colors.blueAccent,
-                                                    size: 15,
-                                                  );
-                                                },
-                                                likeCount:   data.usersPartageId!.length,
-                                                countBuilder: (int? count, bool isLiked, String text) {
-                                                  var color = isLiked ? Colors.black : Colors.black;
-                                                  Widget result;
-                                                  if (count == 0) {
-                                                    result = Text(
-                                                      "0",textAlign: TextAlign.center,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  } else
-                                                    result = Text(
-                                                      text,
-                                                      style: TextStyle(color: color,fontSize: 8),
-                                                    );
-                                                  return result;
-                                                },
-
-                                              ),
-
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                ],
-                              ),
-                              onTap: () {
-                                // Action lors du clic sur un élément de la liste
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }
-                },
+  Widget _buildFiltersSection(PostProvider postProvider) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        border: Border(bottom: BorderSide(color: Colors.green)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterDropdown(
+                  label: 'Catégorie',
+                  items: ServiceConstants.categories,
+                  value: postProvider.selectedCategory,
+                  onChanged: (value) => _applyFilters(category: value),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _buildFilterDropdown(
+                  label: 'Pays',
+                  items: ServiceConstants.africanCountries,
+                  value: postProvider.selectedCountry,
+                  onChanged: (value) => _applyFilters(country: value),
+                ),
               ),
             ],
+          ),
+          SizedBox(height: 8),
+          FutureBuilder<List<String>>(
+            future: postProvider.getServiceCities(),
+            builder: (context, snapshot) {
+              final cities = snapshot.data ?? [];
+              return _buildFilterDropdown(
+                label: 'Ville',
+                items: cities,
+                value: postProvider.selectedCity,
+                onChanged: (value) => _applyFilters(city: value),
+              );
+            },
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _clearFilters,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.yellow,
+                    side: BorderSide(color: Colors.yellow),
+                  ),
+                  child: Text('EFFACER'),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => setState(() { _showFilters = false; }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: Text('APPLIQUER'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required List<String> items,
+    required String? value,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.yellow, fontSize: 12),
+        ),
+        SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: value,
+            isExpanded: true,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            ),
+            dropdownColor: Colors.grey[900],
+            style: TextStyle(color: Colors.white, fontSize: 12),
+            icon: Icon(Icons.arrow_drop_down, color: Colors.yellow, size: 16),
+            items: [
+              DropdownMenuItem<String>(
+                value: null,
+                child: Text('Tous', style: TextStyle(color: Colors.grey)),
+              ),
+              ...items.map((item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+            ],
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.work_outline, size: 64, color: Colors.green),
+          SizedBox(height: 16),
+          Text(
+            'Aucun service trouvé',
+            style: TextStyle(color: Colors.yellow, fontSize: 16),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Essayez de modifier vos filtres',
+            style: TextStyle(color: Colors.grey),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => UserServiceForm()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.black,
+            ),
+            child: Text('CRÉER UN SERVICE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServicesGrid(UserAuthProvider authProvider, PostProvider postProvider) {
+    return Column(
+      children: [
+        // Compteur de résultats
+        if (postProvider.userServices.isNotEmpty)
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            color: Colors.grey[900],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${postProvider.userServices.length} service(s) trouvé(s)',
+                  style: TextStyle(color: Colors.green, fontSize: 12),
+                ),
+                if (postProvider.selectedCategory != null ||
+                    postProvider.selectedCountry != null ||
+                    postProvider.selectedCity != null)
+                  GestureDetector(
+                    onTap: _clearFilters,
+                    child: Text(
+                      'Effacer les filtres',
+                      style: TextStyle(color: Colors.yellow, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        // Grille des services
+        Expanded(
+          child: RefreshIndicator(
+            backgroundColor: Colors.green,
+            color: Colors.yellow,
+            onRefresh: () async {
+              final postProvider = Provider.of<PostProvider>(context, listen: false);
+              await postProvider.getUserServices();
+            },
+            child: GridView.builder(
+              controller: _scrollController,
+              physics: AlwaysScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.85,
+              ),
+              padding: EdgeInsets.all(8),
+              itemCount: postProvider.userServices.length + 1,
+              itemBuilder: (context, index) {
+                if (index == postProvider.userServices.length) {
+                  return _buildLoadMoreIndicator();
+                }
+                return ServiceGridCard(
+                  service: postProvider.userServices[index],
+                  authProvider: authProvider,
+                  onTap: () => _navigateToDetail(postProvider.userServices[index]),
+                  onContact: (service) async {
+                    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+                    await authProvider.createServiceLink(true, service).then((url) async {
+                      await launchWhatsApp(service.contact!, service, url);
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return _isLoadingMore
+        ? Center(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+        ),
+      ),
+    )
+        : SizedBox();
+  }
+}
+
+class ServiceGridCard extends StatelessWidget {
+  final UserServiceData service;
+  final UserAuthProvider authProvider;
+  final VoidCallback onTap;
+  final Function(UserServiceData) onContact;
+
+  const ServiceGridCard({
+    Key? key,
+    required this.service,
+    required this.authProvider,
+    required this.onTap,
+    required this.onContact,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValidImage = service.imageCourverture != null &&
+        service.imageCourverture!.isNotEmpty &&
+        service.imageCourverture!.startsWith('http');
+
+    final hasLocation = (service.city != null && service.city!.isNotEmpty) ||
+        (service.country != null && service.country!.isNotEmpty);
+    final hasCategory = service.category != null && service.category != 'Autre';
+
+    return Container(
+      margin: EdgeInsets.all(4),
+      child: Card(
+        color: Colors.grey[900],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 3,
+        shadowColor: Colors.green.withOpacity(0.3),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.all(6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // SECTION IMAGE AVEC OVERLAY
+                Stack(
+                  children: [
+                    // Image principale avec gradient overlay
+                    Container(
+                      height: 130,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: hasValidImage
+                            ? CachedNetworkImage(
+                          imageUrl: service.imageCourverture!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => _buildImagePlaceholder(),
+                          errorWidget: (context, url, error) => _buildImagePlaceholder(),
+                        )
+                            : _buildImagePlaceholder(),
+                      ),
+                    ),
+
+                    // Gradient overlay pour le texte
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 50, // Augmenté pour plus d'espace texte
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.95),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Titre superposé sur l'image
+                    Positioned(
+                      bottom: 28, // Remonté pour laisser place aux infos
+                      left: 6,
+                      right: 6,
+                      child: Text(
+                        service.titre ?? 'Service',
+                        style: TextStyle(
+                          color: Colors.yellow,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 4,
+                              color: Colors.black,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+
+
+                    // Badge pays en haut à gauche
+                    if (service.country != null && service.country!.isNotEmpty)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.5),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _getCountryFlag(service.country!),
+                                style: TextStyle(fontSize: 8),
+                              ),
+                              SizedBox(width: 2),
+                              Text(
+                                _getCountryAbbreviation(service.country!),
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 6,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Bouton WhatsApp en haut à droite
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => onContact(service),
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.5),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            FontAwesome.whatsapp,
+                            color: Colors.white,
+                            size: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 6),
+
+                // SECTION STATS COMPACTES
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildCompactStat(Icons.remove_red_eye, service.vues ?? 0, 'Vues'),
+                      _buildCompactStat(FontAwesome.whatsapp, service.contactWhatsapp ?? 0, 'Contacts'),
+                      _buildCompactStat(FontAwesome.heart, service.like ?? 0, 'Likes'),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 5,),
+
+                // SECTION INFOS LOCALISATION ET CATÉGORIE
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Catégorie
+                    if (hasCategory)
+                      Container(
+                        margin: EdgeInsets.only(bottom: 2),
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.yellow.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          service.category!,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+
+                    // Localisation
+                    if (hasLocation)
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: Colors.green, size: 8),
+                          SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              _getLocationText(),
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w600,
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 4,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
 
-class IconText extends StatelessWidget {
-  final IconData icon;
-  final String text;
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: Colors.grey[800],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.work_outline, color: Colors.green, size: 30),
+            SizedBox(height: 4),
+            Text(
+              'SERVICE',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  IconText({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget _buildCompactStat(IconData icon, int count, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16),
-        SizedBox(width: 4),
-        // Text(text),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.green, size: 8),
+            SizedBox(width: 2),
+            Text(
+              _formatCount(count),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 1),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 6,
+          ),
+        ),
       ],
     );
+  }
+
+  String _formatCount(int count) {
+    if (count < 1000) return count.toString();
+    if (count < 10000) return '${(count / 1000).toStringAsFixed(1)}K';
+    if (count < 1000000) return '${(count ~/ 1000)}K';
+    return '${(count / 1000000).toStringAsFixed(1)}M';
+  }
+
+  String _getLocationText() {
+    if (service.city != null && service.country != null) {
+      return '${service.city!}, ${service.country!}';
+    } else if (service.city != null) {
+      return service.city!;
+    } else if (service.country != null) {
+      return service.country!;
+    }
+    return '';
+  }
+
+  String _getCountryAbbreviation(String country) {
+    final abbreviations = {
+      'Bénin': 'BJ',
+      'Togo': 'TG',
+      'Ghana': 'GH',
+      'Nigeria': 'NG',
+      'Côte d\'Ivoire': 'CI',
+      'Sénégal': 'SN',
+      'Cameroun': 'CM',
+      'Congo': 'CG',
+      'Gabon': 'GA',
+      'Mali': 'ML',
+      'Burkina Faso': 'BF',
+      'Niger': 'NE',
+      'Tchad': 'TD',
+      'Rwanda': 'RW',
+      'Burundi': 'BI',
+      'Kenya': 'KE',
+      'Tanzanie': 'TZ',
+      'Ouganda': 'UG',
+      'Éthiopie': 'ET',
+      'Somalie': 'SO',
+      'Maroc': 'MA',
+      'Algérie': 'DZ',
+      'Tunisie': 'TN',
+      'Égypte': 'EG',
+      'Soudan': 'SD',
+      'Afrique du Sud': 'ZA',
+      'Angola': 'AO',
+      'Mozambique': 'MZ',
+      'Zambie': 'ZM',
+      'Zimbabwe': 'ZW',
+    };
+
+    return abbreviations[country] ?? country.substring(0, 2).toUpperCase();
+  }
+
+  String _getCountryFlag(String country) {
+    final flagEmojis = {
+      'Bénin': '🇧🇯',
+      'Togo': '🇹🇬',
+      'Ghana': '🇬🇭',
+      'Nigeria': '🇳🇬',
+      'Côte d\'Ivoire': '🇨🇮',
+      'Sénégal': '🇸🇳',
+      'Cameroun': '🇨🇲',
+      'Congo': '🇨🇬',
+      'Gabon': '🇬🇦',
+      'Mali': '🇲🇱',
+      'Burkina Faso': '🇧🇫',
+      'Niger': '🇳🇪',
+      'Tchad': '🇹🇩',
+      'Rwanda': '🇷🇼',
+      'Burundi': '🇧🇮',
+      'Kenya': '🇰🇪',
+      'Tanzanie': '🇹🇿',
+      'Ouganda': '🇺🇬',
+      'Éthiopie': '🇪🇹',
+      'Somalie': '🇸🇴',
+      'Maroc': '🇲🇦',
+      'Algérie': '🇩🇿',
+      'Tunisie': '🇹🇳',
+      'Égypte': '🇪🇬',
+      'Soudan': '🇸🇩',
+      'Afrique du Sud': '🇿🇦',
+      'Angola': '🇦🇴',
+      'Mozambique': '🇲🇿',
+      'Zambie': '🇿🇲',
+      'Zimbabwe': '🇿🇼',
+    };
+
+    return flagEmojis[country] ?? '🇦🇫';
   }
 }

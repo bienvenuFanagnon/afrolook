@@ -669,15 +669,35 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           child: images.isNotEmpty
               ? Opacity(
             opacity: isLocked ? 0.15 : 1.0, // réduit la visibilité si verrouillé
-            child: CachedNetworkImage(
-              imageUrl: images.first,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: h * 0.4,
-              placeholder: (context, url) =>
-                  Container(color: _afroTextSecondary.withOpacity(0.1)),
-              errorWidget: (context, url, error) =>
-                  Container(color: _afroTextSecondary.withOpacity(0.1)),
+            child:         GestureDetector(
+              onTap: () {
+                if(widget.post.dataType==PostDataType.VIDEO.name){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+                    ),
+                  );
+                }else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailsPost(post: widget.post),
+                    ),
+                  );
+                }
+
+              },
+              child: CachedNetworkImage(
+                imageUrl: images.first,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: h * 0.4,
+                placeholder: (context, url) =>
+                    Container(color: _afroTextSecondary.withOpacity(0.1)),
+                errorWidget: (context, url, error) =>
+                    Container(color: _afroTextSecondary.withOpacity(0.1)),
+              ),
             ),
           )
               : Container(color: _afroTextSecondary.withOpacity(0.1)),
@@ -734,13 +754,33 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           )
               : (_videoThumbnailPath != null &&
               File(_videoThumbnailPath!).existsSync())
-              ? Opacity(
-            opacity: isLocked ? 0.6 : 1.0, // réduit la visibilité si verrouillé
-                child: Image.file(
-                            File(_videoThumbnailPath!),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: h * 0.4,
+              ? GestureDetector(
+            onTap: () {
+              if(widget.post.dataType==PostDataType.VIDEO.name){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+                  ),
+                );
+              }else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailsPost(post: widget.post),
+                  ),
+                );
+              }
+
+            },
+                child: Opacity(
+                            opacity: isLocked ? 0.6 : 1.0, // réduit la visibilité si verrouillé
+                            child: Image.file(
+                File(_videoThumbnailPath!),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: h * 0.4,
+                            ),
                           ),
               )
               : _buildFallbackThumbnail(),
@@ -1674,13 +1714,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
 
 // Méthodes utilitaires globales
-bool isIn(List<String> list, String value) {
-  return list.contains(value);
-}
+  bool isIn(List<String> list, String value) {
+    return list.contains(value);
+  }
 
-bool isUserAbonne(List<String> abonnesIds, String userId) {
-  return abonnesIds.contains(userId);
-}}
+  bool isUserAbonne(List<String> abonnesIds, String userId) {
+    return abonnesIds.contains(userId);
+  }}
 
 //
 // class HomePostUsersWidget extends StatefulWidget {

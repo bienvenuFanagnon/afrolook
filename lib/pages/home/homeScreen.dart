@@ -635,6 +635,25 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   ListTile(
+                    trailing: Icon(Icons.info, color: Colors.red),
+                    leading: Image.asset(
+                      'assets/menu/7.png',
+                      height: 20,
+                      width: 20,
+                      color: Colors.yellow, // Icône jaune
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Actus & Infos AfroLook",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.pushNamed(context, '/app_info');
+
+                    },
+                  ),
+                  ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(FontAwesome.forumbee, size: 30, color: Colors.yellow), // Icône jaune
                     title: TextCustomerMenu(
@@ -784,28 +803,7 @@ class _MyHomePageState extends State<MyHomePage>
                   //   },
                   // ),
 
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/7.png',
-                      height: 20,
-                      width: 20,
-                      color: Colors.yellow, // Icône jaune
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Afrolook infos",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      await userProvider.getAllInfos().then(
-                            (value) {
-                          Navigator.pushNamed(context, '/app_info');
-                        },
-                      );
-                    },
-                  ),
+
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -817,11 +815,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      await userProvider.getAllInfos().then(
-                            (value) {
-                          Navigator.pushNamed(context, '/contact');
-                        },
-                      );
+                      Navigator.pushNamed(context, '/contact');
+
                     },
                   ),
 

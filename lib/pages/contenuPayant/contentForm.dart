@@ -446,7 +446,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         );
 
         success = await contentProvider.addEpisode(episode);
-        await userProvider.getAllUsersOneSignaUserId().then((userIds) async {
+         userProvider.getAllUsersOneSignaUserId().then((userIds) async {
           if (userIds.isNotEmpty) {
             await userProvider.sendNotification(
               userIds: userIds,
