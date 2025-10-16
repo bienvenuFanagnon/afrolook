@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
+import '../../userTransactionListe.dart';
 
 
 class UserManagementPage extends StatefulWidget {
@@ -522,8 +523,96 @@ class _UserManagementPageState extends State<UserManagementPage> {
       ),
     );
   }
-
   Widget _buildAdminActions() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ACTIONS ADMINISTRATEUR',
+            style: TextStyle(
+              color: Colors.yellow[700],
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isUpdating ? null : _showDepotDialog,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: Icon(Iconsax.add_circle),
+                  label: Text('DÉPÔT MANUEL'),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isUpdating ? null : _showRetraitDialog,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: Icon(Iconsax.minus_cirlce),
+                  label: Text('RETRAIT MANUEL'),
+                ),
+              ),
+            ],
+          ),
+          // AJOUTEZ CE BOUTON ICI - Nouvelle ligne pour le bouton des transactions
+          SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigation vers la page des transactions de l'utilisateur
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserTransactionsPage(userId: widget.userId),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[800],
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: Size(double.infinity, 50), // Pleine largeur
+            ),
+            icon: Icon(Iconsax.receipt),
+            label: Text('VOIR LES TRANSACTIONS'),
+          ),
+          if (_isUpdating) ...[
+            SizedBox(height: 16),
+            Center(
+              child: CircularProgressIndicator(color: Colors.yellow[700]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  Widget _buildAdminActions2() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20),
