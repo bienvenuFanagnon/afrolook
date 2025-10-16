@@ -421,7 +421,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                       DateTime.now().microsecondsSinceEpoch;
                                   widget.canal!.publicash =  widget.canal!.publicash??0 +1;
                                   postProvider.updateCanal( widget.canal!, context);
-                                  await authProvider.sendPushNotificationToUsers(
+                                   authProvider.sendPushNotificationToUsers(
                                     sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
                                     message: " ${post.description}",                              // Message dynamique
                                     typeNotif: NotificationType.POST.name,                       // Type de notification
@@ -434,7 +434,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                   );
 
                                 }else{
-                                  await authProvider.sendPushNotificationToUsers(
+                                   authProvider.sendPushNotificationToUsers(
                                     sender: authProvider.loginUserData,        // L'utilisateur qui envoie la notification
                                     message: " ${post.description}",           // Message dynamique
                                     typeNotif: NotificationType.POST.name,     // Type de notification
@@ -950,7 +950,7 @@ class _UserPubImageState extends State<UserPubImage> {
                                 await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
                                 print("///////////-- save notification --///////////////");
 
-                                await authProvider.sendPushNotificationToUsers(
+                                 authProvider.sendPushNotificationToUsers(
                                   sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
                                   message: " ${post.description}",                              // Message dynamique
                                   typeNotif: NotificationType.POST.name,                       // Type de notification
@@ -1577,7 +1577,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     try {
       if (widget.canal != null) {
         // 🔹 Notification pour les posts de canal
-        await authProvider.sendPushNotificationToUsers(
+         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,         // L'utilisateur qui publie
           message: " ${post.description}",            // Message dynamique
           typeNotif: NotificationType.POST.name,      // Type de notification
@@ -1595,7 +1595,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         await postProvider.updateCanal(widget.canal!, context);
       } else {
         // 🔹 Notification pour les posts d'utilisateur
-        await authProvider.sendPushNotificationToUsers(
+         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,         // L'utilisateur qui publie
           message: "📢 ${post.description}",          // Message dynamique
           typeNotif: NotificationType.POST.name,      // Type de notification
