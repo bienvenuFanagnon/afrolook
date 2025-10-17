@@ -1009,7 +1009,7 @@ class _HomePageState extends State<HomeAfroshopPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddAnnonceStep1(entrepriseData: value.first),
+                      builder: (context) => AddNewProduit(entrepriseData: value.first),
                     ),
                   );
                 } else {

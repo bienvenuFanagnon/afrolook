@@ -548,7 +548,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => CurrentSubscriptionPage(
-                          abonnement: entrepriseData!.abonnement!,
+                          abonnement: entrepriseData!.abonnement!, entreprise: entrepriseData!,
                         ),
                       ),
                     );
