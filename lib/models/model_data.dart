@@ -854,7 +854,6 @@ class UserShopData {
   Map<String, dynamic> toJson() => _$UserShopDataToJson(this);
 }
 
-@JsonSerializable()
 class ArticleData {
   String? id;
   String? user_id;
@@ -873,20 +872,261 @@ class ArticleData {
   int? partage;
   int? createdAt;
   int? updatedAt;
-  @JsonKey(includeFromJson: false, includeToJson: false)
   UserData? user;
   bool? dispo_annonce_afrolook;
   int? annonce_time;
-
   List<String>? images = [];
-  ArticleData();
 
-  // Add a factory constructor that creates a new instance from a JSON map
-  factory ArticleData.fromJson(Map<String, dynamic> json) =>
-      _$ArticleDataFromJson(json);
+  // Nouveaux attributs pour le boost
+  int? boostEndDate; // Timestamp de fin du boost
+  bool? isBoosted; // Si le produit est actuellement boosté
+  String? boostTransactionId; // ID de la transaction de boost
+  double? boostCost; // Coût du boost
+  int? boostDays; // Nombre de jours de boost
 
-  // Add a method that converts this instance to a JSON map
-  Map<String, dynamic> toJson() => _$ArticleDataToJson(this);
+  // Attributs pour les catégories et tags
+  String? sousCategorie;
+  List<String>? tags = [];
+  String? condition; // Nouveau, occasion, etc.
+  String? etat; // Excellent, bon, moyen
+
+  // Attributs pour la localisation
+  String? ville;
+  String? quartier;
+  double? latitude;
+  double? longitude;
+
+  // Attributs pour la négociation
+  bool? negociable;
+  int? prixOriginal; // Prix avant réduction
+  int? reduction; // Pourcentage de réduction
+
+  // Attributs pour les statistiques avancées
+  int? vuesSemaine;
+  int? vuesMois;
+  int? contactsSemaine;
+  int? contactsMois;
+
+  // Attributs pour la modération
+  String? status; // en_attente, approuve, rejete
+  String? modReason; // Raison de modération
+  String? modBy; // Modérateur
+  int? modDate;
+
+  ArticleData({
+    this.id,
+    this.user_id,
+    this.categorie_id,
+    this.description,
+    this.phone,
+    this.titre,
+    this.prix,
+    this.popularite = 1,
+    this.booster = 0,
+    this.countryData,
+    this.vues,
+    this.disponible = true,
+    this.contact,
+    this.jaime,
+    this.partage,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+    this.dispo_annonce_afrolook,
+    this.annonce_time,
+    this.images,
+    this.boostEndDate,
+    this.isBoosted,
+    this.boostTransactionId,
+    this.boostCost,
+    this.boostDays,
+    this.sousCategorie,
+    this.tags,
+    this.condition,
+    this.etat,
+    this.ville,
+    this.quartier,
+    this.latitude,
+    this.longitude,
+    this.negociable,
+    this.prixOriginal,
+    this.reduction,
+    this.vuesSemaine,
+    this.vuesMois,
+    this.contactsSemaine,
+    this.contactsMois,
+    this.status,
+    this.modReason,
+    this.modBy,
+    this.modDate,
+  });
+
+  factory ArticleData.fromJson(Map<String, dynamic> json) {
+    return ArticleData(
+      id: json['id'] as String?,
+      user_id: json['user_id'] as String?,
+      categorie_id: json['categorie_id'] as String?,
+      description: json['description'] as String?,
+      phone: json['phone'] as String?,
+      titre: json['titre'] as String?,
+      prix: (json['prix'] as num?)?.toInt(),
+      popularite: (json['popularite'] as num?)?.toInt() ?? 1,
+      booster: (json['booster'] as num?)?.toInt() ?? 0,
+      countryData: (json['countryData'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+      ),
+      vues: (json['vues'] as num?)?.toInt(),
+      disponible: json['disponible'] as bool? ?? true,
+      contact: (json['contact'] as num?)?.toInt(),
+      jaime: (json['jaime'] as num?)?.toInt(),
+      partage: (json['partage'] as num?)?.toInt(),
+      createdAt: (json['createdAt'] as num?)?.toInt(),
+      updatedAt: (json['updatedAt'] as num?)?.toInt(),
+      dispo_annonce_afrolook: json['dispo_annonce_afrolook'] as bool?,
+      annonce_time: (json['annonce_time'] as num?)?.toInt(),
+      images: (json['images'] as List<dynamic>?)?.map((e) => e as String).toList(),
+
+      // Nouveaux attributs
+      boostEndDate: (json['boostEndDate'] as num?)?.toInt(),
+      isBoosted: json['isBoosted'] as bool?,
+      boostTransactionId: json['boostTransactionId'] as String?,
+      boostCost: (json['boostCost'] as num?)?.toDouble(),
+      boostDays: (json['boostDays'] as num?)?.toInt(),
+      sousCategorie: json['sousCategorie'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      condition: json['condition'] as String?,
+      etat: json['etat'] as String?,
+      ville: json['ville'] as String?,
+      quartier: json['quartier'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      negociable: json['negociable'] as bool?,
+      prixOriginal: (json['prixOriginal'] as num?)?.toInt(),
+      reduction: (json['reduction'] as num?)?.toInt(),
+      vuesSemaine: (json['vuesSemaine'] as num?)?.toInt(),
+      vuesMois: (json['vuesMois'] as num?)?.toInt(),
+      contactsSemaine: (json['contactsSemaine'] as num?)?.toInt(),
+      contactsMois: (json['contactsMois'] as num?)?.toInt(),
+      status: json['status'] as String?,
+      modReason: json['modReason'] as String?,
+      modBy: json['modBy'] as String?,
+      modDate: (json['modDate'] as num?)?.toInt(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'user_id': user_id,
+      'categorie_id': categorie_id,
+      'description': description,
+      'phone': phone,
+      'titre': titre,
+      'prix': prix,
+      'popularite': popularite,
+      'booster': booster,
+      'countryData': countryData,
+      'vues': vues,
+      'disponible': disponible,
+      'contact': contact,
+      'jaime': jaime,
+      'partage': partage,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'dispo_annonce_afrolook': dispo_annonce_afrolook,
+      'annonce_time': annonce_time,
+      'images': images,
+
+      // Nouveaux attributs
+      'boostEndDate': boostEndDate,
+      'isBoosted': isBoosted,
+      'boostTransactionId': boostTransactionId,
+      'boostCost': boostCost,
+      'boostDays': boostDays,
+      'sousCategorie': sousCategorie,
+      'tags': tags,
+      'condition': condition,
+      'etat': etat,
+      'ville': ville,
+      'quartier': quartier,
+      'latitude': latitude,
+      'longitude': longitude,
+      'negociable': negociable,
+      'prixOriginal': prixOriginal,
+      'reduction': reduction,
+      'vuesSemaine': vuesSemaine,
+      'vuesMois': vuesMois,
+      'contactsSemaine': contactsSemaine,
+      'contactsMois': contactsMois,
+      'status': status,
+      'modReason': modReason,
+      'modBy': modBy,
+      'modDate': modDate,
+    };
+  }
+
+  // Méthodes utilitaires
+  bool get estBoosted {
+    if (boostEndDate == null) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return boostEndDate! > now;
+  }
+
+  int get joursRestantsBoost {
+    if (boostEndDate == null) return 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final difference = boostEndDate! - now;
+    final jours = (difference / (1000 * 60 * 60 * 24)).ceil();
+    return jours > 0 ? jours : 0;
+  }
+
+  double get prixAvecReduction {
+    if (reduction == null || reduction == 0) return prix?.toDouble() ?? 0;
+    final reductionMontant = (prix! * reduction! / 100);
+    return prix! - reductionMontant;
+  }
+
+  bool get estEnPromotion {
+    return reduction != null && reduction! > 0;
+  }
+
+  // Méthode pour mettre à jour les vues
+  void incrementerVues() {
+    vues = (vues ?? 0) + 1;
+    updatedAt = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  // Méthode pour mettre à jour les contacts
+  void incrementerContacts() {
+    contact = (contact ?? 0) + 1;
+    updatedAt = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  // Méthode pour booster le produit
+  void boosterProduit(int jours, double cout) {
+    final now = DateTime.now();
+    final endDate = now.add(Duration(days: jours));
+
+    boostEndDate = endDate.millisecondsSinceEpoch;
+    isBoosted = true;
+    booster = 1;
+    boostDays = jours;
+    boostCost = cout;
+    updatedAt = now.millisecondsSinceEpoch;
+  }
+
+  // Méthode pour arrêter le boost
+  void arreterBoost() {
+    isBoosted = false;
+    booster = 0;
+    boostEndDate = null;
+    updatedAt = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  @override
+  String toString() {
+    return 'ArticleData{id: $id, titre: $titre, prix: $prix, boosté: $estBoosted}';
+  }
 }
 
 // challenge_model.dart

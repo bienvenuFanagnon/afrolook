@@ -579,7 +579,7 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
 
   Widget _buildBoostedProducts(CategorieProduitProvider provider,double w,h) {
     return FutureBuilder<List<ArticleData>>(
-      future: provider.getArticleBooster(),
+      future: provider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG'),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return SizedBox.shrink();
 

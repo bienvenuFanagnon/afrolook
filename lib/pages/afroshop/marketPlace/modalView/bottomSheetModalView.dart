@@ -37,7 +37,8 @@ class _ArticleBottomSheetState extends State<ArticleBottomSheet> {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
     return FutureBuilder<List<ArticleData>>(
-      future: categorieProduitProvider.getArticleBooster(),
+      future: categorieProduitProvider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG'
+      ),
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if (snapshot.hasData) {
           List<ArticleData> articles = snapshot.data;

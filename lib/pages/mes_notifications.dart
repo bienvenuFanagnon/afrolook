@@ -145,47 +145,14 @@ class _MesNotificationState extends State<MesNotification> {
 
       }
       else if (notification.type == NotificationType.ARTICLE.name) {
-
-        await    postProvider.getArticleById(notification.post_id!).then((value) async {
-          if (value.isNotEmpty) {
-            value.first.vues=value.first.vues!+1;
-            // article.vues=value.first.vues!+1;
-            categorieProduitProvider.updateArticle(value.first,context).then((value) {
-              if (value) {
-
-
-              }
-            },);
-            await    authProvider.getUserById(value.first.user_id!).then((users) async {
-              if(users.isNotEmpty){
-                value.first.user=users.first;
-                await    postProvider.getEntreprise(value.first.user_id!).then((entreprises) {
-                  if(entreprises.isNotEmpty){
-                    entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
-                    // setState(() {
-                    //   _isLoading=false;
-                    // });
-                    setState(() {
-                      onTap=false;
-                    });
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              HomeAfroshopPage(title: ""),
-                        ));
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ProduitDetail(article: value.first, entrepriseData: entreprises.first,),
-                        ));
-                  }
-                },);
-              }
-            },);
-          }
-        },);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ProduitDetail( productId: notification.post_id!,),
+            // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+          ),
+        );
 
       }
       else if (notification.type == NotificationType.SERVICE.name) {

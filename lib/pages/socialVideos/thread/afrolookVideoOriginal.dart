@@ -43,10 +43,12 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
 
   late PostProvider _postProvider;
   late CategorieProduitProvider _categorieProduitProvider;
+  late UserAuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
+    _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
 
@@ -82,7 +84,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
 
   Future<void> _loadAdsData() async {
     try {
-      final articleResults = await _categorieProduitProvider.getArticleBooster();
+      final articleResults = await _categorieProduitProvider.getArticleBooster(_authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
       final canalResults = await _postProvider.getCanauxHome();
 
       setState(() {

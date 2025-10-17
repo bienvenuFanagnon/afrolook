@@ -20,6 +20,7 @@ import '../../../../models/model_data.dart';
 import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/userProvider.dart';
+import '../../../entreprise/profile/ProfileEntreprise.dart';
 
 class AddAnnonceStep1 extends StatefulWidget {
   final EntrepriseData entrepriseData;
@@ -291,8 +292,12 @@ class _AddAnnonceState extends State<AddAnnonceStep1> {
                       Navigator.pop(context);
 
                       if (value) {
-                        Navigator.pushNamed(context, '/profile_entreprise');
-                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EntrepriseProfil(userId: authProvider.loginUserData.id!),
+                          ),
+                        );                      } else {
                         // Affiche un modal si pas d’entreprise
                         showDialog(
                           context: context,

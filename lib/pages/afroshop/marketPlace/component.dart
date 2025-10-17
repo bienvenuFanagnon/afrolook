@@ -89,45 +89,14 @@ class _ArticleTileState extends State<ArticleTile> {
   }
 
   Future<void> _handleProductTap() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await categorieProduitProvider.getArticleById(widget.article.id!).then((value) async {
-        if (value.isNotEmpty) {
-          value.first.vues = value.first.vues! + 1;
-          widget.article.vues = value.first.vues!;
-          await categorieProduitProvider.updateArticle(value.first, context);
-
-          await authProvider.getUserById(widget.article.user_id!).then((users) async {
-            if (users.isNotEmpty) {
-              widget.article.user = users.first;
-              await postProvider.getEntreprise(widget.article.user_id!).then((entreprises) {
-                if (entreprises.isNotEmpty) {
-                  entreprises.first.suivi = entreprises.first.usersSuiviId!.length;
-                  setState(() {
-                    _isLoading = false;
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ProduitDetail(article: widget.article, entrepriseData: entreprises.first),
-                    ),
-                  );
-                }
-              });
-            }
-          });
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print("Error navigating to product: $e");
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ProduitDetail( productId: widget.article.id!,),
+        // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+      ),
+    );
   }
 
   Future<bool> _handleLike() async {
@@ -579,52 +548,28 @@ class _ArticleTileBoosterState extends State<ArticleTileBooster> {
           children: [
             GestureDetector(
               onTap: () async {
-                setState(() {
-                  _isLoading = true;
-                });
+                if(widget.isOtherPage){
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
 
-                await categorieProduitProvider.getArticleById(widget.article.id!).then((value) async {
-                  if (value.isNotEmpty) {
-                    value.first.vues = value.first.vues! + 1;
-                    widget.article.vues = value.first.vues! + 1;
-                    categorieProduitProvider.updateArticle(value.first, context).then((value) {
-                      if (value) {
-                        // Additional logic here
-                      }
-                    });
-                    await authProvider.getUserById(widget.article.user_id!).then((users) async {
-                      if (users.isNotEmpty) {
-                        widget.article.user = users.first;
-                        await postProvider.getEntreprise(widget.article.user_id!).then((entreprises) {
-                          if (entreprises.isNotEmpty) {
-                            entreprises.first.suivi = entreprises.first.usersSuiviId!.length;
-                            setState(() {
-                              _isLoading = false;
-                            });
-                            if(widget.isOtherPage){
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProduitDetail( productId: widget.article.id!,),
+                      // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+                    ),
+                  );
+                }else{
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProduitDetail( productId: widget.article.id!,),
+                      // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+                    ),
+                  );
+                }
 
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProduitDetail(article: widget.article, entrepriseData: entreprises.first),
-                                ),
-                              );
-                            }else{
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProduitDetail(article: widget.article, entrepriseData: entreprises.first),
-                                ),
-                              );
-                            }
-
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
               },
               child: ClipRRect(
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(5)),
@@ -744,72 +689,29 @@ class _ArticleTileSheetBoosterState extends State<ArticleTileSheetBooster> {
           child: Stack(
             children: [
               GestureDetector(
-                onTap: () async {
-                  setState(() {
-                    _isLoading = true;
-                  });
+onTap: () {
+  if(widget.isOtherPage){
+    Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
 
-                  await categorieProduitProvider
-                      .getArticleById(widget.article.id!)
-                      .then((value) async {
-                    if (value.isNotEmpty) {
-                      value.first.vues = value.first.vues! + 1;
-                      widget.article.vues = value.first.vues! + 1;
-                      categorieProduitProvider
-                          .updateArticle(value.first, context)
-                          .then((value) {
-                        if (value) {
-                          // Additional logic here
-                        }
-                      });
-                      await authProvider
-                          .getUserById(widget.article.user_id!)
-                          .then((users) async {
-                        if (users.isNotEmpty) {
-                          widget.article.user = users.first;
-                          await postProvider
-                              .getEntreprise(widget.article.user_id!)
-                              .then((entreprises) {
-                            if (entreprises.isNotEmpty) {
-                              entreprises.first.suivi =
-                                  entreprises.first.usersSuiviId!.length;
-                              setState(() {
-                                _isLoading = false;
-                              });
-                              if (widget.isOtherPage) {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          HomeAfroshopPage(title: ''),
-                                    ));
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProduitDetail(
-                                        article: widget.article,
-                                        entrepriseData: entreprises.first),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProduitDetail(
-                                        article: widget.article,
-                                        entrepriseData: entreprises.first),
-                                  ),
-                                );
-                              }
-                            }
-                          });
-                        }
-                      });
-                    }
-                  });
-                },
-                child: ClipRRect(
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ProduitDetail( productId: widget.article.id!,),
+        // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+      ),
+    );
+  }else{
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ProduitDetail( productId: widget.article.id!,),
+        // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+      ),
+    );
+  }
+},                child: ClipRRect(
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(10), topRight: Radius.circular(5)),
                   child: Container(
@@ -1059,93 +961,29 @@ class ProductWidget extends StatelessWidget {
     );
   }
   void _navigateToProductDetail(BuildContext context) async {
-    final categorieProduitProvider =
-    Provider.of<CategorieProduitProvider>(context, listen: false);
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    if(isOtherPage){
+      Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: ''),));
 
-    // Affiche le loader
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(color: Color(0xFF2ECC71)),
-      ),
-    );
-
-    try {
-      // Incrémenter les vues
-      final article =
-      await categorieProduitProvider.getArticleById(this.article.id!);
-      if (article.isNotEmpty) {
-        article.first.vues = (article.first.vues ?? 0) + 1;
-        categorieProduitProvider.updateArticle(article.first, context);
-      }
-
-      // Récupérer les données utilisateur et entreprise
-      final users = await authProvider.getUserById(this.article.user_id!);
-      if (users.isNotEmpty) {
-        this.article.user = users.first;
-        final entreprises = await postProvider.getEntreprise(this.article.user_id!);
-        if (entreprises.isNotEmpty) {
-          Navigator.pop(context); // Ferme le loader avant la navigation
-          if (isOtherPage) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: '')),
-            );
-          }
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProduitDetail(
-                article: this.article,
-                entrepriseData: entreprises.first,
-              ),
-            ),
-          );
-          return;
-        }
-      }
-    } catch (e) {
-      Navigator.pop(context); // Ferme le loader si erreur
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors du chargement")),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              ProduitDetail( productId: article.id!,),
+          // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+        ),
+      );
+    }else{
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              ProduitDetail( productId:article.id!,),
+          // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+        ),
       );
     }
-    Navigator.pop(context); // Ferme le loader si pas de données
   }
 
-  void _navigateToProductDetail2(BuildContext context) async {
-    final categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
-
-    // Incrémenter les vues
-    final article = await categorieProduitProvider.getArticleById(this.article.id!);
-    if (article.isNotEmpty) {
-      article.first.vues = (article.first.vues ?? 0) + 1;
-      categorieProduitProvider.updateArticle(article.first, context);
-    }
-
-    // Récupérer les données utilisateur et entreprise
-    final users = await authProvider.getUserById(this.article.user_id!);
-    if (users.isNotEmpty) {
-      this.article.user = users.first;
-      final entreprises = await postProvider.getEntreprise(this.article.user_id!);
-      if (entreprises.isNotEmpty) {
-        if (isOtherPage) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: '')));
-        }
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProduitDetail(article: this.article, entrepriseData: entreprises.first),
-          ),
-        );
-      }
-    }
-  }
 }
 
 

@@ -603,6 +603,21 @@ class _MyHomePageState extends State<MyHomePage>
                   //     );
                   //   },
                   // ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.store_mall_directory, color: Colors.yellow,size: 35,), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Afroshop MarketPlace",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => HomeAfroshopPage(title: ''),
+                      ));
+                    },
+                  ),
 
                   ListTile(
                     trailing: Icon(Icons.live_tv, color: Colors.red),
@@ -708,21 +723,6 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
 
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.storefront_outlined, color: Colors.yellow), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "Afroshop MarketPlace",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => HomeAfroshopPage(title: ''),
-                      ));
-                    },
-                  ),
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),

@@ -149,9 +149,9 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       _lastContentDocument = null;
 
       await Future.wait([
-        _getTotalContentCount(),
+        // _getTotalContentCount(),
         _loadPostsWithStream(isInitialLoad: true),
-        _loadContentWithStream(isInitialLoad: true),
+        // _loadContentWithStream(isInitialLoad: true),
       ]);
 
       setState(() {
@@ -537,7 +537,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
   Future<void> _loadAdditionalData() async {
     try {
-      final articleResults = await categorieProduitProvider.getArticleBooster();
+      final articleResults = await categorieProduitProvider.getArticleBooster(_authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
       final canalResults = await postProvider.getCanauxHome();
 
       setState(() {
@@ -882,7 +882,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     try {
       await Future.wait([
         if (_hasMorePosts) _loadPostsWithStream(isInitialLoad: false),
-        if (_hasMoreContent) _loadContentWithStream(isInitialLoad: false),
+        // if (_hasMoreContent) _loadContentWithStream(isInitialLoad: false),
       ]);
     } catch (e) {
       print('Error loading more data: $e');

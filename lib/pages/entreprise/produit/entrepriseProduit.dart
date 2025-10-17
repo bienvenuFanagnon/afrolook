@@ -94,41 +94,18 @@ class _EntreprisePublicationViewState extends State<EntrepriseProduitView> {
               children: [
                 GestureDetector(
                   onTap: () async {
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ProduitDetail( productId: article.id!,),
+                        // ProduitDetail(article: widget.article, entrepriseData: entreprises.first, productId: '',),
+                      ),
+                    );
                     setState(() {
                       _isLoading=true;
                     });
-
-                    await    categorieProduitProvider.getArticleById(article.id!).then((value) async {
-                      if (value.isNotEmpty) {
-                        value.first.vues=value.first.vues!+1;
-                        article.vues=value.first.vues!+1;
-                        categorieProduitProvider.updateArticle(value.first,context).then((value) {
-                          if (value) {
-
-
-                          }
-                        },);
-                        await    authProvider.getUserById(article.user_id!).then((users) async {
-                          if(users.isNotEmpty){
-                            article.user=users.first;
-                            await    postProvider.getEntreprise(article.user_id!).then((entreprises) {
-                              if(entreprises.isNotEmpty){
-                                entreprises.first.suivi=entreprises.first.usersSuiviId!.length;
-                                setState(() {
-                                  _isLoading=false;
-                                });
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ProduitDetail(article: article, entrepriseData: entreprises.first,),
-                                    ));
-                              }
-                            },);
-                          }
-                        },);
-                      }
-                    },);
 
 
                   },

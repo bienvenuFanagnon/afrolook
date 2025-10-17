@@ -1,14 +1,17 @@
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constant/custom_theme.dart';
 import '../../models/model_data.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
+import '../../providers/userProvider.dart';
 import '../LiveAgora/create_live_page.dart';
 import '../LiveAgora/livesAgora.dart';
+import '../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../classements/userClassement.dart';
 import 'package:flutter/material.dart';
@@ -786,16 +789,416 @@ class _LiveGridItem extends StatelessWidget {
 
 
 
+// class TopProductsGridModal {
+//   static Future<void> showTopProductsGridModal(BuildContext context) async {
+//     late CategorieProduitProvider     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+//     late UserAuthProvider     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+//
+//
+//
+//     // Charger les produits boostés
+//    ;
+//
+//     final boostedProducts =  await categorieProduitProvider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
+//     final hasBoostedProducts = boostedProducts.isNotEmpty;
+//
+//     showDialog(
+//       context: context,
+//       barrierDismissible: true,
+//       builder: (BuildContext context) {
+//         double height = MediaQuery.of(context).size.height;
+//         double width = MediaQuery.of(context).size.width;
+//
+//         return Dialog(
+//           backgroundColor: Colors.transparent,
+//           insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+//           child: Container(
+//             width: double.infinity,
+//             constraints: BoxConstraints(maxWidth: 500, maxHeight: height * 0.8),
+//             decoration: BoxDecoration(
+//               color: Colors.black,
+//               borderRadius: BorderRadius.circular(20),
+//               border: Border.all(color: CustomConstants.kPrimaryColor, width: 2),
+//               boxShadow: [
+//                 BoxShadow(
+//                   color: CustomConstants.kPrimaryColor.withOpacity(0.3),
+//                   blurRadius: 15,
+//                   spreadRadius: 2,
+//                 ),
+//               ],
+//             ),
+//             child: Column(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 // En-tête avec titre accrocheur
+//                 Container(
+//                   width: double.infinity,
+//                   padding: EdgeInsets.all(16),
+//                   decoration: BoxDecoration(
+//                     gradient: LinearGradient(
+//                       colors: [CustomConstants.kPrimaryColor, Colors.amber],
+//                       begin: Alignment.topLeft,
+//                       end: Alignment.bottomRight,
+//                     ),
+//                     borderRadius: BorderRadius.only(
+//                       topLeft: Radius.circular(20),
+//                       topRight: Radius.circular(20),
+//                     ),
+//                   ),
+//                   child: Stack(
+//                     children: [
+//                       Center(
+//                         child: Column(
+//                           children: [
+//                             Text(
+//                               "🚀 PRODUITS BOOSTÉS 🚀",
+//                               style: TextStyle(
+//                                 fontSize: 20,
+//                                 fontWeight: FontWeight.bold,
+//                                 color: Colors.white,
+//                               ),
+//                             ),
+//                             SizedBox(height: 8),
+//                             Text(
+//                               "Découvrez nos meilleures offres!",
+//                               style: TextStyle(
+//                                 fontSize: 14,
+//                                 color: Colors.white70,
+//                                 fontWeight: FontWeight.w500,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                       Positioned(
+//                         right: 0,
+//                         top: 0,
+//                         child: GestureDetector(
+//                           onTap: () => Navigator.of(context).pop(),
+//                           child: Container(
+//                             padding: EdgeInsets.all(4),
+//                             decoration: BoxDecoration(
+//                               color: Colors.black.withOpacity(0.3),
+//                               shape: BoxShape.circle,
+//                             ),
+//                             child: Icon(
+//                               Icons.close,
+//                               color: Colors.white,
+//                               size: 24,
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//
+//                 // Contenu principal
+//                 if (hasBoostedProducts)
+//                   _buildProductsGrid(context, boostedProducts, width, height)
+//                 else
+//                   _buildNoProductsContent(context),
+//
+//                 // Pied de page avec incitation
+//                 Container(
+//                   width: double.infinity,
+//                   padding: EdgeInsets.all(16),
+//                   decoration: BoxDecoration(
+//                     color: Colors.grey[900],
+//                     borderRadius: BorderRadius.only(
+//                       bottomLeft: Radius.circular(20),
+//                       bottomRight: Radius.circular(20),
+//                     ),
+//                   ),
+//                   child: Column(
+//                     children: [
+//                       Text(
+//                         "Boostez vos produits et multipliez vos ventes!",
+//                         textAlign: TextAlign.center,
+//                         style: TextStyle(
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.bold,
+//                           color: CustomConstants.kPrimaryColor,
+//                         ),
+//                       ),
+//                       SizedBox(height: 8),
+//                       Text(
+//                         "Augmentez votre visibilité et atteignez plus de clients",
+//                         textAlign: TextAlign.center,
+//                         style: TextStyle(
+//                           fontSize: 12,
+//                           color: Colors.white70,
+//                         ),
+//                       ),
+//                       SizedBox(height: 12),
+//                       GestureDetector(
+//                         onTap: () {
+//                           Navigator.of(context).pop();
+//                           // Naviguer vers la page des produits boostés
+//                           Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: "")));
+//                         },
+//                         child: Row(
+//                           mainAxisAlignment: MainAxisAlignment.center,
+//                           children: [
+//                             Icon(Icons.trending_up, color: Colors.amber, size: 16),
+//                             SizedBox(width: 4),
+//                             Text(
+//                               "Voir plus de produits",
+//                               style: TextStyle(
+//                                 fontSize: 12,
+//                                 color: Colors.amber,
+//                                 fontWeight: FontWeight.w900,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   static Widget _buildProductsGrid(BuildContext context, List<ArticleData> products, double width, double height) {
+//     return Expanded(
+//       child: Container(
+//         padding: EdgeInsets.all(16),
+//         child: GridView.builder(
+//           shrinkWrap: true,
+//           physics: AlwaysScrollableScrollPhysics(),
+//           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+//             crossAxisCount: 2,
+//             crossAxisSpacing: 12,
+//             mainAxisSpacing: 12,
+//             childAspectRatio: 0.75,
+//           ),
+//           itemCount: products.length,
+//           itemBuilder: (context, index) {
+//             return _ProductGridItem(
+//               article: products[index],
+//               width: width * 0.4,
+//               height: height * 0.2,
+//               rank: index + 1,
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+//
+//   static Widget _buildNoProductsContent(BuildContext context) {
+//     return Container(
+//       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(
+//             Icons.trending_up,
+//             size: 64,
+//             color: CustomConstants.kPrimaryColor,
+//           ),
+//           SizedBox(height: 16),
+//           Text(
+//             "Aucun produit boosté!",
+//             style: TextStyle(
+//               fontSize: 20,
+//               fontWeight: FontWeight.bold,
+//               color: Colors.white,
+//             ),
+//           ),
+//           SizedBox(height: 12),
+//           Text(
+//             "Boostez vos produits pour les mettre en avant et augmenter vos ventes!",
+//             textAlign: TextAlign.center,
+//             style: TextStyle(
+//               fontSize: 14,
+//               color: Colors.grey[400],
+//             ),
+//           ),
+//           SizedBox(height: 20),
+//           ElevatedButton(
+//             onPressed: () {
+//               Navigator.of(context).pop();
+//               // Naviguer vers la page de boost des produits
+//               Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: "")));
+//             },
+//             style: ElevatedButton.styleFrom(
+//               backgroundColor: CustomConstants.kPrimaryColor,
+//               foregroundColor: Colors.white,
+//               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.circular(12),
+//               ),
+//             ),
+//             child: Text(
+//               "BOOSTER MES PRODUITS",
+//               style: TextStyle(
+//                 fontSize: 16,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           ),
+//           SizedBox(height: 12),
+//           Text(
+//             "Augmentez votre visibilité de 500%!",
+//             style: TextStyle(
+//               fontSize: 12,
+//               color: Colors.grey[500],
+//               fontStyle: FontStyle.italic,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+//
+// class _ProductGridItem extends StatelessWidget {
+//   final ArticleData article;
+//   final double width;
+//   final double height;
+//   final int rank;
+//
+//   const _ProductGridItem({
+//     required this.article,
+//     required this.width,
+//     required this.height,
+//     required this.rank,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     Color rankColor;
+//
+//     if (rank == 1) {
+//       rankColor = Color(0xFFFFD700); // Or
+//     } else if (rank == 2) {
+//       rankColor = Color(0xFFC0C0C0); // Argent
+//     } else if (rank == 3) {
+//       rankColor = Color(0xFFCD7F32); // Bronze
+//     } else {
+//       rankColor = CustomConstants.kPrimaryColor; // Vert Afrolook
+//     }
+//
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: Colors.red,
+//         // color: Colors.transparent,
+//         borderRadius: BorderRadius.circular(12),
+//       ),
+//       child: Stack(
+//         children: [
+//           // Utilisation du ProductWidget existant
+//           Container(
+//             color: Colors.green,
+//
+//             child: ProductWidget(
+//               article: article,
+//               width: width*5,
+//               height: height*5,
+//               isOtherPage: true,
+//             ),
+//           ),
+//
+//           // Badge de rang
+//           Positioned(
+//             top: 8,
+//             left: 8,
+//             child: Container(
+//               width: 28,
+//               height: 28,
+//               alignment: Alignment.center,
+//               decoration: BoxDecoration(
+//                 color: rankColor,
+//                 shape: BoxShape.circle,
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.black.withOpacity(0.3),
+//                     blurRadius: 4,
+//                     offset: Offset(0, 2),
+//                   ),
+//                 ],
+//               ),
+//               child: Text(
+//                 rank <= 3 ? ["🥇", "🥈", "🥉"][rank-1] : "#$rank",
+//                 style: TextStyle(
+//                   fontSize: rank <= 3 ? 14 : 12,
+//                   fontWeight: FontWeight.bold,
+//                   color: rank <= 3 ? Colors.black : Colors.white,
+//                 ),
+//               ),
+//             ),
+//           ),
+//
+//           // Badge BOOSTÉ
+//           Positioned(
+//             top: 8,
+//             right: 8,
+//             child: Container(
+//               padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+//               decoration: BoxDecoration(
+//                 color: Colors.amber,
+//                 borderRadius: BorderRadius.circular(12),
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.black.withOpacity(0.3),
+//                     blurRadius: 4,
+//                     offset: Offset(0, 2),
+//                   ),
+//                 ],
+//               ),
+//               child: Row(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   Icon(Icons.rocket_launch, color: Colors.black, size: 10),
+//                   SizedBox(width: 4),
+//                   Text(
+//                     "BOOSTÉ",
+//                     style: TextStyle(
+//                       color: Colors.black,
+//                       fontSize: 8,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+///////////
+
+
+
+// Ajoutez cette classe après les autres modals
+// Modifiez la partie contenu principal du ChallengeModal
+
+
+
+
 class TopProductsGridModal {
   static Future<void> showTopProductsGridModal(BuildContext context) async {
-    late CategorieProduitProvider     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+    late CategorieProduitProvider categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+    late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    late UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
 
-
+    // Vérifier si l'utilisateur a une entreprise
+    bool hasEntreprise = await userProvider.getUserEntreprise(authProvider.loginUserData.id!);
 
     // Charger les produits boostés
-   ;
-
-    final boostedProducts =  await categorieProduitProvider.getArticleBooster();
+    final boostedProducts = await categorieProduitProvider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
     final hasBoostedProducts = boostedProducts.isNotEmpty;
 
     showDialog(
@@ -846,17 +1249,26 @@ class TopProductsGridModal {
                       Center(
                         child: Column(
                           children: [
-                            Text(
-                              "🚀 PRODUITS BOOSTÉS 🚀",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.rocket_launch, color: Colors.white, size: 24),
+                                SizedBox(width: 8),
+                                Text(
+                                  "PRODUITS STARS 🌟",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.star, color: Colors.white, size: 24),
+                              ],
                             ),
                             SizedBox(height: 8),
                             Text(
-                              "Découvrez nos meilleures offres!",
+                              "Les produits les plus populaires du moment!",
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -893,7 +1305,7 @@ class TopProductsGridModal {
                 if (hasBoostedProducts)
                   _buildProductsGrid(context, boostedProducts, width, height)
                 else
-                  _buildNoProductsContent(context),
+                  _buildNoProductsContent(context, hasEntreprise),
 
                 // Pied de page avec incitation
                 Container(
@@ -908,47 +1320,137 @@ class TopProductsGridModal {
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        "Boostez vos produits et multipliez vos ventes!",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: CustomConstants.kPrimaryColor,
+                      if (hasEntreprise) ...[
+                        Text(
+                          "🚀 Vendez dans toute l'Afrique !",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "Augmentez votre visibilité et atteignez plus de clients",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
+                        SizedBox(height: 8),
+                        Text(
+                          "Boostez vos produits et atteignez des millions de clients potentiels\nà travers 54 pays africains",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          // Naviguer vers la page des produits boostés
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: "")));
-                        },
-                        child: Row(
+                        SizedBox(height: 12),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.trending_up, color: Colors.amber, size: 16),
-                            SizedBox(width: 4),
+                            Icon(Icons.public, color: Colors.green, size: 16),
+                            SizedBox(width: 6),
                             Text(
-                              "Voir plus de produits",
+                              "Visibilité panafricaine garantie",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Text(
+                          "💼 Créez votre entreprise en 2 minutes !",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: CustomConstants.kPrimaryColor,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Rejoignez Afroshop et vendez vos produits\ndans toute l'Afrique dès aujourd'hui",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.flag, color: Colors.amber, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              "Marché de 1.4 milliard de consommateurs",
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.amber,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          if (hasEntreprise) {
+                            // Naviguer vers la page pour booster les produits
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => HomeAfroshopPage(title: "")
+                                )
+                            );
+                          } else {
+                            // Naviguer vers la création d'entreprise
+                            Navigator.pushNamed(context, '/new_entreprise');
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: hasEntreprise ? Colors.amber : CustomConstants.kPrimaryColor,
+                          foregroundColor: Colors.black,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(hasEntreprise ? Icons.rocket_launch : Icons.business_center, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              hasEntreprise ? "BOOSTER MES PRODUITS" : "CRÉER MON ENTREPRISE",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      SizedBox(height: 8),
+                      if (hasEntreprise)
+                        Text(
+                          "Augmentez vos ventes de 300% en moyenne",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.green,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      else
+                        Text(
+                          "Gratuit • Rapide • Sans engagement",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -964,30 +1466,64 @@ class TopProductsGridModal {
     return Expanded(
       child: Container(
         padding: EdgeInsets.all(16),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: AlwaysScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: products.length,
-          itemBuilder: (context, index) {
-            return _ProductGridItem(
-              article: products[index],
-              width: width * 0.4,
-              height: height * 0.2,
-              rank: index + 1,
-            );
-          },
+        child: Column(
+          children: [
+            // Bannière d'information
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: CustomConstants.kPrimaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: CustomConstants.kPrimaryColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: CustomConstants.kPrimaryColor, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Ces produits sont boostés et visibles dans toute l'Afrique",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Grille de produits
+            Expanded(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: AlwaysScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.95,
+                ),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  return _ProductGridItem(
+                    article: products[index],
+                    width: width * 0.4,
+                    height: height * 0.2,
+                    rank: index + 1,
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  static Widget _buildNoProductsContent(BuildContext context) {
+  static Widget _buildNoProductsContent(BuildContext context, bool hasEntreprise) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       child: Column(
@@ -1000,7 +1536,7 @@ class TopProductsGridModal {
           ),
           SizedBox(height: 16),
           Text(
-            "Aucun produit boosté!",
+            hasEntreprise ? "Boostez votre premier produit! 🚀" : "Lancez votre business! 💼",
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1009,45 +1545,79 @@ class TopProductsGridModal {
           ),
           SizedBox(height: 12),
           Text(
-            "Boostez vos produits pour les mettre en avant et augmenter vos ventes!",
+            hasEntreprise
+                ? "Soyez le premier à booster vos produits et dominez le marché africain !\n\nVos produits seront visibles dans 54 pays"
+                : "Créez votre entreprise sur Afroshop et vendez vos produits dans toute l'Afrique !\n\nMarché de 1.4 milliard de consommateurs",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[400],
+              height: 1.4,
             ),
           ),
           SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Naviguer vers la page de boost des produits
-              Navigator.push(context, MaterialPageRoute(builder: (context) => HomeAfroshopPage(title: "")));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CustomConstants.kPrimaryColor,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          if (hasEntreprise) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.public, color: Colors.green, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  "Visibilité panafricaine garantie",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            child: Text(
-              "BOOSTER MES PRODUITS",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.visibility, color: Colors.amber, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  "500% plus de vues en moyenne",
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Augmentez votre visibilité de 500%!",
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-              fontStyle: FontStyle.italic,
+          ] else ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people, color: CustomConstants.kPrimaryColor, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  "1.4 milliard de clients potentiels",
+                  style: TextStyle(
+                    color: CustomConstants.kPrimaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.speed, color: Colors.green, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  "Création en 2 minutes",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          SizedBox(height: 20),
         ],
       ),
     );
@@ -1081,105 +1651,162 @@ class _ProductGridItem extends StatelessWidget {
       rankColor = CustomConstants.kPrimaryColor; // Vert Afrolook
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.red,
-        // color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Stack(
-        children: [
-          // Utilisation du ProductWidget existant
-          Container(
-            color: Colors.green,
-
-            child: ProductWidget(
-              article: article,
-              width: width*5,
-              height: height*5,
-              isOtherPage: true,
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProduitDetail(productId: article.id!),
           ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              // Produit avec fond uniforme
+              Container(
+                color: Colors.grey[900],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Image du produit
+                    Container(
+                      height: height * 0.6,
+                      child: CachedNetworkImage(
+                        imageUrl: article.images?.isNotEmpty == true
+                            ? article.images!.first
+                            : '',
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[800],
+                          child: Icon(Icons.shopping_bag, color: Colors.grey, size: 30),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[800],
+                          child: Icon(Icons.shopping_bag, color: Colors.grey, size: 30),
+                        ),
+                      ),
+                    ),
 
-          // Badge de rang
-          Positioned(
-            top: 8,
-            left: 8,
-            child: Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: rankColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                rank <= 3 ? ["🥇", "🥈", "🥉"][rank-1] : "#$rank",
-                style: TextStyle(
-                  fontSize: rank <= 3 ? 14 : 12,
-                  fontWeight: FontWeight.bold,
-                  color: rank <= 3 ? Colors.black : Colors.white,
+                    // Informations du produit
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        color: Colors.grey[900],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              article.titre ?? 'Produit',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${article.prix ?? 0} FCFA',
+                              style: TextStyle(
+                                color: CustomConstants.kPrimaryColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
 
-          // Badge BOOSTÉ
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+              // Badge de rang
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: rankColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.rocket_launch, color: Colors.black, size: 10),
-                  SizedBox(width: 4),
-                  Text(
-                    "BOOSTÉ",
+                  child: Text(
+                    rank <= 3 ? ["🥇", "🥈", "🥉"][rank-1] : "#$rank",
                     style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 8,
+                      fontSize: rank <= 3 ? 14 : 12,
                       fontWeight: FontWeight.bold,
+                      color: rank <= 3 ? Colors.black : Colors.white,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+
+              // Badge BOOSTÉ
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.rocket_launch, color: Colors.black, size: 10),
+                      SizedBox(width: 4),
+                      Text(
+                        "BOOSTÉ",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
-
-
-
-
-///////////
-
-
-
-// Ajoutez cette classe après les autres modals
-// Modifiez la partie contenu principal du ChallengeModal
 class ChallengeModal {
   static Future<void> showChallengeModal(BuildContext context, Challenge challenge) async {
     final authProvider = context.read<UserAuthProvider>();
@@ -2244,7 +2871,7 @@ class AfrolookInfoModal {
 
 // Modifiez la classe AdvancedModalManager pour inclure le modal info en premier
 class AdvancedModalManager {
-  static const String _lastProductModalKey = 'last_product_modal2';
+  static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';
   static const String _lastInfoModalKey = 'last_info_modal';
@@ -2458,7 +3085,7 @@ class AdvancedModalManager {
   }
 }
 class AdvancedModalManager2 {
-  static const String _lastProductModalKey = 'last_product_modal2';
+  static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';
   static const String _lastModalTypeKey = 'last_modal_type';

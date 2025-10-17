@@ -179,7 +179,7 @@ printVm('widget.sortType : ${widget.sortType}');
     try {
       await authProvider.getAppData();
 
-      final articleResults = await categorieProduitProvider.getArticleBooster();
+      final articleResults = await categorieProduitProvider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
       final serviceResults = await postProvider.getAllUserServiceHome();
       final canalResults = await postProvider.getCanauxHome();
 

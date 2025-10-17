@@ -953,7 +953,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                           itemBuilder: (context, index) {
                             if (index % 8 == 7) {
                               return FutureBuilder<List<ArticleData>>(
-                                future: categorieProduitProvider.getArticleBooster(),
+                                future: categorieProduitProvider.getArticleBooster(authProvider.loginUserData.countryData?['countryCode'] ?? 'TG'),
                                 builder: (BuildContext context, AsyncSnapshot snapshot) {
                                   if (snapshot.hasData) {
                                     List<ArticleData> articles = snapshot.data;
