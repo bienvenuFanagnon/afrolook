@@ -1,6 +1,7 @@
 // app_link_service.dart
 import 'dart:async';
 import 'package:afrotok/pages/home/homeScreen.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:provider/provider.dart';
@@ -537,4 +538,36 @@ class PendingLink {
     this.queryParams = const {},
     this.isInitial = false, // Par défaut false
   });
+}
+
+
+
+class DynamicLinkService {
+  /// Appel à lancer au démarrage de l’app pour capter les liens
+  Future<void> initDynamicLinks({required void Function(Uri) onLinkCallback}) async {
+    final dynamicLinks = FirebaseDynamicLinks.instance;
+
+    // 1. Cas : application fermée (terminated) → récupérer le lien initial
+    try {
+      final PendingDynamicLinkData? initialLink = await dynamicLinks.getInitialLink();
+      if (initialLink != null && initialLink.link != null) {
+        Uri deepLink = initialLink.link;
+        print('Dynamic Link reçu au démarrage : $deepLink');
+        onLinkCallback(deepLink);
+      }
+    } catch (e) {
+      print('Erreur getInitialLink : $e');
+    }
+
+    // 2. Cas : application déjà lancée / en arrière-plan → écouter les nouveaux liens
+    dynamicLinks.onLink.listen((PendingDynamicLinkData? dynamicLinkData) {
+      if (dynamicLinkData != null && dynamicLinkData.link != null) {
+        Uri deepLink = dynamicLinkData.link;
+        print('Dynamic Link reçu via onLink : $deepLink');
+        onLinkCallback(deepLink);
+      }
+    }).onError((error) {
+      print('Erreur onLink listener : $error');
+    });
+  }
 }

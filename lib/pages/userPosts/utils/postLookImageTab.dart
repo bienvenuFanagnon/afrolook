@@ -501,7 +501,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       ),
 
                     TextFormField(
-                      controller: _descriptionController,
+                      controller: _taggerController,
                       decoration: InputDecoration(
                         hintText: 'Légende',
                         border: OutlineInputBorder(

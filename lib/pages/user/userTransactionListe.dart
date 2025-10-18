@@ -507,10 +507,19 @@ class _UserTransactionsPageState extends State<UserTransactionsPage> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '${_userData!.votre_solde?.toStringAsFixed(2) ?? '0.00'} FCFA',
+                  '${_userData!.votre_solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 1),
+                Text(
+                  '${_userData!.votre_solde?.toStringAsFixed(2) ?? '0.00'} FCFA',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 8,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

@@ -137,7 +137,7 @@ class _MyAppState extends State<MyApp> {
 
     return postList;
   }
-
+  FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
   Future<List<Post>> getPostsImagesById(String post_id) async {
     List<Post> posts = [];
     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
@@ -196,37 +196,46 @@ class _MyAppState extends State<MyApp> {
           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),));
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.POST.name) {
-          switch (event.notification.additionalData!['post_type']) {
-            case "IMAGE":
-              await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-                if (posts.isNotEmpty) {
-                  if(posts.first.dataType ==PostDataType.VIDEO.name){
-                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
-                  }else{
-                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                  }
-                }
-              },);
-              break;
-            case 'COMMENT':
-              getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-                if (posts.isNotEmpty) {
-                  navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post: posts.first),));
-                }
-              },);
-              break;
-            default:
-              await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-                if (posts.isNotEmpty) {
-                  if(posts.first.dataType ==PostDataType.VIDEO.name){
-                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
-                  }else{
-                    navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-                  }
-                }
-              },);
-              break;
-          }
+          await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+            if (posts.isNotEmpty) {
+              if(posts.first.dataType == PostDataType.VIDEO.name){
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
+              }else{
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+              }
+            }
+          },);
+          // switch (event.notification.additionalData!['post_type']) {
+          //   case "IMAGE":
+          //     await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+          //       if (posts.isNotEmpty) {
+          //         if(posts.first.dataType ==PostDataType.VIDEO.name){
+          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
+          //         }else{
+          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+          //         }
+          //       }
+          //     },);
+          //     break;
+          //   case 'COMMENT':
+          //     getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+          //       if (posts.isNotEmpty) {
+          //         navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post: posts.first),));
+          //       }
+          //     },);
+          //     break;
+          //   default:
+          //     await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
+          //       if (posts.isNotEmpty) {
+          //         if(posts.first.dataType ==PostDataType.VIDEO.name){
+          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
+          //         }else{
+          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
+          //         }
+          //       }
+          //     },);
+          //     break;
+          // }
         }
         else if (event.notification.additionalData!['type_notif'] == NotificationType.PARRAINAGE.name) {
           Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
@@ -259,6 +268,7 @@ class _MyAppState extends State<MyApp> {
       print("Erreur de lien: $err");
     });
   }
+  final DynamicLinkService _dynamicLinkService = DynamicLinkService();
 
   @override
   void initState() {
@@ -267,6 +277,7 @@ class _MyAppState extends State<MyApp> {
 
     // Initialiser les deep links
     WidgetsBinding.instance.addPostFrameCallback((_) {
+
       initDeepLinks();
     });
   }
