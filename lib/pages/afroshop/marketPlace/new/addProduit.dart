@@ -36,9 +36,10 @@ class _AddAnnonceState extends State<AddNewProduit> {
   String _titre2 = '';
   final _titre = TextEditingController();
   final _description = TextEditingController();
+  final _prix = TextEditingController();
   String _description2 = '';
   String _numero = '';
-  int _prix = 0;
+  // int _prix = 0;
   String _sousCategorieId = '';
   String _regionId = '';
   String _villeId = '';
@@ -74,7 +75,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
   @override
   void initState() {
     super.initState();
-    categorieSelected = null;
+    // categorieSelected = null;
   }
 
   // Vérifier si l'utilisateur peut publier
@@ -1025,6 +1026,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                   label: 'Prix (FCFA) *',
                   icon: Icons.attach_money,
                   child: TextFormField(
+                    controller: _prix,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: 'Ex: 25000',
@@ -1035,9 +1037,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                       }
                       return null;
                     },
-                    onSaved: (value) {
-                      _prix = int.parse(value!);
-                    },
+
                   ),
                 ),
 
@@ -1162,7 +1162,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
       annonceRegisterData.jaime = 0;
       annonceRegisterData.contact = 0;
       annonceRegisterData.partage = 0;
-      annonceRegisterData.prix = _prix;
+      annonceRegisterData.prix = int.parse(_prix.text!) ;
       annonceRegisterData.user_id = authProvider.loginUserData.id!;
       annonceRegisterData.categorie_id = categorieSelected!.id!;
 
@@ -1213,12 +1213,12 @@ class _AddAnnonceState extends State<AddNewProduit> {
         // Réinitialiser le formulaire
         // _titre.text = '';
         // _description = '';
-        _prix = 0;
+        // _prix = 0;
         _mediaFileList = [];
-        _formKey.currentState!.reset();
-        setState(() {
-          categorieSelected = null;
-        });
+        // _formKey.currentState!.reset();
+        // // setState(() {
+        // //   categorieSelected = null;
+        // // });
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
