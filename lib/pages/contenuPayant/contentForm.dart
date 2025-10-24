@@ -2,10 +2,30 @@ import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
+import 'package:video_compress/video_compress.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../providers/authProvider.dart';
+import '../../providers/contenuPayantProvider.dart';
+import '../../providers/userProvider.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
@@ -21,8 +41,14 @@ class ContentFormScreen extends StatefulWidget {
   final ContentPaie? content;
   final bool isEpisode;
   final String? seriesId;
+  final ContentType? seriesType;
 
-  ContentFormScreen({this.content, this.isEpisode = false, this.seriesId});
+  ContentFormScreen({
+    this.content,
+    this.isEpisode = false,
+    this.seriesId,
+    this.seriesType
+  });
 
   @override
   _ContentFormScreenState createState() => _ContentFormScreenState();
@@ -39,16 +65,20 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
   bool _isFree = false;
   bool _isSeries = false;
+  ContentType _contentType = ContentType.VIDEO;
   List<String> _selectedCategories = [];
   String? _videoUrl;
+  String? _pdfUrl;
   String? _thumbnailUrl;
   File? _videoFile;
+  File? _pdfFile;
   File? _thumbnailFile;
   double _uploadProgress = 0.0;
   bool _isUploading = false;
   bool _isSaving = false;
   String _uploadMessage = '';
   int _episodeNumber = 1;
+  int _pageCount = 0;
 
   final ImagePicker _picker = ImagePicker();
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -57,16 +87,23 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
   void initState() {
     super.initState();
 
+    if (widget.isEpisode && widget.seriesType != null) {
+      _contentType = widget.seriesType!;
+    }
+
     if (widget.content != null) {
       _titleController.text = widget.content!.title;
       _descriptionController.text = widget.content!.description;
       _priceController.text = widget.content!.price.toString();
       _isFree = widget.content!.isFree;
-      _isSeries = widget.content!.isSeries;
+      _isSeries = widget.content!.isSeries; // CONSERVÉ
+      _contentType = widget.content!.contentType;
       _selectedCategories = widget.content!.categories;
       _videoUrl = widget.content!.videoUrl;
+      _pdfUrl = widget.content!.pdfUrl;
       _thumbnailUrl = widget.content!.thumbnailUrl;
       _hashtagsController.text = widget.content!.hashtags.join(', ');
+      _pageCount = widget.content!.pageCount;
 
       if (widget.isEpisode) {
         _episodeNumberController.text = widget.content?.title.split('Épisode').last.trim() ?? '1';
@@ -76,7 +113,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     }
   }
 
-  Future<void> _pickVideo2() async {
+  // Méthode pour sélectionner une vidéo
+  Future<void> _pickVideo() async {
     try {
       final XFile? pickedFile = await _picker.pickVideo(
         source: ImageSource.gallery,
@@ -105,13 +143,6 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           _videoFile = newFile;
           _videoUrl = null;
         });
-        //
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text('Vidéo sélectionnée: ${file.path.split('/').last}'),
-        //     backgroundColor: Colors.green,
-        //   ),
-        // );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,111 +154,65 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     }
   }
 
-  Future<void> _pickVideo() async {
+  // Méthode pour sélectionner un PDF
+  Future<void> _pickPDF() async {
     try {
-      final XFile? pickedFile = await _picker.pickVideo(
-        source: ImageSource.gallery,
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: false,
       );
 
-      if (pickedFile != null) {
-        File file = File(pickedFile.path);
+      if (result != null && result.files.single.path != null) {
+        File file = File(result.files.single.path!);
+        final fileSize = await file.length();
+        final fileSizeMB = fileSize / (1024 * 1024);
 
-        // Taille originale
-        final originalSize = await file.length();
-        final originalSizeMB = originalSize / (1024 * 1024);
-        debugPrint("Taille originale : ${originalSizeMB.toStringAsFixed(2)} Mo");
-
-        File finalFile = file;
-
-        // Compression si > 3 Mo
-        if (originalSizeMB > 9) {
-          // Afficher un loading pendant la compression
-          showDialog(
-            context: context,
-            barrierDismissible: false, // L'utilisateur ne peut pas fermer le dialog
-            builder: (_) => Dialog(
-              backgroundColor: Colors.transparent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    "Traitement en cours, merci de patienter...\nNe quittez pas la page",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ],
-              ),
+        if (fileSizeMB > 20) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Le PDF ne doit pas dépasser 20 Mo'),
+              backgroundColor: Colors.red,
             ),
           );
-
-
-          // Choix dynamique de la qualité
-          VideoQuality quality = VideoQuality.Res640x480Quality;
-          if (originalSizeMB < 10) {
-            quality = VideoQuality.LowQuality;
-          } else if (originalSizeMB > 30) {
-            quality = VideoQuality.Res640x480Quality;
-          }
-
-          final info = await VideoCompress.compressVideo(
-            file.path,
-            quality: quality,
-            deleteOrigin: false,
-            includeAudio: true,
-          );
-
-          Navigator.of(context).pop(); // Fermer le loading
-
-          if (info == null || info.file == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Erreur de compression")),
-            );
-            return;
-          }
-
-          finalFile = info.file!;
-
-          // Taille après compression
-          final compressedSize = await finalFile.length();
-          final compressedSizeMB = compressedSize / (1024 * 1024);
-          debugPrint("Taille compressée : ${compressedSizeMB.toStringAsFixed(2)} Mo");
-          debugPrint("Taille originale : ${originalSizeMB.toStringAsFixed(2)} Mo");
-
-          if (compressedSizeMB > 50) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("La vidéo compressée dépasse toujours 50 Mo"),
-                backgroundColor: Colors.red,
-              ),
-            );
-            return;
-          }
+          return;
         }
 
-        // Copier le fichier final (compressé ou original)
-        final directory = await getApplicationDocumentsDirectory();
-        final newPath = path.join(directory.path, path.basename(finalFile.path));
-        final newFile = await finalFile.copy(newPath);
-
         setState(() {
-          _videoFile = newFile;
-          _videoUrl = null;
+          _pdfFile = file;
+          _pdfUrl = null;
         });
-
-        final finalSizeMB = (await newFile.length()) / (1024 * 1024);
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text("Vidéo prête (${finalSizeMB.toStringAsFixed(2)} Mo)"),
-        //     backgroundColor: Colors.green,
-        //   ),
-        // );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Erreur lors de la sélection de la vidéo: $e"),
+          content: Text('Erreur lors de la sélection du PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Méthode pour sélectionner une image de couverture
+  Future<void> _pickThumbnail() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        File file = File(pickedFile.path);
+        setState(() {
+          _thumbnailFile = file;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la sélection de l\'image: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -236,48 +221,59 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
   Future<Map<String, String>> _uploadFiles() async {
     String? finalVideoUrl;
+    String? finalPdfUrl;
     String? finalThumbnailUrl;
 
-    if (_videoFile == null && _videoUrl == null) {
+    // Validation selon le type de contenu
+    if (_contentType == ContentType.VIDEO && _videoFile == null && _videoUrl == null) {
       throw Exception('Aucune vidéo sélectionnée');
+    } else if (_contentType == ContentType.EBOOK && _pdfFile == null && _pdfUrl == null) {
+      throw Exception('Aucun PDF sélectionné');
     }
 
     try {
-      // Upload de la vidéo en premier (si nouveau fichier)
-      if (_videoFile != null) {
+      // Upload de la vidéo
+      if (_contentType == ContentType.VIDEO && _videoFile != null) {
         final String videoFileName = 'video_${DateTime.now().millisecondsSinceEpoch}${path.extension(_videoFile!.path)}';
         finalVideoUrl = await _uploadFile(_videoFile!, videoFileName, 'videos');
         if (finalVideoUrl == null) {
           throw Exception('Échec de l\'upload de la vidéo');
         }
-        print('✅ Upload vidéo réussi: $finalVideoUrl');
       } else {
         finalVideoUrl = _videoUrl;
-        print('✅ Utilisation vidéo existante: $finalVideoUrl');
       }
 
-      // Ensuite, gestion de la miniature
+      // Upload du PDF
+      if (_contentType == ContentType.EBOOK && _pdfFile != null) {
+        final String pdfFileName = 'ebook_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        finalPdfUrl = await _uploadFile(_pdfFile!, pdfFileName, 'ebooks');
+        if (finalPdfUrl == null) {
+          throw Exception('Échec de l\'upload du PDF');
+        }
+      } else {
+        finalPdfUrl = _pdfUrl;
+      }
+
+      // Upload de la miniature
       if (_thumbnailFile != null) {
-        // Upload de la miniature personnalisée
-        print('📸 Upload miniature personnalisée...');
         final String thumbnailFileName = 'thumbnail_${DateTime.now().millisecondsSinceEpoch}.png';
         finalThumbnailUrl = await _uploadFile(_thumbnailFile!, thumbnailFileName, 'thumbnails');
-        print('✅ Upload miniature personnalisée réussi');
-      } else if (_thumbnailUrl == null && _videoFile != null) {
-        // Génération automatique de miniature
-        print('🎞️ Génération miniature depuis vidéo...');
-        try {
-          final File thumbnail = await _getVideoThumbnail(_videoFile!);
-          final String thumbnailFileName = 'thumbnail_${DateTime.now().millisecondsSinceEpoch}.png';
-          finalThumbnailUrl = await _uploadFile(thumbnail, thumbnailFileName, 'thumbnails');
-          print('✅ Génération et upload miniature automatique réussi');
-        } catch (e) {
-          print('❌ Erreur génération miniature: $e');
-          throw Exception('Échec de la génération de la miniature: $e');
+      } else if (_thumbnailUrl == null) {
+        // Génération automatique de miniature pour les vidéos
+        if (_contentType == ContentType.VIDEO && _videoFile != null) {
+          try {
+            final File thumbnail = await _getVideoThumbnail(_videoFile!);
+            final String thumbnailFileName = 'thumbnail_${DateTime.now().millisecondsSinceEpoch}.png';
+            finalThumbnailUrl = await _uploadFile(thumbnail, thumbnailFileName, 'thumbnails');
+          } catch (e) {
+            throw Exception('Échec de la génération de la miniature: $e');
+          }
+        } else {
+          // Pour les ebooks, la miniature est obligatoire
+          throw Exception('Une image de couverture est obligatoire pour les ebooks');
         }
       } else {
         finalThumbnailUrl = _thumbnailUrl;
-        print('✅ Utilisation miniature existante: $finalThumbnailUrl');
       }
 
       if (finalThumbnailUrl == null) {
@@ -285,12 +281,12 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       }
 
       return {
-        'videoUrl': finalVideoUrl!,
+        'videoUrl': finalVideoUrl ?? '',
+        'pdfUrl': finalPdfUrl ?? '',
         'thumbnailUrl': finalThumbnailUrl,
       };
 
     } catch (e) {
-      print('❌ Erreur globale dans _uploadFiles: $e');
       rethrow;
     }
   }
@@ -300,7 +296,6 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       final Reference storageRef = _storage.ref().child('$folder/$fileName');
       final UploadTask uploadTask = storageRef.putFile(file);
 
-      // Créer un completer pour attendre la fin de l'upload
       final completer = Completer<TaskSnapshot>();
 
       uploadTask.snapshotEvents.listen(
@@ -308,7 +303,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             final progress = snapshot.bytesTransferred / snapshot.totalBytes;
             setState(() {
               _uploadProgress = progress;
-              _uploadMessage = 'Upload ${folder == 'videos' ? 'vidéo' : 'miniature'}... ${(progress * 100).toStringAsFixed(0)}%';
+              _uploadMessage = 'Upload ${_getUploadMessage(folder)}... ${(progress * 100).toStringAsFixed(0)}%';
             });
 
             if (snapshot.state == TaskState.success) {
@@ -325,11 +320,19 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
       return downloadUrl;
     } catch (e) {
-      print('❌ Erreur upload $folder: $e');
-      print('❌ Fichier: $fileName, Taille: ${file.lengthSync()} bytes');
       return null;
     }
   }
+
+  String _getUploadMessage(String folder) {
+    switch (folder) {
+      case 'videos': return 'vidéo';
+      case 'ebooks': return 'PDF';
+      case 'thumbnails': return 'miniature';
+      default: return 'fichier';
+    }
+  }
+
   Future<File> _getVideoThumbnail(File videoFile) async {
     try {
       final String? thumbnailPath = await VideoThumbnail.thumbnailFile(
@@ -345,12 +348,52 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       }
       throw Exception('Impossible de générer la miniature');
     } catch (e) {
-      print('Erreur génération thumbnail: $e');
       throw Exception('Erreur lors de la génération de la miniature: $e');
     }
   }
 
+// Fonction pour récupérer un ContentPaie par ID et envoyer une notification
+  Future<void> notifyNewEpisode(String serieId,UserAuthProvider userProvider) async {
+    try {
+      // Récupérer le document depuis Firestore
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('ContentPaies')
+          .doc(serieId)
+          .get();
 
+      if (!docSnapshot.exists) {
+        print('Document $serieId non trouvé');
+        return;
+      }
+
+      // Convertir le snapshot en objet ContentPaie
+      final content = ContentPaie.fromJson(docSnapshot.data()!);
+
+      // Préparer le message de notification
+      final message = "Nouvel épisode ajouté à la série '${content.title}' ! Regardez maintenant.";
+
+      // Récupérer les utilisateurs à notifier
+      final userIds = await userProvider.getAllUsersOneSignaUserId();
+
+      if (userIds.isNotEmpty) {
+        await userProvider.sendNotification(
+          userIds: userIds,
+          smallImage: content.thumbnailUrl,
+          send_user_id: userProvider.loginUserData!.id!,
+          recever_user_id: '',
+          message: message,
+          type_notif: NotificationType.POST.name,
+          post_id: content.id ?? '',
+          post_type: _getPostType(content.contentType),
+          chat_id: '',
+        );
+      }
+
+      print("Notification envoyée pour l'épisode: ${content.title}");
+    } catch (e) {
+      print("Erreur lors de l'envoi de la notification: $e");
+    }
+  }
 
   Future<void> _saveContent() async {
     if (!_formKey.currentState!.validate()) return;
@@ -369,8 +412,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       }
     }
 
-    // Validation vidéo
-    if (_videoUrl == null && _videoFile == null) {
+    // Validation selon le type de contenu
+    if (_contentType == ContentType.VIDEO && _videoUrl == null && _videoFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez sélectionner une vidéo'),
@@ -378,6 +421,25 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         ),
       );
       return;
+    } else if (_contentType == ContentType.EBOOK) {
+      if (_pdfUrl == null && _pdfFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez sélectionner un PDF'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (_thumbnailUrl == null && _thumbnailFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Une image de couverture est obligatoire pour les ebooks'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
     // Validation catégories
@@ -416,10 +478,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       // Étape 1: Upload des fichiers
       final Map<String, String> uploadedUrls = await _uploadFiles();
       final String videoUrl = uploadedUrls['videoUrl']!;
+      final String pdfUrl = uploadedUrls['pdfUrl']!;
       final String thumbnailUrl = uploadedUrls['thumbnailUrl']!;
-
-      printVm("videoUrl: ${videoUrl}");
-      printVm("thumbnailUrl: ${thumbnailUrl}");
 
       // Étape 2: Préparation des données
       final hashtags = _hashtagsController.text
@@ -437,31 +497,19 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           seriesId: widget.seriesId!,
           title: _titleController.text,
           description: _descriptionController.text,
-          videoUrl: videoUrl,
+          videoUrl: _contentType == ContentType.VIDEO ? videoUrl : null,
+          pdfUrl: _contentType == ContentType.EBOOK ? pdfUrl : null,
           thumbnailUrl: thumbnailUrl,
           duration: 0,
+          pageCount: _contentType == ContentType.EBOOK ? _pageCount : 0,
           episodeNumber: _episodeNumber,
           price: _isFree ? 0 : double.parse(_priceController.text),
           isFree: _isFree,
+          contentType: _contentType,
         );
 
         success = await contentProvider.addEpisode(episode);
-         userProvider.getAllUsersOneSignaUserId().then((userIds) async {
-          if (userIds.isNotEmpty) {
-            await userProvider.sendNotification(
-              userIds: userIds,
-              smallImage: episode.thumbnailUrl!,
-              send_user_id: userProvider.loginUserData!.id!,
-              recever_user_id: '',
-              message: "🔥🎥 ${episode.title} est en ligne et fait sensation !",
-              type_notif: NotificationType.POST.name,
-              post_id: episode.id ?? '',
-              post_type: PostDataType.VIDEO.name,
-              chat_id: '',
-            );
-          }
-        });
-
+        notifyNewEpisode(widget.seriesId!,userProvider);
       } else {
         // Création/mise à jour d'un contenu
         final content = ContentPaie(
@@ -469,13 +517,16 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           ownerId: userProvider.loginUserData?.id ?? '',
           title: _isSeries ? _seriesNameController.text : _titleController.text,
           description: _descriptionController.text,
-          videoUrl: _isSeries ? videoUrl : videoUrl, // Les séries n'ont pas de videoUrl direct
+          videoUrl: _contentType == ContentType.VIDEO ? videoUrl : null,
+          pdfUrl: _contentType == ContentType.EBOOK ? pdfUrl : null,
           thumbnailUrl: thumbnailUrl,
           categories: _selectedCategories,
           hashtags: hashtags,
-          isSeries: _isSeries,
+          isSeries: _isSeries, // CONSERVÉ
+          contentType: _contentType,
           price: _isFree ? 0 : double.parse(_priceController.text),
           isFree: _isFree,
+          pageCount: _contentType == ContentType.EBOOK ? _pageCount : 0,
           views: widget.content?.views ?? 0,
           likes: widget.content?.likes ?? 0,
           comments: widget.content?.comments ?? 0,
@@ -486,22 +537,24 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
         if (widget.content == null) {
           success = await contentProvider.addContentPaie(content);
-          await userProvider.getAllUsersOneSignaUserId().then((userIds) async {
+          // Envoi de notification
+           userProvider.getAllUsersOneSignaUserId().then((userIds) async {
             if (userIds.isNotEmpty) {
+              String message = _getNotificationMessage(content);
+
               await userProvider.sendNotification(
                 userIds: userIds,
                 smallImage: content.thumbnailUrl,
                 send_user_id: userProvider.loginUserData!.id!,
                 recever_user_id: '',
-                message: "🔥🎥 ${content.title} est en ligne et fait sensation !",
+                message: message,
                 type_notif: NotificationType.POST.name,
                 post_id: content.id ?? '',
-                post_type: PostDataType.VIDEO.name,
+                post_type: _getPostType(content.contentType),
                 chat_id: '',
               );
             }
           });
-
         } else {
           success = await contentProvider.updateContentPaie(content);
         }
@@ -537,6 +590,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         _isUploading = false;
         _isSaving = false;
       });
+      printVm('Erreur contentpaie: ${e.toString()}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -547,7 +601,35 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     }
   }
 
-  // Les méthodes build restent inchangées...
+  String _getNotificationMessage(ContentPaie content) {
+    if (content.isSeries) {
+      if (content.isVideo) {
+        return "🎬 Nouvelle série vidéo: ${content.title} !";
+      } else {
+        return "📖 Nouvelle série de livres: ${content.title} !";
+      }
+    } else {
+      if (content.isVideo) {
+        return "🔥🎥 ${content.title} est en ligne et fait sensation !";
+      } else {
+        return "📚 ${content.title} est disponible maintenant !";
+      }
+    }
+  }
+
+  String _getPostType(ContentType contentType) {
+    switch (contentType) {
+      case ContentType.VIDEO:
+        return PostDataType.VIDEO.name;
+      case ContentType.EBOOK:
+        return PostDataType.EBOOK.name;
+      default:
+        return PostDataType.VIDEO.name;
+    }
+  }
+
+  // WIDGETS DE L'INTERFACE
+
   Widget _buildUserInfoSection(UserData? user) {
     return Container(
       padding: EdgeInsets.all(12),
@@ -606,43 +688,143 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
           style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
-        Row(
+        Wrap(
+          spacing: 8,
           children: [
-            Expanded(
-              child: ChoiceChip(
-                label: Text('Vidéo simple'),
-                selected: !_isSeries,
-                onSelected: (selected) {
-                  setState(() {
-                    _isSeries = !selected;
-                  });
-                },
-                selectedColor: Colors.red[800],
-                labelStyle: TextStyle(
-                  color: !_isSeries ? Colors.white : Colors.black,
-                ),
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: ChoiceChip(
-                label: Text('Série'),
-                selected: _isSeries,
-                onSelected: (selected) {
-                  setState(() {
-                    _isSeries = selected;
-                  });
-                },
-                selectedColor: Colors.red[800],
-                labelStyle: TextStyle(
-                  color: _isSeries ? Colors.white : Colors.black,
-                ),
-              ),
-            ),
+            _buildContentTypeChip('Vidéo', ContentType.VIDEO, Icons.videocam),
+            _buildContentTypeChip('Ebook', ContentType.EBOOK, Icons.book),
           ],
         ),
       ],
     );
+  }
+
+  Widget _buildContentTypeChip(String label, ContentType type, IconData icon) {
+    final isSelected = _contentType == type;
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.black),
+          SizedBox(width: 4),
+          Text(label),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _contentType = type;
+          if (type == ContentType.EBOOK) {
+            // Réinitialiser la série si on passe à ebook
+            _isSeries = false;
+          }
+        });
+      },
+      selectedColor: Colors.red[800],
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+      ),
+    );
+  }
+
+  Widget _buildSeriesTypeSelector() {
+    if (!widget.isEpisode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Type de série *',
+            style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Vidéo simple'),
+                  selected: !_isSeries && _contentType == ContentType.VIDEO,
+                  onSelected: (selected) {
+                    setState(() {
+                      _isSeries = !selected;
+                      _contentType = ContentType.VIDEO;
+                    });
+                  },
+                  selectedColor: Colors.red[800],
+                  labelStyle: TextStyle(
+                    color: !_isSeries && _contentType == ContentType.VIDEO ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Série vidéo'),
+                  selected: _isSeries && _contentType == ContentType.VIDEO,
+                  onSelected: (selected) {
+                    setState(() {
+                      _isSeries = selected;
+                      _contentType = ContentType.VIDEO;
+                    });
+                  },
+                  selectedColor: Colors.red[800],
+                  labelStyle: TextStyle(
+                    color: _isSeries && _contentType == ContentType.VIDEO ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Ebook simple'),
+                  selected: !_isSeries && _contentType == ContentType.EBOOK,
+                  onSelected: (selected) {
+                    setState(() {
+                      _isSeries = !selected;
+                      _contentType = ContentType.EBOOK;
+                    });
+                  },
+                  selectedColor: Colors.red[800],
+                  labelStyle: TextStyle(
+                    color: !_isSeries && _contentType == ContentType.EBOOK ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Série ebook'),
+                  selected: _isSeries && _contentType == ContentType.EBOOK,
+                  onSelected: (selected) {
+                    setState(() {
+                      _isSeries = selected;
+                      _contentType = ContentType.EBOOK;
+                    });
+                  },
+                  selectedColor: Colors.red[800],
+                  labelStyle: TextStyle(
+                    color: _isSeries && _contentType == ContentType.EBOOK ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    return SizedBox();
+  }
+
+  Widget _buildFileUploadSection() {
+    if (_contentType == ContentType.VIDEO) {
+      return _buildVideoUploadSection();
+    } else if (_contentType == ContentType.EBOOK) {
+      return _buildPDFUploadSection();
+    }
+    return SizedBox();
   }
 
   Widget _buildVideoUploadSection() {
@@ -669,10 +851,102 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
             ),
           ),
           onPressed: _isUploading ? null : _pickVideo,
-          child: Text('Choisir une vidéo'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam),
+              SizedBox(width: 8),
+              Text('Choisir une vidéo'),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  Widget _buildPDFUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Fichier PDF *',
+          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Taille maximale: 20 Mo',
+          style: TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+        SizedBox(height: 8),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.red[800],
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          onPressed: _isUploading ? null : _pickPDF,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.picture_as_pdf),
+              SizedBox(width: 8),
+              Text('Choisir un PDF'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThumbnailSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Image de couverture ${_contentType == ContentType.EBOOK ? '*' : ''}',
+          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 8),
+        if (_contentType == ContentType.EBOOK)
+          Text(
+            'Obligatoire pour les ebooks',
+            style: TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        SizedBox(height: 8),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.black,
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          onPressed: _isUploading ? null : _pickThumbnail,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.image),
+              SizedBox(width: 8),
+              Text('Choisir une image'),
+            ],
+          ),
+        ),
+        _buildThumbnailPreview(),
+      ],
+    );
+  }
+
+  Widget _buildFilePreview() {
+    if (_contentType == ContentType.VIDEO) {
+      return _buildVideoPreview();
+    } else if (_contentType == ContentType.EBOOK) {
+      return _buildPDFPreview();
+    }
+    return SizedBox();
   }
 
   Widget _buildVideoPreview() {
@@ -722,21 +996,6 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                     color: Colors.white.withOpacity(0.8),
                   ),
                 ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${_videoFile!.path.split('/').last}',
-                      style: TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -766,6 +1025,94 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 SizedBox(height: 8),
                 Text(
                   'Vidéo disponible',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return SizedBox();
+  }
+
+  Widget _buildPDFPreview() {
+    if (_pdfFile != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 16),
+          Text(
+            'Fichier PDF sélectionné:',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _pdfFile!.path.split('/').last,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      FutureBuilder<int>(
+                        future: _pdfFile!.length(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            final sizeMB = snapshot.data! / (1024 * 1024);
+                            return Text(
+                              '${sizeMB.toStringAsFixed(2)} Mo',
+                              style: TextStyle(color: Colors.grey),
+                            );
+                          }
+                          return Text('Calcul...', style: TextStyle(color: Colors.grey));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else if (_pdfUrl != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 16),
+          Text(
+            'PDF déjà uploadé:',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.picture_as_pdf, size: 40, color: Colors.grey),
+                SizedBox(height: 8),
+                Text(
+                  'PDF disponible',
                   style: TextStyle(color: Colors.grey),
                 ),
               ],
@@ -810,11 +1157,6 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 },
               ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Miniature: ${_thumbnailFile!.path.split('/').last}',
-            style: TextStyle(color: Colors.green, fontSize: 12),
           ),
         ],
       );
@@ -969,6 +1311,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   if (!widget.isEpisode) ...[
                     _buildContentTypeSelector(),
                     SizedBox(height: 16),
+                    _buildSeriesTypeSelector(),
+                    SizedBox(height: 16),
                   ],
 
                   if (_isSeries && !widget.isEpisode) ...[
@@ -997,6 +1341,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   ],
 
                   if (widget.isEpisode) ...[
+                    _buildContentTypeSelector(),
+                    SizedBox(height: 16),
                     TextFormField(
                       controller: _episodeNumberController,
                       style: TextStyle(color: Colors.black),
@@ -1151,30 +1497,15 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                   ),
                   SizedBox(height: 16),
 
-                  _buildVideoUploadSection(),
+                  _buildFileUploadSection(),
 
                   SizedBox(height: 16),
 
-                  _buildVideoPreview(),
-
-                  // SizedBox(height: 16),
-                  //
-                  // ElevatedButton(
-                  //   style: ElevatedButton.styleFrom(
-                  //     foregroundColor: Colors.white,
-                  //     backgroundColor: Colors.black,
-                  //     padding: EdgeInsets.symmetric(vertical: 16),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(8),
-                  //     ),
-                  //   ),
-                  //   onPressed: _isUploading ? null : _pickThumbnail,
-                  //   child: Text('Choisir une miniature'),
-                  // ),
+                  _buildFilePreview(),
 
                   SizedBox(height: 16),
 
-                  _buildThumbnailPreview(),
+                  _buildThumbnailSection(),
 
                   SizedBox(height: 16),
 

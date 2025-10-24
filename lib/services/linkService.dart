@@ -1,5 +1,6 @@
 // app_link_service.dart
 import 'dart:async';
+import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
@@ -328,12 +329,22 @@ class AppLinkService {
       if (contentDoc.exists) {
         // Convertir les données Firebase en objet ContentPaie
         final contentData = ContentPaie.fromJson(contentDoc.data() as Map<String, dynamic>);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContentDetailScreen(content: contentData),
-          ),
-        );
+        if(contentData.contentType == ContentType.EBOOK){
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EbookDetailScreen(content: contentData),
+            ),
+          );
+        }else{
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ContentDetailScreen(content: contentData),
+            ),
+          );
+        }
+
 
       }
     } catch (e) {

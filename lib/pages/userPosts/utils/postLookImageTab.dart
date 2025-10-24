@@ -372,7 +372,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       if (widget.canal != null) {
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,
-          message: "📢 ${getTabBarTypeMessage(_selectedPostType!, post)}",
+          message: "${getTabBarTypeMessage(_selectedPostType!, post)}",
           typeNotif: NotificationType.POST.name,
           postId: post.id!,
           postType: PostDataType.IMAGE.name,
@@ -395,7 +395,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       } else {
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,
-          message: isChallenge ? "📢 🎉 Nouveau challenge en ligne ! 🎉 " : "📢 @${authProvider.loginUserData.pseudo!} ${getTabBarTypeMessage(_selectedPostType!, post)}",
+          message: isChallenge ? "📢 🎉 Nouveau challenge en ligne ! 🎉 " : "${getTabBarTypeMessage(_selectedPostType!, post)}",
           typeNotif: NotificationType.POST.name,
           postId: post.id!,
           postType: PostDataType.IMAGE.name,

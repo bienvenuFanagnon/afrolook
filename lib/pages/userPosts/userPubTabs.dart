@@ -398,7 +398,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
 
                                   authProvider.sendPushNotificationToUsers(
                                     sender: authProvider.loginUserData,
-                                    message: " ${post.description}",
+                                    message: "${post.description}",
                                     typeNotif: NotificationType.POST.name,
                                     postId: post.id!,
                                     postType: PostDataType.TEXT.name,
@@ -410,7 +410,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                 } else {
                                   authProvider.sendPushNotificationToUsers(
                                     sender: authProvider.loginUserData,
-                                    message: " ${post.description}",
+                                    message: "${post.description}",
                                     typeNotif: NotificationType.POST.name,
                                     postId: post.id!,
                                     postType: PostDataType.TEXT.name,
@@ -742,7 +742,7 @@ class _UserPubImageState extends State<UserPubImage> {
 
                                  authProvider.sendPushNotificationToUsers(
                                   sender: authProvider.loginUserData,                          // L'utilisateur qui envoie la notification
-                                  message: " ${post.description}",                              // Message dynamique
+                                  message: "${post.description}",                              // Message dynamique
                                   typeNotif: NotificationType.POST.name,                       // Type de notification
                                   postId: post!.id!,                                           // ID du post
                                   postType: PostDataType.IMAGE.name,                           // Type de post
@@ -1028,24 +1028,6 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   // Méthode pour obtenir le message de notification selon le type de post
-  String getTabBarTypeMessage(String postType, Post post) {
-    switch (postType) {
-      case 'LOOKS':
-        return 'a partagé un nouveau look vidéo ✨';
-      case 'ACTUALITES':
-        return 'a publié une actualité en vidéo 📰';
-      case 'SPORT':
-        return 'a partagé un moment sportif 🏆';
-      case 'EVENEMENT':
-        return 'a partagé un événement en vidéo 🎉';
-      case 'OFFRES':
-        return 'a publié une nouvelle offre 📢';
-      case 'GAMER':
-        return 'a partagé une story gaming 🎮';
-      default:
-        return 'a publié une nouvelle vidéo 🎥';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1462,7 +1444,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         // 🔹 Notification pour les posts de canal
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,         // L'utilisateur qui publie
-          message: " ${post.description}",            // Message dynamique
+          message: "${post.description}",            // Message dynamique
           typeNotif: NotificationType.POST.name,      // Type de notification
           postId: post.id!,                           // ID du post
           postType: PostDataType.VIDEO.name,          // Type de post
@@ -1480,7 +1462,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         // 🔹 Notification pour les posts d'utilisateur
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,         // L'utilisateur qui publie
-          message: "📢 ${post.description}",          // Message dynamique
+          message: "${post.description}",          // Message dynamique
           typeNotif: NotificationType.POST.name,      // Type de notification
           postId: post.id!,                           // ID du post
           postType: PostDataType.VIDEO.name,          // Type de post
@@ -1490,20 +1472,20 @@ class _UserPubVideoState extends State<UserPubVideo> {
         );
       }
 
-      // 🔹 Création d'une notification dans Firestore
-      NotificationData notif = NotificationData(
-        id: firestore.collection('Notifications').doc().id,
-        titre: "Nouvelle vidéo",
-        description: "Une nouvelle vidéo a été publiée !",
-        users_id_view: [],
-        receiver_id: "",
-        user_id: authProvider.loginUserData.id,
-        updatedAt: DateTime.now().microsecondsSinceEpoch,
-        createdAt: DateTime.now().microsecondsSinceEpoch,
-        status: PostStatus.VALIDE.name,
-      );
-
-      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+      // // 🔹 Création d'une notification dans Firestore
+      // NotificationData notif = NotificationData(
+      //   id: firestore.collection('Notifications').doc().id,
+      //   titre: "Nouvelle vidéo",
+      //   description: "Une nouvelle vidéo a été publiée !",
+      //   users_id_view: [],
+      //   receiver_id: "",
+      //   user_id: authProvider.loginUserData.id,
+      //   updatedAt: DateTime.now().microsecondsSinceEpoch,
+      //   createdAt: DateTime.now().microsecondsSinceEpoch,
+      //   status: PostStatus.VALIDE.name,
+      // );
+      //
+      // await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
       print("✅ Notification envoyée avec succès");
     } catch (e) {

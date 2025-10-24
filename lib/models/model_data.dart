@@ -3027,15 +3027,23 @@ class ContentCategory {
   }
 }
 
-// Modèle pour les épisodes (pour les séries)
+// Enum pour le type de contenu
+enum ContentType {
+  VIDEO,
+  EBOOK
+}
+
+// Modèle pour les épisodes (vidéos et ebooks)
 class Episode {
   String? id;
   String seriesId;
   String title;
   String description;
-  String videoUrl;
+  String? videoUrl; // Pour les épisodes vidéo
+  String? pdfUrl; // Pour les épisodes ebook
   String? thumbnailUrl;
-  int duration; // en secondes
+  int duration; // en secondes pour vidéo
+  int pageCount; // nombre de pages pour ebook
   int episodeNumber;
   double price;
   bool isFree;
@@ -3043,15 +3051,18 @@ class Episode {
   int likes;
   int createdAt;
   int updatedAt;
+  ContentType contentType;
 
   Episode({
     this.id,
     required this.seriesId,
     required this.title,
     required this.description,
-    required this.videoUrl,
+    this.videoUrl,
+    this.pdfUrl,
     this.thumbnailUrl,
-    required this.duration,
+    this.duration = 0,
+    this.pageCount = 0,
     required this.episodeNumber,
     required this.price,
     required this.isFree,
@@ -3059,6 +3070,7 @@ class Episode {
     this.likes = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
+    this.contentType = ContentType.VIDEO,
   });
 
   factory Episode.fromJson(Map<String, dynamic> json) {
@@ -3068,8 +3080,10 @@ class Episode {
       title: json['title'],
       description: json['description'],
       videoUrl: json['videoUrl'],
+      pdfUrl: json['pdfUrl'],
       thumbnailUrl: json['thumbnailUrl'],
-      duration: json['duration'],
+      duration: json['duration'] ?? 0,
+      pageCount: json['pageCount'] ?? 0,
       episodeNumber: json['episodeNumber'],
       price: json['price']?.toDouble() ?? 0.0,
       isFree: json['isFree'] ?? false,
@@ -3077,6 +3091,10 @@ class Episode {
       likes: json['likes'] ?? 0,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
+      contentType: ContentType.values.firstWhere(
+              (e) => e.toString() == 'ContentType.${json['contentType']}',
+          orElse: () => ContentType.VIDEO
+      ),
     );
   }
 
@@ -3087,8 +3105,10 @@ class Episode {
       'title': title,
       'description': description,
       'videoUrl': videoUrl,
+      'pdfUrl': pdfUrl,
       'thumbnailUrl': thumbnailUrl,
       'duration': duration,
+      'pageCount': pageCount,
       'episodeNumber': episodeNumber,
       'price': price,
       'isFree': isFree,
@@ -3096,28 +3116,35 @@ class Episode {
       'likes': likes,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'contentType': contentType.toString().split('.').last,
     };
   }
+
+  bool get isVideo => contentType == ContentType.VIDEO;
+  bool get isEbook => contentType == ContentType.EBOOK;
 }
 
-// Modèle pour le contenu (vidéos simples ou séries)
+// Modèle pour le contenu (vidéos simples, ebooks, séries) - STRUCTURE EXISTANTE CONSERVÉE
 class ContentPaie {
   String? id;
   String ownerId;
   String title;
   String description;
   String? videoUrl; // Pour les vidéos simples
+  String? pdfUrl; // NOUVEAU: Pour les ebooks
   String thumbnailUrl;
   List<String> categories;
   List<String> hashtags;
-  bool isSeries;
+  bool isSeries; // CONSERVÉ: pour la compatibilité avec les données existantes
   String? seriesId; // Pour les épisodes
+  ContentType contentType; // NOUVEAU: pour distinguer vidéo/ebook
   double price;
   bool isFree;
   int views;
   int likes;
   int comments;
-  int duration; // en secondes
+  int duration; // en secondes pour les vidéos
+  int pageCount; // NOUVEAU: nombre de pages pour les ebooks
   int createdAt;
   int updatedAt;
 
@@ -3127,17 +3154,20 @@ class ContentPaie {
     required this.title,
     required this.description,
     this.videoUrl,
+    this.pdfUrl, // NOUVEAU
     required this.thumbnailUrl,
     required this.categories,
     required this.hashtags,
-    this.isSeries = false,
+    this.isSeries = false, // CONSERVÉ
     this.seriesId,
+    this.contentType = ContentType.VIDEO, // NOUVEAU
     required this.price,
     required this.isFree,
     this.views = 0,
     this.likes = 0,
     this.comments = 0,
     this.duration = 0,
+    this.pageCount = 0, // NOUVEAU
     this.createdAt = 0,
     this.updatedAt = 0,
   });
@@ -3149,17 +3179,23 @@ class ContentPaie {
       title: json['title'],
       description: json['description'],
       videoUrl: json['videoUrl'],
+      pdfUrl: json['pdfUrl'], // NOUVEAU
       thumbnailUrl: json['thumbnailUrl'],
       categories: List<String>.from(json['categories'] ?? []),
       hashtags: List<String>.from(json['hashtags'] ?? []),
-      isSeries: json['isSeries'] ?? false,
+      isSeries: json['isSeries'] ?? false, // CONSERVÉ
       seriesId: json['seriesId'],
+      contentType: ContentType.values.firstWhere(
+              (e) => e.toString() == 'ContentType.${json['contentType']}',
+          orElse: () => ContentType.VIDEO // Par défaut VIDEO pour la compatibilité
+      ),
       price: json['price']?.toDouble() ?? 0.0,
       isFree: json['isFree'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
       comments: json['comments'] ?? 0,
       duration: json['duration'] ?? 0,
+      pageCount: json['pageCount'] ?? 0, // NOUVEAU
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
     );
@@ -3172,24 +3208,33 @@ class ContentPaie {
       'title': title,
       'description': description,
       'videoUrl': videoUrl,
+      'pdfUrl': pdfUrl, // NOUVEAU
       'thumbnailUrl': thumbnailUrl,
       'categories': categories,
       'hashtags': hashtags,
-      'isSeries': isSeries,
+      'isSeries': isSeries, // CONSERVÉ
       'seriesId': seriesId,
+      'contentType': contentType.toString().split('.').last, // NOUVEAU
       'price': price,
       'isFree': isFree,
       'views': views,
       'likes': likes,
       'comments': comments,
       'duration': duration,
+      'pageCount': pageCount, // NOUVEAU
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
   }
+
+  // Méthodes utilitaires
+  bool get isVideo => contentType == ContentType.VIDEO;
+  bool get isEbook => contentType == ContentType.EBOOK;
+  bool get isVideoSeries => isSeries && isVideo;
+  bool get isEbookSeries => isSeries && isEbook;
 }
 
-// Modèle pour les achats de contenu
+// Modèle pour les achats de contenu (inchangé)
 class ContentPurchase {
   String? id;
   String userId;
@@ -3234,6 +3279,213 @@ class ContentPurchase {
   }
 }
 
+// // Modèle pour les épisodes (pour les séries)
+// class Episode {
+//   String? id;
+//   String seriesId;
+//   String title;
+//   String description;
+//   String videoUrl;
+//   String? thumbnailUrl;
+//   int duration; // en secondes
+//   int episodeNumber;
+//   double price;
+//   bool isFree;
+//   int views;
+//   int likes;
+//   int createdAt;
+//   int updatedAt;
+//
+//   Episode({
+//     this.id,
+//     required this.seriesId,
+//     required this.title,
+//     required this.description,
+//     required this.videoUrl,
+//     this.thumbnailUrl,
+//     required this.duration,
+//     required this.episodeNumber,
+//     required this.price,
+//     required this.isFree,
+//     this.views = 0,
+//     this.likes = 0,
+//     this.createdAt = 0,
+//     this.updatedAt = 0,
+//   });
+//
+//   factory Episode.fromJson(Map<String, dynamic> json) {
+//     return Episode(
+//       id: json['id'],
+//       seriesId: json['seriesId'],
+//       title: json['title'],
+//       description: json['description'],
+//       videoUrl: json['videoUrl'],
+//       thumbnailUrl: json['thumbnailUrl'],
+//       duration: json['duration'],
+//       episodeNumber: json['episodeNumber'],
+//       price: json['price']?.toDouble() ?? 0.0,
+//       isFree: json['isFree'] ?? false,
+//       views: json['views'] ?? 0,
+//       likes: json['likes'] ?? 0,
+//       createdAt: json['createdAt'] ?? 0,
+//       updatedAt: json['updatedAt'] ?? 0,
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'id': id,
+//       'seriesId': seriesId,
+//       'title': title,
+//       'description': description,
+//       'videoUrl': videoUrl,
+//       'thumbnailUrl': thumbnailUrl,
+//       'duration': duration,
+//       'episodeNumber': episodeNumber,
+//       'price': price,
+//       'isFree': isFree,
+//       'views': views,
+//       'likes': likes,
+//       'createdAt': createdAt,
+//       'updatedAt': updatedAt,
+//     };
+//   }
+// }
+//
+// // Modèle pour le contenu (vidéos simples ou séries)
+// class ContentPaie {
+//   String? id;
+//   String ownerId;
+//   String title;
+//   String description;
+//   String? videoUrl; // Pour les vidéos simples
+//   String thumbnailUrl;
+//   List<String> categories;
+//   List<String> hashtags;
+//   bool isSeries;
+//   String? seriesId; // Pour les épisodes
+//   double price;
+//   bool isFree;
+//   int views;
+//   int likes;
+//   int comments;
+//   int duration; // en secondes
+//   int createdAt;
+//   int updatedAt;
+//
+//   ContentPaie({
+//     this.id,
+//     required this.ownerId,
+//     required this.title,
+//     required this.description,
+//     this.videoUrl,
+//     required this.thumbnailUrl,
+//     required this.categories,
+//     required this.hashtags,
+//     this.isSeries = false,
+//     this.seriesId,
+//     required this.price,
+//     required this.isFree,
+//     this.views = 0,
+//     this.likes = 0,
+//     this.comments = 0,
+//     this.duration = 0,
+//     this.createdAt = 0,
+//     this.updatedAt = 0,
+//   });
+//
+//   factory ContentPaie.fromJson(Map<String, dynamic> json) {
+//     return ContentPaie(
+//       id: json['id'],
+//       ownerId: json['ownerId'],
+//       title: json['title'],
+//       description: json['description'],
+//       videoUrl: json['videoUrl'],
+//       thumbnailUrl: json['thumbnailUrl'],
+//       categories: List<String>.from(json['categories'] ?? []),
+//       hashtags: List<String>.from(json['hashtags'] ?? []),
+//       isSeries: json['isSeries'] ?? false,
+//       seriesId: json['seriesId'],
+//       price: json['price']?.toDouble() ?? 0.0,
+//       isFree: json['isFree'] ?? false,
+//       views: json['views'] ?? 0,
+//       likes: json['likes'] ?? 0,
+//       comments: json['comments'] ?? 0,
+//       duration: json['duration'] ?? 0,
+//       createdAt: json['createdAt'] ?? 0,
+//       updatedAt: json['updatedAt'] ?? 0,
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'id': id,
+//       'ownerId': ownerId,
+//       'title': title,
+//       'description': description,
+//       'videoUrl': videoUrl,
+//       'thumbnailUrl': thumbnailUrl,
+//       'categories': categories,
+//       'hashtags': hashtags,
+//       'isSeries': isSeries,
+//       'seriesId': seriesId,
+//       'price': price,
+//       'isFree': isFree,
+//       'views': views,
+//       'likes': likes,
+//       'comments': comments,
+//       'duration': duration,
+//       'createdAt': createdAt,
+//       'updatedAt': updatedAt,
+//     };
+//   }
+// }
+//
+// // Modèle pour les achats de contenu
+// class ContentPurchase {
+//   String? id;
+//   String userId;
+//   String contentId;
+//   double amountPaid;
+//   double ownerEarnings;
+//   double platformEarnings;
+//   int purchaseDate;
+//
+//   ContentPurchase({
+//     this.id,
+//     required this.userId,
+//     required this.contentId,
+//     required this.amountPaid,
+//     required this.ownerEarnings,
+//     required this.platformEarnings,
+//     this.purchaseDate = 0,
+//   });
+//
+//   factory ContentPurchase.fromJson(Map<String, dynamic> json) {
+//     return ContentPurchase(
+//       id: json['id'],
+//       userId: json['userId'],
+//       contentId: json['contentId'],
+//       amountPaid: json['amountPaid']?.toDouble() ?? 0.0,
+//       ownerEarnings: json['ownerEarnings']?.toDouble() ?? 0.0,
+//       platformEarnings: json['platformEarnings']?.toDouble() ?? 0.0,
+//       purchaseDate: json['purchaseDate'] ?? 0,
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'id': id,
+//       'userId': userId,
+//       'contentId': contentId,
+//       'amountPaid': amountPaid,
+//       'ownerEarnings': ownerEarnings,
+//       'platformEarnings': platformEarnings,
+//       'purchaseDate': purchaseDate,
+//     };
+//   }
+// }
+
 enum UserRole { ADM, USER }
 
 enum RoleUserShop { ADMIN, USER, SUPERADMIN }
@@ -3246,7 +3498,7 @@ enum MessageState { LU, NONLU }
 
 enum PostType { POST, PUB,ARTICLE,CHALLENGE,CHALLENGEPARTICIPATION,SERVICE }
 
-enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT }
+enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT, EBOOK }
 
 enum PostStatus { VALIDE, SIGNALER, NONVALIDE, SUPPRIMER }
 

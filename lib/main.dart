@@ -76,7 +76,7 @@ import 'package:upgrader/upgrader.dart';
 
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
-
+import 'package:flutter_downloader/flutter_downloader.dart';
 // Import du service App Links
 
 late List<CameraDescription> _cameras;
@@ -109,7 +109,15 @@ Future<void> main() async {
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
   OneSignal.Notifications.requestPermission(true);
-
+  if (kReleaseMode) {
+    await FlutterDownloader.initialize(
+      debug: false,
+      ignoreSsl: false,
+    );      } else {
+    await FlutterDownloader.initialize(
+      debug: true,
+      ignoreSsl: true,
+    );      }
   runApp(const MyApp());
 }
 

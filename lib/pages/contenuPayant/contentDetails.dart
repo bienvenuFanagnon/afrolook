@@ -125,7 +125,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
 
     // Déterminer si c'est une série avec épisodes
     bool isSeries = widget.content.isSeries;
-    String videoUrl = isSeries && _currentEpisode != null
+    String? videoUrl = isSeries && _currentEpisode != null
         ? _currentEpisode!.videoUrl
         : widget.content.videoUrl ?? '';
     final userProvider = Provider.of<UserAuthProvider>(context,listen: false);
@@ -138,7 +138,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
 
     // bool canWatch = (isSeries ? _currentEpisode?.isFree ?? false : widget.content.isFree) || hasPurchased;
 
-    if (canWatch && videoUrl.isNotEmpty) {
+    if (canWatch && videoUrl!.isNotEmpty) {
       _videoPlayerController = VideoPlayerController.network(videoUrl);
       await _videoPlayerController.initialize();
 

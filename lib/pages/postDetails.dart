@@ -225,20 +225,23 @@ class _DetailsPostState extends State<DetailsPost>
 
   Future<void> _incrementViews() async {
     try {
-      if (!widget.post.users_vue_id!.contains(authProvider.loginUserData.id)) {
-        // Mettre à jour localement
-        setState(() {
-          widget.post.vues = (widget.post.vues ?? 0) + 1;
-          widget.post.users_vue_id!.add(authProvider.loginUserData.id!);
-        });
+      if (authProvider.loginUserData!=null&&widget.post!=null&&widget.post.users_vue_id!=null) {
+        if (!widget.post.users_vue_id!.contains(authProvider.loginUserData.id)) {
+          // Mettre à jour localement
+          setState(() {
+            widget.post.vues = (widget.post.vues ?? 0) + 1;
+            widget.post.users_vue_id!.add(authProvider.loginUserData.id!);
+          });
 
-        // Mettre à jour dans Firestore
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'vues': FieldValue.increment(1),
-          'users_vue_id':
-          FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(2),
-        });
+          // Mettre à jour dans Firestore
+          await firestore.collection('Posts').doc(widget.post.id).update({
+            'vues': FieldValue.increment(1),
+            'users_vue_id':
+            FieldValue.arrayUnion([authProvider.loginUserData.id]),
+            'popularity': FieldValue.increment(2),
+          });
+        }
+
       }
     } catch (e) {
       print("Erreur incrémentation vues: $e");

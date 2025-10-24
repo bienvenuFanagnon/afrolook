@@ -55,7 +55,7 @@ class ContentProvider with ChangeNotifier {
   // ),
   // ];
 
-  List<ContentCategory> _categories = [
+  List<ContentCategory> _categories2 = [
     ContentCategory(
       id: '1',
       name: 'Musique',
@@ -67,6 +67,12 @@ class ContentProvider with ChangeNotifier {
       name: 'Sport',
       description: 'Football, basket, fitness et plus 🏀⚽',
       imageUrl: 'https://example.com/sport.jpg',
+    ),
+    ContentCategory(
+      id: '3',
+      name: 'Formation',
+      description: 'Cours, tutos et apprentissage 📚',
+      imageUrl: 'https://example.com/education.jpg',
     ),
     ContentCategory(
       id: '3',
@@ -121,6 +127,154 @@ class ContentProvider with ChangeNotifier {
       name: 'Manga',
       description: 'Bandes dessinées japonaises et animés 🇯🇵📖',
       imageUrl: 'https://example.com/manga.jpg',
+    ),
+  ];
+  List<ContentCategory> _categories = [
+    ContentCategory(
+      id: '1',
+      name: 'Musique',
+      description: 'Clips, concerts et tout ce qui bouge 🎶',
+      imageUrl: 'https://example.com/musique.jpg',
+    ),
+    ContentCategory(
+      id: '2',
+      name: 'Sport',
+      description: 'Football, basket, fitness et plus 🏀⚽',
+      imageUrl: 'https://example.com/sport.jpg',
+    ),
+    ContentCategory(
+      id: '3',
+      name: 'Formation',
+      description: 'Formations professionnelles et apprentissages 💼📘',
+      imageUrl: 'https://example.com/formation.jpg',
+    ),
+    ContentCategory(
+      id: '4',
+      name: 'Éducation',
+      description: 'Cours, tutos et apprentissage 📚',
+      imageUrl: 'https://example.com/education.jpg',
+    ),
+    ContentCategory(
+      id: '5',
+      name: 'Divertissement',
+      description: 'Humour, films et distractions 😂🎬',
+      imageUrl: 'https://example.com/divertissement.jpg',
+    ),
+    ContentCategory(
+      id: '6',
+      name: 'Actualités',
+      description: 'Infos, débats et tendances 🌍',
+      imageUrl: 'https://example.com/actualites.jpg',
+    ),
+    ContentCategory(
+      id: '7',
+      name: 'Mode',
+      description: 'Styles, looks et tendances 👗👟',
+      imageUrl: 'https://example.com/mode.jpg',
+    ),
+    ContentCategory(
+      id: '8',
+      name: 'Vidéos Virales',
+      description: 'Les vidéos qui font le buzz 🔥😂',
+      imageUrl: 'https://example.com/virales.jpg',
+    ),
+    ContentCategory(
+      id: '9',
+      name: 'Fuites & Exclus',
+      description: 'Contenus inédits et coulisses 🤫🎥',
+      imageUrl: 'https://example.com/fuites.jpg',
+    ),
+    ContentCategory(
+      id: '10',
+      name: 'Challenges',
+      description: 'Défis amusants et moments viraux 🎉💪',
+      imageUrl: 'https://example.com/challenges.jpg',
+    ),
+    ContentCategory(
+      id: '11',
+      name: 'Cartoon',
+      description: 'Dessins animés et créations ludiques 🐭🎨',
+      imageUrl: 'https://example.com/cartoon.jpg',
+    ),
+    ContentCategory(
+      id: '12',
+      name: 'Manga',
+      description: 'Bandes dessinées japonaises et animés 🇯🇵📖',
+      imageUrl: 'https://example.com/manga.jpg',
+    ),
+
+    // 🆕 --- Catégories eBook et lecture ---
+    ContentCategory(
+      id: '13',
+      name: 'Romans',
+      description: 'Histoires captivantes et aventures littéraires 📖❤️',
+      imageUrl: 'https://example.com/roman.jpg',
+    ),
+    ContentCategory(
+      id: '14',
+      name: 'Contes',
+      description: 'Récits traditionnels et histoires culturelles africaines 🪘📜',
+      imageUrl: 'https://example.com/conte.jpg',
+    ),
+    ContentCategory(
+      id: '15',
+      name: 'Histoire',
+      description: 'Civilisations, biographies et faits marquants du passé 🏛️📜',
+      imageUrl: 'https://example.com/histoire.jpg',
+    ),
+    ContentCategory(
+      id: '16',
+      name: 'Livres pour Enfants',
+      description: 'Contes et apprentissages ludiques pour les petits 👶📘',
+      imageUrl: 'https://example.com/enfant.jpg',
+    ),
+    ContentCategory(
+      id: '17',
+      name: 'Développement Personnel',
+      description: 'Motivation, confiance et bien-être 🌱💭',
+      imageUrl: 'https://example.com/dev_perso.jpg',
+    ),
+    ContentCategory(
+      id: '18',
+      name: 'Sciences & Technologie',
+      description: 'Découvertes, innovations et savoir moderne 🔬💡',
+      imageUrl: 'https://example.com/science.jpg',
+    ),
+    ContentCategory(
+      id: '19',
+      name: 'Culture Africaine',
+      description: 'Littérature, traditions et savoirs du continent 🌍🪘',
+      imageUrl: 'https://example.com/culture_africaine.jpg',
+    ),
+    ContentCategory(
+      id: '20',
+      name: 'Religions & Spiritualité',
+      description: 'Textes sacrés, méditation et croyances ✨🙏',
+      imageUrl: 'https://example.com/spiritualite.jpg',
+    ),
+    ContentCategory(
+      id: '21',
+      name: 'Business & Finance',
+      description: 'Entrepreneuriat, argent et gestion 💼💰',
+      imageUrl: 'https://example.com/business.jpg',
+    ),
+    ContentCategory(
+      id: '22',
+      name: 'Santé & Bien-être',
+      description: 'Corps, esprit et équilibre 🍃💪',
+      imageUrl: 'https://example.com/sante.jpg',
+    ),
+    ContentCategory(
+      id: '23',
+      name: 'Poésie & Arts',
+      description: 'Textes poétiques, art et inspiration 🎨🖋️',
+      imageUrl: 'https://example.com/poesie.jpg',
+    ),
+    ContentCategory(
+      id: '24',
+      name: 'Magazines',
+      description: 'Revues, journaux et publications modernes 📰📔',
+      imageUrl: 'https://example.com/magazine.jpg',
     ),
   ];
 
@@ -459,7 +613,7 @@ class ContentProvider with ChangeNotifier {
           smallImage: currentUser.imageUrl!,
           send_user_id: currentUser.id!,
           recever_user_id: contentPaie.ownerId!,
-          message: "📢 Votre vidéo a été achetée pour ${ownerEarnings.toStringAsFixed(2)} FCFA !",
+          message: "📢 Votre contenu a été achetée pour ${ownerEarnings.toStringAsFixed(2)} FCFA !",
           type_notif: NotificationType.POST.name,
           post_id: contentPaie.id!,
           post_type: "video",

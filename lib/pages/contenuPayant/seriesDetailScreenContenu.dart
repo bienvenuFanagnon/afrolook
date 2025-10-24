@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -231,14 +232,24 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
             isFree: episode.isFree,
             views: episode.views,
             likes: episode.likes,
+            contentType: episode.contentType,
+            pdfUrl: episode.contentType ==ContentType.EBOOK?episode.pdfUrl:null,
+            pageCount: episode.contentType ==ContentType.EBOOK?episode.pageCount:0,
             comments: 0,
             duration: episode.duration,
             createdAt: episode.createdAt,
             updatedAt: episode.updatedAt,
           );
 
-          Navigator.push(
-              context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
+          if(episode.contentType ==ContentType.EBOOK){
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => EbookDetailScreen(content: content)));
+          }else{
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
+          }
+
+
         },
       ),
     );
