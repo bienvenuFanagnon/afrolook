@@ -33,8 +33,10 @@ class AddNewProduit extends StatefulWidget {
 
 class _AddAnnonceState extends State<AddNewProduit> {
   final _formKey = GlobalKey<FormState>();
-  String _titre = '';
-  String _description = '';
+  String _titre2 = '';
+  final _titre = TextEditingController();
+  final _description = TextEditingController();
+  String _description2 = '';
   String _numero = '';
   int _prix = 0;
   String _sousCategorieId = '';
@@ -888,6 +890,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                   label: 'Titre du produit *',
                   icon: Icons.title,
                   child: TextFormField(
+                    controller: _titre,
                     decoration: InputDecoration(
                       hintText: 'Ex: Téléphone Samsung Galaxy S21',
                     ),
@@ -896,12 +899,6 @@ class _AddAnnonceState extends State<AddNewProduit> {
                         return 'Veuillez entrer un titre';
                       }
                       return null;
-                    },
-                    onSaved: (value) {
-                      _titre = value!;
-                    },
-                    onChanged: (value) {
-                      _titre = value!;
                     },
                   ),
                 ),
@@ -944,6 +941,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                   label: 'Description *',
                   icon: Icons.description,
                   child: TextFormField(
+                    controller: _description,
                     maxLines: 3,
                     decoration: InputDecoration(
                       hintText: 'Décrivez votre produit en détail...',
@@ -954,13 +952,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                       }
                       return null;
                     },
-                    onSaved: (value) {
-                      _description = value!;
-                    },
-                    onChanged: (value) {
-                      _description = value!;
 
-                    },
                   ),
                 ),
 
@@ -1161,9 +1153,9 @@ class _AddAnnonceState extends State<AddNewProduit> {
     try {
       ArticleData annonceRegisterData = ArticleData();
       annonceRegisterData.images = [];
-      annonceRegisterData.titre = _titre;
+      annonceRegisterData.titre = _titre.text;
       annonceRegisterData.dispo_annonce_afrolook = false;
-      annonceRegisterData.description = _description;
+      annonceRegisterData.description = _description.text;
       annonceRegisterData.phone = _numero;
       annonceRegisterData.vues = 0;
       annonceRegisterData.popularite = 1;
@@ -1219,8 +1211,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
         );
 
         // Réinitialiser le formulaire
-        _titre = '';
-        _description = '';
+        // _titre.text = '';
+        // _description = '';
         _prix = 0;
         _mediaFileList = [];
         _formKey.currentState!.reset();
