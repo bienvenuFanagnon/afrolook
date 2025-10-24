@@ -1315,17 +1315,17 @@ class _MyHomePageState extends State<MyHomePage>
             child: Icon(Icons.storefront, color: textColor, size: iconSize),
           ),
           SizedBox(width: 10),
-          GestureDetector(
-            onTap: () {
-              if (_scrollController.hasClients) {
-                _scrollController.animateTo(0.0, duration: Duration(milliseconds: 1000), curve: Curves.ease);
-              }
-              setState(() {
-                listConstposts.clear();
-              });
-            },
-            child: Icon(Icons.refresh_rounded, color: textColor, size: iconSize),
-          ),
+          // GestureDetector(
+          //   onTap: () {
+          //     if (_scrollController.hasClients) {
+          //       _scrollController.animateTo(0.0, duration: Duration(milliseconds: 1000), curve: Curves.ease);
+          //     }
+          //     setState(() {
+          //       listConstposts.clear();
+          //     });
+          //   },
+          //   child: Icon(Icons.refresh_rounded, color: textColor, size: iconSize),
+          // ),
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(48),
