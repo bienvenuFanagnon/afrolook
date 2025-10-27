@@ -784,6 +784,27 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
+                        _buildFormField(
+                          label: 'Prix (FCFA) *',
+                          icon: Icons.attach_money,
+                          child: TextFormField(
+                            controller: _prix,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Ex: 25000',
+                            ),
+                            validator: (value) {
+                              if (value!.isEmpty) {
+                                return 'Veuillez entrer un prix';
+                              }
+                              return null;
+                            },
+
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
                         Row(
                           children: [
                             Icon(Icons.category, color: CustomConstants.kPrimaryColor),
@@ -1020,26 +1041,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                   ),
                 ),
 
-                SizedBox(height: 16),
 
-                _buildFormField(
-                  label: 'Prix (FCFA) *',
-                  icon: Icons.attach_money,
-                  child: TextFormField(
-                    controller: _prix,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: 25000',
-                    ),
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Veuillez entrer un prix';
-                      }
-                      return null;
-                    },
-
-                  ),
-                ),
 
                 SizedBox(height: 100),
               ],

@@ -370,7 +370,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       final content = ContentPaie.fromJson(docSnapshot.data()!);
 
       // Préparer le message de notification
-      final message = "Nouvel épisode ajouté à la série '${content.title}' ! Regardez maintenant.";
+      final message = "ZONE VIP 🔥 - Nouvel épisode ajouté à la série '${content.title}' ! Regardez maintenant.";
 
       // Récupérer les utilisateurs à notifier
       final userIds = await userProvider.getAllUsersOneSignaUserId();
@@ -604,15 +604,15 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
   String _getNotificationMessage(ContentPaie content) {
     if (content.isSeries) {
       if (content.isVideo) {
-        return "🎬 Nouvelle série vidéo: ${content.title} !";
+        return "ZONE VIP 🔥 -🎬 Nouvelle série vidéo: ${content.title} !";
       } else {
-        return "📖 Nouvelle série de livres: ${content.title} !";
+        return "ZONE VIP 🔥 -📖 Nouvelle série de livres: ${content.title} !";
       }
     } else {
       if (content.isVideo) {
-        return "🔥🎥 ${content.title} est en ligne et fait sensation !";
+        return "ZONE VIP 🔥 - 🎥 ${content.title} est en ligne et fait sensation !";
       } else {
-        return "📚 ${content.title} est disponible maintenant !";
+        return "ZONE VIP 🔥 - 📚 ${content.title} est disponible maintenant !";
       }
     }
   }

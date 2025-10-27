@@ -320,27 +320,50 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
 
       // --- DEMANDE DE PERMISSIONS ---
       bool permissionGranted = false;
-
       if (Platform.isAndroid) {
         final androidInfo = await DeviceInfoPlugin().androidInfo;
-        if (androidInfo.version.sdkInt >= 33) {
-          // Android 13+
-          final status = await Permission.manageExternalStorage.request();
-          permissionGranted = status.isGranted;
-        } else if (androidInfo.version.sdkInt >= 30) {
+        final sdkInt = androidInfo.version.sdkInt;
+
+        if (sdkInt >= 33) {
+          // Android 13 et +
+          final photos = await Permission.photos.request();
+          final videos = await Permission.videos.request();
+
+          permissionGranted = photos.isGranted || videos.isGranted;
+        } else if (sdkInt >= 30) {
           // Android 11 et 12
-          final status = await Permission.manageExternalStorage.request();
-          permissionGranted = status.isGranted;
+          final storage = await Permission.storage.request();
+          permissionGranted = storage.isGranted;
         } else {
           // Android <11
-          final status = await Permission.storage.request();
-          permissionGranted = status.isGranted;
+          final storage = await Permission.storage.request();
+          permissionGranted = storage.isGranted;
         }
       } else {
         // iOS
         final status = await Permission.storage.request();
         permissionGranted = status.isGranted;
       }
+      // if (Platform.isAndroid) {
+      //   final androidInfo = await DeviceInfoPlugin().androidInfo;
+      //   if (androidInfo.version.sdkInt >= 33) {
+      //     // Android 13+
+      //     final status = await Permission.manageExternalStorage.request();
+      //     permissionGranted = status.isGranted;
+      //   } else if (androidInfo.version.sdkInt >= 30) {
+      //     // Android 11 et 12
+      //     final status = await Permission.manageExternalStorage.request();
+      //     permissionGranted = status.isGranted;
+      //   } else {
+      //     // Android <11
+      //     final status = await Permission.storage.request();
+      //     permissionGranted = status.isGranted;
+      //   }
+      // } else {
+      //   // iOS
+      //   final status = await Permission.storage.request();
+      //   permissionGranted = status.isGranted;
+      // }
 
       if (!permissionGranted) {
         final openSettings = await showDialog<bool>(
