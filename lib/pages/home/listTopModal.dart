@@ -2870,7 +2870,7 @@ class AfrolookInfoModal {
 // Modifiez la classe AdvancedModalManager pour inclure les challenges
 
 // Modifiez la classe AdvancedModalManager pour inclure le modal info en premier
-class AdvancedModalManager {
+class AdvancedModalManager2 {
   static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';
@@ -3084,7 +3084,7 @@ class AdvancedModalManager {
     print('🔄 Tous les modals ont été réinitialisés');
   }
 }
-class AdvancedModalManager2 {
+class AdvancedModalManager {
   static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';

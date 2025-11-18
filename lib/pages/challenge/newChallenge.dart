@@ -498,7 +498,8 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
   }
 
   Future<void> _envoyerNotificationParticipation(
-      Challenge challenge, Post post) async {
+      Challenge challenge, Post post)
+  async {
     try {
       final userIds = await authProvider.getAllUsersOneSignaUserId();
 

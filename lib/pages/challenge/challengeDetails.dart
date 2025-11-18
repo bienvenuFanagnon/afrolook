@@ -1597,12 +1597,41 @@ await  _checkPrixEncaisser();
       });
 
       _showSuccess('INSCRIPTION RÉUSSIE !\nVous êtes maintenant inscrit au challenge.');
-
+      _envoyerNotificationNouvelleInscription(challenge: _challenge!, user: authProvider.loginUserData);
       await _loadChallenge();
       await _loadParticipants();
 
     } catch (e) {
       _showError('ERREUR LORS DE L\'INSCRIPTION: $e\nVeuillez réessayer.');
+    }
+  }
+  Future<void> _envoyerNotificationNouvelleInscription({
+    required Challenge challenge,
+    required UserData user,
+  }) async {
+    try {
+      final userIds = await authProvider.getAllUsersOneSignaUserId();
+
+      if (userIds.isNotEmpty) {
+        final userName = user.pseudo ?? "Un participant";
+        final userImage = user.imageUrl ?? "";
+        final prix = challenge.prix ?? 0;
+
+        await authProvider.sendNotification(
+          userIds: userIds,
+          smallImage: userImage,
+          send_user_id: user.id!,
+          recever_user_id: "",
+          message:
+          "🎉 $userName vient de s'inscrire au challenge! 💰 Prix à gagner : ${prix} FCFA. Venez tenter votre chance pour le challenge '${challenge.titre}' ! 💚🟨⬛",
+          type_notif: 'INSCRIPTION_CHALLENGE',
+          post_id: "",
+          post_type: "",
+          chat_id: '',
+        );
+      }
+    } catch (e) {
+      print('Erreur envoi notification inscription: $e');
     }
   }
 

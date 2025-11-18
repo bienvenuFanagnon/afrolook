@@ -270,6 +270,10 @@ class LiveProvider extends ChangeNotifier {
   List<PostLive> _activeLives = [];
   Map<String, Timer> _liveTimers = {};
 
+  List<PostLive> _endedLives = []; // Nouvelle propriété
+  DocumentSnapshot? _lastEndedLiveDoc; // Nouveau document snapshot
+  bool _endedLivesFinished = false; // Nouveau flag
+  List<PostLive> get endedLives => _endedLives; // Nouveau getter
 
   List<PostLive> _allLives = []; // Liste pour tous les lives
 
@@ -292,42 +296,118 @@ class LiveProvider extends ChangeNotifier {
       _allLives = [];
       _lastAllLiveDoc = null;
       _allLivesFinished = false;
+      print("🔄 Reset de tous les lives");
     }
-    if (_allLivesFinished) return;
+    if (_allLivesFinished) {
+      print("✅ Tous les lives déjà chargés");
+      return;
+    }
+
+    try {
+      Query query = _firestore
+          .collection('lives')
+          .orderBy('isLive', descending: true) // Les lives actifs d'abord
+          .orderBy('giftTotal', descending: true) // Puis par montant
+          .limit(batchSize);
+
+      if (_lastAllLiveDoc != null) {
+        query = query.startAfterDocument(_lastAllLiveDoc!);
+        print("📥 Chargement supplémentaire de tous les lives");
+      } else {
+        print("📥 Premier chargement de tous les lives");
+      }
+
+      QuerySnapshot snapshot = await query.get();
+      print("📊 ${snapshot.docs.length} lives récupérés");
+
+      if (snapshot.docs.isEmpty) {
+        _allLivesFinished = true;
+        print("🏁 Fin du chargement - aucun live supplémentaire");
+        return;
+      }
+
+      int activeCount = 0;
+      int endedCount = 0;
+
+      for (var doc in snapshot.docs) {
+        try {
+          final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+          _allLives.add(live);
+
+          if (live.isLive) {
+            activeCount++;
+          } else {
+            endedCount++;
+          }
+
+          print("✅ Live ajouté: ${live.title} - isLive: ${live.isLive} - giftTotal: ${live.giftTotal}");
+        } catch (e) {
+          print("❌ Impossible de convertir le live ${doc.id}: $e");
+        }
+      }
+
+      _lastAllLiveDoc = snapshot.docs.last;
+
+      if (_allLives.length >= maxLives) {
+        _allLivesFinished = true;
+        print("🏁 Limite maximale de lives atteinte: ${_allLives.length}");
+      }
+
+      print("📈 Statut final - Actifs: $activeCount, Terminés: $endedCount, Total: ${_allLives.length}");
+      notifyListeners();
+
+    } catch (e) {
+      print("❌ Erreur lors du chargement des lives par batch: $e");
+      // Réinitialiser en cas d'erreur pour permettre une nouvelle tentative
+      if (reset) {
+        _allLives = [];
+        _lastAllLiveDoc = null;
+        _allLivesFinished = false;
+      }
+    }
+  }
+
+  Future<void> fetchEndedLivesBatch({bool reset = false}) async {
+    if (reset) {
+      _endedLives = [];
+      _lastEndedLiveDoc = null;
+      _endedLivesFinished = false;
+    }
+    if (_endedLivesFinished) return;
 
     Query query = _firestore
         .collection('lives')
-        .orderBy('giftTotal', descending: true) // Trier par montant gagné
+        .where('isLive', isEqualTo: false)
+        .orderBy('startTime', descending: true) // Les plus récents d'abord
         .limit(batchSize);
 
-    if (_lastAllLiveDoc != null) query = query.startAfterDocument(_lastAllLiveDoc!);
+    if (_lastEndedLiveDoc != null) query = query.startAfterDocument(_lastEndedLiveDoc!);
 
     try {
       QuerySnapshot snapshot = await query.get();
       if (snapshot.docs.isEmpty) {
-        _allLivesFinished = true;
+        _endedLivesFinished = true;
         return;
       }
 
       for (var doc in snapshot.docs) {
         try {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
-          _allLives.add(live);
+          _endedLives.add(live);
         } catch (e) {
-          print("Impossible de convertir le live ${doc.id}: $e");
+          print("Impossible de convertir le live terminé ${doc.id}: $e");
         }
       }
 
-      _lastAllLiveDoc = snapshot.docs.last;
+      _lastEndedLiveDoc = snapshot.docs.last;
 
-      if (_allLives.length >= maxLives) _allLivesFinished = true;
+      if (_endedLives.length >= maxLives) _endedLivesFinished = true;
 
       notifyListeners();
     } catch (e) {
-      print("Erreur lors du chargement des lives par batch: $e");
+      print("Erreur lors du chargement des lives terminés par batch: $e");
     }
   }
-
   Future<void> fetchActiveLivesBatch({bool reset = false}) async {
     if (reset) {
       _activeLives = [];
