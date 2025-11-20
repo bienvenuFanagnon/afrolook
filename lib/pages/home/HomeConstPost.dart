@@ -41,6 +41,7 @@ import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../component/consoleWidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../listeUserLikepage.dart';
 import '../user/conponent.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -1324,14 +1325,74 @@ printVm('widget.sortType : ${widget.sortType}');
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 16, bottom: 8),
-                child: Text(
-                  'Profils à découvrir',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '👑 Profils à découvrir',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Container(
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFFD700), Color(0xFF8B0000)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFFFFD700).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UsersListPage(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Voir tout',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(

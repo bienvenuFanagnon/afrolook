@@ -21,13 +21,19 @@ import 'package:shimmer/shimmer.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../providers/afroshop/categorie_produits_provider.dart';
+import '../../providers/chroniqueProvider.dart';
 import '../../services/postPrepareService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 import '../auth/authTest/Screens/Login/loginPageUser.dart';
 import '../canaux/listCanal.dart';
 import '../challenge/postChallengeWidget.dart';
+import '../chronique/chroniqueform.dart';
+import '../chronique/chroniquehome.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
+
+import '../chronique/chroniquedetails.dart';
+
 class UnifiedHomePage extends StatefulWidget {
   const UnifiedHomePage({super.key});
 
@@ -43,15 +49,20 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
   late PostProvider postProvider;
   late ContentProvider _contentProvider;
   late CategorieProduitProvider categorieProduitProvider;
+  late ChroniqueProvider chroniqueProvider;
+
   List<Post> _posts = [];
   List<ContentPaie> _contents = [];
   List<dynamic> _mixedItems = [];
+  List<Chronique> _activeChroniques = [];
+  Map<String, List<Chronique>> _groupedChroniques = {};
 
   bool _isLoading = true;
   bool _hasError = false;
   bool _isLoadingMore = false;
   bool _hasMorePosts = true;
   bool _hasMoreContent = true;
+  bool _isLoadingChroniques = false;
 
   DocumentSnapshot? _lastContentDocument;
 
@@ -73,8 +84,11 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _contentProvider = Provider.of<ContentProvider>(context, listen: false);
     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+    chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
+
     _loadAdditionalData();
     _loadInitialData();
+    _loadActiveChroniques();
     _scrollController.addListener(_scrollListener);
   }
 
@@ -84,6 +98,376 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     _visibilityTimers.forEach((key, timer) => timer.cancel());
     _visibilityTimers.clear();
     super.dispose();
+  }
+
+  // NOUVELLE FONCTION : Charger les chroniques actives
+  Future<void> _loadActiveChroniques() async {
+    if (_isLoadingChroniques) return;
+
+    setState(() => _isLoadingChroniques = true);
+
+    try {
+      final chroniques = await chroniqueProvider.getActiveChroniques().first;
+
+      // Grouper les chroniques par utilisateur
+      final Map<String, List<Chronique>> grouped = {};
+      for (var chronique in chroniques) {
+        if (!grouped.containsKey(chronique.userId)) {
+          grouped[chronique.userId] = [];
+        }
+        grouped[chronique.userId]!.add(chronique);
+      }
+
+      // Trier chaque groupe par date (plus récent en premier)
+      grouped.forEach((userId, userChroniques) {
+        userChroniques.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      });
+
+      setState(() {
+        _groupedChroniques = grouped;
+        _activeChroniques = chroniques;
+        _isLoadingChroniques = false;
+      });
+    } catch (e) {
+      print('Erreur chargement chroniques: $e');
+      setState(() => _isLoadingChroniques = false);
+    }
+  }
+
+  // NOUVELLE FONCTION : Widget pour la section des chroniques
+  Widget _buildChroniquesSection() {
+    if (_isLoadingChroniques) {
+      return _buildChroniquesShimmer();
+    }
+
+    if (_groupedChroniques.isEmpty) {
+      return SizedBox(); // Ne rien afficher s'il n'y a pas de chroniques
+    }
+
+    final groupedList = _groupedChroniques.values.toList();
+
+    // Trier les groupes par la chronique la plus récente
+    groupedList.sort((a, b) {
+      final latestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
+      final latestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();
+      return latestB.compareTo(latestA);
+    });
+
+    return Container(
+      height: 180,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header de la section chroniques
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Chroniques Actives',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChroniqueHomePage(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFFD700).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Color(0xFFFFD700)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Voir tout',
+                          style: TextStyle(
+                            color: Color(0xFFFFD700),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: Color(0xFFFFD700),
+                          size: 12,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Liste horizontale des chroniques
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              itemCount: groupedList.length,
+              itemBuilder: (context, index) {
+                return _buildChroniqueItem(groupedList[index]);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NOUVELLE FONCTION : Widget pour un item de chronique
+  Widget _buildChroniqueItem(List<Chronique> userChroniques) {
+    if (userChroniques.isEmpty) return SizedBox();
+
+    final firstChronique = userChroniques.first;
+    final chroniqueCount = userChroniques.length;
+    final hasMultiple = chroniqueCount > 1;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChroniqueDetailPage(
+              userChroniques: userChroniques,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 120,
+        margin: EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            // Cercle de la chronique
+            Stack(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Color(0xFFFFD700),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: _buildChroniquePreview(firstChronique),
+                  ),
+                ),
+                // Badge pour multiples chroniques
+                if (hasMultiple)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Color(0xFFFFD700)),
+                      ),
+                      child: Text(
+                        '+${chroniqueCount - 1}',
+                        style: TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 8),
+            // Nom utilisateur
+            Container(
+              constraints: BoxConstraints(maxWidth: 100),
+              child: Text(
+                firstChronique.userPseudo,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // NOUVELLE FONCTION : Preview de la chronique
+  Widget _buildChroniquePreview(Chronique chronique) {
+    switch (chronique.type) {
+      case ChroniqueType.TEXT:
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(int.parse(chronique.backgroundColor!, radix: 16)),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                chronique.textContent ?? '',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+
+      case ChroniqueType.IMAGE:
+        return CachedNetworkImage(
+          imageUrl: chronique.mediaUrl!,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.grey[800],
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFFFD700),
+                strokeWidth: 2,
+              ),
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[800],
+            child: Icon(
+              Icons.person,
+              color: Colors.grey[600],
+              size: 30,
+            ),
+          ),
+        );
+
+      case ChroniqueType.VIDEO:
+        return Stack(
+          children: [
+            Container(
+              color: Colors.grey[800],
+              child: Center(
+                child: Icon(
+                  Icons.play_circle_filled,
+                  color: Color(0xFFFFD700),
+                  size: 30,
+                ),
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  // NOUVELLE FONCTION : Shimmer pour le chargement des chroniques
+  Widget _buildChroniquesShimmer() {
+    return Container(
+      height: 180,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[800]!,
+                  highlightColor: Colors.grey[700]!,
+                  child: Container(
+                    width: 120,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[800]!,
+                  highlightColor: Colors.grey[700]!,
+                  child: Container(
+                    width: 60,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              itemCount: 5,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: 80,
+                  margin: EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[800]!,
+                        highlightColor: Colors.grey[700]!,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[800]!,
+                        highlightColor: Colors.grey[700]!,
+                        child: Container(
+                          width: 60,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _scrollListener() {
@@ -149,9 +533,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
       _lastContentDocument = null;
 
       await Future.wait([
-        // _getTotalContentCount(),
         _loadPostsWithStream(isInitialLoad: true),
-        // _loadContentWithStream(isInitialLoad: true),
       ]);
 
       setState(() {
@@ -882,7 +1264,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     try {
       await Future.wait([
         if (_hasMorePosts) _loadPostsWithStream(isInitialLoad: false),
-        // if (_hasMoreContent) _loadContentWithStream(isInitialLoad: false),
       ]);
     } catch (e) {
       print('Error loading more data: $e');
@@ -914,6 +1295,7 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
     await _loadAdditionalData();
     await _loadInitialData();
+    await _loadActiveChroniques();
 
     print('🔄 Refresh terminé - Données réinitialisées');
   }
@@ -1313,6 +1695,13 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
+            // NOUVEAU : Section des chroniques actives
+            if (_groupedChroniques.isNotEmpty || _isLoadingChroniques)
+              SliverToBoxAdapter(
+                child: _buildChroniquesSection(),
+              ),
+
+            // Contenu principal existant
             SliverList(
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -1390,7 +1779,6 @@ class _MixedItem {
 
   _MixedItem({required this.type, required this.data});
 }
-
 // class UnifiedHomePage extends StatefulWidget {
 //   const UnifiedHomePage({super.key});
 //
@@ -1425,6 +1813,10 @@ class _MixedItem {
 //   final Map<String, bool> _postsViewedInSession = {};
 //   final Map<String, Timer> _visibilityTimers = {};
 //
+//   // Nouvelle variable pour suivre le chargement anticipé
+//   bool _isNearEnd = false;
+//   int _lastLoadedItemCount = 0;
+//
 //   @override
 //   void initState() {
 //     super.initState();
@@ -1447,11 +1839,39 @@ class _MixedItem {
 //
 //   void _scrollListener() {
 //     final hasMoreData = _hasMorePosts || _hasMoreContent;
-//     final isNearBottom = _scrollController.position.pixels >=
-//         _scrollController.position.maxScrollExtent - 200;
 //
-//     if (isNearBottom && !_isLoadingMore && hasMoreData) {
-//       print('📜 Déclenchement du chargement supplémentaire');
+//     if (!hasMoreData || _isLoadingMore) return;
+//
+//     // Calculer la position actuelle par rapport à la fin
+//     final maxScroll = _scrollController.position.maxScrollExtent;
+//     final currentScroll = _scrollController.position.pixels;
+//     final totalItems = _mixedItems.length;
+//
+//     // Vérifier si on est à 70% de la liste actuelle
+//     if (totalItems > 0) {
+//       final scrollPercentage = currentScroll / (maxScroll == double.infinity ? currentScroll : maxScroll);
+//       final itemsThreshold = (totalItems * 0.7).floor();
+//
+//       // Déclencher le chargement quand on atteint 70% des items OU 70% du scroll
+//       if ((currentScroll > 0 && scrollPercentage > 0.7) ||
+//           _scrollController.position.extentAfter < 200) {
+//
+//         if (!_isNearEnd) {
+//           _isNearEnd = true;
+//           print('📜 Déclenchement anticipé du chargement supplémentaire (70%)');
+//           _loadMoreData();
+//         }
+//       } else {
+//         _isNearEnd = false;
+//       }
+//     }
+//
+//     // Garder l'ancienne logique pour la fin absolue
+//     final isNearBottom = _scrollController.position.pixels >=
+//         _scrollController.position.maxScrollExtent - 100;
+//
+//     if (isNearBottom && !_isLoadingMore && hasMoreData && !_isNearEnd) {
+//       print('📜 Déclenchement du chargement en fin de liste');
 //       _loadMoreData();
 //     }
 //   }
@@ -1474,14 +1894,15 @@ class _MixedItem {
 //         _isLoading = true;
 //         _hasError = false;
 //         _postsViewedInSession.clear();
+//         _isNearEnd = false;
 //       });
 //
 //       _lastContentDocument = null;
 //
 //       await Future.wait([
-//         _getTotalContentCount(),
+//         // _getTotalContentCount(),
 //         _loadPostsWithStream(isInitialLoad: true),
-//         _loadContentWithStream(isInitialLoad: true),
+//         // _loadContentWithStream(isInitialLoad: true),
 //       ]);
 //
 //       setState(() {
@@ -1509,7 +1930,6 @@ class _MixedItem {
 //     }
 //   }
 //
-//   // CORRECTION : Cette méthode doit appeler _loadMoreUnseenPosts pour le chargement supplémentaire
 //   Future<void> _loadPostsWithStream({bool isInitialLoad = false}) async {
 //     try {
 //       final currentUserId = _authProvider.loginUserData.id;
@@ -1517,7 +1937,6 @@ class _MixedItem {
 //       if (isInitialLoad) {
 //         await _loadUnseenPostsFirst(currentUserId);
 //       } else {
-//         // CORRECTION : Appeler _loadMoreUnseenPosts pour le chargement supplémentaire
 //         await _loadMoreUnseenPosts(currentUserId);
 //       }
 //
@@ -1601,7 +2020,6 @@ class _MixedItem {
 //
 //     try {
 //       final appData = await _getAppData();
-//       // await cleanInvalidPostIds(appData);
 //       final userData = await _getUserData(currentUserId);
 //
 //       final allPostIds = (appData.allPostIds ?? []).reversed.toList();
@@ -1623,11 +2041,9 @@ class _MixedItem {
 //         });
 //         return;
 //       }
-//       print('🔹 postIds length: ${unseenPostIds.length} | Contenu: ${unseenPostIds.join(', ')}');
 //
 //       final orderedUnseenIds = List<String>.from(unseenPostIds);
 //       final idsToLoad = orderedUnseenIds.take(_initialLimit).toList();
-//       print('🔹 idsToLoad length: ${idsToLoad.length} | Contenu: ${idsToLoad.join(', ')}');
 //
 //       final unseenPosts = await _loadPostsByIds(
 //           idsToLoad,
@@ -1640,7 +2056,6 @@ class _MixedItem {
 //       unseenPosts.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
 //       _posts = unseenPosts;
 //
-//       // _hasMorePosts = await _getRemainingUnseenPostsCount(currentUserId) > 0;
 //       _hasMorePosts = true;
 //
 //       print('✅ Chargement initial terminé.');
@@ -1654,7 +2069,6 @@ class _MixedItem {
 //     }
 //   }
 //
-//   // CORRECTION : Cette méthode doit être appelée pour le chargement supplémentaire
 //   Future<void> _loadMoreUnseenPosts(String? currentUserId) async {
 //     try {
 //       if (currentUserId == null) {
@@ -1684,12 +2098,9 @@ class _MixedItem {
 //         newPosts = await _loadPostsByIds(idsToLoad, limit: _loadMoreLimit, isSeen: false);
 //         print('🔹 Posts non vus supplémentaires chargés: ${newPosts.length}');
 //
-//         // CORRECTION : Bien ajouter les nouveaux posts à la liste existante
 //         _posts.addAll(newPosts);
 //
-//         // Vérifier s'il reste encore des posts non vus
 //         _hasMorePosts = true;
-//         // _hasMorePosts = await _getRemainingUnseenPostsCount(currentUserId) > 0;
 //
 //         print('✅ Chargement supplémentaire terminé.');
 //         print('📊 Nouveaux posts non vus: ${newPosts.length}');
@@ -1734,51 +2145,12 @@ class _MixedItem {
 //
 //     final posts = <Post>[];
 //     final idsToLoad = postIds.take(limit).toList();
-//     print('🔹 postIds length: ${postIds.length} | Contenu: ${postIds.join(', ')}');
 //
 //     print('🔹 Chargement de ${idsToLoad.length} posts par ID (isSeen: $isSeen)');
 //
 //     for (var i = 0; i < idsToLoad.length; i += 10) {
 //       final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
-//       print('🔹 batchIds length: ${batchIds.length} | Contenu: ${batchIds.join(', ')}');
 //
-//       if (batchIds.isEmpty) continue;
-//
-//       try {
-//         final snapshot = await FirebaseFirestore.instance
-//             .collection('Posts')
-//             .where(FieldPath.documentId, whereIn: batchIds)
-//             .get();
-//         print('🔹 snapshot.docs ${snapshot.docs.length}');
-//
-//         for (var doc in snapshot.docs) {
-//           try {
-//             final post = Post.fromJson(doc.data());
-//             post.id = doc.id;
-//             post.hasBeenSeenByCurrentUser = isSeen;
-//             posts.add(post);
-//           } catch (e) {
-//             print('⚠️ Erreur parsing post ${doc.id}: $e');
-//           }
-//         }
-//       } catch (e) {
-//         print('❌ Erreur batch chargement posts: $e');
-//       }
-//     }
-//
-//     posts.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
-//     return posts;
-//   }
-//   Future<List<Post>> _loadPostsById2(List<String> postIds, {required int limit, required bool isSeen}) async {
-//     if (postIds.isEmpty) return [];
-//
-//     final posts = <Post>[];
-//     final idsToLoad = postIds.take(limit).toList();
-//
-//     print('🔹 Chargement de ${idsToLoad.length} posts par ID (isSeen: $isSeen)');
-//
-//     for (var i = 0; i < idsToLoad.length; i += 10) {
-//       final batchIds = idsToLoad.skip(i).take(10).where((id) => id.isNotEmpty).toList();
 //       if (batchIds.isEmpty) continue;
 //
 //       try {
@@ -1802,9 +2174,7 @@ class _MixedItem {
 //       }
 //     }
 //
-//     // 🔹 TRI par date la plus récente
 //     posts.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
-//
 //     return posts;
 //   }
 //
@@ -1918,7 +2288,7 @@ class _MixedItem {
 //
 //   Future<void> _loadAdditionalData() async {
 //     try {
-//       final articleResults = await categorieProduitProvider.getArticleBooster();
+//       final articleResults = await categorieProduitProvider.getArticleBooster(_authProvider.loginUserData.countryData?['countryCode'] ?? 'TG');
 //       final canalResults = await postProvider.getCanauxHome();
 //
 //       setState(() {
@@ -1979,6 +2349,7 @@ class _MixedItem {
 //   List<ArticleData> articles = [];
 //   List<Canal> canaux = [];
 //   int _totalContentCount = 0;
+//
 //   void _createMixedList() {
 //     _mixedItems = [];
 //
@@ -2108,106 +2479,6 @@ class _MixedItem {
 //     print('Mixed list created: ${_mixedItems.length} items');
 //     print('Posts utilisés: ${usedPosts.length}/${_posts.length}');
 //     print('Contents: $contentIndex/${_contents.length}');
-//     print('Boosters: $boosterIndex/${articles.length}, Canaux: $canalIndex/${canaux.length}');
-//
-//     setState(() {});
-//   }
-//   void _createMixedList2() {
-//     _mixedItems = [];
-//
-//     int postIndex = 0;
-//     int contentIndex = 0;
-//     int boosterIndex = 0;
-//     int canalIndex = 0;
-//
-//     final random = Random();
-//     int postsSinceLastInsertion = 0;
-//     bool nextInsertionIsBooster = true;
-//     bool lastWasContentGrid = false;
-//
-//     int maxIterations = (_posts.length + _contents.length) * 2;
-//     int currentIteration = 0;
-//
-//     while ((postIndex < _posts.length || contentIndex < _contents.length) &&
-//         currentIteration < maxIterations) {
-//
-//       currentIteration++;
-//
-//       if (postsSinceLastInsertion >= 2 + random.nextInt(3) && !lastWasContentGrid) {
-//         if (nextInsertionIsBooster && boosterIndex < articles.length) {
-//           final nextBoosters = _getNextBoosters(refIndex: boosterIndex);
-//           if (nextBoosters.isNotEmpty) {
-//             _mixedItems.add(_MixedItem(
-//                 type: _MixedItemType.booster,
-//                 data: nextBoosters
-//             ));
-//             boosterIndex += nextBoosters.length;
-//             nextInsertionIsBooster = false;
-//             lastWasContentGrid = false;
-//             postsSinceLastInsertion = 0;
-//             continue;
-//           }
-//         } else if (!nextInsertionIsBooster && canalIndex < canaux.length) {
-//           final nextCanaux = _getNextCanaux(refIndex: canalIndex);
-//           if (nextCanaux.isNotEmpty) {
-//             _mixedItems.add(_MixedItem(
-//                 type: _MixedItemType.canal,
-//                 data: nextCanaux
-//             ));
-//             canalIndex += nextCanaux.length;
-//             nextInsertionIsBooster = true;
-//             lastWasContentGrid = false;
-//             postsSinceLastInsertion = 0;
-//             continue;
-//           }
-//         }
-//       }
-//
-//       if (postIndex < _posts.length) {
-//         _mixedItems.add(_MixedItem(type: _MixedItemType.post, data: _posts[postIndex]));
-//         postIndex++;
-//         postsSinceLastInsertion++;
-//         lastWasContentGrid = false;
-//       }
-//       else if (contentIndex < _contents.length && !lastWasContentGrid) {
-//         final contentsToAdd = [];
-//         for (int i = 0; i < 2 && contentIndex < _contents.length; i++) {
-//           contentsToAdd.add(_contents[contentIndex]);
-//           contentIndex++;
-//         }
-//         if (contentsToAdd.isNotEmpty) {
-//           _mixedItems.add(_MixedItem(type: _MixedItemType.contentGrid, data: contentsToAdd));
-//           lastWasContentGrid = true;
-//           postsSinceLastInsertion = 0;
-//         }
-//       }
-//       else {
-//         break;
-//       }
-//     }
-//
-//     if (boosterIndex < articles.length) {
-//       final remainingBoosters = _getRemainingBoosters(refIndex: boosterIndex);
-//       if (remainingBoosters.isNotEmpty) {
-//         _mixedItems.add(_MixedItem(
-//             type: _MixedItemType.booster,
-//             data: remainingBoosters
-//         ));
-//       }
-//     }
-//
-//     if (canalIndex < canaux.length) {
-//       final remainingCanaux = _getRemainingCanaux(refIndex: canalIndex);
-//       if (remainingCanaux.isNotEmpty) {
-//         _mixedItems.add(_MixedItem(
-//             type: _MixedItemType.canal,
-//             data: remainingCanaux
-//         ));
-//       }
-//     }
-//
-//     print('Mixed list created: ${_mixedItems.length} items');
-//     print('Posts: $postIndex/${_posts.length}, Contents: $contentIndex/${_contents.length}');
 //     print('Boosters: $boosterIndex/${articles.length}, Canaux: $canalIndex/${canaux.length}');
 //
 //     setState(() {});
@@ -2362,13 +2633,14 @@ class _MixedItem {
 //     try {
 //       await Future.wait([
 //         if (_hasMorePosts) _loadPostsWithStream(isInitialLoad: false),
-//         if (_hasMoreContent) _loadContentWithStream(isInitialLoad: false),
+//         // if (_hasMoreContent) _loadContentWithStream(isInitialLoad: false),
 //       ]);
 //     } catch (e) {
 //       print('Error loading more data: $e');
 //     } finally {
 //       setState(() {
 //         _isLoadingMore = false;
+//         _isNearEnd = false; // Réinitialiser après le chargement
 //       });
 //     }
 //   }
@@ -2387,6 +2659,8 @@ class _MixedItem {
 //       _postsViewedInSession.clear();
 //       _visibilityTimers.forEach((key, timer) => timer.cancel());
 //       _visibilityTimers.clear();
+//       _isNearEnd = false;
+//       _lastLoadedItemCount = 0;
 //     });
 //
 //     await _loadAdditionalData();
@@ -2821,7 +3095,19 @@ class _MixedItem {
 //                 child: Container(
 //                   padding: EdgeInsets.symmetric(vertical: 20),
 //                   child: Center(
-//                     child: CircularProgressIndicator(color: Colors.green),
+//                     child: Column(
+//                       children: [
+//                         CircularProgressIndicator(color: Colors.green),
+//                         SizedBox(height: 10),
+//                         Text(
+//                           'Chargement anticipé...',
+//                           style: TextStyle(
+//                             color: Colors.grey,
+//                             fontSize: 14,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
 //                   ),
 //                 ),
 //               ),
@@ -2855,4 +3141,5 @@ class _MixedItem {
 //
 //   _MixedItem({required this.type, required this.data});
 // }
+
 

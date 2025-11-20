@@ -52,9 +52,11 @@ import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/chroniqueProvider.dart';
 // import 'package:afrotok/providers/challenge_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
+import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/postPrepareService.dart';
@@ -306,7 +308,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostProvider()),
+        ChangeNotifierProvider(create: (context) => ChroniqueProvider()),
         ChangeNotifierProvider(create: (_) => LiveProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileLikeProvider()),
         // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),

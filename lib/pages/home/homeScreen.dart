@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chat/deepseek.dart';
+import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/home/homeActu.dart';
 import 'package:afrotok/pages/home/homeEvent.dart';
@@ -12,10 +13,7 @@ import 'package:afrotok/pages/home/homeSport.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/home/listTopModal.dart';
 import 'package:afrotok/pages/home/unitePage.dart';
-import 'package:afrotok/pages/story/afroStory/repository.dart';
-import 'package:afrotok/pages/story/afroStory/storie/mesChronique.dart';
-import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
-import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
+
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
 import 'package:auto_animated/auto_animated.dart';
@@ -54,6 +52,8 @@ import '../challenge/listChallengePost.dart';
 import '../challenge/main_challenge_integration.dart';
 import '../challenge/newChallenge.dart';
 import '../challenge/userlistchallenge.dart';
+import '../chronique/chroniqueform.dart';
+import '../chronique/chroniquehome.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
 import '../../models/chatmodels/message.dart';
@@ -715,10 +715,7 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                     onTap: () async {
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => MyStoriesPage(
-                            stories: authProvider.loginUserData.stories!,
-                            user: authProvider.loginUserData
-                        ),
+                        builder: (context) => MyChroniquesPage(),
                       ));
                     },
                   ),
@@ -1339,13 +1336,14 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: '🏠 Accueil'),
-                Tab(text: '🏆 Challenges'),
-
-                Tab(text: '🪙 Zone VIP'),
-                // Tab(text: '🎥 Vidéos virales'),
                 Tab(text: '🕒 Récents'),
 
-                Tab(text: '🌟 Looks'),
+                Tab(text: '🏆 Challenges'),
+                Tab(text: '🌟 Chroniques'),
+                Tab(text: '🪙 Zone VIP'),
+                // Tab(text: '🎥 Vidéos virales'),
+
+                // Tab(text: '🌟 Looks'),
                 // Tab(text: '🎵 TikTok'),
                 Tab(text: '🔥 Populaires'),
 
@@ -1361,10 +1359,13 @@ class _MyHomePageState extends State<MyHomePage>
         controller: _tabController,
         children: [
           UnifiedHomePage(),
-          ChallengesListPage(),
-          DashboardContentScreen(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
-          LooksPage(type: TabBarType.LOOKS.name),
+
+          ChallengesListPage(),
+          ChroniqueHomePage(),
+
+          DashboardContentScreen(),
+          // LooksPage(type: TabBarType.LOOKS.name),
 
 
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
