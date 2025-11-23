@@ -55,6 +55,10 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
 // import 'package:afrotok/providers/challenge_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
+import 'package:afrotok/providers/crypto_admin_provider.dart';
+import 'package:afrotok/providers/crypto_initializer.dart';
+import 'package:afrotok/providers/crypto_market_provider.dart';
+import 'package:afrotok/providers/crypto_portfolio_controller.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -284,7 +288,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     onClickNotification();
-
+    // CryptoInitializer.initializeCryptos();
     // Initialiser les deep links
     WidgetsBinding.instance.addPostFrameCallback((_) {
 
@@ -311,6 +315,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => ChroniqueProvider()),
         ChangeNotifierProvider(create: (_) => LiveProvider()),
         ChangeNotifierProvider(create: (_) => ProfileLikeProvider()),
+        ChangeNotifierProvider(create: (_) => CryptoMarketProvider()),
+        ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
+        ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),

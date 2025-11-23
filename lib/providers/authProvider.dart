@@ -33,6 +33,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
   late List<UserPhoneNumber> listNumbers = [];
+  late UserData loginUserData = UserData();
+  late UserData registerUser = UserData();
   late String registerText = "";
   late String? token = '';
   late String? cinetPayToken = '102325650865f879a7b10492.83921456';
@@ -45,8 +47,7 @@ class UserAuthProvider extends ChangeNotifier {
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
   //List<Pays>? listPays=[];
-  late UserData loginUserData = UserData();
-  late UserData registerUser = UserData();
+
   late AppDefaultData appDefaultData = AppDefaultData();
 
   late List<UserGlobalTag> listUserGlobalTag = [];

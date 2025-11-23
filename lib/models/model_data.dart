@@ -377,6 +377,7 @@ class AppDefaultData {
   double? tarifjour = 0.5;
   double? solde_principal = 0.0;
   double? solde_gain = 0.0;
+  double? solde_commission_crypto = 0.0;
   int? nbr_loves = 0;
   int? default_point_new_user = 5;
   int? default_point_new_like = 1;
@@ -403,6 +404,7 @@ class AppDefaultData {
       this.nbr_likes = 0,
       this.solde_principal = 0.0,
       this.solde_gain = 0.0,
+      this.solde_commission_crypto = 0.0,
       this.nbr_comments = 0,
       this.nbr_loves = 0,
       this.default_point_new_user = 5,
@@ -424,6 +426,8 @@ class AppDefaultData {
         json['solde_principal'] == null ? 0.0 : json['solde_principal'];
     solde_gain =
         json['solde_gain'] == null ? 0.0 : json['solde_gain'];
+    solde_commission_crypto =
+        json['solde_commission_crypto'] == null ? 0.0 : json['solde_commission_crypto'];
     app_version_code =
         json['app_version_code'] == null ? 0 : json['app_version_code'];
     googleVerification =

@@ -66,6 +66,7 @@ import '../contenuPayant/TableauDeBord.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../cryptoMarket/cryptoMarketpage.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 
@@ -607,7 +608,7 @@ class _MyHomePageState extends State<MyHomePage>
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.store_mall_directory, color: Colors.yellow,size: 35,), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "Afroshop MarketPlace",
+                      titre: "Afroshop Market",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
@@ -616,6 +617,38 @@ class _MyHomePageState extends State<MyHomePage>
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => HomeAfroshopPage(title: ''),
                       ));
+                    },
+                  ),
+
+                  ListTile(
+                    trailing: Icon(
+                      Icons.arrow_right_outlined,
+                      color: Colors.greenAccent,
+                    ),
+                    leading: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.yellow, width: 2),
+                      ),
+                      child: Icon(
+                        AntDesign.linechart, // Icône crypto native Flutter
+                        color: Colors.yellow,
+                        size: 18,
+                      ),
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "AfroCoin Market",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => CryptoMarketPage()),
+                      );
                     },
                   ),
 
@@ -1303,9 +1336,25 @@ class _MyHomePageState extends State<MyHomePage>
           // ),
           SizedBox(width: 20),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage())),
-            child: Icon(Icons.settings_outlined, color: textColor, size: iconSize),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage())),
+            child: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.red, width: 2),
+              ),
+              child: Icon(
+                AntDesign.linechart, // Icône crypto native Flutter
+                color: Colors.red,
+                size: 12,
+              ),
+            ),
           ),
+          // GestureDetector(
+          //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage())),
+          //   child: Icon(Icons.settings_outlined, color: textColor, size: iconSize),
+          // ),
           SizedBox(width: 10),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: ''))),
