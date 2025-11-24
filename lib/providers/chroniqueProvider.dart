@@ -336,9 +336,59 @@ class ChroniqueProvider with ChangeNotifier {
       throw Exception('Erreur statistiques: $error');
     }
   }
+  Future<void> deleteMessage(String chroniqueId, String messageId) async {
+    try {
+      await _firestore
+          .collection('chronique_messages')
+          .doc(messageId)
+          .delete();
 
+      notifyListeners();
+    } catch (error) {
+      throw Exception('Erreur suppression message: $error');
+    }
+  }
+  // MESSAGES
   // MESSAGES
   Future<void> addMessage({
+    required String chroniqueId,
+    required String userId,
+    required String userPseudo,
+    required String userImageUrl,
+    required String message,
+  }) async {
+    try {
+      if (message.length > 20) {
+        throw Exception('Le message ne doit pas dépasser 20 caractères');
+      }
+
+      final chroniqueMessage = ChroniqueMessage(
+        chroniqueId: chroniqueId,
+        userId: userId,
+        userPseudo: userPseudo,
+        userImageUrl: userImageUrl,
+        message: message,
+        createdAt: Timestamp.now(),
+      );
+
+      // Utiliser une transaction pour garantir la cohérence des données
+      await _firestore.runTransaction((transaction) async {
+        // Ajouter le message
+        final messageRef = _firestore.collection('chronique_messages').doc();
+        transaction.set(messageRef, chroniqueMessage.toMap());
+
+        // Mettre à jour le compteur de commentaires dans la chronique
+        final chroniqueRef = _firestore.collection('chroniques').doc(chroniqueId);
+        transaction.update(chroniqueRef, {
+          'commentCount': FieldValue.increment(1),
+        });
+      });
+
+    } catch (error) {
+      throw Exception('Erreur ajout message: $error');
+    }
+  }
+  Future<void> addMessage2({
     required String chroniqueId,
     required String userId,
     required String userPseudo,
@@ -371,12 +421,15 @@ class ChroniqueProvider with ChangeNotifier {
     return _firestore
         .collection('chronique_messages')
         .where('chroniqueId', isEqualTo: chroniqueId)
-        .orderBy('createdAt', descending: false)
+        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => ChroniqueMessage.fromMap(doc.data(), doc.id))
-        .toList());
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ChroniqueMessage.fromMap(doc.data(), doc.id))
+          .toList();
+    });
   }
+
 
   // CHARGEMENT PAR LOT
   Future<List<Chronique>> getChroniquesBatch({

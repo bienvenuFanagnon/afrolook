@@ -31,6 +31,8 @@ class Chronique {
   Timestamp createdAt;
   Timestamp expiresAt;
   double? fileSize; // en MB
+  int commentCount = 0; // Ajouter cette ligne
+
 
   Chronique({
     this.id,
@@ -45,6 +47,7 @@ class Chronique {
     this.viewCount = 0,
     this.likeCount = 0,
     this.loveCount = 0,
+    this.commentCount = 0,
     this.viewers = const [],
     this.likers = const [],
     this.lovers = const [],
@@ -73,6 +76,8 @@ class Chronique {
       'createdAt': createdAt,
       'expiresAt': expiresAt,
       'fileSize': fileSize,
+      'commentCount': commentCount,
+
     };
   }
 
@@ -97,6 +102,8 @@ class Chronique {
       createdAt: map['createdAt'] ?? Timestamp.now(),
       expiresAt: map['expiresAt'] ?? Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
       fileSize: map['fileSize'],
+      commentCount: map['commentCount'] ?? 0,
+
     );
   }
 
@@ -244,8 +251,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
       // Vérifier la durée
       final duration = await _getVideoDuration(file);
-      if (duration > 10) {
-        _showErrorDialog('La vidéo est trop longue (${duration.toStringAsFixed(1)}s). Maximum 10 secondes.');
+      if (duration > 30) {
+        _showErrorDialog('La vidéo est trop longue (${duration.toStringAsFixed(1)}s). Maximum 30 secondes.');
         return;
       }
 
@@ -381,13 +388,13 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   String _getNotificationText() {
     switch (_selectedType) {
       case ChroniqueType.TEXT:
-        return _textController.text.length > 30
-            ? '${_textController.text.substring(0, 30)}...'
+        return _textController.text.length > 100
+            ? '${_textController.text.substring(0, 100)}...'
             : _textController.text;
       case ChroniqueType.IMAGE:
-        return '📷 Une image ${_textController.text.isNotEmpty ? 'avec texte' : ''}';
+        return '📷 ${_textController.text }';
       case ChroniqueType.VIDEO:
-        return '🎥 Une vidéo ${_textController.text.isNotEmpty ? 'avec texte' : ''}';
+        return '🎥 ${_textController.text }';
       default:
         return 'Nouvelle chronique';
     }

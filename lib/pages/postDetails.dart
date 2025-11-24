@@ -875,8 +875,8 @@ class _DetailsPostState extends State<DetailsPost>
       (senderData['votre_solde_principal'] ?? 0.0).toDouble();
 
       if (senderBalance >= amount) {
-        final double gainDestinataire = amount * 0.5;
-        final double gainApplication = amount * 0.5;
+        final double gainDestinataire = amount * 0.7;
+        final double gainApplication = amount * 0.3;
 
         await firestore
             .collection('Users')
@@ -2628,9 +2628,9 @@ class _DetailsPostState extends State<DetailsPost>
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _isLookChallenge ? 'Détails du Look Challenge' : 'Détails du Post',
+          _isLookChallenge ? 'Look Challenge' : 'Post',
           style: TextStyle(
-              color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 20),
+              color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           Text(

@@ -2263,8 +2263,8 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
       final double senderBalance = (senderData['votre_solde_principal'] ?? 0.0).toDouble();
 
       if (senderBalance >= amount) {
-        final double gainDestinataire = amount * 0.5;
-        final double gainApplication = amount * 0.5;
+        final double gainDestinataire = amount * 0.7;
+        final double gainApplication = amount * 0.3;
 
         await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
           'votre_solde_principal': FieldValue.increment(-amount),

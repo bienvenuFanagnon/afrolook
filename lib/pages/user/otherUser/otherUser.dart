@@ -599,7 +599,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildPostStat(Icons.favorite, post.likes ?? 0),
+                    _buildPostStat(Icons.favorite, post.loves ?? 0),
                     _buildPostStat(Icons.visibility, post.vues ?? 0),
                     _buildPostStat(Icons.comment, post.comments ?? 0),
                   ],

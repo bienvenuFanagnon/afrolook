@@ -1,8 +1,11 @@
 // pages/chronique/chronique_home_page.dart
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/authProvider.dart';
@@ -23,6 +26,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
   DocumentSnapshot? _lastDocument;
   final int _batchSize = 10;
   bool _isFirstLoad = true;
+  final Map<String, String> _videoThumbnails = {};
 
   @override
   void initState() {
@@ -50,11 +54,13 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       final provider = Provider.of<ChroniqueProvider>(context, listen: false);
       final result = await provider.getGroupedChroniquesBatch(limit: _batchSize);
 
+      // Charger les thumbnails pour les vidéos
+      await _loadVideoThumbnails(result);
+
       // Mettre à jour le lastDocument pour la pagination
       if (result.isNotEmpty) {
         final allChroniques = result.values.expand((x) => x).toList();
         if (allChroniques.isNotEmpty) {
-          // Récupérer le dernier document pour la pagination
           final lastChronique = allChroniques.last;
           final lastDoc = await FirebaseFirestore.instance
               .collection('chroniques')
@@ -78,6 +84,29 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
   }
 
+  Future<void> _loadVideoThumbnails(Map<String, List<Chronique>> chroniques) async {
+    for (var userChroniques in chroniques.values) {
+      for (var chronique in userChroniques) {
+        if (chronique.type == ChroniqueType.VIDEO && chronique.mediaUrl != null) {
+          try {
+            final thumbnail = await VideoThumbnail.thumbnailFile(
+              video: chronique.mediaUrl!,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 200,
+              quality: 50,
+              timeMs: 2000, // 2ème frame
+            );
+            if (thumbnail != null) {
+              _videoThumbnails[chronique.id!] = thumbnail;
+            }
+          } catch (e) {
+            print('Erreur génération thumbnail: $e');
+          }
+        }
+      }
+    }
+  }
+
   void _loadMoreChroniques() async {
     if (_isLoading || !_hasMore) return;
 
@@ -97,6 +126,9 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         });
         return;
       }
+
+      // Charger les thumbnails
+      await _loadVideoThumbnails(result);
 
       // Mettre à jour le lastDocument
       final allChroniques = result.values.expand((x) => x).toList();
@@ -126,20 +158,20 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
   }
 
-  // Trier les chroniques par date (la plus récente en premier)
+  // Trier les chroniques par date (les plus anciennes en premier)
   List<List<Chronique>> _getSortedChroniques() {
     final groupedList = _groupedChroniques.values.toList();
 
-    // Trier chaque groupe par date de création décroissante
+    // Trier chaque groupe par date de création croissante (anciennes d'abord)
     for (var group in groupedList) {
-      group.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      group.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     }
 
-    // Trier les groupes par la date de la chronique la plus récente
+    // Trier les groupes par la date de la chronique la plus ancienne
     groupedList.sort((a, b) {
-      final latestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
-      final latestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();
-      return latestB.compareTo(latestA);
+      final oldestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
+      final oldestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();
+      return oldestA.compareTo(oldestB);
     });
 
     return groupedList;
@@ -186,7 +218,6 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
             ),
           ),
           Spacer(),
-          // Bouton pour voir mes chroniques
           IconButton(
             icon: Icon(Icons.person, color: Color(0xFFFFD700)),
             onPressed: () {
@@ -264,10 +295,22 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
   Widget _buildUserChroniqueCard(List<Chronique> userChroniques) {
     if (userChroniques.isEmpty) return SizedBox();
 
-    // Prendre la chronique la plus récente pour l'affichage principal
-    final latestChronique = userChroniques.first;
+    // Prendre la chronique la plus ancienne pour l'affichage principal
+    final oldestChronique = userChroniques.first;
     final chroniqueCount = userChroniques.length;
     final hasMultiple = chroniqueCount > 1;
+
+    // Calculer les stats totales
+    int totalViews = 0;
+    int totalLikes = 0;
+    int totalComments = 0;
+
+    for (var chronique in userChroniques) {
+      totalViews += chronique.viewCount;
+      totalLikes += chronique.likeCount + chronique.loveCount;
+      // Pour les commentaires, vous devrez ajouter cette propriété au modèle Chronique
+      totalComments += chronique.commentCount;
+    }
 
     return GestureDetector(
       onTap: () {
@@ -284,33 +327,14 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         margin: EdgeInsets.all(4),
         child: Stack(
           children: [
-            // Carte principale avec effet décalé
-            Positioned(
-              top: hasMultiple ? 8 : 0,
-              left: hasMultiple ? 8 : 0,
-              right: 0,
-              bottom: 0,
-              child: _buildChroniquePreview(latestChronique, isMain: true),
-            ),
-
-            // Deuxième carte décalée (si multiple) - deuxième plus récente
-            if (hasMultiple)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 8,
-                bottom: 8,
-                child: _buildChroniquePreview(
-                  userChroniques[1],
-                  isMain: false,
-                ),
-              ),
+            // Carte principale
+            _buildChroniquePreview(oldestChronique),
 
             // Badge nombre de chroniques
             if (hasMultiple)
               Positioned(
-                top: 12,
-                right: 12,
+                top: 8,
+                right: 8,
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -329,57 +353,28 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
                 ),
               ),
 
-            // Statistiques en bas
+            // Stats en bas
             Positioned(
               bottom: 8,
               left: 8,
               right: 8,
-              child: _buildStatsInfo(latestChronique),
+              child: _buildStatsInfo(totalViews, totalLikes, totalComments),
             ),
 
-            // Info utilisateur en haut
+            // Profil utilisateur avec chrono en haut
             Positioned(
               top: 8,
               left: 8,
               right: 8,
-              child: _buildUserInfo(latestChronique),
+              child: _buildUserInfoWithTimer(oldestChronique),
             ),
-
-            // Indicateur "Nouveau" pour les chroniques récentes
-            if (_isChroniqueRecent(latestChronique))
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'NOUVEAU',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  bool _isChroniqueRecent(Chronique chronique) {
-    final now = DateTime.now();
-    final chroniqueTime = chronique.createdAt.toDate();
-    final difference = now.difference(chroniqueTime);
-    return difference.inHours < 24; // Moins de 24 heures
-  }
-
-  Widget _buildChroniquePreview(Chronique chronique, {bool isMain = true}) {
+  Widget _buildChroniquePreview(Chronique chronique) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -391,8 +386,8 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
           ),
         ],
         border: Border.all(
-          color: isMain ? Color(0xFFFFD700) : Color(0xFF8B0000),
-          width: 2.5,
+          color: Color(0xFFFFD700),
+          width: 2,
         ),
       ),
       child: ClipRRect(
@@ -462,16 +457,26 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       case ChroniqueType.VIDEO:
         return Stack(
           children: [
-            Container(
-              color: Colors.grey[900],
-              child: Center(
-                child: Icon(
-                  Icons.play_circle_filled,
-                  color: Color(0xFFFFD700),
-                  size: 50,
+            // Aperçu de la vidéo (thumbnail)
+            if (_videoThumbnails.containsKey(chronique.id!))
+              Image.file(
+                File(_videoThumbnails[chronique.id!]!),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              )
+            else
+              Container(
+                color: Colors.grey[900],
+                child: Center(
+                  child: Icon(
+                    Icons.play_circle_filled,
+                    color: Color(0xFFFFD700),
+                    size: 40,
+                  ),
                 ),
               ),
-            ),
+
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -484,6 +489,8 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
                 ),
               ),
             ),
+
+            // Indicateur vidéo
             Positioned(
               bottom: 8,
               right: 8,
@@ -516,7 +523,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
   }
 
-  Widget _buildUserInfo(Chronique chronique) {
+  Widget _buildUserInfoWithTimer(Chronique chronique) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -527,20 +534,34 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 10,
+            radius: 12,
             backgroundImage: CachedNetworkImageProvider(chronique.userImageUrl),
             backgroundColor: Colors.grey[800],
           ),
           SizedBox(width: 6),
           Expanded(
-            child: Text(
-              chronique.userPseudo,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  chronique.userPseudo,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 2),
+                Text(
+                  _getTimeLeft(chronique.expiresAt),
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -548,7 +569,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     );
   }
 
-  Widget _buildStatsInfo(Chronique chronique) {
+  Widget _buildStatsInfo(int totalViews, int totalLikes, int totalComments) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -559,20 +580,20 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(Icons.remove_red_eye, chronique.viewCount),
-          _buildStatItem(Icons.thumb_up, chronique.likeCount),
-          _buildStatItem(Icons.favorite, chronique.loveCount),
+          _buildStatItem(Icons.remove_red_eye, totalViews),
+          _buildStatItem(Icons.thumb_up, totalLikes),
+          _buildStatItem(Icons.comment, totalComments),
         ],
       ),
     );
   }
 
   Widget _buildStatItem(IconData icon, int count) {
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Color(0xFFFFD700), size: 12),
-        SizedBox(width: 2),
+        Icon(icon, color: Color(0xFFFFD700), size: 14),
+        SizedBox(height: 2),
         Text(
           _formatCount(count),
           style: TextStyle(
@@ -589,6 +610,20 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     if (count < 1000) return count.toString();
     if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
     return '${(count / 1000000).toStringAsFixed(1)}M';
+  }
+
+  String _getTimeLeft(Timestamp expiresAt) {
+    final now = DateTime.now();
+    final expireTime = expiresAt.toDate();
+    final difference = expireTime.difference(now);
+
+    if (difference.inHours > 0) {
+      return '${difference.inHours}h';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m';
+    } else {
+      return 'Expiré';
+    }
   }
 
   Widget _buildLoadMoreIndicator() {

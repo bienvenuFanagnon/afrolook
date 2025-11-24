@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 106;
+  late int app_version_code = 107;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -68,7 +68,34 @@ class UserAuthProvider extends ChangeNotifier {
   UserData? get userData => _userData;
   List<UserData> get availableUsers => _availableUsers;
   String? get userId => _auth.currentUser?.uid;
+  Future<void> checkAndCleanViewedPosts(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
 
+      if (userDoc.exists) {
+        final userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+        final viewedPostIds = userData.viewedPostIds ?? [];
+
+        if (viewedPostIds.length >= 1000) {
+          // Garder seulement les 100 derniers posts vus (ou vider complètement)
+          final List<String> recentViewedIds = viewedPostIds.length > 100
+              ? viewedPostIds.sublist(viewedPostIds.length - 100)
+              : [];
+
+          await FirebaseFirestore.instance.collection('Users').doc(userId).update({
+            'viewedPostIds': recentViewedIds,
+          });
+
+          // Mettre à jour localement
+          loginUserData.viewedPostIds = recentViewedIds;
+
+          print("🔄 Nettoyage automatique: viewedPostIds réduit à ${recentViewedIds.length} éléments");
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur nettoyage viewedPosts: $e');
+    }
+  }
   Future<void> fetchUserData() async {
     if (_auth.currentUser != null) {
       final userDoc = await _firestore.collection('Users').doc(_auth.currentUser!.uid).get();
