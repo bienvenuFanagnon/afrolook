@@ -618,10 +618,10 @@ printVm('widget.sortType : ${widget.sortType}');
         return AppDefaultData.fromJson(appDataSnapshot.data() ?? {});
       }
 
-      return AppDefaultData(allPostIds: []);
+      return AppDefaultData();
     } catch (e) {
       print('Error getting AppData: $e');
-      return AppDefaultData(allPostIds: []);
+      return AppDefaultData();
     }
   }
 

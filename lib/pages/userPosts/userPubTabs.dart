@@ -419,7 +419,7 @@ class _UserPubTextState extends State<UserPubText> with TickerProviderStateMixin
                                     isChannel: false,
                                   );
                                 }
-
+                                addPointsForAction(UserAction.post);
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
                                     'Le post a été validé avec succès !',
@@ -1345,7 +1345,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
                                 _controller?.pause();
                                 _controller = null;
                               });
-
+                              addPointsForAction(UserAction.post);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(

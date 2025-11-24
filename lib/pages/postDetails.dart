@@ -38,6 +38,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/authProvider.dart';
 import '../services/linkService.dart';
+import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
 import 'package:flutter/material.dart';
@@ -422,8 +423,142 @@ class _DetailsPostState extends State<DetailsPost>
       }
     }
   }
-
   Future<void> _processVoteWithChallenge(String userId) async {
+    try {
+      await _reloadChallengeData();
+
+      if (_challenge == null) {
+        throw Exception('Données du challenge non disponibles');
+      }
+
+      // Récupérer l'ID unique de l'appareil
+      final String deviceId = await DeviceInfoService.getDeviceId();
+      print("Vérification appareil pour vote: $deviceId");
+
+      // Vérifier si l'appareil a déjà voté (uniquement si ID valide)
+      if (DeviceInfoService.isDeviceIdValid(deviceId) &&
+          _challenge!.aVoteAvecAppareil(deviceId)) {
+        throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter dans ce challenge. L\'utilisation de comptes multiples est strictement interdite.');
+      }
+
+      await firestore.runTransaction((transaction) async {
+        final challengeRef = firestore.collection('Challenges').doc(_challenge!.id!);
+        final challengeDoc = await transaction.get(challengeRef);
+
+        if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
+
+        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
+
+        if (!currentChallenge.isEnCours) {
+          throw Exception('Le challenge n\'est plus actif');
+        }
+
+        if (currentChallenge.aVote(userId)) {
+          throw Exception('Vous avez déjà voté dans ce challenge');
+        }
+
+        // Vérification supplémentaire de l'appareil dans la transaction
+        if (DeviceInfoService.isDeviceIdValid(deviceId) &&
+            currentChallenge.aVoteAvecAppareil(deviceId)) {
+          throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter. Utilisation de comptes multiples interdite.');
+        }
+
+        final postRef = firestore.collection('Posts').doc(widget.post.id);
+        final postDoc = await transaction.get(postRef);
+
+        if (!postDoc.exists) throw Exception('Post non trouvé');
+
+        if (!_challenge!.voteGratuit!) {
+          await _debiterUtilisateur(
+              userId,
+              _challenge!.prixVote!,
+              'Vote pour le challenge ${_challenge!.titre}'
+          );
+        }
+
+        // Mettre à jour le post
+        transaction.update(postRef, {
+          'votes_challenge': FieldValue.increment(1),
+          'users_votes_ids': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(3),
+        });
+
+        // Préparer les updates pour le challenge
+        final challengeUpdates = {
+          'users_votants_ids': FieldValue.arrayUnion([userId]),
+          'total_votes': FieldValue.increment(1),
+          'updated_at': DateTime.now().microsecondsSinceEpoch
+        };
+
+        // Ajouter l'ID appareil uniquement s'il est valide
+        if (DeviceInfoService.isDeviceIdValid(deviceId)) {
+          challengeUpdates['devices_votants_ids'] = FieldValue.arrayUnion([deviceId]);
+        }
+
+        transaction.update(challengeRef, challengeUpdates);
+      });
+
+      // Succès du vote
+      if (mounted) {
+        setState(() {
+          _hasVoted = true;
+          _votersList.add(userId);
+          widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
+        });
+      }
+
+      addPointsForAction(UserAction.voteChallenge);
+
+      // Notification
+      await authProvider.sendNotification(
+        userIds: [widget.post.user!.oneIgnalUserid!],
+        smallImage: authProvider.loginUserData.imageUrl!,
+        send_user_id: authProvider.loginUserData.id!,
+        recever_user_id: widget.post.user_id!,
+        message: "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
+        type_notif: NotificationType.POST.name,
+        post_id: widget.post.id!,
+        post_type: PostDataType.IMAGE.name,
+        chat_id: '',
+      );
+
+      postProvider.interactWithPostAndIncrementSolde(
+          widget.post.id!,
+          authProvider.loginUserData.id!,
+          "vote_look",
+          widget.post.user_id!
+      );
+
+      _showSuccess('✅ VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+      _envoyerNotificationVote(
+          userVotant: authProvider.loginUserData!,
+          userVote: widget.post!.user!
+      );
+
+    } catch (e) {
+      print("Erreur lors du vote avec challenge: $e");
+
+      // Message d'erreur spécifique pour les violations
+      if (e.toString().contains('VIOLATION DÉTECTÉE')) {
+        _showError('''🚨 FRAUDE DÉTECTÉE
+
+Cet appareil a déjà été utilisé pour voter dans ce challenge.
+
+Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule fois, quel que soit le compte utilisé.
+
+📞 Contactez le support si vous pensez qu'il s'agit d'une erreur.''');
+      } else {
+        _showError('❌ ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVoting = false;
+        });
+      }
+    }
+  }
+  Future<void> _processVoteWithChallenge2(String userId) async {
     try {
       await _reloadChallengeData();
 
@@ -478,6 +613,7 @@ class _DetailsPostState extends State<DetailsPost>
           widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
         });
       }
+      addPointsForAction(UserAction.voteChallenge);
 
       await authProvider.sendNotification(
         userIds: [widget.post.user!.oneIgnalUserid!],
@@ -812,8 +948,9 @@ class _DetailsPostState extends State<DetailsPost>
             post_id: "${widget.post!.id!}",
             post_type: PostDataType.IMAGE.name,
             chat_id: '');
-        await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
-            authProvider.loginUserData.id!, "like", widget.post.user_id!);
+        // await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
+        //     authProvider.loginUserData.id!, "like", widget.post.user_id!);
+        addPointsForAction(UserAction.like);
 
         _animationController.forward().then((_) {
           _animationController.reverse();
@@ -822,7 +959,7 @@ class _DetailsPostState extends State<DetailsPost>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '+2 points ajoutés à votre compte',
+              '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.green),
             ),
@@ -2468,6 +2605,8 @@ class _DetailsPostState extends State<DetailsPost>
                 .update({
               'partage': FieldValue.increment(1),
             });
+            addPointsForAction(UserAction.partagePost);
+
           } : null,
           child: _buildStatItem(
             icon: Icons.share,

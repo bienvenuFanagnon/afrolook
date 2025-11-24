@@ -403,7 +403,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           smallImage: "${authProvider.loginUserData.imageUrl!}",
         );
       }
-
+      addPointsForAction(UserAction.post);
       Navigator.pop(context);
       Navigator.pop(pageContext);
 

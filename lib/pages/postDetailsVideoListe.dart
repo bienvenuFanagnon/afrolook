@@ -17,6 +17,7 @@ import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
 const _twitterDarkBg = Color(0xFF000000);
@@ -441,7 +442,7 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
     }
   }
 
-  Future<void> _processVoteWithChallenge(String userId) async {
+  Future<void> _processVoteWithChallenge2(String userId) async {
     try {
       // Recharger une dernière fois avant le vote pour être sûr
       await _reloadChallengeData();
@@ -535,7 +536,139 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
       }
     }
   }
+  Future<void> _processVoteWithChallenge(String userId) async {
+    try {
+      // Recharger une dernière fois avant le vote pour être sûr
+      await _reloadChallengeData();
 
+      if (_challenge == null) {
+        throw Exception('Données du challenge non disponibles');
+      }
+
+      // Récupérer l'ID unique de l'appareil
+      final String deviceId = await DeviceInfoService.getDeviceId();
+      print("Vérification appareil pour vote vidéo: $deviceId");
+
+      // Vérifier si l'appareil a déjà voté (uniquement si ID valide)
+      if (DeviceInfoService.isDeviceIdValid(deviceId) &&
+          _challenge!.aVoteAvecAppareil(deviceId)) {
+        throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter dans ce challenge. L\'utilisation de comptes multiples est strictement interdite.');
+      }
+
+      await _firestore.runTransaction((transaction) async {
+        // Vérifier à nouveau le challenge avec les données fraîches
+        final challengeRef = _firestore.collection('Challenges').doc(_challenge!.id!);
+        final challengeDoc = await transaction.get(challengeRef);
+
+        if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
+
+        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
+
+        // Vérifications finales
+        if (!currentChallenge.isEnCours) {
+          throw Exception('Le challenge n\'est plus actif');
+        }
+
+        if (currentChallenge.aVote(userId)) {
+          throw Exception('Vous avez déjà voté dans ce challenge');
+        }
+
+        // Vérification supplémentaire de l'appareil dans la transaction
+        if (DeviceInfoService.isDeviceIdValid(deviceId) &&
+            currentChallenge.aVoteAvecAppareil(deviceId)) {
+          throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter. Utilisation de comptes multiples interdite.');
+        }
+
+        final postRef = _firestore.collection('Posts').doc(widget.initialPost.id);
+        final postDoc = await transaction.get(postRef);
+
+        if (!postDoc.exists) throw Exception('Post non trouvé');
+
+        // Débiter si vote payant
+        if (!_challenge!.voteGratuit!) {
+          await _debiterUtilisateur(userId, _challenge!.prixVote!,
+              'Vote pour le challenge ${_challenge!.titre}');
+        }
+
+        // Mettre à jour le post
+        transaction.update(postRef, {
+          'votes_challenge': FieldValue.increment(1),
+          'users_votes_ids': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(3),
+        });
+
+        // Préparer les updates pour le challenge
+        final challengeUpdates = {
+          'users_votants_ids': FieldValue.arrayUnion([userId]),
+          'total_votes': FieldValue.increment(1),
+          'updated_at': DateTime.now().microsecondsSinceEpoch
+        };
+
+        // Ajouter l'ID appareil uniquement s'il est valide
+        if (DeviceInfoService.isDeviceIdValid(deviceId)) {
+          challengeUpdates['devices_votants_ids'] = FieldValue.arrayUnion([deviceId]);
+        }
+
+        // Mettre à jour le challenge
+        transaction.update(challengeRef, challengeUpdates);
+      });
+
+      // Mettre à jour l'état local
+      if (mounted) {
+        setState(() {
+          _hasVoted = true;
+          _votersList.add(userId);
+          widget.initialPost.votesChallenge = (widget.initialPost.votesChallenge ?? 0) + 1;
+        });
+      }
+
+      // Ajouter des points pour l'action de vote
+      addPointsForAction(UserAction.voteChallenge);
+
+      // Envoyer une notification
+      await authProvider.sendNotification(
+        userIds: [widget.initialPost.user!.oneIgnalUserid!],
+        smallImage: authProvider.loginUserData.imageUrl!,
+        send_user_id: authProvider.loginUserData.id!,
+        recever_user_id: widget.initialPost.user_id!,
+        message:
+        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre vidéo dans le challenge ${_challenge!.titre}!",
+        type_notif: NotificationType.POST.name,
+        post_id: widget.initialPost.id!,
+        post_type: PostDataType.VIDEO.name,
+        chat_id: '',
+      );
+
+      // Récompense pour le vote
+      await postProvider.interactWithPostAndIncrementSolde(widget.initialPost.id!,
+          authProvider.loginUserData.id!, "vote_look", widget.initialPost.user_id!);
+
+      _showSuccess('✅ VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+      _envoyerNotificationVote(userVotant:  authProvider.loginUserData!, userVote:widget.initialPost!.user!);
+
+    } catch (e) {
+      print("Erreur lors du vote avec challenge: $e");
+
+      // Message d'erreur spécifique pour les violations
+      if (e.toString().contains('VIOLATION DÉTECTÉE')) {
+        _showError('''🚨 FRAUDE DÉTECTÉE
+
+Cet appareil a déjà été utilisé pour voter dans ce challenge.
+
+Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule fois, quel que soit le compte utilisé.
+
+📞 Contactez le support si vous pensez qu'il s'agit d'une erreur.''');
+      } else {
+        _showError('❌ ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVoting = false;
+        });
+      }
+    }
+  }
   Future<void> _processVoteNormal(String userId) async {
     try {
       // Mettre à jour Firestore

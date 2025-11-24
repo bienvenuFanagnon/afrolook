@@ -13,6 +13,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../auth/authTest/constants.dart';
+import '../component/showUserDetails.dart';
 import '../home/listTopModal.dart';
 import '../user/detailsOtherUser.dart';
 
@@ -143,7 +144,7 @@ class _UserClassementState extends State<UserClassement> {
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
-                    _showUserDetailsModalDialog(topUsers[index], width, height);
+                    showUserDetailsModalDialog(topUsers[index], width, height,context);
                   },
                   child: TopFiveUserItem(
                     user: topUsers[index],

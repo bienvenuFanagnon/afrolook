@@ -6,6 +6,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/LiveAgora/create_live_page.dart';
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
+import 'package:afrotok/pages/UserServices/deviceService.dart';
 import 'package:afrotok/pages/admin/annonce.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Welcome/welcome_screen.dart';
@@ -110,7 +111,8 @@ Future<void> main() async {
       print('Utilisateur connecté: ${user.uid}');
     }
   });
-
+  // Initialiser l'ID d'appareil au démarrage
+  await DeviceInfoService.initializeDeviceId();
   //Remove this method to stop OneSignal Debugging
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");

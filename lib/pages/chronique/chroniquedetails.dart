@@ -118,6 +118,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> {
           curve: Curves.easeOut,
         );
       });
+      addPointsForAction(UserAction.commentaire);
 
       await _sendNotification(
           authProvider,
@@ -939,6 +940,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> {
       await provider.removeLike(chronique.id!, authProvider.loginUserData.id!);
     } else {
       await provider.addLike(chronique.id!, authProvider.loginUserData.id!);
+      addPointsForAction(UserAction.like);
+
       await _sendNotification(
           authProvider,
           chronique,

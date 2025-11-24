@@ -1306,17 +1306,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           );
         }
 
-        await postProvider.interactWithPostAndIncrementSolde(
-          widget.post.id!,
-          authProvider.loginUserData.id!,
-          "like",
-          widget.post.user_id!,
-        );
+        addPointsForAction(UserAction.like);
+
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '+2 points ajoutés à votre compte',
+              '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.green),
             ),
@@ -1349,6 +1345,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       message: widget.post.description ?? "",
       mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
     );
+    addPointsForAction(UserAction.partagePost);
+
   }
 
   // Méthode pour supprimer un post
@@ -1486,6 +1484,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         // Créer les transactions
         await _createTransaction(TypeTransaction.DEPENSE.name, amount, "Cadeau envoyé à @${widget.post.user!.pseudo}",authProvider.loginUserData.id!);
         await _createTransaction(TypeTransaction.GAIN.name, gainDestinataire, "Cadeau reçu de @${authProvider.loginUserData.pseudo}",widget.post.user_id!);
+        addPointsForAction(UserAction.cadeau);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

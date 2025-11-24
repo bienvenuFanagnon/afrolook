@@ -201,6 +201,7 @@ class TopFiveUserItem extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // RANK ICON
           Container(
             width: 40,
             height: 40,
@@ -223,6 +224,7 @@ class TopFiveUserItem extends StatelessWidget {
 
           SizedBox(width: 12),
 
+          // PROFILE + BADGE VERIFIE
           Stack(
             children: [
               CircleAvatar(
@@ -252,10 +254,12 @@ class TopFiveUserItem extends StatelessWidget {
 
           SizedBox(width: 12),
 
+          // NAME + FOLLOWERS + POPULARITY
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // PSEUDO
                 Text(
                   "@${user.pseudo}",
                   style: TextStyle(
@@ -265,15 +269,35 @@ class TopFiveUserItem extends StatelessWidget {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+
                 SizedBox(height: 4),
+
+                // FOLLOWERS
                 Row(
                   children: [
                     Icon(Icons.people, size: 14, color: Colors.green[600]),
                     SizedBox(width: 4),
                     Text(
-                      "${user.userAbonnesIds!.length ?? 0} abonnés",
+                      "${user.userAbonnesIds?.length ?? 0} abonnés",
                       style: TextStyle(
                         fontSize: 12,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 2),
+
+                // ⭐ POPULARITÉ
+                Row(
+                  children: [
+                    Icon(Icons.star, size: 12, color: Colors.yellow[700]),
+                    SizedBox(width: 4),
+                    Text(
+                      "${(user.popularite ?? 0).toStringAsFixed(1)}%",
+                      style: TextStyle(
+                        fontSize: 10,
                         color: Colors.grey[400],
                       ),
                     ),
@@ -283,6 +307,7 @@ class TopFiveUserItem extends StatelessWidget {
             ),
           ),
 
+          // RANK ON RIGHT SIDE
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(

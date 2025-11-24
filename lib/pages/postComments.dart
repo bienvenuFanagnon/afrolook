@@ -961,7 +961,7 @@ class _PostCommentsState extends State<PostComments> {
         replying = false;
         replyingTo = "";
       });
-
+      addPointsForAction(UserAction.commentaire);
       // Recharger les commentaires seulement après succès
       if (success) {
         await _loadComments();

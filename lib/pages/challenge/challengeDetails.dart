@@ -1595,6 +1595,7 @@ await  _checkPrixEncaisser();
           'updated_at': DateTime.now().microsecondsSinceEpoch
         });
       });
+      addPointsForAction(UserAction.inscriptionChallenge);
 
       _showSuccess('INSCRIPTION RÉUSSIE !\nVous êtes maintenant inscrit au challenge.');
       _envoyerNotificationNouvelleInscription(challenge: _challenge!, user: authProvider.loginUserData);

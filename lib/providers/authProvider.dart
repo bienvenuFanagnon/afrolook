@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 107;
+  late int app_version_code = 108;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -68,6 +68,7 @@ class UserAuthProvider extends ChangeNotifier {
   UserData? get userData => _userData;
   List<UserData> get availableUsers => _availableUsers;
   String? get userId => _auth.currentUser?.uid;
+
   Future<void> checkAndCleanViewedPosts(String userId) async {
     try {
       final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
@@ -729,8 +730,8 @@ class UserAuthProvider extends ChangeNotifier {
       // 2. Mise à jour sélective des champs sans toucher aux stories
       final updateData = <String, dynamic>{
         'oneIgnalUserid': OneSignal.User.pushSubscription.id,
-        'popularite': _calculatePopularity(loginUserData!),
-        'compteTarif': loginUserData!.popularite! * 80,
+        // 'popularite': _calculatePopularity(loginUserData!),
+        // 'compteTarif': loginUserData!.popularite! * 80,
         'last_time_active': DateTime.now().millisecondsSinceEpoch,
       };
 
@@ -1297,7 +1298,7 @@ class UserAuthProvider extends ChangeNotifier {
       loginUserData.userAbonnes!.add(userAbonne);
       updateUserData.userAbonnesIds!.add(currentUserId);
       updateUserData.abonnes = (updateUserData.abonnes ?? 0) + 1;
-
+      addPointsForAction(UserAction.abonne);
       // Envoi de notification
       if (updateUserData.oneIgnalUserid != null &&
           updateUserData.oneIgnalUserid!.length > 5) {
@@ -2202,4 +2203,44 @@ class UserAuthProvider extends ChangeNotifier {
 
 }
 
+Future<void> addPointsForAction(UserAction action) async {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore db = FirebaseFirestore.instance;
 
+  // 1. Récupérer l'utilisateur connecté
+  final currentUser = auth.currentUser;
+  if (currentUser == null) {
+    throw Exception("Aucun utilisateur connecté");
+  }
+
+  final userRef = db.collection("Users").doc(currentUser.uid);
+  final appRef = db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT");
+
+  // 2. Récupérer points pour l'action
+  int pointsToAdd = ActionPoints.getPoints(action);
+
+  // 3. Récupérer les données actuelles
+  final userSnapshot = await userRef.get();
+  final appSnapshot = await appRef.get();
+
+  int oldUserPoints = (userSnapshot.data() as Map?)?["totalPoints"] ?? 0;
+  int oldAppPoints = (appSnapshot.data() as Map?)?["appTotalPoints"] ?? 0;
+
+  // 4. Calculer nouvelles valeurs
+  int newUserPoints = oldUserPoints + pointsToAdd;
+  int newAppPoints = oldAppPoints + pointsToAdd;
+
+  double newPopularity = newAppPoints == 0
+      ? 0
+      : (newUserPoints / newAppPoints) * 100;
+
+  // 5. Mise à jour Firestore
+  await userRef.update({
+    "totalPoints": newUserPoints,
+    "popularite": newPopularity,
+  });
+
+  await appRef.update({
+    "appTotalPoints": newAppPoints,
+  });
+}

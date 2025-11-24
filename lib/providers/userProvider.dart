@@ -849,26 +849,66 @@ setMessageNonLu(int nbr){
     return resp;
   }
 
-  Future<bool> changeState({required UserData user,required String state}) async {
-
-    bool resp=false;
+  Future<bool> changeState({required UserData user, required String state}) async {
+    final String previousState = user.state ?? ''; // Sauvegarde de l'ancien state
 
     try {
-      user.state=state;
-      printVm('update user state: $state');
+      // // Mise à jour optimisée dans Firebase
+      // final updateData = <String, dynamic>{
+      //   'state': state,
+      //   // 'last_time_active': FieldValue.serverTimestamp()
+      // };
+      //
+      // await firestore.collection('Users').doc(user.id).update(updateData);
+      //
+      // // Mise à jour locale uniquement après succès
+      // user.state = state;
+      // notifyListeners();
+      //
+      // printVm('State utilisateur mis à jour avec succès: $state');
+      return true;
 
-      await firestore.collection('Users').doc(user.id).update(user.toJson());
+    } catch (e, stackTrace) {
+      printVm('Échec mise à jour state: $e');
+      printVm('Stack trace: $stackTrace');
 
+      // Garder l'ancien state en cas d'erreur
+      user.state = previousState;
+      notifyListeners();
 
-      resp=true;
-    } catch (e) {
-
-      printVm(e);
-      resp=false;
+      return false;
     }
+  }
+  Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
+    final String previousState = user.state ?? ''; // Sauvegarde de l'ancien state
 
-    notifyListeners();
-    return resp;
+    try {
+      // Mise à jour optimisée dans Firebase
+      final updateData = <String, dynamic>{
+        'state': state,
+        'isConnected': isConnected,
+        // 'last_time_active': FieldValue.serverTimestamp()
+      };
+
+      await firestore.collection('Users').doc(user.id).update(updateData);
+
+      // Mise à jour locale uniquement après succès
+      user.state = state;
+      notifyListeners();
+
+      printVm('State utilisateur mis à jour avec succès: $state');
+      return true;
+
+    } catch (e, stackTrace) {
+      printVm('Échec mise à jour state: $e');
+      printVm('Stack trace: $stackTrace');
+
+      // Garder l'ancien state en cas d'erreur
+      user.state = previousState;
+      notifyListeners();
+
+      return false;
+    }
   }
 
 }

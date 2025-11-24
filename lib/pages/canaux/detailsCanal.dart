@@ -515,6 +515,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     await firestore.collection('Canaux').doc(widget.canal.id).update({
       'usersSuiviId': widget.canal.usersSuiviId,
     });
+    addPointsForAction(UserAction.abonne);
 
     // Créer la notification
     final NotificationData notif = NotificationData(

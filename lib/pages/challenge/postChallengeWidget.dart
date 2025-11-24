@@ -1288,17 +1288,18 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
             post_type: PostDataType.IMAGE.name,
             chat_id: '');
 
-        await postProvider.interactWithPostAndIncrementSolde(
-            widget.post.id!,
-            authProvider.loginUserData.id!,
-            "like",
-            widget.post.user_id!
-        );
+        // await postProvider.interactWithPostAndIncrementSolde(
+        //     widget.post.id!,
+        //     authProvider.loginUserData.id!,
+        //     "like",
+        //     widget.post.user_id!
+        // );
+        addPointsForAction(UserAction.like);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '+2 points ajoutés à votre compte',
+              '+ de points ajoutés à votre compte',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.green),
             ),
@@ -1333,6 +1334,8 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
           : widget.post.description ?? "",
       mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
     );
+    addPointsForAction(UserAction.partagePost);
+
   }
 
   // Méthode pour afficher le dialogue de cadeau (à adapter depuis votre code existant)

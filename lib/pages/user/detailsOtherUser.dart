@@ -1118,7 +1118,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
 
   @override
   Widget build(BuildContext context) {
-    double taux = widget.user.popularite! * 100;
+    double taux = widget.user.popularite!;
     bool isFriend = isMyFriend(widget.user, authProvider.loginUserData);
     bool isInvited = isInvite(widget.user, authProvider.loginUserData);
     bool isAbonne = isUserAbonne(widget.user.userAbonnesIds!, authProvider.loginUserData.id!);

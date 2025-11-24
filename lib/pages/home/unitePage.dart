@@ -109,6 +109,8 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
     super.dispose();
   }
 
+
+
   // NOUVELLE FONCTION : Charger les chroniques actives
   Future<void> _loadActiveChroniques() async {
     if (_isLoadingChroniques) return;
@@ -1106,10 +1108,10 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         return AppDefaultData.fromJson(appDataSnapshot.data() ?? {});
       }
 
-      return AppDefaultData(allPostIds: []);
+      return AppDefaultData();
     } catch (e) {
       print('❌ Erreur récupération AppData: $e');
-      return AppDefaultData(allPostIds: []);
+      return AppDefaultData();
     }
   }
 

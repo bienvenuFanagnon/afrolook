@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 // models/chronique_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 
@@ -343,7 +344,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           setState(() => _uploadProgress = progress);
         },
       );
-
+      addPointsForAction(UserAction.post);
       // Envoyer notification
       await _sendNotification(authProvider);
 

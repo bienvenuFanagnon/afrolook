@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // models/profile_like_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/model_data.dart';
+import 'authProvider.dart';
+
 class ProfileLike {
   String? id;
   String likedUserId; // Utilisateur qui est liké
@@ -114,6 +117,7 @@ class ProfileLikeProvider with ChangeNotifier {
     await _firestore.collection('Users').doc(userId).update({
       'profileLikesCount': FieldValue.increment(1),
     });
+    addPointsForAction(UserAction.likeProfil);
   }
 
   // Décrémenter le compteur de likes

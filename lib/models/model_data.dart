@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../pages/UserServices/deviceService.dart';
 import '../pages/story/afroStory/repository.dart';
 import 'chatmodels/message.dart';
 
@@ -354,6 +355,147 @@ class UserPseudo {
   }
 }
 
+// class AppDefaultData {
+//   String? id;
+//   String? app_link;
+//   String? geminiapiKey;
+//   List<String>? users_id = [];
+//   int? nbr_abonnes = 0;
+//   int? app_version_code = 0;
+//   int? app_version_code_officiel = 0;
+//   int? nbr_likes = 0;
+//   bool? googleVerification = false;
+//   int? nbr_comments = 0;
+//   String? ia_instruction = "";
+//   late String app_logo = "";
+//   late String one_signal_api_key = "";
+//   late String one_signal_app_id = "";
+//   late String one_signal_app_url = "";
+//   double? tarifPubliCash = 2.5;
+//   double? tarifImage = 0.5;
+//   double? tarifPubliCash_to_xof = 250.0;
+//   double? tarifVideo = 1.0;
+//   double? tarifjour = 0.5;
+//   double? solde_principal = 0.0;
+//   double? solde_gain = 0.0;
+//   double? solde_commission_crypto = 0.0;
+//   int? nbr_loves = 0;
+//   int? default_point_new_user = 5;
+//   int? default_point_new_like = 1;
+//   int? default_point_new_love = 1;
+//   // int? default_point_new_comment=2;
+//   List<String>? allPostIds = []; // Nouveau champ pour stocker les IDs de tous les posts
+//
+//   AppDefaultData(
+//       {this.id,
+//       this.users_id,
+//       this.allPostIds,
+//       this.nbr_abonnes = 0,
+//       this.ia_instruction = "",
+//       this.geminiapiKey = "",
+//       this.app_link,
+//       this.googleVerification,
+//       this.app_version_code = 0,
+//       this.app_version_code_officiel = 0,
+//       this.tarifPubliCash_to_xof = 250.0,
+//       this.tarifPubliCash = 2.5,
+//       this.tarifjour = 0.5,
+//       this.tarifImage = 0.5,
+//       this.tarifVideo = 1.0,
+//       this.nbr_likes = 0,
+//       this.solde_principal = 0.0,
+//       this.solde_gain = 0.0,
+//       this.solde_commission_crypto = 0.0,
+//       this.nbr_comments = 0,
+//       this.nbr_loves = 0,
+//       this.default_point_new_user = 5,
+//       this.default_point_new_like = 1,
+//       this.default_point_new_love = 1});
+//
+//   AppDefaultData.fromJson(Map<String, dynamic> json) {
+//     id = json['id'];
+//     nbr_comments = json['nbr_comments'];
+//     nbr_likes = json['nbr_likes'];
+//     nbr_comments = json['nbr_comments'];
+//     app_link = json['app_link'] == null ? "" : json['app_link'];
+//     geminiapiKey = json['geminiapiKey'] == null ? "" : json['geminiapiKey'];
+//     ia_instruction =
+//         json['ia_instruction'] == null ? "" : json['ia_instruction'];
+//     app_version_code_officiel =
+//         json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
+//     solde_principal =
+//         json['solde_principal'] == null ? 0.0 : json['solde_principal'];
+//     solde_gain =
+//         json['solde_gain'] == null ? 0.0 : json['solde_gain'];
+//     solde_commission_crypto =
+//         json['solde_commission_crypto'] == null ? 0.0 : json['solde_commission_crypto'];
+//     app_version_code =
+//         json['app_version_code'] == null ? 0 : json['app_version_code'];
+//     googleVerification =
+//         json['googleVerification'] == null ? false : json['googleVerification'];
+//     nbr_loves = json['nbr_loves'];
+//     nbr_abonnes = json['nbr_abonnes'];
+//     tarifPubliCash = json['tarifPubliCash'];
+//     tarifImage = json['tarifImage'];
+//     tarifVideo = json['tarifVideo'];
+//     tarifjour = json['tarifjour'];
+//     tarifPubliCash_to_xof = json['tarifPubliCash_to_xof'];
+//     default_point_new_user = json['default_point_new_user'];
+//     default_point_new_like = json['default_point_new_like'];
+//     default_point_new_love = json['default_point_new_love'];
+//
+//     app_logo = json['app_logo'];
+//     one_signal_api_key = json['one_signal_api_key'];
+//     one_signal_app_id = json['one_signal_app_id'];
+//     one_signal_app_url = json['one_signal_app_url'];
+//     if (json['users_id'] != null) {
+//       users_id = <String>[];
+//       json['users_id'].forEach((v) {
+//         users_id!.add(v);
+//       });
+//     }
+//     allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((v) => v.toString()).toList() ?? [];
+//
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     data['id'] = this.id;
+//     data['nbr_comments'] = this.nbr_comments;
+//     data['allPostIds'] = this.allPostIds;
+//
+//     data['nbr_likes'] = this.nbr_likes;
+//     data['nbr_comments'] = this.nbr_comments;
+//     data['nbr_abonnes'] = this.nbr_abonnes;
+//     data['app_version_code'] = this.app_version_code;
+//     data['ia_instruction'] = this.ia_instruction;
+//     data['geminiapiKey'] = this.geminiapiKey;
+//
+//     data['tarifPubliCash'] = this.tarifPubliCash;
+//     data['googleVerification'] = this.googleVerification;
+//     data['tarifImage'] = this.tarifImage;
+//     data['tarifVideo'] = this.tarifVideo;
+//     data['app_link'] = this.app_link;
+//     data['tarifjour'] = this.tarifjour;
+//     data['solde_principal'] = this.solde_principal;
+//     data['solde_gain'] = this.solde_gain;
+//     data['app_version_code_officiel'] = this.app_version_code_officiel;
+//     data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
+//     data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
+//
+//     data['nbr_loves'] = this.nbr_loves;
+//     data['default_point_new_user'] = this.default_point_new_user;
+//     data['default_point_new_like'] = this.default_point_new_like;
+//     data['default_point_new_love'] = this.default_point_new_love;
+//
+//     data['app_logo'] = this.app_logo;
+//     data['one_signal_app_url'] = this.one_signal_app_url;
+//     data['one_signal_app_id'] = this.one_signal_app_id;
+//     data['one_signal_api_key'] = this.one_signal_api_key;
+//
+//     return data;
+//   }
+// }
 class AppDefaultData {
   String? id;
   String? app_link;
@@ -370,75 +512,52 @@ class AppDefaultData {
   late String one_signal_api_key = "";
   late String one_signal_app_id = "";
   late String one_signal_app_url = "";
+
   double? tarifPubliCash = 2.5;
   double? tarifImage = 0.5;
   double? tarifPubliCash_to_xof = 250.0;
   double? tarifVideo = 1.0;
   double? tarifjour = 0.5;
+
   double? solde_principal = 0.0;
   double? solde_gain = 0.0;
   double? solde_commission_crypto = 0.0;
+
   int? nbr_loves = 0;
+
   int? default_point_new_user = 5;
   int? default_point_new_like = 1;
   int? default_point_new_love = 1;
-  // int? default_point_new_comment=2;
-  List<String>? allPostIds = []; // Nouveau champ pour stocker les IDs de tous les posts
 
-  AppDefaultData(
-      {this.id,
-      this.users_id,
-      this.allPostIds,
-      this.nbr_abonnes = 0,
-      this.ia_instruction = "",
-      this.geminiapiKey = "",
-      this.app_link,
-      this.googleVerification,
-      this.app_version_code = 0,
-      this.app_version_code_officiel = 0,
-      this.tarifPubliCash_to_xof = 250.0,
-      this.tarifPubliCash = 2.5,
-      this.tarifjour = 0.5,
-      this.tarifImage = 0.5,
-      this.tarifVideo = 1.0,
-      this.nbr_likes = 0,
-      this.solde_principal = 0.0,
-      this.solde_gain = 0.0,
-      this.solde_commission_crypto = 0.0,
-      this.nbr_comments = 0,
-      this.nbr_loves = 0,
-      this.default_point_new_user = 5,
-      this.default_point_new_like = 1,
-      this.default_point_new_love = 1});
+  List<String>? allPostIds = [];
+
+  /// 📌 Nouveau champ total des points de l'application
+  int appTotalPoints = 0;
+
+  AppDefaultData();
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     nbr_comments = json['nbr_comments'];
     nbr_likes = json['nbr_likes'];
-    nbr_comments = json['nbr_comments'];
-    app_link = json['app_link'] == null ? "" : json['app_link'];
-    geminiapiKey = json['geminiapiKey'] == null ? "" : json['geminiapiKey'];
-    ia_instruction =
-        json['ia_instruction'] == null ? "" : json['ia_instruction'];
-    app_version_code_officiel =
-        json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
-    solde_principal =
-        json['solde_principal'] == null ? 0.0 : json['solde_principal'];
-    solde_gain =
-        json['solde_gain'] == null ? 0.0 : json['solde_gain'];
-    solde_commission_crypto =
-        json['solde_commission_crypto'] == null ? 0.0 : json['solde_commission_crypto'];
-    app_version_code =
-        json['app_version_code'] == null ? 0 : json['app_version_code'];
-    googleVerification =
-        json['googleVerification'] == null ? false : json['googleVerification'];
+    app_link = json['app_link'];
+    geminiapiKey = json['geminiapiKey'];
+    ia_instruction = json['ia_instruction'];
+    app_version_code_officiel = json['app_version_code_officiel'];
+    solde_principal = (json['solde_principal'] as num?)?.toDouble() ?? 0.0;
+    solde_gain = (json['solde_gain'] as num?)?.toDouble() ?? 0.0;
+    solde_commission_crypto = (json['solde_commission_crypto'] as num?)?.toDouble() ?? 0.0;
+    app_version_code = json['app_version_code'];
+    googleVerification = json['googleVerification'];
     nbr_loves = json['nbr_loves'];
     nbr_abonnes = json['nbr_abonnes'];
-    tarifPubliCash = json['tarifPubliCash'];
-    tarifImage = json['tarifImage'];
-    tarifVideo = json['tarifVideo'];
-    tarifjour = json['tarifjour'];
-    tarifPubliCash_to_xof = json['tarifPubliCash_to_xof'];
+
+    tarifPubliCash = (json['tarifPubliCash'] as num?)?.toDouble() ?? 0.0;
+    tarifImage = (json['tarifImage'] as num?)?.toDouble() ?? 0.0;
+    tarifVideo = (json['tarifVideo'] as num?)?.toDouble() ?? 0.0;
+    tarifjour = (json['tarifjour'] as num?)?.toDouble() ?? 0.0;
+    tarifPubliCash_to_xof = (json['tarifPubliCash_to_xof'] as num?)?.toDouble() ?? 0.0;
+
     default_point_new_user = json['default_point_new_user'];
     default_point_new_like = json['default_point_new_like'];
     default_point_new_love = json['default_point_new_love'];
@@ -447,54 +566,51 @@ class AppDefaultData {
     one_signal_api_key = json['one_signal_api_key'];
     one_signal_app_id = json['one_signal_app_id'];
     one_signal_app_url = json['one_signal_app_url'];
-    if (json['users_id'] != null) {
-      users_id = <String>[];
-      json['users_id'].forEach((v) {
-        users_id!.add(v);
-      });
-    }
-    allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((v) => v.toString()).toList() ?? [];
 
+    users_id = (json['users_id'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
+    allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
+    appTotalPoints = json['appTotalPoints'] ?? 0;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['nbr_comments'] = this.nbr_comments;
-    data['allPostIds'] = this.allPostIds;
-
-    data['nbr_likes'] = this.nbr_likes;
-    data['nbr_comments'] = this.nbr_comments;
-    data['nbr_abonnes'] = this.nbr_abonnes;
-    data['app_version_code'] = this.app_version_code;
-    data['ia_instruction'] = this.ia_instruction;
-    data['geminiapiKey'] = this.geminiapiKey;
-
-    data['tarifPubliCash'] = this.tarifPubliCash;
-    data['googleVerification'] = this.googleVerification;
-    data['tarifImage'] = this.tarifImage;
-    data['tarifVideo'] = this.tarifVideo;
-    data['app_link'] = this.app_link;
-    data['tarifjour'] = this.tarifjour;
-    data['solde_principal'] = this.solde_principal;
-    data['solde_gain'] = this.solde_gain;
-    data['app_version_code_officiel'] = this.app_version_code_officiel;
-    data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
-    data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
-
-    data['nbr_loves'] = this.nbr_loves;
-    data['default_point_new_user'] = this.default_point_new_user;
-    data['default_point_new_like'] = this.default_point_new_like;
-    data['default_point_new_love'] = this.default_point_new_love;
-
-    data['app_logo'] = this.app_logo;
-    data['one_signal_app_url'] = this.one_signal_app_url;
-    data['one_signal_app_id'] = this.one_signal_app_id;
-    data['one_signal_api_key'] = this.one_signal_api_key;
-
-    return data;
+    return {
+      "id": id,
+      "nbr_comments": nbr_comments,
+      "allPostIds": allPostIds,
+      "nbr_likes": nbr_likes,
+      "nbr_abonnes": nbr_abonnes,
+      "app_version_code": app_version_code,
+      "app_version_code_officiel": app_version_code_officiel,
+      "ia_instruction": ia_instruction,
+      "geminiapiKey": geminiapiKey,
+      "tarifPubliCash": tarifPubliCash,
+      "tarifImage": tarifImage,
+      "tarifVideo": tarifVideo,
+      "tarifjour": tarifjour,
+      "tarifPubliCash_to_xof": tarifPubliCash_to_xof,
+      "googleVerification": googleVerification,
+      "app_link": app_link,
+      "solde_principal": solde_principal,
+      "solde_gain": solde_gain,
+      "solde_commission_crypto": solde_commission_crypto,
+      "nbr_loves": nbr_loves,
+      "default_point_new_user": default_point_new_user,
+      "default_point_new_like": default_point_new_like,
+      "default_point_new_love": default_point_new_love,
+      "app_logo": app_logo,
+      "one_signal_api_url": one_signal_app_url,
+      "one_signal_app_id": one_signal_app_id,
+      "one_signal_api_key": one_signal_api_key,
+      "users_id": users_id,
+      // "appTotalPoints": appTotalPoints,
+    };
   }
 }
+
+
+
 
 class UserData {
   String? id;
@@ -566,6 +682,7 @@ class UserData {
   List<String> viewedVideos = []; // Liste des vidéos déjà vues
   List<String>? viewedPostIds = []; // Nouveau champ pour stocker les posts vus
   int? lastNotificationTime;
+  int totalPoints = 0;
 
   UserData(
       {this.reference,
@@ -599,6 +716,7 @@ class UserData {
       this.createdAt = 0,
       this.updatedAt = 0,
       this.abonnes = 0,
+      this.totalPoints = 0,
       this.compteTarif = 0,
       this.popularite = 0.0,
       this.votre_solde = 0.0,
@@ -717,7 +835,7 @@ class UserData {
         ?.map((v) => v.toString())
         .toList() ?? [];
     lastNotificationTime = json['lastNotificationTime'] ?? 0;
-
+    // totalPoints = json['totalPoints'] ?? 0;
   }
 
 
@@ -732,7 +850,7 @@ class UserData {
     data['numero_de_telephone'] = this.numeroDeTelephone;
     data['adresse'] = this.adresse;
     // data['isVerify'] = this.isVerify;
-    data['state'] = this.state;
+    // data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
     // data['mesTiktokPubs'] = this.mesTiktokPubs;
     data['code_parrainage'] = this.codeParrainage;
@@ -783,7 +901,7 @@ class UserData {
     data['comments'] = this.comments;
     data['abonnes'] = this.abonnes;
     data['compte_tarif'] = this.compteTarif;
-    data['popularite'] = this.popularite;
+    // data['popularite'] = this.popularite;
     // data['userAbonnesIds'] = this.userAbonnesIds;
     data['friendsIds'] = this.friendsIds;
     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
@@ -793,6 +911,7 @@ class UserData {
     //data['user_global_tags'] = this.userGlobalTags;
     data['viewedVideos'] = this.viewedVideos;
     data['lastNotificationTime'] = lastNotificationTime;
+    // data['totalPoints'] = totalPoints;
 
     return data;
   }
@@ -1149,7 +1268,7 @@ class Challenge {
   bool? isAprouved = true;
   int? jaime;
   int? partage;
-
+  List<String>? devicesVotantsIds = [];
   // Nouveaux champs pour la gestion des frais
   bool? participationGratuite = true;
   int? prixParticipation = 0;
@@ -1228,6 +1347,9 @@ class Challenge {
     userGagnantId = json['user_gagnant_id'];
     prixDejaEncaisser = json['prix_deja_encaisser'] ?? false;
     dateEncaissement = json['date_encaissement'];
+    devicesVotantsIds = json['devices_votants_ids'] != null
+        ? List<String>.from(json['devices_votants_ids'])
+        : [];
   }
 
   Map<String, dynamic> toJson() {
@@ -1272,6 +1394,7 @@ class Challenge {
     data['user_gagnant_id'] = userGagnantId;
     data['prix_deja_encaisser'] = prixDejaEncaisser;
     data['date_encaissement'] = dateEncaissement;
+    data['devices_votants_ids'] = devicesVotantsIds;
 
     return data;
   }
@@ -1281,7 +1404,12 @@ class Challenge {
   bool get isEnCours => statut == 'en_cours';
   bool get isTermine => statut == 'termine';
   bool get isAnnule => statut == 'annule';
-
+  bool aVoteAvecAppareil(String deviceId) {
+    if (!DeviceInfoService.isDeviceIdValid(deviceId)) {
+      return false; // Ne pas bloquer si l'ID n'est pas valide
+    }
+    return devicesVotantsIds?.contains(deviceId) ?? false;
+  }
   bool get inscriptionsOuvertes {
     final now = DateTime.now().microsecondsSinceEpoch;
     return isEnAttente &&
@@ -3638,5 +3766,45 @@ class TransactionRetrait {
       case 'ANNULE': return Colors.red;
       default: return Colors.grey;
     }
+  }
+}
+
+enum UserAction {
+  post,
+  like,
+  commentaire,
+  partagePost,
+  likeProfil,
+  inscriptionChallenge,
+  participationChallenge,
+  voteChallenge,
+  autre,
+  abonne,
+  cadeau,
+}
+
+class ActionPoints {
+  // Points par défaut pour chaque action
+  static const Map<UserAction, int> _points = {
+    UserAction.inscriptionChallenge: 5,
+    UserAction.post: 4,
+    UserAction.like: 2,
+    UserAction.commentaire: 3,
+    UserAction.partagePost: 1,
+    UserAction.likeProfil: 2,
+    UserAction.participationChallenge: 4,
+    UserAction.voteChallenge: 2,
+    UserAction.autre: 1,
+    UserAction.cadeau: 10,
+    UserAction.abonne: 2,
+  };
+
+  /// Retourne le nombre de points pour une action donnée
+  static int getPoints(UserAction action) {
+    return _points[action] ?? 0;
+  }
+  /// Optionnel : permet de modifier dynamiquement les points
+  static void setPoints(UserAction action, int points) {
+    _points[action] = points;
   }
 }
