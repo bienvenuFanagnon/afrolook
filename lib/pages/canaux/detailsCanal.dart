@@ -516,6 +516,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       'usersSuiviId': widget.canal.usersSuiviId,
     });
     addPointsForAction(UserAction.abonne);
+    addPointsForOtherUserAction(widget.canal.userId!, UserAction.autre);
 
     // Créer la notification
     final NotificationData notif = NotificationData(

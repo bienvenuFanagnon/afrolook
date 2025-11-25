@@ -1307,6 +1307,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         }
 
         addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
 
         ScaffoldMessenger.of(context).showSnackBar(

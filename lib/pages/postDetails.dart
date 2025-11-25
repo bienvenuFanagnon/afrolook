@@ -508,6 +508,7 @@ class _DetailsPostState extends State<DetailsPost>
       }
 
       addPointsForAction(UserAction.voteChallenge);
+      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
       // Notification
       await authProvider.sendNotification(
@@ -614,6 +615,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         });
       }
       addPointsForAction(UserAction.voteChallenge);
+      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
       await authProvider.sendNotification(
         userIds: [widget.post.user!.oneIgnalUserid!],
@@ -951,6 +953,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         // await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
         //     authProvider.loginUserData.id!, "like", widget.post.user_id!);
         addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
         _animationController.forward().then((_) {
           _animationController.reverse();

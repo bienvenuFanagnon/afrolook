@@ -227,6 +227,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
     if (list.isNotEmpty) {
       printVm("user trouver");
+      addPointsForOtherUserAction(list.first.id!, UserAction.autre);
 
       //
       //     user.pointContribution=list.first.pointContribution! + authProvider.appDefaultData.default_point_new_user!;

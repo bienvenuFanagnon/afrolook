@@ -119,6 +119,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> {
         );
       });
       addPointsForAction(UserAction.commentaire);
+      addPointsForOtherUserAction(currentChronique.userId, UserAction.autre);
 
       await _sendNotification(
           authProvider,
@@ -941,6 +942,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> {
     } else {
       await provider.addLike(chronique.id!, authProvider.loginUserData.id!);
       addPointsForAction(UserAction.like);
+      addPointsForOtherUserAction(chronique.userId, UserAction.autre);
 
       await _sendNotification(
           authProvider,

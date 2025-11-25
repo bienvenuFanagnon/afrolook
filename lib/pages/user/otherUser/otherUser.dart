@@ -291,7 +291,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                     NumbersWidget(
 
                       followers: widget.otherUser.userAbonnesIds?.length ?? 0,
-                      taux: widget.otherUser.popularite! * 100,
+                      taux: widget.otherUser.popularite!,
                       points: widget.otherUser.pointContribution!,
                     ),
                     SizedBox(height: 16),

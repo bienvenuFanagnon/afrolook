@@ -118,6 +118,7 @@ class ProfileLikeProvider with ChangeNotifier {
       'profileLikesCount': FieldValue.increment(1),
     });
     addPointsForAction(UserAction.likeProfil);
+    addPointsForOtherUserAction(userId, UserAction.autre);
   }
 
   // Décrémenter le compteur de likes
