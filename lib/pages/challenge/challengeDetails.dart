@@ -591,7 +591,7 @@ await  _checkPrixEncaisser();
           .collection('Posts')
           .where('challenge_id', isEqualTo: widget.challengeId)
           .orderBy('votes_challenge', descending: true)
-      .limit(4)
+      .limit(25)
           .get();
 
       List<Post> posts = postsSnapshot.docs.map((doc) {
@@ -2970,7 +2970,7 @@ await  _checkPrixEncaisser();
   Widget _buildPostsTab() {
     final user = _auth.currentUser;
     final aVote = _challenge!.aVote(user?.uid);
-    final displayedPosts = _posts.take(5).toList();
+    final displayedPosts = _posts.take(20).toList();
 
     if (displayedPosts.isEmpty) {
       return _buildEmptyState(
@@ -3107,11 +3107,18 @@ await  _checkPrixEncaisser();
                 ),
               ),
 
-              // Badge gagnant
+              // Badge de rang dans l'angle en haut à droite
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildRankBadge(index + 1), // +1 car index commence à 0
+              ),
+
+              // Badge gagnant (déplacé à gauche pour éviter la superposition)
               if (estGagnant)
                 Positioned(
                   top: 8,
-                  right: 8,
+                  left: 8,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
@@ -3268,220 +3275,71 @@ await  _checkPrixEncaisser();
       ),
     );
   }
-  Widget _buildPostItem(Post post, int index) {
-    final user = _auth.currentUser;
-    final aVotePourCePost = post.aVote(user?.uid ?? '');
-    final peutVoter = _challenge!.isEnCours &&
-        !_challenge!.aVote(user?.uid);
-    final estGagnant = _challenge!.postsWinnerIds?.contains(post.id) ?? false;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header du post
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                // Position
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _getRankColor(index),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                // Avatar
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: post.user?.imageUrl != null
-                      ? NetworkImage(post.user!.imageUrl!)
-                      : null,
-                  backgroundColor: Colors.grey[700],
-                  child: post.user?.imageUrl == null
-                      ? Icon(Icons.person, color: Colors.white, size: 16)
-                      : null,
-                ),
-                SizedBox(width: 12),
-                // Infos utilisateur
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.user?.pseudo ?? 'Utilisateur',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        '${post.votesChallenge ?? 0} votes',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Badges
-                if (estGagnant) ...[
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.yellow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.emoji_events, size: 12, color: Colors.black),
-                        SizedBox(width: 4),
-                        Text(
-                          'GAGNANT',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                ],
-                // Bouton vote
-                if (_challenge!.isEnCours && peutVoter)
-                  ElevatedButton(
-                    onPressed: () => _voterPourPost(post),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: aVotePourCePost ? Colors.green : Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      minimumSize: Size(0, 0),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                            aVotePourCePost ? Icons.check : Icons.how_to_vote,
-                            size: 14
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          aVotePourCePost ? 'VOTÉ' : 'VOTER',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
+  Widget _buildRankBadge(int rank) {
+    // Définir les couleurs et icônes pour les 3 premiers
+    Color badgeColor;
+    Color textColor;
+    IconData? icon;
+    String rankText;
 
-          // Contenu du post
-          InkWell(
-            onTap: () {
-              if (post.id != null) {
-
-    if (post.dataType == PostDataType.VIDEO.name) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VideoTikTokPageDetails(initialPost: post),
-        ),
-      );
-    }else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DetailsPost(post: post),
-        ),
-      );
+    switch (rank) {
+      case 1:
+        badgeColor = Colors.yellow;
+        textColor = Colors.black;
+        icon = Icons.emoji_events;
+        rankText = "1er";
+        break;
+      case 2:
+        badgeColor = Colors.blue[400]!;
+        textColor = Colors.white;
+        icon = Icons.emoji_events;
+        rankText = "2ème";
+        break;
+      case 3:
+        badgeColor = Colors.orange[800]!;
+        textColor = Colors.white;
+        icon = Icons.emoji_events;
+        rankText = "3ème";
+        break;
+      default:
+        badgeColor = Colors.black.withOpacity(0.7);
+        textColor = Colors.white;
+        icon = null;
+        rankText = "#$rank";
     }
 
-              }
-            },
-            child: Column(
-              children: [
-                // Aperçu média
-                if (post.dataType == 'VIDEO' && post.url_media != null)
-                  _buildVideoPreview(post)
-                else if (post.images != null && post.images!.isNotEmpty)
-                  _buildImagePreview(post)
-                else
-                  _buildDefaultPreview2(post),
-
-                // Description
-                if (post.description != null && post.description!.isNotEmpty)
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      post.description!,
-                      style: TextStyle(color: Colors.grey[300], fontSize: 14),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-
-                // Actions
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.how_to_vote, size: 16, color: Colors.blue),
-                      SizedBox(width: 6),
-                      Text('${post.votesChallenge ?? 0}', style: TextStyle(color: Colors.white)),
-                      SizedBox(width: 16),
-                      Icon(Icons.comment, size: 16, color: Colors.grey),
-                      SizedBox(width: 6),
-                      Text('${post.comments ?? 0}', style: TextStyle(color: Colors.white)),
-                      Spacer(),
-                      Text(
-                        'Voir le post →',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null)
+            Icon(icon, size: 16, color: textColor),
+          if (icon != null) SizedBox(width: 4),
+          Text(
+            rankText,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
             ),
           ),
         ],
       ),
     );
   }
-
   Widget _buildVideoPreview(Post post) {
     return FutureBuilder<Uint8List?>(
       future: _generateThumbnail(post.url_media!),

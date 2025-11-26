@@ -1,56 +1,26 @@
-import 'dart:async';
-import 'dart:math';
-
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
-import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/home_view_model.dart';
-import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/view_models/search_view_model.dart';
-import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/comment_text_field.dart';
-import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:comment_tree/widgets/comment_tree_widget.dart';
-import 'package:comment_tree/widgets/tree_theme_data.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flash/flash.dart';
-import 'package:flash/flash_helper.dart';
-import 'package:flutter/foundation.dart';
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/constant/iconGradient.dart';
-import 'package:afrotok/constant/logo.dart';
-import 'package:afrotok/constant/sizeText.dart';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/services/api.dart';
 import 'package:flutter/material.dart';
-import 'package:badges/badges.dart' as badges;
-import 'package:flutter/services.dart';
-import 'package:flutter_list_view/flutter_list_view.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:fluttertagger/fluttertagger.dart';
-import 'package:hashtagable_v3/widgets/hashtag_text.dart';
 import 'package:intl/intl.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:popover_gtk/popover_gtk.dart';
-import 'package:popup_menu_plus/popup_menu_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:skeletonizer/skeletonizer.dart';
-import 'package:stories_for_flutter/stories_for_flutter.dart';
-import '../../constant/listItemsCarousel.dart';
-import '../../constant/textCustom.dart';
-import '../../models/chatmodels/message.dart';
-import '../../providers/authProvider.dart';
+import '../providers/authProvider.dart';
+import '../providers/userProvider.dart';
 
-
-// Couleurs AfroLook
-const _afroGreen = Color(0xFF2ECC71);
-const _afroDarkGreen = Color(0xFF27AE60);
-const _afroYellow = Color(0xFFF1C40F);
-const _afroBlack = Color(0xFF2C3E50);
-const _afroLightBg = Color(0xFFECF0F1);
-const _afroRed = Color(0xFFE74C3C);
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/component/showUserDetails.dart';
+import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/providers/postProvider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/authProvider.dart';
+import '../providers/userProvider.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -67,13 +37,22 @@ class _PostCommentsState extends State<PostComments> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   PostComment commentSelectedToReply = PostComment();
-  UserData commentRecever = UserData();
   bool replying = false;
   String replyingTo = '';
   String replyUser_pseudo = '';
   String replyUser_id = '';
   bool _isLoading = false;
-  bool sendMessageTap = false;
+  bool _isLoadingMore = false;
+  bool _hasMoreComments = true;
+
+  // Pagination des commentaires
+  DocumentSnapshot? _lastCommentDocument;
+  final int _commentsPageSize = 6;
+
+  // États pour gérer l'expansion des commentaires et réponses
+  final Map<String, bool> _commentExpanded = {};
+  final Map<String, bool> _replyExpanded = {};
+  final Map<String, bool> _showAllReplies = {};
 
   TextEditingController _textController = TextEditingController();
   FocusNode _focusNode = FocusNode();
@@ -83,6 +62,11 @@ class _PostCommentsState extends State<PostComments> {
   bool showUserSuggestions = false;
   String currentSearchQuery = '';
 
+  // Pagination pour les suggestions d'utilisateurs
+  int _userSuggestionsPage = 0;
+  final int _userSuggestionsPageSize = 10;
+  bool _hasMoreUsers = true;
+
   @override
   void initState() {
     super.initState();
@@ -91,7 +75,7 @@ class _PostCommentsState extends State<PostComments> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
     _loadUsers();
-    _loadComments();
+    _loadInitialComments();
 
     _textController.addListener(_onTextChanged);
   }
@@ -114,6 +98,8 @@ class _PostCommentsState extends State<PostComments> {
         setState(() {
           currentSearchQuery = query;
           showUserSuggestions = true;
+          _userSuggestionsPage = 0;
+          _hasMoreUsers = true;
           _filterUsers(query);
         });
       } else {
@@ -129,11 +115,23 @@ class _PostCommentsState extends State<PostComments> {
   }
 
   void _filterUsers(String query) {
+    final filtered = users.where((user) {
+      return user.pseudo!.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
     setState(() {
-      suggestedUsers = users.where((user) {
-        return user.pseudo!.toLowerCase().contains(query.toLowerCase());
-      }).toList();
+      suggestedUsers = filtered.take((_userSuggestionsPage + 1) * _userSuggestionsPageSize).toList();
+      _hasMoreUsers = filtered.length > suggestedUsers.length;
     });
+  }
+
+  void _loadMoreUserSuggestions() {
+    if (_hasMoreUsers) {
+      setState(() {
+        _userSuggestionsPage++;
+        _filterUsers(currentSearchQuery);
+      });
+    }
   }
 
   void _selectUser(UserData user) {
@@ -154,31 +152,107 @@ class _PostCommentsState extends State<PostComments> {
   }
 
   Future<void> _loadUsers() async {
-    final usersList = await userProvider.getAllUsers();
+    final usersList = await userProvider.getUserAbonnes(authProvider.loginUserData.id!);
     setState(() {
       users = usersList;
     });
   }
 
-  Future<void> _loadComments() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadInitialComments() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      comments.clear();
+      _lastCommentDocument = null;
+      _hasMoreComments = true;
+    });
+
     try {
-      final commentsList = await postProvider.getPostCommentsNoStream(widget.post);
-      setState(() {
-        comments = commentsList;
-        _isLoading = false;
-      });
+      await _loadCommentsBatch();
     } catch (e) {
       setState(() => _isLoading = false);
       print('Erreur chargement commentaires: $e');
     }
   }
 
+  Future<void> _loadMoreComments() async {
+    if (_isLoadingMore || !_hasMoreComments) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      await _loadCommentsBatch();
+    } catch (e) {
+      print('Erreur chargement plus de commentaires: $e');
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  Future<void> _loadCommentsBatch() async {
+    Query query = FirebaseFirestore.instance
+        .collection('PostComments')
+        .where("post_id", isEqualTo: widget.post.id)
+        .orderBy('created_at', descending: true)
+        .limit(_commentsPageSize);
+
+    if (_lastCommentDocument != null) {
+      query = query.startAfterDocument(_lastCommentDocument!);
+    }
+
+    final querySnapshot = await query.get();
+
+    if (querySnapshot.docs.isEmpty) {
+      setState(() {
+        _hasMoreComments = false;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _lastCommentDocument = querySnapshot.docs.last;
+
+    List<PostComment> newComments = querySnapshot.docs.map((doc) =>
+        PostComment.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+    // Charger les données utilisateur pour les nouveaux commentaires
+    for (var comment in newComments) {
+      final userData = await _loadUserData(comment.user_id!);
+      comment.user = userData;
+    }
+
+    setState(() {
+      comments.addAll(newComments);
+      _isLoading = false;
+    });
+  }
+
+  Future<UserData?> _loadUserData(String userId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return UserData.fromJson(querySnapshot.docs.first.data() as Map<String, dynamic>);
+      }
+    } catch (e) {
+      print('Erreur chargement user $userId: $e');
+    }
+    return null;
+  }
+
   String formatNumber(int number) {
     if (number < 1000) return number.toString();
-    if (number < 1000000) return "${(number / 1000).toStringAsFixed(1)} k";
-    if (number < 1000000000) return "${(number / 1000000).toStringAsFixed(1)} m";
-    return "${(number / 1000000000).toStringAsFixed(1)} b";
+    if (number < 1000000) return "${(number / 1000).toStringAsFixed(1)}k";
+    return "${(number / 1000000).toStringAsFixed(1)}m";
   }
 
   String formaterDateTime(DateTime dateTime) {
@@ -187,836 +261,128 @@ class _PostCommentsState extends State<PostComments> {
 
     if (difference.inDays < 1) {
       if (difference.inHours < 1) {
-        if (difference.inMinutes < 1) return "à l'instant";
-        return "il y a ${difference.inMinutes} min";
+        if (difference.inMinutes < 1) return "maintenant";
+        return "${difference.inMinutes}m";
       } else {
-        return "il y a ${difference.inHours} h";
+        return "${difference.inHours}h";
       }
     } else if (difference.inDays < 7) {
-      return "il y a ${difference.inDays} j";
+      return "${difference.inDays}j";
     } else {
-      return DateFormat('dd MMM yyyy').format(dateTime);
+      return DateFormat('dd/MM/yy').format(dateTime);
     }
   }
 
-  void _showCommentMenuModalDialog(PostComment postComment) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            'Options',
-            style: TextStyle(color: _afroBlack, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (postComment.user!.id == authProvider.loginUserData.id ||
-                  authProvider.loginUserData.role == UserRole.ADM.name)
-                ListTile(
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _deleteComment(postComment);
-                  },
-                  leading: Icon(Icons.delete, color: _afroRed),
-                  title: Text(
-                    'Supprimer',
-                    style: TextStyle(color: _afroBlack),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showResponseMenuModalDialog(PostComment parentComment, ResponsePostComment response) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            'Options',
-            style: TextStyle(color: _afroBlack, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (response.user_id == authProvider.loginUserData.id ||
-                  authProvider.loginUserData.role == UserRole.ADM.name)
-                ListTile(
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _deleteResponse(parentComment, response);
-                  },
-                  leading: Icon(Icons.delete, color: _afroRed),
-                  title: Text(
-                    'Supprimer',
-                    style: TextStyle(color: _afroBlack),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _deleteComment(PostComment comment) async {
-    setState(() => _isLoading = true);
-
-    comment.status = PostStatus.SUPPRIMER.name;
-    bool success = await postProvider.updateComment(comment);
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      await _loadComments(); // Recharger seulement après suppression
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Commentaire supprimé'),
-          backgroundColor: _afroGreen,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression'),
-          backgroundColor: _afroRed,
-        ),
-      );
-    }
-  }
-
-  Future<void> _deleteResponse(PostComment parentComment, ResponsePostComment response) async {
-    setState(() => _isLoading = true);
-
-    response.status = PostStatus.SUPPRIMER.name;
-    bool success = await postProvider.updateComment(parentComment);
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      await _loadComments(); // Recharger seulement après suppression
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Réponse supprimée'),
-          backgroundColor: _afroGreen,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression'),
-          backgroundColor: _afroRed,
-        ),
-      );
-    }
-  }
-
-  Widget _buildUserHeader() {
-    final post = widget.post;
-    final isCanal = post.canal != null;
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: _afroBlack.withOpacity(0.1),
-            blurRadius: 4,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _afroYellow, width: 2),
-                ),
-                child: CircleAvatar(
-                  radius: 25,
-                  backgroundColor: _afroGreen,
-                  backgroundImage: NetworkImage(
-                    isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
-                  ),
-                  child: (isCanal ? post.canal!.urlImage : post.user!.imageUrl) == null
-                      ? Icon(Icons.person, color: Colors.white)
-                      : null,
-                ),
-              ),
-              if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.verified,
-                      color: _afroYellow,
-                      size: 16,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: _afroBlack,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  isCanal
-                      ? "${formatNumber(post.canal!.usersSuiviId?.length ?? 0)} abonnés"
-                      : "${formatNumber(post.user!.userAbonnesIds?.length ?? 0)} abonnés",
-                  style: TextStyle(
-                    color: _afroBlack.withOpacity(0.6),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostContent() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      margin: EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: _afroLightBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: HashTagText(
-        text: widget.post.description ?? "",
-        decoratedStyle: TextStyle(
-          fontSize: 15,
-          color: _afroDarkGreen,
-          fontWeight: FontWeight.w600,
-        ),
-        basicStyle: TextStyle(
-          fontSize: 14,
-          color: _afroBlack,
-          height: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCommentContent(PostComment pcm) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: _afroBlack.withOpacity(0.05),
-            blurRadius: 2,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () {
-              double w= MediaQuery.of(context).size.width;
-              double h= MediaQuery.of(context).size.height;
-              showUserDetailsModalDialog(pcm.user!!, w, h, context);
-              },
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 15,
-                  backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
-                  backgroundColor: _afroGreen,
-                  child: pcm.user!.imageUrl == null
-                      ? Icon(Icons.person, size: 14, color: Colors.white)
-                      : null,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        "@${pcm.user!.pseudo!}",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: _afroBlack,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      if (pcm.user!.isVerify ?? false)
-                        Icon(Icons.verified, size: 14, color: _afroYellow),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          commentSelectedToReply = pcm;
-                          commentRecever = pcm.user!;
-                          replyUser_id = pcm.user!.id!;
-                          replyUser_pseudo = pcm.user!.pseudo!;
-                          replyingTo = "@${pcm.user!.pseudo}";
-                          replying = true;
-                        });
-                        _focusNode.requestFocus();
-                      },
-                      icon: Icon(Icons.reply, size: 16, color: _afroGreen),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                    IconButton(
-                      onPressed: () => _showCommentMenuModalDialog(pcm),
-                      icon: Icon(Icons.more_vert, size: 16, color: _afroBlack),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 6),
-          HashTagText(
-
-            text: pcm.status == PostStatus.SUPPRIMER.name
-                ? "Commentaire supprimé"
-                : pcm.message!,
-            decoratedStyle: TextStyle(
-              fontSize: 12,
-              color: _afroDarkGreen,
-              fontWeight: FontWeight.w600,
-            ),
-            basicStyle: TextStyle(
-              fontSize: 13,
-              color: pcm.status == PostStatus.SUPPRIMER.name
-                  ? _afroRed
-                  : _afroBlack,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
-            style: TextStyle(
-              fontSize: 10,
-              color: _afroBlack.withOpacity(0.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReplyContent(PostComment pcm, ResponsePostComment rpc) {
-    return Container(
-      padding: EdgeInsets.all(10),
-      margin: EdgeInsets.only(left: 20, bottom: 6),
-      decoration: BoxDecoration(
-        color: _afroLightBg,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () {
-              if(rpc.user!=null){
-                double w= MediaQuery.of(context).size.width;
-                double h= MediaQuery.of(context).size.height;
-                showUserDetailsModalDialog(rpc.user!, w, h, context);
-              }
-            },
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 12,
-                  backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
-                  backgroundColor: _afroGreen,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  "@${rpc.user_pseudo}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: _afroBlack,
-                  ),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  "→ @${rpc.user_reply_pseudo ?? ''}",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _afroBlack.withOpacity(0.6),
-                  ),
-                ),
-                Spacer(),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          commentSelectedToReply = pcm;
-                          commentRecever = pcm.user!;
-                          replyUser_id = rpc.user_id!;
-                          replyUser_pseudo = rpc.user_pseudo!;
-                          replyingTo = "@${rpc.user_pseudo}";
-                          replying = true;
-                        });
-                        _focusNode.requestFocus();
-                      },
-                      icon: Icon(Icons.reply, size: 14, color: _afroGreen),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                    IconButton(
-                      onPressed: () => _showResponseMenuModalDialog(pcm, rpc),
-                      icon: Icon(Icons.more_vert, size: 14, color: _afroBlack),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 4),
-          HashTagText(
-            text: rpc.status == PostStatus.SUPPRIMER.name
-                ? "Réponse supprimée"
-                : rpc.message!,
-            decoratedStyle: TextStyle(
-              fontSize: 11,
-              color: _afroDarkGreen,
-              fontWeight: FontWeight.w600,
-            ),
-            basicStyle: TextStyle(
-              fontSize: 12,
-              color: rpc.status == PostStatus.SUPPRIMER.name
-                  ? _afroRed
-                  : _afroBlack,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
-            style: TextStyle(
-              fontSize: 9,
-              color: _afroBlack.withOpacity(0.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentsList() {
-    if (_isLoading) {
-      return Center(
-        child: LoadingAnimationWidget.fourRotatingDots(
-          color: _afroGreen,
-          size: 40,
-        ),
-      );
-    }
-
-    if (comments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.comment_outlined, color: _afroBlack.withOpacity(0.3), size: 50),
-            SizedBox(height: 12),
-            Text(
-              'Soyez le premier à commenter',
-              style: TextStyle(
-                color: _afroBlack.withOpacity(0.5),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: comments.length,
-      itemBuilder: (context, index) {
-        final comment = comments[index];
-        return Column(
-          children: [
-            _buildCommentContent(comment),
-            if (comment.responseComments != null && comment.responseComments!.isNotEmpty)
-              ...comment.responseComments!.map((reply) =>
-                  _buildReplyContent(comment, reply)
-              ).toList(),
-            Divider(height: 20, color: _afroLightBg),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildUserSuggestions() {
-    if (!showUserSuggestions || suggestedUsers.isEmpty) {
-      return SizedBox();
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: _afroBlack.withOpacity(0.1),
-            blurRadius: 4,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        children: suggestedUsers.take(5).map((user) => ListTile(
-          leading: CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage(user.imageUrl ?? ''),
-            backgroundColor: _afroGreen,
-          ),
-          title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 14)),
-          onTap: () => _selectUser(user),
-        )).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCommentInput() {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: _afroLightBg)),
-      ),
-      child: Column(
-        children: [
-          if (replying)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              margin: EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: _afroYellow.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.reply, color: _afroGreen, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Réponse à $replyingTo",
-                      style: TextStyle(
-                        color: _afroBlack,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 16, color: _afroRed),
-                    onPressed: () {
-                      setState(() {
-                        replying = false;
-                        replyingTo = "";
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          _buildUserSuggestions(),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _afroLightBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    decoration: InputDecoration(
-                      hintText: replying ? 'Répondre...' : 'Ajouter un commentaire...',
-                      hintStyle: TextStyle(color: _afroBlack.withOpacity(0.5)),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      suffixIcon: _textController.text.isNotEmpty
-                          ? IconButton(
-                        icon: Icon(Icons.send, color: _afroGreen),
-                        onPressed: _sendComment,
-                      )
-                          : null,
-                    ),
-                    onSubmitted: (value) => _sendComment(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _sendComment2() async {
-    if (_textController.text.trim().isEmpty) return;
-
-    setState(() => _isLoading = true);
-    final textComment = _textController.text.trim();
-    _textController.clear();
-    _focusNode.unfocus();
-
+  // Fonction pour liker un commentaire
+  Future<void> _likeComment(PostComment comment) async {
     try {
-      bool success = false;
+      final userId = authProvider.loginUserData.id!;
+      final isLiked = comment.users_like_id?.contains(userId) ?? false;
 
-      if (replying) {
-        // Envoyer une réponse
-        final response = ResponsePostComment(
-          user_id: authProvider.loginUserData.id,
-          user_logo_url: authProvider.loginUserData.imageUrl,
-          user_pseudo: authProvider.loginUserData.pseudo,
-          post_comment_id: commentSelectedToReply.id,
-          user_reply_pseudo: replyingTo,
-          message: textComment,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
-
-        commentSelectedToReply.responseComments ??= [];
-        commentSelectedToReply.responseComments!.add(response);
-
-        success = await postProvider.updateComment(commentSelectedToReply);
-
-        if (success) {
-          widget.post.comments = (widget.post.comments ?? 0) + 1;
-          await _sendNotification(replyUser_id, "répondu à votre commentaire", textComment);
-        }
+      if (isLiked) {
+        comment.users_like_id?.remove(userId);
+        comment.likes = (comment.likes ?? 1) - 1;
       } else {
-        // Envoyer un nouveau commentaire
-        final comment = PostComment(
-          user_id: authProvider.loginUserData.id,
-          user: authProvider.loginUserData,
-          post_id: widget.post.id,
-          users_like_id: [],
-          responseComments: [],
-          message: textComment,
-          loves: 0,
-          likes: 0,
-          comments: 0,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
+        comment.users_like_id?.add(userId);
+        comment.likes = (comment.likes ?? 0) + 1;
 
-        success = await postProvider.newComment(comment);
-
-        if (success) {
-          widget.post.comments = (widget.post.comments ?? 0) + 1;
-          await _sendNotification(widget.post.user!.id!, "commenté votre look", textComment);
+        // Envoyer notification au propriétaire du commentaire
+        if (comment.user!.id != userId) {
+          await _sendLikeNotification(comment.user!.id!, comment);
         }
       }
 
-      // Réinitialiser l'état de réponse
-      setState(() {
-        replying = false;
-        replyingTo = "";
-      });
-
-      // Recharger les commentaires seulement après succès
-      if (success) {
-        await _loadComments();
-      }
+      await postProvider.updateComment(comment);
+      setState(() {});
 
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: _afroRed,
-        ),
-      );
+      print('Erreur like commentaire: $e');
     }
   }
-  Future<void> _sendComment() async {
-    if (_textController.text.trim().isEmpty) return;
 
-    setState(() => _isLoading = true);
-    final textComment = _textController.text.trim();
-    _textController.clear();
-    _focusNode.unfocus();
-
+  // Fonction pour liker une réponse
+  Future<void> _likeReply(PostComment parentComment, ResponsePostComment reply) async {
     try {
-      bool success = false;
+      final userId = authProvider.loginUserData.id!;
+      final isLiked = reply.users_like_id?.contains(userId) ?? false;
 
-      if (replying) {
-        // Envoyer une réponse
-        final response = ResponsePostComment(
-          user_id: authProvider.loginUserData.id,
-          user_logo_url: authProvider.loginUserData.imageUrl,
-          user_pseudo: authProvider.loginUserData.pseudo,
-          post_comment_id: commentSelectedToReply.id,
-          user_reply_pseudo: replyingTo,
-          message: textComment,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
-
-        commentSelectedToReply.responseComments ??= [];
-        commentSelectedToReply.responseComments!.add(response);
-
-        success = await postProvider.updateComment(commentSelectedToReply);
-
-        if (success) {
-          await FirebaseFirestore.instance
-              .collection("Posts")
-              .doc(widget.post.id)
-              .update({
-            "comments": FieldValue.increment(1),
-            'popularity': FieldValue.increment(3), // pondération pour un commentaire
-
-          });
-
-          widget.post.comments = (widget.post.comments ?? 0) + 1;
-          await _sendNotification(replyUser_id, "répondu à votre commentaire", textComment);
-        }
+      if (isLiked) {
+        reply.users_like_id?.remove(userId);
+        reply.likes = (reply.likes ?? 1) - 1;
       } else {
-        // Envoyer un nouveau commentaire
-        final comment = PostComment(
-          user_id: authProvider.loginUserData.id,
-          user: authProvider.loginUserData,
-          post_id: widget.post.id,
-          users_like_id: [],
-          responseComments: [],
-          message: textComment,
-          loves: 0,
-          likes: 0,
-          comments: 0,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
+        reply.users_like_id?.add(userId);
+        reply.likes = (reply.likes ?? 0) + 1;
 
-        success = await postProvider.newComment(comment);
-
-        if (success) {
-          await FirebaseFirestore.instance
-              .collection("Posts")
-              .doc(widget.post.id)
-              .update({
-            "comments": FieldValue.increment(1),
-            'popularity': FieldValue.increment(3), // pondération pour un commentaire
-
-          });
-
-          widget.post.comments = (widget.post.comments ?? 0) + 1;
-          await _sendNotification(widget.post.user!.id!, "commenté votre look", textComment);
+        // Envoyer notification au propriétaire de la réponse
+        if (reply.user_id != userId) {
+          await _sendLikeNotification(reply.user_id!, parentComment, isReply: true, reply: reply);
         }
       }
 
-      // Réinitialiser l'état de réponse
-      setState(() {
-        replying = false;
-        replyingTo = "";
-      });
-      addPointsForAction(UserAction.commentaire);
-      // Recharger les commentaires seulement après succès
-      if (success) {
-        await _loadComments();
-      }
+      await postProvider.updateComment(parentComment);
+      setState(() {});
+
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: _afroRed,
-        ),
-      );
+      print('Erreur like réponse: $e');
     }
   }
 
-  Future<void> _sendNotification(String receiverId, String action, String message) async {
+  // Fonction pour envoyer une notification de like
+  Future<void> _sendLikeNotification(String receiverId, PostComment comment, {bool isReply = false, ResponsePostComment? reply}) async {
     try {
-      // Notification au propriétaire du commentaire/post
-      final receiver = await authProvider.getUserById(receiverId);
-      if (receiver.isNotEmpty) {
-        final notif = NotificationData(
-          id: firestore.collection('Notifications').doc().id,
-          titre: "Nouvelle interaction",
-          media_url: authProvider.loginUserData.imageUrl,
-          type: NotificationType.POST.name,
-          description: "@${authProvider.loginUserData.pseudo!} a $action",
-          user_id: authProvider.loginUserData.id,
-          receiver_id: receiverId,
-          post_id: widget.post.id!,
-          post_data_type: PostDataType.COMMENT.name!,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-          status: PostStatus.VALIDE.name,
-        );
+      // 1. Enregistrer dans Firebase
+      final notif = NotificationData(
+        id: firestore.collection('Notifications').doc().id,
+        titre: "Nouveau like",
+        media_url: authProvider.loginUserData.imageUrl,
+        type: NotificationType.POST.name,
+        description: "@${authProvider.loginUserData.pseudo!} a aimé votre ${isReply ? 'réponse' : 'commentaire'}",
+        // user_id: receiverId,
+        user_id: authProvider.loginUserData.id,
+        receiver_id: receiverId,
+        post_id: widget.post.id!,
+        post_data_type: PostDataType.COMMENT.name!,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+        status: PostStatus.VALIDE.name,
+      );
 
-        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
-        await authProvider.sendNotification(
-            userIds: [receiver.first.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: receiverId,
-            message: "@${authProvider.loginUserData.pseudo!} a $action",
-            type_notif: NotificationType.POST.name,
-            post_id: widget.post.id!,
-            post_type: PostDataType.COMMENT.name,
-            chat_id: ''
-        );
-      }
+      // 2. Envoyer la notification push
+       authProvider.getUserById(receiverId).then((value) async {
+         final List<UserData> receiverUser = value;
+         print('send notif receiverUser: ${receiverUser.first.pseudo}');
+         if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+            authProvider.sendNotification(
+               userIds: [receiverUser.first.oneIgnalUserid!],
+               smallImage: authProvider.loginUserData.imageUrl!,
+               send_user_id: authProvider.loginUserData.id!,
+               recever_user_id: receiverId,
+               message: "@${authProvider.loginUserData.pseudo!} a aimé votre ${isReply ? 'réponse' : 'commentaire'}",
+               type_notif: NotificationType.POST.name,
+               post_id: widget.post.id!,
+               post_type: PostDataType.COMMENT.name!,
+               chat_id: ''
+           );
+         }
+       },);
 
-      // Notifications pour les utilisateurs tagués
+    } catch (e) {
+      print('Erreur envoi notification like: $e');
+    }
+  }
+
+  // Fonction pour envoyer des notifications de mention
+  Future<void> _sendMentionNotifications(String message) async {
+    try {
       final mentionedUsers = _extractMentionedUsers(message);
+
       for (final username in mentionedUsers) {
         final user = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
-        if (user.id != null && user.id != receiverId) {
+        if (user.id != null && user.id != authProvider.loginUserData.id) {
+
+          // 1. Enregistrer dans Firebase
           final mentionNotif = NotificationData(
             id: firestore.collection('Notifications').doc().id,
             titre: "Vous avez été mentionné",
@@ -1034,22 +400,24 @@ class _PostCommentsState extends State<PostComments> {
 
           await firestore.collection('Notifications').doc(mentionNotif.id).set(mentionNotif.toJson());
 
-          await authProvider.sendNotification(
-              userIds: [user.oneIgnalUserid!],
-              smallImage: authProvider.loginUserData.imageUrl!,
-              send_user_id: authProvider.loginUserData.id!,
-              recever_user_id: user.id!,
-              message: "@${authProvider.loginUserData.pseudo!} vous a mentionné dans un commentaire",
-              type_notif: NotificationType.MESSAGE.name,
-              post_id: widget.post.id!,
-              post_type: PostDataType.COMMENT.name,
-              chat_id: ''
-          );
+          // 2. Envoyer la notification push
+          if (user.oneIgnalUserid != null) {
+            await authProvider.sendNotification(
+                userIds: [user.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: authProvider.loginUserData.id!,
+                recever_user_id: user.id!,
+                message: "@${authProvider.loginUserData.pseudo!} vous a mentionné dans un commentaire",
+                type_notif: NotificationType.MESSAGE.name,
+                post_id: widget.post.id!,
+                post_type: PostDataType.COMMENT.name!,
+                chat_id: ''
+            );
+          }
         }
       }
-
     } catch (e) {
-      print('Erreur envoi notification: $e');
+      print('Erreur envoi notifications mention: $e');
     }
   }
 
@@ -1059,48 +427,803 @@ class _PostCommentsState extends State<PostComments> {
     return matches.map((match) => match.group(1)!).toList();
   }
 
+  // Widget pour le texte avec mentions en vert
+  Widget _buildMentionText(String text) {
+    final List<TextSpan> spans = [];
+    final RegExp mentionRegex = RegExp(r'@(\w+)');
+    final matches = mentionRegex.allMatches(text);
+    int lastEnd = 0;
+
+    for (final match in matches) {
+      // Texte avant la mention
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastEnd, match.start),
+          style: TextStyle(color: Colors.black87, fontSize: 13),
+        ));
+      }
+
+      // La mention en vert
+      spans.add(TextSpan(
+        text: match.group(0),
+        style: TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.w500),
+      ));
+
+      lastEnd = match.end;
+    }
+
+    // Texte après la dernière mention
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastEnd),
+        style: TextStyle(color: Colors.black87, fontSize: 13),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+      maxLines: _commentExpanded[text] ?? false ? null : 2,
+      overflow: _commentExpanded[text] ?? false ? TextOverflow.visible : TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildPostHeader() {
+    final post = widget.post;
+    final isCanal = post.canal != null;
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              double w = MediaQuery.of(context).size.width;
+              double h = MediaQuery.of(context).size.height;
+              if(!isCanal)
+                showUserDetailsModalDialog( post.user!, w, h, context);
+            },
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: NetworkImage(
+                    isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
+                  ),
+                ),
+                if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Icon(Icons.verified, color: Colors.blue, size: 14),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!)),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_forward_ios, size: 16),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (context) => DetailsPost(post: widget.post),
+              ));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentItem(PostComment comment) {
+    final hasReplies = comment.responseComments != null && comment.responseComments!.isNotEmpty;
+    final repliesCount = comment.responseComments?.length ?? 0;
+    final showAll = _showAllReplies[comment.id!] ?? false;
+    final displayedReplies = showAll ? comment.responseComments! : (hasReplies ? [comment.responseComments!.first] : []);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          // Commentaire principal
+          _buildCommentContent(comment),
+
+          // Réponses
+          if (hasReplies) ...[
+            ...displayedReplies.map((reply) => _buildReplyContent(comment, reply)),
+
+            // Bouton pour voir plus/moins de réponses
+            if (repliesCount > 1)
+              Padding(
+                padding: EdgeInsets.only(left: 40, top: 4),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showAllReplies[comment.id!] = !showAll;
+                    });
+                  },
+                  child: Text(
+                    showAll ? 'Masquer les réponses' : 'Voir ${repliesCount - 1} réponse(s) supplémentaire(s)',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentContent(PostComment pcm) {
+    final isLiked = pcm.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
+    final likeCount = pcm.likes ?? 0;
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  double w = MediaQuery.of(context).size.width;
+                  double h = MediaQuery.of(context).size.height;
+                  showUserDetailsModalDialog(pcm.user!!, w, h, context);
+                },
+                child: CircleAvatar(
+                  radius: 16,
+                  backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
+                  backgroundColor: Colors.grey.shade300,
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "@${pcm.user!.pseudo!}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        if (pcm.user!.isVerify ?? false)
+                          Icon(Icons.verified, size: 14, color: Colors.blue),
+                        Spacer(),
+                        Text(
+                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    _buildMentionText(pcm.message!),
+                    if ((pcm.message ?? '').length > 100)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _commentExpanded[pcm.message!] = !(_commentExpanded[pcm.message!] ?? false);
+                          });
+                        },
+                        child: Text(
+                          _commentExpanded[pcm.message!] ?? false ? 'Voir moins' : 'Voir plus',
+                          style: TextStyle(
+                            color: Colors.blue.shade600,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              // Bouton Like
+              GestureDetector(
+                onTap: () => _likeComment(pcm),
+                child: Row(
+                  children: [
+                    Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      size: 16,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      formatNumber(likeCount),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 16),
+              // Bouton Répondre
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    commentSelectedToReply = pcm;
+                    replyUser_id = pcm.user!.id!;
+                    replyUser_pseudo = pcm.user!.pseudo!;
+                    replyingTo = "@${pcm.user!.pseudo}";
+                    replying = true;
+                  });
+                  _focusNode.requestFocus();
+                },
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 16, color: Colors.grey.shade600),
+                    SizedBox(width: 4),
+                    Text(
+                      'Répondre',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Spacer(),
+              // Menu options
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 16),
+                itemBuilder: (context) => [
+                  if (pcm.user!.id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 16),
+                          SizedBox(width: 8),
+                          Text('Supprimer'),
+                        ],
+                      ),
+                    ),
+                ],
+                onSelected: (value) async {
+                  if (value == 'delete') {
+                    await _deleteComment(pcm);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyContent(PostComment pcm, ResponsePostComment rpc) {
+    final isLiked = rpc.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
+    final likeCount = rpc.likes ?? 0;
+
+    return Container(
+      margin: EdgeInsets.only(left: 40, top: 4),
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (rpc.user != null) {
+                    double w = MediaQuery.of(context).size.width;
+                    double h = MediaQuery.of(context).size.height;
+                    showUserDetailsModalDialog(rpc.user!, w, h, context);
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 14,
+                  backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
+                  backgroundColor: Colors.grey.shade300,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "@${rpc.user_pseudo}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.reply, size: 12, color: Colors.grey),
+                              SizedBox(width: 2),
+                              Text(
+                                "@${rpc.user_reply_pseudo}",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        Spacer(),
+                        Text(
+                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    _buildMentionText(rpc.message!),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6),
+          Row(
+            children: [
+              // Bouton Like
+              GestureDetector(
+                onTap: () => _likeReply(pcm, rpc),
+                child: Row(
+                  children: [
+                    Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      size: 14,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      formatNumber(likeCount),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12),
+              // Bouton Répondre
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    commentSelectedToReply = pcm;
+                    replyUser_id = rpc.user_id!;
+                    replyUser_pseudo = rpc.user_pseudo!;
+                    replyingTo = "@${rpc.user_pseudo}";
+                    replying = true;
+                  });
+                  _focusNode.requestFocus();
+                },
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 14, color: Colors.grey.shade600),
+                    SizedBox(width: 4),
+                    Text(
+                      'Répondre',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Spacer(),
+              // Menu options
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 14),
+                itemBuilder: (context) => [
+                  if (rpc.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 14),
+                          SizedBox(width: 8),
+                          Text('Supprimer'),
+                        ],
+                      ),
+                    ),
+                ],
+                onSelected: (value) async {
+                  if (value == 'delete') {
+                    await _deleteResponse(pcm, rpc);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserSuggestions() {
+    if (!showUserSuggestions || suggestedUsers.isEmpty) {
+      return SizedBox();
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      constraints: BoxConstraints(maxHeight: 300),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: suggestedUsers.length + (_hasMoreUsers ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == suggestedUsers.length) {
+            return ListTile(
+              title: Center(
+                child: Text(
+                  'Charger plus...',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+              onTap: _loadMoreUserSuggestions,
+            );
+          }
+
+          final user = suggestedUsers[index];
+          return ListTile(
+            dense: true,
+            leading: CircleAvatar(
+              radius: 16,
+              backgroundImage: NetworkImage(user.imageUrl ?? ''),
+            ),
+            title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 13)),
+            onTap: () => _selectUser(user),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCommentInput() {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Column(
+        children: [
+          if (replying)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.reply, color: Colors.blue, size: 14),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      "Réponse à $replyingTo",
+                      style: TextStyle(
+                        color: Colors.blue.shade800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        replying = false;
+                        replyingTo = "";
+                      });
+                    },
+                    child: Icon(Icons.close, size: 14, color: Colors.blue.shade800),
+                  ),
+                ],
+              ),
+            ),
+          _buildUserSuggestions(),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      hintText: replying ? 'Répondre...' : 'Ajouter un commentaire...',
+                      hintStyle: TextStyle(fontSize: 13),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      suffixIcon: _textController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(Icons.send, color: Colors.blue, size: 18),
+                        onPressed: _sendComment,
+                      )
+                          : null,
+                    ),
+                    onSubmitted: (value) => _sendComment(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendComment() async {
+    if (_textController.text.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+    final textComment = _textController.text.trim();
+    _textController.clear();
+    _focusNode.unfocus();
+
+    try {
+      bool success = false;
+      String receiverId = '';
+      String action = '';
+
+      if (replying) {
+        final response = ResponsePostComment(
+          user_id: authProvider.loginUserData.id,
+          user_logo_url: authProvider.loginUserData.imageUrl,
+          user_pseudo: authProvider.loginUserData.pseudo,
+          post_comment_id: commentSelectedToReply.id,
+          user_reply_pseudo: replyUser_pseudo,
+          message: textComment,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        commentSelectedToReply.responseComments ??= [];
+        commentSelectedToReply.responseComments!.add(response);
+
+        success = await postProvider.updateComment(commentSelectedToReply);
+        receiverId = replyUser_id;
+        action = "répondu à votre commentaire";
+      } else {
+        final comment = PostComment(
+          user_id: authProvider.loginUserData.id,
+          user: authProvider.loginUserData,
+          post_id: widget.post.id,
+          users_like_id: [],
+          responseComments: [],
+          message: textComment,
+          loves: 0,
+          likes: 0,
+          comments: 0,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        success = await postProvider.newComment(comment);
+        receiverId = widget.post.user!.id!;
+        action = "commenté votre publication";
+      }
+
+      if (success) {
+        await FirebaseFirestore.instance
+            .collection("Posts")
+            .doc(widget.post.id)
+            .update({
+          "comments": FieldValue.increment(1),
+        });
+
+        // Envoyer notification au propriétaire du commentaire/post
+        await _sendCommentNotification(receiverId, action, textComment);
+
+        // Envoyer notifications pour les mentions
+        await _sendMentionNotifications(textComment);
+      }
+
+      setState(() {
+        replying = false;
+        replyingTo = "";
+      });
+
+      if (success) {
+        // Recharger les commentaires depuis le début
+        await _loadInitialComments();
+      }
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('Erreur envoi commentaire: $e');
+    }
+  }
+
+  // Fonction pour envoyer une notification de commentaire/réponse
+  Future<void> _sendCommentNotification(String receiverId, String action, String message) async {
+    try {
+      // 1. Enregistrer dans Firebase
+      final notif = NotificationData(
+        id: firestore.collection('Notifications').doc().id,
+        titre: "Nouvelle interaction",
+        media_url: authProvider.loginUserData.imageUrl,
+        type: NotificationType.POST.name,
+        description: "@${authProvider.loginUserData.pseudo!} a $action",
+        user_id: authProvider.loginUserData.id,
+        receiver_id: receiverId,
+        post_id: widget.post.id!,
+        post_data_type: PostDataType.COMMENT.name!,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+        status: PostStatus.VALIDE.name,
+      );
+
+      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+
+      // 2. Envoyer la notification push
+      final receiverUser = await authProvider.getUserById(receiverId);
+      if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
+        await authProvider.sendNotification(
+            userIds: [receiverUser.first.oneIgnalUserid!],
+            smallImage: authProvider.loginUserData.imageUrl!,
+            send_user_id: authProvider.loginUserData.id!,
+            recever_user_id: receiverId,
+            message: "@${authProvider.loginUserData.pseudo!} a $action",
+            type_notif: NotificationType.POST.name,
+            post_id: widget.post.id!,
+            post_type: PostDataType.COMMENT.name!,
+            chat_id: ''
+        );
+      }
+    } catch (e) {
+      print('Erreur envoi notification commentaire: $e');
+    }
+  }
+
+  Future<void> _deleteComment(PostComment comment) async {
+    setState(() => _isLoading = true);
+    comment.status = PostStatus.SUPPRIMER.name;
+    bool success = await postProvider.updateComment(comment);
+    setState(() => _isLoading = false);
+
+    if (success) {
+      await _loadInitialComments();
+    }
+  }
+
+  Future<void> _deleteResponse(PostComment parentComment, ResponsePostComment response) async {
+    setState(() => _isLoading = true);
+    response.status = PostStatus.SUPPRIMER.name;
+    bool success = await postProvider.updateComment(parentComment);
+    setState(() => _isLoading = false);
+
+    if (success) {
+      await _loadInitialComments();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: _afroBlack),
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Commentaires',
-          style: TextStyle(
-            color: _afroBlack,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
       ),
       body: Column(
         children: [
+          _buildPostHeader(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildUserHeader(),
-                  SizedBox(height: 12),
-                  _buildPostContent(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Commentaires (${widget.post.comments ?? 0})',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: _afroBlack,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                  _loadMoreComments();
+                }
+                return false;
+              },
+              child: _isLoading && comments.isEmpty
+                  ? Center(child: CircularProgressIndicator())
+                  : comments.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.comment_outlined, size: 50, color: Colors.grey.shade400),
+                    SizedBox(height: 12),
+                    Text(
+                      'Aucun commentaire',
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
-                  ),
-                  SizedBox(height: 12),
-                  _buildCommentsList(),
-                ],
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                padding: EdgeInsets.all(8),
+                itemCount: comments.length + (_hasMoreComments ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == comments.length) {
+                    return _isLoadingMore
+                        ? Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                        : SizedBox.shrink();
+                  }
+                  return _buildCommentItem(comments[index]);
+                },
               ),
             ),
           ),
@@ -1110,3 +1233,6 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 }
+
+
+

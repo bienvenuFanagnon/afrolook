@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 110;
+  late int app_version_code = 112;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1633,7 +1633,7 @@ class UserAuthProvider extends ChangeNotifier {
 
         printVm(
             'app  data*** ');
-        printVm(appDefaultData.toJson());
+        // printVm(appDefaultData.toJson());
         oneSignalUrl = appDefaultData.one_signal_app_url;
         applogo = appDefaultData.app_logo;
         oneSignalAppId = appDefaultData.one_signal_app_id; // Replace with your app ID

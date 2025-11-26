@@ -401,8 +401,66 @@ setMessageNonLu(int nbr){
     //notifyListeners();
     return hasData;
   }
+  Future<List<UserData>> updateTopUsersPopularity(AppDefaultData appData) async {
+    List<UserData> topUsers = [];
 
-  Future<List<UserData>> getAllUsers() async {
+    try {
+      // 🔥 Vérifier que appTotalPoints n'est pas nul ou zéro
+      if (appData.appTotalPoints == 0) {
+        print("❌ ERREUR : appTotalPoints = 0, impossible de calculer la popularité.");
+        return [];
+      }
+
+      // 📌 Récupérer Top 10
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .orderBy('totalPoints', descending: true)
+          .limit(10)
+          .get();
+
+      topUsers = querySnapshot.docs
+          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+      // 📌 Mise à jour simultanée avec Batch
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      for (UserData user in topUsers) {
+        print("user totalPoints : ${user.totalPoints}");
+        int userPoints = user.totalPoints ?? 0;
+
+        // 🧮 Calcul de popularité (0 à 1)
+        double popularite = (userPoints / appData.appTotalPoints)*100;
+
+        // Limiter à 5 chiffres après virgule
+        popularite = double.parse(popularite.toStringAsFixed(2));
+
+        // 📌 Référence Firestore
+        DocumentReference userRef =
+        FirebaseFirestore.instance.collection('Users').doc(user.id);
+        print("user totalPoints popularite: ${popularite}");
+
+        batch.update(userRef, {
+          "popularite": popularite,
+        });
+
+        user.popularite = popularite; // mettre à jour localement aussi
+      }
+
+      // 🚀 Lancer l’update
+      await batch.commit();
+
+      print("🔥 Popularité mise à jour pour les Top 10 utilisateurs.");
+
+      return topUsers;
+
+    } catch (e) {
+      print("❌ Erreur updateTopUsersPopularity : $e");
+      return [];
+    }
+  }
+
+  Future<List<UserData>> getTopAfrolookeur() async {
 
     listAllUsers = [];
     bool hasData=false;
@@ -411,9 +469,9 @@ setMessageNonLu(int nbr){
       FirebaseFirestore.instance.collection('Users');
       // Get docs from collection reference
       QuerySnapshot querySnapshotUser = await userCollect
-      // .where("id",isNotEqualTo: currentUserId)
-      //     .orderBy('point_contribution', descending: true)
-          .orderBy('popularite', descending: true)
+
+          .orderBy('totalPoints', descending: true)
+          // .orderBy('popularite', descending: true)
           .limit(10)
           .get();
 
@@ -439,6 +497,53 @@ setMessageNonLu(int nbr){
       return [];
     }
 
+  }
+  Future<List<UserData>> getUserAbonnes(String userId) async {
+    try {
+      // 1. Récupérer l’utilisateur
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .get();
+
+      if (!userDoc.exists) return [];
+
+      Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+
+      // 2. Récupérer la liste des IDs abonnés
+      List<String> abonnesIds = List<String>.from(data['userAbonnesIds'] ?? []);
+
+      if (abonnesIds.isEmpty) return [];
+
+      // 3. Limiter à 1000 max
+      if (abonnesIds.length > 1000) {
+        abonnesIds = abonnesIds.sublist(0, 1000);
+      }
+
+      // 4. Firestore limitation: IN maximum 10 (ou 30 selon config)
+      // Donc on doit faire des batches
+      List<UserData> abonnesList = [];
+
+      const int batchSize = 10;
+      for (var i = 0; i < abonnesIds.length; i += batchSize) {
+        var batchIds = abonnesIds.skip(i).take(batchSize).toList();
+
+        QuerySnapshot batchSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .where('id', whereIn: batchIds)
+            .get();
+
+        abonnesList.addAll(
+          batchSnapshot.docs.map((doc) =>
+              UserData.fromJson(doc.data() as Map<String, dynamic>)),
+        );
+      }
+
+      return abonnesList;
+    } catch (e) {
+      print("Erreur getUserAbonnes: $e");
+      return [];
+    }
   }
 
   Future<List<UserData>> getChallengeUsers(

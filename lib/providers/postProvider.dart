@@ -3058,7 +3058,7 @@ class PostProvider extends ChangeNotifier {
       return false;
     }
   }
-  Future<List<PostComment>> getPostCommentsNoStream(Post p) async{
+  Future<List<PostComment>> getPostCommentsNoStream2(Post p) async{
     List<PostComment> postComment = [];
     listConstpostsComment = [];
     CollectionReference userCollect =
@@ -3097,6 +3097,60 @@ class PostProvider extends ChangeNotifier {
     //notifyListeners();
       return listConstpostsComment;
 
+  }
+  Future<List<PostComment>> getPostCommentsNoStream(Post p, {DocumentSnapshot? lastDocument, int limit = 6}) async {
+    List<PostComment> postComments = [];
+
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('PostComments')
+          .where("post_id", isEqualTo: p.id)
+          // .where("status", isNotEqualTo: PostStatus.SUPPRIMER.name)
+          .orderBy('created_at', descending: true)
+          .limit(limit);
+
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+
+      QuerySnapshot querySnapshot = await query.get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return [];
+      }
+
+      postComments = querySnapshot.docs.map((doc) =>
+          PostComment.fromJson(doc.data() as Map<String, dynamic>)).toList();
+
+      // Charger les données utilisateur pour chaque commentaire
+      for (var comment in postComments) {
+        final userData = await _loadUserData(comment.user_id!);
+        comment.user = userData;
+      }
+
+      return postComments;
+
+    } catch (e) {
+      print('Erreur chargement commentaires: $e');
+      return [];
+    }
+  }
+
+  Future<UserData?> _loadUserData(String userId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where("id", isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return UserData.fromJson(querySnapshot.docs.first.data());
+      }
+    } catch (e) {
+      print('Erreur chargement user $userId: $e');
+    }
+    return null;
   }
 
   Future<List<PostComment>> getStoryCommentsNoStream(WhatsappStory w) async{

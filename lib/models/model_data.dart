@@ -835,7 +835,7 @@ class UserData {
         ?.map((v) => v.toString())
         .toList() ?? [];
     lastNotificationTime = json['lastNotificationTime'] ?? 0;
-    // totalPoints = json['totalPoints'] ?? 0;
+    totalPoints = json['totalPoints'] ?? 0;
   }
 
 
@@ -2798,7 +2798,8 @@ class ResponsePostComment {
   String? message;
   String? status;
   UserData? user;
-
+  List<String>? users_like_id = []; // Ajouté pour les likes
+  int? likes = 0; // Ajouté pour le compteur de likes
   int? createdAt;
   int? updatedAt;
 
@@ -2811,9 +2812,10 @@ class ResponsePostComment {
     this.user_reply_pseudo = '',
     this.status = '',
     required this.user_id,
+    this.users_like_id,
+    this.likes = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
-    // required this.user,
   });
 
   ResponsePostComment.fromJson(Map<String, dynamic> json) {
@@ -2827,6 +2829,8 @@ class ResponsePostComment {
     user_reply_pseudo = json['user_reply_pseudo'] == null ? "" : json['user_reply_pseudo'];
     user_id = json['user_id'] == null ? "" : json['user_id'];
     status = json['status'] == null ? "" : json['status'];
+    users_like_id = json['users_like_id'] == null ? [] : json['users_like_id'].cast<String>();
+    likes = json['likes'] ?? 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -2841,10 +2845,69 @@ class ResponsePostComment {
     data['user_logo_url'] = this.user_logo_url;
     data['post_comment_id'] = this.post_comment_id;
     data['user_id'] = this.user_id;
+    data['users_like_id'] = this.users_like_id;
+    data['likes'] = this.likes;
 
     return data;
   }
 }
+// class ResponsePostComment {
+//   String? id;
+//   String? post_comment_id;
+//   String? user_id;
+//   String? user_logo_url;
+//   String? user_pseudo;
+//   String? user_reply_pseudo;
+//   String? message;
+//   String? status;
+//   UserData? user;
+//
+//   int? createdAt;
+//   int? updatedAt;
+//
+//   ResponsePostComment({
+//     this.id = '',
+//     this.message = '',
+//     this.user_pseudo = '',
+//     this.user_logo_url = '',
+//     this.post_comment_id = '',
+//     this.user_reply_pseudo = '',
+//     this.status = '',
+//     required this.user_id,
+//     this.createdAt = 0,
+//     this.updatedAt = 0,
+//     // required this.user,
+//   });
+//
+//   ResponsePostComment.fromJson(Map<String, dynamic> json) {
+//     id = json['id'];
+//     createdAt = json['created_at'];
+//     updatedAt = json['updated_at'];
+//     message = json['message'];
+//     user_pseudo = json['user_pseudo'];
+//     user_logo_url = json['user_logo_url'];
+//     post_comment_id = json['post_comment_id'];
+//     user_reply_pseudo = json['user_reply_pseudo'] == null ? "" : json['user_reply_pseudo'];
+//     user_id = json['user_id'] == null ? "" : json['user_id'];
+//     status = json['status'] == null ? "" : json['status'];
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     data['id'] = this.id;
+//     data['created_at'] = this.createdAt;
+//     data['updated_at'] = this.updatedAt;
+//     data['message'] = this.message;
+//     data['status'] = this.status;
+//     data['user_pseudo'] = this.user_pseudo;
+//     data['user_reply_pseudo'] = this.user_reply_pseudo;
+//     data['user_logo_url'] = this.user_logo_url;
+//     data['post_comment_id'] = this.post_comment_id;
+//     data['user_id'] = this.user_id;
+//
+//     return data;
+//   }
+// }
 
 class Information {
   String? id;
@@ -3032,7 +3095,6 @@ class Annonce {
     return data;
   }
 }
-
 class PostComment {
   String? id;
   String? user_id;
@@ -3041,7 +3103,7 @@ class PostComment {
   String? message;
   int? createdAt;
   int? updatedAt;
-  List<int>? users_like_id = [];
+  List<String>? users_like_id = []; // Changé de List<int> à List<String>
 
   int? comments = 0;
   int? loves = 0;
@@ -3075,8 +3137,7 @@ class PostComment {
     message = json['message'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
-    users_like_id =
-        json['users_like_id'] == null ? [] : json['users_like_id'].cast<int>();
+    users_like_id = json['users_like_id'] == null ? [] : json['users_like_id'].cast<String>(); // Changé pour String
     loves = json['loves'];
     likes = json['likes'];
     if (json['responseComments'] != null) {
@@ -3098,15 +3159,89 @@ class PostComment {
     data['post_id'] = this.post_id;
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
-    data['responseComments'] =
-        responseComments!.map((response) => response.toJson()).toList();
-
+    data['responseComments'] = responseComments != null
+        ? responseComments!.map((response) => response.toJson()).toList()
+        : [];
     data['loves'] = this.loves;
     data['likes'] = this.likes;
 
     return data;
   }
 }
+// class PostComment {
+//   String? id;
+//   String? user_id;
+//   String? post_id;
+//   String? status;
+//   String? message;
+//   int? createdAt;
+//   int? updatedAt;
+//   List<int>? users_like_id = [];
+//
+//   int? comments = 0;
+//   int? loves = 0;
+//   int? likes = 0;
+//   UserData? user;
+//   List<ResponsePostComment>? responseComments = [];
+//   List<Message>? replycommentaires = [];
+//
+//   PostComment({
+//     this.id,
+//     this.comments,
+//     this.users_like_id,
+//     this.user_id,
+//     this.status,
+//     this.message,
+//     this.post_id,
+//     this.responseComments,
+//     this.loves,
+//     this.likes,
+//     this.createdAt,
+//     this.updatedAt,
+//     this.user,
+//   });
+//
+//   PostComment.fromJson(Map<String, dynamic> json) {
+//     id = json['id'];
+//     comments = json['comments'];
+//     user_id = json['user_id'];
+//     status = json['status'];
+//     post_id = json['post_id'];
+//     message = json['message'];
+//     createdAt = json['created_at'];
+//     updatedAt = json['updated_at'];
+//     users_like_id =
+//         json['users_like_id'] == null ? [] : json['users_like_id'].cast<int>();
+//     loves = json['loves'];
+//     likes = json['likes'];
+//     if (json['responseComments'] != null) {
+//       responseComments = <ResponsePostComment>[];
+//       json['responseComments'].forEach((v) {
+//         responseComments!.add(new ResponsePostComment.fromJson(v));
+//       });
+//     }
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     data['id'] = this.id;
+//     data['comments'] = this.comments;
+//     data['user_id'] = this.user_id;
+//     data['status'] = this.status;
+//     data['message'] = this.message;
+//     data['users_like_id'] = this.users_like_id;
+//     data['post_id'] = this.post_id;
+//     data['created_at'] = this.createdAt;
+//     data['updated_at'] = this.updatedAt;
+//     data['responseComments'] =
+//         responseComments!.map((response) => response.toJson()).toList();
+//
+//     data['loves'] = this.loves;
+//     data['likes'] = this.likes;
+//
+//     return data;
+//   }
+// }
 
 class Transactionunk {
   final DateTime date;

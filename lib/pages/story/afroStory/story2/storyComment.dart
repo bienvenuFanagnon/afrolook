@@ -886,9 +886,9 @@ class _StoryCommentsState extends State<StoryComments> with TickerProviderStateM
   List<UserData> users=[];
   @override
   void initState() {
-    userProvider.getAllUsers().then((users2) {
-      users=users2;
-    },);
+    // userProvider.getAllUsers().then((users2) {
+    //   users=users2;
+    // },);
     super.initState();
     _focusNode.addListener(_focusListener);
     _animationController = AnimationController(

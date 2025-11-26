@@ -19,7 +19,8 @@ class ChroniqueProvider with ChangeNotifier {
     File? mediaFile,
     String? backgroundColor,
     required Function(double) onProgress,
-  }) async {
+  }) async
+  {
     try {
       String? mediaUrl;
       double? fileSize;
@@ -73,6 +74,26 @@ class ChroniqueProvider with ChangeNotifier {
       throw Exception('Erreur lors de la publication: $error');
     }
   }
+// Dans ChroniqueProvider
+  Future<int> getLikesCount(String chroniqueId) async {
+    try {
+      final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        int likeCount = data['likeCount'] ?? 0;
+        int loveCount = data['loveCount'] ?? 0;
+
+        // Retourner la somme des likes et loves
+        return likeCount + loveCount;
+      }
+      return 0;
+    } catch (e) {
+      print('Erreur lors de la récupération du nombre de likes: $e');
+      return 0;
+    }
+  }
+
 
   // Upload média vers Firebase Storage
   Future<String> _uploadMedia(File file, Function(double) onProgress) async {
@@ -348,8 +369,58 @@ class ChroniqueProvider with ChangeNotifier {
       throw Exception('Erreur suppression message: $error');
     }
   }
-  // MESSAGES
-  // MESSAGES
+// Dans ChroniqueProvider - remplacez les fonctions de like de message
+  Future<void> likeMessage(String messageId, String userId) async {
+    try {
+      final messageRef = _firestore.collection('chronique_messages').doc(messageId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(messageRef);
+
+        if (doc.exists) {
+          final data = doc.data()!;
+          List<String> likers = List<String>.from(data['likers'] ?? []);
+          int likeCount = data['likeCount'] ?? 0;
+
+          if (!likers.contains(userId)) {
+            likers.add(userId);
+            likeCount++;
+
+            transaction.update(messageRef, {
+              'likers': likers,
+              'likeCount': likeCount,
+            });
+          }
+        }
+      });
+
+      notifyListeners();
+    } catch (e) {
+      print('Erreur lors du like du message: $e');
+      throw e;
+    }
+  }
+
+  Future<bool> hasLikedMessage(String messageId, String userId) async {
+    try {
+      final doc = await _firestore
+          .collection('chronique_messages')
+          .doc(messageId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        List<String> likers = List<String>.from(data['likers'] ?? []);
+        return likers.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Erreur lors de la vérification du like message: $e');
+      return false;
+    }
+  }
+
+// Modifiez aussi la fonction addMessage pour inclure les champs de like
   Future<void> addMessage({
     required String chroniqueId,
     required String userId,
@@ -369,9 +440,10 @@ class ChroniqueProvider with ChangeNotifier {
         userImageUrl: userImageUrl,
         message: message,
         createdAt: Timestamp.now(),
+        likeCount: 0,
+        likers: [],
       );
 
-      // Utiliser une transaction pour garantir la cohérence des données
       await _firestore.runTransaction((transaction) async {
         // Ajouter le message
         final messageRef = _firestore.collection('chronique_messages').doc();
@@ -388,34 +460,104 @@ class ChroniqueProvider with ChangeNotifier {
       throw Exception('Erreur ajout message: $error');
     }
   }
-  Future<void> addMessage2({
-    required String chroniqueId,
-    required String userId,
-    required String userPseudo,
-    required String userImageUrl,
-    required String message,
-  }) async {
-    try {
-      if (message.length > 20) {
-        throw Exception('Le message ne doit pas dépasser 20 caractères');
-      }
+//   // MESSAGES
+//   Future<void> addMessage({
+//     required String chroniqueId,
+//     required String userId,
+//     required String userPseudo,
+//     required String userImageUrl,
+//     required String message,
+//   }) async
+//   {
+//     try {
+//       if (message.length > 20) {
+//         throw Exception('Le message ne doit pas dépasser 20 caractères');
+//       }
+//
+//       final chroniqueMessage = ChroniqueMessage(
+//         chroniqueId: chroniqueId,
+//         userId: userId,
+//         userPseudo: userPseudo,
+//         userImageUrl: userImageUrl,
+//         message: message,
+//         createdAt: Timestamp.now(),
+//       );
+//
+//       // Utiliser une transaction pour garantir la cohérence des données
+//       await _firestore.runTransaction((transaction) async {
+//         // Ajouter le message
+//         final messageRef = _firestore.collection('chronique_messages').doc();
+//         transaction.set(messageRef, chroniqueMessage.toMap());
+//
+//         // Mettre à jour le compteur de commentaires dans la chronique
+//         final chroniqueRef = _firestore.collection('chroniques').doc(chroniqueId);
+//         transaction.update(chroniqueRef, {
+//           'commentCount': FieldValue.increment(1),
+//         });
+//       });
+//
+//     } catch (error) {
+//       throw Exception('Erreur ajout message: $error');
+//     }
+//   }
+//
+// // Dans ChroniqueProvider
+//   Future<void> likeMessage(String chroniqueId, String messageId, String userId) async {
+//     try {
+//       final messageRef = _firestore
+//           .collection('chroniques')
+//           .doc(chroniqueId)
+//           .collection('messages')
+//           .doc(messageId);
+//
+//       await _firestore.runTransaction((transaction) async {
+//         final doc = await transaction.get(messageRef);
+//
+//         if (doc.exists) {
+//           final data = doc.data()!;
+//           List<String> likers = List<String>.from(data['likers'] ?? []);
+//           int likeCount = data['likeCount'] ?? 0;
+//
+//           if (!likers.contains(userId)) {
+//             likers.add(userId);
+//             likeCount++;
+//
+//             transaction.update(messageRef, {
+//               'likers': likers,
+//               'likeCount': likeCount,
+//             });
+//           }
+//         }
+//       });
+//
+//       notifyListeners();
+//     } catch (e) {
+//       print('Erreur lors du like du message: $e');
+//       throw e;
+//     }
+//   }
+//
+//   Future<bool> hasLikedMessage(String chroniqueId, String messageId, String userId) async {
+//     try {
+//       final doc = await _firestore
+//           .collection('chroniques')
+//           .doc(chroniqueId)
+//           .collection('messages')
+//           .doc(messageId)
+//           .get();
+//
+//       if (doc.exists) {
+//         final data = doc.data()!;
+//         List<String> likers = List<String>.from(data['likers'] ?? []);
+//         return likers.contains(userId);
+//       }
+//       return false;
+//     } catch (e) {
+//       print('Erreur lors de la vérification du like message: $e');
+//       return false;
+//     }
+//   }
 
-      final chroniqueMessage = ChroniqueMessage(
-        chroniqueId: chroniqueId,
-        userId: userId,
-        userPseudo: userPseudo,
-        userImageUrl: userImageUrl,
-        message: message,
-        createdAt: Timestamp.now(),
-      );
-
-      await _firestore
-          .collection('chronique_messages')
-          .add(chroniqueMessage.toMap());
-    } catch (error) {
-      throw Exception('Erreur ajout message: $error');
-    }
-  }
 
   Stream<List<ChroniqueMessage>> getChroniqueMessages(String chroniqueId) {
     return _firestore

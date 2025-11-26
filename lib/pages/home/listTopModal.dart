@@ -295,7 +295,7 @@ class TopFiveUserItem extends StatelessWidget {
                     Icon(Icons.star, size: 12, color: Colors.yellow[700]),
                     SizedBox(width: 4),
                     Text(
-                      "${(user.popularite ?? 0).toStringAsFixed(1)}%",
+                      "${(user.popularite ?? 0).toStringAsFixed(2)}%",
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.grey[400],
@@ -2895,15 +2895,17 @@ class AfrolookInfoModal {
 // Modifiez la classe AdvancedModalManager pour inclure les challenges
 
 // Modifiez la classe AdvancedModalManager pour inclure le modal info en premier
-class AdvancedModalManager2 {
+class AdvancedModalManager {
   static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';
   static const String _lastInfoModalKey = 'last_info_modal';
+  static const String _lastTopFiveModalKey = 'last_top_five_modal'; // Nouvelle clé
   static const String _lastModalTypeKey = 'last_modal_type';
   static const int _modalIntervalHours = 4;
   static const int _infoModalIntervalHours = 24; // Une fois par jour
   static const int _challengeModalIntervalHours = 12; // 2 fois par jour
+  static const int _topFiveModalIntervalHours = 6; // 4 fois par jour
   static bool _isShowingModal = false;
 
   static Future<void> showModalsWithSmartDelay(BuildContext context) async {
@@ -2924,7 +2926,17 @@ class AdvancedModalManager2 {
         return; // On s'arrête ici, le modal challenge viendra après
       }
 
-      // 🎯 ÉTAPE 2: Vérifier les challenges
+      // 🏆 ÉTAPE 2: Vérifier et afficher le modal Top 5 Afrolookeur
+      final shouldShowTopFive = await _shouldShowTopFiveModal();
+      if (shouldShowTopFive && context.mounted) {
+        print('👑 Tentative d\'affichage du modal Top 5 Afrolookeur');
+        final success = await _tryShowTopFiveModal(context);
+        if (success) {
+          return; // On s'arrête ici si le modal a été affiché
+        }
+      }
+
+      // 🎯 ÉTAPE 3: Vérifier les challenges
       final shouldShowChallenge = await _shouldShowChallengeModal();
       final activeChallenge = await _getActiveChallenge();
 
@@ -2934,7 +2946,7 @@ class AdvancedModalManager2 {
         return;
       }
 
-      // 🚫 ÉTAPE 3: Aucun modal prioritaire, afficher les autres modals
+      // 🚫 ÉTAPE 4: Aucun modal prioritaire, afficher les autres modals
       print('❌ Aucun modal prioritaire, affichage des modals secondaires');
       final lastModalType = await _getLastModalType();
 
@@ -2949,7 +2961,56 @@ class AdvancedModalManager2 {
     }
   }
 
-  // Nouvelle méthode pour le modal info
+  // Nouvelle méthode pour le modal Top 5
+  static Future<bool> _shouldShowTopFiveModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShowTime = prefs.getInt(_lastTopFiveModalKey) ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final intervalMs = _topFiveModalIntervalHours * 60 * 60 * 1000;
+
+    return currentTime - lastShowTime > intervalMs;
+  }
+
+  // Nouvelle méthode pour afficher le modal Top 5
+  static Future<bool> _tryShowTopFiveModal(BuildContext context) async {
+    try {
+      // Récupérer le UserProvider depuis le contexte
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      List<UserData> topAfrolookeurs = [];
+if(userProvider.listAllUsers.isNotEmpty){
+  topAfrolookeurs = userProvider.listAllUsers;
+}else{
+  topAfrolookeurs = await userProvider.getTopAfrolookeur();
+}
+      // Récupérer le top 5
+
+      if (topAfrolookeurs.isNotEmpty) {
+        final topFive = topAfrolookeurs.take(5).toList();
+        print('👑 Top 5 récupéré avec ${topFive.length} utilisateurs');
+
+        if (context.mounted) {
+          await TopFiveModal.showTopFiveModal(context, topFive);
+          await _markTopFiveModalShown();
+          return true;
+        }
+      } else {
+        print('👑 Aucun utilisateur trouvé pour le Top 5');
+      }
+    } catch (e) {
+      print('❌ Erreur lors de l\'affichage du modal Top 5: $e');
+    }
+
+    return false;
+  }
+
+  // Nouvelle méthode pour marquer l'affichage du modal Top 5
+  static Future<void> _markTopFiveModalShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lastTopFiveModalKey, DateTime.now().millisecondsSinceEpoch);
+    print('✅ Modal Top 5 marqué comme affiché à ${DateTime.now()}');
+  }
+
+  // Les méthodes existantes restent inchangées...
   static Future<bool> _shouldShowInfoModal() async {
     final prefs = await SharedPreferences.getInstance();
     final lastShowTime = prefs.getInt(_lastInfoModalKey) ?? 0;
@@ -2959,7 +3020,6 @@ class AdvancedModalManager2 {
     return currentTime - lastShowTime > intervalMs;
   }
 
-  // Nouvelle méthode pour le modal challenge (2 fois par jour)
   static Future<bool> _shouldShowChallengeModal() async {
     final prefs = await SharedPreferences.getInstance();
     final lastShowTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
@@ -2974,7 +3034,6 @@ class AdvancedModalManager2 {
     return prefs.getString(_lastModalTypeKey) ?? 'live';
   }
 
-  // Les autres méthodes restent similaires mais avec mise à jour des intervalles...
   static Future<void> _tryShowProductModal(BuildContext context) async {
     final shouldShowProducts = await _shouldShowModal(_lastProductModalKey);
     if (shouldShowProducts && context.mounted) {
@@ -2999,24 +3058,19 @@ class AdvancedModalManager2 {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastModalTypeKey, type);
   }
+
   static Future<Challenge?> _getActiveChallenge() async {
     try {
-      // Récupération directe depuis Firebase
       final snapshot = await FirebaseFirestore.instance
           .collection('Challenges')
           .where('statut', whereIn: ['en_attente', 'en_cours'])
           .where('disponible', isEqualTo: true)
-      // .where('isAprouved', isEqualTo: true)
           .limit(1)
           .get();
 
       if (snapshot.docs.isNotEmpty) {
         final challengeData = snapshot.docs.first.data();
         challengeData['id'] = snapshot.docs.first.id;
-        // FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
-        //   'vues': FieldValue.increment(1),
-        // });
-
         return Challenge.fromJson(challengeData);
       }
       return null;
@@ -3025,17 +3079,16 @@ class AdvancedModalManager2 {
       return null;
     }
   }
+
   static Future<void> _showProductModal(BuildContext context) async {
     print('🛒 Affichage du modal des produits boostés');
     await TopProductsGridModal.showTopProductsGridModal(context);
     await _markModalShown(_lastProductModalKey);
   }
-  static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
 
+  static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
     print('🏆 Affichage du modal du challenge: ${challenge.titre}');
     await ChallengeModal.showChallengeModal(context, challenge);
-
-    // On marque quand même l'affichage pour le debug, mais sans bloquer les prochains
     await _markModalShown(_lastChallengeModalKey);
   }
 
@@ -3044,11 +3097,13 @@ class AdvancedModalManager2 {
     await TopLiveGridModal.showTopLiveGridModal(context);
     await _markModalShown(_lastLiveModalKey);
   }
+
   static Future<void> _markModalShown(String modalKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
     print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
   }
+
   static Future<bool> _shouldShowModal(String modalKey) async {
     final prefs = await SharedPreferences.getInstance();
     final lastShowTime = prefs.getInt(modalKey) ?? 0;
@@ -3057,12 +3112,6 @@ class AdvancedModalManager2 {
 
     return currentTime - lastShowTime > intervalMs;
   }
-  // Méthode pour marquer l'affichage du modal challenge
-  static Future<void> _markChallengeModalShown() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastChallengeModalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal challenge marqué comme affiché');
-  }
 
   static Future<void> debugModalStatus() async {
     final prefs = await SharedPreferences.getInstance();
@@ -3070,6 +3119,7 @@ class AdvancedModalManager2 {
     final liveTime = prefs.getInt(_lastLiveModalKey) ?? 0;
     final challengeTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
     final infoTime = prefs.getInt(_lastInfoModalKey) ?? 0;
+    final topFiveTime = prefs.getInt(_lastTopFiveModalKey) ?? 0; // Nouveau
     final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'aucun';
 
     final now = DateTime.now();
@@ -3077,14 +3127,17 @@ class AdvancedModalManager2 {
     final liveShown = liveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(liveTime) : null;
     final challengeShown = challengeTime > 0 ? DateTime.fromMillisecondsSinceEpoch(challengeTime) : null;
     final infoShown = infoTime > 0 ? DateTime.fromMillisecondsSinceEpoch(infoTime) : null;
+    final topFiveShown = topFiveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(topFiveTime) : null; // Nouveau
 
     final activeChallenge = await _getActiveChallenge();
     final shouldShowInfo = await _shouldShowInfoModal();
     final shouldShowChallenge = await _shouldShowChallengeModal();
+    final shouldShowTopFive = await _shouldShowTopFiveModal(); // Nouveau
 
     print('🔍 État des modals:');
     print('   - Dernier modal: $lastModalType');
     print('   - Modal Info: ${shouldShowInfo ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${infoShown ?? "jamais"})');
+    print('   - Modal Top 5: ${shouldShowTopFive ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${topFiveShown ?? "jamais"})'); // Nouveau
     print('   - Modal Challenge: ${shouldShowChallenge ? "À AFFICHER" : "PAS MAINTENANT"} (affiché: ${challengeShown ?? "jamais"})');
     print('   - Challenge actif: ${activeChallenge != null ? "OUI" : "NON"}');
     print('   - Produits affichés: ${productShown ?? "jamais"}');
@@ -3092,6 +3145,8 @@ class AdvancedModalManager2 {
 
     if (shouldShowInfo) {
       print('   📢 PRIORITÉ: Modal Info Afrolook');
+    } else if (shouldShowTopFive) {
+      print('   👑 PRIORITÉ: Modal Top 5 Afrolookeur');
     } else if (activeChallenge != null && shouldShowChallenge) {
       print('   🎯 PRIORITÉ: Modal Challenge');
     } else {
@@ -3105,11 +3160,13 @@ class AdvancedModalManager2 {
     await prefs.remove(_lastLiveModalKey);
     await prefs.remove(_lastChallengeModalKey);
     await prefs.remove(_lastInfoModalKey);
+    await prefs.remove(_lastTopFiveModalKey); // Nouveau
     await prefs.remove(_lastModalTypeKey);
     print('🔄 Tous les modals ont été réinitialisés');
   }
 }
-class AdvancedModalManager {
+
+class AdvancedModalManager2 {
   static const String _lastProductModalKey = 'last_product_modal3';
   static const String _lastLiveModalKey = 'last_live_modal2';
   static const String _lastChallengeModalKey = 'last_challenge_modal2';

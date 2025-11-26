@@ -12,7 +12,6 @@ import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 
 enum ChroniqueType { TEXT, IMAGE, VIDEO }
-
 class Chronique {
   String? id;
   String userId;
@@ -32,8 +31,10 @@ class Chronique {
   Timestamp createdAt;
   Timestamp expiresAt;
   double? fileSize; // en MB
-  int commentCount = 0; // Ajouter cette ligne
-
+  int commentCount = 0;
+  // Ajouter ces nouveaux champs
+  List<String> likes; // Liste des utilisateurs qui ont liké
+  int totalReactions; // Somme des likes + loves
 
   Chronique({
     this.id,
@@ -55,6 +56,8 @@ class Chronique {
     required this.createdAt,
     required this.expiresAt,
     this.fileSize,
+    this.likes = const [], // Initialiser la nouvelle liste
+    this.totalReactions = 0, // Initialiser le total
   });
 
   // Convertir en Map pour Firestore
@@ -78,7 +81,8 @@ class Chronique {
       'expiresAt': expiresAt,
       'fileSize': fileSize,
       'commentCount': commentCount,
-
+      'likes': likes, // Ajouter le nouveau champ
+      'totalReactions': totalReactions, // Ajouter le nouveau champ
     };
   }
 
@@ -104,7 +108,8 @@ class Chronique {
       expiresAt: map['expiresAt'] ?? Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
       fileSize: map['fileSize'],
       commentCount: map['commentCount'] ?? 0,
-
+      likes: List<String>.from(map['likes'] ?? []), // Récupérer le nouveau champ
+      totalReactions: map['totalReactions'] ?? 0, // Récupérer le nouveau champ
     );
   }
 
@@ -132,10 +137,134 @@ class Chronique {
   bool get isVideoTooLong {
     return type == ChroniqueType.VIDEO && duration > 10;
   }
+
+  // Méthode pour calculer le total des réactions (likes + loves)
+  int get calculatedTotalReactions {
+    return likeCount + loveCount;
+  }
 }
+// class Chronique {
+//   String? id;
+//   String userId;
+//   String userPseudo;
+//   String userImageUrl;
+//   ChroniqueType type;
+//   String? textContent;
+//   String? mediaUrl;
+//   String? backgroundColor;
+//   int duration; // en secondes
+//   int viewCount;
+//   int likeCount;
+//   int loveCount;
+//   List<String> viewers;
+//   List<String> likers;
+//   List<String> lovers;
+//   Timestamp createdAt;
+//   Timestamp expiresAt;
+//   double? fileSize; // en MB
+//   int commentCount = 0; // Ajouter cette ligne
+//
+//
+//   Chronique({
+//     this.id,
+//     required this.userId,
+//     required this.userPseudo,
+//     required this.userImageUrl,
+//     required this.type,
+//     this.textContent,
+//     this.mediaUrl,
+//     this.backgroundColor,
+//     this.duration = 0,
+//     this.viewCount = 0,
+//     this.likeCount = 0,
+//     this.loveCount = 0,
+//     this.commentCount = 0,
+//     this.viewers = const [],
+//     this.likers = const [],
+//     this.lovers = const [],
+//     required this.createdAt,
+//     required this.expiresAt,
+//     this.fileSize,
+//   });
+//
+//   // Convertir en Map pour Firestore
+//   Map<String, dynamic> toMap() {
+//     return {
+//       'userId': userId,
+//       'userPseudo': userPseudo,
+//       'userImageUrl': userImageUrl,
+//       'type': type.toString(),
+//       'textContent': textContent,
+//       'mediaUrl': mediaUrl,
+//       'backgroundColor': backgroundColor,
+//       'duration': duration,
+//       'viewCount': viewCount,
+//       'likeCount': likeCount,
+//       'loveCount': loveCount,
+//       'viewers': viewers,
+//       'likers': likers,
+//       'lovers': lovers,
+//       'createdAt': createdAt,
+//       'expiresAt': expiresAt,
+//       'fileSize': fileSize,
+//       'commentCount': commentCount,
+//
+//     };
+//   }
+//
+//   // Créer depuis Firestore
+//   factory Chronique.fromMap(Map<String, dynamic> map, String id) {
+//     return Chronique(
+//       id: id,
+//       userId: map['userId'] ?? '',
+//       userPseudo: map['userPseudo'] ?? '',
+//       userImageUrl: map['userImageUrl'] ?? '',
+//       type: _stringToChroniqueType(map['type']),
+//       textContent: map['textContent'],
+//       mediaUrl: map['mediaUrl'],
+//       backgroundColor: map['backgroundColor'],
+//       duration: map['duration'] ?? 0,
+//       viewCount: map['viewCount'] ?? 0,
+//       likeCount: map['likeCount'] ?? 0,
+//       loveCount: map['loveCount'] ?? 0,
+//       viewers: List<String>.from(map['viewers'] ?? []),
+//       likers: List<String>.from(map['likers'] ?? []),
+//       lovers: List<String>.from(map['lovers'] ?? []),
+//       createdAt: map['createdAt'] ?? Timestamp.now(),
+//       expiresAt: map['expiresAt'] ?? Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
+//       fileSize: map['fileSize'],
+//       commentCount: map['commentCount'] ?? 0,
+//
+//     );
+//   }
+//
+//   static ChroniqueType _stringToChroniqueType(String type) {
+//     switch (type) {
+//       case 'ChroniqueType.TEXT':
+//         return ChroniqueType.TEXT;
+//       case 'ChroniqueType.IMAGE':
+//         return ChroniqueType.IMAGE;
+//       case 'ChroniqueType.VIDEO':
+//         return ChroniqueType.VIDEO;
+//       default:
+//         return ChroniqueType.TEXT;
+//     }
+//   }
+//
+//   bool get isExpired {
+//     return DateTime.now().isAfter(expiresAt.toDate());
+//   }
+//
+//   bool get hasReachedLimit {
+//     return fileSize != null && fileSize! > 20.0;
+//   }
+//
+//   bool get isVideoTooLong {
+//     return type == ChroniqueType.VIDEO && duration > 10;
+//   }
+// }
 
 // models/chronique_message_model.dart
-
 class ChroniqueMessage {
   String? id;
   String chroniqueId;
@@ -144,6 +273,9 @@ class ChroniqueMessage {
   String userImageUrl;
   String message;
   Timestamp createdAt;
+  // Nouveaux champs pour les likes sur les commentaires
+  int likeCount;
+  List<String> likers;
 
   ChroniqueMessage({
     this.id,
@@ -153,6 +285,8 @@ class ChroniqueMessage {
     required this.userImageUrl,
     required this.message,
     required this.createdAt,
+    this.likeCount = 0,
+    this.likers = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -163,6 +297,8 @@ class ChroniqueMessage {
       'userImageUrl': userImageUrl,
       'message': message,
       'createdAt': createdAt,
+      'likeCount': likeCount,
+      'likers': likers,
     };
   }
 
@@ -175,9 +311,53 @@ class ChroniqueMessage {
       userImageUrl: map['userImageUrl'] ?? '',
       message: map['message'] ?? '',
       createdAt: map['createdAt'] ?? Timestamp.now(),
+      likeCount: map['likeCount'] ?? 0,
+      likers: List<String>.from(map['likers'] ?? []),
     );
   }
 }
+// class ChroniqueMessage {
+//   String? id;
+//   String chroniqueId;
+//   String userId;
+//   String userPseudo;
+//   String userImageUrl;
+//   String message;
+//   Timestamp createdAt;
+//
+//   ChroniqueMessage({
+//     this.id,
+//     required this.chroniqueId,
+//     required this.userId,
+//     required this.userPseudo,
+//     required this.userImageUrl,
+//     required this.message,
+//     required this.createdAt,
+//   });
+//
+//   Map<String, dynamic> toMap() {
+//     return {
+//       'chroniqueId': chroniqueId,
+//       'userId': userId,
+//       'userPseudo': userPseudo,
+//       'userImageUrl': userImageUrl,
+//       'message': message,
+//       'createdAt': createdAt,
+//     };
+//   }
+//
+//   factory ChroniqueMessage.fromMap(Map<String, dynamic> map, String id) {
+//     return ChroniqueMessage(
+//       id: id,
+//       chroniqueId: map['chroniqueId'] ?? '',
+//       userId: map['userId'] ?? '',
+//       userPseudo: map['userPseudo'] ?? '',
+//       userImageUrl: map['userImageUrl'] ?? '',
+//       message: map['message'] ?? '',
+//       createdAt: map['createdAt'] ?? Timestamp.now(),
+//     );
+//   }
+// }
 
 class AddChroniquePage extends StatefulWidget {
   @override
