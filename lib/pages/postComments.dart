@@ -158,12 +158,16 @@ class _PostCommentsState extends State<PostComments> {
     });
   }
 
+
   Future<void> _loadInitialComments() async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
-      comments.clear();
+      // Ne pas vider les commentaires existants pour garder l'UI responsive
+      if (comments.isEmpty) {
+        comments.clear();
+      }
       _lastCommentDocument = null;
       _hasMoreComments = true;
     });
@@ -175,7 +179,6 @@ class _PostCommentsState extends State<PostComments> {
       print('Erreur chargement commentaires: $e');
     }
   }
-
   Future<void> _loadMoreComments() async {
     if (_isLoadingMore || !_hasMoreComments) return;
 
@@ -1022,7 +1025,7 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
-  Future<void> _sendComment() async {
+  Future<void> _sendComment2() async {
     if (_textController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
@@ -1103,7 +1106,119 @@ class _PostCommentsState extends State<PostComments> {
       print('Erreur envoi commentaire: $e');
     }
   }
+  Future<void> _sendComment() async {
+    if (_textController.text.trim().isEmpty) return;
 
+    setState(() => _isLoading = true);
+    final textComment = _textController.text.trim();
+    _textController.clear();
+    _focusNode.unfocus();
+
+    try {
+      bool success = false;
+      String receiverId = '';
+      String action = '';
+
+      if (replying) {
+        final response = ResponsePostComment(
+          user_id: authProvider.loginUserData.id,
+          user_logo_url: authProvider.loginUserData.imageUrl,
+          user_pseudo: authProvider.loginUserData.pseudo,
+          post_comment_id: commentSelectedToReply.id,
+          user_reply_pseudo: replyUser_pseudo,
+          message: textComment,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        commentSelectedToReply.responseComments ??= [];
+        commentSelectedToReply.responseComments!.add(response);
+
+        success = await postProvider.updateComment(commentSelectedToReply);
+        receiverId = replyUser_id;
+        action = "répondu à votre commentaire";
+
+        // Mettre à jour localement immédiatement
+        if (success) {
+          _updateCommentLocally(commentSelectedToReply);
+        }
+      } else {
+        final comment = PostComment(
+          id: FirebaseFirestore.instance.collection('PostComments').doc().id, // Ajouter un ID
+          user_id: authProvider.loginUserData.id,
+          user: authProvider.loginUserData,
+          post_id: widget.post.id,
+          users_like_id: [],
+          responseComments: [],
+          message: textComment,
+          loves: 0,
+          likes: 0,
+          comments: 0,
+          createdAt: DateTime.now().microsecondsSinceEpoch,
+          updatedAt: DateTime.now().microsecondsSinceEpoch,
+        );
+
+        success = await postProvider.newComment(comment);
+        receiverId = widget.post.user!.id!;
+        action = "commenté votre publication";
+
+        // Ajouter localement immédiatement
+        if (success) {
+          _addCommentLocally(comment);
+        }
+      }
+
+      if (success) {
+        await FirebaseFirestore.instance
+            .collection("Posts")
+            .doc(widget.post.id)
+            .update({
+          "comments": FieldValue.increment(1),
+        });
+
+        // Envoyer notification au propriétaire du commentaire/post
+        await _sendCommentNotification(receiverId, action, textComment);
+
+        // Envoyer notifications pour les mentions
+        await _sendMentionNotifications(textComment);
+      }
+
+      setState(() {
+        replying = false;
+        replyingTo = "";
+        _isLoading = false; // IMPORTANT: Arrêter le loading
+      });
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('Erreur envoi commentaire: $e');
+
+      // Optionnel: Afficher un message d'erreur à l'utilisateur
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'envoi du commentaire'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Ajouter un nouveau commentaire localement
+  void _addCommentLocally(PostComment newComment) {
+    setState(() {
+      comments.insert(0, newComment); // Ajouter en haut de la liste
+    });
+  }
+
+// Mettre à jour un commentaire existant localement
+  void _updateCommentLocally(PostComment updatedComment) {
+    setState(() {
+      final index = comments.indexWhere((c) => c.id == updatedComment.id);
+      if (index != -1) {
+        comments[index] = updatedComment;
+      }
+    });
+  }
   // Fonction pour envoyer une notification de commentaire/réponse
   Future<void> _sendCommentNotification(String receiverId, String action, String message) async {
     try {

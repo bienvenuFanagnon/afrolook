@@ -3,20 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
+import 'dart:math';
 import '../../models/crypto_model.dart';
 import '../../providers/crypto_market_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/crypto_trading_controller.dart';
-
-// views/crypto/crypto_detail_page.dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:iconsax/iconsax.dart';
-import '../../models/crypto_model.dart';
-import '../../providers/crypto_market_provider.dart';
-import '../../providers/crypto_trading_controller.dart';
+import 'cryptowidgets/crypto_chart_widget.dart';
 
 class CryptoDetailPage extends StatefulWidget {
   final String cryptoId;
@@ -31,33 +24,129 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
   late TabController _tabController;
   final List<String> _timeFrames = ['1H', '24H', '1S', '1M', '1A'];
   int _selectedTimeFrame = 1; // 24H par défaut
+  final Random _random = Random();
+  late TextEditingController _quantityController;
 
-  // Données pour les activités en temps réel
-  final List<Map<String, dynamic>> _marketActivities = [
-    {'user': 'Fatou D.', 'action': 'a acheté', 'amount': '150', 'time': '2 min'},
-    {'user': 'Mohamed K.', 'action': 'a vendu', 'amount': '75', 'time': '5 min'},
-    {'user': 'Aïcha B.', 'action': 'a investi', 'amount': '200', 'time': '8 min'},
-    {'user': 'Jean-Paul M.', 'action': 'a acheté', 'amount': '100', 'time': '12 min'},
-  ];
+  // Données dynamiques pour les activités
+  List<Map<String, dynamic>> _marketActivities = [];
+  late List<String> _userNames;
+  late List<String> _actions;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _quantityController = TextEditingController();
+    _initializeDynamicData();
+    _generateMarketActivities();
 
     // Initialiser les données du trading
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tradingController = Provider.of<CryptoTradingProvider>(context, listen: false);
-      // Vérifier si c'est la même crypto, sinon réinitialiser
       if (tradingController.crypto?.id != widget.cryptoId) {
         tradingController.refreshData();
+      } else {
+        _updateQuantityController(tradingController);
       }
     });
+  }
+
+  void _initializeDynamicData() {
+    _userNames = [
+      'Fatou Diallo', 'Mohamed Konaté', 'Aïcha Bâ', 'Jean-Paul Martin', 'Marie Dubois',
+      'Abdoulaye Sow', 'Sophie Laurent', 'Moussa Traoré', 'Camille Petit', 'Ibrahim Cissé',
+      'Élodie Moreau', 'Koffi Mensah', 'Chantal Ngom', 'Pierre Durand', 'Aminata Diop',
+      'Luc Bernard', 'Kadiatou Keita', 'Thomas Leroy', 'Nadia Sarr', 'David Muller',
+      'Rokhaya Ndiaye', 'Philippe Blanc', 'Mariam Coulibaly', 'Alain Morel', 'Sofia Ben'
+    ];
+
+    _actions = [
+      'a acheté', 'a vendu', 'a investi dans', 'a échangé', 'a converti en',
+      'a ajouté à son portefeuille', 'a retiré', 'a staké', 'a déstaké', 'a tradé',
+      'vient d\'acquérir', 'a réalisé un profit sur', 'a doublé son investissement sur'
+    ];
+  }
+
+  void _generateMarketActivities() {
+    _marketActivities = List.generate(5, (index) {
+      final userName = _userNames[_random.nextInt(_userNames.length)];
+      final action = _actions[_random.nextInt(_actions.length)];
+      final amount = (_random.nextDouble() * 500 + 50).toStringAsFixed(0);
+      final time = '${_random.nextInt(59) + 1} min';
+      final isBuy = _random.nextDouble() > 0.4;
+
+      return {
+        'user': userName.split(' ')[0] + ' ${userName.split(' ')[1][0]}.',
+        'action': action,
+        'amount': amount,
+        'time': time,
+        'fullName': userName,
+        'type': isBuy ? 'buy' : 'sell',
+      };
+    });
+  }
+
+  void _updateQuantityController(CryptoTradingProvider tradingController) {
+    _quantityController.text = tradingController.selectedQuantity.toStringAsFixed(2);
+  }
+
+  // Calculer le pourcentage de variation réel basé sur l'historique des prix
+  double _calculateRealPriceChange(CryptoCurrency crypto, String timeFrame) {
+    if (crypto.priceHistory.isEmpty) return crypto.dailyPriceChange;
+
+    final now = DateTime.now();
+    DateTime startTime;
+
+    switch (timeFrame) {
+      case '1H':
+        startTime = now.subtract(Duration(hours: 1));
+        break;
+      case '24H':
+        startTime = now.subtract(Duration(hours: 24));
+        break;
+      case '1S':
+        startTime = now.subtract(Duration(days: 7));
+        break;
+      case '1M':
+        startTime = now.subtract(Duration(days: 30));
+        break;
+      case '1A':
+        startTime = now.subtract(Duration(days: 365));
+        break;
+      default:
+        startTime = now.subtract(Duration(hours: 24));
+    }
+
+    // Trouver le prix le plus proche dans l'historique
+    final historicalPrices = crypto.priceHistory
+        .where((point) => point.timestamp.isAfter(startTime))
+        .toList();
+
+    if (historicalPrices.isEmpty) return crypto.dailyPriceChange;
+
+    // Prendre le prix le plus ancien dans la période
+    historicalPrices.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final startPrice = historicalPrices.first.price;
+    final currentPrice = crypto.currentPrice;
+
+    // Calculer la variation en pourcentage
+    return ((currentPrice - startPrice) / startPrice);
+  }
+
+  String _getTrendDescription(double changePercent) {
+    if (changePercent > 0.05) return '📈 Forte hausse';
+    if (changePercent > 0.02) return '📈 Hausse modérée';
+    if (changePercent > 0) return '↗️ Légère hausse';
+    if (changePercent == 0) return '➡️ Stable';
+    if (changePercent > -0.02) return '↘️ Légère baisse';
+    if (changePercent > -0.05) return '📉 Baisse modérée';
+    return '📉 Forte baisse';
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 
@@ -81,6 +170,11 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
 
             if (crypto == null) {
               return _buildNotFoundState();
+            }
+
+            // Mettre à jour le controller de quantité si nécessaire
+            if (_quantityController.text.isEmpty) {
+              _updateQuantityController(tradingController);
             }
 
             return _buildMainContent(crypto, tradingController);
@@ -148,7 +242,10 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
   }
 
   Widget _buildMainContent(CryptoCurrency crypto, CryptoTradingProvider tradingController) {
-    final isPositive = crypto.dailyPriceChange >= 0;
+    // Calculer la variation réelle pour le timeframe sélectionné
+    final realPriceChange = _calculateRealPriceChange(crypto, _timeFrames[_selectedTimeFrame]);
+    final isPositive = realPriceChange >= 0;
+    final trendDescription = _getTrendDescription(realPriceChange);
 
     return CustomScrollView(
       physics: BouncingScrollPhysics(),
@@ -158,8 +255,8 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
           backgroundColor: Color(0xFF0F111C),
           elevation: 0,
           pinned: true,
-          expandedHeight: 220,
-          flexibleSpace: _buildCryptoHeader(crypto, isPositive),
+          expandedHeight: 240,
+          flexibleSpace: _buildCryptoHeader(crypto, isPositive, realPriceChange, trendDescription),
           leading: IconButton(
             icon: Icon(Iconsax.arrow_left_2, color: Colors.white),
             onPressed: () => Navigator.pop(context),
@@ -167,7 +264,10 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
           actions: [
             IconButton(
               icon: Icon(Iconsax.refresh, color: Colors.white),
-              onPressed: tradingController.refreshData,
+              onPressed: () {
+                tradingController.refreshData();
+                _generateMarketActivities();
+              },
             ),
           ],
         ),
@@ -176,8 +276,8 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
         SliverToBoxAdapter(
           child: Column(
             children: [
-              // Statistiques rapides
-              _buildQuickStats(crypto),
+              // Statistiques rapides avec variation réelle
+              _buildQuickStats(crypto, realPriceChange, trendDescription),
 
               // Graphique et timeframe selector
               _buildChartSection(crypto),
@@ -188,11 +288,13 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
               // Informations détaillées
               _buildCryptoInfo(crypto),
 
-              // Activités du marché
+              // Activités du marché dynamiques
               _buildMarketActivity(),
 
               // Historique des transactions
               _buildTransactionHistory(tradingController),
+
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -200,7 +302,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
     );
   }
 
-  Widget _buildCryptoHeader(CryptoCurrency crypto, bool isPositive) {
+  Widget _buildCryptoHeader(CryptoCurrency crypto, bool isPositive, double realPriceChange, String trendDescription) {
     return FlexibleSpaceBar(
       background: Container(
         decoration: BoxDecoration(
@@ -260,7 +362,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
                       fontSize: 16,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
@@ -271,9 +373,13 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(width: 12),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: isPositive
                               ? Color(0xFF00B894).withOpacity(0.2)
@@ -287,13 +393,21 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
                               color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
                               size: 14,
                             ),
-                            SizedBox(width: 4),
+                            SizedBox(width: 6),
                             Text(
-                              '${(crypto.dailyPriceChange * 100).toStringAsFixed(2)}%',
+                              '${(realPriceChange * 100).toStringAsFixed(2)}%',
                               style: TextStyle(
                                 color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              trendDescription,
+                              style: TextStyle(
+                                color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -310,7 +424,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
     );
   }
 
-  Widget _buildQuickStats(CryptoCurrency crypto) {
+  Widget _buildQuickStats(CryptoCurrency crypto, double realPriceChange, String trendDescription) {
     return Container(
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(20),
@@ -319,12 +433,59 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Color(0xFF2A3649)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildStatItem('Capitalisation', '${_formatNumber(crypto.marketCap)} FCFA'),
-          _buildStatItem('Volume 24h', '${_formatNumber(crypto.dailyVolume)} FCFA'),
-          _buildStatItem('Rang', '#${crypto.rank}'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Capitalisation', '${_formatNumber(crypto.marketCap)} FCFA'),
+              _buildStatItem('Volume 24h', '${_formatNumber(crypto.dailyVolume)} FCFA'),
+              _buildStatItem('Rang', '#${crypto.rank}'),
+            ],
+          ),
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: realPriceChange >= 0
+                  ? Color(0xFF00B894).withOpacity(0.1)
+                  : Color(0xFFFF4D4D).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: realPriceChange >= 0
+                    ? Color(0xFF00B894).withOpacity(0.3)
+                    : Color(0xFFFF4D4D).withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  realPriceChange >= 0 ? Iconsax.trend_up : Iconsax.trend_down,
+                  color: realPriceChange >= 0 ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                  size: 16,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  trendDescription,
+                  style: TextStyle(
+                    color: realPriceChange >= 0 ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  '${_timeFrames[_selectedTimeFrame]} : ${(realPriceChange * 100).toStringAsFixed(2)}%',
+                  style: TextStyle(
+                    color: realPriceChange >= 0 ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -401,26 +562,36 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
           ),
           SizedBox(height: 16),
 
-          // Graphique placeholder
+          // Graphique interactif
           Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Color(0xFF1A202C),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Color(0xFF2A3649)),
+            height: 300,
+            child: CryptoChartWidget(
+              priceHistory: crypto.priceHistory,
+              selectedTimeFrame: _timeFrames[_selectedTimeFrame],
+              isInteractive: true,
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Iconsax.chart_2, color: Color(0xFF00B894), size: 40),
-                  SizedBox(height: 8),
-                  Text(
-                    'Graphique en développement',
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
-                ],
+          ),
+
+          // Bouton pour voir en plein écran
+          SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => _showFullScreenChart(crypto),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF2A3649),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Iconsax.maximize_2, size: 16, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Voir en plein écran',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
             ),
           ),
         ],
@@ -439,7 +610,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
       ),
       child: Column(
         children: [
-          // Quantité selector
+          // Quantité selector avec champ de saisie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -453,29 +624,68 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
               ),
               Row(
                 children: [
+                  // Bouton moins
                   IconButton(
                     icon: Icon(Iconsax.minus_square, color: Colors.white),
                     onPressed: () {
-                      if (tradingController.selectedQuantity > 1) {
-                        tradingController.selectedQuantity = tradingController.selectedQuantity - 1;
+                      if (tradingController.selectedQuantity > 0.01) {
+                        tradingController.selectedQuantity = tradingController.selectedQuantity - 0.01;
+                        _quantityController.text = tradingController.selectedQuantity.toStringAsFixed(2);
+                        setState(() {});
                       }
                     },
                   ),
+
+                  // Champ de saisie manuelle
                   Container(
-                    width: 60,
-                    child: Text(
-                      tradingController.selectedQuantity.toStringAsFixed(2),
+                    width: 100,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF2A3649),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: TextField(
+                      controller: _quantityController,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        hintText: '0.00',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                      ),
+                      onChanged: (value) {
+                        if (value.isEmpty) return;
+
+                        final parsedValue = double.tryParse(value) ?? 0.0;
+                        if (parsedValue >= 0) {
+                          tradingController.selectedQuantity = parsedValue;
+                          setState(() {});
+                        }
+                      },
+                      onEditingComplete: () {
+                        // Formatage automatique quand l'utilisateur termine la saisie
+                        final value = double.tryParse(_quantityController.text) ?? 0.0;
+                        _quantityController.text = value.toStringAsFixed(2);
+                        tradingController.selectedQuantity = value;
+                        setState(() {});
+                      },
                     ),
                   ),
+
+                  // Bouton plus
                   IconButton(
                     icon: Icon(Iconsax.add_square, color: Colors.white),
-                    onPressed: () => tradingController.selectedQuantity = tradingController.selectedQuantity + 1,
+                    onPressed: () {
+                      tradingController.selectedQuantity = tradingController.selectedQuantity + 0.01;
+                      _quantityController.text = tradingController.selectedQuantity.toStringAsFixed(2);
+                      setState(() {});
+                    },
                   ),
                 ],
               ),
@@ -483,30 +693,56 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
           ),
           SizedBox(height: 16),
 
-          // Prix total
+          // Prix total avec mise à jour en temps réel
           Container(
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: Color(0xFF2A3649),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Text(
-                  'Total',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 16,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Prix unitaire',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '${crypto.currentPrice.toStringAsFixed(2)} FCFA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${(crypto.currentPrice * tradingController.selectedQuantity).toStringAsFixed(2)} FCFA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                SizedBox(height: 8),
+                Divider(color: Colors.grey[600], height: 1),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      '${(crypto.currentPrice * tradingController.selectedQuantity).toStringAsFixed(2)} FCFA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -556,7 +792,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
                     ),
                   ),
                   onPressed: (tradingController.isSelling || tradingController.ownedCrypto == null ||
-                      tradingController.ownedCrypto!.quantity < tradingController.selectedQuantity)
+                      (tradingController.ownedCrypto!.quantity < tradingController.selectedQuantity))
                       ? null
                       : () => _showSellConfirmation(crypto, tradingController),
                   child: tradingController.isSelling
@@ -596,20 +832,190 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
                   Icon(Iconsax.wallet_check, color: Color(0xFF00B894), size: 16),
                   SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'Vous possédez ${tradingController.ownedCrypto!.quantity.toStringAsFixed(4)} ${crypto.symbol}',
-                      style: TextStyle(
-                        color: Color(0xFF00B894),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Solde disponible: ${tradingController.ownedCrypto!.quantity.toStringAsFixed(4)} ${crypto.symbol}',
+                          style: TextStyle(
+                            color: Color(0xFF00B894),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (tradingController.selectedQuantity > tradingController.ownedCrypto!.quantity)
+                          Text(
+                            'Quantité insuffisante',
+                            style: TextStyle(
+                              color: Color(0xFFFF4D4D),
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ],
+
+          // Suggestions de quantités rapides
+          SizedBox(height: 16),
+          Text(
+            'Quantités rapides:',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 12,
+            ),
+          ),
+          SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [0.1, 0.5, 1.0, 5.0, 10.0, 25.0].map((amount) {
+              return GestureDetector(
+                onTap: () {
+                  tradingController.selectedQuantity = amount;
+                  _quantityController.text = amount.toStringAsFixed(2);
+                  setState(() {});
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: tradingController.selectedQuantity == amount
+                        ? Color(0xFF00B894)
+                        : Color(0xFF2A3649),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 1),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showFullScreenChart(CryptoCurrency crypto) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        decoration: BoxDecoration(
+          color: Color(0xFF0F111C),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFF1A202C),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Iconsax.arrow_left_2, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Graphique ${crypto.name}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(Iconsax.refresh, color: Colors.white),
+                    onPressed: () {
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Timeframe selector pour le mode plein écran
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Container(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _timeFrames.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedTimeFrame = index;
+                        });
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(right: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _selectedTimeFrame == index
+                              ? Color(0xFF00B894)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _selectedTimeFrame == index
+                                ? Color(0xFF00B894)
+                                : Color(0xFF2A3649),
+                          ),
+                        ),
+                        child: Text(
+                          _timeFrames[index],
+                          style: TextStyle(
+                            color: _selectedTimeFrame == index
+                                ? Colors.white
+                                : Colors.grey[400],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // Graphique en plein écran
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: CryptoChartWidget(
+                  priceHistory: crypto.priceHistory,
+                  selectedTimeFrame: _timeFrames[_selectedTimeFrame],
+                  isInteractive: true,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -683,12 +1089,21 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
               Icon(Iconsax.activity, color: Color(0xFF00B894)),
               SizedBox(width: 8),
               Text(
-                'Activité Récente',
+                'Activité Récente du Marché',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
+              ),
+              Spacer(),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _generateMarketActivities();
+                  });
+                },
+                child: Icon(Iconsax.refresh, color: Colors.grey[400], size: 20),
               ),
             ],
           ),
@@ -700,62 +1115,68 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
   }
 
   Widget _buildActivityItem(Map<String, dynamic> activity) {
-    final isBuy = activity['action'].contains('acheté');
+    return Consumer<CryptoTradingProvider>(
+      builder: (context, tradingController, child) {
+        final crypto = tradingController.crypto;
+        if (crypto == null) return SizedBox();
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A202C),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isBuy
-                  ? Color(0xFF00B894).withOpacity(0.2)
-                  : Color(0xFFFF4D4D).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Icon(
-                isBuy ? Iconsax.arrow_down : Iconsax.arrow_up_3,
-                color: isBuy ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                size: 16,
+        final isBuy = activity['type'] == 'buy';
+
+        return Container(
+          margin: EdgeInsets.only(bottom: 8),
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Color(0xFF1A202C),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isBuy
+                      ? Color(0xFF00B894).withOpacity(0.2)
+                      : Color(0xFFFF4D4D).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Icon(
+                    isBuy ? Iconsax.arrow_down : Iconsax.arrow_up_3,
+                    color: isBuy ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                    size: 16,
+                  ),
+                ),
               ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${activity['user']} ${activity['action']} ${activity['amount']}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${activity['user']} ${activity['action']} ${activity['amount']} ${crypto.symbol}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Il y a ${activity['time']}',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Il y a ${activity['time']}',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
-
   Widget _buildTransactionHistory(CryptoTradingProvider tradingController) {
     final transactions = tradingController.transactions;
 
@@ -883,7 +1304,7 @@ class _CryptoDetailPageState extends State<CryptoDetailPage> with SingleTickerPr
     switch (symbol) {
       case 'AFC': return '🪙';
       case 'KRC': return '⚡';
-      case 'NIG': return '🪙';
+      case 'NIG': return '🏺';
       case 'SVT': return '🌍';
       case 'TBD': return '💎';
       default: return '🪙';

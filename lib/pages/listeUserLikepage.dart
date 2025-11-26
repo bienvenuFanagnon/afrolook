@@ -1,4 +1,6 @@
 // pages/users/users_list_page.dart
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -82,15 +84,16 @@ class _UsersListPageState extends State<UsersListPage> {
     }
   }
 
-  Future<List<UserData>> _fetchUsersBatch({
+  Future<List<UserData>> _fetchUsersBatch2({
     required int limit,
     DocumentSnapshot? lastDocument,
-  }) async {
+  }) async
+  {
     try {
       Query query = FirebaseFirestore.instance
           .collection('Users')
           .where('isBlocked', isEqualTo: false)
-          .orderBy('createdAt', descending: true)
+          // .orderBy('createdAt', descending: true)
           .limit(limit);
 
       if (lastDocument != null) {
@@ -116,7 +119,72 @@ class _UsersListPageState extends State<UsersListPage> {
       throw Exception('Erreur fetch users: $e');
     }
   }
+  final _seenUserIds = <String>{};
 
+  Future<List<UserData>> _fetchUsersBatch({
+    required int limit,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    try {
+      // Récupérer plus d'utilisateurs pour avoir plus de choix
+      final fetchLimit = lastDocument == null ? limit * 5 : limit * 2;
+
+      Query query = FirebaseFirestore.instance
+          .collection('Users')
+          .where('isBlocked', isEqualTo: false)
+          .limit(fetchLimit);
+
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        // Recycler quand on arrive en fin de liste
+        if (_seenUserIds.length > limit * 3) {
+          _seenUserIds.clear();
+        }
+        return [];
+      }
+
+      _lastDocument = snapshot.docs.last;
+
+      // Filtrer les utilisateurs déjà vus récemment
+      final users = snapshot.docs
+          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+          .where((user) => user.id != null && !_seenUserIds.contains(user.id))
+          .toList();
+
+      // Si pas assez de nouveaux utilisateurs, en prendre quand même
+      final resultUsers = users.isNotEmpty ? users : snapshot.docs
+          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+      // Mélanger aléatoirement
+      resultUsers.shuffle();
+
+      final result = resultUsers.take(limit).toList();
+
+      // Marquer comme vus (garder seulement les 50 derniers)
+      _seenUserIds.addAll(result.map((user) => user.id!));
+      if (_seenUserIds.length > 50) {
+        final newSet = _seenUserIds.toList().reversed.take(50).toSet();
+        _seenUserIds.clear();
+        _seenUserIds.addAll(newSet);
+      }
+
+      return result;
+    } catch (e) {
+      print('Erreur fetch users: $e');
+      throw Exception('Erreur fetch users: $e');
+    }
+  }
+
+  void refreshUsersRandomly() {
+    _seenUserIds.clear();
+    _lastDocument = null;
+  }
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -340,11 +408,11 @@ class _UsersListPageState extends State<UsersListPage> {
                             'Abonnés',
                             Icons.people,
                           ),
-                          _buildStatItem(
-                            _formatCount(user.userlikes ?? 0),
-                            'Likes',
-                            Icons.favorite,
-                          ),
+                          // _buildStatItem(
+                          //   _formatCount(user.userlikes ?? 0),
+                          //   'Likes',
+                          //   Icons.favorite,
+                          // ),
                         ],
                       ),
 

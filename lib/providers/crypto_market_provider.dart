@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -53,6 +55,93 @@ class CryptoMarketProvider with ChangeNotifier {
     // }
 
     return false;
+  }
+
+  // AJOUTEZ CETTE FONCTION DANS LA CLASSE :
+  List<PriceHistory> _generateDefaultPriceHistory(CryptoCurrency crypto) {
+    final List<PriceHistory> history = [];
+    final now = DateTime.now();
+    final random = Random();
+
+    final initialPrice = crypto.initialPrice;
+    final currentPrice = crypto.currentPrice;
+    const totalDays = 90; // 3 mois d'historique
+
+    double price = initialPrice;
+
+    for (int i = totalDays; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+
+      // Calculer la progression vers le prix actuel
+      final progress = 1 - (i / totalDays);
+      final targetPrice = initialPrice + (currentPrice - initialPrice) * progress;
+
+      // Ajouter de la volatilité réaliste
+      final volatility = (random.nextDouble() - 0.5) * 0.06; // ±3%
+      price = targetPrice * (1 + volatility);
+
+      // Pour aujourd'hui, forcer le prix actuel exact
+      if (i == 0) {
+        price = currentPrice;
+      }
+
+      history.add(PriceHistory(
+        price: double.parse(price.toStringAsFixed(4)),
+        timestamp: date,
+      ));
+    }
+
+    return history;
+  }
+
+  // MODIFIEZ votre fonction fetchCryptos existante :
+  Future<void> fetchCryptos2() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final snapshot = await _firestore
+          .collection('cryptos')
+          .orderBy('rank')
+          .limit(100)
+          .get();
+
+      // Transformez les documents en CryptoCurrency
+      List<CryptoCurrency> loadedCryptos = snapshot.docs
+          .map((doc) => CryptoCurrency.fromFirestore(doc))
+          .toList();
+
+      // ICI : AJOUTER L'HISTORIQUE POUR CHAQUE CRYPTO
+      _cryptos = loadedCryptos.map((crypto) {
+        // Si pas d'historique ou historique insuffisant, on génère
+        if (crypto.priceHistory.isEmpty || crypto.priceHistory.length < 10) {
+          return crypto.copyWith(
+            priceHistory: _generateDefaultPriceHistory(crypto),
+          );
+        }
+        return crypto; // Sinon garder l'historique existant
+      }).toList();
+
+      _trendingCryptos = _cryptos
+          .where((crypto) => crypto.isTrending)
+          .take(5)
+          .toList();
+
+      _featuredCryptos = _cryptos
+          .where((crypto) => crypto.rank <= 10)
+          .take(3)
+          .toList();
+
+      // Calculer les métriques du marché
+      _calculateMarketMetrics();
+
+      _errorMessage = '';
+    } catch (e) {
+      _errorMessage = 'Erreur lors du chargement des cryptos: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
   Future<void> fetchCryptos() async {
     try {

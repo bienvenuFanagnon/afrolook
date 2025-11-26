@@ -2,23 +2,27 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import '../../models/crypto_model.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/crypto_market_provider.dart';
-import 'cryptowidgets/bottom_navigation.dart';
-import 'cryptowidgets/crypto_list.dart';
-import 'cryptowidgets/featured_cryptos.dart';
-import 'cryptowidgets/market_activity.dart';
-import 'cryptowidgets/market_overview.dart';
-import 'cryptowidgets/trending_cryptos.dart';
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'admin_crypto_page.dart';
-import 'crypto_form_page.dart';
+import 'crypto_detail_page.dart';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:math';
+import '../../models/crypto_model.dart';
+import '../../providers/authProvider.dart';
+import '../../providers/crypto_market_provider.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'admin_crypto_page.dart';
 import 'crypto_detail_page.dart';
 
 class CryptoMarketPage extends StatefulWidget {
@@ -29,23 +33,26 @@ class CryptoMarketPage extends StatefulWidget {
 class _CryptoMarketPageState extends State<CryptoMarketPage> {
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
+  final Random _random = Random();
+
+  // Messages d'excitation dynamiques
   final List<Map<String, dynamic>> _excitationMessages = [
     {
       'title': '🚀 AFROCOIN EN FORTE HAUSSE !',
       'message': 'L\'AFC a pris +18% cette semaine ! Ne ratez pas l\'opportunité.',
-      'icon': Iconsax.trade1,
+      'icon': Iconsax.trend_up,
       'color': Color(0xFF00B894)
     },
     {
       'title': '💎 KORACON VOLATILE !',
       'message': 'La KRC montre une volatilité exceptionnelle. Parfait pour le trading actif !',
-      'icon': Iconsax.trade2,
+      'icon': Iconsax.activity,
       'color': Color(0xFFFF6B9D)
     },
     {
       'title': '📈 NILOGOLD STABLE ET SÛR',
       'message': 'Le NIG continue sa croissance régulière. Investissement sécurisé !',
-      'icon': Iconsax.chart_2,
+      'icon': Iconsax.chart_success,
       'color': Color(0xFFFFD700)
     },
     {
@@ -59,113 +66,14 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
       'message': 'Le TBD reste la valeur refuge du marché. Stabilité garantie !',
       'icon': Iconsax.shield_tick,
       'color': Color(0xFF667EEA)
-    },
-    {
-      'title': '🌟 DIVERSIFIEZ VOTRE PORTEFEUILLE',
-      'message': '5 cryptos africaines uniques pour maximiser vos gains !',
-      'icon': Iconsax.wallet_3,
-      'color': Color(0xFFFA709A)
     }
   ];
 
-  final List<Map<String, dynamic>> _activityMessages = [
-    {
-      'user': 'Fatou D.',
-      'action': 'a acheté',
-      'amount': '150 AFC',
-      'profit': '25,000',
-      'product': 'AfroCoin',
-      'type': 'buy'
-    },
-    {
-      'user': 'Mohamed K.',
-      'action': 'a vendu',
-      'amount': '75 KRC',
-      'profit': '18,500',
-      'product': 'KoraCoin',
-      'type': 'sell'
-    },
-    {
-      'user': 'Amina S.',
-      'action': 'a investi sur',
-      'amount': '50 NIG',
-      'profit': '32,000',
-      'product': 'NiloGold',
-      'type': 'buy'
-    },
-    {
-      'user': 'Jean-Paul M.',
-      'action': 'a réalisé un profit de',
-      'amount': '200 SVT',
-      'profit': '45,000',
-      'product': 'Savannah Token',
-      'type': 'sell'
-    },
-    {
-      'user': 'Binta T.',
-      'action': 'vient d\'acquérir',
-      'amount': '100 TBD',
-      'profit': '28,000',
-      'product': 'Timbuktu Dollar',
-      'type': 'buy'
-    },
-    {
-      'user': 'Koffi A.',
-      'action': 'a doublé son investissement sur',
-      'amount': '80 AFC',
-      'profit': '15,000',
-      'product': 'AfroCoin',
-      'type': 'buy'
-    },
-    {
-      'user': 'Sophie L.',
-      'action': 'a vendu avec succès',
-      'amount': '120 KRC',
-      'profit': '22,000',
-      'product': 'KoraCoin',
-      'type': 'sell'
-    },
-    {
-      'user': 'Omar D.',
-      'action': 'a acheté rapidement',
-      'amount': '90 NIG',
-      'profit': '12,500',
-      'product': 'NiloGold',
-      'type': 'buy'
-    },
-    {
-      'user': 'Grace M.',
-      'action': 'a réalisé un gain sur',
-      'amount': '180 SVT',
-      'profit': '38,000',
-      'product': 'Savannah Token',
-      'type': 'sell'
-    },
-    {
-      'user': 'David K.',
-      'action': 'vient d\'investir dans',
-      'amount': '60 TBD',
-      'profit': '9,500',
-      'product': 'Timbuktu Dollar',
-      'type': 'buy'
-    },
-    {
-      'user': 'Isabelle R.',
-      'action': 'a gagné sur',
-      'amount': '110 AFC',
-      'profit': '19,000',
-      'product': 'AfroCoin',
-      'type': 'sell'
-    },
-    {
-      'user': 'Moussa C.',
-      'action': 'a acheté en gros',
-      'amount': '95 KRC',
-      'profit': '14,200',
-      'product': 'KoraCoin',
-      'type': 'buy'
-    }
-  ];
+  // Données dynamiques pour les activités
+  List<Map<String, dynamic>> _marketActivities = [];
+  late List<String> _userNames;
+  late List<String> _actions;
+  late List<String> _cryptoNames;
 
   bool _showWelcomeModal = true;
   bool _acceptedTerms = false;
@@ -176,10 +84,186 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   @override
   void initState() {
     super.initState();
+    _initializeDynamicData();
+    _generateMarketActivities();
     _checkFirstLaunch();
     _startActivityRotation();
     _startExcitationRotation();
     _initializeData();
+  }
+
+  void _initializeDynamicData() {
+    _userNames = [
+      'Fatou Diallo', 'Mohamed Konaté', 'Aïcha Bâ', 'Jean-Paul Martin', 'Marie Dubois',
+      'Abdoulaye Sow', 'Sophie Laurent', 'Moussa Traoré', 'Camille Petit', 'Ibrahim Cissé',
+      'Élodie Moreau', 'Koffi Mensah', 'Chantal Ngom', 'Pierre Durand', 'Aminata Diop',
+      'Luc Bernard', 'Kadiatou Keita', 'Thomas Leroy', 'Nadia Sarr', 'David Muller',
+      'Rokhaya Ndiaye', 'Philippe Blanc', 'Mariam Coulibaly', 'Alain Morel', 'Sofia Ben'
+    ];
+
+    _actions = [
+      'a acheté', 'a vendu', 'a investi dans', 'a échangé', 'a converti en',
+      'a ajouté à son portefeuille', 'a retiré', 'a staké', 'a déstaké', 'a tradé',
+      'vient d\'acquérir', 'a réalisé un profit sur', 'a doublé son investissement sur'
+    ];
+
+    _cryptoNames = ['AFC', 'KRC', 'NIG', 'SVT', 'TBD'];
+  }
+
+  void _generateMarketActivities() {
+    _marketActivities = List.generate(15, (index) {
+      final userName = _userNames[_random.nextInt(_userNames.length)];
+      final action = _actions[_random.nextInt(_actions.length)];
+      final cryptoName = _cryptoNames[_random.nextInt(_cryptoNames.length)];
+      final amount = (_random.nextDouble() * 500 + 50).toStringAsFixed(0);
+      final profit = (_random.nextDouble() * 50000 + 5000).toStringAsFixed(0);
+      final time = '${_random.nextInt(59) + 1} min';
+      final isBuy = _random.nextDouble() > 0.4;
+
+      return {
+        'user': userName.split(' ')[0] + ' ${userName.split(' ')[1][0]}.',
+        'action': action,
+        'amount': amount,
+        'crypto': cryptoName,
+        'profit': profit,
+        'time': time,
+        'type': isBuy ? 'buy' : 'sell',
+        'fullName': userName,
+      };
+    });
+  }
+
+  // NOUVELLE MÉTHODE : Calcul précis du pourcentage de variation (identique à CryptoDetailPage)
+  double _calculatePrecisePriceChange2(CryptoCurrency crypto, String timeFrame) {
+    if (crypto.priceHistory.isEmpty) {
+      // Si pas d'historique, utiliser dailyPriceChange mais avec précision améliorée
+      return crypto.dailyPriceChange;
+    }
+
+    final now = DateTime.now();
+    DateTime startTime;
+
+    switch (timeFrame) {
+      case '1H':
+        startTime = now.subtract(Duration(hours: 1));
+        break;
+      case '24H':
+        startTime = now.subtract(Duration(hours: 24));
+        break;
+      case '1S':
+        startTime = now.subtract(Duration(days: 7));
+        break;
+      case '1M':
+        startTime = now.subtract(Duration(days: 30));
+        break;
+      case '1A':
+        startTime = now.subtract(Duration(days: 365));
+        break;
+      default:
+        startTime = now.subtract(Duration(hours: 24));
+    }
+
+    // Filtrer les prix historiques dans la période
+    final historicalPrices = crypto.priceHistory
+        .where((point) => point.timestamp.isAfter(startTime))
+        .toList();
+
+    if (historicalPrices.isEmpty) {
+      return crypto.dailyPriceChange;
+    }
+
+    // Trier par timestamp et prendre le plus ancien
+    historicalPrices.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final startPrice = historicalPrices.first.price;
+    final currentPrice = crypto.currentPrice;
+
+    // Calcul précis avec gestion des très petites variations
+    if (startPrice == 0) return 0.0;
+
+    final rawChange = ((currentPrice - startPrice) / startPrice);
+
+    // Éviter les arrondis problématiques autour de zéro
+    if (rawChange.abs() < 0.0001) {
+      return rawChange; // Garder la valeur exacte même très petite
+    }
+
+    return rawChange;
+  }
+  double _calculatePrecisePriceChange(CryptoCurrency crypto, String timeFrame) {
+    if (crypto.priceHistory.isEmpty) return crypto.dailyPriceChange;
+
+    final now = DateTime.now();
+    DateTime startTime;
+
+    switch (timeFrame) {
+      case '1H':
+        startTime = now.subtract(Duration(hours: 1));
+        break;
+      case '24H':
+        startTime = now.subtract(Duration(hours: 24));
+        break;
+      case '1S':
+        startTime = now.subtract(Duration(days: 7));
+        break;
+      case '1M':
+        startTime = now.subtract(Duration(days: 30));
+        break;
+      case '1A':
+        startTime = now.subtract(Duration(days: 365));
+        break;
+      default:
+        startTime = now.subtract(Duration(hours: 24));
+    }
+
+    // Trouver le prix le plus proche dans l'historique
+    final historicalPrices = crypto.priceHistory
+        .where((point) => point.timestamp.isAfter(startTime))
+        .toList();
+
+    if (historicalPrices.isEmpty) return crypto.dailyPriceChange;
+
+    // Prendre le prix le plus ancien dans la période
+    historicalPrices.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final startPrice = historicalPrices.first.price;
+    final currentPrice = crypto.currentPrice;
+
+    // Calculer la variation en pourcentage
+    return ((currentPrice - startPrice) / startPrice);
+  }
+
+  // MÉTHODE AMÉLIORÉE : Affichage cohérent du pourcentage
+  String _formatPercentage(double changePercent) {
+    // Pour les très petites valeurs, afficher plus de précision
+    if (changePercent.abs() < 0.01) {
+      return '${(changePercent * 100).toStringAsFixed(3)}%';
+    }
+    return '${(changePercent * 100).toStringAsFixed(2)}%';
+  }
+
+  // MÉTHODE AMÉLIORÉE : Description de la tendance avec cohérence
+  String _getTrendDescription(double changePercent) {
+    // Utiliser une tolérance très faible pour détecter les vraies variations
+    const tolerance = 0.00001;
+
+    if (changePercent > tolerance) {
+      if (changePercent > 0.05) return '📈 Forte hausse';
+      if (changePercent > 0.02) return '📈 Hausse modérée';
+      return '↗️ Légère hausse';
+    } else if (changePercent < -tolerance) {
+      if (changePercent < -0.05) return '📉 Forte baisse';
+      if (changePercent < -0.02) return '📉 Baisse modérée';
+      return '↘️ Légère baisse';
+    } else {
+      return '➡️ Stable';
+    }
+  }
+
+  // MÉTHODE : Obtenir la couleur basée sur la tendance réelle
+  Color _getTrendColor(double changePercent) {
+    const tolerance = 0.00001;
+    if (changePercent > tolerance) return Color(0xFF00B894);
+    if (changePercent < -tolerance) return Color(0xFFFF4D4D);
+    return Colors.grey;
   }
 
   void _initializeData() {
@@ -205,7 +289,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
     Future.delayed(Duration(seconds: 4), () {
       if (mounted) {
         setState(() {
-          _currentActivityIndex = (_currentActivityIndex + 1) % _activityMessages.length;
+          _currentActivityIndex = (_currentActivityIndex + 1) % _marketActivities.length;
         });
         _startActivityRotation();
       }
@@ -222,14 +306,24 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
       }
     });
   }
-
+String timetrade = '24H';
   void _updateFeaturedCryptos(List<CryptoCurrency> cryptos) {
     final availableCryptos = List.from(cryptos);
     _displayedFeaturedCryptos = availableCryptos.take(3).map((crypto) {
+      // Calculer la variation réelle pour 24H avec la nouvelle méthode précise
+      final realChange = _calculatePrecisePriceChange(crypto, timetrade);
+      final trendColor = _getTrendColor(realChange);
+      final trendDescription = _getTrendDescription(realChange);
+      final formattedPercentage = _formatPercentage(realChange);
+
       return {
         'crypto': crypto,
         'reason': _getRandomFeatureReason(crypto.name),
-        'trend': crypto.dailyPriceChange >= 0 ? 'up' : 'down'
+        'trend': realChange >= 0 ? 'up' : 'down',
+        'realChange': realChange,
+        'trendDescription': trendDescription,
+        'trendColor': trendColor,
+        'formattedPercentage': formattedPercentage,
       };
     }).toList();
   }
@@ -243,7 +337,9 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
       'Roadmap de développement ambitieuse',
       'Communauté très active',
       'Utility token à fort potentiel',
-      'Écosystème en expansion'
+      'Écosystème en expansion',
+      'Performance exceptionnelle cette semaine',
+      'Innovation technologique remarquable'
     ];
     return reasons[DateTime.now().millisecondsSinceEpoch % reasons.length];
   }
@@ -550,7 +646,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
           );
         }
 
-        // Mettre à jour les cryptos en vedette
+        // Mettre à jour les cryptos en vedette avec les vraies variations PRÉCISES
         _updateFeaturedCryptos(marketProvider.cryptos);
 
         return RefreshIndicator(
@@ -576,12 +672,10 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                   ),
                 ),
                 actions: [
-                  // Bouton d'aide
                   IconButton(
                     icon: Icon(Iconsax.info_circle, color: Colors.white),
                     onPressed: _showWelcomeModalDialog,
                   ),
-                  // Bouton portefeuille
                   IconButton(
                     icon: Icon(Iconsax.wallet_3, color: Colors.white),
                     onPressed: () {
@@ -597,12 +691,9 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                       });
                     },
                   ),
-                  // Bouton admin (seulement pour les ADM)
                   Consumer<CryptoMarketProvider>(
                     builder: (context, marketProvider, child) {
-                      // Vérifier si l'utilisateur est admin
-                      // final isAdmin = marketProvider.isAdmin; // À implémenter dans le provider
-                      final isAdmin = authProvider.loginUserData.role==UserRole.ADM.name; // À implémenter dans le provider
+                      final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
                       if (isAdmin) {
                         return IconButton(
                           icon: Icon(Iconsax.shield_tick, color: Color(0xFF00B894)),
@@ -625,24 +716,24 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                 child: _buildExcitationBanner(),
               ),
 
-              // Activités récentes
+              // Activités récentes dynamiques
               SliverToBoxAdapter(
                 child: _buildActivityFeed(),
               ),
 
-              // Cryptos en vedette
+              // Cryptos en vedette avec variations PRÉCISES
               if (_displayedFeaturedCryptos.isNotEmpty)
                 SliverToBoxAdapter(
                   child: _buildFeaturedCryptosSection(),
                 ),
 
-              // Cryptos tendances
+              // Cryptos tendances avec variations PRÉCISES
               if (marketProvider.trendingCryptos.isNotEmpty)
                 SliverToBoxAdapter(
                   child: _buildTrendingSection(marketProvider.trendingCryptos),
                 ),
 
-              // Toutes les cryptos
+              // Toutes les cryptos avec variations PRÉCISES
               SliverPadding(
                 padding: EdgeInsets.all(16),
                 sliver: SliverList(
@@ -726,7 +817,6 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-
                 onTap: () {
                   if (!_acceptedTerms) {
                     _showTermsAndConditions();
@@ -755,7 +845,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   }
 
   Widget _buildActivityFeed() {
-    final activity = _activityMessages[_currentActivityIndex];
+    final activity = _marketActivities[_currentActivityIndex];
     final isBuy = activity['type'] == 'buy';
 
     return Container(
@@ -812,7 +902,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                     ),
                   ),
                   TextSpan(
-                    text: 'de ${activity['product']}',
+                    text: 'de ${activity['crypto']}',
                     style: TextStyle(
                       color: Colors.grey[400],
                       fontSize: 14,
@@ -869,7 +959,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
           ),
         ),
         Container(
-          height: 160,
+          height: 180,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -887,7 +977,10 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   Widget _buildFeaturedCryptoCard(Map<String, dynamic> feature) {
     final crypto = feature['crypto'] as CryptoCurrency;
     final reason = feature['reason'] as String;
-    final trend = feature['trend'] as String;
+    final realChange = feature['realChange'] as double;
+    final trendDescription = feature['trendDescription'] as String;
+    final trendColor = feature['trendColor'] as Color;
+    final formattedPercentage = feature['formattedPercentage'] as String;
 
     return GestureDetector(
       onTap: () {
@@ -915,7 +1008,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
             ],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Color(0xFF00B894).withOpacity(0.3)),
+          border: Border.all(color: trendColor.withOpacity(0.3)),
         ),
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -927,10 +1020,10 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                   Container(
                     padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Color(0xFF00B894).withOpacity(0.2),
+                      color: trendColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Iconsax.star_1, color: Color(0xFF00B894), size: 16),
+                    child: Icon(Iconsax.star_1, color: trendColor, size: 16),
                   ),
                   SizedBox(width: 8),
                   Expanded(
@@ -980,16 +1073,28 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: trend == 'up' ? Color(0xFF00B894).withOpacity(0.2) : Color(0xFFFF4D4D).withOpacity(0.2),
+                      color: trendColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      trend == 'up' ? '📈 HAUSSE' : '📉 BAISSE',
-                      style: TextStyle(
-                        color: trend == 'up' ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          trendDescription,
+                          style: TextStyle(
+                            color: trendColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          formattedPercentage,
+                          style: TextStyle(
+                            color: trendColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1023,7 +1128,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
           ),
         ),
         Container(
-          height: 120,
+          height: 140,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -1039,7 +1144,11 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   }
 
   Widget _buildTrendingCryptoCard(CryptoCurrency crypto) {
-    final isPositive = crypto.dailyPriceChange >= 0;
+    // UTILISATION DU CALCUL PRÉCIS
+    final realChange = _calculatePrecisePriceChange(crypto, timetrade);
+    final trendColor = _getTrendColor(realChange);
+    final trendDescription = _getTrendDescription(realChange);
+    final formattedPercentage = _formatPercentage(realChange);
 
     return GestureDetector(
       onTap: () {
@@ -1055,7 +1164,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
         });
       },
       child: Container(
-        width: 140,
+        width: 160,
         margin: EdgeInsets.only(right: 12),
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -1068,7 +1177,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
             ],
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Color(0xFFFF6B9D).withOpacity(0.3)),
+          border: Border.all(color: trendColor.withOpacity(0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1091,21 +1200,35 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isPositive ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
-                  color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                  size: 12,
-                ),
-                SizedBox(width: 4),
                 Text(
-                  '${(crypto.dailyPriceChange * 100).toStringAsFixed(1)}%',
+                  trendDescription,
                   style: TextStyle(
-                    color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    color: trendColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      realChange >= 0 ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
+                      color: trendColor,
+                      size: 12,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      formattedPercentage,
+                      style: TextStyle(
+                        color: trendColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1116,7 +1239,11 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   }
 
   Widget _buildCryptoListItem(CryptoCurrency crypto) {
-    final isPositive = crypto.dailyPriceChange >= 0;
+    // UTILISATION DU CALCUL PRÉCIS pour chaque item de liste
+    final realChange = _calculatePrecisePriceChange(crypto, timetrade);
+    final trendColor = _getTrendColor(realChange);
+    final trendDescription = _getTrendDescription(realChange);
+    final formattedPercentage = _formatPercentage(realChange);
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -1136,12 +1263,6 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
               context,
               MaterialPageRoute(builder: (context) => CryptoDetailPage(cryptoId: crypto.id)),
             );
-            // _checkPortfolioBeforeAction(() {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => CryptoDetailPage(cryptoId: crypto.id)),
-            //   );
-            // });
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
@@ -1190,14 +1311,14 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Color(0xFF00B894).withOpacity(0.1),
+                          color: trendColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Color(0xFF00B894).withOpacity(0.3)),
+                          border: Border.all(color: trendColor.withOpacity(0.3)),
                         ),
                         child: Text(
                           crypto.category,
                           style: TextStyle(
-                            color: Color(0xFF00B894),
+                            color: trendColor,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1207,7 +1328,7 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                   ),
                 ),
 
-                // Prix et variation
+                // Prix et variation RÉELLE et PRÉCISE
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -1221,26 +1342,40 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                     ),
                     SizedBox(height: 4),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isPositive ? Color(0xFF00B894).withOpacity(0.2) : Color(0xFFFF4D4D).withOpacity(0.2),
+                        color: trendColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Icon(
-                            isPositive ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
-                            color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                            size: 12,
-                          ),
-                          SizedBox(width: 4),
                           Text(
-                            '${(crypto.dailyPriceChange * 100).toStringAsFixed(2)}%',
+                            trendDescription,
                             style: TextStyle(
-                              color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
+                              color: trendColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
                             ),
+                          ),
+                          SizedBox(height: 2),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                realChange >= 0 ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
+                                color: trendColor,
+                                size: 12,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                formattedPercentage,
+                                style: TextStyle(
+                                  color: trendColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -1257,11 +1392,11 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
 
   String _getCryptoEmoji(String symbol) {
     switch (symbol) {
-      case 'AFC': return '🪙'; // AfroCoin
-      case 'KRC': return '⚡'; // KoraCoin
-      case 'NIG': return '🏺'; // NiloGold
-      case 'SVT': return '🌍'; // Savannah Token
-      case 'TBD': return '💎'; // Timbuktu Dollar
+      case 'AFC': return '🪙';
+      case 'KRC': return '⚡';
+      case 'NIG': return '🏺';
+      case 'SVT': return '🌍';
+      case 'TBD': return '💎';
       default: return '🪙';
     }
   }
@@ -1337,7 +1472,10 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
   }
 
   Widget _buildCryptoSelectionItem(CryptoCurrency crypto) {
-    final isPositive = crypto.dailyPriceChange >= 0;
+    // UTILISATION DU CALCUL PRÉCIS pour la sélection
+    final realChange = _calculatePrecisePriceChange(crypto, timetrade);
+    final trendColor = _getTrendColor(realChange);
+    final formattedPercentage = _formatPercentage(realChange);
 
     return Container(
       margin: EdgeInsets.only(bottom: 8),
@@ -1409,15 +1547,15 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
                     Row(
                       children: [
                         Icon(
-                          isPositive ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
-                          color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                          realChange >= 0 ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
+                          color: trendColor,
                           size: 12,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          '${(crypto.dailyPriceChange * 100).toStringAsFixed(2)}%',
+                          formattedPercentage,
                           style: TextStyle(
-                            color: isPositive ? Color(0xFF00B894) : Color(0xFFFF4D4D),
+                            color: trendColor,
                             fontSize: 12,
                           ),
                         ),
@@ -1692,3 +1830,6 @@ class _CryptoMarketPageState extends State<CryptoMarketPage> {
     );
   }
 }
+
+
+
