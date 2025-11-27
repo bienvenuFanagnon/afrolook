@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 
 // Flutter imports:
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
+import 'package:afrotok/pages/userPosts/postTabs/postLookImageTab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_watermark/image_watermark.dart';

@@ -14,6 +14,7 @@ import 'package:afrotok/pages/home/homeSport.dart';
 import 'package:afrotok/pages/home/slive/utils.dart';
 import 'package:afrotok/pages/home/listTopModal.dart';
 import 'package:afrotok/pages/home/unitePage.dart';
+import 'package:afrotok/pages/home/unitePostPage/unified_home_page.dart';
 
 import 'package:animated_icon/animated_icon.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
@@ -1535,7 +1536,8 @@ class _MyHomePageState extends State<MyHomePage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          UnifiedHomePage(),
+          UnifiedHomeOptimized(),
+          // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
 
           ChallengesListPage(),

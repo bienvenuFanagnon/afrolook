@@ -680,14 +680,18 @@ class UserData {
   // List<Map<String, dynamic>>? stories = [];
   List<WhatsappStory>? stories = [];
   List<String> viewedVideos = []; // Liste des vidéos déjà vues
-  List<String>? viewedPostIds = []; // Nouveau champ pour stocker les posts vus
   int? lastNotificationTime;
   int totalPoints = 0;
+  int? lastFeedVisitTime; // Timestamp de la dernière consultation du feed
+
+
+  List<String> newPostsFromSubscriptions = []; // IDs des nouveaux posts des abonnements (max 1000)
+  List<String>? viewedPostIds = []; // IDs des posts déjà vus (max 1000)
+  int lastFeedUpdate = 0; // Timestamp de la dernière mise à jour du feed
 
   UserData(
       {this.reference,
       this.pseudo,
-      this.viewedPostIds,
       this.nom,
       this.prenom,
       this.email,
@@ -736,7 +740,9 @@ class UserData {
       this.state = "OFFLINE",
         this.viewedVideos = const [],
         this.userAbonnesIds = const [],
-
+        this.newPostsFromSubscriptions = const [],
+        this.viewedPostIds = const [],
+        this.lastFeedUpdate = 0,
       //this.genreId,
       this.role,
       this.userGlobalTags});
@@ -836,6 +842,11 @@ class UserData {
         .toList() ?? [];
     lastNotificationTime = json['lastNotificationTime'] ?? 0;
     totalPoints = json['totalPoints'] ?? 0;
+    lastFeedVisitTime = json['lastFeedVisitTime'] ??
+        DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
+    newPostsFromSubscriptions= List<String>.from(json['newPostsFromSubscriptions'] ?? []);
+    viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
+    lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
   }
 
 
@@ -912,8 +923,257 @@ class UserData {
     data['viewedVideos'] = this.viewedVideos;
     data['lastNotificationTime'] = lastNotificationTime;
     // data['totalPoints'] = totalPoints;
+    data['lastFeedVisitTime'] = lastFeedVisitTime;
+
+    data['newPostsFromSubscriptions'] = this.newPostsFromSubscriptions;
+    data['viewedPostIds'] = this.viewedPostIds;
+    data['lastFeedUpdate'] = this.lastFeedUpdate;
 
     return data;
+  }
+
+  bool isNewForUser(int userLastVisitTime) {
+    if (createdAt == null) return false;
+    // createdAt est en MICROSECONDS, userLastVisitTime aussi
+    return createdAt! > userLastVisitTime;
+  }
+}
+class Post {
+  String? id;
+  String? user_id;
+  String? challenge_id;
+  String? entreprise_id;
+  String? canal_id;
+  String? type;
+  String? categorie;
+  String? status;
+  String? urlLink;
+  String? dataType;
+  String? typeTabbar;
+  String? colorDomine;
+  String? colorSecondaire;
+  String? description;
+  String? isPostLink;
+  String? contact_whatsapp;
+  int? nombreCollaborateur;
+  double? publiCashTotal;
+  int? nombreImage;
+  int? nombrePersonneParJour;
+  String? url_media;
+  int? createdAt;
+  int? updatedAt;
+
+  int? comments = 0;
+  int? loves = 0;
+  int? partage = 0;
+  int? vues = 0;
+  int? likes = 0;
+  int? seenByUsersCount = 0;
+  int? popularity = 0;
+
+  // Nouveaux champs pour les challenges
+  int? votesChallenge = 0; // Nombre de votes spécifiques au challenge
+  List<String>? usersVotesIds = []; // Utilisateurs qui ont voté pour ce post
+
+  UserData? user;
+  EntrepriseData? entrepriseData;
+  Canal? canal;
+
+  List<PostComment>? commentaires = [];
+  List<String>? images = [];
+  List<String>? users_like_id = [];
+  List<String>? users_love_id = [];
+  List<String>? users_comments_id = [];
+  List<String>? users_partage_id = [];
+  List<String>? users_cadeau_id = [];
+  List<String>? users_republier_id = [];
+  List<String>? users_vue_id = [];
+
+  Map<String, bool>? seenByUsersMap = {};
+  bool? hasBeenSeenByCurrentUser;
+
+
+  double? feedScore = 0.5; // Score pour le feed (0.0 - 1.0)
+  int? lastScoreUpdate; // Timestamp du dernier calcul
+  int? recentEngagement; // Engagement des dernières 24h
+  bool? isBoosted = false; // Post boosté manuellement
+  int? uniqueViewsCount = 0; // Compteur de vues uniques
+
+  Post({
+    this.id,
+    this.comments,
+    this.dataType,
+    this.user_id,
+    this.entreprise_id,
+    this.status,
+    this.url_media,
+    this.nombreCollaborateur = 0,
+    this.popularity = 0,
+    this.publiCashTotal = 0,
+    this.nombreImage = 0,
+    this.nombrePersonneParJour = 0,
+    this.type,
+    this.images,
+    this.isPostLink,
+    this.users_like_id,
+    this.users_love_id,
+    this.loves,
+    this.partage = 0,
+    this.feedScore = 0.0,
+    this.users_vue_id,
+    this.challenge_id,
+    this.vues,
+    this.likes,
+    this.commentaires,
+    this.users_partage_id,
+    this.users_republier_id,
+    this.users_cadeau_id,
+    this.users_comments_id,
+    this.contact_whatsapp,
+    this.colorDomine,
+    this.colorSecondaire,
+    this.description,
+    this.typeTabbar,
+    this.urlLink,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+    this.seenByUsersCount = 0,
+    this.seenByUsersMap,
+    this.hasBeenSeenByCurrentUser = false,
+    this.votesChallenge = 0,
+    this.usersVotesIds,
+  });
+
+  int compareTo(Post other) {
+    return other.createdAt!.compareTo(createdAt!);
+  }
+
+  Post.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    comments = json['comments'];
+    user_id = json['user_id'];
+    entreprise_id = json['entreprise_id'];
+    status = json['status'];
+    type = json['type'];
+    description = json['description'];
+    createdAt = json['created_at'];
+    updatedAt = json['updated_at'];
+    dataType = json['dataType'];
+    url_media = json['url_media'];
+    contact_whatsapp = json['contact_whatsapp'] ?? "";
+    typeTabbar = json['typeTabbar'] ?? "";
+    isPostLink = json['isPostLink'] ?? "NON";
+    colorSecondaire = json['colorSecondaire'];
+    colorDomine = json['colorDomine'];
+    challenge_id = json['challenge_id'] ?? "";
+    categorie = json['categorie'] ?? "LOOK";
+    loves = json['loves'];
+    images = json['images'] == null ? [] : List<String>.from(json['images']);
+    canal_id = json['canal_id'] ?? "";
+    likes = json['likes'];
+    vues = json['vues'] ?? 0;
+    popularity = json['popularity'] ?? 0;
+    partage = json['partage'] ?? 0;
+    urlLink = json['urlLink'] ?? "";
+    users_like_id = json['users_like_id'] == null ? [] : List<String>.from(json['users_like_id']);
+    users_cadeau_id = json['users_cadeau_id'] == null ? [] : List<String>.from(json['users_cadeau_id']);
+    users_republier_id = json['users_republier_id'] == null ? [] : List<String>.from(json['users_republier_id']);
+    users_love_id = json['users_love_id'] == null ? [] : List<String>.from(json['users_love_id']);
+    users_vue_id = json['users_vue_id'] == null ? [] : List<String>.from(json['users_vue_id']);
+    nombreCollaborateur = json['nombreCollaborateur'];
+    nombreImage = json['nombreImage'];
+    nombrePersonneParJour = json['nombrePersonneParJour'];
+
+    // Champs challenge
+    votesChallenge = json['votes_challenge'] ?? 0;
+    usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
+
+    seenByUsersCount = json['seen_by_users_count'] ?? 0;
+    if (json['seen_by_users_map'] != null) {
+      seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
+    } else {
+      seenByUsersMap = {};
+    }
+
+    hasBeenSeenByCurrentUser = false;
+
+    feedScore = (json['feedScore'] as num?)?.toDouble() ?? 0.5;
+    lastScoreUpdate = json['lastScoreUpdate'];
+    recentEngagement = json['recentEngagement'];
+    isBoosted = json['isBoosted'] ?? false;
+    uniqueViewsCount = json['uniqueViewsCount'] ?? 0;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    data['id'] = id;
+    data['user_id'] = user_id;
+    data['entreprise_id'] = entreprise_id;
+    data['status'] = status;
+    data['popularity'] = popularity;
+    data['type'] = type;
+    data['description'] = description;
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
+    data['url_media'] = url_media;
+    data['colorDomine'] = colorDomine;
+    data['colorSecondaire'] = colorSecondaire;
+    data['loves'] = loves;
+    data['contact_whatsapp'] = contact_whatsapp;
+    data['challenge_id'] = challenge_id;
+    data['dataType'] = dataType;
+    data['categorie'] = categorie ?? 'LOOK';
+    data['urlLink'] = urlLink;
+    data['images'] = images;
+    data['isPostLink'] = isPostLink;
+    data['users_like_id'] = users_like_id;
+    data['users_love_id'] = users_love_id;
+    data['users_republier_id'] = users_republier_id;
+    data['likes'] = likes;
+    data['partage'] = partage;
+    data['users_vue_id'] = users_vue_id;
+    data['vues'] = vues;
+    data['typeTabbar'] = typeTabbar;
+    data['canal_id'] = canal_id;
+    data['nombreCollaborateur'] = nombreCollaborateur;
+    data['publiCashTotal'] = publiCashTotal;
+    data['nombreImage'] = nombreImage;
+    data['nombrePersonneParJour'] = nombrePersonneParJour;
+    data['comments'] = comments;
+
+    // Champs challenge
+    data['votes_challenge'] = votesChallenge;
+    data['users_votes_ids'] = usersVotesIds;
+
+    data['seen_by_users_count'] = seenByUsersCount;
+    data['seen_by_users_map'] = seenByUsersMap ?? {};
+    // NOUVEAUX CHAMPS
+    data['feedScore'] = feedScore;
+    data['lastScoreUpdate'] = lastScoreUpdate;
+    data['recentEngagement'] = recentEngagement;
+    data['isBoosted'] = isBoosted;
+    data['uniqueViewsCount'] = uniqueViewsCount;
+
+    return data;
+  }
+
+  // Méthode pour vérifier si un utilisateur a voté pour ce post
+  bool aVote(String userId) {
+    return usersVotesIds?.contains(userId) ?? false;
+  }
+
+  // === MÉTHODES UTILITAIRES POUR LE SCORING ===
+  bool isNewForUser(int userLastVisitTime) {
+    return (createdAt ?? 0) > userLastVisitTime;
+  }
+
+  bool isTrending() {
+    final int ageInHours = (DateTime.now().millisecondsSinceEpoch - (createdAt ?? 0)) ~/ (1000 * 3600);
+    if (ageInHours < 1) return false;
+
+    final double engagementPerHour = ((likes ?? 0) + (comments ?? 0) + (partage ?? 0)) / ageInHours;
+    return engagementPerHour > 5.0;
   }
 }
 
@@ -2488,211 +2748,6 @@ class Chat {
 
 
 // post_model.dart (mis à jour)
-class Post {
-  String? id;
-  String? user_id;
-  String? challenge_id;
-  String? entreprise_id;
-  String? canal_id;
-  String? type;
-  String? categorie;
-  String? status;
-  String? urlLink;
-  String? dataType;
-  String? typeTabbar;
-  String? colorDomine;
-  String? colorSecondaire;
-  String? description;
-  String? isPostLink;
-  String? contact_whatsapp;
-  int? nombreCollaborateur;
-  double? publiCashTotal;
-  int? nombreImage;
-  int? nombrePersonneParJour;
-  String? url_media;
-  int? createdAt;
-  int? updatedAt;
-
-  int? comments = 0;
-  int? loves = 0;
-  int? partage = 0;
-  int? vues = 0;
-  int? likes = 0;
-  int? seenByUsersCount = 0;
-  int? popularity = 0;
-
-  // Nouveaux champs pour les challenges
-  int? votesChallenge = 0; // Nombre de votes spécifiques au challenge
-  List<String>? usersVotesIds = []; // Utilisateurs qui ont voté pour ce post
-
-  UserData? user;
-  EntrepriseData? entrepriseData;
-  Canal? canal;
-
-  List<PostComment>? commentaires = [];
-  List<String>? images = [];
-  List<String>? users_like_id = [];
-  List<String>? users_love_id = [];
-  List<String>? users_comments_id = [];
-  List<String>? users_partage_id = [];
-  List<String>? users_cadeau_id = [];
-  List<String>? users_republier_id = [];
-  List<String>? users_vue_id = [];
-
-  Map<String, bool>? seenByUsersMap = {};
-  bool? hasBeenSeenByCurrentUser;
-
-  Post({
-    this.id,
-    this.comments,
-    this.dataType,
-    this.user_id,
-    this.entreprise_id,
-    this.status,
-    this.url_media,
-    this.nombreCollaborateur = 0,
-    this.popularity = 0,
-    this.publiCashTotal = 0,
-    this.nombreImage = 0,
-    this.nombrePersonneParJour = 0,
-    this.type,
-    this.images,
-    this.isPostLink,
-    this.users_like_id,
-    this.users_love_id,
-    this.loves,
-    this.partage = 0,
-    this.users_vue_id,
-    this.challenge_id,
-    this.vues,
-    this.likes,
-    this.commentaires,
-    this.users_partage_id,
-    this.users_republier_id,
-    this.users_cadeau_id,
-    this.users_comments_id,
-    this.contact_whatsapp,
-    this.colorDomine,
-    this.colorSecondaire,
-    this.description,
-    this.typeTabbar,
-    this.urlLink,
-    this.createdAt,
-    this.updatedAt,
-    this.user,
-    this.seenByUsersCount = 0,
-    this.seenByUsersMap,
-    this.hasBeenSeenByCurrentUser = false,
-    this.votesChallenge = 0,
-    this.usersVotesIds,
-  });
-
-  int compareTo(Post other) {
-    return other.createdAt!.compareTo(createdAt!);
-  }
-
-  Post.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    comments = json['comments'];
-    user_id = json['user_id'];
-    entreprise_id = json['entreprise_id'];
-    status = json['status'];
-    type = json['type'];
-    description = json['description'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    dataType = json['dataType'];
-    url_media = json['url_media'];
-    contact_whatsapp = json['contact_whatsapp'] ?? "";
-    typeTabbar = json['typeTabbar'] ?? "";
-    isPostLink = json['isPostLink'] ?? "NON";
-    colorSecondaire = json['colorSecondaire'];
-    colorDomine = json['colorDomine'];
-    challenge_id = json['challenge_id'] ?? "";
-    categorie = json['categorie'] ?? "LOOK";
-    loves = json['loves'];
-    images = json['images'] == null ? [] : List<String>.from(json['images']);
-    canal_id = json['canal_id'] ?? "";
-    likes = json['likes'];
-    vues = json['vues'] ?? 0;
-    popularity = json['popularity'] ?? 0;
-    partage = json['partage'] ?? 0;
-    urlLink = json['urlLink'] ?? "";
-    users_like_id = json['users_like_id'] == null ? [] : List<String>.from(json['users_like_id']);
-    users_cadeau_id = json['users_cadeau_id'] == null ? [] : List<String>.from(json['users_cadeau_id']);
-    users_republier_id = json['users_republier_id'] == null ? [] : List<String>.from(json['users_republier_id']);
-    users_love_id = json['users_love_id'] == null ? [] : List<String>.from(json['users_love_id']);
-    users_vue_id = json['users_vue_id'] == null ? [] : List<String>.from(json['users_vue_id']);
-    nombreCollaborateur = json['nombreCollaborateur'];
-    nombreImage = json['nombreImage'];
-    nombrePersonneParJour = json['nombrePersonneParJour'];
-
-    // Champs challenge
-    votesChallenge = json['votes_challenge'] ?? 0;
-    usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
-
-    seenByUsersCount = json['seen_by_users_count'] ?? 0;
-    if (json['seen_by_users_map'] != null) {
-      seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
-    } else {
-      seenByUsersMap = {};
-    }
-
-    hasBeenSeenByCurrentUser = false;
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = {};
-    data['id'] = id;
-    data['user_id'] = user_id;
-    data['entreprise_id'] = entreprise_id;
-    data['status'] = status;
-    data['popularity'] = popularity;
-    data['type'] = type;
-    data['description'] = description;
-    data['created_at'] = createdAt;
-    data['updated_at'] = updatedAt;
-    data['url_media'] = url_media;
-    data['colorDomine'] = colorDomine;
-    data['colorSecondaire'] = colorSecondaire;
-    data['loves'] = loves;
-    data['contact_whatsapp'] = contact_whatsapp;
-    data['challenge_id'] = challenge_id;
-    data['dataType'] = dataType;
-    data['categorie'] = categorie ?? 'LOOK';
-    data['urlLink'] = urlLink;
-    data['images'] = images;
-    data['isPostLink'] = isPostLink;
-    data['users_like_id'] = users_like_id;
-    data['users_love_id'] = users_love_id;
-    data['users_republier_id'] = users_republier_id;
-    data['likes'] = likes;
-    data['partage'] = partage;
-    data['users_vue_id'] = users_vue_id;
-    data['vues'] = vues;
-    data['typeTabbar'] = typeTabbar;
-    data['canal_id'] = canal_id;
-    data['nombreCollaborateur'] = nombreCollaborateur;
-    data['publiCashTotal'] = publiCashTotal;
-    data['nombreImage'] = nombreImage;
-    data['nombrePersonneParJour'] = nombrePersonneParJour;
-    data['comments'] = comments;
-
-    // Champs challenge
-    data['votes_challenge'] = votesChallenge;
-    data['users_votes_ids'] = usersVotesIds;
-
-    data['seen_by_users_count'] = seenByUsersCount;
-    data['seen_by_users_map'] = seenByUsersMap ?? {};
-
-    return data;
-  }
-
-  // Méthode pour vérifier si un utilisateur a voté pour ce post
-  bool aVote(String userId) {
-    return usersVotesIds?.contains(userId) ?? false;
-  }
-}
 class PostImage {
   String? id;
   String? post_id;

@@ -21,6 +21,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
+import '../services/postService/feed_interaction_service.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -1182,7 +1183,7 @@ class _PostCommentsState extends State<PostComments> {
         // Envoyer notifications pour les mentions
         await _sendMentionNotifications(textComment);
       }
-
+      FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
       setState(() {
         replying = false;
         replyingTo = "";

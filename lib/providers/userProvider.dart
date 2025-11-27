@@ -426,7 +426,7 @@ setMessageNonLu(int nbr){
       WriteBatch batch = FirebaseFirestore.instance.batch();
 
       for (UserData user in topUsers) {
-        print("user totalPoints : ${user.totalPoints}");
+        // print("user totalPoints : ${user.totalPoints}");
         int userPoints = user.totalPoints ?? 0;
 
         // 🧮 Calcul de popularité (0 à 1)
@@ -438,7 +438,7 @@ setMessageNonLu(int nbr){
         // 📌 Référence Firestore
         DocumentReference userRef =
         FirebaseFirestore.instance.collection('Users').doc(user.id);
-        print("user totalPoints popularite: ${popularite}");
+        // print("user totalPoints popularite: ${popularite}");
 
         batch.update(userRef, {
           "popularite": popularite,

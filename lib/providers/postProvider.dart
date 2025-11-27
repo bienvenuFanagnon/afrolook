@@ -2175,7 +2175,7 @@ class PostProvider extends ChangeNotifier {
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' UserServices user ${user.toJson()}');
+        // printVm(' UserServices user ${user.toJson()}');
 
         article.user = user;
       }
@@ -2220,7 +2220,7 @@ class PostProvider extends ChangeNotifier {
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' UserServices user ${user.toJson()}');
+        // printVm(' UserServices user ${user.toJson()}');
 
         article.user = user;
       }
@@ -2266,7 +2266,7 @@ class PostProvider extends ChangeNotifier {
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' UserServices user ${user.toJson()}');
+        // printVm(' UserServices user ${user.toJson()}');
 
         article.user = user;
       }
@@ -2312,7 +2312,7 @@ class PostProvider extends ChangeNotifier {
       for (var article in listArticles) {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        printVm(' UserServices user ${user.toJson()}');
+        // printVm(' UserServices user ${user.toJson()}');
 
         article.user = user;
       }

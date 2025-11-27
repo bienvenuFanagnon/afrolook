@@ -568,53 +568,6 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
         );
     }
   }
-  Widget _buildChroniqueStats(Chronique chronique) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // Vues
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.remove_red_eye, color: Colors.white, size: 10),
-              SizedBox(width: 2),
-              Text(
-                _formatCount(chronique.viewCount),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-
-          // Chrono
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.timer, color: Color(0xFFFFD700), size: 10),
-              SizedBox(width: 2),
-              Text(
-                _getTimeLeft(chronique.expiresAt),
-                style: TextStyle(
-                  color: Color(0xFFFFD700),
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   String _formatCount(int count) {
     if (count < 1000) return count.toString();

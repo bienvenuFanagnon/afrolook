@@ -20,12 +20,15 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../services/postService/feed_interaction_service.dart';
 import '../canaux/detailsCanal.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
 import '../postDetailsVideoListe.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
+
+
 
 // Vos couleurs principales
 const _afroBlack = Color(0xFF000000);
@@ -45,6 +48,10 @@ class LookChallengePostWidget extends StatefulWidget {
   final bool isDegrade;
   bool isPreview;
   final Function(Post, VisibilityInfo)? onVisibilityChanged;
+  final VoidCallback? onLiked;
+  final VoidCallback? onCommented;
+  final VoidCallback? onShared;
+  final VoidCallback? onLoved;
 
   LookChallengePostWidget({
     required this.post,
@@ -55,6 +62,10 @@ class LookChallengePostWidget extends StatefulWidget {
     Key? key,
     this.isPreview = true,
     this.onVisibilityChanged,
+    this.onLiked,
+    this.onCommented,
+    this.onShared,
+    this.onLoved,
   }) : super(key: key);
 
   @override
@@ -972,7 +983,8 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
   }
 
   Widget _buildPostActions() {
-    final isLiked = isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!);
+    final isLiked = isIn(widget.post.users_like_id ?? [], authProvider.loginUserData.id!);
+    final isLoved = isIn(widget.post.users_love_id ?? [], authProvider.loginUserData.id!);
 
     return Container(
       margin: EdgeInsets.only(top: 8),
@@ -986,6 +998,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
             color: _afroTextSecondary,
             onPressed: () {
               _showCommentsModal(widget.post);
+              widget.onCommented?.call();
             },
           ),
 
@@ -998,11 +1011,19 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
           ),
 
           // Like
+          // _buildActionButton(
+          //   icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+          //   count: widget.post.likes ?? 0,
+          //   color: isLiked ? _afroRed : _afroTextSecondary,
+          //   onPressed: () => _handleLike(),
+          // ),
+
+          // Love
           _buildActionButton(
-            icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+            icon: isLoved ? Icons.favorite : Icons.favorite_border,
             count: widget.post.loves ?? 0,
-            color: isLiked ? _afroRed : _afroTextSecondary,
-            onPressed: () => _handleLike(),
+            color: isLoved ? _afroRed : _afroTextSecondary,
+            onPressed: () => _handleLove(),
           ),
 
           // Cadeau
@@ -1265,17 +1286,17 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
 
   Future<void> _handleLike() async {
     try {
-      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+      if (!isIn(widget.post.users_like_id!, authProvider.loginUserData.id!)) {
         setState(() {
-          widget.post.loves = widget.post.loves! + 1;
-          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
+          widget.post.likes = (widget.post.likes ?? 0) + 1;
+          widget.post.users_like_id!.add(authProvider.loginUserData.id!);
         });
 
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(1),
-        });
+        // Appel du nouveau service
+        await FeedInteractionService.onPostLiked(widget.post, authProvider.loginUserData.id!);
+
+        // Appel du callback
+        widget.onLiked?.call();
 
         await authProvider.sendNotification(
             userIds: [widget.post.user!.oneIgnalUserid!],
@@ -1288,12 +1309,6 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
             post_type: PostDataType.IMAGE.name,
             chat_id: '');
 
-        // await postProvider.interactWithPostAndIncrementSolde(
-        //     widget.post.id!,
-        //     authProvider.loginUserData.id!,
-        //     "like",
-        //     widget.post.user_id!
-        // );
         addPointsForAction(UserAction.like);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1308,6 +1323,48 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
       }
     } catch (e) {
       print("Erreur like: $e");
+    }
+  }
+
+  Future<void> _handleLove() async {
+    try {
+      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+        setState(() {
+          widget.post.loves = (widget.post.loves ?? 0) + 1;
+          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
+        });
+
+        // Appel du nouveau service
+        await FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
+
+        // Appel du callback
+        widget.onLoved?.call();
+
+        await authProvider.sendNotification(
+            userIds: [widget.post.user!.oneIgnalUserid!],
+            smallImage: "${authProvider.loginUserData.imageUrl!}",
+            send_user_id: "${authProvider.loginUserData.id!}",
+            recever_user_id: "${widget.post.user_id!}",
+            message: "❤️ @${authProvider.loginUserData.pseudo!} a adoré votre ${_isLookChallenge ? 'look' : 'post'}",
+            type_notif: NotificationType.POST.name,
+            post_id: "${widget.post!.id!}",
+            post_type: PostDataType.IMAGE.name,
+            chat_id: '');
+
+        addPointsForAction(UserAction.like);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+ de points ajoutés à votre compte',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Erreur love: $e");
     }
   }
 
@@ -1334,8 +1391,14 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
           : widget.post.description ?? "",
       mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
     );
-    addPointsForAction(UserAction.partagePost);
 
+    // Appel du nouveau service
+    await FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
+
+    // Appel du callback
+    widget.onShared?.call();
+
+    addPointsForAction(UserAction.partagePost);
   }
 
   // Méthode pour afficher le dialogue de cadeau (à adapter depuis votre code existant)

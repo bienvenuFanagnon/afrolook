@@ -6,7 +6,7 @@ import 'dart:ui' as ui;
 // Flutter imports:
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/utils/example_helper.dart';
-import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
+import 'package:afrotok/pages/userPosts/postTabs/postLookImageTab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';

@@ -5,7 +5,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/userPosts/utils/postLookImageTab.dart';
+import 'package:afrotok/pages/userPosts/postTabs/postLookImageTab.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/pages/userPosts/utils/example_helper.dart';
 import 'package:afrotok/pages/userPosts/utils/example_constants.dart';

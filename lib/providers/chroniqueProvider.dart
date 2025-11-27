@@ -161,7 +161,7 @@ class ChroniqueProvider with ChangeNotifier {
     return _firestore
         .collection('chroniques')
         .where('expiresAt', isGreaterThan: Timestamp.now())
-        .orderBy('expiresAt', descending: false)
+        .orderBy('expiresAt', descending: false).limit(10)
         .snapshots()
         .map((snapshot) => snapshot.docs
         .map((doc) => Chronique.fromMap(doc.data(), doc.id))

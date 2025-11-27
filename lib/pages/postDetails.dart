@@ -38,6 +38,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/authProvider.dart';
 import '../services/linkService.dart';
+import '../services/postService/feed_interaction_service.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
@@ -939,6 +940,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(3),
         });
+        FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
+
         await authProvider.sendNotification(
             userIds: [widget.post.user!.oneIgnalUserid!],
             smallImage: "${authProvider.loginUserData.imageUrl!}",
@@ -975,7 +978,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   Future<void> _createTransaction(
-      String type, double montant, String description, String userid) async {
+      String type, double montant, String description, String userid) async
+  {
     try {
       final transaction = TransactionSolde()
         ..id = firestore.collection('TransactionSoldes').doc().id
@@ -1050,6 +1054,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             gainDestinataire,
             "Cadeau reçu de @${authProvider.loginUserData.pseudo}",
             widget.post.user_id!);
+        FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2608,6 +2613,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 .update({
               'partage': FieldValue.increment(1),
             });
+            FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
+
             addPointsForAction(UserAction.partagePost);
 
           } : null,
