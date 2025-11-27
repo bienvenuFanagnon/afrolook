@@ -10,8 +10,9 @@ import 'feed_scoring_service.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 
-class TikTokVideoService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+class MixedTikTokVideoService {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   final UserAuthProvider authProvider;
   final CategorieProduitProvider categorieProvider;
@@ -19,29 +20,27 @@ class TikTokVideoService {
   final ChroniqueProvider chroniqueProvider;
   final ContentProvider contentProvider;
 
-  // 🔥 MÉMOIRE DES VIDÉOS VUES
-  static const String _prefsKeySeen = 'seen_tiktok_videos';
+  // 🔥 CACHE AMÉLIORÉ POUR VIDÉOS
+  List<String> _preparedVideoIds = [];
+  int _currentIndex = 0;
+  static const int _preloadBatchSize = 50;
+  static const int _displayBatchSize = 5;
+
+  // 🔥 MÉMOIRE DES VIDÉOS DÉJÀ CHARGÉES
+  Set<String> _alreadyLoadedVideoIds = Set();
   Set<String> _seenVideoIds = Set();
   final int _maxSeenMemory = 300;
+  static const String _prefsKeySeen = 'seen_tiktok_videos';
 
-  // 🔥 CURSEURS POUR VIDÉOS
-  Map<String, DocumentSnapshot?> _cursors = {
-    'lowScore': null,
-    'mediumScore': null,
-    'highScore': null,
-    'recent': null,
-  };
+  // 🔥 ÉTAT DE CHARGEMENT
+  bool _isLoading = false;
+  bool _hasMore = true;
+  bool _isPreparingVideos = false;
 
-  // 🔥 GESTION DES TENTATIVES
-  int _consecutiveEmptyLoads = 0;
-  static const int _maxConsecutiveEmptyLoads = 3;
+  // 🔥 CONTENU MIXTE ACTUEL POUR VIDÉOS
+  List<dynamic> _mixedVideoContent = [];
 
-  // CONTENU GLOBAL POUR PUBLICITÉS
-  List<ArticleData> _globalArticles = [];
-  List<Canal> _globalCanaux = [];
-  bool _hasLoadedGlobalContent = false;
-
-  TikTokVideoService({
+  MixedTikTokVideoService({
     required this.authProvider,
     required this.categorieProvider,
     required this.postProvider,
@@ -49,11 +48,21 @@ class TikTokVideoService {
     required this.contentProvider,
   });
 
+  // 🔥 GETTERS
+  List<dynamic> get mixedVideoContent => _mixedVideoContent;
+  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+  bool get isReady => _preparedVideoIds.isNotEmpty;
+  int get preparedVideosCount => _preparedVideoIds.length;
+  int get currentIndex => _currentIndex;
+
+  // 🔥 INITIALISATION
   Future<void> initialize() async {
     await _loadSeenVideosFromStorage();
     print('🎯 Service TikTok initialisé - ${_seenVideoIds.length} vidéos vues');
   }
 
+  // 🔥 CHARGEMENT DE LA MÉMOIRE DES VIDÉOS VUES
   Future<void> _loadSeenVideosFromStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -69,6 +78,7 @@ class TikTokVideoService {
     }
   }
 
+  // 🔥 SAUVEGARDE DE LA MÉMOIRE
   Future<void> _saveSeenVideosToStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -80,425 +90,422 @@ class TikTokVideoService {
   }
 
   // 🔥 ALGORITHME PRINCIPAL POUR VIDÉOS
-  Future<List<Post>> loadTikTokVideos({
-    required int userLastVisitTime,
-    bool isInitialLoad = true,
-    bool loadMore = false,
-  }) async {
-    print('🚀 Chargement vidéos TikTok - Initial: $isInitialLoad, LoadMore: $loadMore');
+  Future<List<dynamic>> loadMixedVideoContent({bool loadMore = false}) async {
+    if (_isLoading) return _mixedVideoContent;
+
+    _isLoading = true;
 
     try {
-      if (_consecutiveEmptyLoads >= _maxConsecutiveEmptyLoads) {
-        print('🔄 Réinitialisation après charges vides successives');
-        await _softReset();
+      print('🎬 Chargement contenu vidéo mixte - LoadMore: $loadMore');
+
+      if (!loadMore) {
+        // 🔥 RÉINITIALISER POUR LE PREMIER CHARGEMENT
+        _mixedVideoContent.clear();
+        _currentIndex = 0;
+        _alreadyLoadedVideoIds.clear();
       }
 
-      List<Post> results;
+      // 🔥 PRÉPARER LES IDs SI NÉCESSAIRE
+      if (!loadMore || _preparedVideoIds.isEmpty || _currentIndex >= _preparedVideoIds.length - 10) {
+        final currentUserId = authProvider.loginUserData.id;
+        if (currentUserId != null) {
+          await _prepareInitialVideoIds(currentUserId);
+        }
+      }
 
-      if (isInitialLoad) {
-        results = await _loadInitialTikTokVideos(userLastVisitTime);
-      } else if (loadMore) {
-        results = await _loadMoreTikTokVideos(userLastVisitTime);
+      if (_preparedVideoIds.isEmpty) {
+        print('📭 Aucune vidéo à charger');
+        _hasMore = false;
+        return _mixedVideoContent;
+      }
+
+      // 🔥 CHARGER LE LOT DE VIDÉOS ACTUEL
+      final videos = await _loadCurrentVideoBatch();
+
+      // 🔥 CONSTRUIRE LE CONTENU MIXTE AVEC PUBLICITÉS
+      final newContent = _buildMixedVideoContent(videos, loadMore: loadMore);
+
+      if (loadMore) {
+        _mixedVideoContent.addAll(newContent);
       } else {
-        results = await _loadNewVideosOnly(userLastVisitTime);
+        _mixedVideoContent = newContent;
       }
 
-      // Gestion des charges vides
-      if (results.isEmpty) {
-        _consecutiveEmptyLoads++;
-        print('⚠️ Charge vidéos vide ($_consecutiveEmptyLoads/$_maxConsecutiveEmptyLoads)');
-      } else {
-        _consecutiveEmptyLoads = 0;
-      }
+      // 🔥 METTRE À JOUR L'ÉTAT "HAS MORE"
+      _hasMore = _currentIndex < _preparedVideoIds.length;
 
-      return results;
+      print('✅ Contenu vidéo mixte chargé: ${_mixedVideoContent.length} éléments (hasMore: $_hasMore)');
+      return _mixedVideoContent;
 
     } catch (e) {
-      print('❌ Erreur chargement vidéos TikTok: $e');
-      _consecutiveEmptyLoads++;
-      return [];
+      print('❌ Erreur chargement contenu vidéo mixte: $e');
+      _hasMore = false;
+      return _mixedVideoContent;
+    } finally {
+      _isLoading = false;
     }
   }
 
-  // 🔥 CHARGEMENT INITIAL VIDÉOS
-  Future<List<Post>> _loadInitialTikTokVideos(int userLastVisitTime) async {
-    print('🎯 Chargement initial vidéos TikTok...');
+  // 🔥 PRÉPARATION DES IDs DE VIDÉOS (CORRIGÉ)
+  Future<void> _prepareInitialVideoIds(String currentUserId) async {
+    if (_isPreparingVideos) return;
 
-    _resetCursors();
+    _isPreparingVideos = true;
 
-    final results = await Future.wait([
-      _loadRecentVideos(userLastVisitTime, limit: 8),
-      _loadLowScoreVideos(userLastVisitTime, limit: 10),
-      _loadMediumScoreVideos(userLastVisitTime, limit: 6),
-      _loadHighScoreVideos(userLastVisitTime, limit: 4),
-    ], eagerError: true);
-
-    final allVideos = [...results[0], ...results[1], ...results[2], ...results[3]];
-
-    // Mélange et filtrage
-    final shuffledVideos = _shuffleVideos(allVideos);
-    final uniqueVideos = _filterSeenVideos(shuffledVideos);
-
-    print('📊 Mix vidéos: ${allVideos.length} bruts → ${uniqueVideos.length} uniques');
-
-    // GARDE-FOU
-    if (uniqueVideos.isEmpty && allVideos.isNotEmpty) {
-      return _handleAllVideosFiltered(allVideos);
-    }
-
-    return uniqueVideos;
-  }
-
-  // 🔥 CHARGEMENT SUPPLÉMENTAIRE VIDÉOS
-  Future<List<Post>> _loadMoreTikTokVideos(int userLastVisitTime) async {
-    print('📥 Chargement supplémentaire vidéos...');
-
-    final List<Post> newVideos = [];
-
-    // Priorité aux vidéos faible score pour la découverte
-    if (newVideos.length < 6) {
-      final lowScoreVideos = await _loadLowScoreVideos(userLastVisitTime, limit: 8);
-      newVideos.addAll(lowScoreVideos);
-    }
-
-    // Puis moyen score
-    if (newVideos.length < 4) {
-      final mediumScoreVideos = await _loadMediumScoreVideos(userLastVisitTime, limit: 6);
-      newVideos.addAll(mediumScoreVideos);
-    }
-
-    // Enfin haut score
-    if (newVideos.length < 2) {
-      final highScoreVideos = await _loadHighScoreVideos(userLastVisitTime, limit: 4);
-      newVideos.addAll(highScoreVideos);
-    }
-
-    if (newVideos.isEmpty) {
-      print('🏁 Fin des vidéos disponibles');
-      return [];
-    }
-
-    final uniqueVideos = _filterSeenVideos(newVideos);
-    print('📥 Vidéos supplémentaires: ${uniqueVideos.length}');
-
-    return uniqueVideos;
-  }
-
-  // 🔥 VIDÉOS RÉCENTES
-  Future<List<Post>> _loadRecentVideos(int userLastVisitTime, {required int limit}) async {
     try {
-      final userLastVisitMicros = _millisToMicro(userLastVisitTime);
+      print('🎯 Préparation des IDs de vidéos...');
 
-      final snapshot = await _firestore
+      final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data()!;
+      final userLastVisitTime = userData['lastFeedVisitTime'] ??
+          (DateTime.now().microsecondsSinceEpoch - Duration(hours: 1).inMicroseconds);
+
+      // 🔥 ALGORITHME POUR VIDÉOS UNIQUES - EXCLURE LES VIDÉOS VUES
+      final Set<String> allVideoIds = Set();
+
+      // 1. Vidéos récentes non vues (CORRIGÉ - pas de whereNotIn avec whereIn)
+      final recentVideos = await _getRecentVideoIds(20);
+      allVideoIds.addAll(recentVideos);
+
+      // 2. Vidéos par score (CORRIGÉ - pas de whereNotIn avec whereIn)
+      final highScoreVideos = await _getVideosByScore(15, 0.7, 1.0);
+      final mediumScoreVideos = await _getVideosByScore(15, 0.4, 0.7);
+      final lowScoreVideos = await _getVideosByScore(10, 0.0, 0.4);
+
+      allVideoIds.addAll(highScoreVideos);
+      allVideoIds.addAll(mediumScoreVideos);
+      allVideoIds.addAll(lowScoreVideos);
+
+      print('📊 Composition vidéos: ${recentVideos.length} récentes, ${highScoreVideos.length}F ${mediumScoreVideos.length}M ${lowScoreVideos.length}L');
+
+      // 🔥 FILTRAGE FINAL POUR EXCLURE LES VIDÉOS VUES
+      final filteredRecentVideos = recentVideos.where((id) => !_seenVideoIds.contains(id)).toList();
+      final filteredHighScoreVideos = highScoreVideos.where((id) => !_seenVideoIds.contains(id)).toList();
+      final filteredMediumScoreVideos = mediumScoreVideos.where((id) => !_seenVideoIds.contains(id)).toList();
+      final filteredLowScoreVideos = lowScoreVideos.where((id) => !_seenVideoIds.contains(id)).toList();
+
+      print('''
+🧹 FILTRAGE VIDÉOS:
+   - Récents: ${recentVideos.length} → ${filteredRecentVideos.length}
+   - Fort: ${highScoreVideos.length} → ${filteredHighScoreVideos.length}
+   - Moyen: ${mediumScoreVideos.length} → ${filteredMediumScoreVideos.length}
+   - Low: ${lowScoreVideos.length} → ${filteredLowScoreVideos.length}
+''');
+
+      // 🔥 ORDRE CYCLIQUE POUR VIDÉOS
+      final orderedVideos = _createVideoCyclicOrder(
+        recentVideos: filteredRecentVideos,
+        highScoreVideos: filteredHighScoreVideos,
+        mediumScoreVideos: filteredMediumScoreVideos,
+        lowScoreVideos: filteredLowScoreVideos,
+      );
+
+      _preparedVideoIds = orderedVideos.take(_preloadBatchSize).toList();
+      _currentIndex = 0;
+      _alreadyLoadedVideoIds.clear();
+      _hasMore = _preparedVideoIds.isNotEmpty;
+
+      print('''
+📦 PRÉPARATION VIDÉOS TERMINÉE:
+   - IDs préparés: ${_preparedVideoIds.length} vidéos
+   - Vidéos exclues (déjà vues): ${_seenVideoIds.length}
+   - Premier ID: ${_preparedVideoIds.isNotEmpty ? _preparedVideoIds.first : 'aucun'}
+''');
+
+    } catch (e) {
+      print('❌ Erreur préparation IDs vidéos: $e');
+      _preparedVideoIds = [];
+      _hasMore = false;
+    } finally {
+      _isPreparingVideos = false;
+    }
+  }
+
+  // 🔥 ORDRE CYCLIQUE POUR VIDÉOS
+  List<String> _createVideoCyclicOrder({
+    required List<String> recentVideos,
+    required List<String> highScoreVideos,
+    required List<String> mediumScoreVideos,
+    required List<String> lowScoreVideos,
+  }) {
+    final orderedVideos = <String>[];
+
+    // 🔥 CRÉER DES COPIES MUTABLES
+    final recentPool = List<String>.from(recentVideos);
+    final highPool = List<String>.from(highScoreVideos);
+    final mediumPool = List<String>.from(mediumScoreVideos);
+    final lowPool = List<String>.from(lowScoreVideos);
+
+    // 🔥 PATTERN SPÉCIAL POUR VIDÉOS TIKTOK
+    const pattern = [
+      _VideoType.RECENT, _VideoType.RECENT, _VideoType.RECENT,
+      _VideoType.HIGH, _VideoType.HIGH,
+      _VideoType.MEDIUM, _VideoType.MEDIUM,
+      _VideoType.LOW, _VideoType.LOW,
+      _VideoType.RECENT, _VideoType.RECENT,
+    ];
+
+    int patternIndex = 0;
+
+    while (orderedVideos.length < _preloadBatchSize) {
+      final currentType = pattern[patternIndex % pattern.length];
+
+      String? nextVideo;
+
+      switch (currentType) {
+        case _VideoType.RECENT:
+          if (recentPool.isNotEmpty) nextVideo = recentPool.removeAt(0);
+          break;
+        case _VideoType.HIGH:
+          if (highPool.isNotEmpty) nextVideo = highPool.removeAt(0);
+          break;
+        case _VideoType.MEDIUM:
+          if (mediumPool.isNotEmpty) nextVideo = mediumPool.removeAt(0);
+          break;
+        case _VideoType.LOW:
+          if (lowPool.isNotEmpty) nextVideo = lowPool.removeAt(0);
+          break;
+      }
+
+      // 🔥 COMPENSATION SI CATÉGORIE VIDE
+      if (nextVideo == null) {
+        nextVideo = _getAnyAvailableVideo([recentPool, highPool, mediumPool, lowPool]);
+      }
+
+      if (nextVideo != null) {
+        orderedVideos.add(nextVideo);
+      } else {
+        break; // Plus de vidéos disponibles
+      }
+
+      patternIndex++;
+    }
+
+    print('🎯 Ordre cyclique vidéos: ${orderedVideos.length} vidéos');
+    return orderedVideos;
+  }
+
+  String? _getAnyAvailableVideo(List<List<String>> pools) {
+    for (final pool in pools) {
+      if (pool.isNotEmpty) {
+        return pool.removeAt(0);
+      }
+    }
+    return null;
+  }
+
+  // 🔥 CHARGEMENT DU LOT ACTUEL DE VIDÉOS
+  Future<List<Post>> _loadCurrentVideoBatch() async {
+    final batchSize = _displayBatchSize;
+    final endIndex = min(_currentIndex + batchSize, _preparedVideoIds.length);
+
+    if (_currentIndex >= _preparedVideoIds.length) {
+      return [];
+    }
+
+    // 🔥 FILTRER LES IDs DÉJÀ CHARGÉS
+    final availableIds = _preparedVideoIds.sublist(_currentIndex, endIndex)
+        .where((id) => !_alreadyLoadedVideoIds.contains(id))
+        .toList();
+
+    if (availableIds.isEmpty) {
+      print('⚠️ Toutes les vidéos de ce lot sont déjà chargées');
+      _currentIndex = endIndex;
+      return await _loadCurrentVideoBatch();
+    }
+
+    final videos = await _loadVideosByIds(availableIds);
+
+    // 🔥 METTRE À JOUR LA MÉMOIRE ET L'INDEX
+    for (final video in videos) {
+      if (video.id != null) {
+        _alreadyLoadedVideoIds.add(video.id!);
+      }
+    }
+
+    _currentIndex = endIndex;
+    return videos;
+  }
+
+  // 🔥 CONSTRUCTION DU CONTENU MIXTE VIDÉOS + PUBLICITÉS
+  List<dynamic> _buildMixedVideoContent(List<Post> videos, {bool loadMore = false}) {
+    final mixedContent = <dynamic>[];
+    int videoCount = 0;
+
+    for (final video in videos) {
+      // Ajouter la vidéo
+      mixedContent.add(VideoContentSection(
+        type: VideoContentType.VIDEO,
+        data: video,
+      ));
+      videoCount++;
+
+      // 🔥 INSÉRER UNE PUBLICITÉ APRÈS 3 VIDÉOS
+      if (videoCount >= 3) {
+        // Alterner entre produits et canaux
+        final adType = (mixedContent.length % 2 == 0) ? AdType.PRODUCT : AdType.CHANNEL;
+        mixedContent.add(VideoContentSection(
+          type: VideoContentType.AD,
+          data: adType,
+        ));
+        videoCount = 0;
+      }
+    }
+
+    print('🎬 Contenu vidéo mixte: ${mixedContent.length} éléments (${videos.length} vidéos)');
+    return mixedContent;
+  }
+
+  // 🔥 MÉTHODES DE CHARGEMENT SPÉCIFIQUES AUX VIDÉOS (CORRIGÉES)
+  Future<List<String>> _getRecentVideoIds(int limit) async {
+    try {
+      final snapshot = await firestore
           .collection('Posts')
           .where('dataType', isEqualTo: 'VIDEO')
           .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
-          .where('created_at', isGreaterThan: userLastVisitMicros - Duration(days: 2).inMicroseconds)
           .orderBy('created_at', descending: true)
           .limit(limit)
           .get();
 
-      final videos = _processVideosSnapshot(snapshot);
-      _calculateScores(videos, userLastVisitTime);
-
-      print('🆕 Vidéos récentes: ${videos.length}');
-      return videos;
-
+      return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
       print('❌ Erreur vidéos récentes: $e');
       return [];
     }
   }
 
-  // 🔥 VIDÉOS FAIBLE SCORE
-  Future<List<Post>> _loadLowScoreVideos(int userLastVisitTime, {required int limit}) async {
+  Future<List<String>> _getVideosByScore(int limit, double minScore, double maxScore) async {
     try {
-      Query query = _firestore
+      final snapshot = await firestore
           .collection('Posts')
           .where('dataType', isEqualTo: 'VIDEO')
           .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
-          .where('feedScore', isGreaterThanOrEqualTo: 0.0)
-          .where('feedScore', isLessThan: 0.4)
-          .orderBy('feedScore', descending: false)
-          .orderBy('created_at', descending: true)
-          .limit(limit);
-
-      if (_cursors['lowScore'] != null) {
-        query = query.startAfterDocument(_cursors['lowScore']!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _cursors['lowScore'] = snapshot.docs.last;
-      }
-
-      final videos = _processVideosSnapshot(snapshot);
-      _calculateScores(videos, userLastVisitTime);
-
-      print('📉 Vidéos faible score: ${videos.length}');
-      return videos;
-
-    } catch (e) {
-      print('❌ Erreur vidéos faible score: $e');
-      return [];
-    }
-  }
-
-  // 🔥 VIDÉOS MOYEN SCORE
-  Future<List<Post>> _loadMediumScoreVideos(int userLastVisitTime, {required int limit}) async {
-    try {
-      Query query = _firestore
-          .collection('Posts')
-          .where('dataType', isEqualTo: 'VIDEO')
-          .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
-          .where('feedScore', isGreaterThanOrEqualTo: 0.4)
-          .where('feedScore', isLessThan: 0.7)
-          .orderBy('feedScore', descending: true)
-          .orderBy('created_at', descending: true)
-          .limit(limit);
-
-      if (_cursors['mediumScore'] != null) {
-        query = query.startAfterDocument(_cursors['mediumScore']!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _cursors['mediumScore'] = snapshot.docs.last;
-      }
-
-      final videos = _processVideosSnapshot(snapshot);
-      _calculateScores(videos, userLastVisitTime);
-
-      return videos;
-
-    } catch (e) {
-      print('❌ Erreur vidéos moyen score: $e');
-      return [];
-    }
-  }
-
-  // 🔥 VIDÉOS FORT SCORE
-  Future<List<Post>> _loadHighScoreVideos(int userLastVisitTime, {required int limit}) async {
-    try {
-      Query query = _firestore
-          .collection('Posts')
-          .where('dataType', isEqualTo: 'VIDEO')
-          .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
-          .where('feedScore', isGreaterThanOrEqualTo: 0.7)
-          .orderBy('feedScore', descending: true)
-          .orderBy('created_at', descending: true)
-          .limit(limit);
-
-      if (_cursors['highScore'] != null) {
-        query = query.startAfterDocument(_cursors['highScore']!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _cursors['highScore'] = snapshot.docs.last;
-      }
-
-      final videos = _processVideosSnapshot(snapshot);
-      _calculateScores(videos, userLastVisitTime);
-
-      return videos;
-
-    } catch (e) {
-      print('❌ Erreur vidéos fort score: $e');
-      return [];
-    }
-  }
-
-  // 🔥 FILTRAGE VIDÉOS VUES
-  List<Post> _filterSeenVideos(List<Post> videos) {
-    final uniqueVideos = <Post>[];
-    int filteredCount = 0;
-
-    for (final video in videos) {
-      if (video.id != null && !_seenVideoIds.contains(video.id!)) {
-        uniqueVideos.add(video);
-        _markVideoAsSeen(video.id!);
-      } else {
-        filteredCount++;
-      }
-    }
-
-    print('🔍 Filtrage vidéos: ${videos.length} → ${uniqueVideos.length} uniques ($filteredCount filtrés)');
-    return uniqueVideos;
-  }
-
-  // 🔥 NOUVELLES VIDÉOS SEULEMENT
-  Future<List<Post>> _loadNewVideosOnly(int userLastVisitTime) async {
-    print('🔄 Chargement nouvelles vidéos...');
-
-    final userLastVisitMicros = _millisToMicro(userLastVisitTime);
-
-    try {
-      final snapshot = await _firestore
-          .collection('Posts')
-          .where('dataType', isEqualTo: 'VIDEO')
-          .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
-          .where('created_at', isGreaterThan: userLastVisitMicros)
-          .orderBy('created_at', descending: true)
-          .limit(15)
+          .where('feedScore', isGreaterThanOrEqualTo: minScore)
+          .where('feedScore', isLessThan: maxScore)
+          .orderBy('feedScore', descending: minScore > 0.5)
+          .limit(limit)
           .get();
 
-      final newVideos = _processVideosSnapshot(snapshot);
-      _calculateScores(newVideos, userLastVisitTime);
-
-      final uniqueVideos = _filterSeenVideos(newVideos);
-      print('🆕 Nouvelles vidéos: ${uniqueVideos.length}');
-
-      return uniqueVideos;
-
+      return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
-      print('❌ Erreur nouvelles vidéos: $e');
+      print('❌ Erreur vidéos par score: $e');
       return [];
     }
   }
 
-  // 🔥 MÉTHODES UTILITAIRES
-  List<Post> _shuffleVideos(List<Post> videos) {
-    final random = Random();
-    final shuffled = List<Post>.from(videos);
-    shuffled.shuffle(random);
-    return shuffled;
-  }
+  Future<List<Post>> _loadVideosByIds(List<String> videoIds) async {
+    if (videoIds.isEmpty) return [];
 
-  List<Post> _handleAllVideosFiltered(List<Post> allVideos) {
-    print('⚠️ GARDE-FOU: Toutes les vidéos filtrées');
+    final List<Post> videos = [];
 
-    _cleanSeenMemory(50);
+    try {
+      for (int i = 0; i < videoIds.length; i += 10) {
+        final batchIds = videoIds.sublist(i, min(i + 10, videoIds.length));
 
-    final emergencyVideos = allVideos.take(3).toList();
-    for (final video in emergencyVideos) {
-      _markVideoAsSeen(video.id!);
-    }
+        final snapshot = await firestore
+            .collection('Posts')
+            .where(FieldPath.documentId, whereIn: batchIds)
+            .get();
 
-    print('🆘 Vidéos d\'urgence: ${emergencyVideos.length}');
-    return emergencyVideos;
-  }
+        final batchVideos = snapshot.docs.map((doc) {
+          try {
+            final post = Post.fromJson({'id': doc.id, ...doc.data()});
 
-  void _cleanSeenMemory(int keepCount) {
-    if (_seenVideoIds.length > keepCount) {
-      final idsToKeep = _seenVideoIds.take(keepCount).toSet();
-      _seenVideoIds = idsToKeep;
-      _saveSeenVideosToStorage();
-      print('🧹 Mémoire vidéos nettoyée: $keepCount conservés');
-    }
-  }
+            // 🔥 VALIDATION DE LA VIDÉO
+            if (post.createdAt == null) return null;
+            final postDate = DateTime.fromMicrosecondsSinceEpoch(post.createdAt!);
+            if (postDate.year < 2020 || postDate.year > 2030) return null;
 
-  Future<void> _softReset() async {
-    _cursors.forEach((key, value) {
-      _cursors[key] = null;
-    });
-    _consecutiveEmptyLoads = 0;
-    _cleanSeenMemory(100);
-    print('🔄 Réinitialisation douce vidéos effectuée');
-  }
+            return post;
+          } catch (e) {
+            print('❌ Erreur parsing vidéo ${doc.id}: $e');
+            return null;
+          }
+        }).where((video) => video != null).cast<Post>().toList();
 
-  void _markVideoAsSeen(String videoId) {
-    _seenVideoIds.add(videoId);
-
-    if (_seenVideoIds.length > _maxSeenMemory) {
-      final idsToRemove = _seenVideoIds.take(_seenVideoIds.length - _maxSeenMemory).toList();
-      for (final id in idsToRemove) {
-        _seenVideoIds.remove(id);
+        videos.addAll(batchVideos);
       }
+    } catch (e) {
+      print('❌ Erreur chargement vidéos par IDs: $e');
     }
 
-    _saveSeenVideosToStorage();
+    return videos;
   }
 
-  void _resetCursors() {
-    _cursors.forEach((key, value) {
-      _cursors[key] = null;
-    });
-  }
+  // 🔥 MARQUER UNE VIDÉO COMME VUE
+  Future<void> markVideoAsSeen(String videoId) async {
+    try {
+      _seenVideoIds.add(videoId);
 
-  List<Post> _processVideosSnapshot(QuerySnapshot snapshot) {
-    return snapshot.docs.map((doc) {
-      try {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
-
-        if (post.createdAt == null) return null;
-        final postDate = DateTime.fromMicrosecondsSinceEpoch(post.createdAt!);
-        if (postDate.year < 2020 || postDate.year > 2030) return null;
-
-        return post;
-      } catch (e) {
-        return null;
+      // 🔥 LIMITER LA TAILLE DE LA MÉMOIRE
+      if (_seenVideoIds.length > _maxSeenMemory) {
+        final idsToRemove = _seenVideoIds.take(_seenVideoIds.length - _maxSeenMemory).toList();
+        for (final id in idsToRemove) {
+          _seenVideoIds.remove(id);
+        }
       }
-    }).where((post) => post != null).cast<Post>().toList();
-  }
 
-  void _calculateScores(List<Post> posts, int userLastVisitTime) {
-    for (final post in posts) {
-      final score = FeedScoringService.calculateFeedScore(post, userLastVisitTime);
-      post.feedScore = score;
-    }
-  }
+      await _saveSeenVideosToStorage();
 
-  int _millisToMicro(int millis) => millis * 1000;
+      // 🔥 METTRE À JOUR FIRESTORE (optionnel)
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId != null) {
+        await firestore.collection('Users').doc(currentUserId).update({
+          'viewedVideoIds': FieldValue.arrayUnion([videoId]),
+        });
+      }
 
-  // 🔥 CHARGEMENT CONTENU PUBLICITAIRE
-  Future<void> loadAdsContent() async {
-    if (_hasLoadedGlobalContent) return;
-
-    try {
-      final results = await Future.wait([
-        _loadGlobalArticles(),
-        _loadGlobalCanaux(),
-      ], eagerError: true);
-
-      _globalArticles = results[0] as List<ArticleData>;
-      _globalCanaux = results[1] as List<Canal>;
-      _hasLoadedGlobalContent = true;
-
-      print('🛍️ Contenu publicitaire chargé: ${_globalArticles.length} articles, ${_globalCanaux.length} canaux');
+      print('👁️ Vidéo $videoId marquée comme vue');
 
     } catch (e) {
-      print('❌ Erreur chargement contenu publicitaire: $e');
+      print('❌ Erreur marquage vidéo vue: $e');
     }
   }
 
-  Future<List<ArticleData>> _loadGlobalArticles() async {
+  // 🔥 VIDER LA MÉMOIRE DES VIDÉOS VUES
+  Future<void> clearSeenVideos() async {
     try {
-      final countryCode = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
-      return await categorieProvider.getArticleBooster(countryCode);
+      _seenVideoIds.clear();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefsKeySeen);
+      print('🧹 Mémoire vidéos vidée');
     } catch (e) {
-      print('❌ Erreur articles: $e');
-      return [];
+      print('❌ Erreur vidage mémoire vidéos: $e');
     }
   }
 
-  Future<List<Canal>> _loadGlobalCanaux() async {
-    try {
-      return await postProvider.getCanauxHome();
-    } catch (e) {
-      print('❌ Erreur canaux: $e');
-      return [];
-    }
-  }
-
+  // 🔥 RÉINITIALISATION COMPLÈTE
   Future<void> reset() async {
-    _seenVideoIds.clear();
-    _resetCursors();
-    _consecutiveEmptyLoads = 0;
-    _hasLoadedGlobalContent = false;
+    _preparedVideoIds.clear();
+    _currentIndex = 0;
+    _alreadyLoadedVideoIds.clear();
+    _mixedVideoContent.clear();
+    _isLoading = false;
+    _hasMore = true;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefsKeySeen);
-
-    print('🔄 Service TikTok COMPLÈTEMENT réinitialisé');
+    print('🔄 Service vidéo réinitialisé');
   }
+}
 
-  // GETTERS
-  List<ArticleData> get articles => _globalArticles;
-  List<Canal> get canaux => _globalCanaux;
-  int get seenVideosCount => _seenVideoIds.length;
+// 🔥 ENUMS POUR LES TYPES DE CONTENU VIDÉO
+enum VideoContentType {
+  VIDEO,
+  AD
+}
+
+enum AdType {
+  PRODUCT,
+  CHANNEL
+}
+
+enum _VideoType { RECENT, HIGH, MEDIUM, LOW }
+
+// 🔥 CLASSE POUR REPRÉSENTER UNE SECTION DE CONTENU VIDÉO
+class VideoContentSection {
+  final VideoContentType type;
+  final dynamic data;
+
+  VideoContentSection({required this.type, required this.data});
 }

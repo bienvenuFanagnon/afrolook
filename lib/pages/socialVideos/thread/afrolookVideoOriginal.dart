@@ -18,6 +18,25 @@ import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../canaux/listCanal.dart';
 
+import 'dart:async';
+import 'dart:math';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
+import 'package:afrotok/pages/canaux/detailsCanal.dart';
+import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/postProvider.dart';
+import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../providers/chroniqueProvider.dart';
+import '../../../providers/contenuPayantProvider.dart';
+import '../../../services/postService/mixed_feedvideo_service.dart';
+import '../../UserServices/ServiceWidget.dart';
+import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
+import '../../canaux/listCanal.dart';
+
 class VideoTikTokPage extends StatefulWidget {
   const VideoTikTokPage({Key? key}) : super(key: key);
 
@@ -27,9 +46,8 @@ class VideoTikTokPage extends StatefulWidget {
 
 class _VideoTikTokPageState extends State<VideoTikTokPage> {
   final PageController _pageController = PageController();
-  late TikTokVideoService _tiktokService;
+  late MixedTikTokVideoService _mixedVideoService;
 
-  List<Post> _videoPosts = [];
   List<dynamic> _mixedFeed = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -39,6 +57,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   // 🔥 TIMER pour publicités automatiques
   Timer? _adAutoScrollTimer;
   final int _adDisplayDuration = 5; // secondes
+  int _remainingAdTime = 5;
+
+  // 🔥 CONTENU PUBLICITAIRE
+  List<ArticleData> _articles = [];
+  List<Canal> _canaux = [];
 
   @override
   void initState() {
@@ -63,7 +86,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
       final contentProvider = Provider.of<ContentProvider>(context, listen: false);
 
-      _tiktokService = TikTokVideoService(
+      _mixedVideoService = MixedTikTokVideoService(
         authProvider: authProvider,
         categorieProvider: categorieProvider,
         postProvider: postProvider,
@@ -71,96 +94,95 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         contentProvider: contentProvider,
       );
 
-      await _tiktokService.initialize();
-      await _tiktokService.loadAdsContent();
+      await _mixedVideoService.initialize();
+      await _loadAdsContent();
       await _loadInitialVideos();
 
     } catch (e) {
       print('❌ Erreur initialisation services TikTok: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  // 🔥 CHARGEMENT DES VIDÉOS AVEC ALGORITHME DE SCORING
+  // 🔥 CHARGEMENT DU CONTENU PUBLICITAIRE
+  Future<void> _loadAdsContent() async {
+    try {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final categorieProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+
+      // Charger les articles boostés
+      final countryCode = authProvider.loginUserData.countryData?['countryCode'] ?? 'TG';
+      final articles = await categorieProvider.getArticleBooster(countryCode);
+
+      // Charger les canaux
+      final canaux = await postProvider.getCanauxHome();
+
+      setState(() {
+        _articles = articles.take(6).toList();
+        _canaux = canaux.take(6).toList();
+      });
+
+      print('🛍️ Contenu publicitaire chargé: ${_articles.length} articles, ${_canaux.length} canaux');
+
+    } catch (e) {
+      print('❌ Erreur chargement contenu publicitaire: $e');
+    }
+  }
+
+  // 🔥 CHARGEMENT DES VIDÉOS AVEC LE NOUVEAU SERVICE MIXTE
   Future<void> _loadInitialVideos() async {
     try {
-      final userLastVisitTime = await _getUserLastVisitTime();
-
-      final videos = await _tiktokService.loadTikTokVideos(
-        userLastVisitTime: userLastVisitTime,
-        isInitialLoad: true,
+      final mixedContent = await _mixedVideoService.loadMixedVideoContent(
+        loadMore: false,
       );
 
-      _videoPosts = videos;
-      _createMixedFeedWithAds();
+      if (mounted) {
+        setState(() {
+          _mixedFeed = mixedContent;
+          _hasMore = _mixedVideoService.hasMore;
+        });
+      }
 
       if (_mixedFeed.isNotEmpty) {
         _startAutoPlayTimer();
       }
 
-      print('✅ Chargement initial: ${_videoPosts.length} vidéos');
+      print('✅ Chargement initial: ${_mixedFeed.length} éléments mixte');
 
     } catch (e) {
       print('❌ Erreur chargement vidéos: $e');
     }
   }
 
-  Future<int> _getUserLastVisitTime() async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUser = authProvider.loginUserData;
-
-    return currentUser.lastFeedVisitTime ??
-        DateTime.now().microsecondsSinceEpoch - Duration(hours: 1).inMicroseconds;
-  }
-
-  // 🔥 CRÉATION DU FEED MIXTE VIDÉOS + PUBLICITÉS
-  void _createMixedFeedWithAds() {
-    _mixedFeed = [];
-    int videoCount = 0;
-
-    for (int i = 0; i < _videoPosts.length; i++) {
-      // Ajouter la vidéo
-      _mixedFeed.add(_videoPosts[i]);
-      videoCount++;
-
-      // Insérer une publicité après 3 vidéos
-      if (videoCount >= 3 && i < _videoPosts.length - 1) {
-        // Alterner entre produits et canaux
-        final adType = (_mixedFeed.length % 2 == 0) ? AdType.product : AdType.channel;
-        _mixedFeed.add(AdItem(type: adType));
-        videoCount = 0;
-      }
-    }
-
-    print('📊 Feed mixte créé: ${_mixedFeed.length} items');
-  }
-
   // 🔥 CHARGEMENT SUPPLÉMENTAIRE
   Future<void> _loadMoreVideos() async {
-    if (_isLoadingMore || !_hasMore) return;
+    if (_isLoadingMore || !_mixedVideoService.hasMore) return;
 
     setState(() => _isLoadingMore = true);
 
     try {
-      final userLastVisitTime = await _getUserLastVisitTime();
-      final newVideos = await _tiktokService.loadTikTokVideos(
-        userLastVisitTime: userLastVisitTime,
-        isInitialLoad: false,
+      final newContent = await _mixedVideoService.loadMixedVideoContent(
         loadMore: true,
       );
 
-      if (newVideos.isNotEmpty) {
-        _videoPosts.addAll(newVideos);
-        _createMixedFeedWithAds();
+      if (newContent.isNotEmpty && mounted) {
+        setState(() {
+          _mixedFeed.addAll(newContent);
+        });
       } else {
-        _hasMore = false;
+        setState(() => _hasMore = false);
       }
 
     } catch (e) {
       print('❌ Erreur chargement supplémentaire: $e');
     } finally {
-      setState(() => _isLoadingMore = false);
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
     }
   }
 
@@ -179,17 +201,42 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     // Arrêter tout timer existant
     _adAutoScrollTimer?.cancel();
 
-    // Vérifier si l'élément actuel est une publicité
-    if (pageIndex < _mixedFeed.length && _mixedFeed[pageIndex] is AdItem) {
-      // Démarrer un timer pour défiler automatiquement après 3 secondes
-      _adAutoScrollTimer = Timer(Duration(seconds: _adDisplayDuration), () {
-        if (mounted && pageIndex < _mixedFeed.length - 1) {
-          _pageController.nextPage(
-            duration: Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
+    if (pageIndex < _mixedFeed.length) {
+      final section = _mixedFeed[pageIndex] as VideoContentSection;
+
+      // Vérifier si l'élément actuel est une publicité
+      if (section.type == VideoContentType.AD) {
+        _startAdCountdown();
+      }
+    }
+  }
+
+  void _startAdCountdown() {
+    _remainingAdTime = _adDisplayDuration;
+    _adAutoScrollTimer?.cancel();
+
+    _adAutoScrollTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _remainingAdTime--;
+        });
+
+        if (_remainingAdTime <= 0) {
+          timer.cancel();
+          _goToNextVideo();
         }
-      });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _goToNextVideo() {
+    if (_currentPage < _mixedFeed.length - 1) {
+      _pageController.nextPage(
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -203,19 +250,27 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     _adAutoScrollTimer?.cancel();
   }
 
+  // 🔥 MARQUER UNE VIDÉO COMME VUE
+  void _markVideoAsSeen(String videoId) {
+    _mixedVideoService.markVideoAsSeen(videoId);
+  }
+
   // 🔥 RAFRAÎCHISSEMENT
   Future<void> _refreshVideos() async {
     setState(() {
       _mixedFeed.clear();
-      _videoPosts.clear();
       _isLoading = true;
       _hasMore = true;
       _currentPage = 0;
     });
 
     _adAutoScrollTimer?.cancel();
+    await _mixedVideoService.reset();
     await _loadInitialVideos();
-    setState(() => _isLoading = false);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   // 🔥 CONSTRUCTION DE LA PAGE
@@ -290,17 +345,31 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       controller: _pageController,
       scrollDirection: Axis.vertical,
       itemCount: _mixedFeed.length + (_isLoadingMore ? 1 : 0),
+      onPageChanged: (index) {
+        // Marquer la vidéo comme vue quand elle devient visible
+        if (index < _mixedFeed.length) {
+          final section = _mixedFeed[index] as VideoContentSection;
+          if (section.type == VideoContentType.VIDEO) {
+            final post = section.data as Post;
+            if (post.id != null) {
+              _markVideoAsSeen(post.id!);
+            }
+          }
+        }
+      },
       itemBuilder: (context, index) {
         if (index >= _mixedFeed.length) {
           return _buildLoadMorePage();
         }
 
-        final item = _mixedFeed[index];
+        final section = _mixedFeed[index] as VideoContentSection;
 
-        if (item is Post) {
-          return _buildVideoItem(item, index);
-        } else if (item is AdItem) {
-          return _buildAdItem(item, index);
+        if (section.type == VideoContentType.VIDEO) {
+          final post = section.data as Post;
+          return _buildVideoItem(post, index);
+        } else if (section.type == VideoContentType.AD) {
+          final adType = section.data as AdType;
+          return _buildAdItem(adType, index);
         } else {
           return Container(color: Colors.black);
         }
@@ -309,13 +378,19 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   }
 
   Widget _buildVideoItem(Post post, int index) {
+    final isCurrentPage = index == _currentPage;
+
     return Stack(
       children: [
         // VIDÉO PRINCIPALE
-        VideoTikTokPageDetails(initialPost: post),
+        VideoTikTokPageDetails(
+          initialPost: post,
+
+          // isCurrentPage: isCurrentPage,
+        ),
 
         // BADGE NOUVEAU
-        if (!_isPostSeen(post))
+        if (!_isVideoSeen(post))
           Positioned(
             top: 50,
             right: 16,
@@ -371,25 +446,46 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           ),
         ),
 
-        // COMPTEUR TEMPOREL POUR LES PUBS (visible uniquement sur les pubs)
-        if (_mixedFeed[index] is AdItem && index == _currentPage)
+        // INDICATEUR DE SCORE
+        if (post.feedScore != null)
           Positioned(
-            top: 100,
+            top: 50,
             right: 16,
-            child: _buildAdCountdown(),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getScoreColor(post.feedScore!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${(post.feedScore! * 100).toInt()}%',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
       ],
     );
   }
 
-  bool _isPostSeen(Post post) {
-    // La logique de vue est gérée par le service TikTok
-    return false; // Le service gère déjà la mémoire
+  Color _getScoreColor(double score) {
+    if (score >= 0.7) return Colors.green;
+    if (score >= 0.4) return Colors.orange;
+    return Colors.red;
   }
 
-  // 🔥 WIDGET PUBLICITÉ RÉDUIT
-// 🔥 WIDGET PUBLICITÉ COMPLET AVEC GRILLES
-  Widget _buildAdItem(AdItem ad, int index) {
+  bool _isVideoSeen(Post post) {
+    // La logique est gérée par le service MixedTikTokVideoService
+    return false;
+  }
+
+  // 🔥 WIDGET PUBLICITÉ
+  Widget _buildAdItem(AdType adType, int index) {
+    final isCurrentPage = index == _currentPage;
+
     return Container(
       color: Colors.black,
       child: Column(
@@ -401,21 +497,21 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  ad.type == AdType.product ? "🛍️ Produits Exclusifs" : "📺 Canaux Populaires",
+                  adType == AdType.PRODUCT ? "🛍️ Produits Exclusifs" : "📺 Canaux Populaires",
                   style: TextStyle(
-                    color: ad.type == AdType.product ? Colors.orange : Colors.blue,
+                    color: adType == AdType.PRODUCT ? Colors.orange : Colors.blue,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                _buildAdCountdown(),
+                if (isCurrentPage) _buildAdCountdown(),
               ],
             ),
           ),
 
           // CONTENU EN GRILLE
           Expanded(
-            child: ad.type == AdType.product
+            child: adType == AdType.PRODUCT
                 ? _buildProductsSection()
                 : _buildChannelsSection(),
           ),
@@ -426,14 +522,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             child: Column(
               children: [
                 ElevatedButton(
-                  onPressed: () {
-                    if (index < _mixedFeed.length - 1) {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
+                  onPressed: _goToNextVideo,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -443,7 +532,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'La vidéo suivante démarre automatiquement dans $_adDisplayDuration secondes',
+                  'La vidéo suivante démarre automatiquement dans $_remainingAdTime secondes',
                   style: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 10,
@@ -469,11 +558,10 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       ),
     );
   }
-// 🔥 SECTION PRODUITS EN GRILLE
-  Widget _buildProductsSection() {
-    final articles = _tiktokService.articles.take(4).toList();
 
-    if (articles.isEmpty) {
+  // 🔥 SECTION PRODUITS EN GRILLE
+  Widget _buildProductsSection() {
+    if (_articles.isEmpty) {
       return _buildNoProducts();
     }
 
@@ -514,9 +602,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               mainAxisSpacing: 10,
               childAspectRatio: 0.75,
             ),
-            itemCount: articles.length,
+            itemCount: min(_articles.length, 4),
             itemBuilder: (context, index) {
-              return _buildProductGridItem(articles[index]);
+              return _buildProductGridItem(_articles[index]);
             },
           ),
         ),
@@ -549,11 +637,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     );
   }
 
-// 🔥 SECTION CANAUX EN GRILLE
+  // 🔥 SECTION CANAUX EN GRILLE
   Widget _buildChannelsSection() {
-    final canaux = _tiktokService.canaux.take(4).toList();
-
-    if (canaux.isEmpty) {
+    if (_canaux.isEmpty) {
       return _buildNoChannels();
     }
 
@@ -594,9 +680,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
               mainAxisSpacing: 10,
               childAspectRatio: 0.85,
             ),
-            itemCount: canaux.length,
+            itemCount: min(_canaux.length, 4),
             itemBuilder: (context, index) {
-              return _buildChannelGridItem(canaux[index]);
+              return _buildChannelGridItem(_canaux[index]);
             },
           ),
         ),
@@ -629,7 +715,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     );
   }
 
-// 🔥 WIDGETS PAS DE CONTENU
+  // 🔥 WIDGETS PAS DE CONTENU
   Widget _buildNoProducts() {
     return Center(
       child: Column(
@@ -673,189 +759,464 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       ),
     );
   }
+
   // 🔥 WIDGET PRODUIT EN GRILLE
   Widget _buildProductGridItem(ArticleData article) {
     final prixAffichage = article.estEnPromotion
         ? article.prixAvecReduction
         : (article.prix?.toDouble() ?? 0);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Image du produit avec badge boosté
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                // Image principale
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                    image: article.images != null && article.images!.isNotEmpty
-                        ? DecorationImage(
-                      image: NetworkImage(article.images!.first),
-                      fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () => _onProductTap(article),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Image du produit avec badge boosté
+            Expanded(
+              flex: 3,
+              child: Stack(
+                children: [
+                  // Image principale
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      image: article.images != null && article.images!.isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(article.images!.first),
+                        fit: BoxFit.cover,
+                      )
+                          : null,
+                      color: Colors.grey[800],
+                    ),
+                    child: article.images == null || article.images!.isEmpty
+                        ? Center(
+                      child: Icon(
+                        Icons.shopping_bag,
+                        color: Colors.grey[600],
+                        size: 40,
+                      ),
                     )
                         : null,
-                    color: Colors.grey[800],
                   ),
-                  child: article.images == null || article.images!.isEmpty
-                      ? Center(
-                    child: Icon(
-                      Icons.shopping_bag,
-                      color: Colors.grey[600],
-                      size: 40,
-                    ),
-                  )
-                      : null,
-                ),
 
-                // Badge boosté
-                if (article.estBoosted)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.rocket_launch, size: 10, color: Colors.white),
-                          SizedBox(width: 2),
-                          Text(
-                            'Boosté',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
+                  // Badge boosté
+                  if (article.estBoosted)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.rocket_launch, size: 10, color: Colors.white),
+                            SizedBox(width: 2),
+                            Text(
+                              'Boosté',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                // Badge promotion
-                if (article.estEnPromotion)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '-${article.reduction}%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
+                          ],
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
 
-          // Informations du produit
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Nom du produit
-                  Text(
-                    article.titre?.substring(0, min(article.titre?.length ?? 0, 20)) ?? 'Produit',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  // Prix et condition
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Prix
-                      Row(
-                        children: [
-                          Text(
-                            '${prixAffichage.toInt()} FCFA',
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  // Badge promotion
+                  if (article.estEnPromotion)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '-${article.reduction}%',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
                           ),
-                          // Ancien prix barré si promotion
-                          if (article.estEnPromotion)
-                            Padding(
-                              padding: EdgeInsets.only(left: 4),
-                              child: Text(
-                                '${article.prix} FCFA',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 10,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Informations du produit
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Nom du produit
+                    Text(
+                      article.titre?.substring(0, min(article.titre?.length ?? 0, 20)) ?? 'Produit',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    // Prix et condition
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Prix
+                        Row(
+                          children: [
+                            Text(
+                              '${prixAffichage.toInt()} FCFA',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                        ],
-                      ),
+                            // Ancien prix barré si promotion
+                            if (article.estEnPromotion)
+                              Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Text(
+                                  '${article.prix} FCFA',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 10,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
 
-                      // Condition et état
-                      if (article.condition != null || article.etat != null)
+                        // Condition et état
+                        if (article.condition != null || article.etat != null)
+                          Text(
+                            '${article.condition ?? ''} ${article.etat ?? ''}'.trim(),
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 9,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+
+                    // Bouton rapide et statistiques
+                    Row(
+                      children: [
+                        // Bouton Voir
+                        Expanded(
+                          child: Container(
+                            height: 25,
+                            child: ElevatedButton(
+                              onPressed: () => _onProductTap(article),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              child: Text(
+                                'Voir',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Statistiques
+                        if (article.vues != null && article.vues! > 0)
+                          Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Row(
+                              children: [
+                                Icon(Icons.remove_red_eye, size: 10, color: Colors.grey[400]),
+                                SizedBox(width: 2),
+                                Text(
+                                  '${article.vues}',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onProductTap(ArticleData article) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (context) => ProduitDetail(productId: article.id!),
+    ));
+  }
+
+  // 🔥 WIDGET CANAL EN GRILLE
+  Widget _buildChannelGridItem(Canal canal) {
+    final abonnesCount = canal.suivi ?? 0;
+    final publicationsCount = canal.publication ?? 0;
+    final isPrivate = canal.isPrivate;
+    final hasSubscription = canal.subscriptionPrice > 0;
+
+    return GestureDetector(
+      onTap: () => _onChannelTap(canal),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Image de couverture avec avatar
+            Expanded(
+              flex: 3,
+              child: Stack(
+                children: [
+                  // Image de couverture
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      image: canal.urlCouverture != null && canal.urlCouverture!.isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(canal.urlCouverture!),
+                        fit: BoxFit.cover,
+                      )
+                          : null,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+
+                  // Avatar du canal au centre
+                  Positioned(
+                    bottom: -20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey[900]!, width: 3),
+                          image: canal.urlImage != null && canal.urlImage!.isNotEmpty
+                              ? DecorationImage(
+                            image: NetworkImage(canal.urlImage!),
+                            fit: BoxFit.cover,
+                          )
+                              : null,
+                          color: Colors.grey[700],
+                        ),
+                        child: canal.urlImage == null || canal.urlImage!.isEmpty
+                            ? Icon(Icons.people, color: Colors.grey[400], size: 24)
+                            : null,
+                      ),
+                    ),
+                  ),
+
+                  // Badges en haut
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Badge vérifié
+                        if (canal.isVerify == true)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified, size: 10, color: Colors.white),
+                                SizedBox(width: 2),
+                                Text(
+                                  'Vérifié',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Badge privé ou payant
+                        if (isPrivate)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: hasSubscription ? Colors.purple : Colors.green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  hasSubscription ? Icons.lock : Icons.private_connectivity,
+                                  size: 10,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 2),
+                                Text(
+                                  hasSubscription ? '${canal.subscriptionPrice.toInt()} FCFA' : 'Privé',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Informations du canal
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(8, 20, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Nom et description
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Nom du canal
                         Text(
-                          '${article.condition ?? ''} ${article.etat ?? ''}'.trim(),
+                          canal.titre?.substring(0, min(canal.titre?.length ?? 0, 18)) ?? 'Canal',
                           style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 9,
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
 
-                  // Bouton rapide et statistiques
-                  Row(
-                    children: [
-                      // Bouton Voir
-                      Expanded(
-                        child: Container(
+                        // Description
+                        if (canal.description != null && canal.description!.isNotEmpty)
+                          Text(
+                            canal.description!.substring(0, min(canal.description!.length, 30)),
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 9,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+
+                    // Statistiques et bouton
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Statistiques
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Abonnés
+                            Row(
+                              children: [
+                                Icon(Icons.people, size: 10, color: Colors.grey[400]),
+                                SizedBox(width: 4),
+                                Text(
+                                  _formatCount(abonnesCount),
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Publications
+                            Row(
+                              children: [
+                                Icon(Icons.video_library, size: 10, color: Colors.grey[400]),
+                                SizedBox(width: 4),
+                                Text(
+                                  _formatCount(publicationsCount),
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        // Bouton Voir
+                        Container(
+                          width: 60,
                           height: 25,
                           child: ElevatedButton(
-                            onPressed: () {
-                              // Action rapide pour le produit
-                              _onProductTap(article);
-                            },
+                            onPressed: () => _onChannelTap(canal),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
+                              backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
@@ -868,295 +1229,19 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                             ),
                           ),
                         ),
-                      ),
-
-                      // Statistiques
-                      if (article.vues != null && article.vues! > 0)
-                        Padding(
-                          padding: EdgeInsets.only(left: 6),
-                          child: Row(
-                            children: [
-                              Icon(Icons.remove_red_eye, size: 10, color: Colors.grey[400]),
-                              SizedBox(width: 2),
-                              Text(
-                                '${article.vues}',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onProductTap(ArticleData article) {
-    // Navigation vers les détails du produit
-    print('Produit tapé: ${article.titre}');
-    Navigator.push(context, MaterialPageRoute(
-      builder: (context) => ProduitDetail(productId: article.id!),
-    ));
-  }
-
-
-  // 🔥 WIDGET CANAL EN GRILLE
-  Widget _buildChannelGridItem(Canal canal) {
-    final abonnesCount = canal.suivi ?? 0;
-    final publicationsCount = canal.publication ?? 0;
-    final isPrivate = canal.isPrivate;
-    final hasSubscription = canal.subscriptionPrice > 0;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Image de couverture avec avatar
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                // Image de couverture
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                    image: canal.urlCouverture != null && canal.urlCouverture!.isNotEmpty
-                        ? DecorationImage(
-                      image: NetworkImage(canal.urlCouverture!),
-                      fit: BoxFit.cover,
-                    )
-                        : null,
-                    color: Colors.grey[800],
-                  ),
-                ),
-
-                // Avatar du canal au centre
-                Positioned(
-                  bottom: -20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey[900]!, width: 3),
-                        image: canal.urlImage != null && canal.urlImage!.isNotEmpty
-                            ? DecorationImage(
-                          image: NetworkImage(canal.urlImage!),
-                          fit: BoxFit.cover,
-                        )
-                            : null,
-                        color: Colors.grey[700],
-                      ),
-                      child: canal.urlImage == null || canal.urlImage!.isEmpty
-                          ? Icon(Icons.people, color: Colors.grey[400], size: 24)
-                          : null,
+                      ],
                     ),
-                  ),
+                  ],
                 ),
-
-                // Badges en haut
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  right: 8,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Badge vérifié
-                      if (canal.isVerify == true)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.verified, size: 10, color: Colors.white),
-                              SizedBox(width: 2),
-                              Text(
-                                'Vérifié',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Badge privé ou payant
-                      if (isPrivate)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: hasSubscription ? Colors.purple : Colors.green,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                hasSubscription ? Icons.lock : Icons.private_connectivity,
-                                size: 10,
-                                color: Colors.white,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                hasSubscription ? '${canal.subscriptionPrice.toInt()} FCFA' : 'Privé',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Informations du canal
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(8, 20, 8, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Nom et description
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Nom du canal
-                      Text(
-                        canal.titre?.substring(0, min(canal.titre?.length ?? 0, 18)) ?? 'Canal',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      // Description
-                      if (canal.description != null && canal.description!.isNotEmpty)
-                        Text(
-                          canal.description!.substring(0, min(canal.description!.length, 30)),
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 9,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-
-                  // Statistiques et bouton
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Statistiques
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Abonnés
-                          Row(
-                            children: [
-                              Icon(Icons.people, size: 10, color: Colors.grey[400]),
-                              SizedBox(width: 4),
-                              Text(
-                                _formatCount(abonnesCount),
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Publications
-                          Row(
-                            children: [
-                              Icon(Icons.video_library, size: 10, color: Colors.grey[400]),
-                              SizedBox(width: 4),
-                              Text(
-                                _formatCount(publicationsCount),
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      // Bouton Suivre
-                      Container(
-                        width: 60,
-                        height: 25,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _onChannelTap(canal);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          child: Text(
-                            'Voir',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-// 🔥 FONCTION POUR FORMATER LES NOMBRES
+  // 🔥 FONCTION POUR FORMATER LES NOMBRES
   String _formatCount(int count) {
     if (count < 1000) return count.toString();
     if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
@@ -1164,12 +1249,11 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   }
 
   void _onChannelTap(Canal canal) {
-    // Navigation vers le canal
-    print('Canal tapé: ${canal.titre}');
     Navigator.push(context, MaterialPageRoute(
       builder: (context) => CanalDetails(canal: canal),
     ));
   }
+
   Widget _buildAdCountdown() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1179,7 +1263,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         border: Border.all(color: Colors.green),
       ),
       child: Text(
-        '$_adDisplayDuration s',
+        '$_remainingAdTime s',
         style: TextStyle(
           color: Colors.green,
           fontSize: 12,
@@ -1188,8 +1272,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       ),
     );
   }
-
-
 
   Widget _buildLoadMorePage() {
     return Container(
@@ -1250,14 +1332,6 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
       ),
     );
   }
-}
-
-enum AdType { product, channel }
-
-class AdItem {
-  final AdType type;
-
-  AdItem({required this.type});
 }
 
 // import 'dart:async';

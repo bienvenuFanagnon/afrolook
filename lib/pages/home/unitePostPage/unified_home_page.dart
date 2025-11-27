@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -14,18 +18,21 @@ import 'package:afrotok/pages/userPosts/postWidgets/postHomeWidget.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 
 import '../../../services/postService/feed_interaction_service.dart';
+import '../../../services/postService/local_viewed_posts_service.dart';
 import '../../../services/postService/mixed_feed_service.dart';
 import '../../chronique/chroniqueform.dart';
 import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'chronique_section.dart';
-import 'home_components/content_grid_component.dart';
 import 'home_components/loading_components.dart';
 import 'home_components/special_sections_component.dart';
-
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -33,12 +40,16 @@ import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
+import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postHomeWidget.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 
 import '../../../services/postService/feed_interaction_service.dart';
+import '../../../services/postService/local_viewed_posts_service.dart';
 import '../../../services/postService/mixed_feed_service.dart';
+import '../../chronique/chroniqueform.dart';
+import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'chronique_section.dart';
 import 'home_components/loading_components.dart';
 import 'home_components/special_sections_component.dart';
@@ -51,56 +62,57 @@ class UnifiedHomeOptimized extends StatefulWidget {
 }
 
 class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
-  late MixedFeedService _feedService;
   final ScrollController _scrollController = ScrollController();
 
-  // 🔥 ÉTAT AMÉLIORÉ
-  List<Post> _posts = [];
+  // 🔥 VARIABLES SIMPLIFIÉES
   bool _isLoading = false;
   bool _isLoadingMore = false;
-  bool _hasMore = true;
   bool _hasError = false;
+  int _currentIndex = 0;
   int _userLastVisitTime = 0;
   bool _isRefreshing = false;
 
   // 🔥 GESTION VISIBILITÉ
   final Map<String, Timer> _visibilityTimers = {};
 
+  // 🔥 VARIABLES POUR LES CHRONIQUES
+  final Map<String, String> _videoThumbnails = {};
+  final Map<String, bool> _userVerificationStatus = {};
+  final Map<String, UserData> _userDataCache = {};
+  bool _isLoadingChroniques = false;
+  Map<String, List<Chronique>> _groupedChroniques = {};
+
   @override
   void initState() {
     super.initState();
-    _initializeServices();
+    _initializePage();
     _scrollController.addListener(_scrollListener);
   }
 
-  // 🔥 INITIALISATION OPTIMISÉE
-  Future<void> _initializeServices() async {
+  // 🔥 INITIALISATION SIMPLIFIÉE AVEC LE PROVIDER
+  Future<void> _initializePage() async {
+    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+
     try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final categorieProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
-      final postProvider = Provider.of<PostProvider>(context, listen: false);
-      final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-      final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+      print('🎯 UnifiedHomeOptimized - Initialisation avec le provider...');
 
-      _feedService = MixedFeedService(
-        authProvider: authProvider,
-        categorieProvider: categorieProvider,
-        postProvider: postProvider,
-        chroniqueProvider: chroniqueProvider,
-        contentProvider: contentProvider,
-      );
-
-      // Charger le temps de dernière visite
+      // 🔥 CHARGER LE TEMPS DE DERNIÈRE VISITE
       await _loadUserLastVisitTime();
 
-      // Nettoyer les listes au login
-      await _feedService.cleanupUserLists();
-
-      // Charger le feed initial
-      await _loadInitialPosts();
+      if (mixedFeedProvider.isPrepared) {
+        print('✅ Service déjà préparé avec ${mixedFeedProvider.preparedPostsCount} posts');
+        // Charger directement le contenu global
+        await mixedFeedProvider.loadGlobalContent();
+        await _loadInitialContent();
+      } else {
+        print('🔄 Service non préparé - préparation rapide...');
+        await mixedFeedProvider.preparePosts();
+        await mixedFeedProvider.loadGlobalContent();
+        await _loadInitialContent();
+      }
 
     } catch (e) {
-      print('❌ Erreur initialisation: $e');
+      print('❌ Erreur initialisation page: $e');
       setState(() => _hasError = true);
     }
   }
@@ -133,11 +145,10 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
       if (currentUserId != null) {
         final now = DateTime.now().microsecondsSinceEpoch;
-        await _feedService.firestore.collection('Users').doc(currentUserId).update({
+        await FirebaseFirestore.instance.collection('Users').doc(currentUserId).update({
           'lastFeedVisitTime': now,
         });
 
-        // Mettre à jour localement
         authProvider.loginUserData.lastFeedVisitTime = now;
         _userLastVisitTime = now;
 
@@ -148,31 +159,36 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-  // 🔥 CHARGEMENT INITIAL AVEC TIMEOUT
-  Future<void> _loadInitialPosts() async {
+  // 🔥 CHARGEMENT INITIAL ULTRA RAPIDE
+  Future<void> _loadInitialContent() async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
       _hasError = false;
-      _posts = []; // Vider les posts pendant le chargement
     });
 
     try {
-      final newPosts = await _feedService.loadSmartFeed(loadMore: false)
-          .timeout(Duration(seconds: 30), onTimeout: () {
-        print('⏰ Timeout chargement initial');
-        return [];
-      });
+      final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
 
-      setState(() {
-        _posts = newPosts;
-        _hasMore = newPosts.isNotEmpty;
-      });
+      print('🚀 Chargement rapide depuis le provider...');
 
-      print('✅ Feed initial: ${newPosts.length} posts');
+      // 🔥 AFFICHER LE DERNIER POST VU AU DÉMARRAGE
+      final lastSeenPost = await LocalViewedPostsService.getLastSeenPost();
+      final viewedPosts = await LocalViewedPostsService.getViewedPosts();
+      print('''
+🚀 DÉMARRAGE APPLICATION:
+   - Dernier post vu: $lastSeenPost
+   - Posts déjà vus: ${viewedPosts.length}
+   - Provider prêt: ${mixedFeedProvider.isPrepared}
+   - Posts préparés: ${mixedFeedProvider.preparedPostsCount}
+''');
 
-      // METTRE À JOUR LE TEMPS DE VISITE
+      // 🔥 CHARGEMENT DIRECT
+      await mixedFeedProvider.loadMixedContent(loadMore: false);
+
+      print('✅ Contenu chargé: ${mixedFeedProvider.mixedContent.length} éléments');
+
       await _updateLastVisitTime();
 
     } catch (e) {
@@ -183,29 +199,18 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-  // 🔥 CHARGEMENT SUPPLÉMENTAIRE AVEC TIMEOUT
-  Future<void> _loadMorePosts() async {
-    if (_isLoadingMore || !_hasMore || _isLoading || _isRefreshing) return;
+  // 🔥 CHARGEMENT SUPPLÉMENTAIRE SIMPLIFIÉ
+  Future<void> _loadMoreContent() async {
+    if (_isLoadingMore) return;
+
+    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+    if (!mixedFeedProvider.hasMore) return;
 
     setState(() => _isLoadingMore = true);
 
     try {
-      final newPosts = await _feedService.loadSmartFeed(loadMore: true)
-          .timeout(Duration(seconds: 15), onTimeout: () {
-        print('⏰ Timeout chargement supplémentaire');
-        return [];
-      });
-
-      setState(() {
-        if (newPosts.isNotEmpty) {
-          _posts.addAll(newPosts);
-          print('📥 Ajout: ${newPosts.length} posts (total: ${_posts.length})');
-        } else {
-          _hasMore = false;
-          print('🏁 Fin des posts disponibles');
-        }
-      });
-
+      await mixedFeedProvider.loadMixedContent(loadMore: true);
+      print('📥 Chargement supplémentaire terminé');
     } catch (e) {
       print('❌ Erreur chargement supplémentaire: $e');
     } finally {
@@ -213,7 +218,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-  // 🔥 REFRESH COMPLET AVEC INDICATEUR
+  // 🔥 REFRESH COMPLET
   Future<void> _refreshData() async {
     print('🔄 Refresh manuel...');
 
@@ -225,24 +230,14 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     });
 
     try {
-      // RÉINITIALISER COMPLÈTEMENT LE SERVICE
-      await _feedService.reset();
+      final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
 
-      final newPosts = await _feedService.loadSmartFeed(loadMore: false)
-          .timeout(Duration(seconds: 20), onTimeout: () {
-        print('⏰ Timeout refresh');
-        return [];
-      });
+      await mixedFeedProvider.reset();
+      await mixedFeedProvider.preparePosts();
+      await mixedFeedProvider.loadGlobalContent();
+      await _loadInitialContent();
 
-      setState(() {
-        _posts = newPosts;
-        _hasMore = newPosts.isNotEmpty;
-      });
-
-      // METTRE À JOUR LE TEMPS DE VISITE
-      await _updateLastVisitTime();
-
-      print('🆕 Nouveaux posts après refresh: ${newPosts.length}');
+      print('🆕 Refresh terminé');
 
     } catch (e) {
       print('❌ Erreur refresh: $e');
@@ -252,251 +247,85 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-  // 🔥 RÉINITIALISATION COMPLÈTE
-  Future<void> _resetEverything() async {
-    print('🔄 Réinitialisation complète...');
-
-    setState(() {
-      _isLoading = true;
-      _posts = [];
-      _hasMore = true;
-      _hasError = false;
-    });
-
-    try {
-      // RÉINITIALISER LE SERVICE
-      await _feedService.reset();
-
-      // RECOMMENCER LE CHARGEMENT
-      await _loadInitialPosts();
-
-      print('✅ Réinitialisation terminée');
-
-    } catch (e) {
-      print('❌ Erreur réinitialisation: $e');
-      setState(() {
-        _hasError = true;
-        _isLoading = false;
-      });
-    }
-  }
-
   void _scrollListener() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 400) {
-      _loadMorePosts();
+      _loadMoreContent();
     }
   }
 
-  // 🔥 MARQUER UN POST COMME VU QUAND IL EST VISIBLE
-  void _handlePostVisibility(Post post, VisibilityInfo info) {
-    final postId = post.id!;
-    _visibilityTimers[postId]?.cancel();
+  // 🔥 CONSTRUCTION DES SECTIONS DE CONTENU
+  Widget _buildContentSection(ContentSection section) {
+    print('🎨 Construction section: ${section.type}');
 
-    if (info.visibleFraction > 0.6) {
-      _visibilityTimers[postId] = Timer(Duration(milliseconds: 800), () {
-        if (mounted && info.visibleFraction > 0.6) {
-          _markPostAsSeen(post);
-        }
+    switch (section.type) {
+      case ContentMixtType.POST:
+        final post = section.data as Post;
+        print('   📝 Post: ${post.id} - ${post.type}');
+        return _buildPostItem(post);
+
+      case ContentMixtType.CHRONIQUES:
+        final chroniques = section.data as List<Chronique>;
+        print('   📺 Chroniques: ${chroniques.length} éléments');
+        return _buildChroniquesSection(chroniques);
+
+      case ContentMixtType.ARTICLES:
+        final articles = section.data as List<ArticleData>;
+        print('   📰 Articles: ${articles.length} éléments');
+        return _buildArticlesSection(articles);
+
+      case ContentMixtType.CANAUX:
+        final canaux = section.data as List<Canal>;
+        print('   🎙️ Canaux: ${canaux.length} éléments');
+        return _buildCanauxSection(canaux);
+
+      default:
+        print('   ❌ Type inconnu: ${section.type}');
+        return SizedBox.shrink();
+    }
+  }
+
+  // 🔥 SECTION CHRONIQUES
+  Widget _buildChroniquesSection(List<Chronique> chroniques) {
+    // Charger les données si nécessaire
+    if (!_isLoadingChroniques && _groupedChroniques.isEmpty && chroniques.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadChroniqueData(chroniques);
       });
-    } else {
-      _visibilityTimers.remove(postId);
     }
-  }
 
-  Future<void> _markPostAsSeen(Post post) async {
-    final currentUserId = _getUserId();
-    if (currentUserId.isEmpty || post.id == null) return;
-
-    try {
-      // Marquer dans Firebase
-      await _feedService.markPostAsSeen(post.id!);
-
-      // Mettre à jour localement
-      if (mounted) {
-        setState(() {
-          post.vues = (post.vues ?? 0) + 1;
-          post.users_vue_id ??= [];
-          if (!post.users_vue_id!.contains(currentUserId)) {
-            post.users_vue_id!.add(currentUserId);
-          }
-        });
-      }
-    } catch (e) {
-      print('❌ Erreur enregistrement vue: $e');
-    }
-  }
-
-  // 🔥 GESTION DES ERREURS
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 64),
-          SizedBox(height: 20),
-          Text(
-            'Erreur de chargement',
-            style: TextStyle(color: Colors.white, fontSize: 18),
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Impossible de charger le contenu',
-            style: TextStyle(color: Colors.grey),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _loadInitialPosts,
-            icon: Icon(Icons.refresh),
-            label: Text('Réessayer'),
-          ),
-        ],
-      ),
+    return ChroniqueSectionComponent(
+      videoThumbnails: _videoThumbnails,
+      userVerificationStatus: _userVerificationStatus,
+      userDataCache: _userDataCache,
+      isLoadingChroniques: _isLoadingChroniques,
+      groupedChroniques: _groupedChroniques,
     );
   }
 
-  // 🔥 CONSTRUCTION DU BODY AMÉLIORÉE
-  Widget _buildBody(double width, double height) {
-    // AFFICHER LE CHARGEMENT INITIAL
-    if (_isLoading && _posts.isEmpty) {
-      return LoadingComponents.buildShimmerEffect();
-    }
+  // 🔥 SECTION ARTICLES
+  Widget _buildArticlesSection(List<ArticleData> articles) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
 
-    // AFFICHER L'ERREUR
-    if (_hasError && _posts.isEmpty) {
-      return _buildErrorWidget();
-    }
+    return SpecialSectionsComponent.buildBoosterSection(
+      articles: articles,
+      context: context,
+      width: width,
+      height: height,
+    );
+  }
 
-    // AUCUN CONTENU
-    if (_posts.isEmpty && !_isLoading) {
-      return LoadingComponents.buildShimmerEffect();
+  // 🔥 SECTION CANAUX
+  Widget _buildCanauxSection(List<Canal> canaux) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
 
-      // return Center(
-      //   child: Column(
-      //     mainAxisAlignment: MainAxisAlignment.center,
-      //     children: [
-      //       Icon(Icons.search_off, color: Colors.grey, size: 64),
-      //       SizedBox(height: 20),
-      //       Text(
-      //         'Aucun contenu disponible',
-      //         style: TextStyle(color: Colors.grey, fontSize: 16),
-      //       ),
-      //       SizedBox(height: 10),
-      //       Text(
-      //         'Revenez plus tard ou rafraîchissez',
-      //         style: TextStyle(color: Colors.grey, fontSize: 14),
-      //       ),
-      //       SizedBox(height: 20),
-      //       ElevatedButton.icon(
-      //         onPressed: _refreshData,
-      //         icon: Icon(Icons.refresh),
-      //         label: Text('Rafraîchir'),
-      //       ),
-      //     ],
-      //   ),
-      // );
-    }
-
-    return Stack(
-      children: [
-        // CONTENU PRINCIPAL
-        RefreshIndicator(
-          onRefresh: _refreshData,
-          backgroundColor: Colors.black,
-          color: Colors.white,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // SECTION CHRONIQUES
-              if (_feedService.chroniques.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: ChroniqueSectionComponent(
-                    videoThumbnails: {},
-                    userVerificationStatus: {},
-                    userDataCache: {},
-                    isLoadingChroniques: false,
-                    groupedChroniques: _groupChroniquesByUser(_feedService.chroniques),
-                  ),
-                ),
-
-              // SECTION POSTS PRINCIPALE
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    if (index == _posts.length) {
-                      return _buildLoadingMore();
-                    }
-                    return _buildPostItem(_posts[index]);
-                  },
-                  childCount: _posts.length + (_hasMore ? 1 : 0),
-                ),
-              ),
-
-              // SECTIONS SPÉCIALES
-              if (_feedService.articles.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: SpecialSectionsComponent.buildBoosterSection(
-                    articles: _feedService.articles,
-                    context: context,
-                    width: width,
-                    height: height,
-                  ),
-                ),
-
-              if (_feedService.canaux.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: SpecialSectionsComponent.buildCanalSection(
-                    canaux: _feedService.canaux,
-                    context: context,
-                    width: width,
-                    height: height,
-                  ),
-                ),
-
-              // MESSAGE DE FIN
-              if (!_hasMore && _posts.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _buildEndOfFeed(),
-                ),
-            ],
-          ),
-        ),
-
-        // INDICATEUR DE REFRESH EN HAUT
-        if (_isRefreshing)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 60,
-              color: Colors.black.withOpacity(0.8),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Actualisation...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
+    return SpecialSectionsComponent.buildCanalSection(
+      canaux: canaux,
+      context: context,
+      width: width,
+      height: height,
     );
   }
 
@@ -527,7 +356,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
         ),
         child: Stack(
           children: [
-            // CONTENU POST
             post.type == PostType.CHALLENGEPARTICIPATION.name
                 ? LookChallengePostWidget(
               post: post,
@@ -550,7 +378,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
               onLoved: () => _onPostLoved(post),
             ),
 
-            // BADGE "NOUVEAU" POUR LES POSTS RÉCENTS
             if (isNewForUser)
               Positioned(
                 top: 10,
@@ -586,7 +413,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
                 ),
               ),
 
-            // INDICATEUR DE DATE DE CRÉATION
             if (post.createdAt != null)
               Positioned(
                 bottom: 5,
@@ -612,27 +438,307 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 
-  // 🔥 FORMATAGE DE LA DATE POUR AFFICHAGE
-  String _formatPostDate(int microSinceEpoch) {
-    try {
-      final date = DateTime.fromMicrosecondsSinceEpoch(microSinceEpoch);
-      final now = DateTime.now();
-      final difference = now.difference(date);
+  // 🔥 MARQUER UN POST COMME VU
+  void _handlePostVisibility(Post post, VisibilityInfo info) {
+    final postId = post.id!;
+    _visibilityTimers[postId]?.cancel();
 
-      if (difference.inMinutes < 1) return 'À l\'instant';
-      if (difference.inMinutes < 60) return 'Il y a ${difference.inMinutes}min';
-      if (difference.inHours < 24) return 'Il y a ${difference.inHours}h';
-      if (difference.inDays < 7) return 'Il y a ${difference.inDays}j';
-
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return 'Date inconnue';
+    if (info.visibleFraction > 0.8) {
+      _visibilityTimers[postId] = Timer(Duration(seconds: 2), () {
+        if (mounted && info.visibleFraction > 0.7) {
+          print('✅ Post VU: $postId (regardé pendant 2 secondes)');
+          _markPostAsSeen(post);
+        } else {
+          print('❌ Marquage annulé: $postId pas regardé assez longtemps');
+        }
+      });
+    } else if (info.visibleFraction < 0.3) {
+      _visibilityTimers.remove(postId);
     }
   }
 
-  // 🔥 LOADING MORE
+  Future<void> _markPostAsSeen(Post post) async {
+    final currentUserId = _getUserId();
+    if (currentUserId.isEmpty || post.id == null) return;
+
+    try {
+      print('👁️ Marquage post comme vu: ${post.id}');
+
+      // 🔥 SAUVEGARDE LOCALE
+      await LocalViewedPostsService.markPostAsViewedAndUpdateLast(post.id!);
+
+      // 🔥 MARQUAGE DANS FIRESTORE VIA LE SERVICE DU PROVIDER
+      final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+      if (mixedFeedProvider.mixedFeedService != null) {
+        await mixedFeedProvider.mixedFeedService!.markPostAsSeen(post.id!);
+      }
+
+      if (mounted) {
+        setState(() {
+          post.vues = (post.vues ?? 0) + 1;
+          post.users_vue_id ??= [];
+          if (!post.users_vue_id!.contains(currentUserId)) {
+            post.users_vue_id!.add(currentUserId);
+          }
+        });
+      }
+
+      // 🔥 DEBUG
+      final lastSeen = await LocalViewedPostsService.getLastSeenPost();
+      final viewedCount = await LocalViewedPostsService.getViewedPosts();
+      print('''
+📍 STATUT POSTS VUS:
+   - Dernier post vu: $lastSeen
+   - Total posts vus: ${viewedCount.length}
+   - Post actuel: ${post.id}
+''');
+
+    } catch (e) {
+      print('❌ Erreur enregistrement vue: $e');
+    }
+  }
+
+  // 🔥 MÉTHODES POUR LES CHRONIQUES
+  Future<void> _loadChroniqueData(List<Chronique> chroniques) async {
+    if (_isLoadingChroniques) return;
+
+    setState(() => _isLoadingChroniques = true);
+
+    try {
+      _groupedChroniques = _groupChroniquesByUser(chroniques);
+      await _loadUserVerificationStatus(chroniques);
+      await _loadUserData(chroniques);
+      await _generateVideoThumbnails(chroniques);
+
+      print('✅ Données chroniques chargées: ${chroniques.length} éléments');
+
+    } catch (e) {
+      print('❌ Erreur chargement données chroniques: $e');
+    } finally {
+      setState(() => _isLoadingChroniques = false);
+    }
+  }
+
+  Future<void> _loadUserVerificationStatus(List<Chronique> chroniques) async {
+    try {
+      final userIds = chroniques.map((c) => c.userId).toSet();
+
+      for (final userId in userIds) {
+        if (!_userVerificationStatus.containsKey(userId)) {
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+          final isVerified = userDoc.data()?['isVerify'] ?? false;
+          _userVerificationStatus[userId] = isVerified;
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur chargement statut vérification: $e');
+    }
+  }
+
+  Future<void> _loadUserData(List<Chronique> chroniques) async {
+    try {
+      final userIds = chroniques.map((c) => c.userId).toSet();
+
+      for (final userId in userIds) {
+        if (!_userDataCache.containsKey(userId)) {
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+          if (userDoc.exists) {
+            final userData = UserData.fromJson(userDoc.data()!);
+            _userDataCache[userId] = userData;
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur chargement données utilisateurs: $e');
+    }
+  }
+
+  Future<void> _generateVideoThumbnails(List<Chronique> chroniques) async {
+    try {
+      final videoChroniques = chroniques.where((c) => c.type == ChroniqueType.VIDEO);
+
+      for (final chronique in videoChroniques) {
+        if (chronique.mediaUrl != null && !_videoThumbnails.containsKey(chronique.id)) {
+          _videoThumbnails[chronique.id!] = chronique.mediaUrl!;
+
+          // Tu pourras ajouter video_thumbnail plus tard si nécessaire
+
+          final thumbnailPath = await VideoThumbnail.thumbnailFile(
+            video: chronique.mediaUrl!,
+            thumbnailPath: (await getTemporaryDirectory()).path,
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 200,
+            quality: 50,
+            timeMs: 2000,
+          );
+          if (thumbnailPath != null) {
+            _videoThumbnails[chronique.id!] = thumbnailPath;
+          }
+
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur génération thumbnails: $e');
+    }
+  }
+
+  Map<String, List<Chronique>> _groupChroniquesByUser(List<Chronique> chroniques) {
+    final grouped = <String, List<Chronique>>{};
+    for (final chronique in chroniques) {
+      grouped[chronique.userId] = [...grouped[chronique.userId] ?? [], chronique];
+    }
+    return grouped;
+  }
+
+  // 🔥 BODY SIMPLIFIÉ AVEC CONSUMER
+  Widget _buildBody(double width, double height) {
+    return Consumer<MixedFeedServiceProvider>(
+      builder: (context, provider, child) {
+        final content = provider.mixedContent;
+
+        print('🎯 Build avec ${content.length} éléments (préparés: ${provider.preparedPostsCount})');
+
+        if (_isLoading && content.isEmpty) {
+          return LoadingComponents.buildShimmerEffect();
+        }
+
+        if (_hasError && content.isEmpty) {
+          return _buildErrorWidget();
+        }
+
+        if (content.isEmpty && !_isLoading) {
+          return _buildEmptyState();
+        }
+
+        return Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: _refreshData,
+              backgroundColor: Colors.black,
+              color: Colors.white,
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        if (index == content.length) {
+                          return _buildLoadingMore();
+                        }
+                        final section = content[index] as ContentSection;
+                        return _buildContentSection(section);
+                      },
+                      childCount: content.length + (provider.hasMore ? 1 : 0),
+                    ),
+                  ),
+
+                  if (!provider.hasMore && content.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: _buildEndOfFeed(),
+                    ),
+                ],
+              ),
+            ),
+
+            if (_isRefreshing)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 60,
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Actualisation...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 🔥 WIDGETS D'ÉTAT
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 64),
+          SizedBox(height: 20),
+          Text(
+            'Erreur de chargement',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Impossible de charger le contenu',
+            style: TextStyle(color: Colors.grey),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _loadInitialContent,
+            icon: Icon(Icons.refresh),
+            label: Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox, color: Colors.grey, size: 64),
+          SizedBox(height: 20),
+          Text(
+            'Aucun contenu disponible',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Le chargement semble avoir échoué',
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _refreshData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Recommencer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingMore() {
-    if (!_hasMore) return SizedBox.shrink();
+    if (!_isLoadingMore) return SizedBox.shrink();
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20),
@@ -651,7 +757,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 
-  // 🔥 FIN DU FEED
   Widget _buildEndOfFeed() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 30),
@@ -677,6 +782,24 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 
+  // 🔥 MÉTHODES UTILITAIRES
+  String _formatPostDate(int microSinceEpoch) {
+    try {
+      final date = DateTime.fromMicrosecondsSinceEpoch(microSinceEpoch);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inMinutes < 1) return 'À l\'instant';
+      if (difference.inMinutes < 60) return 'Il y a ${difference.inMinutes}min';
+      if (difference.inHours < 24) return 'Il y a ${difference.inHours}h';
+      if (difference.inDays < 7) return 'Il y a ${difference.inDays}j';
+
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'Date inconnue';
+    }
+  }
+
   String _getUserId() {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     return authProvider.loginUserData.id ?? '';
@@ -696,15 +819,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
   void _onPostLoved(Post post) {
     FeedInteractionService.onPostLoved(post, _getUserId());
-  }
-
-  // 🔥 GROUPEMENT DES CHRONIQUES PAR UTILISATEUR
-  Map<String, List<Chronique>> _groupChroniquesByUser(List<Chronique> chroniques) {
-    final grouped = <String, List<Chronique>>{};
-    for (final chronique in chroniques) {
-      grouped[chronique.userId] = [...grouped[chronique.userId] ?? [], chronique];
-    }
-    return grouped;
   }
 
   @override
@@ -734,7 +848,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
           ),
         ),
         actions: [
-          // 🔥 ICÔNE REFRESH AVEC INDICATEUR
           Stack(
             children: [
               IconButton(
@@ -760,7 +873,10 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {
-              if (value == 'reset') _resetEverything();
+              if (value == 'reset') {
+                Provider.of<MixedFeedServiceProvider>(context, listen: false).reset();
+                _refreshData();
+              }
             },
             itemBuilder: (BuildContext context) => [
               PopupMenuItem<String>(
@@ -775,3 +891,4 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 }
+// 🔥 ENUM POUR LES TYPES DE CONTENU

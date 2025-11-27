@@ -42,6 +42,9 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constant/custom_theme.dart';
+import '../../providers/chroniqueProvider.dart';
+import '../../providers/contenuPayantProvider.dart';
+import '../../services/postService/mixed_feed_service.dart';
 import '../LiveAgora/mesLives.dart';
 import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
@@ -78,11 +81,16 @@ const Color darkBackground = Colors.black;
 const Color textColor = Colors.white;
 
 class MyHomePage extends StatefulWidget {
-   MyHomePage({super.key, required this.title,this.isOpenLink=false});
 
   final String title;
    bool isOpenLink;
-
+   final MixedFeedService? preloadedFeedService; // 🔥 NOUVEAU
+    MyHomePage({
+     super.key,
+     required this.title,
+     this.isOpenLink = false,
+     this.preloadedFeedService, // 🔥 NOUVEAU
+   });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -158,6 +166,8 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
+  late MixedFeedService _mixedFeedService;
+  bool _isGlobalContentLoading = false;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool _buttonEnabled = true;
@@ -179,7 +189,46 @@ class _MyHomePageState extends State<MyHomePage>
       return number.toString();
     }
   }
+  // 🔥 INITIALISATION DU SERVICE DE FEED
+// 🔥 INITIALISATION DU SERVICE DE FEED
+  void _initializeFeedService() {
+    // Utiliser le service préchargé ou en créer un nouveau
+    if (widget.preloadedFeedService != null) {
+      _mixedFeedService = widget.preloadedFeedService!;
+      print('🎯 Service de feed préchargé utilisé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
 
+      // 🔥 CHARGER LE CONTENU GLOBAL DEPUIS LA PAGE
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _mixedFeedService!.loadGlobalContentFromPage();
+        print('🌍 Contenu global chargé depuis MyHomePage');
+      });
+    } else {
+      // Créer un nouveau service si pas de service préchargé
+      _mixedFeedService = MixedFeedService(
+        authProvider: authProvider,
+        categorieProvider: categorieProduitProvider,
+        postProvider: postProvider,
+        chroniqueProvider: Provider.of<ChroniqueProvider>(context, listen: false),
+        contentProvider: Provider.of<ContentProvider>(context, listen: false),
+      );
+
+      // Préparer les posts et charger le contenu global
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final currentUserId = authProvider.loginUserData.id;
+        if (currentUserId != null) {
+          // await _mixedFeedService!.preparePostsOnly();
+          await _mixedFeedService!.loadGlobalContentFromPage();
+          print('🔄 Nouveau service créé: ${_mixedFeedService!.preparedPostsCount} posts prêts');
+        }
+      });
+    }
+  }
+  // 🔥 CHARGEMENT DU CONTENU GLOBAL
+
+  // 🔥 DANS VOTRE MÉTHODE DE CONSTRUCTION DE LA TAB "Accueil"
+  Widget _buildDiscoverTab() {
+    return UnifiedHomeOptimized();
+  }
   Future<Chat> getIAChatsData(UserIACompte amigo) async {
     // Définissez la requête
     var friendsStream = FirebaseFirestore.instance
@@ -1114,6 +1163,7 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    _initializeFeedService();
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
     userProvider.getTopAfrolookeur().then((value) {
@@ -1536,7 +1586,8 @@ class _MyHomePageState extends State<MyHomePage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          UnifiedHomeOptimized(),
+          _buildDiscoverTab(),
+          // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
 

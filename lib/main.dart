@@ -60,6 +60,7 @@ import 'package:afrotok/providers/crypto_admin_provider.dart';
 import 'package:afrotok/providers/crypto_initializer.dart';
 import 'package:afrotok/providers/crypto_market_provider.dart';
 import 'package:afrotok/providers/crypto_portfolio_controller.dart';
+import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -320,6 +321,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoMarketProvider()),
         ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
+        ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
