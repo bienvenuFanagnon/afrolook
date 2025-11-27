@@ -49,14 +49,14 @@ class ChroniqueSectionComponent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader(),
+          _buildSectionHeader(context),
           _buildChroniquesList(groupedList),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader() {
+  Widget _buildSectionHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
       child: Row(
@@ -73,7 +73,7 @@ class ChroniqueSectionComponent extends StatelessWidget {
           GestureDetector(
             onTap: () {
               Navigator.push(
-                navigatorKey.currentContext!,
+                context!,
                 MaterialPageRoute(
                   builder: (context) => ChroniqueHomePage(),
                 ),
@@ -119,13 +119,13 @@ class ChroniqueSectionComponent extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 12),
         itemCount: groupedList.length,
         itemBuilder: (context, index) {
-          return _buildChroniqueItem(groupedList[index]);
+          return _buildChroniqueItem(groupedList[index],context);
         },
       ),
     );
   }
 
-  Widget _buildChroniqueItem(List<Chronique> userChroniques) {
+  Widget _buildChroniqueItem(List<Chronique> userChroniques,BuildContext context) {
     if (userChroniques.isEmpty) return SizedBox();
 
     final firstChronique = userChroniques.first;
@@ -135,7 +135,7 @@ class ChroniqueSectionComponent extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Navigator.push(
-          navigatorKey.currentContext!,
+          context!,
           MaterialPageRoute(
             builder: (context) => ChroniqueDetailPage(
               userChroniques: userChroniques,

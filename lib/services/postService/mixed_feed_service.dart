@@ -40,7 +40,7 @@ class MixedFeedService {
   // 🔥 NOUVEAU: Cache des IDs préparés
   List<String> _preparedPostIds = [];
   int _currentIndex = 0;
-  static const int _preloadBatchSize = 100;
+  static const int _preloadBatchSize = 50;
 
   // 🔥 CONTENU GLOBAL
   List<ArticleData> _globalArticles = [];
@@ -81,10 +81,10 @@ class MixedFeedService {
   Future<void> _loadChroniques() async {
     try {
       final snapshot = await firestore
-          .collection('Chroniques')
+          .collection('chroniques')
           // .where('isActive', isEqualTo: true)
           .orderBy('createdAt', descending: true)
-          .limit(20)
+          .limit(8)
           .get();
 
       _globalChroniques = snapshot.docs.map((doc) {
@@ -101,7 +101,7 @@ class MixedFeedService {
           .collection('Articles')
           .where('isBoosted', isEqualTo: true)
           // .orderBy('boostedUntil', descending: true)
-          .limit(4)
+          .limit(3)
           .get();
 
       _globalArticles = snapshot.docs.map((doc) {
@@ -118,7 +118,7 @@ class MixedFeedService {
           .collection('Canaux')
           // .where('isActive', isEqualTo: true)
           // .orderBy('subscribersCount', descending: true)
-          .limit(6)
+          .limit(4)
           .get();
 
       _globalCanaux = snapshot.docs.map((doc) {

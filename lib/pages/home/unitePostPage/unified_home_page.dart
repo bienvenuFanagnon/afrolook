@@ -369,30 +369,32 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
     // AUCUN CONTENU
     if (_posts.isEmpty && !_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, color: Colors.grey, size: 64),
-            SizedBox(height: 20),
-            Text(
-              'Aucun contenu disponible',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Revenez plus tard ou rafraîchissez',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _refreshData,
-              icon: Icon(Icons.refresh),
-              label: Text('Rafraîchir'),
-            ),
-          ],
-        ),
-      );
+      return LoadingComponents.buildShimmerEffect();
+
+      // return Center(
+      //   child: Column(
+      //     mainAxisAlignment: MainAxisAlignment.center,
+      //     children: [
+      //       Icon(Icons.search_off, color: Colors.grey, size: 64),
+      //       SizedBox(height: 20),
+      //       Text(
+      //         'Aucun contenu disponible',
+      //         style: TextStyle(color: Colors.grey, fontSize: 16),
+      //       ),
+      //       SizedBox(height: 10),
+      //       Text(
+      //         'Revenez plus tard ou rafraîchissez',
+      //         style: TextStyle(color: Colors.grey, fontSize: 14),
+      //       ),
+      //       SizedBox(height: 20),
+      //       ElevatedButton.icon(
+      //         onPressed: _refreshData,
+      //         icon: Icon(Icons.refresh),
+      //         label: Text('Rafraîchir'),
+      //       ),
+      //     ],
+      //   ),
+      // );
     }
 
     return Stack(
