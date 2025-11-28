@@ -48,11 +48,24 @@ import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/postService/local_viewed_posts_service.dart';
 import '../../../services/postService/mixed_feed_service.dart';
-import '../../chronique/chroniqueform.dart';
-import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'chronique_section.dart';
 import 'home_components/loading_components.dart';
 import 'home_components/special_sections_component.dart';
+
+// 🔥 ENUM POUR LES FILTRES
+enum FeedFilter {
+  ALL('Tout', '🌍', null),
+  CHALLENGE('Look Challenge', '🏆', 'challenge'),
+  SUBSCRIPTIONS('Abonnements', '📨', 'subscriptions'),
+  VIRAL('Viral', '🔥', 'viral'),
+  LOW_SCORE('Faible score', '📉', 'low_score');
+
+  final String label;
+  final String emoji;
+  final String? value;
+
+  const FeedFilter(this.label, this.emoji, this.value);
+}
 
 class UnifiedHomeOptimized extends StatefulWidget {
   const UnifiedHomeOptimized({super.key});
@@ -63,14 +76,17 @@ class UnifiedHomeOptimized extends StatefulWidget {
 
 class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _filterScrollController = ScrollController();
 
-  // 🔥 VARIABLES SIMPLIFIÉES
+  // 🔥 ÉTATS LOCAUX POUR L'AFFICHAGE
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasError = false;
-  int _currentIndex = 0;
   int _userLastVisitTime = 0;
   bool _isRefreshing = false;
+
+  // 🔥 CONTENU ACTUEL À AFFICHER
+  List<dynamic> _currentContent = [];
 
   // 🔥 GESTION VISIBILITÉ
   final Map<String, Timer> _visibilityTimers = {};
@@ -82,6 +98,19 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   bool _isLoadingChroniques = false;
   Map<String, List<Chronique>> _groupedChroniques = {};
 
+  // 🔥 POUR SUIVRE L'ÉTAT DES POSTS
+  bool _hasDisplayedImmediatePosts = false;
+  bool _isInitialLoadComplete = false;
+  Timer? _backgroundLoadTimer;
+
+  // 🔥 POUR ÉVITER LES DOUBLONS
+  final Set<String> _displayedPostIds = Set();
+  final Set<String> _displayedChroniqueIds = Set();
+
+  // 🔥 FILTRES
+  FeedFilter _currentFilter = FeedFilter.ALL;
+  final List<FeedFilter> _availableFilters = FeedFilter.values;
+
   @override
   void initState() {
     super.initState();
@@ -89,32 +118,549 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     _scrollController.addListener(_scrollListener);
   }
 
-  // 🔥 INITIALISATION SIMPLIFIÉE AVEC LE PROVIDER
+  // 🔥 INITIALISATION COMPLÈTE
   Future<void> _initializePage() async {
     final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
 
     try {
-      print('🎯 UnifiedHomeOptimized - Initialisation avec le provider...');
+      print('🎯 UnifiedHomeOptimized - Initialisation complète...');
 
-      // 🔥 CHARGER LE TEMPS DE DERNIÈRE VISITE
       await _loadUserLastVisitTime();
 
-      if (mixedFeedProvider.isPrepared) {
-        print('✅ Service déjà préparé avec ${mixedFeedProvider.preparedPostsCount} posts');
-        // Charger directement le contenu global
-        await mixedFeedProvider.loadGlobalContent();
-        await _loadInitialContent();
-      } else {
-        print('🔄 Service non préparé - préparation rapide...');
-        await mixedFeedProvider.preparePosts();
-        await mixedFeedProvider.loadGlobalContent();
-        await _loadInitialContent();
-      }
+      // 🔥 ÉTAPE 1: CHARGER LE CONTENU GLOBAL (chroniques, articles, canaux)
+      await _loadGlobalContentImmediately(mixedFeedProvider);
+
+      // 🔥 ÉTAPE 2: AFFICHER CHRONIQUES + POSTS IMMÉDIATS
+      _displayInitialContent(mixedFeedProvider);
+
+      // 🔥 ÉTAPE 3: PRÉPARER ET CHARGER LE CONTENU MIXTE PROGRESSIVEMENT
+      _prepareAndLoadMixedContent(mixedFeedProvider);
 
     } catch (e) {
       print('❌ Erreur initialisation page: $e');
       setState(() => _hasError = true);
     }
+  }
+
+  // 🔥 CHARGEMENT IMMÉDIAT DU CONTENU GLOBAL
+  Future<void> _loadGlobalContentImmediately(MixedFeedServiceProvider provider) async {
+    try {
+      print('🌍 Chargement immédiat du contenu global...');
+      await provider.loadGlobalContent();
+      print('✅ Contenu global chargé');
+    } catch (e) {
+      print('❌ Erreur chargement global: $e');
+    }
+  }
+
+  // 🔥 AFFICHER LE CONTENU INITIAL (CHRONIQUES + POSTS IMMÉDIATS)
+  void _displayInitialContent(MixedFeedServiceProvider provider) {
+    if (_hasDisplayedImmediatePosts) return;
+
+    print('🚀 Construction du contenu initial...');
+
+    final initialContent = <dynamic>[];
+
+    // 🔥 ÉTAPE 1: AJOUTER LES CHRONIQUES EN PREMIÈRE POSITION
+    final chroniques = provider.mixedFeedService?.chroniques ?? [];
+    if (chroniques.isNotEmpty) {
+      initialContent.add(ContentSection(
+        type: ContentMixtType.CHRONIQUES,
+        data: chroniques,
+      ));
+      print('✅ Chroniques ajoutées en première position: ${chroniques.length}');
+
+      // Précharger les données des chroniques
+      _preloadChroniqueData(chroniques);
+    }
+
+    // 🔥 ÉTAPE 2: AJOUTER LES POSTS IMMÉDIATS
+    final immediatePosts = provider.immediatePosts;
+    if (immediatePosts.isNotEmpty) {
+      for (final post in immediatePosts) {
+        if (post.id != null && !_displayedPostIds.contains(post.id!)) {
+          initialContent.add(ContentSection(
+            type: ContentMixtType.POST,
+            data: post,
+          ));
+          _displayedPostIds.add(post.id!);
+        }
+      }
+      print('✅ Posts immédiats ajoutés: ${immediatePosts.length}');
+    }
+
+    // 🔥 ÉTAPE 3: AJOUTER ARTICLES ET CANAUX SI DISPONIBLES
+    final articles = provider.mixedFeedService?.articles ?? [];
+    if (articles.isNotEmpty) {
+      initialContent.add(ContentSection(
+        type: ContentMixtType.ARTICLES,
+        data: articles,
+      ));
+      print('✅ Articles ajoutés: ${articles.length}');
+    }
+
+    final canaux = provider.mixedFeedService?.canaux ?? [];
+    if (canaux.isNotEmpty) {
+      initialContent.add(ContentSection(
+        type: ContentMixtType.CANAUX,
+        data: canaux,
+      ));
+      print('✅ Canaux ajoutés: ${canaux.length}');
+    }
+
+    setState(() {
+      _currentContent = initialContent;
+      _hasDisplayedImmediatePosts = true;
+    });
+
+    print('🎯 Contenu initial affiché: ${initialContent.length} éléments');
+  }
+
+  // 🔥 PRÉPARER ET CHARGER LE CONTENU MIXTE
+  void _prepareAndLoadMixedContent(MixedFeedServiceProvider provider) {
+    WidgetsBinding.instance?.addPostFrameCallback((_) async {
+      try {
+        print('🧠 Début du chargement du contenu mixte...');
+
+        // Attendre un peu pour laisser l'UI s'afficher
+        await Future.delayed(Duration(milliseconds: 300));
+
+        // 🔥 CHARGER LE CONTENU MIXTE DISPONIBLE
+        await _loadAvailableMixedContent(provider);
+
+        // 🔥 CONTINUER LE CHARGEMENT EN BACKGROUND
+        _continueLoadingInBackground(provider);
+
+      } catch (e) {
+        print('❌ Erreur chargement contenu mixte: $e');
+        setState(() {
+          _isInitialLoadComplete = true;
+        });
+      }
+    });
+  }
+
+  // 🔥 CHARGER LE CONTENU MIXTE DISPONIBLE
+  Future<void> _loadAvailableMixedContent(MixedFeedServiceProvider provider) async {
+    try {
+      if (provider.isReady) {
+        print('🚀 Chargement du contenu mixte disponible...');
+
+        final mixedContent = await provider.loadMixedContent(loadMore: false);
+
+        if (mixedContent.isNotEmpty) {
+          print('✅ Contenu mixte chargé: ${mixedContent.length} éléments');
+          _mergeMixedContent(mixedContent, provider);
+        } else {
+          print('⏳ Aucun contenu mixte disponible pour le moment');
+        }
+      } else {
+        print('⏳ Service pas encore prêt, attente...');
+        // Réessayer après 1 seconde
+        await Future.delayed(Duration(seconds: 1));
+        await _loadAvailableMixedContent(provider);
+      }
+    } catch (e) {
+      print('❌ Erreur chargement contenu mixte: $e');
+    }
+  }
+
+  // 🔥 FUSIONNER INTELLIGEMMENT LE CONTENU MIXTE
+  void _mergeMixedContent(List<dynamic> newMixedContent, MixedFeedServiceProvider provider) {
+    print('🎯 Fusion du contenu mixte...');
+
+    final mergedContent = List<dynamic>.from(_currentContent);
+    int newItemsCount = 0;
+
+    for (final section in newMixedContent) {
+      if (section is ContentSection) {
+        switch (section.type) {
+          case ContentMixtType.POST:
+            final post = section.data as Post;
+            if (post.id != null && !_displayedPostIds.contains(post.id!)) {
+              mergedContent.add(section);
+              _displayedPostIds.add(post.id!);
+              newItemsCount++;
+            }
+            break;
+
+          case ContentMixtType.CHRONIQUES:
+          // Les chroniques sont déjà en première position, on évite les doublons
+            final chroniques = section.data as List<Chronique>;
+            final newChroniques = chroniques.where((c) =>
+            c.id != null && !_displayedChroniqueIds.contains(c.id!)).toList();
+
+            if (newChroniques.isNotEmpty) {
+              // On pourrait ajouter une nouvelle section chroniques plus bas
+              // ou mettre à jour la section existante
+              print('📝 Nouvelles chroniques disponibles: ${newChroniques.length}');
+            }
+            break;
+
+          case ContentMixtType.ARTICLES:
+          case ContentMixtType.CANAUX:
+          // Vérifier si on a déjà ce type de section
+            final hasSimilarSection = mergedContent.any((existing) =>
+            existing is ContentSection && existing.type == section.type);
+
+            if (!hasSimilarSection) {
+              mergedContent.add(section);
+              newItemsCount++;
+            }
+            break;
+        }
+      }
+    }
+
+    if (newItemsCount > 0) {
+      setState(() {
+        _currentContent = mergedContent;
+      });
+      print('✅ Fusion réussie: +$newItemsCount nouveaux éléments (Total: ${mergedContent.length})');
+    } else {
+      print('ℹ️ Aucun nouvel élément à ajouter');
+    }
+  }
+
+  // 🔥 CONTINUER LE CHARGEMENT EN BACKGROUND
+  void _continueLoadingInBackground(MixedFeedServiceProvider provider) {
+    int checkCount = 0;
+    const int maxChecks = 8;
+
+    _backgroundLoadTimer = Timer.periodic(Duration(seconds: 3), (timer) async {
+      if (!mounted || checkCount >= maxChecks) {
+        timer.cancel();
+        if (mounted) {
+          setState(() {
+            _isInitialLoadComplete = true;
+          });
+        }
+        print('✅ Chargement background terminé après $checkCount vérifications');
+        return;
+      }
+
+      checkCount++;
+
+      try {
+        if (provider.hasMore && provider.isReady) {
+          final previousLength = _currentContent.length;
+          final newMixedContent = await provider.loadMixedContent(loadMore: true);
+
+          if (newMixedContent.length > previousLength) {
+            final newItems = newMixedContent.skip(previousLength).toList();
+
+            print('🆕 Nouveaux éléments en background: +${newItems.length}');
+
+            // Fusionner les nouveaux éléments
+            final mergedContent = List<dynamic>.from(_currentContent);
+            int addedCount = 0;
+
+            for (final section in newItems) {
+              if (section is ContentSection && section.type == ContentMixtType.POST) {
+                final post = section.data as Post;
+                if (post.id != null && !_displayedPostIds.contains(post.id!)) {
+                  mergedContent.add(section);
+                  _displayedPostIds.add(post.id!);
+                  addedCount++;
+                }
+              }
+            }
+
+            if (addedCount > 0) {
+              setState(() {
+                _currentContent = mergedContent;
+              });
+              print('✅ Background: +$addedCount posts ajoutés');
+            }
+          }
+        }
+
+        // Arrêter si on a assez de contenu
+        if (_currentContent.length >= 20 || !provider.hasMore) {
+          timer.cancel();
+          setState(() {
+            _isInitialLoadComplete = true;
+          });
+          print('🎯 Chargement optimal atteint: ${_currentContent.length} éléments');
+        }
+
+      } catch (e) {
+        print('❌ Erreur chargement background: $e');
+        timer.cancel();
+        setState(() {
+          _isInitialLoadComplete = true;
+        });
+      }
+    });
+  }
+
+  // 🔥 PRÉCHARGER LES DONNÉES DES CHRONIQUES
+  void _preloadChroniqueData(List<Chronique> chroniques) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadChroniqueData(chroniques);
+    });
+  }
+
+  // 🔥 CHANGEMENT DE FILTRE
+  Future<void> _onFilterChanged(FeedFilter newFilter) async {
+    if (_currentFilter == newFilter) return;
+
+    print('🎯 Changement de filtre: ${_currentFilter.label} → ${newFilter.label}');
+
+    setState(() {
+      _currentFilter = newFilter;
+      _isLoading = true;
+    });
+
+    try {
+      List<ContentSection> filteredContent = [];
+
+      if (newFilter == FeedFilter.ALL) {
+        // 🔥 FILTRE "TOUT" : RECONSTRUIRE LE CONTENU COMPLET
+        final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+
+        // Réinitialiser les ensembles de contrôle
+        _displayedPostIds.clear();
+        _displayedChroniqueIds.clear();
+
+        // Reconstruire le contenu initial
+        final initialContent = <dynamic>[];
+
+        // Chroniques
+        final chroniques = mixedFeedProvider.mixedFeedService?.chroniques ?? [];
+        if (chroniques.isNotEmpty) {
+          initialContent.add(ContentSection(
+            type: ContentMixtType.CHRONIQUES,
+            data: chroniques,
+          ));
+        }
+
+        // Posts immédiats
+        final immediatePosts = mixedFeedProvider.immediatePosts;
+        for (final post in immediatePosts) {
+          if (post.id != null) {
+            initialContent.add(ContentSection(
+              type: ContentMixtType.POST,
+              data: post,
+            ));
+            _displayedPostIds.add(post.id!);
+          }
+        }
+
+        filteredContent = initialContent.cast<ContentSection>();
+
+      } else {
+        // 🔥 AUTRES FILTRES : Charger depuis Firebase
+        filteredContent = await _loadFilteredPosts(newFilter);
+      }
+
+      setState(() {
+        _currentContent = filteredContent;
+        _isLoading = false;
+      });
+
+      print('✅ Filtre appliqué: ${filteredContent.length} éléments');
+
+    } catch (e) {
+      print('❌ Erreur application filtre: $e');
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  // 🔥 CHARGER LES POSTS FILTRÉS
+  Future<List<ContentSection>> _loadFilteredPosts(FeedFilter filter) async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+
+    if (currentUserId == null) return [];
+
+    try {
+      Query query = FirebaseFirestore.instance.collection('Posts');
+
+      switch (filter) {
+        case FeedFilter.SUBSCRIPTIONS:
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentUserId).get();
+          final newPostsFromSubscriptions = List<String>.from(userDoc.data()?['newPostsFromSubscriptions'] ?? []);
+
+          if (newPostsFromSubscriptions.isEmpty) return [];
+          query = query.where('id', whereIn: newPostsFromSubscriptions.take(10));
+          break;
+
+        case FeedFilter.VIRAL:
+          query = query.orderBy('feedScore', descending: true);
+          break;
+
+        case FeedFilter.CHALLENGE:
+          query = query.where('type', isEqualTo: PostType.CHALLENGEPARTICIPATION.name);
+          break;
+
+        case FeedFilter.LOW_SCORE:
+          query = query.orderBy('feedScore', descending: false);
+          break;
+
+        case FeedFilter.ALL:
+        default:
+          query = query.orderBy('created_at', descending: true);
+          break;
+      }
+
+      query = query.limit(10);
+
+      final snapshot = await query.get();
+
+      final posts = snapshot.docs.map((doc) {
+        try {
+          return Post.fromJson(doc.data() as Map<String, dynamic>);
+        } catch (e) {
+          print('❌ Erreur parsing post ${doc.id}: $e');
+          return null;
+        }
+      }).where((post) => post != null).cast<Post>().toList();
+
+      // 🔥 CONTRÔLE DES DOUBLONS
+      final uniquePosts = <Post>[];
+      final seenIds = Set<String>();
+
+      for (final post in posts) {
+        if (post.id != null && !seenIds.contains(post.id!)) {
+          uniquePosts.add(post);
+          seenIds.add(post.id!);
+        }
+      }
+
+      return uniquePosts.map((post) => ContentSection(
+        type: ContentMixtType.POST,
+        data: post,
+      )).toList();
+
+    } catch (e) {
+      print('❌ Erreur chargement posts filtrés: $e');
+      return [];
+    }
+  }
+
+  // 🔥 CHARGEMENT SUPPLÉMENTAIRE
+  Future<void> _loadMoreContent() async {
+    if (_isLoadingMore) return;
+
+    if (_currentFilter != FeedFilter.ALL) {
+      await _loadMoreFilteredContent();
+      return;
+    }
+
+    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+    if (!mixedFeedProvider.hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final newContent = await mixedFeedProvider.loadMixedContent(loadMore: true);
+
+      if (newContent.isNotEmpty) {
+        // 🔥 FILTRER LES DOUBLONS
+        final uniqueNewContent = <dynamic>[];
+        for (final section in newContent) {
+          if (section is ContentSection && section.type == ContentMixtType.POST) {
+            final post = section.data as Post;
+            if (post.id != null && !_displayedPostIds.contains(post.id!)) {
+              uniqueNewContent.add(section);
+              _displayedPostIds.add(post.id!);
+            }
+          } else {
+            uniqueNewContent.add(section);
+          }
+        }
+
+        if (uniqueNewContent.isNotEmpty) {
+          setState(() {
+            _currentContent.addAll(uniqueNewContent);
+          });
+          print('📥 Chargement supplémentaire: +${uniqueNewContent.length} éléments uniques');
+        }
+      }
+
+    } catch (e) {
+      print('❌ Erreur chargement supplémentaire: $e');
+    } finally {
+      setState(() => _isLoadingMore = false);
+    }
+  }
+
+  // 🔥 CHARGEMENT SUPPLÉMENTAIRE FILTRÉ
+  Future<void> _loadMoreFilteredContent() async {
+    if (_isLoadingMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final morePosts = await _loadFilteredPosts(_currentFilter);
+
+      if (morePosts.isNotEmpty) {
+        // 🔥 FILTRER LES DOUBLONS
+        final uniquePosts = <ContentSection>[];
+        for (final section in morePosts) {
+          final post = section.data as Post;
+          if (post.id != null && !_displayedPostIds.contains(post.id!)) {
+            uniquePosts.add(section);
+            _displayedPostIds.add(post.id!);
+          }
+        }
+
+        if (uniquePosts.isNotEmpty) {
+          setState(() {
+            _currentContent.addAll(uniquePosts);
+          });
+          print('📥 Chargement filtré supplémentaire: +${uniquePosts.length} éléments');
+        }
+      }
+
+    } catch (e) {
+      print('❌ Erreur chargement filtré supplémentaire: $e');
+    } finally {
+      setState(() => _isLoadingMore = false);
+    }
+  }
+
+  // 🔥 WIDGET DES FILTRES
+  Widget _buildFilterChips() {
+    return Container(
+      height: 50,
+      child: ListView.builder(
+        controller: _filterScrollController,
+        scrollDirection: Axis.horizontal,
+        itemCount: _availableFilters.length,
+        itemBuilder: (context, index) {
+          final filter = _availableFilters[index];
+          final isSelected = _currentFilter == filter;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 16 : 8,
+              right: index == _availableFilters.length - 1 ? 16 : 0,
+            ),
+            child: FilterChip(
+              label: Text('${filter.emoji} ${filter.label}'),
+              selected: isSelected,
+              onSelected: (selected) => _onFilterChanged(filter),
+              backgroundColor: Colors.grey[800],
+              selectedColor: Colors.green,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[300],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // 🔥 CHARGEMENT DU TEMPS DE DERNIÈRE VISITE
@@ -137,87 +683,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-  // 🔥 METTRE À JOUR LE TEMPS DE DERNIÈRE VISITE
-  Future<void> _updateLastVisitTime() async {
-    try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final currentUserId = authProvider.loginUserData.id;
-
-      if (currentUserId != null) {
-        final now = DateTime.now().microsecondsSinceEpoch;
-        await FirebaseFirestore.instance.collection('Users').doc(currentUserId).update({
-          'lastFeedVisitTime': now,
-        });
-
-        authProvider.loginUserData.lastFeedVisitTime = now;
-        _userLastVisitTime = now;
-
-        print('🕐 Temps de visite mis à jour');
-      }
-    } catch (e) {
-      print('❌ Erreur mise à jour temps visite: $e');
-    }
-  }
-
-  // 🔥 CHARGEMENT INITIAL ULTRA RAPIDE
-  Future<void> _loadInitialContent() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-
-      print('🚀 Chargement rapide depuis le provider...');
-
-      // 🔥 AFFICHER LE DERNIER POST VU AU DÉMARRAGE
-      final lastSeenPost = await LocalViewedPostsService.getLastSeenPost();
-      final viewedPosts = await LocalViewedPostsService.getViewedPosts();
-      print('''
-🚀 DÉMARRAGE APPLICATION:
-   - Dernier post vu: $lastSeenPost
-   - Posts déjà vus: ${viewedPosts.length}
-   - Provider prêt: ${mixedFeedProvider.isPrepared}
-   - Posts préparés: ${mixedFeedProvider.preparedPostsCount}
-''');
-
-      // 🔥 CHARGEMENT DIRECT
-      await mixedFeedProvider.loadMixedContent(loadMore: false);
-
-      print('✅ Contenu chargé: ${mixedFeedProvider.mixedContent.length} éléments');
-
-      await _updateLastVisitTime();
-
-    } catch (e) {
-      print('❌ Erreur chargement initial: $e');
-      setState(() => _hasError = true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  // 🔥 CHARGEMENT SUPPLÉMENTAIRE SIMPLIFIÉ
-  Future<void> _loadMoreContent() async {
-    if (_isLoadingMore) return;
-
-    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-    if (!mixedFeedProvider.hasMore) return;
-
-    setState(() => _isLoadingMore = true);
-
-    try {
-      await mixedFeedProvider.loadMixedContent(loadMore: true);
-      print('📥 Chargement supplémentaire terminé');
-    } catch (e) {
-      print('❌ Erreur chargement supplémentaire: $e');
-    } finally {
-      setState(() => _isLoadingMore = false);
-    }
-  }
-
   // 🔥 REFRESH COMPLET
   Future<void> _refreshData() async {
     print('🔄 Refresh manuel...');
@@ -230,12 +695,23 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     });
 
     try {
+      _backgroundLoadTimer?.cancel();
+
       final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
 
+      // Réinitialiser complètement
       await mixedFeedProvider.reset();
-      await mixedFeedProvider.preparePosts();
-      await mixedFeedProvider.loadGlobalContent();
-      await _loadInitialContent();
+      _displayedPostIds.clear();
+      _displayedChroniqueIds.clear();
+      _hasDisplayedImmediatePosts = false;
+      _isInitialLoadComplete = false;
+
+      // Relancer l'initialisation
+      await _initializePage();
+
+      setState(() {
+        _currentFilter = FeedFilter.ALL;
+      });
 
       print('🆕 Refresh terminé');
 
@@ -248,46 +724,37 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 400) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
       _loadMoreContent();
     }
   }
 
   // 🔥 CONSTRUCTION DES SECTIONS DE CONTENU
   Widget _buildContentSection(ContentSection section) {
-    print('🎨 Construction section: ${section.type}');
-
     switch (section.type) {
       case ContentMixtType.POST:
         final post = section.data as Post;
-        print('   📝 Post: ${post.id} - ${post.type}');
         return _buildPostItem(post);
 
       case ContentMixtType.CHRONIQUES:
         final chroniques = section.data as List<Chronique>;
-        print('   📺 Chroniques: ${chroniques.length} éléments');
         return _buildChroniquesSection(chroniques);
 
       case ContentMixtType.ARTICLES:
         final articles = section.data as List<ArticleData>;
-        print('   📰 Articles: ${articles.length} éléments');
         return _buildArticlesSection(articles);
 
       case ContentMixtType.CANAUX:
         final canaux = section.data as List<Canal>;
-        print('   🎙️ Canaux: ${canaux.length} éléments');
         return _buildCanauxSection(canaux);
 
       default:
-        print('   ❌ Type inconnu: ${section.type}');
         return SizedBox.shrink();
     }
   }
 
   // 🔥 SECTION CHRONIQUES
   Widget _buildChroniquesSection(List<Chronique> chroniques) {
-    // Charger les données si nécessaire
     if (!_isLoadingChroniques && _groupedChroniques.isEmpty && chroniques.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadChroniqueData(chroniques);
@@ -334,8 +801,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     final screenHeight = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
-    final isNewForUser = post.createdAt != null &&
-        post.createdAt! > _userLastVisitTime;
+    final isNewForUser = post.createdAt != null && post.createdAt! > _userLastVisitTime;
 
     return VisibilityDetector(
       key: Key('post-${post.id}'),
@@ -387,13 +853,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
                   decoration: BoxDecoration(
                     color: Colors.green,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -438,6 +897,107 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 
+  // 🔥 BODY PRINCIPAL
+  Widget _buildBody(double width, double height) {
+    print('🎯 Build avec: ${_currentContent.length} éléments - Filtre: ${_currentFilter.label}');
+
+    if (_currentContent.isEmpty && (_isLoading || !_hasDisplayedImmediatePosts)) {
+      return LoadingComponents.buildShimmerEffect();
+    }
+
+    if (_hasError && _currentContent.isEmpty) {
+      return _buildErrorWidget();
+    }
+
+    if (_currentContent.isEmpty && _isInitialLoadComplete) {
+      return _buildEmptyState();
+    }
+
+    return Column(
+      children: [
+        _buildFilterChips(),
+        SizedBox(height: 8),
+        Expanded(
+          child: Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: _refreshData,
+                backgroundColor: Colors.black,
+                color: Colors.white,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                          if (index == _currentContent.length) {
+                            return _buildLoadingMore();
+                          }
+                          final section = _currentContent[index] as ContentSection;
+                          return _buildContentSection(section);
+                        },
+                        childCount: _currentContent.length + (_shouldShowLoadingMore() ? 1 : 0),
+                      ),
+                    ),
+
+                    if (!_shouldShowLoadingMore() && _currentContent.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _buildEndOfFeed(),
+                      ),
+                  ],
+                ),
+              ),
+
+              if (_isRefreshing)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 60,
+                    color: Colors.black.withOpacity(0.8),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Actualisation...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 🔥 DÉTERMINER SI ON DOIT AFFICHER "CHARGEMENT SUPPLEMENTAIRE"
+  bool _shouldShowLoadingMore() {
+    if (_currentFilter != FeedFilter.ALL) {
+      return true;
+    }
+
+    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+    return mixedFeedProvider.hasMore && _isInitialLoadComplete;
+  }
+
   // 🔥 MARQUER UN POST COMME VU
   void _handlePostVisibility(Post post, VisibilityInfo info) {
     final postId = post.id!;
@@ -446,10 +1006,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     if (info.visibleFraction > 0.8) {
       _visibilityTimers[postId] = Timer(Duration(seconds: 2), () {
         if (mounted && info.visibleFraction > 0.7) {
-          print('✅ Post VU: $postId (regardé pendant 2 secondes)');
           _markPostAsSeen(post);
-        } else {
-          print('❌ Marquage annulé: $postId pas regardé assez longtemps');
         }
       });
     } else if (info.visibleFraction < 0.3) {
@@ -462,12 +1019,8 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     if (currentUserId.isEmpty || post.id == null) return;
 
     try {
-      print('👁️ Marquage post comme vu: ${post.id}');
-
-      // 🔥 SAUVEGARDE LOCALE
       await LocalViewedPostsService.markPostAsViewedAndUpdateLast(post.id!);
 
-      // 🔥 MARQUAGE DANS FIRESTORE VIA LE SERVICE DU PROVIDER
       final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
       if (mixedFeedProvider.mixedFeedService != null) {
         await mixedFeedProvider.mixedFeedService!.markPostAsSeen(post.id!);
@@ -483,16 +1036,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
         });
       }
 
-      // 🔥 DEBUG
-      final lastSeen = await LocalViewedPostsService.getLastSeenPost();
-      final viewedCount = await LocalViewedPostsService.getViewedPosts();
-      print('''
-📍 STATUT POSTS VUS:
-   - Dernier post vu: $lastSeen
-   - Total posts vus: ${viewedCount.length}
-   - Post actuel: ${post.id}
-''');
-
     } catch (e) {
       print('❌ Erreur enregistrement vue: $e');
     }
@@ -501,17 +1044,12 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   // 🔥 MÉTHODES POUR LES CHRONIQUES
   Future<void> _loadChroniqueData(List<Chronique> chroniques) async {
     if (_isLoadingChroniques) return;
-
     setState(() => _isLoadingChroniques = true);
-
     try {
       _groupedChroniques = _groupChroniquesByUser(chroniques);
       await _loadUserVerificationStatus(chroniques);
       await _loadUserData(chroniques);
       await _generateVideoThumbnails(chroniques);
-
-      print('✅ Données chroniques chargées: ${chroniques.length} éléments');
-
     } catch (e) {
       print('❌ Erreur chargement données chroniques: $e');
     } finally {
@@ -522,7 +1060,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   Future<void> _loadUserVerificationStatus(List<Chronique> chroniques) async {
     try {
       final userIds = chroniques.map((c) => c.userId).toSet();
-
       for (final userId in userIds) {
         if (!_userVerificationStatus.containsKey(userId)) {
           final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
@@ -538,7 +1075,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   Future<void> _loadUserData(List<Chronique> chroniques) async {
     try {
       final userIds = chroniques.map((c) => c.userId).toSet();
-
       for (final userId in userIds) {
         if (!_userDataCache.containsKey(userId)) {
           final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
@@ -556,25 +1092,9 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   Future<void> _generateVideoThumbnails(List<Chronique> chroniques) async {
     try {
       final videoChroniques = chroniques.where((c) => c.type == ChroniqueType.VIDEO);
-
       for (final chronique in videoChroniques) {
         if (chronique.mediaUrl != null && !_videoThumbnails.containsKey(chronique.id)) {
           _videoThumbnails[chronique.id!] = chronique.mediaUrl!;
-
-          // Tu pourras ajouter video_thumbnail plus tard si nécessaire
-
-          final thumbnailPath = await VideoThumbnail.thumbnailFile(
-            video: chronique.mediaUrl!,
-            thumbnailPath: (await getTemporaryDirectory()).path,
-            imageFormat: ImageFormat.JPEG,
-            maxHeight: 200,
-            quality: 50,
-            timeMs: 2000,
-          );
-          if (thumbnailPath != null) {
-            _videoThumbnails[chronique.id!] = thumbnailPath;
-          }
-
         }
       }
     } catch (e) {
@@ -590,95 +1110,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     return grouped;
   }
 
-  // 🔥 BODY SIMPLIFIÉ AVEC CONSUMER
-  Widget _buildBody(double width, double height) {
-    return Consumer<MixedFeedServiceProvider>(
-      builder: (context, provider, child) {
-        final content = provider.mixedContent;
-
-        print('🎯 Build avec ${content.length} éléments (préparés: ${provider.preparedPostsCount})');
-
-        if (_isLoading && content.isEmpty) {
-          return LoadingComponents.buildShimmerEffect();
-        }
-
-        if (_hasError && content.isEmpty) {
-          return _buildErrorWidget();
-        }
-
-        if (content.isEmpty && !_isLoading) {
-          return _buildEmptyState();
-        }
-
-        return Stack(
-          children: [
-            RefreshIndicator(
-              onRefresh: _refreshData,
-              backgroundColor: Colors.black,
-              color: Colors.white,
-              child: CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                        if (index == content.length) {
-                          return _buildLoadingMore();
-                        }
-                        final section = content[index] as ContentSection;
-                        return _buildContentSection(section);
-                      },
-                      childCount: content.length + (provider.hasMore ? 1 : 0),
-                    ),
-                  ),
-
-                  if (!provider.hasMore && content.isNotEmpty)
-                    SliverToBoxAdapter(
-                      child: _buildEndOfFeed(),
-                    ),
-                ],
-              ),
-            ),
-
-            if (_isRefreshing)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 60,
-                  color: Colors.black.withOpacity(0.8),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Actualisation...',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
   // 🔥 WIDGETS D'ÉTAT
   Widget _buildErrorWidget() {
     return Center(
@@ -687,18 +1118,12 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
         children: [
           Icon(Icons.error_outline, color: Colors.red, size: 64),
           SizedBox(height: 20),
-          Text(
-            'Erreur de chargement',
-            style: TextStyle(color: Colors.white, fontSize: 18),
-          ),
+          Text('Erreur de chargement', style: TextStyle(color: Colors.white, fontSize: 18)),
           SizedBox(height: 10),
-          Text(
-            'Impossible de charger le contenu',
-            style: TextStyle(color: Colors.grey),
-          ),
+          Text('Impossible de charger le contenu', style: TextStyle(color: Colors.grey)),
           SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: _loadInitialContent,
+            onPressed: _refreshData,
             icon: Icon(Icons.refresh),
             label: Text('Réessayer'),
           ),
@@ -714,22 +1139,13 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
         children: [
           Icon(Icons.inbox, color: Colors.grey, size: 64),
           SizedBox(height: 20),
-          Text(
-            'Aucun contenu disponible',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
+          Text('Aucun contenu disponible', style: TextStyle(color: Colors.grey, fontSize: 16)),
           SizedBox(height: 10),
-          Text(
-            'Le chargement semble avoir échoué',
-            style: TextStyle(color: Colors.grey[400], fontSize: 12),
-          ),
+          Text('Le chargement semble avoir échoué', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: _refreshData,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
             child: Text('Recommencer'),
           ),
         ],
@@ -739,7 +1155,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
   Widget _buildLoadingMore() {
     if (!_isLoadingMore) return SizedBox.shrink();
-
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20),
       child: Center(
@@ -747,10 +1162,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 10),
-            Text(
-              'Chargement de plus de contenu...',
-              style: TextStyle(color: Colors.grey),
-            ),
+            Text('Chargement de plus de contenu...', style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),
@@ -765,17 +1177,10 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
           children: [
             Icon(Icons.flag, color: Colors.green, size: 40),
             SizedBox(height: 10),
-            Text(
-              'Vous avez vu tous les contenus pour le moment',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Revenez plus tard pour découvrir de nouveaux posts',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
+            SizedBox(
+                height: 30,
+                width: 30,
+                child: CircularProgressIndicator())
           ],
         ),
       ),
@@ -788,12 +1193,10 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
       final date = DateTime.fromMicrosecondsSinceEpoch(microSinceEpoch);
       final now = DateTime.now();
       final difference = now.difference(date);
-
       if (difference.inMinutes < 1) return 'À l\'instant';
       if (difference.inMinutes < 60) return 'Il y a ${difference.inMinutes}min';
       if (difference.inHours < 24) return 'Il y a ${difference.inHours}h';
       if (difference.inDays < 7) return 'Il y a ${difference.inDays}j';
-
       return '${date.day}/${date.month}/${date.year}';
     } catch (e) {
       return 'Date inconnue';
@@ -824,6 +1227,8 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _filterScrollController.dispose();
+    _backgroundLoadTimer?.cancel();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
     _visibilityTimers.clear();
     super.dispose();
@@ -839,14 +1244,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.black,
-        title: Text(
-          'Découvrir 🚀',
-          style: TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold
-          ),
-        ),
+        title: Text('Découvrir 🚀', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           Stack(
             children: [
@@ -856,18 +1254,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
                 tooltip: 'Rafraîchir',
               ),
               if (_isRefreshing)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
+                Positioned(right: 8, top: 8, child: Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle))),
             ],
           ),
           PopupMenuButton<String>(
@@ -879,10 +1266,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
               }
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'reset',
-                child: Text('Réinitialiser le feed'),
-              ),
+              PopupMenuItem<String>(value: 'reset', child: Text('Réinitialiser le feed')),
             ],
           ),
         ],
@@ -891,4 +1275,3 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     );
   }
 }
-// 🔥 ENUM POUR LES TYPES DE CONTENU

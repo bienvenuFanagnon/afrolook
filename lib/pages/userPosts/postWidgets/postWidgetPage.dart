@@ -1276,7 +1276,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(1),
         });
-
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
         if (currentUser != null && currentUser!.oneIgnalUserid != null) {
           await authProvider.sendNotification(
             userIds: [currentUser!.oneIgnalUserid!],
@@ -1291,8 +1292,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           );
         }
 
-        addPointsForAction(UserAction.like);
-        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
 
         // 🔥 APPEL DU CALLBACK LOVE
         widget.onLoved?.call();
@@ -1334,10 +1334,34 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       message: widget.post.description ?? "",
       mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
     );
-    addPointsForAction(UserAction.partagePost);
+    setState(() {
+      widget.post.partage = widget.post.partage! + 1;
+      widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
+    });
 
-    // 🔥 APPEL DU CALLBACK SHARE
-    widget.onShared?.call();
+    await firestore.collection('Posts').doc(widget.post.id).update({
+      'partage': FieldValue.increment(1),
+      'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+    });
+    if (!isIn(widget.post.users_partage_id!, authProvider.loginUserData.id!)) {
+
+      addPointsForAction(UserAction.partagePost);
+      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
+      // 🔥 APPEL DU CALLBACK LOVE
+      widget.onShared?.call();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '+ de points ajoutés à votre compte',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+      );
+    }
+
   }
 
   // Méthode pour supprimer un post

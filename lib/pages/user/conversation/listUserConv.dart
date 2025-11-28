@@ -992,41 +992,45 @@ import '../../../constant/sizeText.dart';
 import '../../../constant/textCustom.dart';
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import '../../auth/authTest/constants.dart';
-import '../../chat/chatXilo.dart';
-import '../../chat/myChat.dart';
-import '../../component/consoleWidget.dart';
-import '../detailsOtherUser.dart';
 
+import 'package:afrotok/services/chat_service.dart';
+
+import 'package:afrotok/pages/chat/myChat.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-// Modèles et providers (gardez vos imports existants)
-import 'package:afrotok/models/chatmodels/message.dart';
-import 'package:afrotok/models/model_data.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/constant/constColors.dart';
+import 'package:afrotok/services/chat_service.dart';
+import 'package:afrotok/pages/chat/myChat.dart';
 
-class ListUserChats extends StatefulWidget {
-  const ListUserChats({super.key});
+class ListUserChatsOptimized extends StatefulWidget {
+  const ListUserChatsOptimized({super.key});
 
   @override
-  State<ListUserChats> createState() => _ListUserChatsState();
+  State<ListUserChatsOptimized> createState() => _ListUserChatsOptimizedState();
 }
 
-class _ListUserChatsState extends State<ListUserChats> {
+class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   late UserAuthProvider authProvider;
-  late UserProvider userProvider;
-  late List<Chat> listChatsSearch = [];
+  late ChatService chatService;
+
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   List<Chat> _searchResults = [];
+  bool _isSearchLoading = false;
 
-  // Couleurs de la palette
+  // Gestion de la pagination
+  int _currentLimit = ChatService.initialLimit;
+  bool _hasMoreChats = true;
+  bool _isLoadingMore = false;
+  bool _isInitialLoad = true;
+  final ScrollController _scrollController = ScrollController();
+
+  // Pour suivre les données déjà chargées
+  List<ChatWithLastMessage> _loadedChats = [];
+
+  // Couleurs
   final Color primaryBlack = Colors.black;
   final Color primaryGreen = Colors.green;
   final Color primaryYellow = Colors.yellow;
@@ -1037,16 +1041,65 @@ class _ListUserChatsState extends State<ListUserChats> {
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    chatService = ChatService();
+
+    _scrollController.addListener(_onScroll);
+
+    // Démarrer le chargement automatique immédiatement
+    _startAutoLoading();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _startAutoLoading() async {
+    // Attendre que l'interface soit construite
+    await Future.delayed(Duration(milliseconds: 500));
+
+    // Charger automatiquement jusqu'à maxLimit par lots de 3
+    while (_currentLimit < ChatService.maxLimit && _hasMoreChats && mounted) {
+      await Future.delayed(Duration(milliseconds: 300)); // Réduit le délai
+      _loadMoreChats();
+    }
+    _isInitialLoad = false;
   }
 
-  // Méthode de recherche dans Firebase
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100 &&
+        _hasMoreChats &&
+        !_isLoadingMore &&
+        !_isSearching &&
+        !_isInitialLoad) {
+      _loadMoreChats();
+    }
+  }
+
+  Future<void> _loadMoreChats() async {
+    if (!_hasMoreChats || _isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    // Pas de délai artificiel pour aller plus vite
+    int newLimit;
+    if (_currentLimit < ChatService.maxLimit) {
+      // Phase 1: Charger par 3 jusqu'à 10
+      newLimit = _currentLimit + ChatService.incrementStep;
+      if (newLimit >= ChatService.maxLimit) {
+        newLimit = ChatService.maxLimit;
+        _hasMoreChats = false;
+      }
+    } else {
+      // Phase 2: Après 10, charger par 20 (infini)
+      newLimit = _currentLimit + ChatService.infinityLimit;
+      _hasMoreChats = true;
+    }
+
+    setState(() {
+      _currentLimit = newLimit;
+      _isLoadingMore = false;
+    });
+  }
+
   Future<void> _searchChats(String query) async {
     if (query.isEmpty) {
       setState(() {
@@ -1058,344 +1111,63 @@ class _ListUserChatsState extends State<ListUserChats> {
 
     setState(() {
       _isSearching = true;
+      _isSearchLoading = true;
     });
 
     try {
-      // Recherche dans les conversations existantes
-      final chatsQuery = FirebaseFirestore.instance
-          .collection('Chats')
-          .where(Filter.or(
-        Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
-        Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
-      ))
-          .where("type", isEqualTo: ChatType.USER.name)
-          .get();
-
-      // Recherche dans les utilisateurs pour trouver des correspondances
-      final usersQuery = FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isGreaterThanOrEqualTo: query)
-          .where('pseudo', isLessThan: query + 'z')
-          .get();
-
-      final results = await Future.wait([chatsQuery, usersQuery]);
-      final chatsSnapshot = results[0] as QuerySnapshot;
-      final usersSnapshot = results[1] as QuerySnapshot;
-
-      List<Chat> foundChats = [];
-
-      // Traiter les conversations existantes
-      for (var chatDoc in chatsSnapshot.docs) {
-        Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-        // Récupérer les informations de l'utilisateur correspondant
-        CollectionReference friendCollect = FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect
-            .where("id",
-            isEqualTo: authProvider.loginUserData.id == chat.receiverId
-                ? chat.senderId
-                : chat.receiverId)
-            .get();
-
-        if (querySnapshotUser.docs.isNotEmpty) {
-          UserData userData = UserData.fromJson(
-              querySnapshotUser.docs.first.data() as Map<String, dynamic>);
-          chat.chatFriend = userData;
-
-          // Vérifier si le pseudo correspond à la recherche
-          if (userData.pseudo!.toLowerCase().contains(query.toLowerCase())) {
-            foundChats.add(chat);
-          }
-        }
-      }
-
-      // Vérifier si on a trouvé des utilisateurs qui ne sont pas encore dans les conversations
-      for (var userDoc in usersSnapshot.docs) {
-        UserData userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-
-        // Éviter de s'ajouter soi-même
-        if (userData.id == authProvider.loginUserData.id) continue;
-
-        // Vérifier si cet utilisateur n'est pas déjà dans les résultats
-        bool alreadyInResults = foundChats.any((chat) =>
-        chat.chatFriend != null && chat.chatFriend!.id == userData.id);
-
-        if (!alreadyInResults) {
-          // Créer une conversation fictive pour l'affichage
-          Chat newChat = Chat(
-            id: 'search_${userData.id}',
-            senderId: authProvider.loginUserData.id!,
-            receiverId: userData.id!,
-            lastMessage: 'Démarrer une conversation',
-            type: ChatType.USER.name,
-            createdAt: DateTime.now().millisecondsSinceEpoch,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            receiver: userData,
-          );
-          foundChats.add(newChat);
-        }
-      }
+      final results = await chatService.searchChats(
+        query: query,
+        currentUserId: authProvider.loginUserData.id!,
+      );
 
       setState(() {
-        _searchResults = foundChats;
+        _searchResults = results;
+        _isSearchLoading = false;
       });
     } catch (e) {
-      print("Erreur de recherche: $e");
       setState(() {
-        _isSearching = false;
+        _isSearchLoading = false;
         _searchResults = [];
       });
     }
   }
 
-  Widget chatXiloWidget() {
-    return GestureDetector(
-      onTap: () {
-        // Votre logique pour ouvrir le chat XILO
-      },
-      child: ConversationList(
-        name: "@XILO",
-        messageText: "Assistant virtuel",
-        imageUrl: "",
-        time: "",
-        isMessageRead: false,
-        isOnline: true,
-        unreadCount: 0,
-        isTyping: false,
-      ),
-    );
-  }
-
-  Stream<List<Chat>> getAllChatsData() async* {
-    var chatsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
-      Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
-    ))
-        .where("type", isEqualTo: ChatType.USER.name)
-        .orderBy('updated_at', descending: true)
-        .snapshots();
-
-    List<Chat> listChats = [];
-
-    await for (var chatSnapshot in chatsStream) {
-      for (var chatDoc in chatSnapshot.docs) {
-        CollectionReference friendCollect = FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect
-            .where("id",
-            isEqualTo: authProvider.loginUserData.id == chatDoc["receiver_id"]
-                ? chatDoc["sender_id"]
-                : chatDoc["receiver_id"]!)
-            .get();
-
-        List<UserData> userList = querySnapshotUser.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        if (userList.isNotEmpty) {
-          Chat usersChat = Chat.fromJson(chatDoc.data());
-          usersChat.chatFriend = userList.first;
-          usersChat.receiver = userList.first;
-          listChats.add(usersChat);
-        }
-      }
-      listChatsSearch = List.from(listChats);
-      yield listChats;
-      listChats = [];
-    }
-  }
-
-  // Créer ou récupérer une conversation
+  // CORRECTION : Navigation vers le chat COMPLÈTE
   Future<void> _openChat(Chat chat) async {
-    // Si c'est une conversation de recherche (non existante)
-    if (chat.id!.startsWith('search_')) {
-      // Vérifier si une conversation existe déjà
-      final existingChats = await FirebaseFirestore.instance
-          .collection('Chats')
-          .where(Filter.or(
-        Filter('docId', isEqualTo: '${chat.senderId}${chat.receiverId}'),
-        Filter('docId', isEqualTo: '${chat.receiverId}${chat.senderId}'),
-      ))
-          .get();
-
-      if (existingChats.docs.isNotEmpty) {
-        // Conversation existe déjà, l'ouvrir
-        Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
-        existingChat.chatFriend = chat.chatFriend;
-        // Navigation vers le chat existant
-        // Navigator.push(...);
-      } else {
-        // Créer une nouvelle conversation
-        String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-        Chat newChat = Chat(
-          docId: '${chat.senderId}${chat.receiverId}',
-          id: chatId,
-          senderId: chat.senderId!,
-          receiverId: chat.receiverId!,
-          lastMessage: '',
-          type: ChatType.USER.name,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          updatedAt: DateTime.now().millisecondsSinceEpoch,
-          receiver: chat.chatFriend,
-        );
-
-        await FirebaseFirestore.instance
-            .collection('Chats')
-            .doc(chatId)
-            .set(newChat.toJson());
-
-        // Navigation vers le nouveau chat
-        Navigator.push(
-            context,
-            PageTransition(
-                type: PageTransitionType.fade,
-                child: MyChat(
-                  title: 'mon chat',
-                  chat: chat,
-                )));      }
-    } else {
-      // Conversation existante, l'ouvrir normalement
-      // Navigation vers le chat
-      Navigator.push(
-          context,
-          PageTransition(
-              type: PageTransitionType.fade,
-              child: MyChat(
-                title: 'mon chat',
-                chat: chat,
-              )));
-    }
-  }
-
-  Future<Chat> getChatsData(Friends amigo) async {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId', isEqualTo: '${amigo.friendId}${amigo.currentUserId}'),
-      Filter('docId', isEqualTo: '${amigo.currentUserId}${amigo.friendId}'),
-    ))
-        .snapshots();
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-      Chat chat = Chat(
-        docId: '${amigo.friendId}${amigo.currentUserId}',
-        id: chatId,
-        senderId: authProvider.loginUserData.id == amigo.friendId
-            ? '${amigo.friendId}'
-            : '${amigo.currentUserId}',
-        receiverId: authProvider.loginUserData.id == amigo.friendId
-            ? '${amigo.currentUserId}'
-            : '${amigo.friendId}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now()
-            .millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
+    try {
+      final resultChat = await chatService.createOrGetChat(
+        chat: chat,
+        currentUserId: authProvider.loginUserData.id!,
       );
-      await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .set(chat.toJson());
-      usersChat = chat;
-    } else {
-      printVm("le chat existe  ");
-      printVm("stream :${friendsStream}");
-      usersChat = await friendsStream.first.then((value) async {
-        printVm("stream value l :${value.docs.length}");
-        if (value.docs.length <= 0) {
-          printVm("pas de chat ");
-          String chatId =
-              FirebaseFirestore.instance.collection('Chats').doc().id;
-          Chat chat = Chat(
-            docId: '${amigo.friendId}${amigo.currentUserId}',
-            id: chatId,
-            senderId: authProvider.loginUserData.id == amigo.friendId
-                ? '${amigo.friendId}'
-                : '${amigo.currentUserId}',
-            receiverId: authProvider.loginUserData.id == amigo.friendId
-                ? '${amigo.currentUserId}'
-                : '${amigo.friendId}',
-            lastMessage: 'hi',
 
-            type: ChatType.USER.name,
-            createdAt: DateTime.now()
-                .millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance
-              .collection('Chats')
-              .doc(chatId)
-              .set(chat.toJson());
-          usersChat = chat;
-          return chat;
-        } else {
-          return Chat.fromJson(value.docs.first.data());
-        }
-      });
-      CollectionReference messageCollect =
-      await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      if (messageList.isEmpty) {
-        usersChat.messages = [];
-        userProvider.chat = usersChat;
-        printVm("messgae vide ");
-      } else {
-        printVm("have messages");
-        usersChat.messages = messageList;
-        userProvider.chat = usersChat;
-      }
-
-      /////////////ami//////////
-      CollectionReference friendCollect =
-      await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.friendId
-              ? '${amigo.friendId}'
-              : '${amigo.currentUserId}')
-          .get();
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver = await friendCollect
-          .where("id",
-          isEqualTo: authProvider.loginUserData.id == amigo.friendId
-              ? '${amigo.currentUserId}'
-              : '${amigo.friendId}')
-          .get();
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.receiver = receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-      usersChat.sender = senderUserList.first;
+      // Navigation vers le chat - CODE ORIGINAL
+      Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.fade,
+          child: MyChat(
+            title: 'mon chat',
+            chat: resultChat,
+          ),
+        ),
+      );
+    } catch (e) {
+      print("Erreur ouverture chat: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erreur lors de l'ouverture du chat"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    return usersChat;
   }
 
-
-
-
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1446,7 +1218,6 @@ class _ListUserChatsState extends State<ListUserChats> {
                   });
                 },
               ),
-              // Bouton pour aller à la liste d'amis
               IconButton(
                 icon: Icon(Icons.people, color: primaryYellow),
                 onPressed: () {
@@ -1459,58 +1230,151 @@ class _ListUserChatsState extends State<ListUserChats> {
       ),
       body: Column(
         children: [
-          // Section XILO
-          if (!_isSearching) chatXiloWidget(),
-
+          if (!_isSearching) _buildXiloWidget(),
           if (!_isSearching) Divider(height: 1, color: darkGrey),
-
-          // En-tête des conversations
-          if (!_isSearching)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "MESSAGES",
-                    style: TextStyle(
-                      color: primaryGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Text(
-                    "${authProvider.loginUserData.pseudo}",
-                    style: TextStyle(
-                      color: lightGrey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Liste des conversations ou résultats de recherche
+          if (!_isSearching) _buildHeader(),
           Expanded(
             child: _isSearching
                 ? _buildSearchResults()
-                : StreamBuilder<List<Chat>>(
-              stream: getAllChatsData(),
-              builder: (context, AsyncSnapshot<List<Chat>> snapshot) {
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return _buildChatList(snapshot.data!);
-                } else if (snapshot.hasError) {
-                  return _buildErrorWidget();
-                } else if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _buildLoadingSkeleton();
-                } else {
-                  return _buildEmptyState();
-                }
+                : StreamBuilder<List<ChatWithLastMessage>>(
+              stream: chatService.getChatsPaginated(
+                currentUserId: authProvider.loginUserData.id!,
+                limit: _currentLimit,
+              ),
+              builder: (context, snapshot) {
+                return _buildChatStream(snapshot);
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildXiloWidget() {
+    return GestureDetector(
+      onTap: () {
+        // Logique pour ouvrir le chat XILO
+      },
+      child: ConversationList(
+        name: "@XILO",
+        messageText: "Assistant virtuel",
+        imageUrl: "",
+        time: "",
+        isMessageRead: false,
+        isOnline: true,
+        unreadCount: 0,
+        isTyping: false,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "MESSAGES",
+            style: TextStyle(
+              color: primaryGreen,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+          Text(
+            "${authProvider.loginUserData.pseudo}",
+            style: TextStyle(
+              color: lightGrey,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatStream(AsyncSnapshot<List<ChatWithLastMessage>> snapshot) {
+    print('🔄 [UI] _buildChatStream - ConnectionState: ${snapshot.connectionState}');
+    print('🔄 [UI] _buildChatStream - hasData: ${snapshot.hasData}');
+    print('🔄 [UI] _buildChatStream - hasError: ${snapshot.hasError}');
+
+    if (snapshot.hasError) {
+      print('❌ [UI] Erreur stream: ${snapshot.error}');
+      return _buildErrorWidget();
+    }
+
+    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+      print('⏳ [UI] En attente de données...');
+      return _buildLoadingSkeleton();
+    }
+
+    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      print('📭 [UI] Aucune donnée ou liste vide');
+      return _buildEmptyState();
+    }
+
+    // Stocker les données chargées
+    _loadedChats = snapshot.data!;
+
+    // Log détaillé des chats récupérés
+    print('📋 [UI] ${_loadedChats.length} chats chargés:');
+    for (var i = 0; i < _loadedChats.length; i++) {
+      final chatWithMessage = _loadedChats[i];
+      final chat = chatWithMessage.chat;
+      final lastMessage = chatWithMessage.lastMessage;
+
+      print('   ${i + 1}. Chat: ${chat.id}');
+      print('      - Utilisateur: @${chat.chatFriend?.pseudo}');
+      print('      - Dernier message: ${lastMessage?.message ?? "NULL"}');
+      print('      - Type: ${lastMessage?.messageType ?? "NULL"}');
+      print('      - Date: ${lastMessage?.createdAt ?? "NULL"}');
+    }
+
+    return _buildChatList(_loadedChats);
+  }
+  Widget _buildChatList(List<ChatWithLastMessage> chatsWithMessages) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollNotification) {
+        if (scrollNotification is ScrollEndNotification) {
+          _onScroll();
+        }
+        return false;
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: chatsWithMessages.length + (_hasMoreChats ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == chatsWithMessages.length) {
+            return _buildLoadMoreIndicator();
+          }
+
+          final chatWithMessage = chatsWithMessages[index];
+          final Chat chat = chatWithMessage.chat;
+          final Message? lastMessage = chatWithMessage.lastMessage;
+
+          final int unreadCount = _getUnreadCount(chat);
+          final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
+          final bool isLastMessageFromMe = _isLastMessageFromCurrentUser(lastMessage);
+
+          return GestureDetector(
+            onTap: () => _openChat(chat),
+            child: ConversationList(
+              name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
+              messageText: _getMessagePreview(lastMessage),
+              imageUrl: chat.chatFriend?.imageUrl ?? '',
+              time: _formatTime(chat.updatedAt),
+              isMessageRead: unreadCount == 0,
+              isOnline: isOnline,
+              unreadCount: unreadCount,
+              isTyping: false,
+              isLastMessageFromMe: isLastMessageFromMe,
+              messageStatus: _getMessageStatus(lastMessage),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1525,25 +1389,12 @@ class _ListUserChatsState extends State<ListUserChats> {
       );
     }
 
+    if (_isSearchLoading) {
+      return _buildLoadingSkeleton();
+    }
+
     if (_searchResults.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, color: primaryYellow, size: 48),
-            SizedBox(height: 16),
-            Text(
-              "Aucun résultat trouvé",
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Essayez avec d'autres termes",
-              style: TextStyle(color: lightGrey, fontSize: 12),
-            ),
-          ],
-        ),
-      );
+      return _buildNoSearchResults();
     }
 
     return ListView.builder(
@@ -1551,8 +1402,7 @@ class _ListUserChatsState extends State<ListUserChats> {
       itemBuilder: (context, index) {
         final Chat chat = _searchResults[index];
         final bool isSearchResult = chat.id!.startsWith('search_');
-        final int unreadCount = isSearchResult ? 0 :
-        (authProvider.loginUserData.id == chat.senderId ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0));
+        final int unreadCount = _getUnreadCount(chat);
         final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
 
         return GestureDetector(
@@ -1573,29 +1423,72 @@ class _ListUserChatsState extends State<ListUserChats> {
     );
   }
 
-  Widget _buildChatList(List<Chat> chats) {
-    return ListView.builder(
-      itemCount: chats.length,
-      itemBuilder: (context, index) {
-        final Chat chat = chats[index];
-        final bool isCurrentUserSender = authProvider.loginUserData.id == chat.senderId;
-        final int unreadCount = isCurrentUserSender ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0);
-        final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
+  // CORRECTION : Méthode pour obtenir le texte d'aperçu du message
+  String _getMessagePreview(Message? lastMessage) {
+    if (lastMessage == null) return 'Aucun message';
 
-        return GestureDetector(
-          onTap: () => _openChat(chat),
-          child: ConversationList(
-            name: "@${chat.chatFriend?.pseudo ?? 'Utilisateur'}",
-            messageText: chat.lastMessage ?? '',
-            imageUrl: chat.chatFriend?.imageUrl ?? '',
-            time: _formatTime(chat.updatedAt),
-            isMessageRead: unreadCount == 0,
-            isOnline: isOnline,
-            unreadCount: unreadCount,
-            isTyping: false,
-          ),
+    switch (lastMessage.messageType) {
+      case 'text':
+        return lastMessage.message;
+      case 'image':
+        return '📷 Image${lastMessage.imageText != null ? ': ${lastMessage.imageText}' : ''}';
+      case 'voice':
+        return '🎤 Message audio';
+      default:
+        return lastMessage.message;
+    }
+  }
+
+  // CORRECTION : Méthode pour déterminer si le dernier message vient de l'utilisateur actuel
+  bool _isLastMessageFromCurrentUser(Message? lastMessage) {
+    if (lastMessage == null) return false;
+    return lastMessage.sendBy == authProvider.loginUserData.id;
+  }
+
+  // CORRECTION : Méthode pour obtenir l'état du message à afficher
+  Widget _getMessageStatus(Message? lastMessage) {
+    if (lastMessage == null || !_isLastMessageFromCurrentUser(lastMessage)) {
+      return SizedBox.shrink();
+    }
+
+    switch (lastMessage.message_state) {
+      case 'LU':
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.done_all, color: primaryGreen, size: 16),
+            SizedBox(width: 2),
+            Icon(Icons.done_all, color: primaryGreen, size: 16),
+          ],
         );
-      },
+      case 'NONLU':
+        return Icon(Icons.done, color: lightGrey, size: 16);
+      default:
+        return Icon(Icons.access_time, color: lightGrey, size: 16);
+    }
+  }
+
+  int _getUnreadCount(Chat chat) {
+    final isCurrentUserSender = authProvider.loginUserData.id == chat.senderId;
+    return isCurrentUserSender ? (chat.my_msg_not_read ?? 0) : (chat.your_msg_not_read ?? 0);
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _isLoadingMore
+            ? CircularProgressIndicator(color: primaryGreen)
+            : _hasMoreChats
+            ? Text(
+          "Chargement...",
+          style: TextStyle(color: lightGrey),
+        )
+            : Text(
+          "Toutes les conversations sont chargées",
+          style: TextStyle(color: lightGrey, fontSize: 12),
+        ),
+      ),
     );
   }
 
@@ -1625,7 +1518,7 @@ class _ListUserChatsState extends State<ListUserChats> {
 
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
-      itemCount: 5,
+      itemCount: 3,
       itemBuilder: (context, index) {
         return ConversationList(
           name: "Chargement...",
@@ -1674,6 +1567,27 @@ class _ListUserChatsState extends State<ListUserChats> {
     );
   }
 
+  Widget _buildNoSearchResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, color: primaryYellow, size: 48),
+          SizedBox(height: 16),
+          Text(
+            "Aucun résultat trouvé",
+            style: TextStyle(color: Colors.white),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Essayez avec d'autres termes",
+            style: TextStyle(color: lightGrey, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatTime(int? timestamp) {
     if (timestamp == null) return "";
 
@@ -1695,6 +1609,7 @@ class _ListUserChatsState extends State<ListUserChats> {
   }
 }
 
+
 class ConversationList extends StatefulWidget {
   final String name;
   final String messageText;
@@ -1706,8 +1621,11 @@ class ConversationList extends StatefulWidget {
   final bool isTyping;
   final bool isLoading;
   final bool isSearchResult;
+  final bool isLastMessageFromMe;
+  final Widget messageStatus;
 
-  ConversationList({
+  const ConversationList({
+    Key? key,
     required this.name,
     required this.messageText,
     required this.imageUrl,
@@ -1718,14 +1636,15 @@ class ConversationList extends StatefulWidget {
     this.isTyping = false,
     this.isLoading = false,
     this.isSearchResult = false,
-  });
+    this.isLastMessageFromMe = false,
+    this.messageStatus = const SizedBox.shrink(),
+  }) : super(key: key);
 
   @override
   _ConversationListState createState() => _ConversationListState();
 }
 
 class _ConversationListState extends State<ConversationList> {
-  // Couleurs de la palette
   final Color primaryBlack = Colors.black;
   final Color primaryGreen = Colors.green;
   final Color primaryYellow = Colors.yellow;
@@ -1742,132 +1661,141 @@ class _ConversationListState extends State<ConversationList> {
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: <Widget>[
-          // Avatar avec indicateur de statut
-          Stack(
-            children: [
-              widget.isLoading
-                  ? CircleAvatar(
-                backgroundColor: darkGrey,
-                radius: 24,
-              )
-                  : CircleAvatar(
-                backgroundImage: widget.imageUrl.isNotEmpty
-                    ? NetworkImage(widget.imageUrl)
-                    : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
-                backgroundColor: darkGrey,
-                radius: 24,
-              ),
-              if (!widget.isLoading)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: widget.isOnline ? primaryGreen : darkGrey,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: primaryBlack, width: 2),
-                    ),
-                  ),
-                )
-            ],
-          ),
-
+          _buildAvatar(),
           SizedBox(width: 16),
+          _buildMessageInfo(),
+          _buildTimeAndStatus(),
+        ],
+      ),
+    );
+  }
 
-          Expanded(
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          widget.name,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+  Widget _buildAvatar() {
+    return Stack(
+      children: [
+        widget.isLoading
+            ? CircleAvatar(
+          backgroundColor: darkGrey,
+          radius: 24,
+        )
+            : CircleAvatar(
+          backgroundImage: widget.imageUrl.isNotEmpty
+              ? NetworkImage(widget.imageUrl)
+              : AssetImage('assets/icon/amixilo3.png') as ImageProvider,
+          backgroundColor: darkGrey,
+          radius: 24,
+        ),
+        if (!widget.isLoading)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: widget.isOnline ? primaryGreen : darkGrey,
+                shape: BoxShape.circle,
+                border: Border.all(color: primaryBlack, width: 2),
+              ),
+            ),
+          )
+      ],
+    );
+  }
 
-                        SizedBox(height: 6),
-
-                        widget.isLoading
-                            ? Container(
-                          width: 150,
-                          height: 14,
-                          color: darkGrey,
-                        )
-                            : Text(
-                          widget.isTyping
-                              ? "écrit..."
-                              : widget.messageText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: widget.isTyping
-                                ? primaryYellow
-                                : (widget.isMessageRead ? lightGrey : Colors.white),
-                            fontWeight: widget.isMessageRead
-                                ? FontWeight.normal
-                                : FontWeight.w500,
-                            fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ],
-                    ),
+  Widget _buildMessageInfo() {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            widget.name,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 6),
+          widget.isLoading
+              ? Container(
+            width: 150,
+            height: 14,
+            color: darkGrey,
+          )
+              : Row(
+            children: [
+              if (widget.isLastMessageFromMe)
+                Text(
+                  "Vous: ",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: primaryGreen,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Badge de messages non lus et heure
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (widget.time.isNotEmpty)
-                Text(
-                  widget.time,
+              Expanded(
+                child: Text(
+                  widget.isTyping ? "écrit..." : widget.messageText,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: lightGrey,
+                    fontSize: 14,
+                    color: widget.isTyping
+                        ? primaryYellow
+                        : (widget.isMessageRead ? lightGrey : Colors.white),
                     fontWeight: widget.isMessageRead
                         ? FontWeight.normal
-                        : FontWeight.bold,
+                        : FontWeight.w500,
+                    fontStyle: widget.isSearchResult ? FontStyle.italic : FontStyle.normal,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-
-              if (widget.time.isNotEmpty) SizedBox(height: 6),
-
-              if (widget.unreadCount > 0)
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: primaryGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${widget.unreadCount}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: primaryBlack,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              else if (widget.isSearchResult)
-                Icon(Icons.add_circle_outline, color: primaryGreen, size: 20),
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTimeAndStatus() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (widget.time.isNotEmpty)
+          Text(
+            widget.time,
+            style: TextStyle(
+              fontSize: 12,
+              color: lightGrey,
+              fontWeight: widget.isMessageRead
+                  ? FontWeight.normal
+                  : FontWeight.bold,
+            ),
+          ),
+        if (widget.time.isNotEmpty) SizedBox(height: 6),
+        if (widget.unreadCount > 0)
+          Container(
+            padding: EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: primaryGreen,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '${widget.unreadCount}',
+              style: TextStyle(
+                fontSize: 12,
+                color: primaryBlack,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        else if (widget.isSearchResult)
+          Icon(Icons.add_circle_outline, color: primaryGreen, size: 20)
+        else if (widget.isLastMessageFromMe)
+            widget.messageStatus,
+      ],
     );
   }
 }

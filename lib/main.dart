@@ -355,7 +355,7 @@ class _MyAppState extends State<MyApp> {
               case '/new_entreprise':
                 return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
               case '/list_users_chat':
-                return PageTransition(child: ListUserChats(), type: PageTransitionType.fade);
+                return PageTransition(child: ListUserChatsOptimized(), type: PageTransitionType.fade);
               case '/bon_a_savoir':
                 return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
               case '/introduction':

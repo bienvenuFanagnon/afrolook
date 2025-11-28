@@ -1081,6 +1081,8 @@ class Post {
     users_republier_id = json['users_republier_id'] == null ? [] : List<String>.from(json['users_republier_id']);
     users_love_id = json['users_love_id'] == null ? [] : List<String>.from(json['users_love_id']);
     users_vue_id = json['users_vue_id'] == null ? [] : List<String>.from(json['users_vue_id']);
+    users_partage_id = json['users_partage_id']?.cast<String>() ?? [];
+
     nombreCollaborateur = json['nombreCollaborateur'];
     nombreImage = json['nombreImage'];
     nombrePersonneParJour = json['nombrePersonneParJour'];

@@ -2014,7 +2014,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
     return Positioned(
       right: 16,
-      bottom: 120,
+      bottom: 90,
       child: Column(
         children: [
           // Avatar utilisateur
@@ -2077,7 +2077,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 icon: Icon(
                   isLiked ? Icons.favorite : Icons.favorite_border,
                   color: isLiked ? _afroRed : Colors.white,
-                  size: 35,
+                  size: 30,
                 ),
                 onPressed: hasAccess ? () => _handleLike(post) : null,
               ),
@@ -2092,7 +2092,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           Column(
             children: [
               IconButton(
-                icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 35),
+                icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33),
                 onPressed: hasAccess ? () => _showCommentsModal(post) : null,
               ),
               Text(
@@ -2103,10 +2103,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
 
           // Cadeaux
-          Column(
+          post.type == PostType.CHALLENGEPARTICIPATION .name ? SizedBox.shrink() :   Column(
             children: [
               IconButton(
-                icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 35),
+                icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 30),
                 onPressed: hasAccess ? () => _showGiftDialog(post) : null,
               ),
               Text(
@@ -2128,17 +2128,26 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ],
+          ),    // Vue
+          Column(
+            children: [
+              // Partager
+              IconButton(
+                icon: Icon(Icons.share, color: Colors.white, size: 30),
+                onPressed: hasAccess ? () => _sharePost(post) : null,
+              ),
+              Text(
+                _formatCount(post.partage ?? 0),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
 
-          // Partager
-          IconButton(
-            icon: Icon(Icons.share, color: Colors.white, size: 35),
-            onPressed: hasAccess ? () => _sharePost(post) : null,
-          ),
+
 
           // Menu
           IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.white, size: 35),
+            icon: Icon(Icons.more_vert, color: Colors.white, size: 30),
             onPressed: hasAccess ? () => _showPostMenu(post) : null,
           ),
         ],
@@ -2478,6 +2487,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       print("Erreur création transaction: $e");
     }
   }
+  // Méthodes utilitaires globales
+  bool isIn(List<String> list, String value) {
+    return list.contains(value);
+  }
+
 
   Future<void> _sharePost(Post post) async {
     final AppLinkService _appLinkService = AppLinkService();
@@ -2487,6 +2501,21 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       message: post.description ?? "",
       mediaUrl: post.url_media ?? "",
     );
+
+
+    setState(() {
+      widget.initialPost.partage =widget.initialPost.partage! + 1;
+     widget.initialPost.users_partage_id!.add(authProvider.loginUserData.id!);
+    });
+
+    await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+      'partage': FieldValue.increment(1),
+      'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+    });
+    if (!isIn(widget.initialPost.users_partage_id!, authProvider.loginUserData.id!)) {
+      addPointsForAction(UserAction.partagePost);
+      addPointsForOtherUserAction(post.user_id!, UserAction.autre);
+    }
   }
 
   void _showPostMenu(Post post) {

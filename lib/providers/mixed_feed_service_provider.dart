@@ -1,4 +1,5 @@
 // mixed_feed_service_provider.dart
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
 import '../services/postService/mixed_feed_service.dart';
@@ -13,10 +14,19 @@ class MixedFeedServiceProvider extends ChangeNotifier {
   bool _isPreparing = false;
   String _status = 'Non initialisé';
 
+  // 🔥 NOUVEAU: État pour les posts immédiats
+  bool _areImmediatePostsLoaded = false;
+  bool _isLoadingImmediatePosts = false;
+
   MixedFeedService? get mixedFeedService => _mixedFeedService;
   bool get isPrepared => _isPrepared;
   bool get isPreparing => _isPreparing;
   String get status => _status;
+
+  // 🔥 GETTERS POUR POSTS IMMÉDIATS
+  List<Post> get immediatePosts => _mixedFeedService?.immediatePosts ?? [];
+  bool get areImmediatePostsLoaded => _areImmediatePostsLoaded;
+  bool get isLoadingImmediatePosts => _isLoadingImmediatePosts;
 
   // 🔥 INITIALISATION DU SERVICE
   void initializeService({
@@ -38,6 +48,32 @@ class MixedFeedServiceProvider extends ChangeNotifier {
 
     _status = 'Service initialisé';
     notifyListeners();
+  }
+
+  // 🔥 CHARGEMENT DES POSTS IMMÉDIATS (à appeler depuis le Splash)
+  Future<void> loadImmediatePosts() async {
+    if (_isLoadingImmediatePosts || _areImmediatePostsLoaded || _mixedFeedService == null) return;
+
+    _isLoadingImmediatePosts = true;
+    _status = 'Chargement des posts immédiats...';
+    notifyListeners();
+
+    try {
+      await _mixedFeedService!.loadImmediatePosts();
+
+      _areImmediatePostsLoaded = true;
+      _isLoadingImmediatePosts = false;
+      _status = 'Posts immédiats prêts - ${_mixedFeedService!.immediatePosts.length} posts';
+
+      print('✅ Provider: Posts immédiats chargés - ${_mixedFeedService!.immediatePosts.length} posts');
+
+    } catch (e) {
+      _isLoadingImmediatePosts = false;
+      _status = 'Erreur chargement posts immédiats';
+      print('❌ Provider: Erreur posts immédiats: $e');
+    } finally {
+      notifyListeners();
+    }
   }
 
   // 🔥 PRÉPARATION DES POSTS (à appeler depuis le Splash)
@@ -77,6 +113,8 @@ class MixedFeedServiceProvider extends ChangeNotifier {
   Future<void> reset() async {
     await _mixedFeedService?.reset();
     _isPrepared = false;
+    _areImmediatePostsLoaded = false;
+    _isLoadingImmediatePosts = false;
     _status = 'Réinitialisé';
     notifyListeners();
   }

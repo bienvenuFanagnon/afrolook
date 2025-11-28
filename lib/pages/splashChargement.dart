@@ -32,6 +32,7 @@ import '../providers/chroniqueProvider.dart';
 import '../providers/contenuPayantProvider.dart';
 import 'home/homeScreen.dart';
 
+
 class SplahsChargement extends StatefulWidget {
   final String postId;
   final String postType;
@@ -49,14 +50,12 @@ class _ChargementState extends State<SplahsChargement> {
   late ChroniqueProvider chroniqueProvider;
   late ContentProvider contentProvider;
 
-  // 🔥 SERVICE DE FEED - SEULEMENT POUR LES POSTS
-  MixedFeedService? _mixedFeedService;
-
   VideoPlayerController? _controller;
   bool isFinished = false;
   bool isLoadingVideo = true;
   bool shouldPlayVideo = false;
   bool _isAuthCompleted = false;
+  bool _areImmediatePostsLoaded = false;
   bool _arePostsPrepared = false;
   bool _hasError = false;
   String _loadingText = "Initialisation...";
@@ -102,7 +101,6 @@ class _ChargementState extends State<SplahsChargement> {
         await _initializeVideo();
       } else {
         shouldPlayVideo = false;
-        // MODIFIER ICI :
         if (mounted) {
           setState(() {
             isFinished = true;
@@ -114,7 +112,6 @@ class _ChargementState extends State<SplahsChargement> {
     } catch (e) {
       print('❌ Erreur vérification vidéo: $e');
       shouldPlayVideo = false;
-      // MODIFIER ICI AUSSI :
       if (mounted) {
         setState(() {
           isFinished = true;
@@ -124,6 +121,7 @@ class _ChargementState extends State<SplahsChargement> {
       }
     }
   }
+
   Future<void> _initializeVideo() async {
     try {
       _controller = VideoPlayerController.asset('assets/videos/intro_video.mp4');
@@ -133,7 +131,6 @@ class _ChargementState extends State<SplahsChargement> {
 
       _controller!.addListener(() {
         if (_controller!.value.position >= _controller!.value.duration && !isFinished) {
-          // MODIFIER ICI :
           if (mounted) {
             setState(() {
               isFinished = true;
@@ -143,13 +140,11 @@ class _ChargementState extends State<SplahsChargement> {
         }
       });
 
-      // MODIFIER ICI AUSSI :
       if (mounted) {
         setState(() => isLoadingVideo = false);
       }
     } catch (e) {
       debugPrint("❌ Erreur d'initialisation vidéo : $e");
-      // MODIFIER ICI AUSSI :
       if (mounted) {
         setState(() {
           isFinished = true;
@@ -159,12 +154,14 @@ class _ChargementState extends State<SplahsChargement> {
       }
     }
   }
+
   // 🔥 AUTHENTIFICATION ET PRÉPARATION DES POSTS
   Future<void> _initAuthAndPosts() async {
     try {
       if (mounted) {
         setState(() => _loadingText = "Chargement des données...");
       }
+
       // 1. CHARGER LES DONNÉES DE L'APP
       await authProvider.getAppData();
 
@@ -213,10 +210,13 @@ class _ChargementState extends State<SplahsChargement> {
         return;
       }
 
-      // 6. 🔥 PRÉPARER UNIQUEMENT LES POSTS (100 IDs uniques)
-      await _preparePostsOnly();
+      // 6. 🔥 CHARGER LES 2 POSTS IMMÉDIATS
+      await _loadImmediatePosts();
 
-      // 7. NAVIGUER VERS MY HOMEPAGE
+      // 7. 🔥 PRÉPARER LES IDs EN BACKGROUND (sans attendre)
+      _preparePostsInBackground();
+
+      // 8. NAVIGUER VERS MY HOMEPAGE
       _navigateToDestination();
 
     } catch (e) {
@@ -234,14 +234,13 @@ class _ChargementState extends State<SplahsChargement> {
     }
   }
 
-  // 🔥 PRÉPARER SEULEMENT LES POSTS (100 IDs uniques)
-// 🔥 DANS VOTRE SPLASH SCREEN
-  Future<void> _preparePostsOnly() async {
+  // 🔥 NOUVELLE MÉTHODE : CHARGER LES POSTS IMMÉDIATS
+  Future<void> _loadImmediatePosts() async {
     try {
       if (authProvider.loginUserData.id == null) return;
 
       if (mounted) {
-        setState(() => _loadingText = "Préparation des posts...");
+        setState(() => _loadingText = "Chargement des premiers posts...");
       }
 
       // 🔥 INITIALISER LE PROVIDER
@@ -256,22 +255,44 @@ class _ChargementState extends State<SplahsChargement> {
         contentProvider: contentProvider,
       );
 
-      // 🔥 PRÉPARER LES POSTS (100 IDs uniques)
-      await mixedFeedProvider.preparePosts();
+      // 🔥 CHARGER LES 2 POSTS IMMÉDIATS
+      await mixedFeedProvider.loadImmediatePosts();
 
-      // MODIFIER ICI AUSSI :
       if (mounted) {
-        setState(() => _arePostsPrepared = mixedFeedProvider.isPrepared);
+        setState(() => _areImmediatePostsLoaded = mixedFeedProvider.areImmediatePostsLoaded);
       }
 
-      print('✅ Posts préparés avec succès: ${mixedFeedProvider.preparedPostsCount} IDs uniques');
+      print('✅ Posts immédiats chargés: ${mixedFeedProvider.immediatePosts.length}');
 
     } catch (e) {
-      print('❌ Erreur préparation posts: $e');
+      print('❌ Erreur chargement posts immédiats: $e');
     }
   }
 
-// 🔥 NAVIGATION SIMPLIFIÉE
+  // 🔥 NOUVELLE MÉTHODE : PRÉPARER LES IDs EN BACKGROUND
+// Dans SplahsChargement
+// 🔥 LANCER LA PRÉPARATION PROGRESSIVE
+  void _preparePostsInBackground() {
+    WidgetsBinding.instance?.addPostFrameCallback((_) async {
+      try {
+        final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+
+        // 🔥 LANCER SANS ATTENDRE (progressif)
+        mixedFeedProvider.preparePosts();
+
+        print('🎯 Préparation progressive lancée en background');
+
+        // Vérifier après 1 seconde combien de posts sont disponibles
+        await Future.delayed(Duration(seconds: 1));
+
+        print('📊 Posts disponibles après 1s: ${mixedFeedProvider.preparedPostsCount}');
+
+      } catch (e) {
+        print('❌ Erreur préparation background: $e');
+      }
+    });
+  }
+  // 🔥 NAVIGATION VERS MY HOMEPAGE
   void _navigateToDestination() {
     if (!mounted) return;
 
@@ -279,22 +300,26 @@ class _ChargementState extends State<SplahsChargement> {
       return;
     }
 
+    // 🔥 ATTENDRE QUE LES POSTS IMMÉDIATS SOIENT CHARGÉS
+    if (!_areImmediatePostsLoaded) {
+      print('⏳ En attente des posts immédiats...');
+      return;
+    }
+
     if (widget.postId.isNotEmpty) {
       final AppLinkService linkService = AppLinkService();
       linkService.handleNavigation(context, widget.postId, widget.postType);
     } else {
-      // 🔥 NAVIGATION SIMPLE - LE SERVICE EST DÉJÀ DANS LE PROVIDER
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => MyHomePage(
             title: '',
-            preloadedFeedService: _mixedFeedService, // 🔥 PASSER LE SERVICE
           ),
         ),
       );
     }
-  }  // 🔥 NAVIGATION VERS MY HOMEPAGE
+  }
 
   @override
   void dispose() {
@@ -307,8 +332,8 @@ class _ChargementState extends State<SplahsChargement> {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
-    // 🔥 VÉRIFIER SI ON PEUT NAVIGUER (auth complète + vidéo finie)
-    if (_isAuthCompleted && (isFinished || !shouldPlayVideo)) {
+    // 🔥 VÉRIFIER SI ON PEUT NAVIGUER (auth + posts immédiats + vidéo)
+    if (_isAuthCompleted && _areImmediatePostsLoaded && (isFinished || !shouldPlayVideo)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToDestination();
       });
@@ -451,16 +476,19 @@ class _ChargementState extends State<SplahsChargement> {
   }
 
   Widget _buildPostsStatus() {
+    final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
+    final immediateCount = mixedFeedProvider.immediatePosts.length;
+
     return Column(
       children: [
         Icon(
-          _arePostsPrepared ? Icons.check_circle : Icons.downloading,
-          color: _arePostsPrepared ? Colors.green : Colors.orange,
+          _areImmediatePostsLoaded ? Icons.check_circle : Icons.downloading,
+          color: _areImmediatePostsLoaded ? Colors.green : Colors.orange,
           size: 30,
         ),
         SizedBox(height: 8),
         Text(
-          _arePostsPrepared ? "Prêt !" : "Préparation des posts...",
+          _areImmediatePostsLoaded ? "Prêt !" : "Chargement des posts...",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -469,7 +497,9 @@ class _ChargementState extends State<SplahsChargement> {
         ),
         SizedBox(height: 4),
         Text(
-          _arePostsPrepared ? "Redirection..." : "Chargement des publications...",
+          _areImmediatePostsLoaded
+              ? "$immediateCount post(s) chargé(s) - Redirection..."
+              : "Préparation des premiers posts...",
           style: TextStyle(
             color: Colors.grey[400],
             fontSize: 12,
@@ -500,7 +530,7 @@ class _ChargementState extends State<SplahsChargement> {
             _buildLoadingScreen("Chargement de la vidéo..."),
 
           // OVERLAY DE CHARGEMENT
-          if (_isAuthCompleted && _arePostsPrepared)
+          if (_isAuthCompleted && _areImmediatePostsLoaded)
             Positioned(
               bottom: 100,
               left: 0,
