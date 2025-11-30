@@ -521,6 +521,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onUserOffline: (connection, remoteUid, reason) {
             print("👋 Utilisateur parti: $remoteUid");
             setState(() => _remoteUid = null);
+            // _removeUserFromSpectators();
+
           },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
             print("📹 État vidéo UID $remoteUid: $state");
@@ -1918,7 +1920,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
   @override
   void dispose() {
-    _removeUserFromSpectators();
+    // _removeUserFromSpectators();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
     _paymentWarningTimer?.cancel();

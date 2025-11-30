@@ -147,7 +147,7 @@ class PostLive {
       'screenShareUid': screenShareUid,
       'isScreenSharing': isScreenSharing,
       'screenSharerId': screenSharerId,
-      'totalspectateurs ': totalspectateurs ,
+      'totalspectateurs': totalspectateurs ,
     };
   }
 
@@ -179,8 +179,8 @@ class PostLive {
       spectators: map['spectators'] != null
           ? List<String>.from(map['spectators'])
           : [],
-      totalspectateurs : map['totalspectateurs '] != null
-          ? List<String>.from(map['totalspectateurs '])
+      totalspectateurs : map['totalspectateurs'] != null
+          ? List<String>.from(map['totalspectateurs'])
           : [],
       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
       withdrawalDate: map['withdrawalDate']?.toDate(),
@@ -826,7 +826,7 @@ class LiveProvider extends ChangeNotifier {
   Future<void> joinAsSpectator(String liveId, String userId) async {
     try {
       await _firestore.collection('lives').doc(liveId).update({
-        'totalspectateurs ': FieldValue.arrayUnion([userId]),
+        'totalspectateurs': FieldValue.arrayUnion([userId]),
         'spectators': FieldValue.arrayUnion([userId]),
         'viewerCount': FieldValue.increment(1),
       });

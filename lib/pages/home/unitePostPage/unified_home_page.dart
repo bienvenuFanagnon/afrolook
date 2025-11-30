@@ -1014,13 +1014,24 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
+// Ajoutez cette variable en haut de votre classe
+  final Set<String> _alreadyViewedPosts = Set<String>();
+
   void _handlePostVisibility(Post post, VisibilityInfo info) {
     final postId = post.id!;
+
+    // 🔥 VÉRIFIER SI DÉJÀ VU
+    if (_alreadyViewedPosts.contains(postId)) {
+      return; // Déjà compté, on ne fait rien
+    }
+
     _visibilityTimers[postId]?.cancel();
 
     if (info.visibleFraction > 0.6) {
-      _visibilityTimers[postId] = Timer(Duration(milliseconds: 300), () {
+      _visibilityTimers[postId] = Timer(Duration(milliseconds: 400), () {
         if (mounted && info.visibleFraction > 0.5) {
+          // 🔥 MARQUER COMME VU AVANT L'ENREGISTREMENT
+          _alreadyViewedPosts.add(postId);
           _markPostAsSeen(post);
         }
       });
@@ -1028,7 +1039,6 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
       _visibilityTimers.remove(postId);
     }
   }
-
   Future<void> _markPostAsSeen(Post post) async {
     final currentUserId = _getUserId();
     if (currentUserId.isEmpty || post.id == null) return;

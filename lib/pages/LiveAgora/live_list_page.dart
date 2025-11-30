@@ -233,8 +233,10 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         : liveProvider.allLives.where((live) => live.isLive).toList();
 
     // Pour les lives terminés, utiliser la liste dédiée ou filtrer
-    final endedLives =  List<PostLive>.from(liveProvider.endedLives)
-       ;
+// Pour les lives terminés, utiliser la liste dédiée ou filtrer
+    final endedLives = liveProvider.endedLives.isNotEmpty
+        ? List<PostLive>.from(liveProvider.endedLives)
+        : liveProvider.allLives.where((live) => !live.isLive).toList();
 
     print("📊 Organisation des lives:");
     print("   - Lives actifs: ${activeLives.length}");
