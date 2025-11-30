@@ -1,26 +1,11 @@
 // models/live_models.dart
 import 'dart:async';
-import 'dart:math';
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/component/showUserDetails.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-import '../../models/model_data.dart';
-import '../../services/linkService.dart';
-import '../paiement/newDepot.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostLive {
   final String? liveId;
@@ -39,14 +24,40 @@ class PostLive {
   bool paymentRequired;
   DateTime? paymentRequestTime;
   final List<String> invitedUsers;
+  final List<String> totalspectateurs ;
   final List<String> participants;
   final List<String> spectators;
-  final double participationFee;
+
+  // NOUVEAUX CHAMPS POUR LIVE PAYANT
+  final bool isPaidLive; // Live payant ou gratuit
+  final double participationFee; // Prix pour rejoindre le live
+  final int freeTrialMinutes; // Temps d'essai gratuit en minutes
+
+  // NOUVEAUX CHAMPS POUR COMPORTEMENT APRÈS ESSAI
+  final String audioBehaviorAfterTrial; // 'mute', 'reduce', 'keep'
+  final int audioReductionPercent; // Pourcentage de réduction si 'reduce'
+  final bool blurVideoAfterTrial; // Flouter la vidéo après essai
+  final bool showPaymentModalAfterTrial; // Afficher modal paiement automatique
+
+  // NOUVEAUX CHAMPS POUR FONCTIONNALITÉS AVANCÉES
+  final String? pinnedText; // Texte épinglé par l'hôte
+  final int shareCount; // Nombre de partages du live
+  final double paidParticipationTotal; // Total des participations payantes
+
+  // NOUVEAU CHAMP POUR TEMPS DE VISIONNAGE
+  final Map<String, dynamic> userWatchTime; // {userId: minutesRestantes}
+
+  // CHAMPS EXISTANTS
   bool earningsWithdrawn;
   DateTime? withdrawalDate;
   String? withdrawalTransactionId;
 
+  final int? screenShareUid; // UID du partage d'écran actif
+  final bool isScreenSharing; // Si un partage d'écran est en cours
+  final String? screenSharerId; // ID de l'utilisateur qui partage son écran
+
   PostLive({
+    // Champs existants
     this.earningsWithdrawn = false,
     this.withdrawalDate,
     this.withdrawalTransactionId,
@@ -68,11 +79,36 @@ class PostLive {
     this.invitedUsers = const [],
     this.participants = const [],
     this.spectators = const [],
+    this.totalspectateurs  = const [],
+
+    // Nouveaux champs avec valeurs par défaut
+    this.isPaidLive = false,
     this.participationFee = 100.0,
+    this.freeTrialMinutes = 1, // 1 minute par défaut
+
+    // Comportement après essai
+    this.audioBehaviorAfterTrial = 'reduce', // Réduire le son par défaut
+    this.audioReductionPercent = 50, // Réduire à 50% par défaut
+    this.blurVideoAfterTrial = true, // Flouter par défaut
+    this.showPaymentModalAfterTrial = true, // Afficher modal par défaut
+
+    // Fonctionnalités avancées
+    this.pinnedText,
+    this.shareCount = 0,
+    this.paidParticipationTotal = 0.0,
+
+    // Temps de visionnage
+    this.userWatchTime = const {},
+
+
+    this.screenShareUid,
+    this.isScreenSharing = false,
+    this.screenSharerId,
   });
 
   Map<String, dynamic> toMap() {
     return {
+      // Champs existants
       'liveId': liveId,
       'hostId': hostId,
       'hostName': hostName,
@@ -90,10 +126,28 @@ class PostLive {
       'invitedUsers': invitedUsers,
       'participants': participants,
       'spectators': spectators,
-      'participationFee': participationFee,
       'earningsWithdrawn': earningsWithdrawn,
       'withdrawalDate': withdrawalDate,
       'withdrawalTransactionId': withdrawalTransactionId,
+
+      // Nouveaux champs
+      'isPaidLive': isPaidLive,
+      'participationFee': participationFee,
+      'freeTrialMinutes': freeTrialMinutes,
+      'audioBehaviorAfterTrial': audioBehaviorAfterTrial,
+      'audioReductionPercent': audioReductionPercent,
+      'blurVideoAfterTrial': blurVideoAfterTrial,
+      'showPaymentModalAfterTrial': showPaymentModalAfterTrial,
+      'pinnedText': pinnedText,
+      'shareCount': shareCount,
+      'paidParticipationTotal': paidParticipationTotal,
+      'userWatchTime': userWatchTime,
+
+
+      'screenShareUid': screenShareUid,
+      'isScreenSharing': isScreenSharing,
+      'screenSharerId': screenSharerId,
+      'totalspectateurs ': totalspectateurs ,
     };
   }
 
@@ -105,7 +159,6 @@ class PostLive {
       hostImage: map['hostImage'] ?? '',
       title: map['title'] ?? '',
       viewerCount: map['viewerCount'] ?? 0,
-      // giftCount: map['giftCount'] ?? 0,
       startTime: (map['startTime'] as Timestamp).toDate(),
       endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
       isLive: map['isLive'] ?? true,
@@ -126,15 +179,196 @@ class PostLive {
       spectators: map['spectators'] != null
           ? List<String>.from(map['spectators'])
           : [],
-      participationFee: map['participationFee']?.toDouble() ?? 100.0,
-
+      totalspectateurs : map['totalspectateurs '] != null
+          ? List<String>.from(map['totalspectateurs '])
+          : [],
       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
       withdrawalDate: map['withdrawalDate']?.toDate(),
       withdrawalTransactionId: map['withdrawalTransactionId'],
       likeCount: map['likeCount'],
+
+      // Nouveaux champs
+      isPaidLive: map['isPaidLive'] ?? false,
+      participationFee: map['participationFee']?.toDouble() ?? 100.0,
+      freeTrialMinutes: map['freeTrialMinutes'] ?? 1,
+      audioBehaviorAfterTrial: map['audioBehaviorAfterTrial'] ?? 'reduce',
+      audioReductionPercent: map['audioReductionPercent'] ?? 50,
+      blurVideoAfterTrial: map['blurVideoAfterTrial'] ?? true,
+      showPaymentModalAfterTrial: map['showPaymentModalAfterTrial'] ?? true,
+      pinnedText: map['pinnedText'],
+      shareCount: map['shareCount'] ?? 0,
+      paidParticipationTotal: map['paidParticipationTotal']?.toDouble() ?? 0.0,
+      userWatchTime: map['userWatchTime'] != null
+          ? Map<String, dynamic>.from(map['userWatchTime'])
+          : {},
+
+      screenShareUid: map['screenShareUid'],
+      isScreenSharing: map['isScreenSharing'] ?? false,
+      screenSharerId: map['screenSharerId'],
+    );
+  }
+
+
+  PostLive copyWith({
+    int? screenShareUid,
+    bool? isScreenSharing,
+    String? screenSharerId,
+    // ... autres champs ...
+  }) {
+    return PostLive(
+      liveId: liveId,
+      hostId: hostId,
+      hostName: hostName,
+      hostImage: hostImage,
+      title: title,
+      viewerCount: viewerCount,
+      giftCount: giftCount,
+      startTime: startTime,
+      endTime: endTime,
+      isLive: isLive,
+      giftTotal: giftTotal,
+      likeCount: likeCount,
+      gifts: gifts,
+      paymentRequired: paymentRequired,
+      paymentRequestTime: paymentRequestTime,
+      invitedUsers: invitedUsers,
+      participants: participants,
+      spectators: spectators,
+      isPaidLive: isPaidLive,
+      participationFee: participationFee,
+      freeTrialMinutes: freeTrialMinutes,
+      audioBehaviorAfterTrial: audioBehaviorAfterTrial,
+      audioReductionPercent: audioReductionPercent,
+      blurVideoAfterTrial: blurVideoAfterTrial,
+      showPaymentModalAfterTrial: showPaymentModalAfterTrial,
+      pinnedText: pinnedText,
+      shareCount: shareCount,
+      paidParticipationTotal: paidParticipationTotal,
+      userWatchTime: userWatchTime,
+      earningsWithdrawn: earningsWithdrawn,
+      withdrawalDate: withdrawalDate,
+      withdrawalTransactionId: withdrawalTransactionId,
+
+      // Partage d'écran
+      screenShareUid: screenShareUid ?? this.screenShareUid,
+      isScreenSharing: isScreenSharing ?? this.isScreenSharing,
+      screenSharerId: screenSharerId ?? this.screenSharerId,
     );
   }
 }
+// class PostLive {
+//   final String? liveId;
+//   final String? hostId;
+//   final String? hostName;
+//   final String? hostImage;
+//   final String title;
+//   int viewerCount;
+//   int? giftCount;
+//   int? likeCount;
+//   final DateTime startTime;
+//   DateTime? endTime;
+//   bool isLive;
+//   double giftTotal;
+//   final List<LiveGift> gifts;
+//   bool paymentRequired;
+//   DateTime? paymentRequestTime;
+//   final List<String> invitedUsers;
+//   final List<String> participants;
+//   final List<String> spectators;
+//   final double participationFee;
+//   bool earningsWithdrawn;
+//   DateTime? withdrawalDate;
+//   String? withdrawalTransactionId;
+//
+//   PostLive({
+//     this.earningsWithdrawn = false,
+//     this.withdrawalDate,
+//     this.withdrawalTransactionId,
+//     required this.liveId,
+//     required this.hostId,
+//     required this.hostName,
+//     required this.hostImage,
+//     required this.title,
+//     this.viewerCount = 0,
+//     this.giftCount = 0,
+//     required this.startTime,
+//     this.endTime,
+//     this.isLive = true,
+//     this.giftTotal = 0,
+//     this.likeCount = 0,
+//     this.gifts = const [],
+//     this.paymentRequired = false,
+//     this.paymentRequestTime,
+//     this.invitedUsers = const [],
+//     this.participants = const [],
+//     this.spectators = const [],
+//     this.participationFee = 100.0,
+//   });
+//
+//   Map<String, dynamic> toMap() {
+//     return {
+//       'liveId': liveId,
+//       'hostId': hostId,
+//       'hostName': hostName,
+//       'hostImage': hostImage,
+//       'title': title,
+//       'likeCount': likeCount,
+//       'viewerCount': viewerCount,
+//       'startTime': startTime,
+//       'endTime': endTime,
+//       'isLive': isLive,
+//       'giftTotal': giftTotal,
+//       'gifts': gifts.map((gift) => gift.toMap()).toList(),
+//       'paymentRequired': paymentRequired,
+//       'paymentRequestTime': paymentRequestTime,
+//       'invitedUsers': invitedUsers,
+//       'participants': participants,
+//       'spectators': spectators,
+//       'participationFee': participationFee,
+//       'earningsWithdrawn': earningsWithdrawn,
+//       'withdrawalDate': withdrawalDate,
+//       'withdrawalTransactionId': withdrawalTransactionId,
+//     };
+//   }
+//
+//   factory PostLive.fromMap(Map<String, dynamic> map) {
+//     return PostLive(
+//       liveId: map['liveId'] ?? '',
+//       hostId: map['hostId'] ?? '',
+//       hostName: map['hostName'] ?? '',
+//       hostImage: map['hostImage'] ?? '',
+//       title: map['title'] ?? '',
+//       viewerCount: map['viewerCount'] ?? 0,
+//       // giftCount: map['giftCount'] ?? 0,
+//       startTime: (map['startTime'] as Timestamp).toDate(),
+//       endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
+//       isLive: map['isLive'] ?? true,
+//       giftTotal: map['giftTotal']?.toDouble() ?? 0.0,
+//       gifts: map['gifts'] != null
+//           ? List<LiveGift>.from((map['gifts'] as List).map((x) => LiveGift.fromMap(x)))
+//           : [],
+//       paymentRequired: map['paymentRequired'] ?? false,
+//       paymentRequestTime: map['paymentRequestTime'] != null
+//           ? (map['paymentRequestTime'] as Timestamp).toDate()
+//           : null,
+//       invitedUsers: map['invitedUsers'] != null
+//           ? List<String>.from(map['invitedUsers'])
+//           : [],
+//       participants: map['participants'] != null
+//           ? List<String>.from(map['participants'])
+//           : [],
+//       spectators: map['spectators'] != null
+//           ? List<String>.from(map['spectators'])
+//           : [],
+//       participationFee: map['participationFee']?.toDouble() ?? 100.0,
+//
+//       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
+//       withdrawalDate: map['withdrawalDate']?.toDate(),
+//       withdrawalTransactionId: map['withdrawalTransactionId'],
+//       likeCount: map['likeCount'],
+//     );
+//   }
+// }
 
 
 class LiveGift {
@@ -245,52 +479,34 @@ class LiveComment {
   }
 }
 
-class Gift {
-  final String id;
-  final String name;
-  final double price;
-  final String icon;
-  final Color color;
-
-  Gift({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.icon,
-    required this.color,
-  });
-}
-
-
-// providers/live_provider.dart
 
 
 class LiveProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   List<PostLive> _activeLives = [];
+  List<PostLive> _endedLives = [];
+  List<PostLive> _allLives = [];
   Map<String, Timer> _liveTimers = {};
 
-  List<PostLive> _endedLives = []; // Nouvelle propriété
-  DocumentSnapshot? _lastEndedLiveDoc; // Nouveau document snapshot
-  bool _endedLivesFinished = false; // Nouveau flag
-  List<PostLive> get endedLives => _endedLives; // Nouveau getter
+  // Pagination
+  static const int batchSize = 8;
+  static const int maxLives = 30;
+  DocumentSnapshot? _lastAllLiveDoc;
+  DocumentSnapshot? _lastActiveLiveDoc;
+  DocumentSnapshot? _lastEndedLiveDoc;
+  bool _allLivesFinished = false;
+  bool _activeLivesFinished = false;
+  bool _endedLivesFinished = false;
 
-  List<PostLive> _allLives = []; // Liste pour tous les lives
-
+  // Getters
+  List<PostLive> get endedLives => _endedLives;
   List<PostLive> get allLives => _allLives;
   List<PostLive> get activeLives => _activeLives;
 
-  // Pagination batch
-  static const int batchSize = 8;
-  static const int maxLives = 30;
+  // ==================== MÉTHODES DE RÉCUPÉRATION ====================
 
-  DocumentSnapshot? _lastAllLiveDoc;
-  DocumentSnapshot? _lastActiveLiveDoc;
-
-  bool _allLivesFinished = false;
-  bool _activeLivesFinished = false;
-
-  // ----------------- BATCH FETCH -----------------
   Future<void> fetchAllLivesBatch({bool reset = false}) async {
     if (reset) {
       _allLives = [];
@@ -302,12 +518,16 @@ class LiveProvider extends ChangeNotifier {
       print("✅ Tous les lives déjà chargés");
       return;
     }
-
+    // inal List<String> totalspectateurs ;
+    // final List<String> participants;
+    // final List<String> spectators;
     try {
       Query query = _firestore
           .collection('lives')
-          .orderBy('isLive', descending: true) // Les lives actifs d'abord
-          .orderBy('giftTotal', descending: true) // Puis par montant
+          .orderBy('isLive', descending: true)
+          .orderBy('totalspectateurs', descending: true)
+          // .orderBy('spectators', descending: true)
+          // .orderBy('giftTotal', descending: true)
           .limit(batchSize);
 
       if (_lastAllLiveDoc != null) {
@@ -358,7 +578,6 @@ class LiveProvider extends ChangeNotifier {
 
     } catch (e) {
       print("❌ Erreur lors du chargement des lives par batch: $e");
-      // Réinitialiser en cas d'erreur pour permettre une nouvelle tentative
       if (reset) {
         _allLives = [];
         _lastAllLiveDoc = null;
@@ -378,7 +597,7 @@ class LiveProvider extends ChangeNotifier {
     Query query = _firestore
         .collection('lives')
         .where('isLive', isEqualTo: false)
-        .orderBy('startTime', descending: true) // Les plus récents d'abord
+        .orderBy('startTime', descending: true)
         .limit(batchSize);
 
     if (_lastEndedLiveDoc != null) query = query.startAfterDocument(_lastEndedLiveDoc!);
@@ -408,6 +627,7 @@ class LiveProvider extends ChangeNotifier {
       print("Erreur lors du chargement des lives terminés par batch: $e");
     }
   }
+
   Future<void> fetchActiveLivesBatch({bool reset = false}) async {
     if (reset) {
       _activeLives = [];
@@ -419,7 +639,7 @@ class LiveProvider extends ChangeNotifier {
     Query query = _firestore
         .collection('lives')
         .where('isLive', isEqualTo: true)
-        .orderBy('giftTotal', descending: true) // Trier par montant gagné
+        .orderBy('giftTotal', descending: true)
         .limit(batchSize);
 
     if (_lastActiveLiveDoc != null) query = query.startAfterDocument(_lastActiveLiveDoc!);
@@ -450,8 +670,6 @@ class LiveProvider extends ChangeNotifier {
     }
   }
 
-
-  // Récupérer tous les lives, peu importe leur statut
   Future<void> fetchAllLives() async {
     _allLives = [];
     try {
@@ -465,26 +683,15 @@ class LiveProvider extends ChangeNotifier {
           _allLives.add(live);
         } catch (e) {
           print("Impossible de convertir le live ${doc.id}: $e");
-          print("Impossible de convertir le live ${doc.data()}: $e");
-          // On ignore ce live pour ne pas bloquer la liste
         }
       }
-
-
-
       print("Liste des lives: ${_allLives.length}");
-
-      // Filtrer les lives actifs
-      // _activeLives = _allLives.where((live) => live.isLive).toList();
-      // _activeLives = _allLives;
-
       notifyListeners();
     } catch (e) {
       print("Erreur lors du chargement des lives: $e");
     }
   }
 
-  // Récupérer seulement les lives actifs
   Future<void> fetchActiveLives() async {
     try {
       QuerySnapshot snapshot = await _firestore
@@ -501,7 +708,6 @@ class LiveProvider extends ChangeNotifier {
           _activeLives.add(live);
         } catch (e) {
           print("Impossible de convertir le live ${doc.id}: $e");
-          // On ignore ce live pour ne pas bloquer la liste
         }
       }
 
@@ -511,14 +717,87 @@ class LiveProvider extends ChangeNotifier {
     }
   }
 
+  // ==================== NOUVELLES MÉTHODES ====================
+
+  Future<void> updateUserWatchTime(String liveId, String userId, int minutes) async {
+    try {
+      await _firestore.collection('lives').doc(liveId).update({
+        'userWatchTime.$userId': minutes,
+      });
+      print("⏰ Temps visionnage mis à jour: $userId -> $minutes min");
+    } catch (e) {
+      print("❌ Erreur mise à jour temps visionnage: $e");
+    }
+  }
+
+  Future<bool> checkUserPaymentStatus(String liveId, String userId) async {
+    try {
+      final doc = await _firestore.collection('lives').doc(liveId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
+        final userTime = userWatchTime[userId] ?? 0;
+        return userTime > 60;
+      }
+      return false;
+    } catch (e) {
+      print("❌ Erreur vérification statut paiement: $e");
+      return false;
+    }
+  }
+
+  Future<void> processParticipationPayment(String liveId, String userId, double amount) async {
+    try {
+      await _firestore.collection('lives').doc(liveId).update({
+        'paidParticipationTotal': FieldValue.increment(amount),
+        'giftTotal': FieldValue.increment(amount),
+        'userWatchTime.$userId': 999,
+      });
+      print("💰 Paiement participation traité: $amount FCFA pour $userId");
+    } catch (e) {
+      print("❌ Erreur traitement paiement participation: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updatePinnedText(String liveId, String text) async {
+    try {
+      if (text.isEmpty) {
+        await _firestore.collection('lives').doc(liveId).update({
+          'pinnedText': FieldValue.delete(),
+        });
+        print("📌 Texte épinglé supprimé");
+      } else {
+        await _firestore.collection('lives').doc(liveId).update({
+          'pinnedText': text,
+        });
+        print("📌 Texte épinglé mis à jour: $text");
+      }
+    } catch (e) {
+      print("❌ Erreur mise à jour texte épinglé: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> incrementShareCount(String liveId) async {
+    try {
+      await _firestore.collection('lives').doc(liveId).update({
+        'shareCount': FieldValue.increment(1),
+      });
+      print("📤 Compteur partages incrémenté");
+    } catch (e) {
+      print("❌ Erreur incrémentation partages: $e");
+    }
+  }
 
   Future<void> inviteUserToLive(String liveId, String userId) async {
     try {
       await _firestore.collection('lives').doc(liveId).update({
         'invitedUsers': FieldValue.arrayUnion([userId]),
       });
+      print("📨 Utilisateur $userId invité au live $liveId");
     } catch (e) {
-      print("Erreur lors de l'invitation: $e");
+      print("❌ Erreur lors de l'invitation: $e");
     }
   }
 
@@ -533,12 +812,13 @@ class LiveProvider extends ChangeNotifier {
             'participants': FieldValue.arrayUnion([userId]),
             'invitedUsers': FieldValue.arrayRemove([userId]),
           });
+          print("🎤 Utilisateur $userId rejoint comme participant");
           return true;
         }
       }
       return false;
     } catch (e) {
-      print("Erreur lors de la participation: $e");
+      print("❌ Erreur lors de la participation: $e");
       return false;
     }
   }
@@ -546,11 +826,13 @@ class LiveProvider extends ChangeNotifier {
   Future<void> joinAsSpectator(String liveId, String userId) async {
     try {
       await _firestore.collection('lives').doc(liveId).update({
+        'totalspectateurs ': FieldValue.arrayUnion([userId]),
         'spectators': FieldValue.arrayUnion([userId]),
         'viewerCount': FieldValue.increment(1),
       });
+      print("👀 Utilisateur $userId rejoint comme spectateur");
     } catch (e) {
-      print("Erreur lors de l'ajout du spectateur: $e");
+      print("❌ Erreur lors de l'ajout du spectateur: $e");
     }
   }
 
@@ -561,8 +843,9 @@ class LiveProvider extends ChangeNotifier {
         'spectators': FieldValue.arrayRemove([userId]),
         'viewerCount': FieldValue.increment(-1),
       });
+      print("🚪 Utilisateur $userId a quitté le live");
     } catch (e) {
-      print("Erreur lors de la sortie du live: $e");
+      print("❌ Erreur lors de la sortie du live: $e");
     }
   }
 
@@ -572,12 +855,14 @@ class LiveProvider extends ChangeNotifier {
       onTimeExpired();
       stopLiveTimer(liveId);
     });
+    print("⏰ Timer live démarré: $durationMinutes minutes");
   }
 
   void stopLiveTimer(String liveId) {
     if (_liveTimers.containsKey(liveId)) {
       _liveTimers[liveId]!.cancel();
       _liveTimers.remove(liveId);
+      print("⏹️ Timer live arrêté");
     }
   }
 
@@ -585,1893 +870,338 @@ class LiveProvider extends ChangeNotifier {
   void dispose() {
     _liveTimers.values.forEach((timer) => timer.cancel());
     _liveTimers.clear();
+    print("🧹 LiveProvider disposé");
     super.dispose();
   }
 }
+// class LiveProvider extends ChangeNotifier {
+//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+//   List<PostLive> _activeLives = [];
+//   Map<String, Timer> _liveTimers = {};
+//
+//   List<PostLive> _endedLives = []; // Nouvelle propriété
+//   DocumentSnapshot? _lastEndedLiveDoc; // Nouveau document snapshot
+//   bool _endedLivesFinished = false; // Nouveau flag
+//   List<PostLive> get endedLives => _endedLives; // Nouveau getter
+//
+//   List<PostLive> _allLives = []; // Liste pour tous les lives
+//
+//   List<PostLive> get allLives => _allLives;
+//   List<PostLive> get activeLives => _activeLives;
+//
+//   // Pagination batch
+//   static const int batchSize = 8;
+//   static const int maxLives = 30;
+//
+//   DocumentSnapshot? _lastAllLiveDoc;
+//   DocumentSnapshot? _lastActiveLiveDoc;
+//
+//   bool _allLivesFinished = false;
+//   bool _activeLivesFinished = false;
+//
+//   // ----------------- BATCH FETCH -----------------
+//   Future<void> fetchAllLivesBatch({bool reset = false}) async {
+//     if (reset) {
+//       _allLives = [];
+//       _lastAllLiveDoc = null;
+//       _allLivesFinished = false;
+//       print("🔄 Reset de tous les lives");
+//     }
+//     if (_allLivesFinished) {
+//       print("✅ Tous les lives déjà chargés");
+//       return;
+//     }
+//
+//     try {
+//       Query query = _firestore
+//           .collection('lives')
+//           .orderBy('isLive', descending: true) // Les lives actifs d'abord
+//           .orderBy('giftTotal', descending: true) // Puis par montant
+//           .limit(batchSize);
+//
+//       if (_lastAllLiveDoc != null) {
+//         query = query.startAfterDocument(_lastAllLiveDoc!);
+//         print("📥 Chargement supplémentaire de tous les lives");
+//       } else {
+//         print("📥 Premier chargement de tous les lives");
+//       }
+//
+//       QuerySnapshot snapshot = await query.get();
+//       print("📊 ${snapshot.docs.length} lives récupérés");
+//
+//       if (snapshot.docs.isEmpty) {
+//         _allLivesFinished = true;
+//         print("🏁 Fin du chargement - aucun live supplémentaire");
+//         return;
+//       }
+//
+//       int activeCount = 0;
+//       int endedCount = 0;
+//
+//       for (var doc in snapshot.docs) {
+//         try {
+//           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+//           _allLives.add(live);
+//
+//           if (live.isLive) {
+//             activeCount++;
+//           } else {
+//             endedCount++;
+//           }
+//
+//           print("✅ Live ajouté: ${live.title} - isLive: ${live.isLive} - giftTotal: ${live.giftTotal}");
+//         } catch (e) {
+//           print("❌ Impossible de convertir le live ${doc.id}: $e");
+//         }
+//       }
+//
+//       _lastAllLiveDoc = snapshot.docs.last;
+//
+//       if (_allLives.length >= maxLives) {
+//         _allLivesFinished = true;
+//         print("🏁 Limite maximale de lives atteinte: ${_allLives.length}");
+//       }
+//
+//       print("📈 Statut final - Actifs: $activeCount, Terminés: $endedCount, Total: ${_allLives.length}");
+//       notifyListeners();
+//
+//     } catch (e) {
+//       print("❌ Erreur lors du chargement des lives par batch: $e");
+//       // Réinitialiser en cas d'erreur pour permettre une nouvelle tentative
+//       if (reset) {
+//         _allLives = [];
+//         _lastAllLiveDoc = null;
+//         _allLivesFinished = false;
+//       }
+//     }
+//   }
+//
+//   Future<void> fetchEndedLivesBatch({bool reset = false}) async {
+//     if (reset) {
+//       _endedLives = [];
+//       _lastEndedLiveDoc = null;
+//       _endedLivesFinished = false;
+//     }
+//     if (_endedLivesFinished) return;
+//
+//     Query query = _firestore
+//         .collection('lives')
+//         .where('isLive', isEqualTo: false)
+//         .orderBy('startTime', descending: true) // Les plus récents d'abord
+//         .limit(batchSize);
+//
+//     if (_lastEndedLiveDoc != null) query = query.startAfterDocument(_lastEndedLiveDoc!);
+//
+//     try {
+//       QuerySnapshot snapshot = await query.get();
+//       if (snapshot.docs.isEmpty) {
+//         _endedLivesFinished = true;
+//         return;
+//       }
+//
+//       for (var doc in snapshot.docs) {
+//         try {
+//           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+//           _endedLives.add(live);
+//         } catch (e) {
+//           print("Impossible de convertir le live terminé ${doc.id}: $e");
+//         }
+//       }
+//
+//       _lastEndedLiveDoc = snapshot.docs.last;
+//
+//       if (_endedLives.length >= maxLives) _endedLivesFinished = true;
+//
+//       notifyListeners();
+//     } catch (e) {
+//       print("Erreur lors du chargement des lives terminés par batch: $e");
+//     }
+//   }
+//   Future<void> fetchActiveLivesBatch({bool reset = false}) async {
+//     if (reset) {
+//       _activeLives = [];
+//       _lastActiveLiveDoc = null;
+//       _activeLivesFinished = false;
+//     }
+//     if (_activeLivesFinished) return;
+//
+//     Query query = _firestore
+//         .collection('lives')
+//         .where('isLive', isEqualTo: true)
+//         .orderBy('giftTotal', descending: true) // Trier par montant gagné
+//         .limit(batchSize);
+//
+//     if (_lastActiveLiveDoc != null) query = query.startAfterDocument(_lastActiveLiveDoc!);
+//
+//     try {
+//       QuerySnapshot snapshot = await query.get();
+//       if (snapshot.docs.isEmpty) {
+//         _activeLivesFinished = true;
+//         return;
+//       }
+//
+//       for (var doc in snapshot.docs) {
+//         try {
+//           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+//           _activeLives.add(live);
+//         } catch (e) {
+//           print("Impossible de convertir le live actif ${doc.id}: $e");
+//         }
+//       }
+//
+//       _lastActiveLiveDoc = snapshot.docs.last;
+//
+//       if (_activeLives.length >= maxLives) _activeLivesFinished = true;
+//
+//       notifyListeners();
+//     } catch (e) {
+//       print("Erreur lors du chargement des lives actifs par batch: $e");
+//     }
+//   }
+//
+//
+//   // Récupérer tous les lives, peu importe leur statut
+//   Future<void> fetchAllLives() async {
+//     _allLives = [];
+//     try {
+//       QuerySnapshot snapshot = await _firestore
+//           .collection('lives')
+//           .orderBy('startTime', descending: true)
+//           .get();
+//       for (var doc in snapshot.docs) {
+//         try {
+//           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+//           _allLives.add(live);
+//         } catch (e) {
+//           print("Impossible de convertir le live ${doc.id}: $e");
+//           print("Impossible de convertir le live ${doc.data()}: $e");
+//           // On ignore ce live pour ne pas bloquer la liste
+//         }
+//       }
+//
+//
+//
+//       print("Liste des lives: ${_allLives.length}");
+//
+//       // Filtrer les lives actifs
+//       // _activeLives = _allLives.where((live) => live.isLive).toList();
+//       // _activeLives = _allLives;
+//
+//       notifyListeners();
+//     } catch (e) {
+//       print("Erreur lors du chargement des lives: $e");
+//     }
+//   }
+//
+//   // Récupérer seulement les lives actifs
+//   Future<void> fetchActiveLives() async {
+//     try {
+//       QuerySnapshot snapshot = await _firestore
+//           .collection('lives')
+//           .where('isLive', isEqualTo: true)
+//           .orderBy('startTime', descending: true)
+//           .get();
+//
+//       _activeLives = [];
+//
+//       for (var doc in snapshot.docs) {
+//         try {
+//           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
+//           _activeLives.add(live);
+//         } catch (e) {
+//           print("Impossible de convertir le live ${doc.id}: $e");
+//           // On ignore ce live pour ne pas bloquer la liste
+//         }
+//       }
+//
+//       notifyListeners();
+//     } catch (e) {
+//       print("Erreur lors du chargement des lives actifs: $e");
+//     }
+//   }
+//
+//
+//   Future<void> inviteUserToLive(String liveId, String userId) async {
+//     try {
+//       await _firestore.collection('lives').doc(liveId).update({
+//         'invitedUsers': FieldValue.arrayUnion([userId]),
+//       });
+//     } catch (e) {
+//       print("Erreur lors de l'invitation: $e");
+//     }
+//   }
+//
+//   Future<bool> joinAsParticipant(String liveId, String userId) async {
+//     try {
+//       final liveDoc = await _firestore.collection('lives').doc(liveId).get();
+//       if (liveDoc.exists) {
+//         final live = PostLive.fromMap(liveDoc.data()!);
+//
+//         if (live.invitedUsers.contains(userId)) {
+//           await _firestore.collection('lives').doc(liveId).update({
+//             'participants': FieldValue.arrayUnion([userId]),
+//             'invitedUsers': FieldValue.arrayRemove([userId]),
+//           });
+//           return true;
+//         }
+//       }
+//       return false;
+//     } catch (e) {
+//       print("Erreur lors de la participation: $e");
+//       return false;
+//     }
+//   }
+//
+//   Future<void> joinAsSpectator(String liveId, String userId) async {
+//     try {
+//       await _firestore.collection('lives').doc(liveId).update({
+//         'spectators': FieldValue.arrayUnion([userId]),
+//         'viewerCount': FieldValue.increment(1),
+//       });
+//     } catch (e) {
+//       print("Erreur lors de l'ajout du spectateur: $e");
+//     }
+//   }
+//
+//   Future<void> leaveLive(String liveId, String userId) async {
+//     try {
+//       await _firestore.collection('lives').doc(liveId).update({
+//         'participants': FieldValue.arrayRemove([userId]),
+//         'spectators': FieldValue.arrayRemove([userId]),
+//         'viewerCount': FieldValue.increment(-1),
+//       });
+//     } catch (e) {
+//       print("Erreur lors de la sortie du live: $e");
+//     }
+//   }
+//
+//   void startLiveTimer(String liveId, int durationMinutes, Function onTimeExpired) {
+//     stopLiveTimer(liveId);
+//     _liveTimers[liveId] = Timer(Duration(minutes: durationMinutes), () {
+//       onTimeExpired();
+//       stopLiveTimer(liveId);
+//     });
+//   }
+//
+//   void stopLiveTimer(String liveId) {
+//     if (_liveTimers.containsKey(liveId)) {
+//       _liveTimers[liveId]!.cancel();
+//       _liveTimers.remove(liveId);
+//     }
+//   }
+//
+//   @override
+//   void dispose() {
+//     _liveTimers.values.forEach((timer) => timer.cancel());
+//     _liveTimers.clear();
+//     super.dispose();
+//   }
+// }
 
 
 
 
 
-// pages/create_live_page.dart
 
 
-class JoinLiveDialog extends StatelessWidget {
-  final String liveId;
-  final VoidCallback onJoinAsParticipant;
-  final VoidCallback onJoinAsSpectator;
 
-  const JoinLiveDialog({
-    Key? key,
-    required this.liveId,
-    required this.onJoinAsParticipant,
-    required this.onJoinAsSpectator,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.grey[900],
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Rejoindre le Live',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
-            Text('Vous avez été invité à participer à ce live',
-              style: TextStyle(color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: onJoinAsParticipant,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFF9A825),
-                minimumSize: Size(200, 50),
-              ),
-              child: Text('Participer (100 FCFA)', style: TextStyle(color: Colors.black)),
-            ),
-            SizedBox(height: 10),
-            TextButton(
-              onPressed: onJoinAsSpectator,
-              child: Text('Regarder seulement', style: TextStyle(color: Color(0xFFF9A825))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-class LivePage extends StatefulWidget {
-  final String liveId;
-  final PostLive postLive;
-  final bool isHost;
-  final String hostName;
-  final String hostImage;
-  final bool isInvited;
-
-  const LivePage({
-    Key? key,
-    required this.liveId,
-    required this.isHost,
-    required this.hostName,
-    required this.hostImage,
-    required this.isInvited, required this.postLive,
-  }) : super(key: key);
-
-  @override
-  _LivePageState createState() => _LivePageState();
-}
-
-class _LivePageState extends State<LivePage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController _commentController = TextEditingController();
-
-  int? _remoteUid;
-  bool _localUserJoined = false;
-  late RtcEngine _engine;
-  int _viewerCount = 0;
-  int _giftCount = 0;
-  List<LiveComment> _comments = [];
-  bool _showGiftPanel = false;
-  bool _showPaymentWarning = false;
-  Timer? _paymentWarningTimer;
-  bool _isFollowing = false;
-  double _giftTotal = 0.0;
-  List<String> _participants = [];
-  List<String> _spectators = [];
-  bool _isParticipant = false;
-  bool _hostJoined = false;
-  bool _isInitialized = false;
-  bool _isFullScreen = false;
-  int _likeCount = 0;
-  int _subscriberCount = 0;
-  String _hostUsername = '';
-  UserData _hostData = UserData();
-  Timer? _likeEffectTimer;
-  final List<LikeEffect> _likeEffects = [];
-  final List<GiftEffect> _giftEffects = [];
-  double _commentsHeight = 0.3; // Hauteur initiale des commentaires
-  final ScrollController _commentsScrollController = ScrollController();
-
-  // Stream subscriptions
-  StreamSubscription<DocumentSnapshot>? _liveSubscription;
-  StreamSubscription<QuerySnapshot>? _commentsSubscription;
-  StreamSubscription<DocumentSnapshot>? _hostSubscription;
-  late UserAuthProvider authProvider =
-  Provider.of<UserAuthProvider>(context, listen: false);
-
-
-  bool _isFrontCamera = true;
-  // Ajoutez cette variable pour le nombre de caméras disponibles
-  int _numberOfCameras = 0;
-  // Controller pour la configuration vidéo
-  late VideoEncoderConfiguration _videoConfig;
-
-  @override
-  void initState() {
-    super.initState();
-    print("🎬 Initialisation de LivePage - isHost: ${widget.isHost}");
-
-    // Initialiser la configuration vidéo
-    _videoConfig = VideoEncoderConfiguration();
-    _setupCamera();
-    _initAgora();
-    _setupFirestoreListeners();
-    _fetchHostData();
-
-    if (widget.isHost) {
-      _startPaymentTimer();
-    }
-
-    if (widget.isInvited) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showJoinOptions();
-      });
-    }
-
-    _startLikeEffectTimer();
-  }
-
-  // Nouvelle méthode pour configurer les caméras
-  Future<void> _setupCamera() async {
-    try {
-      // Obtenir le nombre de caméras disponibles
-      // _numberOfCameras = await _engine.getCameraCount();
-      _numberOfCameras = 2;
-      print("📷 Nombre de caméras disponibles: $_numberOfCameras");
-
-      if (_numberOfCameras > 1) {
-        // Configurer la caméra par défaut (front)
-        await _engine.startPreview();
-        _isFrontCamera = true;
-      }
-    } catch (e) {
-      print("❌ Erreur configuration caméra: $e");
-    }
-  }
-
-  // Nouvelle méthode pour basculer entre les caméras
-  Future<void> _switchCamera() async {
-    try {
-      if (_numberOfCameras < 2) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Une seule caméra disponible'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      // Basculer la caméra
-      await _engine.switchCamera();
-
-      setState(() {
-        _isFrontCamera = !_isFrontCamera;
-      });
-
-      print("📸 Caméra basculée vers: ${_isFrontCamera ? 'Avant' : 'Arrière'}");
-    } catch (e) {
-      print("❌ Erreur basculement caméra: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors du changement de caméra'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  // Modifiez votre méthode _initAgora pour inclure la configuration caméra
-  Future<void> _initAgora() async {
-    try {
-      print("🔊 Demande des permissions Agora...");
-      await [Permission.microphone, Permission.camera].request();
-
-      print("🚀 Création du moteur Agora...");
-      _engine = createAgoraRtcEngine();
-
-      await _engine.initialize(RtcEngineContext(
-        appId: "957063f627aa471581a52d4160f7c054",
-        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-      ));
-
-      // Configuration des handlers
-      _engine.registerEventHandler(
-        RtcEngineEventHandler(
-          onJoinChannelSuccess: (connection, elapsed) {
-            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
-            setState(() => _localUserJoined = true);
-          },
-          onUserJoined: (connection, remoteUid, elapsed) {
-            print("👤 Utilisateur rejoint: $remoteUid");
-            setState(() => _remoteUid = remoteUid);
-          },
-          onUserOffline: (connection, remoteUid, reason) {
-            print("👋 Utilisateur parti: $remoteUid");
-            setState(() => _remoteUid = null);
-          },
-          onCameraReady: () {
-            print("📷 Caméra prête");
-          },
-          // onCameraFocusAreaChanged: () {
-          //   print("🔍 Zone de focus caméra changée");
-          // },
-        ),
-      );
-
-      await _engine.enableVideo();
-
-      // Configuration vidéo améliorée
-      _videoConfig = const VideoEncoderConfiguration(
-        dimensions: VideoDimensions(width: 640, height: 360),
-        frameRate: 15,
-        bitrate: 0,
-        minBitrate: 0,
-        orientationMode: OrientationMode.orientationModeAdaptive,
-        degradationPreference: DegradationPreference.maintainQuality,
-        mirrorMode: VideoMirrorModeType.videoMirrorModeAuto,
-      );
-
-      await _engine.setVideoEncoderConfiguration(_videoConfig);
-
-      final role = widget.isHost || _isParticipant
-          ? ClientRoleType.clientRoleBroadcaster
-          : ClientRoleType.clientRoleAudience;
-
-      await _engine.setClientRole(role: role);
-
-      if (widget.isHost || _isParticipant) {
-        await _engine.startPreview();
-      }
-
-      final uid = 0;
-      final token = await _getAgoraToken(
-        channelName: widget.liveId,
-        uid: uid,
-        isHost: widget.isHost || _isParticipant,
-      );
-
-      if (token == null) {
-        throw Exception("Impossible de générer un token Agora");
-      }
-
-      await _engine.joinChannel(
-        token: token,
-        channelId: widget.liveId,
-        uid: uid,
-        options: ChannelMediaOptions(
-          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-          clientRoleType: role,
-          publishCameraTrack: widget.isHost || _isParticipant,
-          publishMicrophoneTrack: widget.isHost || _isParticipant,
-          autoSubscribeAudio: true,
-          autoSubscribeVideo: true,
-        ),
-      );
-
-      setState(() => _isInitialized = true);
-    } catch (e) {
-      print("💥 Erreur lors de l'initialisation Agora: $e");
-    }
-  }
-
-  // Ajoutez cette méthode pour gérer le mode miroir
-  Future<void> _toggleMirrorMode() async {
-    try {
-      final currentMode = _videoConfig.mirrorMode;
-      final newMode = currentMode == VideoMirrorModeType.videoMirrorModeEnabled
-          ? VideoMirrorModeType.videoMirrorModeDisabled
-          : VideoMirrorModeType.videoMirrorModeEnabled;
-
-      // _videoConfig.mirrorMode = newMode;
-      await _engine.setVideoEncoderConfiguration(_videoConfig);
-
-      print("🪞 Mode miroir: ${newMode == VideoMirrorModeType.videoMirrorModeEnabled ? 'Activé' : 'Désactivé'}");
-    } catch (e) {
-      print("❌ Erreur changement mode miroir: $e");
-    }
-  }
-
-  // Modifiez votre méthode _buildHostOverlay pour ajouter le bouton de basculement caméra
-  Widget _buildHostOverlay() {
-    return Positioned(
-      top: 50,
-      left: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Info host
-          GestureDetector(
-            onTap: () {
-              double h = MediaQuery.of(context).size.height;
-              double w = MediaQuery.of(context).size.width;
-              showUserDetailsModalDialog(_hostData, w, h, context);
-            },
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(widget.hostImage),
-                  radius: 20,
-                ),
-                SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "@${_hostData.pseudo}",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      '${_hostData.userAbonnesIds!.length} abonnés',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    if (widget.isHost)
-                      Text(
-                        'Hôte du live',
-                        style: TextStyle(color: Color(0xFFF9A825), fontSize: 12),
-                      ),
-                  ],
-                ),
-                SizedBox(width: 12),
-                if (!widget.isHost)
-                  GestureDetector(
-                    onTap: _toggleFollow,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _isFollowing ? 'Suivi' : 'Suivre',
-                        style: TextStyle(
-                          color: _isFollowing ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Boutons de contrôle caméra (seulement pour host/participant)
-          if (widget.isHost || _isParticipant) ...[
-            SizedBox(height: 10),
-            Row(
-              children: [
-                // Bouton bascule caméra
-                GestureDetector(
-                  onTap: _switchCamera,
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _isFrontCamera ? Icons.camera_front : Icons.camera_rear,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          _isFrontCamera ? 'Avant' : 'Arrière',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(width: 8),
-
-                // Bouton mode miroir
-                GestureDetector(
-                  onTap: _toggleMirrorMode,
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.flip,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<void> _joinAsParticipant() async {
-    try {
-      final authProvider = context.read<UserAuthProvider>();
-      final liveProvider = context.read<LiveProvider>();
-
-      if (authProvider.loginUserData!.votre_solde_principal! < 100) {
-        _showPaymentRequiredDialog();
-        return;
-      }
-
-      final paymentSuccess = await authProvider.deductFromBalance(context,100.0);
-
-      if (paymentSuccess) {
-        authProvider.incrementAppGain(100);
-        await liveProvider.joinAsParticipant(widget.liveId, authProvider.userId!);
-        setState(() {
-          _isParticipant = true;
-        });
-        await _reinitializeAgora();
-      }
-    } catch (e) {
-      print("❌ Erreur rejoindre comme participant: $e");
-    }
-  }
-
-  Future<void> _joinAsSpectator() async {
-    try {
-      final liveProvider = context.read<LiveProvider>();
-      await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
-      print("👀 Rejoint comme spectateur");
-    } catch (e) {
-      print("❌ Erreur rejoindre comme spectateur: $e");
-    }
-  }
-
-  Future<void> _reinitializeAgora() async {
-    try {
-      await _engine.leaveChannel();
-      await _engine.release();
-      await _initAgora();
-    } catch (e) {
-      print("❌ Erreur réinitialisation Agora: $e");
-    }
-  }
-
-  void _showPaymentRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
-        content: Text('Vous avez besoin de 100 FCFA pour participer au live.',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFFF9A825))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _startPaymentTimer() {
-    _paymentWarningTimer = Timer(const Duration(minutes: 55), () {
-      _requestPayment();
-    });
-  }
-
-  void _requestPayment() async {
-    try {
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'paymentRequired': true,
-        'paymentRequestTime': DateTime.now(),
-      });
-
-      setState(() {
-        _showPaymentWarning = true;
-      });
-    } catch (e) {
-      print("❌ Erreur demande paiement: $e");
-    }
-  }
-
-  void _handlePayment() async {
-    try {
-      final userProvider = context.read<UserAuthProvider>();
-      bool paymentSuccess = await userProvider.deductFromBalance(context,100.0);
-
-      if (paymentSuccess) {
-        userProvider.incrementAppGain(100);
-
-        await _firestore.collection('lives').doc(widget.liveId).update({
-          'paymentRequired': false,
-          'paymentRequestTime': null,
-        });
-
-        setState(() {
-          _showPaymentWarning = false;
-        });
-        _startPaymentTimer();
-      } else {
-        _endLive();
-      }
-    } catch (e) {
-      print("❌ Erreur traitement paiement: $e");
-    }
-  }
-
-
-  Future<void> _fetchHostData() async {
-    try {
-      final hostDoc = await _firestore.collection('Users').doc(widget.postLive.hostId).get();
-      if (hostDoc.exists) {
-        setState(() {
-          _hostData = UserData.fromJson(hostDoc.data()!) ;
-          _isFollowing = _hostData.userAbonnesIds?.contains(widget.postLive.hostId) ?? false;
-          // _isFollowing = true;
-          // _subscriberCount = _hostData['subscriberCount'] ?? 0;
-          // _hostUsername = _hostData['username'] ?? widget.hostName;
-        });
-      }
-    } catch (e) {
-      print("❌ Erreur récupération données hôte: $e");
-    }
-  }
-  Future<String?> _getAgoraToken({
-    required String channelName,
-    required int uid,
-    required bool isHost,
-  }) async {
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('generateAgoraToken');
-      final result = await callable.call({
-        'channelName': channelName,
-        'uid': uid.toString(),
-        'role': isHost ? 'host' : 'audience',
-      });
-
-      return result.data['token'] as String;
-    } catch (e) {
-      print("❌ Erreur récupération token Agora: $e");
-      return null;
-    }
-  }
-  Future<void> _initAgora2() async {
-    try {
-      print("🔊 Demande des permissions Agora...");
-      await [Permission.microphone, Permission.camera].request();
-
-      print("🚀 Création du moteur Agora...");
-      _engine = createAgoraRtcEngine();
-
-      await _engine.initialize(RtcEngineContext(
-        appId: "957063f627aa471581a52d4160f7c054", // <- Juste l’App ID public
-        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-      ));
-
-      // Configuration des handlers
-      _engine.registerEventHandler(
-        RtcEngineEventHandler(
-          onJoinChannelSuccess: (connection, elapsed) {
-            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
-            setState(() => _localUserJoined = true);
-          },
-          onUserJoined: (connection, remoteUid, elapsed) {
-            print("👤 Utilisateur rejoint: $remoteUid");
-            setState(() => _remoteUid = remoteUid);
-          },
-          onUserOffline: (connection, remoteUid, reason) {
-            print("👋 Utilisateur parti: $remoteUid");
-            setState(() => _remoteUid = null);
-          },
-        ),
-      );
-
-      await _engine.enableVideo();
-
-      final role = widget.isHost || _isParticipant
-          ? ClientRoleType.clientRoleBroadcaster
-          : ClientRoleType.clientRoleAudience;
-
-      await _engine.setClientRole(role: role);
-
-      if (widget.isHost || _isParticipant) {
-        await _engine.startPreview();
-      }
-
-      // 🔑 Récupération du token depuis la Cloud Function
-      final uid = 0; // Laisse Agora générer ou utilise Firebase UID hashé
-      final token = await _getAgoraToken(
-        channelName: widget.liveId,
-        uid: uid,
-        isHost: widget.isHost || _isParticipant,
-      );
-
-      if (token == null) {
-        throw Exception("Impossible de générer un token Agora");
-      }
-
-      // 🔗 Rejoindre le canal avec token sécurisé
-      await _engine.joinChannel(
-        token: token,
-        channelId: widget.liveId,
-        uid: uid,
-        options: ChannelMediaOptions(
-          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-          clientRoleType: role,
-          publishCameraTrack: widget.isHost || _isParticipant,
-          publishMicrophoneTrack: widget.isHost || _isParticipant,
-          autoSubscribeAudio: true,
-          autoSubscribeVideo: true,
-        ),
-      );
-
-      setState(() => _isInitialized = true);
-    } catch (e) {
-      print("💥 Erreur lors de l'initialisation Agora: $e");
-    }
-  }
-
-
-  void _setupFirestoreListeners() {
-    print("🔥 Configuration des listeners Firestore...");
-
-    // Listener pour les données du live
-    _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshots().listen(
-          (snapshot) {
-        try {
-          if (snapshot.exists) {
-            final data = snapshot.data()!;
-            print("📊 Mise à jour des données du live: ${data['viewerCount']} spectateurs");
-
-            setState(() {
-              _viewerCount = data['viewerCount'] ?? 0;
-              _giftCount = data['giftCount'] ?? 0;
-              _giftTotal = (data['giftTotal'] ?? 0).toDouble();
-              _participants = List<String>.from(data['participants'] ?? []);
-              _spectators = List<String>.from(data['spectators'] ?? []);
-              _likeCount = data['likeCount'] ?? 0;
-
-              // Vérifier si l'utilisateur actuel est un participant
-              final currentUserId = _auth.currentUser?.uid;
-              _isParticipant = currentUserId != null && _participants.contains(currentUserId);
-            });
-          }
-        } catch (e) {
-          print("❌ Erreur traitement données live: $e");
-        }
-      },
-      onError: (error) {
-        print("❌ Erreur listener live: $error");
-      },
-    );
-
-    // Listener pour les commentaires
-    _commentsSubscription = _firestore
-        .collection('livecomments')
-        .where('liveId', isEqualTo: widget.liveId)
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .listen(
-          (snapshot) {
-        try {
-          print("💬 ${snapshot.docs.length} commentaires chargés");
-          setState(() {
-            _comments = snapshot.docs.map((doc) {
-              return LiveComment.fromMap(doc.data());
-            }).toList();
-          });
-
-          // Faire défiler vers le bas pour voir les nouveaux commentaires
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_commentsScrollController.hasClients) {
-              _commentsScrollController.animateTo(
-                _commentsScrollController.position.maxScrollExtent,
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        } catch (e) {
-          print("❌ Erreur traitement commentaires: $e");
-        }
-      },
-      onError: (error) {
-        print("❌ Erreur listener commentaires: $error");
-      },
-    );
-
-    // Incrémenter le compteur de viewers quand un utilisateur rejoint
-    if (!widget.isHost) {
-      _firestore.collection('lives').doc(widget.liveId).update({
-        'viewerCount': FieldValue.increment(1),
-        'spectators': FieldValue.arrayUnion([_auth.currentUser!.uid]),
-      });
-    }
-  }
-
-  void _startLikeEffectTimer() {
-    _likeEffectTimer = Timer.periodic(Duration(seconds: 2), (timer) {
-      if (mounted && _viewerCount > 0) {
-        setState(() {
-          _likeEffects.add(LikeEffect(
-            id: DateTime.now().millisecondsSinceEpoch,
-            x: Random().nextDouble() * 0.8 + 0.1, // Position aléatoire en X
-          ));
-        });
-
-        // Supprimer les effets après 3 secondes
-        Future.delayed(Duration(seconds: 3), () {
-          if (mounted && _likeEffects.isNotEmpty) {
-            setState(() {
-              _likeEffects.removeAt(0);
-            });
-          }
-        });
-      }
-    });
-  }
-
-  // ... (autres méthodes comme _showJoinOptions, _joinAsParticipant, etc.)
-  void _showJoinOptions() {
-    showDialog(
-      context: context,
-      builder: (context) => JoinLiveDialog(
-        liveId: widget.liveId,
-        onJoinAsParticipant: _joinAsParticipant,
-        onJoinAsSpectator: _joinAsSpectator,
-      ),
-    );
-  }
-  void _endLive() async {
-    try {
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'isLive': false,
-        'endTime': DateTime.now(),
-      });
-
-      // Quitter le canal Agora
-      await _engine.leaveChannel();
-      await _engine.release();
-
-      Navigator.pop(context);
-      print("🛑 Live terminé");
-    } catch (e) {
-      print("❌ Erreur fin du live: $e");
-    }
-  }
-  void _toggleScreenMode() {
-    setState(() {
-      _isFullScreen = !_isFullScreen;
-    });
-  }
-
-  void _confirmEndLive() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey[900],
-          title: Text('Terminer le live?', style: TextStyle(color: Colors.white)),
-          content: Text('Voulez-vous vraiment terminer votre live?', style: TextStyle(color: Colors.white70)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Annuler', style: TextStyle(color: Colors.white70)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _endLive();
-              },
-              child: Text('Terminer', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _sendComment(String message, {String type = 'text', String? giftId}) {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
-
-    try {
-      User? user = _auth.currentUser;
-      if (user != null && message.isNotEmpty) {
-        // Limiter à 20 mots maximum
-        final words = message.split(' ');
-        if (words.length > 20) {
-          message = words.take(20).join(' ') + '...';
-        }
-
-        _firestore.collection('livecomments').add({
-          'liveId': widget.liveId,
-          'userId': user.uid,
-          'username': authProvider.loginUserData.pseudo! ?? 'Utilisateur',
-          'userImage': authProvider.loginUserData.imageUrl! ?? '',
-          'message': message,
-          'timestamp': DateTime.now(),
-          'type': type,
-          'giftId': giftId,
-        });
-        print("💬 Commentaire envoyé: $message");
-      }
-    } catch (e) {
-      print("❌ Erreur envoi commentaire: $e");
-    }
-  }
-
-  void _sendLike() {
-    try {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        _firestore.collection('lives').doc(widget.liveId).update({
-          'likeCount': FieldValue.increment(1),
-        });
-
-        setState(() {
-          _likeEffects.add(LikeEffect(
-            id: DateTime.now().millisecondsSinceEpoch,
-            x: 0.5, // Position centrale
-          ));
-        });
-
-        // Supprimer l'effet après 3 secondes
-        Future.delayed(Duration(seconds: 3), () {
-          if (mounted && _likeEffects.isNotEmpty) {
-            setState(() {
-              _likeEffects.removeAt(0);
-            });
-          }
-        });
-      }
-    } catch (e) {
-      print("❌ Erreur envoi like: $e");
-    }
-  }
-
-  void _sendGift(Gift gift) async {
-    print("❌ _sendGift");
-
-    try {
-      final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final userBalance = userProvider.loginUserData!.votre_solde_principal!;
-
-      if (userBalance < gift.price) {
-        print("❌ Solde insuffisant");
-
-        _showInsufficientBalanceDialog();
-        return;
-      }
-
-      final paymentSuccess = await userProvider.deductFromBalance(context,gift.price);
-      print("❌ _sendGift3");
-
-      if (paymentSuccess) {
-        User? user = _auth.currentUser;
-        if (user != null) {
-          _sendComment(
-            'a envoyé ${gift.name} - ${gift.icon}',
-            type: 'gift',
-            giftId: gift.id,
-          );
-
-          _firestore.collection('lives').doc(widget.liveId).update({
-            'giftTotal': FieldValue.increment((gift.price*0.7)),
-            'giftCount': FieldValue.increment(1),
-            'gifts': FieldValue.arrayUnion([{
-              'giftId': gift.id,
-              'senderId': user.uid,
-              'senderName': userProvider.loginUserData!.pseudo ?? 'Utilisateur',
-              'timestamp': DateTime.now(),
-              'price': gift.price,
-            }])
-          });
-          userProvider.incrementAppGain(gift.price*0.3);
-
-          // Ajouter l'effet de cadeau
-          setState(() {
-            _giftEffects.add(GiftEffect(
-              id: DateTime.now().millisecondsSinceEpoch,
-              gift: gift,
-              x: Random().nextDouble() * 0.6 + 0.2, // Position aléatoire
-            ));
-          });
-
-          // Supprimer l'effet après 5 secondes
-          Future.delayed(Duration(seconds: 5), () {
-            if (mounted && _giftEffects.isNotEmpty) {
-              setState(() {
-                _giftEffects.removeAt(0);
-              });
-            }
-          });
-
-          setState(() {
-            _showGiftPanel = false;
-          });
-
-          print("🎁 Cadeau envoyé: ${gift.name}");
-        }
-      }
-    } catch (e) {
-      print("❌ Erreur envoi cadeau: $e");
-    }
-  }
-
-  void _showInsufficientBalanceDialog() {
-    print("❌ Solde insuffisant");
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
-        content: Text('Votre solde est insuffisant pour envoyer ce cadeau. Voulez-vous recharger?',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard', style: TextStyle(color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Naviguer vers la page de recharge
-              Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
-            },
-            child: Text('Recharger', style: TextStyle(color: Color(0xFFF9A825))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    print("🧹 Nettoyage LivePage...");
-
-    _liveSubscription?.cancel();
-    _commentsSubscription?.cancel();
-    _hostSubscription?.cancel();
-    _paymentWarningTimer?.cancel();
-    _likeEffectTimer?.cancel();
-    _commentsScrollController.dispose();
-
-    _engine.leaveChannel();
-    _engine.release();
-    _commentController.dispose();
-
-    // Décrémenter le compteur de viewers quand un utilisateur quitte
-    if (!widget.isHost) {
-      // _firestore.collection('lives').doc(widget.liveId).update({
-      //   'viewerCount': FieldValue.increment(-1),
-      //   'spectators': FieldValue.arrayRemove([_auth.currentUser!.uid]),
-      // });
-    }
-
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Live video
-          _buildVideoSection(),
-
-          // App name in top right
-          _buildAppName(),
-
-          // Host info and controls
-          _buildHostOverlay(),
-
-          // Viewer count & like count
-          _buildViewerInfo(),
-
-          // Comments section
-          _buildCommentsSection(),
-
-          // Footer with message, like, gift, share
-          _buildFooter(),
-
-          // Gift panel
-          if (_showGiftPanel) _buildGiftPanel(),
-
-          // Payment warning overlay
-          if (_showPaymentWarning) _buildPaymentWarning(),
-
-          // Like effects
-          ..._buildLikeEffects(),
-
-          // Gift effects
-          ..._buildGiftEffects(),
-
-          // Debug info (à enlever en production)
-          if (!_isInitialized) _buildLoadingOverlay(),
-        ],
-      ),
-    );
-  }
-  Future<void> _toggleFollow() async {
-    setState(() {
-      _isFollowing = !_isFollowing;
-    });
-
-    if(_isFollowing==false){
-      // Mise à jour atomique dans Firestore
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(_hostData.id)
-          .update({
-        'userAbonnesIds': FieldValue.arrayUnion([_hostData.id]),
-        'abonnes': FieldValue.increment(1),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-    }
-
-    // Logique Firebase pour follow à ajouter
-  }
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Color(0xFFF9A825)),
-            SizedBox(height: 16),
-            Text(
-              'Connexion au live en cours...',
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Live ID: ${widget.liveId}',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  final List<Gift> _gifts = [
-    Gift(id: '1', name: 'Rose', price: 10, icon: '🌹', color: Colors.pink),
-    Gift(id: '2', name: 'Coeur', price: 25, icon: '❤️', color: Colors.red),
-    Gift(id: '3', name: 'Couronne', price: 50, icon: '👑', color: Colors.yellow),
-    Gift(id: '4', name: 'Diamant', price: 100, icon: '💎', color: Colors.blue),
-    Gift(id: '5', name: 'Ferrari', price: 200, icon: '🏎️', color: Colors.redAccent),
-    Gift(id: '6', name: 'Étoile', price: 300, icon: '⭐', color: Colors.orange),
-    Gift(id: '7', name: 'Chocolat', price: 500, icon: '🍫', color: Colors.brown),
-    Gift(id: '8', name: 'Coffre', price: 700, icon: '🧰', color: Colors.green),
-    Gift(id: '9', name: 'Cactus', price: 1500, icon: '🌵', color: Colors.teal),
-    Gift(id: '10', name: 'Pizza', price: 2000, icon: '🍕', color: Colors.deepOrange),
-    Gift(id: '11', name: 'Glace', price: 2500, icon: '🍦', color: Colors.lightBlue),
-    Gift(id: '12', name: 'Laptop', price: 5000, icon: '💻', color: Colors.blueGrey),
-    Gift(id: '13', name: 'Voiture', price: 7000, icon: '🚗', color: Colors.red),
-    Gift(id: '14', name: 'Maison', price: 10000, icon: '🏠', color: Colors.brown),
-    Gift(id: '15', name: 'Jet', price: 15000, icon: '🛩️', color: Colors.grey),
-    Gift(id: '16', name: 'Yacht', price: 20000, icon: '🛥️', color: Colors.blue),
-    Gift(id: '17', name: 'Château', price: 30000, icon: '🏰', color: Colors.deepPurple),
-    Gift(id: '18', name: 'Diamant Rare', price: 50000, icon: '💎', color: Colors.cyan),
-    Gift(id: '19', name: 'Ferrari Rouge', price: 75000, icon: '🏎️', color: Colors.redAccent),
-    Gift(id: '20', name: 'Lamborghini', price: 100000, icon: '🚗', color: Colors.orange),
-  ];
-
-  Widget _buildGiftPanel() {
-    final height = MediaQuery.of(context).size.height * 0.6; // 60% de l'écran
-
-    return Stack(
-      children: [
-        // Fond semi-transparent
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: () => setState(() => _showGiftPanel = false),
-            child: Container(color: Colors.black54),
-          ),
-        ),
-
-        // Panel de cadeaux
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: height,
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Header avec bouton fermer
-                Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Envoyer un cadeau',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: Colors.white),
-                        onPressed: () => setState(() => _showGiftPanel = false),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: GridView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: _gifts.length,
-                    itemBuilder: (context, index) {
-                      final gift = _gifts[index];
-                      return GestureDetector(
-                        onTap: () => _sendGift(gift),
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: gift.color, width: 2),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(gift.icon, style: TextStyle(fontSize: 24)),
-                              SizedBox(height: 4),
-                              Text(gift.name,
-                                  style: TextStyle(color: Colors.white, fontSize: 10),
-                                  textAlign: TextAlign.center),
-                              SizedBox(height: 2),
-                              Text('${gift.price.toInt()} FCFA',
-                                  style: TextStyle(color: Color(0xFFF9A825), fontSize: 10)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentWarning() {
-    return Container(
-      color: Colors.black.withOpacity(0.9),
-      padding: EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
-            SizedBox(height: 20),
-            Text(
-              'Temps de live écoulé',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Payez 100 FCFA pour continuer votre live pendant 1 heure supplémentaire',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _handlePayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF9A825),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text('Payer 100 FCFA',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                ),
-                TextButton(
-                  onPressed: _endLive,
-                  child: Text('Arrêter', style: TextStyle(color: Colors.white70)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoSection() {
-    if (!_isInitialized) {
-      return Center(child: CircularProgressIndicator(color: Color(0xFFF9A825)));
-    }
-
-    return Stack(
-      children: [
-        // Vidéo distante (spectateurs)
-        if (_remoteUid != null)
-          AgoraVideoView(
-            controller: VideoViewController.remote(
-              rtcEngine: _engine,
-              canvas: VideoCanvas(uid: _remoteUid),
-              connection: RtcConnection(channelId: widget.liveId),
-            ),
-          ),
-
-        // Vidéo locale (hôte/participant)
-        if (widget.isHost || _isParticipant)
-          Positioned(
-            bottom: _isFullScreen ? 16 : 100,
-            right: 16,
-            child: GestureDetector(
-              onTap: _toggleScreenMode,
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                width: _isFullScreen ? MediaQuery.of(context).size.width : 120,
-                height: _isFullScreen ? MediaQuery.of(context).size.height : 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(_isFullScreen ? 0 : 12),
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: AgoraVideoView(
-                  controller: VideoViewController(
-                    rtcEngine: _engine,
-                    canvas: const VideoCanvas(uid: 0),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // Message d'attente
-        if (_remoteUid == null && !widget.isHost && !_isParticipant)
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.videocam_off, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('En attente du stream...', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildAppName() {
-    return Positioned(
-      top: 40,
-      right: 16,
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: Colors.red,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 6),
-          Text(
-            'Afrolook Live',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              foreground: Paint()..shader = LinearGradient(
-                colors: <Color>[Colors.greenAccent, Colors.green],
-              ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-              shadows: [
-                Shadow(
-                  offset: Offset(2.0, 2.0),
-                  blurRadius: 4.0,
-                  color: Colors.black38,
-                ),
-              ],
-            ),
-          ),
-
-          // Text(
-          //   'Afrolook Live',
-          //   style: TextStyle(
-          //     color: Colors.green,
-          //     fontWeight: FontWeight.w900,
-          //     fontSize: 16,
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHostOverlay2() {
-
-    return Positioned(
-      top: 50,
-      left: 16,
-      child: GestureDetector(
-        onTap: () {
-          double h = MediaQuery.of(context).size.height;
-          double w = MediaQuery.of(context).size.width;
-          showUserDetailsModalDialog(_hostData, w, h, context);
-        },
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(widget.hostImage),
-              radius: 20,
-            ),
-            SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "@${_hostData.pseudo}",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${_hostData.userAbonnesIds!.length} abonnés',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                if (widget.isHost)
-                  Text(
-                    'Hôte du live',
-                    style: TextStyle(color: Color(0xFFF9A825), fontSize: 12),
-                  ),
-              ],
-            ),
-            SizedBox(width: 12),
-            if (!widget.isHost)
-              GestureDetector(
-                onTap: _toggleFollow,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _isFollowing ? 'Suivi' : 'Suivre',
-                    style: TextStyle(
-                      color: _isFollowing ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildViewerInfo() {
-    return Positioned(
-      top: 100,
-      right: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Viewer count
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.people, color: Colors.white70, size: 16),
-                SizedBox(width: 4),
-                Text(
-                  '$_viewerCount',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          // Like count
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.favorite, color: Colors.pink, size: 12),
-                SizedBox(width: 4),
-                Text(
-                  '$_likeCount',
-                  style: TextStyle(color: Colors.white70,fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          // Gift total
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.card_giftcard, color: Color(0xFFF9A825), size: 16),
-                SizedBox(width: 4),
-                Text(
-                  // '${_giftTotal.toInt()} FCFA',
-                  '${_giftCount} : ${_giftTotal.toInt()} FCFA',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold,fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          if (widget.isHost||authProvider.loginUserData.role==UserRole.ADM.name) ...[
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _confirmEndLive,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Arrêter',
-                style: TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentsSection() {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final commentsHeight = widget.isHost ? screenHeight * 0.4 : screenHeight * 0.3;
-
-    return Positioned(
-      bottom: 80,
-      left: 8,
-      width: MediaQuery.of(context).size.width * 0.7,
-      height: commentsHeight,
-      child: Column(
-        children: [
-          // Drag handle for resizing
-          if (!widget.isHost)
-            GestureDetector(
-              onVerticalDragUpdate: (details) {
-                setState(() {
-                  _commentsHeight = (_commentsHeight - details.delta.dy / screenHeight).clamp(0.2, 0.5);
-                });
-              },
-              child: Container(
-                height: 20,
-                width: double.infinity,
-                alignment: Alignment.center,
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white54,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListView.builder(
-                controller: _commentsScrollController,
-                reverse: true,
-                shrinkWrap: true,
-                itemCount: _comments.length,
-                itemBuilder: (context, index) {
-                  final comment = _comments[index];
-                  return _buildCommentItem(comment);
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentItem(LiveComment comment) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 4),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundImage: NetworkImage(comment.userImage),
-            radius: 12,
-          ),
-          SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  comment.username,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  comment.message,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [Colors.black87, Colors.transparent],
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Envoyer un message...',
-                          hintStyle: TextStyle(color: Colors.white54),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.send, color: Color(0xFFF9A825), size: 20),
-                      onPressed: () {
-                        if (_commentController.text.isNotEmpty) {
-                          _sendComment(_commentController.text);
-                          _commentController.clear();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(width: 12),
-            GestureDetector(
-              onTap: _sendLike,
-              child: Column(
-                children: [
-                  Icon(Icons.favorite, color: Colors.red, size: 28),
-                  SizedBox(height: 2),
-                  Text(
-                    '$_likeCount',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            GestureDetector(
-              onTap: () => setState(() => _showGiftPanel = true),
-              child: Column(
-                children: [
-                  Icon(Icons.card_giftcard, color: Color(0xFFF9A825), size: 28),
-                  SizedBox(height: 2),
-                  Text(
-                    'Cadeau',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            GestureDetector(
-              onTap: () {
-                final AppLinkService _appLinkService = AppLinkService();
-                _appLinkService.shareContent(
-                  type: AppLinkType.live,
-                  id: widget.liveId!,
-                  message: " 🎥🔥 ${widget.postLive.title}",
-                  mediaUrl: "${widget.postLive.hostImage}",
-                );
-                //
-                // _appLinkService.shareLink(
-                //   AppLinkType.live,
-                //   widget.liveId!,
-                //   message: '🔥🎥 LIVE EN COURS ! 🎥🔥 ${widget.postLive.title} 💫 Ne rate pas ce direct exceptionnel sur Afrolook ! 🚀⭐️',                );
-                //
-                }, // Logique de partage
-              child: Icon(Icons.share, color: Colors.white, size: 28),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildLikeEffects() {
-    return _likeEffects.map((effect) {
-      return Positioned(
-        left: effect.x * MediaQuery.of(context).size.width,
-        bottom: 100 + (DateTime.now().millisecondsSinceEpoch % 100) * 2,
-        child: LikeAnimation(
-          child: Icon(Icons.favorite, color: Colors.pink, size: 30),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildGiftEffects() {
-    return _giftEffects.map((effect) {
-      return Positioned(
-        left: effect.x * MediaQuery.of(context).size.width,
-        bottom: 150 + (DateTime.now().millisecondsSinceEpoch % 100) * 2,
-        child: GiftAnimation(
-          gift: effect.gift,
-        ),
-      );
-    }).toList();
-  }
-
-// ... (autres méthodes comme _buildGiftPanel, _buildPaymentWarning, etc.)
-}
-
-// Classes pour les effets
-class LikeEffect {
-  final int id;
-  final double x;
-
-  LikeEffect({required this.id, required this.x});
-}
-
-class GiftEffect {
-  final int id;
-  final Gift gift;
-  final double x;
-
-  GiftEffect({required this.id, required this.gift, required this.x});
-}
-
-// Widget d'animation pour les likes
-class LikeAnimation extends StatefulWidget {
-  final Widget child;
-
-  const LikeAnimation({Key? key, required this.child}) : super(key: key);
-
-  @override
-  _LikeAnimationState createState() => _LikeAnimationState();
-}
-
-class _LikeAnimationState extends State<LikeAnimation> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _controller.forward();
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (mounted) {
-          setState(() {
-            _controller.reset();
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _opacityAnimation.value,
-          child: Transform.scale(
-            scale: _scaleAnimation.value,
-            child: widget.child,
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Widget d'animation pour les cadeaux
-class GiftAnimation extends StatefulWidget {
-  final Gift gift;
-
-  const GiftAnimation({Key? key, required this.gift}) : super(key: key);
-
-  @override
-  _GiftAnimationState createState() => _GiftAnimationState();
-}
-
-class _GiftAnimationState extends State<GiftAnimation> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-  late Animation<Offset> _positionAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _positionAnimation = Tween<Offset>(
-      begin: Offset(0, 0),
-      end: Offset(0, -0.5),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _positionAnimation,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _opacityAnimation.value,
-            child: Transform.scale(
-              scale: _scaleAnimation.value,
-              child: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
-                    Text(widget.gift.icon, style: TextStyle(fontSize: 24)),
-                    SizedBox(height: 4),
-                    Text(
-                      widget.gift.name,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}

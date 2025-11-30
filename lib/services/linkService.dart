@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/model_data.dart';
+import '../pages/LiveAgora/livePage.dart';
 import '../pages/LiveAgora/livesAgora.dart';
 import '../pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import '../pages/component/consoleWidget.dart';

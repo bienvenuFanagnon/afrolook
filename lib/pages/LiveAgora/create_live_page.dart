@@ -14,16 +14,22 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
+
 
 
 import '../../models/model_data.dart';
 import '../paiement/newDepot.dart';
 import 'create_live_page.dart';
+import 'livePage.dart';
 import 'livesAgora.dart';
+// pages/live/create_live_page.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import 'livePage.dart';
 
 class CreateLivePage extends StatefulWidget {
   @override
@@ -34,9 +40,18 @@ class _CreateLivePageState extends State<CreateLivePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _feeController = TextEditingController(text: '100');
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  List<String> _selectedUsers = [];
+
+  // NOUVEAUX CONTROLLERS POUR LIVE PAYANT
+  final TextEditingController _participationFeeController = TextEditingController(text: '100');
+  final TextEditingController _freeTrialController = TextEditingController(text: '1');
+
+  // VARIABLES POUR LES PARAMÈTRES
+  bool _isPaidLive = false;
+  String _audioBehavior = 'reduce';
+  int _audioReductionPercent = 50;
+  bool _blurVideoAfterTrial = true;
+  bool _showPaymentModalAfterTrial = true;
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +71,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
             children: [
               SizedBox(height: 20),
               _buildTitleField(),
-              // SizedBox(height: 20),
-              // _buildFeeField(),
-              // SizedBox(height: 20),
-              // _buildUserSelection(authProvider),
+              SizedBox(height: 20),
+              _buildLiveTypeSection(),
+              if (_isPaidLive) ..._buildPaidLiveOptions(),
               SizedBox(height: 30),
               _buildCreateButton(),
             ],
@@ -70,7 +84,6 @@ class _CreateLivePageState extends State<CreateLivePage> {
   }
 
   Widget _buildTitleField() {
-
     return TextFormField(
       controller: _titleController,
       style: TextStyle(color: Colors.white),
@@ -93,13 +106,112 @@ class _CreateLivePageState extends State<CreateLivePage> {
     );
   }
 
-  Widget _buildFeeField() {
+  Widget _buildLiveTypeSection() {
+    return Card(
+      color: Colors.grey[900],
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Type de live',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildLiveTypeOption(
+                    title: 'Gratuit',
+                    subtitle: 'Tout le monde peut regarder',
+                    isSelected: !_isPaidLive,
+                    onTap: () => setState(() => _isPaidLive = false),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _buildLiveTypeOption(
+                    title: 'Payant',
+                    subtitle: 'Spectateurs payent pour regarder',
+                    isSelected: _isPaidLive,
+                    onTap: () => setState(() => _isPaidLive = true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveTypeOption({
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFFF9A825).withOpacity(0.2) : Colors.grey[800],
+          border: Border.all(
+            color: isSelected ? Color(0xFFF9A825) : Colors.transparent,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildPaidLiveOptions() {
+    return [
+      SizedBox(height: 20),
+      _buildParticipationFeeField(),
+      SizedBox(height: 20),
+      _buildFreeTrialField(),
+      SizedBox(height: 20),
+      _buildAudioBehaviorSection(),
+      SizedBox(height: 20),
+      _buildVisualRestrictionsSection(),
+    ];
+  }
+
+  Widget _buildParticipationFeeField() {
     return TextFormField(
-      controller: _feeController,
+      controller: _participationFeeController,
       style: TextStyle(color: Colors.white),
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: 'Frais de participation (FCFA)',
+        labelText: 'Prix de participation (FCFA)',
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),
@@ -107,67 +219,207 @@ class _CreateLivePageState extends State<CreateLivePage> {
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFFF9A825)),
         ),
+        prefixText: 'FCFA ',
+        prefixStyle: TextStyle(color: Colors.white70),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Veuillez entrer un montant';
+        if (_isPaidLive && (value == null || value.isEmpty)) {
+          return 'Veuillez entrer un prix';
         }
-        if (double.tryParse(value) == null) {
-          return 'Montant invalide';
+        if (_isPaidLive && double.tryParse(value!) == null) {
+          return 'Prix invalide';
         }
         return null;
       },
     );
   }
 
-  Widget _buildUserSelection(UserAuthProvider authProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Inviter des participants',
-          style: TextStyle(color: Colors.white, fontSize: 16),
+  Widget _buildFreeTrialField() {
+    return TextFormField(
+      controller: _freeTrialController,
+      style: TextStyle(color: Colors.white),
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'Temps d\'essai gratuit (minutes)',
+        labelStyle: TextStyle(color: Color(0xFF2E7D32)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF2E7D32)),
         ),
-        SizedBox(height: 8),
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            border: Border.all(color: Color(0xFF2E7D32)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListView.builder(
-            itemCount: authProvider.availableUsers.length,
-            itemBuilder: (context, index) {
-              final user = authProvider.availableUsers[index];
-              return CheckboxListTile(
-                title: Text(user.pseudo ?? user.email ?? '',
-                    style: TextStyle(color: Colors.white)),
-                value: _selectedUsers.contains(user.id),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFFF9A825)),
+        ),
+        suffixText: 'min',
+        suffixStyle: TextStyle(color: Colors.white70),
+      ),
+      validator: (value) {
+        if (_isPaidLive && (value == null || value.isEmpty)) {
+          return 'Veuillez entrer une durée';
+        }
+        if (_isPaidLive && int.tryParse(value!) == null) {
+          return 'Durée invalide';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildAudioBehaviorSection() {
+    return Card(
+      color: Colors.grey[900],
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Comportement du son après l\'essai',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            _buildAudioOption(
+              value: 'mute',
+              title: '🔇 Son coupé',
+              subtitle: 'Le spectateur ne peut plus entendre',
+            ),
+            _buildAudioOption(
+              value: 'reduce',
+              title: '🎵 Son réduit',
+              subtitle: 'Le son est baissé mais audible',
+            ),
+            _buildAudioOption(
+              value: 'keep',
+              title: '🔊 Son normal',
+              subtitle: 'Le son reste inchangé',
+            ),
+            if (_audioBehavior == 'reduce') ...[
+              SizedBox(height: 16),
+              Text(
+                'Réduction du son: $_audioReductionPercent%',
+                style: TextStyle(color: Colors.white70),
+              ),
+              Slider(
+                value: _audioReductionPercent.toDouble(),
+                min: 10,
+                max: 90,
+                divisions: 8,
+                label: '$_audioReductionPercent%',
                 onChanged: (value) {
                   setState(() {
-                    if (value == true) {
-                      _selectedUsers.add(user.id!);
-                    } else {
-                      _selectedUsers.remove(user.id);
-                    }
+                    _audioReductionPercent = value.round();
                   });
                 },
                 activeColor: Color(0xFFF9A825),
-              );
-            },
-          ),
+                inactiveColor: Colors.grey,
+              ),
+            ],
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildAudioOption({
+    required String value,
+    required String title,
+    required String subtitle,
+  }) {
+    return RadioListTile<String>(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(color: Colors.white)),
+          SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
+      ),
+      value: value,
+      groupValue: _audioBehavior,
+      onChanged: (newValue) {
+        setState(() {
+          _audioBehavior = newValue!;
+        });
+      },
+      activeColor: Color(0xFFF9A825),
+    );
+  }
+
+  Widget _buildVisualRestrictionsSection() {
+    return Card(
+      color: Colors.grey[900],
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Restrictions visuelles après l\'essai',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            SwitchListTile(
+              title: Text(
+                'Flouter la vidéo',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                'Rendre le flux vidéo flou',
+                style: TextStyle(color: Colors.white70),
+              ),
+              value: _blurVideoAfterTrial,
+              onChanged: (value) {
+                setState(() {
+                  _blurVideoAfterTrial = value;
+                });
+              },
+              activeColor: Color(0xFFF9A825),
+            ),
+            SwitchListTile(
+              title: Text(
+                'Afficher le modal de paiement',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                'Montrer automatiquement la demande de paiement',
+                style: TextStyle(color: Colors.white70),
+              ),
+              value: _showPaymentModalAfterTrial,
+              onChanged: (value) {
+                setState(() {
+                  _showPaymentModalAfterTrial = value;
+                });
+              },
+              activeColor: Color(0xFFF9A825),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildCreateButton() {
     return ElevatedButton(
       onPressed: _createLive,
-      child: Text('Démarrer le live', style: TextStyle(color: Colors.black)),
+      child: Text(
+        'Démarrer le live',
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: Color(0xFFF9A825),
         padding: EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
@@ -177,22 +429,33 @@ class _CreateLivePageState extends State<CreateLivePage> {
       User? user = _auth.currentUser;
       late UserAuthProvider authProvider =
       Provider.of<UserAuthProvider>(context, listen: false);
+
       if (user != null) {
         String liveId = _firestore.collection('lives').doc().id;
 
+        // Création du live avec tous les nouveaux paramètres
         PostLive newLive = PostLive(
-          paymentRequired: false,
           liveId: liveId,
           hostId: user.uid,
           hostName: authProvider.loginUserData.pseudo! ?? 'Utilisateur',
-          hostImage: authProvider.loginUserData.imageUrl!?? 'https://via.placeholder.com/150',
+          hostImage: authProvider.loginUserData.imageUrl! ?? 'https://via.placeholder.com/150',
           title: _titleController.text,
           startTime: DateTime.now(),
-          participationFee: double.parse(_feeController.text),
-          invitedUsers: _selectedUsers,
+
+          // Paramètres live payant
+          isPaidLive: _isPaidLive,
+          participationFee: _isPaidLive ? double.parse(_participationFeeController.text) : 0.0,
+          freeTrialMinutes: _isPaidLive ? int.parse(_freeTrialController.text) : 0,
+
+          // Comportement après essai
+          audioBehaviorAfterTrial: _audioBehavior,
+          audioReductionPercent: _audioReductionPercent,
+          blurVideoAfterTrial: _blurVideoAfterTrial,
+          showPaymentModalAfterTrial: _showPaymentModalAfterTrial,
         );
 
-        await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
+        try {
+          await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
         authProvider
             .getAllUsersOneSignaUserId()
             .then(
@@ -204,7 +467,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   smallImage: "${authProvider.loginUserData.imageUrl!}",
                   send_user_id: "${authProvider.loginUserData.id!}",
                   recever_user_id: "",
-                  message: "🚀 @${authProvider.loginUserData.pseudo!} vient tout juste de lancer un live 🎬✨ ! Rejoignez-le vite pour ne rien manquer 👀🔥",
+                  message: "🚀 @${authProvider.loginUserData.pseudo!} vient tout juste de lancer un live 🎬✨ ! :${newLive.title}",
                   type_notif: NotificationType.CHRONIQUE.name,
                   post_id: "id",
                   post_type: PostDataType.TEXT.name, chat_id: ''
@@ -213,20 +476,245 @@ class _CreateLivePageState extends State<CreateLivePage> {
             }
           },
         );
+          print("✅ Live créé avec succès:");
+          print("   - Type: ${_isPaidLive ? 'Payant' : 'Gratuit'}");
+          if (_isPaidLive) {
+            print("   - Prix: ${_participationFeeController.text} FCFA");
+            print("   - Essai gratuit: ${_freeTrialController.text} min");
+            print("   - Comportement audio: $_audioBehavior");
+          }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LivePage(
-              liveId: liveId,
-              isHost: true,
-              hostName: newLive.hostName!,
-              hostImage: newLive.hostImage!,
-              isInvited: false, postLive: newLive,
+          // Navigation vers le live
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LivePage(
+                liveId: liveId,
+                isHost: true,
+                hostName: newLive.hostName!,
+                hostImage: newLive.hostImage!,
+                isInvited: false,
+                postLive: newLive,
+              ),
             ),
-          ),
-        );
+          );
+
+        } catch (e) {
+          print("❌ Erreur création live: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur lors de la création du live'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
 }
+
+// class CreateLivePage extends StatefulWidget {
+//   @override
+//   _CreateLivePageState createState() => _CreateLivePageState();
+// }
+//
+// class _CreateLivePageState extends State<CreateLivePage> {
+//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+//   final FirebaseAuth _auth = FirebaseAuth.instance;
+//   final TextEditingController _titleController = TextEditingController();
+//   final TextEditingController _feeController = TextEditingController(text: '100');
+//   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+//   List<String> _selectedUsers = [];
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final authProvider = context.watch<UserAuthProvider>();
+//
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text('Créer un live', style: TextStyle(color: Color(0xFFF9A825))),
+//         backgroundColor: Colors.black,
+//       ),
+//       backgroundColor: Colors.black,
+//       body: Padding(
+//         padding: EdgeInsets.all(16),
+//         child: Form(
+//           key: _formKey,
+//           child: ListView(
+//             children: [
+//               SizedBox(height: 20),
+//               _buildTitleField(),
+//               // SizedBox(height: 20),
+//               // _buildFeeField(),
+//               // SizedBox(height: 20),
+//               // _buildUserSelection(authProvider),
+//               SizedBox(height: 30),
+//               _buildCreateButton(),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildTitleField() {
+//
+//     return TextFormField(
+//       controller: _titleController,
+//       style: TextStyle(color: Colors.white),
+//       decoration: InputDecoration(
+//         labelText: 'Titre du live',
+//         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
+//         enabledBorder: OutlineInputBorder(
+//           borderSide: BorderSide(color: Color(0xFF2E7D32)),
+//         ),
+//         focusedBorder: OutlineInputBorder(
+//           borderSide: BorderSide(color: Color(0xFFF9A825)),
+//         ),
+//       ),
+//       validator: (value) {
+//         if (value == null || value.isEmpty) {
+//           return 'Veuillez entrer un titre';
+//         }
+//         return null;
+//       },
+//     );
+//   }
+//
+//   Widget _buildFeeField() {
+//     return TextFormField(
+//       controller: _feeController,
+//       style: TextStyle(color: Colors.white),
+//       keyboardType: TextInputType.number,
+//       decoration: InputDecoration(
+//         labelText: 'Frais de participation (FCFA)',
+//         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
+//         enabledBorder: OutlineInputBorder(
+//           borderSide: BorderSide(color: Color(0xFF2E7D32)),
+//         ),
+//         focusedBorder: OutlineInputBorder(
+//           borderSide: BorderSide(color: Color(0xFFF9A825)),
+//         ),
+//       ),
+//       validator: (value) {
+//         if (value == null || value.isEmpty) {
+//           return 'Veuillez entrer un montant';
+//         }
+//         if (double.tryParse(value) == null) {
+//           return 'Montant invalide';
+//         }
+//         return null;
+//       },
+//     );
+//   }
+//
+//   Widget _buildUserSelection(UserAuthProvider authProvider) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(
+//           'Inviter des participants',
+//           style: TextStyle(color: Colors.white, fontSize: 16),
+//         ),
+//         SizedBox(height: 8),
+//         Container(
+//           height: 200,
+//           decoration: BoxDecoration(
+//             border: Border.all(color: Color(0xFF2E7D32)),
+//             borderRadius: BorderRadius.circular(8),
+//           ),
+//           child: ListView.builder(
+//             itemCount: authProvider.availableUsers.length,
+//             itemBuilder: (context, index) {
+//               final user = authProvider.availableUsers[index];
+//               return CheckboxListTile(
+//                 title: Text(user.pseudo ?? user.email ?? '',
+//                     style: TextStyle(color: Colors.white)),
+//                 value: _selectedUsers.contains(user.id),
+//                 onChanged: (value) {
+//                   setState(() {
+//                     if (value == true) {
+//                       _selectedUsers.add(user.id!);
+//                     } else {
+//                       _selectedUsers.remove(user.id);
+//                     }
+//                   });
+//                 },
+//                 activeColor: Color(0xFFF9A825),
+//               );
+//             },
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildCreateButton() {
+//     return ElevatedButton(
+//       onPressed: _createLive,
+//       child: Text('Démarrer le live', style: TextStyle(color: Colors.black)),
+//       style: ElevatedButton.styleFrom(
+//         backgroundColor: Color(0xFFF9A825),
+//         padding: EdgeInsets.symmetric(vertical: 16),
+//       ),
+//     );
+//   }
+//
+//   Future<void> _createLive() async {
+//     if (_formKey.currentState!.validate()) {
+//       User? user = _auth.currentUser;
+//       late UserAuthProvider authProvider =
+//       Provider.of<UserAuthProvider>(context, listen: false);
+//       if (user != null) {
+//         String liveId = _firestore.collection('lives').doc().id;
+//
+//         PostLive newLive = PostLive(
+//           paymentRequired: false,
+//           liveId: liveId,
+//           hostId: user.uid,
+//           hostName: authProvider.loginUserData.pseudo! ?? 'Utilisateur',
+//           hostImage: authProvider.loginUserData.imageUrl!?? 'https://via.placeholder.com/150',
+//           title: _titleController.text,
+//           startTime: DateTime.now(),
+//           participationFee: double.parse(_feeController.text),
+//           invitedUsers: _selectedUsers,
+//         );
+//
+//         await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
+//         authProvider
+//             .getAllUsersOneSignaUserId()
+//             .then(
+//               (userIds) async {
+//             if (userIds.isNotEmpty) {
+//
+//               await authProvider.sendNotification(
+//                   userIds: userIds,
+//                   smallImage: "${authProvider.loginUserData.imageUrl!}",
+//                   send_user_id: "${authProvider.loginUserData.id!}",
+//                   recever_user_id: "",
+//                   message: "🚀 @${authProvider.loginUserData.pseudo!} vient tout juste de lancer un live 🎬✨ ! Rejoignez-le vite pour ne rien manquer 👀🔥",
+//                   type_notif: NotificationType.CHRONIQUE.name,
+//                   post_id: "id",
+//                   post_type: PostDataType.TEXT.name, chat_id: ''
+//               );
+//
+//             }
+//           },
+//         );
+//
+//         Navigator.pushReplacement(
+//           context,
+//           MaterialPageRoute(
+//             builder: (context) => LivePage(
+//               liveId: liveId,
+//               isHost: true,
+//               hostName: newLive.hostName!,
+//               hostImage: newLive.hostImage!,
+//               isInvited: false, postLive: newLive,
+//             ),
+//           ),
+//         );
+//       }
+//     }
+//   }
+// }

@@ -10,6 +10,7 @@ import '../../models/model_data.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/userProvider.dart';
 import '../LiveAgora/create_live_page.dart';
+import '../LiveAgora/livePage.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../afroshop/marketPlace/acceuil/produit_details.dart';
 import '../afroshop/marketPlace/component.dart';

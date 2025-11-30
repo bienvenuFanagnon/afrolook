@@ -14,6 +14,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
 
 
 
@@ -54,7 +56,8 @@
         android:label="Afrolook"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        tools:ignore="ExtraText">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -172,6 +175,17 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- SERVICES POUR PARTAGE D'ÉCRAN AGORA -->
+        <service
+            android:name="io.agora.rtc.ss.ScreenSharingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name="io.agora.rtc.ss.AudioRecordService"
+            android:exported="false" />
 
         <receiver
             android:exported="false"
