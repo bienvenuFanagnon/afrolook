@@ -999,7 +999,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   }
 
   // 🔥 MARQUER UN POST COMME VU
-  void _handlePostVisibility(Post post, VisibilityInfo info) {
+  void _handlePostVisibility2(Post post, VisibilityInfo info) {
     final postId = post.id!;
     _visibilityTimers[postId]?.cancel();
 
@@ -1010,6 +1010,21 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
         }
       });
     } else if (info.visibleFraction < 0.3) {
+      _visibilityTimers.remove(postId);
+    }
+  }
+
+  void _handlePostVisibility(Post post, VisibilityInfo info) {
+    final postId = post.id!;
+    _visibilityTimers[postId]?.cancel();
+
+    if (info.visibleFraction > 0.6) {
+      _visibilityTimers[postId] = Timer(Duration(milliseconds: 300), () {
+        if (mounted && info.visibleFraction > 0.5) {
+          _markPostAsSeen(post);
+        }
+      });
+    } else if (info.visibleFraction < 0.2) {
       _visibilityTimers.remove(postId);
     }
   }

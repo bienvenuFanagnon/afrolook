@@ -525,9 +525,9 @@ class LiveProvider extends ChangeNotifier {
       Query query = _firestore
           .collection('lives')
           .orderBy('isLive', descending: true)
-          .orderBy('totalspectateurs', descending: true)
+          // .orderBy('totalspectateurs', descending: true)
           // .orderBy('spectators', descending: true)
-          // .orderBy('giftTotal', descending: true)
+          .orderBy('giftTotal', descending: true)
           .limit(batchSize);
 
       if (_lastAllLiveDoc != null) {
