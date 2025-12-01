@@ -123,6 +123,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   StreamSubscription<QuerySnapshot>? _typingSubscription;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _usersSubscription;
   Timer? _paymentWarningTimer;
+  final int _liveDurationMinutes = 30; // ← CHANGEZ ICI POUR MODIFIER LA DURÉE
 
   // LISTE DE CADEAUX
   final List<Gift> _gifts = [
@@ -169,18 +170,180 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _initializeTrialSystem();
     _setupFreeAccess();
 
+    // if (widget.isHost) {
+    //   _startPaymentTimer();
+    // }
+
     if (widget.isHost) {
-      _startPaymentTimer();
+      _initializeHostTimer();
     }
 
     if (widget.isInvited) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showJoinOptions();
+        // _showJoinOptions();
       });
     }
 
     _setupTypingListener();
   }
+
+
+
+  // ==================== GESTION TEMPS PERSISTANT SIMPLIFIÉE ====================
+
+  Future<void> _initializeHostTimer() async {
+    if (!widget.isHost) return;
+
+    try {
+      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
+      if (liveDoc.exists) {
+        final data = liveDoc.data()!;
+
+        // Si déjà en attente de paiement
+        if (data['paymentRequired'] == true) {
+          setState(() => _showPaymentWarning = true);
+          return;
+        }
+
+        // Calculer le temps écoulé depuis le début ou dernier paiement
+        final referenceTime = data['lastPaymentTime'] ?? data['startTime'];
+        if (referenceTime == null) return;
+
+        final referenceDateTime = (referenceTime as Timestamp).toDate();
+        final now = DateTime.now();
+
+        final elapsedMinutes = now.difference(referenceDateTime).inMinutes;
+        final remainingMinutes = max(0, _liveDurationMinutes - elapsedMinutes);
+
+        print("⏰ $elapsedMinutes min écoulées, $remainingMinutes min restantes sur $_liveDurationMinutes min");
+
+        _startPaymentTimer(remainingMinutes);
+      }
+    } catch (e) {
+      print("❌ Erreur initialisation timer: $e");
+      _startPaymentTimer();
+    }
+  }
+
+  void _startPaymentTimer([int? remainingMinutes]) {
+    if (!widget.isHost) return;
+
+    _paymentWarningTimer?.cancel();
+
+    // Utiliser la durée par défaut si non spécifiée
+    final minutes = remainingMinutes ?? _liveDurationMinutes;
+
+    // Si temps écoulé, demander paiement immédiatement
+    if (minutes <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _requestPayment();
+      });
+      return;
+    }
+
+    print("⏰ Timer configuré: $minutes minutes");
+
+    _paymentWarningTimer = Timer(Duration(minutes: minutes), () {
+      _requestPayment();
+    });
+  }
+
+  void _requestPayment() async {
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({
+        'paymentRequired': true,
+        'paymentRequestTime': DateTime.now(),
+      });
+
+      setState(() => _showPaymentWarning = true);
+    } catch (e) {
+      print("❌ Erreur demande paiement: $e");
+    }
+  }
+
+  void _handlePayment() async {
+    try {
+      final userProvider = context.read<UserAuthProvider>();
+      bool paymentSuccess = await userProvider.deductFromBalance(context, 100.0);
+
+      if (paymentSuccess) {
+        userProvider.incrementAppGain(100);
+
+        // Sauvegarder le moment du paiement
+        final now = DateTime.now();
+        await _firestore.collection('lives').doc(widget.liveId).update({
+          'paymentRequired': false,
+          'paymentRequestTime': null,
+          'lastPaymentTime': now,
+        });
+
+        setState(() => _showPaymentWarning = false);
+        _startPaymentTimer(); // Redémarre avec la durée configurée
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Paiement accepté! Live prolongé'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        _endLive();
+      }
+    } catch (e) {
+      print("❌ Erreur traitement paiement: $e");
+    }
+  }
+
+// Mettez à jour le message d'alerte
+  Widget _buildPaymentWarning() {
+    return Container(
+      color: Colors.black.withOpacity(0.9),
+      padding: EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
+            SizedBox(height: 20),
+            Text(
+              'Temps de live écoulés', // ← DYNAMIQUE
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Payez 100 FCFA pour continuer votre live', // ← DYNAMIQUE
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _handlePayment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFF9A825),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: Text('Payer 100 FCFA',
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+                TextButton(
+                  onPressed: _endLive,
+                  child: Text('Arrêter', style: TextStyle(color: Colors.white70)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _removeUserFromSpectators() async {
     try {
       final currentUserId = _auth.currentUser?.uid;
@@ -1097,47 +1260,47 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   // ==================== GESTION FIN DE LIVE ====================
 
-  void _startPaymentTimer() {
-    _paymentWarningTimer = Timer(const Duration(minutes: 55), () {
-      _requestPayment();
-    });
-  }
-
-  void _requestPayment() async {
-    try {
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'paymentRequired': true,
-        'paymentRequestTime': DateTime.now(),
-      });
-
-      setState(() => _showPaymentWarning = true);
-    } catch (e) {
-      print("❌ Erreur demande paiement: $e");
-    }
-  }
-
-  void _handlePayment() async {
-    try {
-      final userProvider = context.read<UserAuthProvider>();
-      bool paymentSuccess = await userProvider.deductFromBalance(context, 100.0);
-
-      if (paymentSuccess) {
-        userProvider.incrementAppGain(100);
-
-        await _firestore.collection('lives').doc(widget.liveId).update({
-          'paymentRequired': false,
-          'paymentRequestTime': null,
-        });
-
-        setState(() => _showPaymentWarning = false);
-        _startPaymentTimer();
-      } else {
-        _endLive();
-      }
-    } catch (e) {
-      print("❌ Erreur traitement paiement: $e");
-    }
-  }
+  // void _startPaymentTimer() {
+  //   _paymentWarningTimer = Timer(const Duration(minutes: 30), () {
+  //     _requestPayment();
+  //   });
+  // }
+  //
+  // void _requestPayment() async {
+  //   try {
+  //     await _firestore.collection('lives').doc(widget.liveId).update({
+  //       'paymentRequired': true,
+  //       'paymentRequestTime': DateTime.now(),
+  //     });
+  //
+  //     setState(() => _showPaymentWarning = true);
+  //   } catch (e) {
+  //     print("❌ Erreur demande paiement: $e");
+  //   }
+  // }
+  //
+  // void _handlePayment() async {
+  //   try {
+  //     final userProvider = context.read<UserAuthProvider>();
+  //     bool paymentSuccess = await userProvider.deductFromBalance(context, 100.0);
+  //
+  //     if (paymentSuccess) {
+  //       userProvider.incrementAppGain(100);
+  //
+  //       await _firestore.collection('lives').doc(widget.liveId).update({
+  //         'paymentRequired': false,
+  //         'paymentRequestTime': null,
+  //       });
+  //
+  //       setState(() => _showPaymentWarning = false);
+  //       _startPaymentTimer();
+  //     } else {
+  //       _endLive();
+  //     }
+  //   } catch (e) {
+  //     print("❌ Erreur traitement paiement: $e");
+  //   }
+  // }
 
   void _confirmEndLive() {
     showDialog(
@@ -1206,6 +1369,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _shareLive() {
+    final AppLinkService _appLinkService = AppLinkService();
+    _appLinkService.shareContent(
+      type: AppLinkType.live,
+      id: widget.liveId!,
+      message: " 🎥🔥 ${widget.postLive.title}",
+      mediaUrl: "${widget.postLive.hostImage}",
+    );
     _incrementShareCount();
   }
 
@@ -1220,7 +1390,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   // ==================== WIDGETS PRINCIPAUX ====================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1247,6 +1416,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             // INTERFACE UTILISATEUR
             if (_showUI) ..._buildUIOverlay(),
 
+            // BOUTON TOGGLE COMMENTS (TOUJOURS VISIBLE MÊME SI _showUI = false)
+            if (_showUI) _buildToggleCommentsButton(),
+
             // EFFETS ANIMÉS (au-dessus de tout)
             ..._buildTikTokLikeEffects(),
             ..._buildGiftEffects(),
@@ -1258,6 +1430,46 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ),
     );
   }
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     backgroundColor: Colors.black,
+  //     body: GestureDetector(
+  //       onTapDown: _onTap,
+  //       onDoubleTapDown: _onTap,
+  //       child: Stack(
+  //         children: [
+  //           // VIDÉO PRINCIPALE
+  //           _buildVideoSection(),
+  //
+  //           // OVERLAY TEMPS ESSAI
+  //           if (widget.postLive.isPaidLive && _showTrialOverlay && !_shouldSkipTrial())
+  //             _buildTrialOverlay(),
+  //
+  //           // BOUTON TOGGLE UI (positionné pour être visible)
+  //           Positioned(
+  //             top: MediaQuery.of(context).padding.top + 10,
+  //             left: 16,
+  //             child: _buildToggleUIButton(),
+  //           ),
+  //
+  //           // INTERFACE UTILISATEUR
+  //           if (_showUI) ..._buildUIOverlay(),
+  //
+  //           // EFFETS ANIMÉS (au-dessus de tout)
+  //           ..._buildTikTokLikeEffects(),
+  //           ..._buildGiftEffects(),
+  //
+  //           // LOADING
+  //           if (!_isInitialized) _buildLoadingOverlay(),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+
+
   List<Widget> _buildUIOverlay() {
     return [
       _buildAppName(),
@@ -1396,53 +1608,107 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           color: Colors.black.withOpacity(0.6),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(widget.hostImage),
-              radius: 20,
-            ),
-            SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                    "@${_hostData.pseudo ?? widget.hostName}",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-                ),
-                Text(
-                    '${_hostData.userAbonnesIds?.length ?? 0} abonnés',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)
-                ),
-                if (widget.isHost)
-                  Text('Hôte du live', style: TextStyle(color: Color(0xFFF9A825), fontSize: 12)),
-              ],
-            ),
-            SizedBox(width: 12),
-            if (!widget.isHost)
-              GestureDetector(
-                onTap: () => setState(() => _isFollowing = !_isFollowing),
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
-                    borderRadius: BorderRadius.circular(20),
+        child:   GestureDetector(
+          onTap: () {
+            _showHostDetails();
+            setState(() => _isFollowing = !_isFollowing);
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(widget.hostImage),
+                radius: 20,
+              ),
+              SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      "@${_hostData.pseudo ?? widget.hostName}",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
                   ),
-                  child: Text(
-                    _isFollowing ? 'Suivi' : 'Suivre',
-                    style: TextStyle(
-                        color: _isFollowing ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold
+                  Text(
+                      '${_hostData.userAbonnesIds?.length ?? 0} abonnés',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)
+                  ),
+                  if (widget.isHost)
+                    Text('Hôte du live', style: TextStyle(color: Color(0xFFF9A825), fontSize: 12)),
+                ],
+              ),
+              SizedBox(width: 12),
+              if (!widget.isHost)
+                GestureDetector(
+                  onTap: () {
+                    _showHostDetails();
+                    setState(() => _isFollowing = !_isFollowing);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _isFollowing ? Colors.grey : Color(0xFFF9A825),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _isFollowing ? 'Suivi' : 'Suivre',
+                      style: TextStyle(
+                          color: _isFollowing ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.bold
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+  Future<void> _showUserDetailsById(String userId) async {
+    try {
+      // Récupérer les données de l'utilisateur depuis Firestore
+      final userDoc = await _firestore.collection('Users').doc(userId).get();
 
+      if (userDoc.exists) {
+        // Convertir les données en UserData
+        final userData = UserData.fromJson(userDoc.data()!);
+
+        // Récupérer les dimensions de l'écran
+        final double width = MediaQuery.of(context).size.width;
+        final double height = MediaQuery.of(context).size.height;
+
+        // Appeler la fonction d'affichage des détails
+        showUserDetailsModalDialog(userData, width, height, context);
+
+        // Optionnel : Mettre à jour l'état du follow si nécessaire
+        // setState(() => _isFollowing = !_isFollowing);
+      } else {
+        print("❌ Utilisateur non trouvé avec l'ID: $userId");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Utilisateur non trouvé'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print("❌ Erreur récupération utilisateur: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des informations'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+// ==================== UTILISATION DANS VOTRE CODE ====================
+
+// Exemple 1: Pour afficher les détails de l'hôte
+  void _showHostDetails() {
+    if (widget.postLive.hostId != null) {
+      _showUserDetailsById(widget.postLive.hostId!);
+    }
+  }
   Widget _buildViewerInfo() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 50,
@@ -1461,7 +1727,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               color: Color(0xFFF9A825)
           ),
           SizedBox(height: 8),
-          _buildInfoChip(icon: Icons.share, value: '$_shareCount', color: Colors.blue),
+          GestureDetector(
+            onTap: () {
+              _shareLive();
+            },
+              child: _buildInfoChip(icon: Icons.share, value: '$_shareCount', color: Colors.blue)),
 
           if (widget.postLive.isPaidLive && _remainingTrialMinutes < 999 && !_shouldSkipTrial())
             Container(
@@ -1571,62 +1841,165 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
+  bool _showComments = true;
+  Widget _buildToggleCommentsButton() {
+    return Positioned(
+      bottom: 80,
+      left: 8 + MediaQuery.of(context).size.width * 0.4 + 8,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _showComments = !_showComments;
+          });
+        },
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            _showComments ? Icons.comment : Icons.comment_outlined,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildCommentsSection() {
+    if (!_showComments) {
+      return SizedBox.shrink(); // Ne rien afficher quand désactivé
+    }
+
     return Positioned(
       bottom: 80,
       left: 8,
-      width: MediaQuery.of(context).size.width * 0.7,
-      height: MediaQuery.of(context).size.height * 0.3,
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _commentsScrollController,
-              reverse: true,
-              shrinkWrap: true,
-              itemCount: _comments.length,
-              itemBuilder: (context, index) {
-                final comment = _comments[index];
-                return Container(
-                  margin: EdgeInsets.symmetric(vertical: 4),
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(comment.userImage),
-                        radius: 12,
-                      ),
-                      SizedBox(width: 6),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              comment.username,
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                            Text(
-                              comment.message,
-                              style: TextStyle(color: Colors.white, fontSize: 12),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+      width: widget.isHost? MediaQuery.of(context).size.width * 0.7:MediaQuery.of(context).size.width * 0.7,
+      height:  MediaQuery.of(context).size.height * 0.35,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: Offset(0, 4),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          children: [
+            // En-tête de la section
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                // color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Commentaires',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showComments = false;
+                      });
+                    },
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Liste des commentaires
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  // color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+                child: ListView.builder(
+                  controller: _commentsScrollController,
+                  // SUPPRIMEZ reverse: true pour afficher du haut vers le bas
+                  shrinkWrap: true,
+                  itemCount: _comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = _comments[index];
+                    return Container(
+                      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: NetworkImage(comment.userImage),
+                            radius: 12,
+                          ),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  comment.username,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  comment.message,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1694,31 +2067,43 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                   child: Column(
                     children: [
                       Icon(Icons.favorite, color: Colors.red, size: 28),
-                      SizedBox(height: 2),
+                      SizedBox(height: 1),
                       Text('$_likeCount', style: TextStyle(color: Colors.white, fontSize: 12)),
                     ],
                   ),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => setState(() => _showGiftPanel = true),
                   child: Column(
                     children: [
                       Icon(Icons.card_giftcard, color: Color(0xFFF9A825), size: 28),
-                      SizedBox(height: 2),
+                      SizedBox(height: 1),
                       Text('Cadeau', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _toggleUsersPanel,
+                  child:Column(
+                    children: [
+                      Icon(Icons.people, color: Colors.white, size: 28),
+                      SizedBox(height: 1),
+                      Text('$_viewerCount', style: TextStyle(color: Colors.white, fontSize: 12)),
                     ],
                   ),
                 ),
                 SizedBox(width: 16),
                 GestureDetector(
-                  onTap: _toggleUsersPanel,
-                  child: Icon(Icons.people, color: Colors.white, size: 28),
-                ),
-                SizedBox(width: 16),
-                GestureDetector(
                   onTap: _shareLive,
-                  child: Icon(Icons.share, color: Colors.white, size: 28),
+                  child:Column(
+                    children: [
+                      Icon(Icons.share, color: Colors.blue, size: 28),
+                      SizedBox(height: 1),
+                      Text('$_shareCount', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -1858,54 +2243,54 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildPaymentWarning() {
-    return Container(
-      color: Colors.black.withOpacity(0.9),
-      padding: EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
-            SizedBox(height: 20),
-            Text(
-              'Temps de live écoulé',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Payez 100 FCFA pour continuer votre live pendant 1 heure supplémentaire',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _handlePayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF9A825),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text('Payer 100 FCFA',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                ),
-                TextButton(
-                  onPressed: _endLive,
-                  child: Text('Arrêter', style: TextStyle(color: Colors.white70)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildPaymentWarning() {
+  //   return Container(
+  //     color: Colors.black.withOpacity(0.9),
+  //     padding: EdgeInsets.all(24),
+  //     child: Center(
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
+  //           SizedBox(height: 20),
+  //           Text(
+  //             'Temps de live écoulé',
+  //             style: TextStyle(
+  //               color: Colors.white,
+  //               fontSize: 20,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //           SizedBox(height: 12),
+  //           Text(
+  //             'Payez 100 FCFA pour continuer votre live pendant 1 heure supplémentaire',
+  //             style: TextStyle(color: Colors.white70, fontSize: 14),
+  //             textAlign: TextAlign.center,
+  //           ),
+  //           SizedBox(height: 24),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //             children: [
+  //               ElevatedButton(
+  //                 onPressed: _handlePayment,
+  //                 style: ElevatedButton.styleFrom(
+  //                   backgroundColor: Color(0xFFF9A825),
+  //                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+  //                 ),
+  //                 child: Text('Payer 100 FCFA',
+  //                     style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+  //               ),
+  //               TextButton(
+  //                 onPressed: _endLive,
+  //                 child: Text('Arrêter', style: TextStyle(color: Colors.white70)),
+  //               ),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildLoadingOverlay() {
     return Container(
@@ -1936,7 +2321,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
   @override
   void dispose() {
-    // _removeUserFromSpectators();
+    _removeUserFromSpectators();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
     _paymentWarningTimer?.cancel();

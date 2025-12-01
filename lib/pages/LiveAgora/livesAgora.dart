@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PostLive {
   final String? liveId;
   final String? hostId;
@@ -24,37 +22,40 @@ class PostLive {
   bool paymentRequired;
   DateTime? paymentRequestTime;
   final List<String> invitedUsers;
-  final List<String> totalspectateurs ;
+  final List<String> totalspectateurs;
   final List<String> participants;
   final List<String> spectators;
 
   // NOUVEAUX CHAMPS POUR LIVE PAYANT
-  final bool isPaidLive; // Live payant ou gratuit
-  final double participationFee; // Prix pour rejoindre le live
-  final int freeTrialMinutes; // Temps d'essai gratuit en minutes
+  final bool isPaidLive;
+  final double participationFee;
+  final int freeTrialMinutes;
 
   // NOUVEAUX CHAMPS POUR COMPORTEMENT APRÈS ESSAI
-  final String audioBehaviorAfterTrial; // 'mute', 'reduce', 'keep'
-  final int audioReductionPercent; // Pourcentage de réduction si 'reduce'
-  final bool blurVideoAfterTrial; // Flouter la vidéo après essai
-  final bool showPaymentModalAfterTrial; // Afficher modal paiement automatique
+  final String audioBehaviorAfterTrial;
+  final int audioReductionPercent;
+  final bool blurVideoAfterTrial;
+  final bool showPaymentModalAfterTrial;
 
   // NOUVEAUX CHAMPS POUR FONCTIONNALITÉS AVANCÉES
-  final String? pinnedText; // Texte épinglé par l'hôte
-  final int shareCount; // Nombre de partages du live
-  final double paidParticipationTotal; // Total des participations payantes
+  final String? pinnedText;
+  final int shareCount;
+  final double paidParticipationTotal;
 
   // NOUVEAU CHAMP POUR TEMPS DE VISIONNAGE
-  final Map<String, dynamic> userWatchTime; // {userId: minutesRestantes}
+  final Map<String, dynamic> userWatchTime;
 
   // CHAMPS EXISTANTS
   bool earningsWithdrawn;
   DateTime? withdrawalDate;
   String? withdrawalTransactionId;
 
-  final int? screenShareUid; // UID du partage d'écran actif
-  final bool isScreenSharing; // Si un partage d'écran est en cours
-  final String? screenSharerId; // ID de l'utilisateur qui partage son écran
+  final int? screenShareUid;
+  final bool isScreenSharing;
+  final String? screenSharerId;
+
+  // NOUVEAU CHAMP : DURÉE DU LIVE POUR L'HÔTE
+  final int? liveDurationMinutes; // ← AJOUTEZ CE CHAMP
 
   PostLive({
     // Champs existants
@@ -79,18 +80,18 @@ class PostLive {
     this.invitedUsers = const [],
     this.participants = const [],
     this.spectators = const [],
-    this.totalspectateurs  = const [],
+    this.totalspectateurs = const [],
 
     // Nouveaux champs avec valeurs par défaut
     this.isPaidLive = false,
     this.participationFee = 100.0,
-    this.freeTrialMinutes = 1, // 1 minute par défaut
+    this.freeTrialMinutes = 1,
 
     // Comportement après essai
-    this.audioBehaviorAfterTrial = 'reduce', // Réduire le son par défaut
-    this.audioReductionPercent = 50, // Réduire à 50% par défaut
-    this.blurVideoAfterTrial = true, // Flouter par défaut
-    this.showPaymentModalAfterTrial = true, // Afficher modal par défaut
+    this.audioBehaviorAfterTrial = 'reduce',
+    this.audioReductionPercent = 50,
+    this.blurVideoAfterTrial = true,
+    this.showPaymentModalAfterTrial = true,
 
     // Fonctionnalités avancées
     this.pinnedText,
@@ -100,11 +101,17 @@ class PostLive {
     // Temps de visionnage
     this.userWatchTime = const {},
 
-
+    // Partage d'écran
     this.screenShareUid,
     this.isScreenSharing = false,
     this.screenSharerId,
+
+    // NOUVEAU : Durée du live avec valeur par défaut de 30 minutes
+    this.liveDurationMinutes = 30, // ← VALEUR PAR DÉFAUT
   });
+
+  // Méthode utilitaire pour obtenir la durée (gestion des null)
+  int get safeLiveDurationMinutes => liveDurationMinutes ?? 30;
 
   Map<String, dynamic> toMap() {
     return {
@@ -143,11 +150,14 @@ class PostLive {
       'paidParticipationTotal': paidParticipationTotal,
       'userWatchTime': userWatchTime,
 
-
+      // Partage d'écran
       'screenShareUid': screenShareUid,
       'isScreenSharing': isScreenSharing,
       'screenSharerId': screenSharerId,
-      'totalspectateurs': totalspectateurs ,
+      'totalspectateurs': totalspectateurs,
+
+      // NOUVEAU CHAMP
+      'liveDurationMinutes': liveDurationMinutes, // ← AJOUTEZ
     };
   }
 
@@ -179,7 +189,7 @@ class PostLive {
       spectators: map['spectators'] != null
           ? List<String>.from(map['spectators'])
           : [],
-      totalspectateurs : map['totalspectateurs'] != null
+      totalspectateurs: map['totalspectateurs'] != null
           ? List<String>.from(map['totalspectateurs'])
           : [],
       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
@@ -202,17 +212,21 @@ class PostLive {
           ? Map<String, dynamic>.from(map['userWatchTime'])
           : {},
 
+      // Partage d'écran
       screenShareUid: map['screenShareUid'],
       isScreenSharing: map['isScreenSharing'] ?? false,
       screenSharerId: map['screenSharerId'],
+
+      // NOUVEAU CHAMP (avec gestion null)
+      liveDurationMinutes: map['liveDurationMinutes'] ?? 30, // ← AJOUTEZ
     );
   }
-
 
   PostLive copyWith({
     int? screenShareUid,
     bool? isScreenSharing,
     String? screenSharerId,
+    int? liveDurationMinutes, // ← AJOUTEZ
     // ... autres champs ...
   }) {
     return PostLive(
@@ -234,6 +248,7 @@ class PostLive {
       invitedUsers: invitedUsers,
       participants: participants,
       spectators: spectators,
+      totalspectateurs: totalspectateurs,
       isPaidLive: isPaidLive,
       participationFee: participationFee,
       freeTrialMinutes: freeTrialMinutes,
@@ -253,9 +268,13 @@ class PostLive {
       screenShareUid: screenShareUid ?? this.screenShareUid,
       isScreenSharing: isScreenSharing ?? this.isScreenSharing,
       screenSharerId: screenSharerId ?? this.screenSharerId,
+
+      // NOUVEAU CHAMP
+      liveDurationMinutes: liveDurationMinutes ?? this.liveDurationMinutes, // ← AJOUTEZ
     );
   }
 }
+
 // class PostLive {
 //   final String? liveId;
 //   final String? hostId;
@@ -273,14 +292,40 @@ class PostLive {
 //   bool paymentRequired;
 //   DateTime? paymentRequestTime;
 //   final List<String> invitedUsers;
+//   final List<String> totalspectateurs ;
 //   final List<String> participants;
 //   final List<String> spectators;
-//   final double participationFee;
+//
+//   // NOUVEAUX CHAMPS POUR LIVE PAYANT
+//   final bool isPaidLive; // Live payant ou gratuit
+//   final double participationFee; // Prix pour rejoindre le live
+//   final int freeTrialMinutes; // Temps d'essai gratuit en minutes
+//
+//   // NOUVEAUX CHAMPS POUR COMPORTEMENT APRÈS ESSAI
+//   final String audioBehaviorAfterTrial; // 'mute', 'reduce', 'keep'
+//   final int audioReductionPercent; // Pourcentage de réduction si 'reduce'
+//   final bool blurVideoAfterTrial; // Flouter la vidéo après essai
+//   final bool showPaymentModalAfterTrial; // Afficher modal paiement automatique
+//
+//   // NOUVEAUX CHAMPS POUR FONCTIONNALITÉS AVANCÉES
+//   final String? pinnedText; // Texte épinglé par l'hôte
+//   final int shareCount; // Nombre de partages du live
+//   final double paidParticipationTotal; // Total des participations payantes
+//
+//   // NOUVEAU CHAMP POUR TEMPS DE VISIONNAGE
+//   final Map<String, dynamic> userWatchTime; // {userId: minutesRestantes}
+//
+//   // CHAMPS EXISTANTS
 //   bool earningsWithdrawn;
 //   DateTime? withdrawalDate;
 //   String? withdrawalTransactionId;
 //
+//   final int? screenShareUid; // UID du partage d'écran actif
+//   final bool isScreenSharing; // Si un partage d'écran est en cours
+//   final String? screenSharerId; // ID de l'utilisateur qui partage son écran
+//
 //   PostLive({
+//     // Champs existants
 //     this.earningsWithdrawn = false,
 //     this.withdrawalDate,
 //     this.withdrawalTransactionId,
@@ -302,11 +347,36 @@ class PostLive {
 //     this.invitedUsers = const [],
 //     this.participants = const [],
 //     this.spectators = const [],
+//     this.totalspectateurs  = const [],
+//
+//     // Nouveaux champs avec valeurs par défaut
+//     this.isPaidLive = false,
 //     this.participationFee = 100.0,
+//     this.freeTrialMinutes = 1, // 1 minute par défaut
+//
+//     // Comportement après essai
+//     this.audioBehaviorAfterTrial = 'reduce', // Réduire le son par défaut
+//     this.audioReductionPercent = 50, // Réduire à 50% par défaut
+//     this.blurVideoAfterTrial = true, // Flouter par défaut
+//     this.showPaymentModalAfterTrial = true, // Afficher modal par défaut
+//
+//     // Fonctionnalités avancées
+//     this.pinnedText,
+//     this.shareCount = 0,
+//     this.paidParticipationTotal = 0.0,
+//
+//     // Temps de visionnage
+//     this.userWatchTime = const {},
+//
+//
+//     this.screenShareUid,
+//     this.isScreenSharing = false,
+//     this.screenSharerId,
 //   });
 //
 //   Map<String, dynamic> toMap() {
 //     return {
+//       // Champs existants
 //       'liveId': liveId,
 //       'hostId': hostId,
 //       'hostName': hostName,
@@ -324,10 +394,28 @@ class PostLive {
 //       'invitedUsers': invitedUsers,
 //       'participants': participants,
 //       'spectators': spectators,
-//       'participationFee': participationFee,
 //       'earningsWithdrawn': earningsWithdrawn,
 //       'withdrawalDate': withdrawalDate,
 //       'withdrawalTransactionId': withdrawalTransactionId,
+//
+//       // Nouveaux champs
+//       'isPaidLive': isPaidLive,
+//       'participationFee': participationFee,
+//       'freeTrialMinutes': freeTrialMinutes,
+//       'audioBehaviorAfterTrial': audioBehaviorAfterTrial,
+//       'audioReductionPercent': audioReductionPercent,
+//       'blurVideoAfterTrial': blurVideoAfterTrial,
+//       'showPaymentModalAfterTrial': showPaymentModalAfterTrial,
+//       'pinnedText': pinnedText,
+//       'shareCount': shareCount,
+//       'paidParticipationTotal': paidParticipationTotal,
+//       'userWatchTime': userWatchTime,
+//
+//
+//       'screenShareUid': screenShareUid,
+//       'isScreenSharing': isScreenSharing,
+//       'screenSharerId': screenSharerId,
+//       'totalspectateurs': totalspectateurs ,
 //     };
 //   }
 //
@@ -339,7 +427,6 @@ class PostLive {
 //       hostImage: map['hostImage'] ?? '',
 //       title: map['title'] ?? '',
 //       viewerCount: map['viewerCount'] ?? 0,
-//       // giftCount: map['giftCount'] ?? 0,
 //       startTime: (map['startTime'] as Timestamp).toDate(),
 //       endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
 //       isLive: map['isLive'] ?? true,
@@ -360,15 +447,84 @@ class PostLive {
 //       spectators: map['spectators'] != null
 //           ? List<String>.from(map['spectators'])
 //           : [],
-//       participationFee: map['participationFee']?.toDouble() ?? 100.0,
-//
+//       totalspectateurs : map['totalspectateurs'] != null
+//           ? List<String>.from(map['totalspectateurs'])
+//           : [],
 //       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
 //       withdrawalDate: map['withdrawalDate']?.toDate(),
 //       withdrawalTransactionId: map['withdrawalTransactionId'],
 //       likeCount: map['likeCount'],
+//
+//       // Nouveaux champs
+//       isPaidLive: map['isPaidLive'] ?? false,
+//       participationFee: map['participationFee']?.toDouble() ?? 100.0,
+//       freeTrialMinutes: map['freeTrialMinutes'] ?? 1,
+//       audioBehaviorAfterTrial: map['audioBehaviorAfterTrial'] ?? 'reduce',
+//       audioReductionPercent: map['audioReductionPercent'] ?? 50,
+//       blurVideoAfterTrial: map['blurVideoAfterTrial'] ?? true,
+//       showPaymentModalAfterTrial: map['showPaymentModalAfterTrial'] ?? true,
+//       pinnedText: map['pinnedText'],
+//       shareCount: map['shareCount'] ?? 0,
+//       paidParticipationTotal: map['paidParticipationTotal']?.toDouble() ?? 0.0,
+//       userWatchTime: map['userWatchTime'] != null
+//           ? Map<String, dynamic>.from(map['userWatchTime'])
+//           : {},
+//
+//       screenShareUid: map['screenShareUid'],
+//       isScreenSharing: map['isScreenSharing'] ?? false,
+//       screenSharerId: map['screenSharerId'],
+//     );
+//   }
+//
+//
+//   PostLive copyWith({
+//     int? screenShareUid,
+//     bool? isScreenSharing,
+//     String? screenSharerId,
+//     // ... autres champs ...
+//   }) {
+//     return PostLive(
+//       liveId: liveId,
+//       hostId: hostId,
+//       hostName: hostName,
+//       hostImage: hostImage,
+//       title: title,
+//       viewerCount: viewerCount,
+//       giftCount: giftCount,
+//       startTime: startTime,
+//       endTime: endTime,
+//       isLive: isLive,
+//       giftTotal: giftTotal,
+//       likeCount: likeCount,
+//       gifts: gifts,
+//       paymentRequired: paymentRequired,
+//       paymentRequestTime: paymentRequestTime,
+//       invitedUsers: invitedUsers,
+//       participants: participants,
+//       spectators: spectators,
+//       isPaidLive: isPaidLive,
+//       participationFee: participationFee,
+//       freeTrialMinutes: freeTrialMinutes,
+//       audioBehaviorAfterTrial: audioBehaviorAfterTrial,
+//       audioReductionPercent: audioReductionPercent,
+//       blurVideoAfterTrial: blurVideoAfterTrial,
+//       showPaymentModalAfterTrial: showPaymentModalAfterTrial,
+//       pinnedText: pinnedText,
+//       shareCount: shareCount,
+//       paidParticipationTotal: paidParticipationTotal,
+//       userWatchTime: userWatchTime,
+//       earningsWithdrawn: earningsWithdrawn,
+//       withdrawalDate: withdrawalDate,
+//       withdrawalTransactionId: withdrawalTransactionId,
+//
+//       // Partage d'écran
+//       screenShareUid: screenShareUid ?? this.screenShareUid,
+//       isScreenSharing: isScreenSharing ?? this.isScreenSharing,
+//       screenSharerId: screenSharerId ?? this.screenSharerId,
 //     );
 //   }
 // }
+
 
 
 class LiveGift {
