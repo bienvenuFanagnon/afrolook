@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 118;
+  late int app_version_code = 119;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -61,6 +61,194 @@ class UserAuthProvider extends ChangeNotifier {
   initializeData() {
     registerUser = UserData();
   }
+
+  Future<void> ajouterCommissionParrainViaUserId({
+    required String userId,
+    required double montant,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+
+    // 1️⃣ Récupérer l'utilisateur via son ID
+    final userDoc = await firestore.collection('Users').doc(userId).get();
+
+    if (!userDoc.exists) {
+      print("⚠️ Utilisateur introuvable avec cet ID");
+      return;
+    }
+
+    final userData = userDoc.data();
+    if (userData == null || userData['code_parrain'] == null || userData['code_parrain'] == "") {
+      print("⚠️ Cet utilisateur n'a pas de parrain");
+      return;
+    }
+
+    final String codeParrain = userData['code_parrain'];
+
+    // 2️⃣ Récupérer le parrain via son code
+    final query = await firestore
+        .collection('Users')
+        .where('code_parrainage', isEqualTo: codeParrain)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      print("⚠️ Aucun parrain trouvé avec ce code");
+      await firestore.collection('AppData').doc(appDefaultData.id).update({
+        'solde_gain': FieldValue.increment(montant * 0.025),
+      });
+      return;
+    }
+
+    final DocumentSnapshot parrainDoc = query.docs.first;
+    final DocumentReference parrainRef = parrainDoc.reference;
+    final String parrainId = parrainDoc.id;
+
+    // 3️⃣ Calcul des 5%
+    final double commission = montant * 0.025;
+
+    // 4️⃣ Incrémentation du solde du parrain
+    await parrainRef.update({
+      "votre_solde_principal": FieldValue.increment(commission),
+      "updatedAt": FieldValue.serverTimestamp(),
+    });
+
+    // 5️⃣ Enregistrement de la transaction GAIN
+    final transactionRef = firestore.collection("TransactionSoldes").doc();
+
+    await transactionRef.set({
+      "id": transactionRef.id,
+      "user_id": parrainId,
+      "type": "GAIN",
+      "statut": "VALIDER",
+      "description": "Commission de parrainage (5%) sur dépôt filleul",
+      "montant": commission,
+      "montant_total": commission,
+      "numero_depot": null,
+      "methode_paiement": "COMMISSION",
+      "frais": 0,
+      "frais_operateur": 0,
+      "frais_gain": 0,
+      "id_transaction_paygate": null,
+      "createdAt": DateTime.now().millisecondsSinceEpoch,
+    });
+
+    print("✅ Commission de $commission FCFA ajoutée au parrain et transaction créée.");
+  }
+
+  Future<void> ajouterCommissionParrain({
+    required String codeParrainage,
+    required double montant,
+  }) async
+  {
+    final firestore = FirebaseFirestore.instance;
+
+    // 1️⃣ Récupérer le parrain via son code
+    final query = await firestore
+        .collection('Users')
+        .where('code_parrainage', isEqualTo: codeParrainage)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      print("⚠️ Aucun parrain trouvé avec ce code");
+      return;
+    }
+
+    final DocumentSnapshot parrainDoc = query.docs.first;
+    final DocumentReference parrainRef = parrainDoc.reference;
+    final String parrainId = parrainDoc.id;
+
+    // 2️⃣ Calcul des 5%
+    final double commission = montant * 0.05;
+
+    // 3️⃣ Incrémentation du solde du parrain
+    await parrainRef.update({
+      "votre_solde_principal": FieldValue.increment(commission),
+      "updatedAt": FieldValue.serverTimestamp(),
+    });
+
+    // 4️⃣ Enregistrement de la transaction GAIN
+    final transactionRef =
+    firestore.collection("TransactionSoldes").doc();
+
+    await transactionRef.set({
+      "id": transactionRef.id,
+      "user_id": parrainId,
+      "type": "GAIN", // 👌 Type correct pour commission
+      "statut": "VALIDER",
+      "description": "Commission de parrainage (5%) sur dépôt filleul",
+      "montant": commission,
+      "montant_total": commission,
+      // Tu peux mettre null si pas utilisé
+      "numero_depot": null,
+      "methode_paiement": "COMMISSION",
+      "frais": 0,
+      "frais_operateur": 0,
+      "frais_gain": 0,
+      "id_transaction_paygate": null,
+      "createdAt": DateTime.now().millisecondsSinceEpoch,
+    });
+
+    print("✅ Commission de $commission FCFA ajoutée et transaction créée.");
+  }
+
+  Future<void> ajouterCadeauCommissionParrain({
+    required String codeParrainage,
+    required double montant,
+  }) async
+  {
+    final firestore = FirebaseFirestore.instance;
+
+    // 1️⃣ Récupérer le parrain via son code
+    final query = await firestore
+        .collection('Users')
+        .where('code_parrainage', isEqualTo: codeParrainage)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      print("⚠️ Aucun parrain trouvé avec ce code");
+      return;
+    }
+
+    final DocumentSnapshot parrainDoc = query.docs.first;
+    final DocumentReference parrainRef = parrainDoc.reference;
+    final String parrainId = parrainDoc.id;
+
+    // 2️⃣ Calcul des 5%
+    final double commission = montant * 0.025;
+
+    // 3️⃣ Incrémentation du solde du parrain
+    await parrainRef.update({
+      "votre_solde_principal": FieldValue.increment(commission),
+      // "updatedAt": FieldValue.serverTimestamp(),
+    });
+
+    // 4️⃣ Enregistrement de la transaction GAIN
+    final transactionRef =
+    firestore.collection("TransactionSoldes").doc();
+
+    await transactionRef.set({
+      "id": transactionRef.id,
+      "user_id": parrainId,
+      "type": "GAIN", // 👌 Type correct pour commission
+      "statut": "VALIDER",
+      "description": "Commission de parrainage (5%) sur dépôt filleul",
+      "montant": commission,
+      "montant_total": commission,
+      // Tu peux mettre null si pas utilisé
+      "numero_depot": null,
+      "methode_paiement": "COMMISSION",
+      "frais": 0,
+      "frais_operateur": 0,
+      "frais_gain": 0,
+      "id_transaction_paygate": null,
+      "createdAt": DateTime.now().millisecondsSinceEpoch,
+    });
+
+    print("✅ Commission de $commission FCFA ajoutée et transaction créée.");
+  }
+
 
   UserData? _userData;
   List<UserData> _availableUsers = [];

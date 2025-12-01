@@ -286,15 +286,36 @@ class _CanalListPageState extends State<CanalListPage> {
         throw Exception('Échec de la déduction du solde');
       }
 
-      // Diviser le montant (50% créateur, 50% application)
-      final double creatorShare = price / 2;
-      final double appShare = price / 2;
+      // // Diviser le montant (50% créateur, 50% application)
+      // final double creatorShare = price / 2;
+      // final double appShare = price / 2;
+      //
+      // // Créditer le créateur du canal
+      // await _creditCreator(canal.userId!, creatorShare, canal.id!);
+      //
+      // // Créditer l'application
+      // await authProvider.incrementAppGain(appShare);
+
+
+      // Diviser le montant (70% créateur, 30% application)
+      final double creatorShare = price * 0.7;
+      double appShare = price * 0.3;
 
       // Créditer le créateur du canal
       await _creditCreator(canal.userId!, creatorShare, canal.id!);
+      if(authProvider.loginUserData!.codeParrain!=null){
+        appShare = price * 0.25;
+        authProvider.incrementAppGain(appShare);
+        authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: price);
+        authProvider.ajouterCommissionParrainViaUserId(userId: canal.userId!, montant: price);
 
-      // Créditer l'application
-      await authProvider.incrementAppGain(appShare);
+      }else{
+        appShare = price * 0.75;
+        authProvider.incrementAppGain(appShare);
+        authProvider.ajouterCommissionParrainViaUserId(userId: canal.userId!, montant: price);
+
+      }
+
 
       // Enregistrer les transactions
       await _recordTransactions(canal, price, creatorShare, appShare, isAlreadySubscribed);

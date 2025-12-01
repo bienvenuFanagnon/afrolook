@@ -1020,7 +1020,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
       if (senderBalance >= amount) {
         final double gainDestinataire = amount * 0.7;
-        final double gainApplication = amount * 0.3;
 
         await firestore
             .collection('Users')
@@ -1034,9 +1033,51 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         });
 
         String appDataId = authProvider.appDefaultData.id!;
-        await firestore.collection('AppData').doc(appDataId).update({
-          'solde_gain': FieldValue.increment(gainApplication),
-        });
+
+        if(widget.post.user!.codeParrain!=null){
+
+          if(authProvider.loginUserData!.codeParrain!=null){
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
+            authProvider.ajouterCadeauCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
+
+          }
+          else{
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
+
+          }
+
+        }else{
+          if(authProvider.loginUserData!.codeParrain!=null){
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
+
+          }
+          else{
+            final double gainApplication = amount * 0.3;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+
+          }
+        }
+
+
+
 
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_cadeau_id':

@@ -1457,7 +1457,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       // Vérifier le solde
       if (senderBalance >= amount) {
         final double gainDestinataire = amount * 0.7;
-        final double gainApplication = amount * 0.3;
+        // final double gainApplication = amount * 0.3;
 
         // Débiter l'expéditeur
         await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
@@ -1471,9 +1471,49 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
         // Créditer l'application
         String appDataId = authProvider.appDefaultData.id!;
-        await firestore.collection('AppData').doc(appDataId).update({
-          'solde_gain': FieldValue.increment(gainApplication),
-        });
+
+
+        if(widget.post.user!.codeParrain!=null){
+
+          if(authProvider.loginUserData!.codeParrain!=null){
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
+            authProvider.ajouterCadeauCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
+
+          }
+          else{
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
+
+          }
+
+        }else{
+          if(authProvider.loginUserData!.codeParrain!=null){
+            final double gainApplication = amount * 0.25;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+            authProvider.ajouterCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
+
+          }
+          else{
+            final double gainApplication = amount * 0.3;
+
+            await firestore.collection('AppData').doc(appDataId).update({
+              'solde_gain': FieldValue.increment(gainApplication),
+            });
+
+          }
+        }
 
         // Ajouter l'expéditeur à la liste des cadeaux du post
         await firestore.collection('Posts').doc(widget.post.id).update({

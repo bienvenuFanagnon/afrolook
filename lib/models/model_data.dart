@@ -778,7 +778,11 @@ class UserData {
     mesPubs = json['mesPubs'] ?? 0;
     mesTiktokPubs = json['mesTiktokPubs'] ?? 0;
     partage = json['partage'] ?? 0;
-    last_time_active = json['last_time_active'] ?? 0;
+    // last_time_active = json['last_time_active'] is Timestamp
+    //     ? (json['last_time_active'] as Timestamp).millisecondsSinceEpoch
+    //     : (json['last_time_active'] is int
+    //     ? json['last_time_active'] as int
+    //     : 0);
     pointContribution = json['pointContribution'] ?? 0;
     userlikes = json['userlikes'] ?? 0;
     userjaimes = json['userjaimes'] ?? 0;
@@ -801,8 +805,8 @@ class UserData {
 
     password = json['password']?.toString() ?? '';
     role = json['role']?.toString() ?? '';
-    createdAt = json['createdAt'] ?? 0;
-    updatedAt = json['updatedAt'] ?? 0;
+    // createdAt = json['createdAt'] ?? 0;
+    // updatedAt = json['updatedAt'] ?? 0;
 
     userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
         ?.map((e) => int.tryParse(e.toString()) ?? 0)
@@ -846,7 +850,7 @@ class UserData {
         DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
     newPostsFromSubscriptions= List<String>.from(json['newPostsFromSubscriptions'] ?? []);
     viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
-    lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
+    // lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
   }
 
 

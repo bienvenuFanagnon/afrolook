@@ -417,19 +417,25 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       if (paymentSuccess) {
         final hostShare = amount * 0.7;
-        final appShare = amount * 0.3;
 
         // CORRECTION : Distribution correcte des fonds
         await _firestore.collection('lives').doc(widget.liveId).update({
           'paidParticipationTotal': FieldValue.increment(hostShare),
         });
 
-        // // Créditer l'hôte
-        // await _firestore.collection('Users').doc(widget.postLive.hostId).update({
-        //   'votre_solde_principal': FieldValue.increment(hostShare),
-        // });
+        if(userProvider.loginUserData!.codeParrain!=null){
+          final appShare = amount * 0.25;
+          userProvider.incrementAppGain(appShare);
+          userProvider.ajouterCadeauCommissionParrain(codeParrainage: userProvider.loginUserData!.codeParrain!, montant: amount);
+          userProvider.ajouterCommissionParrainViaUserId(userId: widget.postLive.hostId!, montant: amount);
 
-        userProvider.incrementAppGain(appShare);
+        }else{
+          final appShare = amount * 0.75;
+          userProvider.incrementAppGain(appShare);
+          userProvider.ajouterCommissionParrainViaUserId(userId: widget.postLive.hostId!, montant: amount);
+
+        }
+
 
         final currentUserId = _auth.currentUser?.uid;
         if (currentUserId != null) {
@@ -562,6 +568,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             autoSubscribeVideo: true,
           ),
         );
+        _joinAsSpectator();
       }
 
       setState(() => _isInitialized = true);
@@ -812,7 +819,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           );
 
           final hostShare = gift.price * 0.7;
-          final appShare = gift.price * 0.3;
+
 
           await _firestore.collection('lives').doc(widget.liveId).update({
             'giftTotal': FieldValue.increment(hostShare),
@@ -823,7 +830,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             'votre_solde_principal': FieldValue.increment(hostShare),
           });
 
-          userProvider.incrementAppGain(appShare);
+          if(userProvider.loginUserData!.codeParrain!=null){
+            final appShare = gift.price * 0.25;
+            userProvider.incrementAppGain(appShare);
+            userProvider.ajouterCommissionParrain(codeParrainage: userProvider.loginUserData!.codeParrain!, montant: gift.price);
+
+          }else{
+            final appShare = gift.price * 0.3;
+            userProvider.incrementAppGain(appShare);
+          }
+
 
           setState(() {
             _giftEffects.add(GiftEffect(

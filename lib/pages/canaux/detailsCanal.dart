@@ -14,7 +14,7 @@ import '../component/showImage.dart';
 import '../home/slive/utils.dart';
 import '../paiement/newDepot.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'followers.dart';
+import 'listCanalfollowers.dart';
 
 
 import 'dart:async';
@@ -32,7 +32,7 @@ import 'package:afrotok/models/model_data.dart';
 import '../component/showImage.dart';
 import '../home/slive/utils.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'followers.dart';
+import 'listCanalfollowers.dart';
 
 
 import 'dart:async';
@@ -49,7 +49,7 @@ import 'package:afrotok/models/model_data.dart';
 import '../component/showImage.dart';
 import '../home/slive/utils.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'followers.dart';
+import 'listCanalfollowers.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -384,15 +384,29 @@ class _CanalDetailsState extends State<CanalDetails> {
         throw Exception('Échec de la déduction du solde');
       }
 
-      // Diviser le montant (50% créateur, 50% application)
-      final double creatorShare = price / 2;
-      final double appShare = price / 2;
+      // Diviser le montant (70% créateur, 30% application)
+      final double creatorShare = price * 0.7;
+       double appShare = price * 0.3;
 
       // Créditer le créateur du canal
       await _creditCreator(creatorShare);
+      if(authProvider.loginUserData!.codeParrain!=null){
+         appShare = price * 0.25;
+        authProvider.incrementAppGain(appShare);
+        authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: price);
+        authProvider.ajouterCommissionParrainViaUserId(userId: widget.canal.userId!, montant: price);
 
-      // Créditer l'application
-      await authProvider.incrementAppGain(appShare);
+      }else{
+         appShare = price * 0.75;
+        authProvider.incrementAppGain(appShare);
+        authProvider.ajouterCommissionParrainViaUserId(userId: widget.canal.userId!, montant: price);
+
+      }
+
+
+
+      // // Créditer l'application
+      // await authProvider.incrementAppGain(appShare);
 
       // Enregistrer les transactions
       await _recordTransactions(price, creatorShare, appShare, isAlreadySubscribed);
@@ -785,6 +799,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   Widget _buildInfoSection() {
     final isPrivate = widget.canal.isPrivate == true;
     final isOwner = authProvider.loginUserData.id == widget.canal.userId;
+    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
     final subscribersCount = widget.canal.usersSuiviId?.length ?? 0;
     final postsCount = widget.canal.publication ?? 0;
 
@@ -960,36 +975,37 @@ class _CanalDetailsState extends State<CanalDetails> {
               ],
             ),
 
-            // if (isOwner) ...[
-            //   SizedBox(height: 12),
-            //   Container(
-            //     width: double.infinity,
-            //     height: 45,
-            //     child: ElevatedButton(
-            //       onPressed: () {
-            //         Navigator.push(
-            //           context,
-            //           MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!)),
-            //         );
-            //       },
-            //       style: ElevatedButton.styleFrom(
-            //         backgroundColor: _primaryYellow,
-            //         foregroundColor: Colors.black,
-            //         shape: RoundedRectangleBorder(
-            //           borderRadius: BorderRadius.circular(25),
-            //         ),
-            //       ),
-            //       child: Row(
-            //         mainAxisAlignment: MainAxisAlignment.center,
-            //         children: [
-            //           Icon(Icons.people, size: 18),
-            //           SizedBox(width: 6),
-            //           Text('VOIR MES ABONNÉS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            //         ],
-            //       ),
-            //     ),
-            //   ),
-            // ],
+            // if (isOwner || isAdmin) ...[
+            if (isAdmin) ...[
+              SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!, channelName: widget.canal.titre!,)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryYellow,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.people, size: 18),
+                      SizedBox(width: 6),
+                      Text('VOIR MES ABONNÉS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
 
             SizedBox(height: 16),
 

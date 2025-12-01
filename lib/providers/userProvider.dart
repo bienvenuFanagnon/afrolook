@@ -546,8 +546,107 @@ setMessageNonLu(int nbr){
     }
   }
 
+  Future<List<UserData>> getUsersBatch(List<String> userIds) async {
+    List<UserData> listUsers = [];
+
+    print('🔍 getUsersBatch appelé avec ${userIds.length} userIds');
+    print('🔍 userIds: $userIds');
+
+    if (userIds.isEmpty) {
+      print('⚠️ Liste userIds vide');
+      return listUsers;
+    }
+
+    try {
+      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
+
+      const batchSize = 10;
+      int batchCount = 0;
+
+      for (int i = 0; i < userIds.length; i += batchSize) {
+        batchCount++;
+        final end = i + batchSize < userIds.length ? i + batchSize : userIds.length;
+        final batchIds = userIds.sublist(i, end);
+
+        print('\n📦 Batch $batchCount (${batchIds.length} IDs): $batchIds');
+
+        if (batchIds.isEmpty) continue;
+
+        try {
+          QuerySnapshot querySnapshotUser = await userCollect
+              .where('id', whereIn: batchIds)
+              .get();
+
+          print('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
+
+          // DEBUG: Afficher chaque document
+          for (var doc in querySnapshotUser.docs) {
+            print('📄 Document ID: ${doc.id}');
+            print('📄 Document data: ${doc.data()}');
+
+            try {
+              final data = doc.data() as Map<String, dynamic>;
+              final user = UserData.fromJson(data);
+
+              print('✅ User créé:');
+              print('   - id: ${user.id}');
+              print('   - pseudo: ${user.pseudo}');
+              print('   - imageUrl: ${user.imageUrl}');
+              print('   - abonnes: ${user.abonnes}');
+              print('   - isVerify: ${user.isVerify}');
+
+              listUsers.add(user);
+            } catch (e) {
+              print('❌ Erreur création UserData: $e');
+              print('❌ Données problématiques: ${doc.data()}');
+            }
+          }
+
+          // Petite pause pour éviter les timeouts
+          if (i + batchSize < userIds.length) {
+            await Future.delayed(Duration(milliseconds: 50));
+          }
+
+        } catch (e) {
+          print('❌ Erreur batch $batchCount: $e');
+        }
+      }
+
+      print('\n📊 Récapitulatif:');
+      print('✅ Total utilisateurs récupérés: ${listUsers.length} sur ${userIds.length}');
+
+      if (listUsers.isNotEmpty) {
+        print('👥 Utilisateurs obtenus:');
+        for (var user in listUsers) {
+          print('   - ${user.pseudo} (id: ${user.id})');
+        }
+
+        // Trier par popularité
+        listUsers.sort((a, b) {
+          final aFollowers = a.userAbonnesIds?.length ?? 0;
+          final bFollowers = b.userAbonnesIds?.length ?? 0;
+          return bFollowers.compareTo(aFollowers);
+        });
+
+        print('📈 Tri effectué par popularité');
+      } else {
+        print('⚠️ AUCUN utilisateur récupéré!');
+        print('⚠️ Possible causes:');
+        print('   - IDs incorrects dans Firestore');
+        print('   - Champ "id" différent dans Firestore');
+        print('   - Structure de données différente');
+      }
+
+    } catch (e) {
+      print('❌ Erreur globale getUsersBatch: $e');
+      print('❌ StackTrace: ${e.toString()}');
+    }
+
+    return listUsers;
+  }
   Future<List<UserData>> getChallengeUsers(
-      List<String> userIds) async {
+      List<String> userIds)
+  async {
 
 
     List<UserData> listUsers = [];
