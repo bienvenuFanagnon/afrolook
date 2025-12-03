@@ -1003,6 +1003,13 @@ class Post {
   bool? isBoosted = false; // Post boosté manuellement
   int? uniqueViewsCount = 0; // Compteur de vues uniques
 
+
+  // NOUVEAUX CHAMPS POUR GESTION MULTIPLE GAGNANTS
+  int? rangGagnant; // 1, 2, 3
+  int? prixGagnant; // Prix pour ce rang
+  bool? prixDejaEncaisser = false; // Si le prix a été encaissé
+  int? dateEncaissement; // Date d'encaissement
+
   Post({
     this.id,
     this.comments,
@@ -1109,6 +1116,12 @@ class Post {
     recentEngagement = json['recentEngagement'];
     isBoosted = json['isBoosted'] ?? false;
     uniqueViewsCount = json['uniqueViewsCount'] ?? 0;
+
+    // NOUVEAUX CHAMPS
+    rangGagnant = json['rang_gagnant'];
+    prixGagnant = json['prix_gagnant'];
+    prixDejaEncaisser = json['prix_deja_encaisser'] ?? false;
+    dateEncaissement = json['date_encaissement'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1160,6 +1173,11 @@ class Post {
     data['recentEngagement'] = recentEngagement;
     data['isBoosted'] = isBoosted;
     data['uniqueViewsCount'] = uniqueViewsCount;
+
+    data['rang_gagnant'] = rangGagnant;
+    data['prix_gagnant'] = prixGagnant;
+    data['prix_deja_encaisser'] = prixDejaEncaisser;
+    data['date_encaissement'] = dateEncaissement;
 
     return data;
   }
@@ -1570,6 +1588,18 @@ class Challenge {
   bool? prixDejaEncaisser = false; // Si le prix a déjà été encaissé
   int? dateEncaissement; // Date d'encaissement
 
+  // NOUVEAU: Gestion multiple gagnants
+  int? nombreGagnants = 1; // Nombre de gagnants (par défaut 1 pour rétrocompatibilité)
+  List<Map<String, dynamic>>? gagnants = []; // Liste des gagnants avec leur rang et prix
+  List<int>? prixGagnants = []; // Prix pour chaque position [1er, 2ème, 3ème]
+
+  // 🚀 NOUVEAUX CHAMPS AJOUTÉS
+  bool? notificationGagnantsEnvoyee = false;
+  int? dateNotificationGagnants;
+  bool? determinationEnCours = false;
+  int? dateDeterminationGagnants;
+
+
   Challenge();
 
   Challenge.fromJson(Map<String, dynamic> json) {
@@ -1616,6 +1646,48 @@ class Challenge {
     devicesVotantsIds = json['devices_votants_ids'] != null
         ? List<String>.from(json['devices_votants_ids'])
         : [];
+
+
+    // NOUVEAUX CHAMPS POUR GESTION MULTIPLE GAGNANTS
+    nombreGagnants = json['nombre_gagnants'] ?? 1;
+    bool hasValidGagnants = json['gagnants'] != null &&
+        json['gagnants'] is List &&
+        json['gagnants'].isNotEmpty &&
+        json['prix_deja_encaisser'] != true; // <─ IMPORTANT
+    // Récupérer les gagnants (rétrocompatible avec posts_winner_ids)
+    if (hasValidGagnants) {
+      print("Migration challenge postsWinnerIds 1 :");
+      gagnants = List<Map<String, dynamic>>.from(json['gagnants']);
+    }
+// Sinon migration depuis l'ancien format
+    else if (json['posts_winner_ids'] != null) {
+      final postsWinnerIds = List<String>.from(json['posts_winner_ids']);
+      if (postsWinnerIds.isNotEmpty) {
+        print("Migration challenge postsWinnerIds 3 :");
+        gagnants = [{
+          'post_id': postsWinnerIds.first,
+          'rang': 1,
+          'prix': json['prix'] ?? 0,
+          'user_id': json['user_gagnant_id'],
+          'encaisser': json['prix_deja_encaisser'] ?? false,
+          'date_encaissement': null,
+        }];
+      }
+    }
+
+    // Récupérer les prix par position
+    if (json['prix_gagnants'] != null) {
+      prixGagnants = List<int>.from(json['prix_gagnants']);
+    } else {
+      // Rétrocompatible: utiliser le même prix pour tous
+      prixGagnants = List.filled(nombreGagnants ?? 1, json['prix'] ?? 0);
+    }
+
+    // 🚀 NOUVEAUX CHAMPS
+    notificationGagnantsEnvoyee = json['notification_gagnants_envoyee'] ?? false;
+    dateNotificationGagnants = json['date_notification_gagnants'];
+    determinationEnCours = json['determination_en_cours'] ?? false;
+    dateDeterminationGagnants = json['date_determination_gagnants'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1662,6 +1734,19 @@ class Challenge {
     data['date_encaissement'] = dateEncaissement;
     data['devices_votants_ids'] = devicesVotantsIds;
 
+    // NOUVEAUX CHAMPS
+    data['nombre_gagnants'] = nombreGagnants;
+    data['gagnants'] = gagnants;
+    data['prix_deja_encaisser'] = prixDejaEncaisser;
+
+    data['prix_gagnants'] = prixGagnants;
+
+    // 🚀 NOUVEAUX CHAMPS
+    data['notification_gagnants_envoyee'] = notificationGagnantsEnvoyee;
+    data['date_notification_gagnants'] = dateNotificationGagnants;
+    data['determination_en_cours'] = determinationEnCours;
+    data['date_determination_gagnants'] = dateDeterminationGagnants;
+
     return data;
   }
 
@@ -1669,7 +1754,7 @@ class Challenge {
   bool get isEnAttente => statut == 'en_attente';
   bool get isEnCours => statut == 'en_cours';
   bool get isTermine => statut == 'termine';
-  bool get isAnnule => statut == 'annule';
+  bool get isAnnule => statut == 'annule' || statut == 'annulé';
   bool aVoteAvecAppareil(String deviceId) {
     if (!DeviceInfoService.isDeviceIdValid(deviceId)) {
       return false; // Ne pas bloquer si l'ID n'est pas valide
@@ -1704,6 +1789,26 @@ class Challenge {
   bool aVote(String? userId) {
     if (userId == null) return false;
     return usersVotantsIds?.contains(userId) ?? false;
+  }
+
+  // NOUVELLE METHODE: Récupérer les posts gagnants
+  List<String> getPostsGagnantsIds() {
+    if (gagnants != null && gagnants!.isNotEmpty) {
+      return gagnants!.map((g) => g['post_id'] as String).toList();
+    }
+    // Rétrocompatible
+    return postsWinnerIds ?? [];
+  }
+
+  // NOUVELLE METHODE: Vérifier si un utilisateur a déjà encaissé
+  bool aDejaEncaisser(String userId, int rang) {
+    if (gagnants == null) return false;
+    for (var gagnant in gagnants!) {
+      if (gagnant['user_id'] == userId && gagnant['rang'] == rang) {
+        return gagnant['encaisser'] ?? false;
+      }
+    }
+    return false;
   }
 }
 

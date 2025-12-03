@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -92,7 +93,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   final Map<String, Timer> _visibilityTimers = {};
 
   // 🔥 VARIABLES POUR LES CHRONIQUES
-  final Map<String, String> _videoThumbnails = {};
+  final Map<String, Uint8List> _videoThumbnails = {};
   final Map<String, bool> _userVerificationStatus = {};
   final Map<String, UserData> _userDataCache = {};
   bool _isLoadingChroniques = false;
@@ -1116,14 +1117,34 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
   Future<void> _generateVideoThumbnails(List<Chronique> chroniques) async {
     try {
-      final videoChroniques = chroniques.where((c) => c.type == ChroniqueType.VIDEO);
+      final videoChroniques = chroniques.where((c) => c.type == ChroniqueType.VIDEO).toList();
+
       for (final chronique in videoChroniques) {
         if (chronique.mediaUrl != null && !_videoThumbnails.containsKey(chronique.id)) {
-          _videoThumbnails[chronique.id!] = chronique.mediaUrl!;
+          // Générer le thumbnail
+          final thumbnail = await _generateThumbnail(chronique.mediaUrl!);
+          if (thumbnail != null) {
+            _videoThumbnails[chronique.id!] = thumbnail;
+          }
         }
       }
     } catch (e) {
       print('❌ Erreur génération thumbnails: $e');
+    }
+  }
+  Future<Uint8List?> _generateThumbnail(String videoUrl) async {
+    try {
+      final uint8list = await VideoThumbnail.thumbnailData(
+        video: videoUrl,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 400,
+        quality: 75,
+        timeMs: 1000, // capture à 1 seconde, pour avoir un autre frame que le premier
+      );
+      return uint8list;
+    } catch (e) {
+      debugPrint("Erreur génération thumbnail: $e");
+      return null;
     }
   }
 

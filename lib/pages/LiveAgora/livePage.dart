@@ -18,6 +18,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:video_player/video_player.dart';
 
 
 import ' live_widgets.dart';
@@ -58,6 +59,13 @@ class LivePage extends StatefulWidget {
 }
 
 class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin {
+
+  // NOUVEAUX ÉTATS
+  String? _passiveStreamUrl; // L'URL HLS/RTMP pour les spectateurs passifs
+  late VideoPlayerController _videoPlayerController; // Contrôleur pour lire le flux passif
+  bool _isPassiveSpectator = false; // Vrai si l'utilisateur est un simple spectateur passif
+
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _commentController = TextEditingController();
@@ -161,9 +169,22 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       vsync: this,
       duration: Duration(milliseconds: 1500),
     );
+// =========================================================================
+    // CORRECTION MAJEURE: Init Agora SEULEMENT si l'utilisateur est actif
+    // =========================================================================
 
-    _setupCamera();
+    // final role = widget.isHost || widget.isInvited || _isParticipant;
+    //
+    // if (role) {
+    //   _initAgora(); // Utilisateur ACTIF (Hôte ou participant) -> Utilise Agora ILS
+    //   _setupCamera();
+    //   // _initAgora();
+    // } else {
+    //   _isPassiveSpectator = true;
+    //   _initPassiveStreaming(); // Utilisateur PASSIF (Spectateur) -> Utilise CDN/HLS
+    // }
     _initAgora();
+
     _setupFirestoreListeners();
     _setupLikesListener(); // ← AJOUTEZ CETTE LIGNE
     _fetchHostData();
@@ -188,7 +209,38 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
 
+// Ajout dans _LivePageState
+  Future<void> _initPassiveStreaming() async {
+    print("🎬 Initialisation du mode spectateur passif (CDN)");
 
+    try {
+      // 1. Récupérer l'URL de diffusion (RTMP/HLS) que l'hôte a enregistrée
+      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
+      final passiveUrl = liveDoc.data()?['passiveStreamUrl'] as String?;
+
+      if (passiveUrl != null && mounted) {
+        // 2. Initialiser un contrôleur vidéo Flutter standard
+        _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(passiveUrl));
+        await _videoPlayerController.initialize();
+        await _videoPlayerController.play();
+
+        setState(() {
+          _passiveStreamUrl = passiveUrl;
+        });
+        print("✅ Flux passif démarré depuis: $passiveUrl");
+
+        // Logique pour le compteur de spectateurs (doit être mis à jour)
+        _joinAsSpectator(); // Garder pour le compteur Firestore, mais PAS pour Agora.
+
+      } else {
+        print("❌ URL passive non disponible, attente...");
+        // Optionnel: Tenter à nouveau après un délai
+      }
+    } catch (e) {
+      print("❌ Erreur init streaming passif: $e");
+      // Afficher un message d'erreur à l'utilisateur
+    }
+  }
   // ==================== GESTION TEMPS PERSISTANT SIMPLIFIÉE ====================
 
   Future<void> _initializeHostTimer() async {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ import 'package:afrotok/pages/chronique/chroniquedetails.dart';
 import '../../chronique/chroniqueform.dart';
 
 class ChroniqueSectionComponent extends StatelessWidget {
-  final Map<String, String> videoThumbnails;
+  final Map<String, Uint8List> videoThumbnails;
   final Map<String, bool> userVerificationStatus;
   final Map<String, UserData> userDataCache;
   final bool isLoadingChroniques;
@@ -351,8 +352,8 @@ class ChroniqueSectionComponent extends StatelessWidget {
         return Stack(
           children: [
             if (videoThumbnails.containsKey(chronique.id!))
-              Image.file(
-                File(videoThumbnails[chronique.id!]!),
+              Image.memory(
+                videoThumbnails[chronique.id!]!,
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,

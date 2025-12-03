@@ -16,9 +16,26 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/postProvider.dart';
+import 'package:afrotok/providers/userProvider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as Path;
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
+
 class ChallengePostPage extends StatefulWidget {
-  final Challenge? challenge; // Si null = création, si non null = participation
-  final bool isParticipation; // true = participation, false = création
+  final Challenge? challenge;
+  final bool isParticipation;
 
   const ChallengePostPage({
     Key? key,
@@ -34,14 +51,17 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _titreController = TextEditingController();
-  final TextEditingController _prixController = TextEditingController();
   final TextEditingController _prixParticipationController = TextEditingController();
   final TextEditingController _prixVoteController = TextEditingController();
-  final TextEditingController _lienController = TextEditingController();
-
-  // Contrôleurs pour le challenge
   final TextEditingController _descriptionCadeauController = TextEditingController();
-  final TextEditingController _montantCadeauController = TextEditingController();
+
+  // NOUVEAUX CONTROLEURS POUR LES PRIX MULTIPLES
+  List<TextEditingController> _prixGagnantsControllers = [
+    TextEditingController(text: '5000'),
+    TextEditingController(text: '3000'),
+    TextEditingController(text: '2000'),
+  ];
+  int _nombreGagnants = 3;
 
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
@@ -62,14 +82,12 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
   DateTime _dateFinInscription = DateTime.now().add(Duration(days: 7));
   DateTime _dateFinChallenge = DateTime.now().add(Duration(days: 14));
 
-  // Types de contenu
   final Map<String, String> _typesContenu = {
     'image': 'Image uniquement',
     'video': 'Vidéo uniquement',
     'les_deux': 'Image et Vidéo',
   };
 
-  // Types de cadeaux
   final Map<String, String> _typesCadeaux = {
     'physique': 'Cadeau physique',
     'virtuel': 'Cadeau virtuel',
@@ -82,52 +100,99 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    // Pré-remplir les dates pour la création
-    if (widget.isParticipation) {
-      _dateFinInscription = _dateFinInscription.add(Duration(days: 7));
-      _dateFinChallenge = _dateFinChallenge.add(Duration(days: 14));
+    // Si on édite un challenge existant, charger ses données
+    if (widget.challenge != null && !widget.isParticipation) {
+      _chargerDonneesChallenge();
     }
   }
 
-  // Méthode pour sélectionner une image
+  void _chargerDonneesChallenge() {
+    final challenge = widget.challenge!;
+    _titreController.text = challenge.titre ?? '';
+    _descriptionController.text = challenge.description ?? '';
+    _selectedTypeContenu = challenge.typeContenu ?? 'les_deux';
+    _selectedGiftType = challenge.typeCadeaux ?? 'virtuel';
+    _descriptionCadeauController.text = challenge.descriptionCadeaux ?? '';
+    _participationGratuite = challenge.participationGratuite ?? true;
+    _voteGratuit = challenge.voteGratuit ?? true;
+    _nombreGagnants = challenge.nombreGagnants ?? 3;
+
+    // Charger les dates
+    if (challenge.startInscriptionAt != null) {
+      _dateDebutInscription = DateTime.fromMicrosecondsSinceEpoch(challenge.startInscriptionAt!);
+    }
+    if (challenge.endInscriptionAt != null) {
+      _dateFinInscription = DateTime.fromMicrosecondsSinceEpoch(challenge.endInscriptionAt!);
+    }
+    if (challenge.finishedAt != null) {
+      _dateFinChallenge = DateTime.fromMicrosecondsSinceEpoch(challenge.finishedAt!);
+    }
+
+    // Charger les prix des gagnants
+    if (challenge.prixGagnants != null && challenge.prixGagnants!.isNotEmpty) {
+      _prixGagnantsControllers = [];
+      for (int i = 0; i < challenge.prixGagnants!.length; i++) {
+        _prixGagnantsControllers.add(
+            TextEditingController(text: challenge.prixGagnants![i].toString())
+        );
+      }
+      _nombreGagnants = challenge.prixGagnants!.length;
+    } else if (challenge.prix != null) {
+      // Rétrocompatible: répartir le prix unique
+      _prixGagnantsControllers = [
+        TextEditingController(text: challenge.prix!.toString()),
+      ];
+      if (_nombreGagnants > 1) {
+        // Créer des prix décroissants
+        for (int i = 1; i < _nombreGagnants; i++) {
+          final prix = (challenge.prix! * (0.5 / i)).toInt();
+          _prixGagnantsControllers.add(TextEditingController(text: prix.toString()));
+        }
+      }
+    }
+
+    if (!_participationGratuite && challenge.prixParticipation != null) {
+      _prixParticipationController.text = challenge.prixParticipation!.toString();
+    }
+    if (!_voteGratuit && challenge.prixVote != null) {
+      _prixVoteController.text = challenge.prixVote!.toString();
+    }
+  }
+
   Future<void> _selectImage() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() {
           _selectedFile = File(image.path);
-          _imageBytes = null; // Reset les bytes si on sélectionne un nouveau fichier
+          _imageBytes = null;
         });
       }
     } catch (e) {
-      _showError('Erreur lors de la sélection de l\'image: $e');
+      _showError('Erreur lors de la sélection: $e');
     }
   }
 
-  // Méthode pour sélectionner une vidéo
   Future<void> _selectVideo() async {
     try {
       final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
       if (video != null) {
-        // Vérifier la taille et la durée de la vidéo
         final file = File(video.path);
         final size = await file.length();
-        if (size > 20 * 1024 * 1024) { // 20MB
+        if (size > 20 * 1024 * 1024) {
           _showError('La vidéo est trop lourde (max 20MB)');
           return;
         }
-
         setState(() {
           _selectedFile = file;
           _imageBytes = null;
         });
       }
     } catch (e) {
-      _showError('Erreur lors de la sélection de la vidéo: $e');
+      _showError('Erreur lors de la sélection: $e');
     }
   }
 
-  // Méthode pour uploader le média
   Future<String> _uploadMedia(File file, String fileName) async {
     try {
       Reference storageRef = FirebaseStorage.instance.ref().child('challenge_media/$fileName');
@@ -146,31 +211,30 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     }
   }
 
-  // Vérifier le type de contenu
   bool _isMediaTypeValid(String mediaType) {
     if (widget.isParticipation && widget.challenge != null) {
       final challengeType = widget.challenge!.typeContenu;
       switch (challengeType) {
-        case 'image':
-          return mediaType == 'image';
-        case 'video':
-          return mediaType == 'video';
-        case 'les_deux':
-          return mediaType == 'image' || mediaType == 'video';
-        default:
-          return true;
+        case 'image': return mediaType == 'image';
+        case 'video': return mediaType == 'video';
+        case 'les_deux': return mediaType == 'image' || mediaType == 'video';
+        default: return true;
       }
     }
     return true;
   }
 
-  // Méthode principale de soumission
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Vérifications média
-    if (_selectedFile == null && _imageBytes == null) {
-      _showError('Veuillez sélectionner un média');
+    // Valider les prix décroissants
+    if (!_validatePrixDecroissants()) {
+      _showError('Les prix doivent être décroissants (1er > 2ème > 3ème)');
+      return;
+    }
+
+    if (_selectedFile == null && _imageBytes == null && !widget.isParticipation) {
+      _showError('Veuillez sélectionner un média pour le challenge');
       return;
     }
 
@@ -185,6 +249,8 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     try {
       if (widget.isParticipation) {
         await _participerAuChallenge(user.uid);
+      } else if (widget.challenge != null) {
+        await _modifierChallenge(user.uid);
       } else {
         await _creerChallenge(user.uid);
       }
@@ -195,13 +261,21 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     }
   }
 
-  // Créer un nouveau challenge
+  bool _validatePrixDecroissants() {
+    for (int i = 0; i < _prixGagnantsControllers.length - 1; i++) {
+      final prix1 = int.tryParse(_prixGagnantsControllers[i].text) ?? 0;
+      final prix2 = int.tryParse(_prixGagnantsControllers[i + 1].text) ?? 0;
+      if (prix1 <= prix2) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<void> _creerChallenge(String userId) async {
     final now = DateTime.now().microsecondsSinceEpoch;
-
-    // Créer le post du challenge
-    String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
-    String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;
+    String postId = Uuid().v4();
+    String challengeId = Uuid().v4();
 
     // Upload du média
     String mediaUrl = '';
@@ -212,14 +286,13 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       mediaUrl = await _uploadMedia(_selectedFile!, fileName);
       mediaType = _selectedFile!.path.toLowerCase().contains('.mp4') ? 'video' : 'image';
     } else if (_imageBytes != null) {
-      // Gérer l'upload des bytes d'image
       final fileName = '${Uuid().v4()}.jpg';
       final tempFile = await _convertUint8ListToFile(_imageBytes!, fileName);
       mediaUrl = await _uploadMedia(tempFile, fileName);
       mediaType = 'image';
     }
 
-    // Créer le post
+    // Créer le post du challenge
     Post post = Post()
       ..id = postId
       ..user_id = userId
@@ -236,6 +309,15 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ..comments = 0
       ..vues = 0;
 
+    // Calculer les prix des gagnants
+    List<int> prixGagnants = [];
+    int totalPrix = 0;
+    for (var controller in _prixGagnantsControllers) {
+      final prix = int.tryParse(controller.text) ?? 0;
+      prixGagnants.add(prix);
+      totalPrix += prix;
+    }
+
     // Créer le challenge
     Challenge challenge = Challenge()
       ..id = challengeId
@@ -246,7 +328,10 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ..statut = 'en_attente'
       ..typeCadeaux = _selectedGiftType
       ..descriptionCadeaux = _descriptionCadeauController.text
-      ..prix = int.tryParse(_montantCadeauController.text) ?? 0
+      ..prix = totalPrix // Total pour rétrocompatibilité
+      ..nombreGagnants = _nombreGagnants
+      ..prixGagnants = prixGagnants
+      ..gagnants = []
       ..participationGratuite = _participationGratuite
       ..prixParticipation = _participationGratuite ? 0 : int.tryParse(_prixParticipationController.text) ?? 0
       ..voteGratuit = _voteGratuit
@@ -263,59 +348,83 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ..totalVotes = 0
       ..postsIds = []
       ..usersInscritsIds = []
-      ..usersVotantsIds = [];
+      ..usersVotantsIds = []
+      ..devicesVotantsIds = []
+      ..postsWinnerIds = []
+      ..userGagnantId = null
+      ..prixDejaEncaisser = false
+      ..dateEncaissement = null;
 
-    // Enregistrement dans Firestore
+    // Enregistrement
     final batch = FirebaseFirestore.instance.batch();
-
-    batch.set(
-      FirebaseFirestore.instance.collection('Posts').doc(postId),
-      post.toJson(),
-    );
-
-    batch.set(
-      FirebaseFirestore.instance.collection('Challenges').doc(challengeId),
-      challenge.toJson(),
-    );
-
+    batch.set(FirebaseFirestore.instance.collection('Posts').doc(postId), post.toJson());
+    batch.set(FirebaseFirestore.instance.collection('Challenges').doc(challengeId), challenge.toJson());
     await batch.commit();
+
     _showSuccess('Challenge créé avec succès!');
-    // Envoyer les notifications
-     _envoyerNotificationsChallenge(challenge, post);
-
-
+    _envoyerNotificationsChallenge(challenge, post);
     Navigator.of(context).pop();
   }
 
-  // Participer à un challenge existant
+  Future<void> _modifierChallenge(String userId) async {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    final challenge = widget.challenge!;
+
+    // Calculer les nouveaux prix
+    List<int> prixGagnants = [];
+    int totalPrix = 0;
+    for (var controller in _prixGagnantsControllers) {
+      final prix = int.tryParse(controller.text) ?? 0;
+      prixGagnants.add(prix);
+      totalPrix += prix;
+    }
+
+    // Mettre à jour le challenge
+    await FirebaseFirestore.instance.collection('Challenges').doc(challenge.id!).update({
+      'titre': _titreController.text,
+      'description': _descriptionController.text,
+      'typeCadeaux': _selectedGiftType,
+      'descriptionCadeaux': _descriptionCadeauController.text,
+      'prix': totalPrix,
+      'nombre_gagnants': _nombreGagnants,
+      'prix_gagnants': prixGagnants,
+      'participationGratuite': _participationGratuite,
+      'prixParticipation': _participationGratuite ? 0 : int.tryParse(_prixParticipationController.text) ?? 0,
+      'voteGratuit': _voteGratuit,
+      'prixVote': _voteGratuit ? 0 : int.tryParse(_prixVoteController.text) ?? 0,
+      'type_contenu': _selectedTypeContenu,
+      'start_inscription_at': _dateDebutInscription.microsecondsSinceEpoch,
+      'end_inscription_at': _dateFinInscription.microsecondsSinceEpoch,
+      'finished_at': _dateFinChallenge.microsecondsSinceEpoch,
+      'updated_at': now,
+    });
+
+    _showSuccess('Challenge modifié avec succès!');
+    Navigator.of(context).pop();
+  }
+
   Future<void> _participerAuChallenge(String userId) async {
     if (widget.challenge == null) return;
 
     final challenge = widget.challenge!;
     final now = DateTime.now().microsecondsSinceEpoch;
 
-    // VÉRIFICATIONS POUR LA PARTICIPATION (PUBLICATION)
-
-    // 1. Vérifier que le challenge est en cours
+    // Vérifications
     if (!challenge.isEnCours) {
       _showError('Le challenge n\'est pas encore commencé ou est terminé');
       return;
     }
-
-    // 2. Vérifier que l'utilisateur est inscrit
     if (!challenge.isInscrit(userId)) {
-      _showError('Vous devez être inscrit pour participer à ce challenge');
+      _showError('Vous devez être inscrit pour participer');
       return;
     }
 
-    // 3. Vérifier que l'utilisateur n'a pas déjà publié un post pour ce challenge
     final existingPost = await _checkIfUserAlreadyPosted(userId);
     if (existingPost) {
-      _showError('Vous avez déjà publié votre participation à ce challenge');
+      _showError('Vous avez déjà publié votre participation');
       return;
     }
 
-    // 4. Vérifier le type de média
     if (_selectedFile == null) {
       _showError('Veuillez sélectionner un média');
       return;
@@ -323,26 +432,16 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 
     String mediaType = _selectedFile!.path.toLowerCase().contains('.mp4') ? 'video' : 'image';
     if (!_isMediaTypeValid(mediaType)) {
-      _showError('Type de média non autorisé pour ce challenge');
+      _showError('Type de média non autorisé');
       return;
     }
 
-    // 5. Vérifier le solde si participation payante (optionnel - pour publication spéciale)
-    if (widget.isParticipation && !challenge.participationGratuite!) {
-      final solde = await _getSoldeUtilisateur(userId);
-      if (solde < challenge.prixParticipation!) {
-        _showSoldeInsuffisant(challenge.prixParticipation! - solde.toInt());
-        return;
-      }
-    }
-
-    // UPLOAD DU MÉDIA
+    // Upload
     final fileName = '${Uuid().v4()}_${Path.basename(_selectedFile!.path)}';
     final mediaUrl = await _uploadMedia(_selectedFile!, fileName);
 
-    // CRÉER LE POST DE PARTICIPATION
-    String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
-
+    // Créer le post
+    String postId = Uuid().v4();
     Post post = Post()
       ..id = postId
       ..user_id = userId
@@ -362,71 +461,55 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ..votesChallenge = 0
       ..usersVotesIds = [];
 
-    // TRANSACTION POUR LA PARTICIPATION (PUBLICATION)
+    // Transaction
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      // Vérifications finales
       final challengeRef = FirebaseFirestore.instance.collection('Challenges').doc(challenge.id!);
       final challengeDoc = await transaction.get(challengeRef);
 
       if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
-
       final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
 
-      // Vérifications finales
-      if (!currentChallenge.isEnCours) {
-        throw Exception('Le challenge n\'est plus en cours');
-      }
+      if (!currentChallenge.isEnCours) throw Exception('Challenge non en cours');
+      if (!currentChallenge.isInscrit(userId)) throw Exception('Non inscrit');
 
-      if (!currentChallenge.isInscrit(userId)) {
-        throw Exception('Vous n\'êtes pas inscrit à ce challenge');
-      }
-
-      // Vérifier si l'utilisateur a déjà un post pour ce challenge
+      // Vérifier post existant
       final postsQuery = await FirebaseFirestore.instance
           .collection('Posts')
           .where('user_id', isEqualTo: userId)
           .where('challenge_id', isEqualTo: challenge.id)
           .get();
 
-      if (postsQuery.docs.isNotEmpty) {
-        throw Exception('Vous avez déjà publié votre participation');
-      }
+      if (postsQuery.docs.isNotEmpty) throw Exception('Participation déjà existante');
 
-      // Déduire le prix si participation payante
-      if (widget.isParticipation && !challenge.participationGratuite!) {
+      // Débiter si participation payante
+      if (!challenge.participationGratuite!) {
         await _debiterUtilisateur(
             userId,
             challenge.prixParticipation!,
-            'Participation au challenge: ${challenge.titre}'
+            'Participation: ${challenge.titre}'
         );
       }
 
-      // CRÉER LE POST
+      // Créer post
       transaction.set(
         FirebaseFirestore.instance.collection('Posts').doc(postId),
         post.toJson(),
       );
 
-      // METTRE À JOUR LE CHALLENGE
+      // Mettre à jour challenge
       transaction.update(challengeRef, {
         'posts_ids': FieldValue.arrayUnion([postId]),
-        'updated_at': now
-      });
-
-      // METTRE À JOUR LES STATISTIQUES (optionnel)
-      transaction.update(challengeRef, {
-        'total_participants': FieldValue.increment(1), // Si vous voulez compter les posts comme participants
+        'total_participants': FieldValue.increment(1),
+        'updated_at': now,
       });
     });
+
     postProvider.addPostIdToAppDefaultData(postId);
-
-    _showSuccess('Votre participation a été publiée avec succès!');
-     _envoyerNotificationParticipation(challenge, post);
-
+    _showSuccess('Participation publiée avec succès!');
+    _envoyerNotificationParticipation(challenge, post);
     Navigator.of(context).pop();
   }
 
-// Méthode pour vérifier si l'utilisateur a déjà publié un post pour ce challenge
   Future<bool> _checkIfUserAlreadyPosted(String userId) async {
     try {
       final postsSnapshot = await FirebaseFirestore.instance
@@ -435,16 +518,12 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
           .where('challenge_id', isEqualTo: widget.challenge!.id)
           .limit(1)
           .get();
-
       return postsSnapshot.docs.isNotEmpty;
     } catch (e) {
-      debugPrint('Erreur vérification post existant: $e');
       return false;
     }
   }
 
-// Méthode pour vérifier le type de média
-  // Méthodes utilitaires
   Future<File> _convertUint8ListToFile(Uint8List uint8List, String fileName) async {
     final Directory tempDir = await getTemporaryDirectory();
     final String filePath = '${tempDir.path}/$fileName';
@@ -457,8 +536,16 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
   }
 
   Future<void> _debiterUtilisateur(String userId, int montant, String raison) async {
-    await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-      'votre_solde_principal': FieldValue.increment(-montant)
+    final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
+    final userDoc = await userRef.get();
+    final ancienSolde = (userDoc.data()?['votre_solde_principal'] ?? 0).toDouble();
+
+    if (ancienSolde < montant) {
+      throw Exception('Solde insuffisant');
+    }
+
+    await userRef.update({
+      'votre_solde_principal': ancienSolde - montant,
     });
 
     // Crediter l'application
@@ -466,13 +553,14 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       'solde_gain': FieldValue.increment(montant)
     }, SetOptions(merge: true));
 
-    // Log de transaction
-    await FirebaseFirestore.instance.collection('transactions').add({
+    // Transaction
+    await FirebaseFirestore.instance.collection('TransactionSoldes').add({
       'user_id': userId,
-      'type': 'debit',
       'montant': montant,
-      'raison': raison,
-      'created_at': DateTime.now().microsecondsSinceEpoch
+      'type': TypeTransaction.DEPENSE.name,
+      'description': raison,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+      'statut': StatutTransaction.VALIDER.name,
     });
   }
 
@@ -485,7 +573,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
             smallImage: authProvider.loginUserData.imageUrl ?? '',
             send_user_id: authProvider.loginUserData.id!,
             recever_user_id: "",
-            message: "🎉 Nouveau challenge: ${challenge.description}! 🎁 Prix: ${challenge.prix} FCFA",
+            message: "🎉 Nouveau challenge: ${challenge.titre}! 🏆 Prix: ${challenge.prix} FCFA",
             type_notif: 'CHALLENGE',
             post_id: post.id!,
             post_type: post.dataType ?? 'IMAGE',
@@ -493,27 +581,20 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         );
       }
     } catch (e) {
-      print('Erreur envoi notification: $e');
+      print('Erreur notification: $e');
     }
   }
 
-  Future<void> _envoyerNotificationParticipation(
-      Challenge challenge, Post post)
-  async {
+  Future<void> _envoyerNotificationParticipation(Challenge challenge, Post post) async {
     try {
       final userIds = await authProvider.getAllUsersOneSignaUserId();
-
       if (userIds.isNotEmpty) {
-        final userName = authProvider.loginUserData.pseudo ?? "Un participant";
-        final userImage = authProvider.loginUserData.imageUrl ?? "";
-
         await authProvider.sendNotification(
           userIds: userIds,
-          smallImage: userImage,
+          smallImage: authProvider.loginUserData.imageUrl ?? '',
           send_user_id: authProvider.loginUserData.id!,
           recever_user_id: "",
-          message:
-          "🔥 $userName participe au challenge '${challenge.titre}' ! 🎯 Venez voter 💚🟨⬛",
+          message: "🔥 ${authProvider.loginUserData.pseudo} participe à '${challenge.titre}'! 🎯 Votez maintenant!",
           type_notif: 'PARTICIPATION_CHALLENGE',
           post_id: post.id!,
           post_type: post.dataType ?? 'IMAGE',
@@ -521,98 +602,27 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         );
       }
     } catch (e) {
-      print('Erreur envoi notification participation: $e');
+      print('Erreur notification: $e');
     }
   }
 
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
-  void _showSoldeInsuffisant(int montantManquant) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Solde insuffisant'),
-        content: Text('Il vous manque $montantManquant FCFA pour participer à ce challenge.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Naviguer vers la page de recharge
-              // Navigator.push(context, MaterialPageRoute(builder: (_) => RechargePage()));
-            },
-            child: Text('Recharger'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Sélecteurs de date
   Future<void> _selectDate(BuildContext context, bool isStart, bool isInscription) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: isStart
-          ? _dateDebutInscription
-          : (isInscription ? _dateFinInscription : _dateFinChallenge),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(pickedDate),
-      );
-
-      if (pickedTime != null) {
-        final DateTime fullDateTime = DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          pickedTime.hour,
-          pickedTime.minute,
-        );
-
-        setState(() {
-          if (isStart) {
-            _dateDebutInscription = fullDateTime;
-          } else if (isInscription) {
-            _dateFinInscription = fullDateTime;
-          } else {
-            _dateFinChallenge = fullDateTime;
-          }
-        });
-      }
-    }
-  }
-  Future<void> _selectDate3(BuildContext context, bool isStart, bool isInscription) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStart
-          ? _dateDebutInscription
-          : (isInscription ? _dateFinInscription : _dateFinChallenge),
-      firstDate: DateTime(2000), // ✅ Autorise les dates passées
+      initialDate: isStart ? _dateDebutInscription : (isInscription ? _dateFinInscription : _dateFinChallenge),
+      firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
 
@@ -631,26 +641,28 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCreation = !widget.isParticipation;
+    final bool isCreation = !widget.isParticipation && widget.challenge == null;
+    final bool isModification = !widget.isParticipation && widget.challenge != null;
     final bool isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    // Vérifier les permissions
     if (isCreation && !isAdmin) {
       return Scaffold(
         appBar: AppBar(title: Text('Créer un Challenge')),
-        body: Center(
-          child: Text('Seuls les administrateurs peuvent créer des challenges'),
-        ),
+        body: Center(child: Text('Administrateurs seulement')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isCreation ? 'Créer un Challenge' : 'Participer au Challenge'),
+        title: Text(
+          isCreation ? 'Créer un Challenge' :
+          isModification ? 'Modifier le Challenge' :
+          'Participer au Challenge',
+        ),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: _isLoading ? _buildLoading() : _buildForm(isCreation),
+      body: _isLoading ? _buildLoading() : _buildForm(isCreation, isModification),
     );
   }
 
@@ -672,7 +684,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     );
   }
 
-  Widget _buildForm(bool isCreation) {
+  Widget _buildForm(bool isCreation, bool isModification) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
       child: Form(
@@ -680,66 +692,43 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section Média
-            _buildMediaSection(isCreation),
+            if (!widget.isParticipation) _buildMediaSection(),
             SizedBox(height: 20),
 
-            // Description
             TextFormField(
               controller: _descriptionController,
               decoration: InputDecoration(
-                labelText: isCreation ? 'Description du challenge' : 'Description de votre participation',
+                labelText: widget.isParticipation
+                    ? 'Description de votre participation'
+                    : 'Description du challenge',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Ce champ est obligatoire';
-                }
-                return null;
-              },
+              validator: (value) => value?.isEmpty ?? true ? 'Obligatoire' : null,
             ),
             SizedBox(height: 20),
 
-            // Section spécifique à la création
-            if (isCreation) ..._buildCreationFields(),
-
-            // Section spécifique à la participation
-            if (!isCreation && widget.challenge != null) ..._buildParticipationInfo(),
+            if (isCreation || isModification) ..._buildCreationFields(),
+            if (widget.isParticipation && widget.challenge != null) ..._buildParticipationInfo(),
 
             SizedBox(height: 30),
-
-            // Bouton de soumission
-            _buildSubmitButton(isCreation),
+            _buildSubmitButton(isCreation, isModification),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMediaSection(bool isCreation) {
+  Widget _buildMediaSection() {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Média ${isCreation ? 'du challenge' : 'de participation'}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text('Média du challenge', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
 
-            // Restrictions pour la participation
-            if (!isCreation && widget.challenge != null)
-              Text(
-                'Type autorisé: ${_typesContenu[widget.challenge!.typeContenu] ?? 'Tous'}',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-
-            SizedBox(height: 10),
-
-            // Aperçu du média
             if (_selectedFile != null || _imageBytes != null)
               Container(
                 height: 200,
@@ -748,9 +737,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: _selectedFile != null && _selectedFile!.path.toLowerCase().contains('.mp4')
-                    ? _buildVideoPreview()
-                    : _buildImagePreview(),
+                child: _buildMediaPreview(),
               )
             else
               Container(
@@ -770,8 +757,6 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
               ),
 
             SizedBox(height: 10),
-
-            // Boutons de sélection
             Row(
               children: [
                 Expanded(
@@ -797,74 +782,147 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     );
   }
 
-  Widget _buildImagePreview() {
-    return _imageBytes != null
-        ? Image.memory(_imageBytes!, fit: BoxFit.cover)
-        : _selectedFile != null
-        ? Image.file(_selectedFile!, fit: BoxFit.cover)
-        : Container();
-  }
-
-  Widget _buildVideoPreview() {
-    return Stack(
-      children: [
-        Container(
-          color: Colors.black,
-          child: Center(child: Icon(Icons.play_arrow, size: 50, color: Colors.white)),
-        ),
-        Positioned(
-          bottom: 10,
-          right: 10,
-          child: Container(
-            padding: EdgeInsets.all(4),
-            color: Colors.black54,
-            child: Text('VIDEO', style: TextStyle(color: Colors.white)),
-          ),
-        ),
-      ],
-    );
+  Widget _buildMediaPreview() {
+    if (_imageBytes != null) {
+      return Image.memory(_imageBytes!, fit: BoxFit.cover);
+    } else if (_selectedFile != null) {
+      if (_selectedFile!.path.toLowerCase().contains('.mp4')) {
+        return Stack(
+          children: [
+            Container(color: Colors.black),
+            Center(child: Icon(Icons.play_arrow, size: 50, color: Colors.white)),
+          ],
+        );
+      } else {
+        return Image.file(_selectedFile!, fit: BoxFit.cover);
+      }
+    }
+    return Container();
   }
 
   List<Widget> _buildCreationFields() {
     return [
-      // Titre du challenge
+      // Titre
       TextFormField(
         controller: _titreController,
-        decoration: InputDecoration(
-          labelText: 'Titre du challenge',
-          border: OutlineInputBorder(),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Le titre est obligatoire';
-          }
-          return null;
-        },
+        decoration: InputDecoration(labelText: 'Titre du challenge', border: OutlineInputBorder()),
+        validator: (value) => value?.isEmpty ?? true ? 'Titre obligatoire' : null,
       ),
       SizedBox(height: 20),
 
       // Type de contenu
       DropdownButtonFormField<String>(
         value: _selectedTypeContenu,
-        decoration: InputDecoration(
-          labelText: 'Type de contenu autorisé',
-          border: OutlineInputBorder(),
-        ),
-        items: _typesContenu.entries.map((entry) {
-          return DropdownMenuItem(
-            value: entry.key,
-            child: Text(entry.value),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            _selectedTypeContenu = value!;
-          });
-        },
+        decoration: InputDecoration(labelText: 'Type de contenu autorisé', border: OutlineInputBorder()),
+        items: _typesContenu.entries.map((entry) =>
+            DropdownMenuItem(value: entry.key, child: Text(entry.value))
+        ).toList(),
+        onChanged: (value) => setState(() => _selectedTypeContenu = value!),
       ),
       SizedBox(height: 20),
 
-      // Informations du cadeau
+      // NOUVEAU: Gestion des gagnants
+      Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('🏆 Gagnants et Prix', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+
+              Row(
+                children: [
+                  Text('Nombre de gagnants:'),
+                  SizedBox(width: 10),
+                  DropdownButton<int>(
+                    value: _nombreGagnants,
+                    items: [1, 2, 3, 4, 5].map((value) =>
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text('$value gagnant${value > 1 ? "s" : ""}'),
+                        )
+                    ).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _nombreGagnants = value!;
+                        // Ajuster les contrôleurs
+                        if (_prixGagnantsControllers.length < value) {
+                          for (int i = _prixGagnantsControllers.length; i < value; i++) {
+                            _prixGagnantsControllers.add(TextEditingController(text: '0'));
+                          }
+                        } else if (_prixGagnantsControllers.length > value) {
+                          _prixGagnantsControllers = _prixGagnantsControllers.sublist(0, value);
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+
+              // Prix par position
+              Text('💰 Prix par position:', style: TextStyle(fontWeight: FontWeight.w600)),
+              SizedBox(height: 10),
+
+              for (int i = 0; i < _nombreGagnants; i++)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 70,
+                          child: Text(
+                            _getPositionLabel(i + 1),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: _getPositionColor(i + 1),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _prixGagnantsControllers[i],
+                            decoration: InputDecoration(
+                              labelText: 'Prix (FCFA)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) return 'Prix obligatoire';
+                              if (int.tryParse(value!) == null) return 'Nombre valide';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (i < _nombreGagnants - 1) SizedBox(height: 10),
+                  ],
+                ),
+
+              SizedBox(height: 20),
+              Divider(),
+
+              // Total
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('TOTAL DES PRIX:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '${_calculateTotalPrix()} FCFA',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      SizedBox(height: 20),
+
+      // Type de cadeau
       Card(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -876,46 +934,18 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 
               DropdownButtonFormField<String>(
                 value: _selectedGiftType,
-                decoration: InputDecoration(labelText: 'Type de cadeau'),
-                items: _typesCadeaux.entries.map((entry) {
-                  return DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedGiftType = value!;
-                  });
-                },
+                decoration: InputDecoration(labelText: 'Type de prix'),
+                items: _typesCadeaux.entries.map((entry) =>
+                    DropdownMenuItem(value: entry.key, child: Text(entry.value))
+                ).toList(),
+                onChanged: (value) => setState(() => _selectedGiftType = value!),
               ),
               SizedBox(height: 10),
 
               TextFormField(
                 controller: _descriptionCadeauController,
-                decoration: InputDecoration(labelText: 'Description du cadeau'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'La description est obligatoire';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 10),
-
-              TextFormField(
-                controller: _montantCadeauController,
-                decoration: InputDecoration(labelText: 'Montant du prix (FCFA)'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Le montant est obligatoire';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Veuillez entrer un nombre valide';
-                  }
-                  return null;
-                },
+                decoration: InputDecoration(labelText: 'Description du prix'),
+                validator: (value) => value?.isEmpty ?? true ? 'Description obligatoire' : null,
               ),
             ],
           ),
@@ -933,59 +963,50 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
               Text('💰 Configuration des frais', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
 
-              // Participation gratuite/payante
-              Row(
-                children: [
-                  Text('Participation gratuite'),
-                  Switch(
-                    value: _participationGratuite,
-                    onChanged: (value) {
-                      setState(() {
-                        _participationGratuite = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
+              // Participation
+              Row(children: [
+                Text('Participation gratuite'),
+                Switch(
+                  value: _participationGratuite,
+                  onChanged: (value) => setState(() => _participationGratuite = value),
+                ),
+              ]),
 
               if (!_participationGratuite) ...[
+                SizedBox(height: 10),
                 TextFormField(
                   controller: _prixParticipationController,
                   decoration: InputDecoration(labelText: 'Prix de participation (FCFA)'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (!_participationGratuite && (value == null || value.isEmpty)) {
-                      return 'Le prix de participation est obligatoire';
+                    if (!_participationGratuite && (value?.isEmpty ?? true)) {
+                      return 'Prix obligatoire';
                     }
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
               ],
 
-              // Vote gratuit/payant
-              Row(
-                children: [
-                  Text('Vote gratuit'),
-                  Switch(
-                    value: _voteGratuit,
-                    onChanged: (value) {
-                      setState(() {
-                        _voteGratuit = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
+              SizedBox(height: 20),
+
+              // Vote
+              Row(children: [
+                Text('Vote gratuit'),
+                Switch(
+                  value: _voteGratuit,
+                  onChanged: (value) => setState(() => _voteGratuit = value),
+                ),
+              ]),
 
               if (!_voteGratuit) ...[
+                SizedBox(height: 10),
                 TextFormField(
                   controller: _prixVoteController,
                   decoration: InputDecoration(labelText: 'Prix du vote (FCFA)'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (!_voteGratuit && (value == null || value.isEmpty)) {
-                      return 'Le prix du vote est obligatoire';
+                    if (!_voteGratuit && (value?.isEmpty ?? true)) {
+                      return 'Prix obligatoire';
                     }
                     return null;
                   },
@@ -997,7 +1018,7 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ),
       SizedBox(height: 20),
 
-      // Dates du challenge
+      // Dates
       Card(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -1009,10 +1030,8 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
 
               _buildDateField('Début des inscriptions', _dateDebutInscription, true, true),
               SizedBox(height: 10),
-
               _buildDateField('Fin des inscriptions', _dateFinInscription, false, true),
               SizedBox(height: 10),
-
               _buildDateField('Fin du challenge', _dateFinChallenge, false, false),
             ],
           ),
@@ -1033,34 +1052,95 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
               Text('📋 Informations du challenge', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
 
-              Text('Titre: ${challenge.titre ?? 'N/A'}', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Titre: ${challenge.titre}', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 5),
+              Text('Description: ${challenge.description}'),
               SizedBox(height: 5),
 
-              Text('Description: ${challenge.description ?? 'N/A'}'),
-              SizedBox(height: 5),
+              // Afficher les prix des gagnants
+              Text('Prix à gagner:', style: TextStyle(fontWeight: FontWeight.bold)),
+              for (int i = 0; i < (challenge.prixGagnants?.length ?? 1); i++)
+                Padding(
+                  padding: EdgeInsets.only(left: 10),
+                  child: Text(
+                    '${_getPositionLabel(i + 1)}: ${challenge.prixGagnants?[i] ?? challenge.prix} FCFA',
+                    style: TextStyle(color: _getPositionColor(i + 1)),
+                  ),
+                ),
 
-              Text('Prix à gagner: ${challenge.prix ?? 0} FCFA', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-              SizedBox(height: 5),
-
-              Text('Type de contenu: ${_typesContenu[challenge.typeContenu] ?? 'Tous'}'),
-              SizedBox(height: 5),
+              SizedBox(height: 10),
+              Text('Type de contenu: ${_typesContenu[challenge.typeContenu] ?? "Tous"}'),
 
               if (!challenge.participationGratuite!)
-                Text('Coût de participation: ${challenge.prixParticipation} FCFA', style: TextStyle(color: Colors.orange)),
+                Text('Coût de participation: ${challenge.prixParticipation} FCFA',
+                    style: TextStyle(color: Colors.orange)),
             ],
           ),
         ),
       ),
       SizedBox(height: 20),
+
+      // Média de participation
+      Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('📷 Votre participation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+
+              if (_selectedFile != null || _imageBytes != null)
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _buildMediaPreview(),
+                )
+              else
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(child: Text('Aucun média sélectionné')),
+                ),
+
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _selectImage,
+                      icon: Icon(Icons.photo),
+                      label: Text('Image'),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _selectVideo,
+                      icon: Icon(Icons.videocam),
+                      label: Text('Vidéo'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     ];
   }
 
   Widget _buildDateField(String label, DateTime date, bool isStart, bool isInscription) {
     return Row(
       children: [
-        Expanded(
-          child: Text('$label: ${DateFormat('dd/MM/yyyy').format(date)}'),
-        ),
+        Expanded(child: Text('$label: ${DateFormat('dd/MM/yyyy').format(date)}')),
         TextButton(
           onPressed: () => _selectDate(context, isStart, isInscription),
           child: Text('Modifier'),
@@ -1069,23 +1149,1127 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
     );
   }
 
-  Widget _buildSubmitButton(bool isCreation) {
+  Widget _buildSubmitButton(bool isCreation, bool isModification) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCreation ? Colors.blue : Colors.green,
+          backgroundColor: isCreation ? Colors.blue :
+          isModification ? Colors.orange : Colors.green,
           foregroundColor: Colors.white,
         ),
         child: _isLoading
             ? CircularProgressIndicator(color: Colors.white)
             : Text(
-          isCreation ? 'Créer le Challenge' : 'Participer au Challenge',
+          isCreation ? 'Créer le Challenge' :
+          isModification ? 'Modifier le Challenge' :
+          'Participer au Challenge',
           style: TextStyle(fontSize: 16),
         ),
       ),
     );
   }
+
+  // Méthodes utilitaires
+  String _getPositionLabel(int position) {
+    switch(position) {
+      case 1: return '🥇 1er Prix';
+      case 2: return '🥈 2ème Prix';
+      case 3: return '🥉 3ème Prix';
+      default: return '$position ème Prix';
+    }
+  }
+
+  Color _getPositionColor(int position) {
+    switch(position) {
+      case 1: return Colors.yellow.shade800;
+      case 2: return Colors.grey.shade600;
+      case 3: return Colors.orange.shade800;
+      default: return Colors.blue;
+    }
+  }
+
+  int _calculateTotalPrix() {
+    int total = 0;
+    for (var controller in _prixGagnantsControllers) {
+      total += int.tryParse(controller.text) ?? 0;
+    }
+    return total;
+  }
 }
+
+// class ChallengePostPage extends StatefulWidget {
+//   final Challenge? challenge; // Si null = création, si non null = participation
+//   final bool isParticipation; // true = participation, false = création
+//
+//   const ChallengePostPage({
+//     Key? key,
+//     this.challenge,
+//     this.isParticipation = false,
+//   }) : super(key: key);
+//
+//   @override
+//   _ChallengePostPageState createState() => _ChallengePostPageState();
+// }
+//
+// class _ChallengePostPageState extends State<ChallengePostPage> {
+//   final _formKey = GlobalKey<FormState>();
+//   final TextEditingController _descriptionController = TextEditingController();
+//   final TextEditingController _titreController = TextEditingController();
+//   final TextEditingController _prixController = TextEditingController();
+//   final TextEditingController _prixParticipationController = TextEditingController();
+//   final TextEditingController _prixVoteController = TextEditingController();
+//   final TextEditingController _lienController = TextEditingController();
+//
+//   // Contrôleurs pour le challenge
+//   final TextEditingController _descriptionCadeauController = TextEditingController();
+//   final TextEditingController _montantCadeauController = TextEditingController();
+//
+//   late UserAuthProvider authProvider;
+//   late UserProvider userProvider;
+//   late PostProvider postProvider;
+//
+//   File? _selectedFile;
+//   Uint8List? _imageBytes;
+//   final ImagePicker _picker = ImagePicker();
+//   bool _isLoading = false;
+//   double _uploadProgress = 0;
+//
+//   // Variables pour le challenge
+//   String _selectedTypeContenu = 'les_deux';
+//   String _selectedGiftType = 'virtuel';
+//   bool _participationGratuite = true;
+//   bool _voteGratuit = true;
+//   DateTime _dateDebutInscription = DateTime.now();
+//   DateTime _dateFinInscription = DateTime.now().add(Duration(days: 7));
+//   DateTime _dateFinChallenge = DateTime.now().add(Duration(days: 14));
+//
+//   // Types de contenu
+//   final Map<String, String> _typesContenu = {
+//     'image': 'Image uniquement',
+//     'video': 'Vidéo uniquement',
+//     'les_deux': 'Image et Vidéo',
+//   };
+//
+//   // Types de cadeaux
+//   final Map<String, String> _typesCadeaux = {
+//     'physique': 'Cadeau physique',
+//     'virtuel': 'Cadeau virtuel',
+//   };
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+//     userProvider = Provider.of<UserProvider>(context, listen: false);
+//     postProvider = Provider.of<PostProvider>(context, listen: false);
+//
+//     // Pré-remplir les dates pour la création
+//     if (widget.isParticipation) {
+//       _dateFinInscription = _dateFinInscription.add(Duration(days: 7));
+//       _dateFinChallenge = _dateFinChallenge.add(Duration(days: 14));
+//     }
+//   }
+//
+//   // Méthode pour sélectionner une image
+//   Future<void> _selectImage() async {
+//     try {
+//       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+//       if (image != null) {
+//         setState(() {
+//           _selectedFile = File(image.path);
+//           _imageBytes = null; // Reset les bytes si on sélectionne un nouveau fichier
+//         });
+//       }
+//     } catch (e) {
+//       _showError('Erreur lors de la sélection de l\'image: $e');
+//     }
+//   }
+//
+//   // Méthode pour sélectionner une vidéo
+//   Future<void> _selectVideo() async {
+//     try {
+//       final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+//       if (video != null) {
+//         // Vérifier la taille et la durée de la vidéo
+//         final file = File(video.path);
+//         final size = await file.length();
+//         if (size > 20 * 1024 * 1024) { // 20MB
+//           _showError('La vidéo est trop lourde (max 20MB)');
+//           return;
+//         }
+//
+//         setState(() {
+//           _selectedFile = file;
+//           _imageBytes = null;
+//         });
+//       }
+//     } catch (e) {
+//       _showError('Erreur lors de la sélection de la vidéo: $e');
+//     }
+//   }
+//
+//   // Méthode pour uploader le média
+//   Future<String> _uploadMedia(File file, String fileName) async {
+//     try {
+//       Reference storageRef = FirebaseStorage.instance.ref().child('challenge_media/$fileName');
+//       UploadTask uploadTask = storageRef.putFile(file);
+//
+//       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+//         setState(() {
+//           _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+//         });
+//       });
+//
+//       await uploadTask;
+//       return await storageRef.getDownloadURL();
+//     } catch (e) {
+//       throw Exception('Erreur upload: $e');
+//     }
+//   }
+//
+//   // Vérifier le type de contenu
+//   bool _isMediaTypeValid(String mediaType) {
+//     if (widget.isParticipation && widget.challenge != null) {
+//       final challengeType = widget.challenge!.typeContenu;
+//       switch (challengeType) {
+//         case 'image':
+//           return mediaType == 'image';
+//         case 'video':
+//           return mediaType == 'video';
+//         case 'les_deux':
+//           return mediaType == 'image' || mediaType == 'video';
+//         default:
+//           return true;
+//       }
+//     }
+//     return true;
+//   }
+//
+//   // Méthode principale de soumission
+//   Future<void> _submit() async {
+//     if (!_formKey.currentState!.validate()) return;
+//
+//     // Vérifications média
+//     if (_selectedFile == null && _imageBytes == null) {
+//       _showError('Veuillez sélectionner un média');
+//       return;
+//     }
+//
+//     final user = FirebaseAuth.instance.currentUser;
+//     if (user == null) {
+//       _showError('Utilisateur non connecté');
+//       return;
+//     }
+//
+//     setState(() { _isLoading = true; });
+//
+//     try {
+//       if (widget.isParticipation) {
+//         await _participerAuChallenge(user.uid);
+//       } else {
+//         await _creerChallenge(user.uid);
+//       }
+//     } catch (e) {
+//       _showError('Erreur: $e');
+//     } finally {
+//       setState(() { _isLoading = false; });
+//     }
+//   }
+//
+//   // Créer un nouveau challenge
+//   Future<void> _creerChallenge(String userId) async {
+//     final now = DateTime.now().microsecondsSinceEpoch;
+//
+//     // Créer le post du challenge
+//     String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
+//     String challengeId = FirebaseFirestore.instance.collection('Challenges').doc().id;
+//
+//     // Upload du média
+//     String mediaUrl = '';
+//     String mediaType = 'image';
+//
+//     if (_selectedFile != null) {
+//       final fileName = '${Uuid().v4()}_${Path.basename(_selectedFile!.path)}';
+//       mediaUrl = await _uploadMedia(_selectedFile!, fileName);
+//       mediaType = _selectedFile!.path.toLowerCase().contains('.mp4') ? 'video' : 'image';
+//     } else if (_imageBytes != null) {
+//       // Gérer l'upload des bytes d'image
+//       final fileName = '${Uuid().v4()}.jpg';
+//       final tempFile = await _convertUint8ListToFile(_imageBytes!, fileName);
+//       mediaUrl = await _uploadMedia(tempFile, fileName);
+//       mediaType = 'image';
+//     }
+//
+//     // Créer le post
+//     Post post = Post()
+//       ..id = postId
+//       ..user_id = userId
+//       ..description = _descriptionController.text
+//       ..type = PostType.CHALLENGE.name
+//       ..dataType = mediaType.toUpperCase()
+//       ..status = PostStatus.VALIDE.name
+//       ..createdAt = now
+//       ..updatedAt = now
+//       ..images = mediaType == 'image' ? [mediaUrl] : []
+//       ..url_media = mediaType == 'video' ? mediaUrl : null
+//       ..likes = 0
+//       ..loves = 0
+//       ..comments = 0
+//       ..vues = 0;
+//
+//     // Créer le challenge
+//     Challenge challenge = Challenge()
+//       ..id = challengeId
+//       ..user_id = userId
+//       ..postChallengeId = postId
+//       ..titre = _titreController.text
+//       ..description = _descriptionController.text
+//       ..statut = 'en_attente'
+//       ..typeCadeaux = _selectedGiftType
+//       ..descriptionCadeaux = _descriptionCadeauController.text
+//       ..prix = int.tryParse(_montantCadeauController.text) ?? 0
+//       ..participationGratuite = _participationGratuite
+//       ..prixParticipation = _participationGratuite ? 0 : int.tryParse(_prixParticipationController.text) ?? 0
+//       ..voteGratuit = _voteGratuit
+//       ..prixVote = _voteGratuit ? 0 : int.tryParse(_prixVoteController.text) ?? 0
+//       ..typeContenu = _selectedTypeContenu
+//       ..startInscriptionAt = _dateDebutInscription.microsecondsSinceEpoch
+//       ..endInscriptionAt = _dateFinInscription.microsecondsSinceEpoch
+//       ..finishedAt = _dateFinChallenge.microsecondsSinceEpoch
+//       ..createdAt = now
+//       ..updatedAt = now
+//       ..disponible = true
+//       ..isAprouved = true
+//       ..totalParticipants = 0
+//       ..totalVotes = 0
+//       ..postsIds = []
+//       ..usersInscritsIds = []
+//       ..usersVotantsIds = [];
+//
+//     // Enregistrement dans Firestore
+//     final batch = FirebaseFirestore.instance.batch();
+//
+//     batch.set(
+//       FirebaseFirestore.instance.collection('Posts').doc(postId),
+//       post.toJson(),
+//     );
+//
+//     batch.set(
+//       FirebaseFirestore.instance.collection('Challenges').doc(challengeId),
+//       challenge.toJson(),
+//     );
+//
+//     await batch.commit();
+//     _showSuccess('Challenge créé avec succès!');
+//     // Envoyer les notifications
+//      _envoyerNotificationsChallenge(challenge, post);
+//
+//
+//     Navigator.of(context).pop();
+//   }
+//
+//   // Participer à un challenge existant
+//   Future<void> _participerAuChallenge(String userId) async {
+//     if (widget.challenge == null) return;
+//
+//     final challenge = widget.challenge!;
+//     final now = DateTime.now().microsecondsSinceEpoch;
+//
+//     // VÉRIFICATIONS POUR LA PARTICIPATION (PUBLICATION)
+//
+//     // 1. Vérifier que le challenge est en cours
+//     if (!challenge.isEnCours) {
+//       _showError('Le challenge n\'est pas encore commencé ou est terminé');
+//       return;
+//     }
+//
+//     // 2. Vérifier que l'utilisateur est inscrit
+//     if (!challenge.isInscrit(userId)) {
+//       _showError('Vous devez être inscrit pour participer à ce challenge');
+//       return;
+//     }
+//
+//     // 3. Vérifier que l'utilisateur n'a pas déjà publié un post pour ce challenge
+//     final existingPost = await _checkIfUserAlreadyPosted(userId);
+//     if (existingPost) {
+//       _showError('Vous avez déjà publié votre participation à ce challenge');
+//       return;
+//     }
+//
+//     // 4. Vérifier le type de média
+//     if (_selectedFile == null) {
+//       _showError('Veuillez sélectionner un média');
+//       return;
+//     }
+//
+//     String mediaType = _selectedFile!.path.toLowerCase().contains('.mp4') ? 'video' : 'image';
+//     if (!_isMediaTypeValid(mediaType)) {
+//       _showError('Type de média non autorisé pour ce challenge');
+//       return;
+//     }
+//
+//     // 5. Vérifier le solde si participation payante (optionnel - pour publication spéciale)
+//     if (widget.isParticipation && !challenge.participationGratuite!) {
+//       final solde = await _getSoldeUtilisateur(userId);
+//       if (solde < challenge.prixParticipation!) {
+//         _showSoldeInsuffisant(challenge.prixParticipation! - solde.toInt());
+//         return;
+//       }
+//     }
+//
+//     // UPLOAD DU MÉDIA
+//     final fileName = '${Uuid().v4()}_${Path.basename(_selectedFile!.path)}';
+//     final mediaUrl = await _uploadMedia(_selectedFile!, fileName);
+//
+//     // CRÉER LE POST DE PARTICIPATION
+//     String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
+//
+//     Post post = Post()
+//       ..id = postId
+//       ..user_id = userId
+//       ..challenge_id = challenge.id
+//       ..description = _descriptionController.text
+//       ..type = PostType.CHALLENGEPARTICIPATION.name
+//       ..dataType = mediaType.toUpperCase()
+//       ..status = PostStatus.VALIDE.name
+//       ..createdAt = now
+//       ..updatedAt = now
+//       ..images = mediaType == 'image' ? [mediaUrl] : []
+//       ..url_media = mediaType == 'video' ? mediaUrl : null
+//       ..likes = 0
+//       ..loves = 0
+//       ..comments = 0
+//       ..vues = 0
+//       ..votesChallenge = 0
+//       ..usersVotesIds = [];
+//
+//     // TRANSACTION POUR LA PARTICIPATION (PUBLICATION)
+//     await FirebaseFirestore.instance.runTransaction((transaction) async {
+//       // Vérifications finales
+//       final challengeRef = FirebaseFirestore.instance.collection('Challenges').doc(challenge.id!);
+//       final challengeDoc = await transaction.get(challengeRef);
+//
+//       if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
+//
+//       final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
+//
+//       // Vérifications finales
+//       if (!currentChallenge.isEnCours) {
+//         throw Exception('Le challenge n\'est plus en cours');
+//       }
+//
+//       if (!currentChallenge.isInscrit(userId)) {
+//         throw Exception('Vous n\'êtes pas inscrit à ce challenge');
+//       }
+//
+//       // Vérifier si l'utilisateur a déjà un post pour ce challenge
+//       final postsQuery = await FirebaseFirestore.instance
+//           .collection('Posts')
+//           .where('user_id', isEqualTo: userId)
+//           .where('challenge_id', isEqualTo: challenge.id)
+//           .get();
+//
+//       if (postsQuery.docs.isNotEmpty) {
+//         throw Exception('Vous avez déjà publié votre participation');
+//       }
+//
+//       // Déduire le prix si participation payante
+//       if (widget.isParticipation && !challenge.participationGratuite!) {
+//         await _debiterUtilisateur(
+//             userId,
+//             challenge.prixParticipation!,
+//             'Participation au challenge: ${challenge.titre}'
+//         );
+//       }
+//
+//       // CRÉER LE POST
+//       transaction.set(
+//         FirebaseFirestore.instance.collection('Posts').doc(postId),
+//         post.toJson(),
+//       );
+//
+//       // METTRE À JOUR LE CHALLENGE
+//       transaction.update(challengeRef, {
+//         'posts_ids': FieldValue.arrayUnion([postId]),
+//         'updated_at': now
+//       });
+//
+//       // METTRE À JOUR LES STATISTIQUES (optionnel)
+//       transaction.update(challengeRef, {
+//         'total_participants': FieldValue.increment(1), // Si vous voulez compter les posts comme participants
+//       });
+//     });
+//     postProvider.addPostIdToAppDefaultData(postId);
+//
+//     _showSuccess('Votre participation a été publiée avec succès!');
+//      _envoyerNotificationParticipation(challenge, post);
+//
+//     Navigator.of(context).pop();
+//   }
+//
+// // Méthode pour vérifier si l'utilisateur a déjà publié un post pour ce challenge
+//   Future<bool> _checkIfUserAlreadyPosted(String userId) async {
+//     try {
+//       final postsSnapshot = await FirebaseFirestore.instance
+//           .collection('Posts')
+//           .where('user_id', isEqualTo: userId)
+//           .where('challenge_id', isEqualTo: widget.challenge!.id)
+//           .limit(1)
+//           .get();
+//
+//       return postsSnapshot.docs.isNotEmpty;
+//     } catch (e) {
+//       debugPrint('Erreur vérification post existant: $e');
+//       return false;
+//     }
+//   }
+//
+// // Méthode pour vérifier le type de média
+//   // Méthodes utilitaires
+//   Future<File> _convertUint8ListToFile(Uint8List uint8List, String fileName) async {
+//     final Directory tempDir = await getTemporaryDirectory();
+//     final String filePath = '${tempDir.path}/$fileName';
+//     return File(filePath).writeAsBytes(uint8List);
+//   }
+//
+//   Future<double> _getSoldeUtilisateur(String userId) async {
+//     final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+//     return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
+//   }
+//
+//   Future<void> _debiterUtilisateur(String userId, int montant, String raison) async {
+//     await FirebaseFirestore.instance.collection('Users').doc(userId).update({
+//       'votre_solde_principal': FieldValue.increment(-montant)
+//     });
+//
+//     // Crediter l'application
+//     await FirebaseFirestore.instance.collection('app_default_data').doc('solde').set({
+//       'solde_gain': FieldValue.increment(montant)
+//     }, SetOptions(merge: true));
+//
+//     // Log de transaction
+//     await FirebaseFirestore.instance.collection('transactions').add({
+//       'user_id': userId,
+//       'type': 'debit',
+//       'montant': montant,
+//       'raison': raison,
+//       'created_at': DateTime.now().microsecondsSinceEpoch
+//     });
+//   }
+//
+//   Future<void> _envoyerNotificationsChallenge(Challenge challenge, Post post) async {
+//     try {
+//       final userIds = await authProvider.getAllUsersOneSignaUserId();
+//       if (userIds.isNotEmpty) {
+//         await authProvider.sendNotification(
+//             userIds: userIds,
+//             smallImage: authProvider.loginUserData.imageUrl ?? '',
+//             send_user_id: authProvider.loginUserData.id!,
+//             recever_user_id: "",
+//             message: "🎉 Nouveau challenge: ${challenge.description}! 🎁 Prix: ${challenge.prix} FCFA",
+//             type_notif: 'CHALLENGE',
+//             post_id: post.id!,
+//             post_type: post.dataType ?? 'IMAGE',
+//             chat_id: ''
+//         );
+//       }
+//     } catch (e) {
+//       print('Erreur envoi notification: $e');
+//     }
+//   }
+//
+//   Future<void> _envoyerNotificationParticipation(
+//       Challenge challenge, Post post)
+//   async {
+//     try {
+//       final userIds = await authProvider.getAllUsersOneSignaUserId();
+//
+//       if (userIds.isNotEmpty) {
+//         final userName = authProvider.loginUserData.pseudo ?? "Un participant";
+//         final userImage = authProvider.loginUserData.imageUrl ?? "";
+//
+//         await authProvider.sendNotification(
+//           userIds: userIds,
+//           smallImage: userImage,
+//           send_user_id: authProvider.loginUserData.id!,
+//           recever_user_id: "",
+//           message:
+//           "🔥 $userName participe au challenge '${challenge.titre}' ! 🎯 Venez voter 💚🟨⬛",
+//           type_notif: 'PARTICIPATION_CHALLENGE',
+//           post_id: post.id!,
+//           post_type: post.dataType ?? 'IMAGE',
+//           chat_id: '',
+//         );
+//       }
+//     } catch (e) {
+//       print('Erreur envoi notification participation: $e');
+//     }
+//   }
+//
+//
+//   void _showError(String message) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(message, style: TextStyle(color: Colors.white)),
+//         backgroundColor: Colors.red,
+//       ),
+//     );
+//   }
+//
+//   void _showSuccess(String message) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(message, style: TextStyle(color: Colors.white)),
+//         backgroundColor: Colors.green,
+//       ),
+//     );
+//   }
+//
+//   void _showSoldeInsuffisant(int montantManquant) {
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: Text('Solde insuffisant'),
+//         content: Text('Il vous manque $montantManquant FCFA pour participer à ce challenge.'),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.of(context).pop(),
+//             child: Text('Annuler'),
+//           ),
+//           TextButton(
+//             onPressed: () {
+//               Navigator.of(context).pop();
+//               // Naviguer vers la page de recharge
+//               // Navigator.push(context, MaterialPageRoute(builder: (_) => RechargePage()));
+//             },
+//             child: Text('Recharger'),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   // Sélecteurs de date
+//   Future<void> _selectDate(BuildContext context, bool isStart, bool isInscription) async {
+//     final DateTime? pickedDate = await showDatePicker(
+//       context: context,
+//       initialDate: isStart
+//           ? _dateDebutInscription
+//           : (isInscription ? _dateFinInscription : _dateFinChallenge),
+//       firstDate: DateTime(2000),
+//       lastDate: DateTime(2100),
+//     );
+//
+//     if (pickedDate != null) {
+//       final TimeOfDay? pickedTime = await showTimePicker(
+//         context: context,
+//         initialTime: TimeOfDay.fromDateTime(pickedDate),
+//       );
+//
+//       if (pickedTime != null) {
+//         final DateTime fullDateTime = DateTime(
+//           pickedDate.year,
+//           pickedDate.month,
+//           pickedDate.day,
+//           pickedTime.hour,
+//           pickedTime.minute,
+//         );
+//
+//         setState(() {
+//           if (isStart) {
+//             _dateDebutInscription = fullDateTime;
+//           } else if (isInscription) {
+//             _dateFinInscription = fullDateTime;
+//           } else {
+//             _dateFinChallenge = fullDateTime;
+//           }
+//         });
+//       }
+//     }
+//   }
+//   Future<void> _selectDate3(BuildContext context, bool isStart, bool isInscription) async {
+//     final DateTime? picked = await showDatePicker(
+//       context: context,
+//       initialDate: isStart
+//           ? _dateDebutInscription
+//           : (isInscription ? _dateFinInscription : _dateFinChallenge),
+//       firstDate: DateTime(2000), // ✅ Autorise les dates passées
+//       lastDate: DateTime(2100),
+//     );
+//
+//     if (picked != null) {
+//       setState(() {
+//         if (isStart) {
+//           _dateDebutInscription = picked;
+//         } else if (isInscription) {
+//           _dateFinInscription = picked;
+//         } else {
+//           _dateFinChallenge = picked;
+//         }
+//       });
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final bool isCreation = !widget.isParticipation;
+//     final bool isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+//
+//     // Vérifier les permissions
+//     if (isCreation && !isAdmin) {
+//       return Scaffold(
+//         appBar: AppBar(title: Text('Créer un Challenge')),
+//         body: Center(
+//           child: Text('Seuls les administrateurs peuvent créer des challenges'),
+//         ),
+//       );
+//     }
+//
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text(isCreation ? 'Créer un Challenge' : 'Participer au Challenge'),
+//         backgroundColor: Colors.blue,
+//         foregroundColor: Colors.white,
+//       ),
+//       body: _isLoading ? _buildLoading() : _buildForm(isCreation),
+//     );
+//   }
+//
+//   Widget _buildLoading() {
+//     return Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           CircularProgressIndicator(),
+//           SizedBox(height: 20),
+//           Text('Traitement en cours...'),
+//           if (_uploadProgress > 0) ...[
+//             SizedBox(height: 10),
+//             LinearProgressIndicator(value: _uploadProgress),
+//             Text('${(_uploadProgress * 100).toStringAsFixed(1)}%'),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildForm(bool isCreation) {
+//     return SingleChildScrollView(
+//       padding: EdgeInsets.all(16),
+//       child: Form(
+//         key: _formKey,
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             // Section Média
+//             _buildMediaSection(isCreation),
+//             SizedBox(height: 20),
+//
+//             // Description
+//             TextFormField(
+//               controller: _descriptionController,
+//               decoration: InputDecoration(
+//                 labelText: isCreation ? 'Description du challenge' : 'Description de votre participation',
+//                 border: OutlineInputBorder(),
+//               ),
+//               maxLines: 3,
+//               validator: (value) {
+//                 if (value == null || value.isEmpty) {
+//                   return 'Ce champ est obligatoire';
+//                 }
+//                 return null;
+//               },
+//             ),
+//             SizedBox(height: 20),
+//
+//             // Section spécifique à la création
+//             if (isCreation) ..._buildCreationFields(),
+//
+//             // Section spécifique à la participation
+//             if (!isCreation && widget.challenge != null) ..._buildParticipationInfo(),
+//
+//             SizedBox(height: 30),
+//
+//             // Bouton de soumission
+//             _buildSubmitButton(isCreation),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildMediaSection(bool isCreation) {
+//     return Card(
+//       child: Padding(
+//         padding: EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(
+//               'Média ${isCreation ? 'du challenge' : 'de participation'}',
+//               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//             ),
+//             SizedBox(height: 10),
+//
+//             // Restrictions pour la participation
+//             if (!isCreation && widget.challenge != null)
+//               Text(
+//                 'Type autorisé: ${_typesContenu[widget.challenge!.typeContenu] ?? 'Tous'}',
+//                 style: TextStyle(color: Colors.grey[600]),
+//               ),
+//
+//             SizedBox(height: 10),
+//
+//             // Aperçu du média
+//             if (_selectedFile != null || _imageBytes != null)
+//               Container(
+//                 height: 200,
+//                 width: double.infinity,
+//                 decoration: BoxDecoration(
+//                   border: Border.all(color: Colors.grey),
+//                   borderRadius: BorderRadius.circular(8),
+//                 ),
+//                 child: _selectedFile != null && _selectedFile!.path.toLowerCase().contains('.mp4')
+//                     ? _buildVideoPreview()
+//                     : _buildImagePreview(),
+//               )
+//             else
+//               Container(
+//                 height: 100,
+//                 width: double.infinity,
+//                 decoration: BoxDecoration(
+//                   border: Border.all(color: Colors.grey),
+//                   borderRadius: BorderRadius.circular(8),
+//                 ),
+//                 child: Column(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [
+//                     Icon(Icons.photo_library, size: 40, color: Colors.grey),
+//                     Text('Aucun média sélectionné'),
+//                   ],
+//                 ),
+//               ),
+//
+//             SizedBox(height: 10),
+//
+//             // Boutons de sélection
+//             Row(
+//               children: [
+//                 Expanded(
+//                   child: OutlinedButton.icon(
+//                     onPressed: _selectImage,
+//                     icon: Icon(Icons.photo),
+//                     label: Text('Image'),
+//                   ),
+//                 ),
+//                 SizedBox(width: 10),
+//                 Expanded(
+//                   child: OutlinedButton.icon(
+//                     onPressed: _selectVideo,
+//                     icon: Icon(Icons.videocam),
+//                     label: Text('Vidéo'),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildImagePreview() {
+//     return _imageBytes != null
+//         ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+//         : _selectedFile != null
+//         ? Image.file(_selectedFile!, fit: BoxFit.cover)
+//         : Container();
+//   }
+//
+//   Widget _buildVideoPreview() {
+//     return Stack(
+//       children: [
+//         Container(
+//           color: Colors.black,
+//           child: Center(child: Icon(Icons.play_arrow, size: 50, color: Colors.white)),
+//         ),
+//         Positioned(
+//           bottom: 10,
+//           right: 10,
+//           child: Container(
+//             padding: EdgeInsets.all(4),
+//             color: Colors.black54,
+//             child: Text('VIDEO', style: TextStyle(color: Colors.white)),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   List<Widget> _buildCreationFields() {
+//     return [
+//       // Titre du challenge
+//       TextFormField(
+//         controller: _titreController,
+//         decoration: InputDecoration(
+//           labelText: 'Titre du challenge',
+//           border: OutlineInputBorder(),
+//         ),
+//         validator: (value) {
+//           if (value == null || value.isEmpty) {
+//             return 'Le titre est obligatoire';
+//           }
+//           return null;
+//         },
+//       ),
+//       SizedBox(height: 20),
+//
+//       // Type de contenu
+//       DropdownButtonFormField<String>(
+//         value: _selectedTypeContenu,
+//         decoration: InputDecoration(
+//           labelText: 'Type de contenu autorisé',
+//           border: OutlineInputBorder(),
+//         ),
+//         items: _typesContenu.entries.map((entry) {
+//           return DropdownMenuItem(
+//             value: entry.key,
+//             child: Text(entry.value),
+//           );
+//         }).toList(),
+//         onChanged: (value) {
+//           setState(() {
+//             _selectedTypeContenu = value!;
+//           });
+//         },
+//       ),
+//       SizedBox(height: 20),
+//
+//       // Informations du cadeau
+//       Card(
+//         child: Padding(
+//           padding: EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Text('🎁 Informations du prix', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+//               SizedBox(height: 10),
+//
+//               DropdownButtonFormField<String>(
+//                 value: _selectedGiftType,
+//                 decoration: InputDecoration(labelText: 'Type de cadeau'),
+//                 items: _typesCadeaux.entries.map((entry) {
+//                   return DropdownMenuItem(
+//                     value: entry.key,
+//                     child: Text(entry.value),
+//                   );
+//                 }).toList(),
+//                 onChanged: (value) {
+//                   setState(() {
+//                     _selectedGiftType = value!;
+//                   });
+//                 },
+//               ),
+//               SizedBox(height: 10),
+//
+//               TextFormField(
+//                 controller: _descriptionCadeauController,
+//                 decoration: InputDecoration(labelText: 'Description du cadeau'),
+//                 validator: (value) {
+//                   if (value == null || value.isEmpty) {
+//                     return 'La description est obligatoire';
+//                   }
+//                   return null;
+//                 },
+//               ),
+//               SizedBox(height: 10),
+//
+//               TextFormField(
+//                 controller: _montantCadeauController,
+//                 decoration: InputDecoration(labelText: 'Montant du prix (FCFA)'),
+//                 keyboardType: TextInputType.number,
+//                 validator: (value) {
+//                   if (value == null || value.isEmpty) {
+//                     return 'Le montant est obligatoire';
+//                   }
+//                   if (int.tryParse(value) == null) {
+//                     return 'Veuillez entrer un nombre valide';
+//                   }
+//                   return null;
+//                 },
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//       SizedBox(height: 20),
+//
+//       // Configuration des frais
+//       Card(
+//         child: Padding(
+//           padding: EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Text('💰 Configuration des frais', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+//               SizedBox(height: 10),
+//
+//               // Participation gratuite/payante
+//               Row(
+//                 children: [
+//                   Text('Participation gratuite'),
+//                   Switch(
+//                     value: _participationGratuite,
+//                     onChanged: (value) {
+//                       setState(() {
+//                         _participationGratuite = value;
+//                       });
+//                     },
+//                   ),
+//                 ],
+//               ),
+//
+//               if (!_participationGratuite) ...[
+//                 TextFormField(
+//                   controller: _prixParticipationController,
+//                   decoration: InputDecoration(labelText: 'Prix de participation (FCFA)'),
+//                   keyboardType: TextInputType.number,
+//                   validator: (value) {
+//                     if (!_participationGratuite && (value == null || value.isEmpty)) {
+//                       return 'Le prix de participation est obligatoire';
+//                     }
+//                     return null;
+//                   },
+//                 ),
+//                 SizedBox(height: 10),
+//               ],
+//
+//               // Vote gratuit/payant
+//               Row(
+//                 children: [
+//                   Text('Vote gratuit'),
+//                   Switch(
+//                     value: _voteGratuit,
+//                     onChanged: (value) {
+//                       setState(() {
+//                         _voteGratuit = value;
+//                       });
+//                     },
+//                   ),
+//                 ],
+//               ),
+//
+//               if (!_voteGratuit) ...[
+//                 TextFormField(
+//                   controller: _prixVoteController,
+//                   decoration: InputDecoration(labelText: 'Prix du vote (FCFA)'),
+//                   keyboardType: TextInputType.number,
+//                   validator: (value) {
+//                     if (!_voteGratuit && (value == null || value.isEmpty)) {
+//                       return 'Le prix du vote est obligatoire';
+//                     }
+//                     return null;
+//                   },
+//                 ),
+//               ],
+//             ],
+//           ),
+//         ),
+//       ),
+//       SizedBox(height: 20),
+//
+//       // Dates du challenge
+//       Card(
+//         child: Padding(
+//           padding: EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Text('📅 Dates du challenge', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+//               SizedBox(height: 10),
+//
+//               _buildDateField('Début des inscriptions', _dateDebutInscription, true, true),
+//               SizedBox(height: 10),
+//
+//               _buildDateField('Fin des inscriptions', _dateFinInscription, false, true),
+//               SizedBox(height: 10),
+//
+//               _buildDateField('Fin du challenge', _dateFinChallenge, false, false),
+//             ],
+//           ),
+//         ),
+//       ),
+//     ];
+//   }
+//
+//   List<Widget> _buildParticipationInfo() {
+//     final challenge = widget.challenge!;
+//     return [
+//       Card(
+//         child: Padding(
+//           padding: EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Text('📋 Informations du challenge', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+//               SizedBox(height: 10),
+//
+//               Text('Titre: ${challenge.titre ?? 'N/A'}', style: TextStyle(fontWeight: FontWeight.bold)),
+//               SizedBox(height: 5),
+//
+//               Text('Description: ${challenge.description ?? 'N/A'}'),
+//               SizedBox(height: 5),
+//
+//               Text('Prix à gagner: ${challenge.prix ?? 0} FCFA', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+//               SizedBox(height: 5),
+//
+//               Text('Type de contenu: ${_typesContenu[challenge.typeContenu] ?? 'Tous'}'),
+//               SizedBox(height: 5),
+//
+//               if (!challenge.participationGratuite!)
+//                 Text('Coût de participation: ${challenge.prixParticipation} FCFA', style: TextStyle(color: Colors.orange)),
+//             ],
+//           ),
+//         ),
+//       ),
+//       SizedBox(height: 20),
+//     ];
+//   }
+//
+//   Widget _buildDateField(String label, DateTime date, bool isStart, bool isInscription) {
+//     return Row(
+//       children: [
+//         Expanded(
+//           child: Text('$label: ${DateFormat('dd/MM/yyyy').format(date)}'),
+//         ),
+//         TextButton(
+//           onPressed: () => _selectDate(context, isStart, isInscription),
+//           child: Text('Modifier'),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildSubmitButton(bool isCreation) {
+//     return SizedBox(
+//       width: double.infinity,
+//       height: 50,
+//       child: ElevatedButton(
+//         onPressed: _isLoading ? null : _submit,
+//         style: ElevatedButton.styleFrom(
+//           backgroundColor: isCreation ? Colors.blue : Colors.green,
+//           foregroundColor: Colors.white,
+//         ),
+//         child: _isLoading
+//             ? CircularProgressIndicator(color: Colors.white)
+//             : Text(
+//           isCreation ? 'Créer le Challenge' : 'Participer au Challenge',
+//           style: TextStyle(fontSize: 16),
+//         ),
+//       ),
+//     );
+//   }
+// }
