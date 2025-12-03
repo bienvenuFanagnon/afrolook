@@ -119,7 +119,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   bool _isScreenSharing = false;
   Map<String, dynamic> _typingUsers = {};
   Timer? _typingTimer;
-
+  bool _isLivePaused = false;
+  String? _pauseMessage;
   // DONNÉES
   UserData _hostData = UserData();
   List<UserData> _allUsers = [];
@@ -132,7 +133,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _usersSubscription;
   Timer? _paymentWarningTimer;
   final int _liveDurationMinutes = 30; // ← CHANGEZ ICI POUR MODIFIER LA DURÉE
-
+  late VideoEncoderConfiguration _videoConfig;
   // LISTE DE CADEAUX
   final List<Gift> _gifts = [
     Gift(id: '1', name: 'Rose', price: 10, icon: '🌹', color: Colors.pink),
@@ -169,6 +170,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       vsync: this,
       duration: Duration(milliseconds: 1500),
     );
+
+    print("🎬 Initialisation de LivePage - isHost: ${widget.isHost}");
+
+    // Initialiser la configuration vidéo
+    _videoConfig = VideoEncoderConfiguration();
 // =========================================================================
     // CORRECTION MAJEURE: Init Agora SEULEMENT si l'utilisateur est actif
     // =========================================================================
@@ -183,6 +189,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     //   _isPassiveSpectator = true;
     //   _initPassiveStreaming(); // Utilisateur PASSIF (Spectateur) -> Utilise CDN/HLS
     // }
+    // Après 3 secondes, si remoteUid est toujours null, essayez avec uid=1
+    Future.delayed(Duration(seconds: 3), () {
+      if (_remoteUid == null && mounted) {
+        print("⚠️ remoteUid toujours null, tentative avec uid=1");
+        setState(() {
+          _remoteUid = 1; // Essayez avec l'UID probable de l'hôte
+        });
+      }
+    });
+    _setupCamera();
     _initAgora();
 
     _setupFirestoreListeners();
@@ -210,37 +226,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
 
 // Ajout dans _LivePageState
-  Future<void> _initPassiveStreaming() async {
-    print("🎬 Initialisation du mode spectateur passif (CDN)");
-
-    try {
-      // 1. Récupérer l'URL de diffusion (RTMP/HLS) que l'hôte a enregistrée
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
-      final passiveUrl = liveDoc.data()?['passiveStreamUrl'] as String?;
-
-      if (passiveUrl != null && mounted) {
-        // 2. Initialiser un contrôleur vidéo Flutter standard
-        _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(passiveUrl));
-        await _videoPlayerController.initialize();
-        await _videoPlayerController.play();
-
-        setState(() {
-          _passiveStreamUrl = passiveUrl;
-        });
-        print("✅ Flux passif démarré depuis: $passiveUrl");
-
-        // Logique pour le compteur de spectateurs (doit être mis à jour)
-        _joinAsSpectator(); // Garder pour le compteur Firestore, mais PAS pour Agora.
-
-      } else {
-        print("❌ URL passive non disponible, attente...");
-        // Optionnel: Tenter à nouveau après un délai
-      }
-    } catch (e) {
-      print("❌ Erreur init streaming passif: $e");
-      // Afficher un message d'erreur à l'utilisateur
-    }
-  }
   // ==================== GESTION TEMPS PERSISTANT SIMPLIFIÉE ====================
 
   Future<void> _initializeHostTimer() async {
@@ -300,14 +285,25 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     });
   }
 
+
   void _requestPayment() async {
     try {
       await _firestore.collection('lives').doc(widget.liveId).update({
         'paymentRequired': true,
         'paymentRequestTime': DateTime.now(),
+        // ⭐ AJOUTER ces 2 champs pour synchroniser
+        'isPaused': true,
+        'pauseMessage': "Temps écoulé - En attente de prolongement" ,
       });
 
       setState(() => _showPaymentWarning = true);
+
+      // Optionnel : Muter les flux de l'hôte immédiatement
+      if (widget.isHost) {
+        await _engine.muteLocalAudioStream(true);
+        await _engine.muteLocalVideoStream(true);
+      }
+
     } catch (e) {
       print("❌ Erreur demande paiement: $e");
     }
@@ -321,16 +317,24 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (paymentSuccess) {
         userProvider.incrementAppGain(100);
 
-        // Sauvegarder le moment du paiement
         final now = DateTime.now();
         await _firestore.collection('lives').doc(widget.liveId).update({
           'paymentRequired': false,
           'paymentRequestTime': null,
           'lastPaymentTime': now,
+          // ⭐ AJOUTER : Reprendre le live pour tous
+          'isPaused': false,
+          'pauseMessage': null,
         });
 
+        // Réactiver les flux si hôte
+        if (widget.isHost) {
+          await _engine.muteLocalAudioStream(false);
+          await _engine.muteLocalVideoStream(false);
+        }
+
         setState(() => _showPaymentWarning = false);
-        _startPaymentTimer(); // Redémarre avec la durée configurée
+        _startPaymentTimer();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -345,7 +349,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       print("❌ Erreur traitement paiement: $e");
     }
   }
-
 // Mettez à jour le message d'alerte
   Widget _buildPaymentWarning() {
     return Container(
@@ -718,17 +721,20 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       print("❌ Erreur configuration caméra: $e");
     }
   }
-
   Future<void> _initAgora() async {
     try {
+      print("🔊 Demande des permissions Agora...");
       await [Permission.microphone, Permission.camera].request();
 
+      print("🚀 Création du moteur Agora...");
       _engine = createAgoraRtcEngine();
+
       await _engine.initialize(RtcEngineContext(
         appId: "957063f627aa471581a52d4160f7c054",
         channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
       ));
 
+      // Configuration des handlers
       _engine.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (connection, elapsed) {
@@ -742,9 +748,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onUserOffline: (connection, remoteUid, reason) {
             print("👋 Utilisateur parti: $remoteUid");
             setState(() => _remoteUid = null);
-            // _removeUserFromSpectators();
-
           },
+          onCameraReady: () {
+            print("📷 Caméra prête");
+          },
+          // onCameraFocusAreaChanged: () {
+          //   print("🔍 Zone de focus caméra changée");
+          // },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
             print("📹 État vidéo UID $remoteUid: $state");
           },
@@ -752,6 +762,19 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       );
 
       await _engine.enableVideo();
+
+      // Configuration vidéo améliorée
+      _videoConfig = const VideoEncoderConfiguration(
+        dimensions: VideoDimensions(width: 640, height: 360),
+        frameRate: 15,
+        bitrate: 0,
+        minBitrate: 0,
+        orientationMode: OrientationMode.orientationModeAdaptive,
+        degradationPreference: DegradationPreference.maintainQuality,
+        mirrorMode: VideoMirrorModeType.videoMirrorModeAuto,
+      );
+
+      await _engine.setVideoEncoderConfiguration(_videoConfig);
 
       final role = widget.isHost || _isParticipant
           ? ClientRoleType.clientRoleBroadcaster
@@ -763,34 +786,39 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await _engine.startPreview();
       }
 
+      final uid = 0;
       final token = await _getAgoraToken(
         channelName: widget.liveId,
-        uid: 0,
+        uid: uid,
         isHost: widget.isHost || _isParticipant,
       );
 
-      if (token != null) {
-        await _engine.joinChannel(
-          token: token,
-          channelId: widget.liveId,
-          uid: 0,
-          options: ChannelMediaOptions(
-            channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-            clientRoleType: role,
-            publishCameraTrack: widget.isHost || _isParticipant,
-            publishMicrophoneTrack: widget.isHost || _isParticipant,
-            autoSubscribeAudio: true,
-            autoSubscribeVideo: true,
-          ),
-        );
-        _joinAsSpectator();
+      if (token == null) {
+        throw Exception("Impossible de générer un token Agora");
       }
 
+      await _engine.joinChannel(
+        token: token,
+        channelId: widget.liveId,
+        uid: uid,
+        options: ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          clientRoleType: role,
+          publishCameraTrack: widget.isHost || _isParticipant,
+          publishMicrophoneTrack: widget.isHost || _isParticipant,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+          audienceLatencyLevel: AudienceLatencyLevelType
+              .audienceLatencyLevelLowLatency, // Coût réduit
+        ),
+      );
+      _joinAsSpectator();
       setState(() => _isInitialized = true);
     } catch (e) {
-      print("💥 Erreur initialisation Agora: $e");
+      print("💥 Erreur lors de l'initialisation Agora: $e");
     }
   }
+
 
   Future<String?> _getAgoraToken({
     required String channelName,
@@ -1089,10 +1117,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           _shareCount = data['shareCount'] ?? 0;
           _paidParticipationTotal = (data['paidParticipationTotal'] ?? 0).toDouble();
 
+          // ⭐ NOUVEAU : État de pause synchronisé
+          _showPaymentWarning = data['paymentRequired'] == true;
+          _isLivePaused = data['isPaused'] == true;
+          _pauseMessage = data['pauseMessage'] as String?;
+
           final currentUserId = _auth.currentUser?.uid;
           _isParticipant = currentUserId != null && _participants.contains(currentUserId);
         });
       }
+
+      // Muter les flux audio si le live est en pause
+      if (_isLivePaused && !widget.isHost) {
+        _engine.muteAllRemoteAudioStreams(true);
+      } else if (!_isLivePaused && !widget.isHost) {
+        _engine.muteAllRemoteAudioStreams(false);
+      }
+
     });
 
     _commentsSubscription = _firestore
@@ -1270,9 +1311,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       final liveProvider = context.read<LiveProvider>();
 
       if (authProvider.loginUserData.role == UserRole.ADM.name) {
-        await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
+        // await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
         await _grantFreeAccess();
-        return;
+        // return;
       }
 
       await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
@@ -1537,7 +1578,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onGiftSelected: _sendGift,
           onClose: () => setState(() => _showGiftPanel = false),
         ),
-      if (_showPaymentWarning) _buildPaymentWarning(),
+      if (_showPaymentWarning&&widget.isHost) _buildPaymentWarning(),
       if (_showUsersPanel)
         UsersPanelWidget(
           users: _allUsers,
@@ -1553,18 +1594,98 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         ),
     ];
   }
+  Widget _buildPausedOverlay() {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icône selon rôle
+            Icon(
+              widget.isHost ? Icons.timer_off : Icons.pause_circle_filled,
+              size: 80,
+              color: Color(0xFFF9A825),
+            ),
+            SizedBox(height: 20),
 
+            // Titre
+            Text(
+              widget.isHost ? 'Temps écoulé' : 'Live en pause',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+
+            // Message (utilise celui de Firestore ou un par défaut)
+            Text(
+              _pauseMessage ??
+                  (widget.isHost
+                      ? 'Payez pour continuer la diffusion'
+                      : 'L\'hôte renouvelle son temps de live'),
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24),
+
+            // Boutons différents selon rôle
+            if (widget.isHost)
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: _handlePayment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFF9A825),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    ),
+                    child: Text('Payer 100 FCFA',
+                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                  SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _endLive,
+                    child: Text('Arrêter le live', style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
+              )
+            else
+            // Pour spectateurs : juste un indicateur d'attente
+              Column(
+                children: [
+                  CircularProgressIndicator(color: Color(0xFFF9A825)),
+                  SizedBox(height: 16),
+                  Text('Réactivation automatique...',
+                      style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _buildVideoSection() {
+
+    // ⭐ PRIORITÉ : Afficher écran de pause si live en pause
+    if (_isLivePaused&&!widget.isHost) {
+      return _buildPausedOverlay();
+    }
     return Stack(
       children: [
         if (_remoteUid != null)
           AgoraVideoView(
             controller: VideoViewController.remote(
+
               rtcEngine: _engine,
               canvas: VideoCanvas(uid: _remoteUid),
               connection: RtcConnection(channelId: widget.liveId),
             ),
           ),
+        if (_remoteUid == null)
+          Text("_remoteUid: ${_remoteUid}"),
+
 
         if (_isVideoBlurred)
           BackdropFilter(

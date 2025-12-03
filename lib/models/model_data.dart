@@ -1600,6 +1600,8 @@ class Challenge {
   int? dateDeterminationGagnants;
 
 
+
+
   Challenge();
 
   Challenge.fromJson(Map<String, dynamic> json) {

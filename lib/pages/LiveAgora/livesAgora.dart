@@ -57,6 +57,9 @@ class PostLive {
   // NOUVEAU CHAMP : DURÉE DU LIVE POUR L'HÔTE
   final int? liveDurationMinutes; // ← AJOUTEZ CE CHAMP
 
+  final bool isPaused;              // ← NOUVEAU
+  final String? pauseMessage;       // ← NOUVEAU
+
   PostLive({
     // Champs existants
     this.earningsWithdrawn = false,
@@ -108,6 +111,9 @@ class PostLive {
 
     // NOUVEAU : Durée du live avec valeur par défaut de 30 minutes
     this.liveDurationMinutes = 30, // ← VALEUR PAR DÉFAUT
+
+    this.isPaused = false,          // ← NOUVEAU (valeur par défaut)
+    this.pauseMessage,              // ← NOUVEAU (peut être null)
   });
 
   // Méthode utilitaire pour obtenir la durée (gestion des null)
@@ -158,6 +164,10 @@ class PostLive {
 
       // NOUVEAU CHAMP
       'liveDurationMinutes': liveDurationMinutes, // ← AJOUTEZ
+
+      // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
+      'isPaused': isPaused,
+      'pauseMessage': pauseMessage,
     };
   }
 
@@ -219,6 +229,10 @@ class PostLive {
 
       // NOUVEAU CHAMP (avec gestion null)
       liveDurationMinutes: map['liveDurationMinutes'] ?? 30, // ← AJOUTEZ
+
+      // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
+      isPaused: map['isPaused'] ?? false,
+      pauseMessage: map['pauseMessage'],
     );
   }
 
@@ -228,6 +242,10 @@ class PostLive {
     String? screenSharerId,
     int? liveDurationMinutes, // ← AJOUTEZ
     // ... autres champs ...
+
+    // ⭐ AJOUTER LES 2 NOUVEAUX PARAMÈTRES
+    bool? isPaused,
+    String? pauseMessage,
   }) {
     return PostLive(
       liveId: liveId,
@@ -271,259 +289,13 @@ class PostLive {
 
       // NOUVEAU CHAMP
       liveDurationMinutes: liveDurationMinutes ?? this.liveDurationMinutes, // ← AJOUTEZ
+
+      // ⭐ AJOUTER LES 2 NOUVEAUX CHAMPS
+      isPaused: isPaused ?? this.isPaused,
+      pauseMessage: pauseMessage ?? this.pauseMessage,
     );
   }
 }
-
-// class PostLive {
-//   final String? liveId;
-//   final String? hostId;
-//   final String? hostName;
-//   final String? hostImage;
-//   final String title;
-//   int viewerCount;
-//   int? giftCount;
-//   int? likeCount;
-//   final DateTime startTime;
-//   DateTime? endTime;
-//   bool isLive;
-//   double giftTotal;
-//   final List<LiveGift> gifts;
-//   bool paymentRequired;
-//   DateTime? paymentRequestTime;
-//   final List<String> invitedUsers;
-//   final List<String> totalspectateurs ;
-//   final List<String> participants;
-//   final List<String> spectators;
-//
-//   // NOUVEAUX CHAMPS POUR LIVE PAYANT
-//   final bool isPaidLive; // Live payant ou gratuit
-//   final double participationFee; // Prix pour rejoindre le live
-//   final int freeTrialMinutes; // Temps d'essai gratuit en minutes
-//
-//   // NOUVEAUX CHAMPS POUR COMPORTEMENT APRÈS ESSAI
-//   final String audioBehaviorAfterTrial; // 'mute', 'reduce', 'keep'
-//   final int audioReductionPercent; // Pourcentage de réduction si 'reduce'
-//   final bool blurVideoAfterTrial; // Flouter la vidéo après essai
-//   final bool showPaymentModalAfterTrial; // Afficher modal paiement automatique
-//
-//   // NOUVEAUX CHAMPS POUR FONCTIONNALITÉS AVANCÉES
-//   final String? pinnedText; // Texte épinglé par l'hôte
-//   final int shareCount; // Nombre de partages du live
-//   final double paidParticipationTotal; // Total des participations payantes
-//
-//   // NOUVEAU CHAMP POUR TEMPS DE VISIONNAGE
-//   final Map<String, dynamic> userWatchTime; // {userId: minutesRestantes}
-//
-//   // CHAMPS EXISTANTS
-//   bool earningsWithdrawn;
-//   DateTime? withdrawalDate;
-//   String? withdrawalTransactionId;
-//
-//   final int? screenShareUid; // UID du partage d'écran actif
-//   final bool isScreenSharing; // Si un partage d'écran est en cours
-//   final String? screenSharerId; // ID de l'utilisateur qui partage son écran
-//
-//   PostLive({
-//     // Champs existants
-//     this.earningsWithdrawn = false,
-//     this.withdrawalDate,
-//     this.withdrawalTransactionId,
-//     required this.liveId,
-//     required this.hostId,
-//     required this.hostName,
-//     required this.hostImage,
-//     required this.title,
-//     this.viewerCount = 0,
-//     this.giftCount = 0,
-//     required this.startTime,
-//     this.endTime,
-//     this.isLive = true,
-//     this.giftTotal = 0,
-//     this.likeCount = 0,
-//     this.gifts = const [],
-//     this.paymentRequired = false,
-//     this.paymentRequestTime,
-//     this.invitedUsers = const [],
-//     this.participants = const [],
-//     this.spectators = const [],
-//     this.totalspectateurs  = const [],
-//
-//     // Nouveaux champs avec valeurs par défaut
-//     this.isPaidLive = false,
-//     this.participationFee = 100.0,
-//     this.freeTrialMinutes = 1, // 1 minute par défaut
-//
-//     // Comportement après essai
-//     this.audioBehaviorAfterTrial = 'reduce', // Réduire le son par défaut
-//     this.audioReductionPercent = 50, // Réduire à 50% par défaut
-//     this.blurVideoAfterTrial = true, // Flouter par défaut
-//     this.showPaymentModalAfterTrial = true, // Afficher modal par défaut
-//
-//     // Fonctionnalités avancées
-//     this.pinnedText,
-//     this.shareCount = 0,
-//     this.paidParticipationTotal = 0.0,
-//
-//     // Temps de visionnage
-//     this.userWatchTime = const {},
-//
-//
-//     this.screenShareUid,
-//     this.isScreenSharing = false,
-//     this.screenSharerId,
-//   });
-//
-//   Map<String, dynamic> toMap() {
-//     return {
-//       // Champs existants
-//       'liveId': liveId,
-//       'hostId': hostId,
-//       'hostName': hostName,
-//       'hostImage': hostImage,
-//       'title': title,
-//       'likeCount': likeCount,
-//       'viewerCount': viewerCount,
-//       'startTime': startTime,
-//       'endTime': endTime,
-//       'isLive': isLive,
-//       'giftTotal': giftTotal,
-//       'gifts': gifts.map((gift) => gift.toMap()).toList(),
-//       'paymentRequired': paymentRequired,
-//       'paymentRequestTime': paymentRequestTime,
-//       'invitedUsers': invitedUsers,
-//       'participants': participants,
-//       'spectators': spectators,
-//       'earningsWithdrawn': earningsWithdrawn,
-//       'withdrawalDate': withdrawalDate,
-//       'withdrawalTransactionId': withdrawalTransactionId,
-//
-//       // Nouveaux champs
-//       'isPaidLive': isPaidLive,
-//       'participationFee': participationFee,
-//       'freeTrialMinutes': freeTrialMinutes,
-//       'audioBehaviorAfterTrial': audioBehaviorAfterTrial,
-//       'audioReductionPercent': audioReductionPercent,
-//       'blurVideoAfterTrial': blurVideoAfterTrial,
-//       'showPaymentModalAfterTrial': showPaymentModalAfterTrial,
-//       'pinnedText': pinnedText,
-//       'shareCount': shareCount,
-//       'paidParticipationTotal': paidParticipationTotal,
-//       'userWatchTime': userWatchTime,
-//
-//
-//       'screenShareUid': screenShareUid,
-//       'isScreenSharing': isScreenSharing,
-//       'screenSharerId': screenSharerId,
-//       'totalspectateurs': totalspectateurs ,
-//     };
-//   }
-//
-//   factory PostLive.fromMap(Map<String, dynamic> map) {
-//     return PostLive(
-//       liveId: map['liveId'] ?? '',
-//       hostId: map['hostId'] ?? '',
-//       hostName: map['hostName'] ?? '',
-//       hostImage: map['hostImage'] ?? '',
-//       title: map['title'] ?? '',
-//       viewerCount: map['viewerCount'] ?? 0,
-//       startTime: (map['startTime'] as Timestamp).toDate(),
-//       endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
-//       isLive: map['isLive'] ?? true,
-//       giftTotal: map['giftTotal']?.toDouble() ?? 0.0,
-//       gifts: map['gifts'] != null
-//           ? List<LiveGift>.from((map['gifts'] as List).map((x) => LiveGift.fromMap(x)))
-//           : [],
-//       paymentRequired: map['paymentRequired'] ?? false,
-//       paymentRequestTime: map['paymentRequestTime'] != null
-//           ? (map['paymentRequestTime'] as Timestamp).toDate()
-//           : null,
-//       invitedUsers: map['invitedUsers'] != null
-//           ? List<String>.from(map['invitedUsers'])
-//           : [],
-//       participants: map['participants'] != null
-//           ? List<String>.from(map['participants'])
-//           : [],
-//       spectators: map['spectators'] != null
-//           ? List<String>.from(map['spectators'])
-//           : [],
-//       totalspectateurs : map['totalspectateurs'] != null
-//           ? List<String>.from(map['totalspectateurs'])
-//           : [],
-//       earningsWithdrawn: map['earningsWithdrawn'] ?? false,
-//       withdrawalDate: map['withdrawalDate']?.toDate(),
-//       withdrawalTransactionId: map['withdrawalTransactionId'],
-//       likeCount: map['likeCount'],
-//
-//       // Nouveaux champs
-//       isPaidLive: map['isPaidLive'] ?? false,
-//       participationFee: map['participationFee']?.toDouble() ?? 100.0,
-//       freeTrialMinutes: map['freeTrialMinutes'] ?? 1,
-//       audioBehaviorAfterTrial: map['audioBehaviorAfterTrial'] ?? 'reduce',
-//       audioReductionPercent: map['audioReductionPercent'] ?? 50,
-//       blurVideoAfterTrial: map['blurVideoAfterTrial'] ?? true,
-//       showPaymentModalAfterTrial: map['showPaymentModalAfterTrial'] ?? true,
-//       pinnedText: map['pinnedText'],
-//       shareCount: map['shareCount'] ?? 0,
-//       paidParticipationTotal: map['paidParticipationTotal']?.toDouble() ?? 0.0,
-//       userWatchTime: map['userWatchTime'] != null
-//           ? Map<String, dynamic>.from(map['userWatchTime'])
-//           : {},
-//
-//       screenShareUid: map['screenShareUid'],
-//       isScreenSharing: map['isScreenSharing'] ?? false,
-//       screenSharerId: map['screenSharerId'],
-//     );
-//   }
-//
-//
-//   PostLive copyWith({
-//     int? screenShareUid,
-//     bool? isScreenSharing,
-//     String? screenSharerId,
-//     // ... autres champs ...
-//   }) {
-//     return PostLive(
-//       liveId: liveId,
-//       hostId: hostId,
-//       hostName: hostName,
-//       hostImage: hostImage,
-//       title: title,
-//       viewerCount: viewerCount,
-//       giftCount: giftCount,
-//       startTime: startTime,
-//       endTime: endTime,
-//       isLive: isLive,
-//       giftTotal: giftTotal,
-//       likeCount: likeCount,
-//       gifts: gifts,
-//       paymentRequired: paymentRequired,
-//       paymentRequestTime: paymentRequestTime,
-//       invitedUsers: invitedUsers,
-//       participants: participants,
-//       spectators: spectators,
-//       isPaidLive: isPaidLive,
-//       participationFee: participationFee,
-//       freeTrialMinutes: freeTrialMinutes,
-//       audioBehaviorAfterTrial: audioBehaviorAfterTrial,
-//       audioReductionPercent: audioReductionPercent,
-//       blurVideoAfterTrial: blurVideoAfterTrial,
-//       showPaymentModalAfterTrial: showPaymentModalAfterTrial,
-//       pinnedText: pinnedText,
-//       shareCount: shareCount,
-//       paidParticipationTotal: paidParticipationTotal,
-//       userWatchTime: userWatchTime,
-//       earningsWithdrawn: earningsWithdrawn,
-//       withdrawalDate: withdrawalDate,
-//       withdrawalTransactionId: withdrawalTransactionId,
-//
-//       // Partage d'écran
-//       screenShareUid: screenShareUid ?? this.screenShareUid,
-//       isScreenSharing: isScreenSharing ?? this.isScreenSharing,
-//       screenSharerId: screenSharerId ?? this.screenSharerId,
-//     );
-//   }
-// }
 
 
 

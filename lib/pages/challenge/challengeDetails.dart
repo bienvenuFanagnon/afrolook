@@ -980,7 +980,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
         }
 
         // Vérifier le solde de l'application
-        final appDataRef = _firestore.collection('AppData').doc('solde');
+        final appDataRef = _firestore.collection('AppData').doc(authProvider.appDefaultData.id);
         final appDataDoc = await transaction.get(appDataRef);
         final soldeApp = (appDataDoc.data()?['solde_gain'] ?? 0).toDouble();
 
