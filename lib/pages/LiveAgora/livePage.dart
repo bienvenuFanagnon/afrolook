@@ -65,7 +65,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   late VideoPlayerController _videoPlayerController; // Contrôleur pour lire le flux passif
   bool _isPassiveSpectator = false; // Vrai si l'utilisateur est un simple spectateur passif
 
+  // 🔥 GETTER POUR VÉRIFIER SI L'HÔTE EST PREMIUM
+  bool get _isHostPremium {
+    // Vérifier l'abonnement de l'hôte depuis le provider
+    return authProvider.loginUserData.abonnement?.estPremium ?? false;
+  }
 
+  // 🔥 GETTER POUR VÉRIFIER SI LE LIVE EST PREMIUM
+  bool get _isLivePremium {
+    // Un live est premium si sa durée est de 60 minutes
+    return widget.postLive.safeLiveDurationMinutes == 60;
+  }
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _commentController = TextEditingController();
@@ -227,8 +237,44 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
 // Ajout dans _LivePageState
   // ==================== GESTION TEMPS PERSISTANT SIMPLIFIÉE ====================
+  void _initializeHostTimer() async {
+    if (!widget.isHost) return;
 
-  Future<void> _initializeHostTimer() async {
+    try {
+      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
+      if (liveDoc.exists) {
+        final data = liveDoc.data()!;
+
+        // Si déjà en attente de paiement
+        if (data['paymentRequired'] == true) {
+          setState(() => _showPaymentWarning = true);
+          return;
+        }
+
+        // Récupérer la durée depuis PostLive (30 ou 60 minutes)
+        final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
+
+        // Calculer le temps écoulé depuis le début ou dernier paiement
+        final referenceTime = data['lastPaymentTime'] ?? data['startTime'];
+        if (referenceTime == null) return;
+
+        final referenceDateTime = (referenceTime as Timestamp).toDate();
+        final now = DateTime.now();
+
+        final elapsedMinutes = now.difference(referenceDateTime).inMinutes;
+        final remainingMinutes = max(0, liveDurationMinutes - elapsedMinutes);
+
+        print("⏰ $elapsedMinutes min écoulées, $remainingMinutes min restantes sur $liveDurationMinutes min");
+        print("🎯 Type live: ${_isHostPremium ? 'PREMIUM' : 'GRATUIT'} (${liveDurationMinutes}min)");
+
+        _startPaymentTimer(remainingMinutes, liveDurationMinutes);
+      }
+    } catch (e) {
+      print("❌ Erreur initialisation timer: $e");
+      _startPaymentTimer();
+    }
+  }
+  Future<void> _initializeHostTimer2() async {
     if (!widget.isHost) return;
 
     try {
@@ -261,14 +307,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _startPaymentTimer();
     }
   }
-
-  void _startPaymentTimer([int? remainingMinutes]) {
+  void _startPaymentTimer([int? remainingMinutes, int? totalDuration]) {
     if (!widget.isHost) return;
 
     _paymentWarningTimer?.cancel();
 
-    // Utiliser la durée par défaut si non spécifiée
-    final minutes = remainingMinutes ?? _liveDurationMinutes;
+    // Utiliser la durée du PostLive
+    final liveDurationMinutes = totalDuration ?? widget.postLive.safeLiveDurationMinutes;
+    final minutes = remainingMinutes ?? liveDurationMinutes;
+
+    print("⏰ Timer configuré: $minutes minutes sur $liveDurationMinutes");
+    print("💰 Montant: ${liveDurationMinutes == 60 ? '200' : '100'} FCFA");
 
     // Si temps écoulé, demander paiement immédiatement
     if (minutes <= 0) {
@@ -278,22 +327,21 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       return;
     }
 
-    print("⏰ Timer configuré: $minutes minutes");
-
     _paymentWarningTimer = Timer(Duration(minutes: minutes), () {
       _requestPayment();
     });
   }
-
-
   void _requestPayment() async {
     try {
+      // Calculer le prix selon la durée
+      final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
+      final amount = liveDurationMinutes == 60 ? 200.0 : 100.0; // 200 FCFA pour 60min, 100 pour 30min
+
       await _firestore.collection('lives').doc(widget.liveId).update({
         'paymentRequired': true,
         'paymentRequestTime': DateTime.now(),
-        // ⭐ AJOUTER ces 2 champs pour synchroniser
         'isPaused': true,
-        'pauseMessage': "Temps écoulé - En attente de prolongement" ,
+        'pauseMessage': "Temps écoulé - En attente de prolongement ($liveDurationMinutes min)",
       });
 
       setState(() => _showPaymentWarning = true);
@@ -304,6 +352,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await _engine.muteLocalVideoStream(true);
       }
 
+      print("💰 Demande de paiement: $amount FCFA pour ${liveDurationMinutes}min");
+
     } catch (e) {
       print("❌ Erreur demande paiement: $e");
     }
@@ -312,17 +362,19 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _handlePayment() async {
     try {
       final userProvider = context.read<UserAuthProvider>();
-      bool paymentSuccess = await userProvider.deductFromBalance(context, 100.0);
+      final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
+      final amount = liveDurationMinutes == 60 ? 200.0 : 100.0;
+
+      bool paymentSuccess = await userProvider.deductFromBalance(context, amount);
 
       if (paymentSuccess) {
-        userProvider.incrementAppGain(100);
+        userProvider.incrementAppGain(amount);
 
         final now = DateTime.now();
         await _firestore.collection('lives').doc(widget.liveId).update({
           'paymentRequired': false,
           'paymentRequestTime': null,
           'lastPaymentTime': now,
-          // ⭐ AJOUTER : Reprendre le live pour tous
           'isPaused': false,
           'pauseMessage': null,
         });
@@ -334,11 +386,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         }
 
         setState(() => _showPaymentWarning = false);
-        _startPaymentTimer();
+        _startPaymentTimer(liveDurationMinutes, liveDurationMinutes);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Paiement accepté! Live prolongé'),
+            content: Text('Paiement de ${amount.toInt()} FCFA accepté! Live prolongé de $liveDurationMinutes min'),
             backgroundColor: Colors.green,
           ),
         );
@@ -351,6 +403,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 // Mettez à jour le message d'alerte
   Widget _buildPaymentWarning() {
+    final liveDuration = widget.postLive.safeLiveDurationMinutes;
+    final amount = liveDuration == 60 ? 200.0 : 100.0;
+
     return Container(
       color: Colors.black.withOpacity(0.9),
       padding: EdgeInsets.all(24),
@@ -361,16 +416,21 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             Icon(Icons.timer, size: 64, color: Color(0xFFF9A825)),
             SizedBox(height: 20),
             Text(
-              'Temps de live écoulés', // ← DYNAMIQUE
+              'Temps de live écoulé',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
+            SizedBox(height: 8),
+            Text(
+              'Live ${liveDuration} minutes',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
             SizedBox(height: 12),
             Text(
-              'Payez 100 FCFA pour continuer votre live', // ← DYNAMIQUE
+              'Payez ${amount.toInt()} FCFA pour continuer votre live pendant ${liveDuration} minutes supplémentaires',
               style: TextStyle(color: Colors.white70, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -384,7 +444,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                     backgroundColor: Color(0xFFF9A825),
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   ),
-                  child: Text('Payer 100 FCFA',
+                  child: Text('Payer ${amount.toInt()} FCFA',
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
                 TextButton(
@@ -398,7 +458,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
   Future<void> _removeUserFromSpectators() async {
     try {
       final currentUserId = _auth.currentUser?.uid;
@@ -721,7 +780,123 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       print("❌ Erreur configuration caméra: $e");
     }
   }
+
   Future<void> _initAgora() async {
+    try {
+      print("🔊 Demande des permissions Agora...");
+      await [Permission.microphone, Permission.camera].request();
+
+      print("🚀 Création du moteur Agora...");
+      _engine = createAgoraRtcEngine();
+
+      await _engine.initialize(RtcEngineContext(
+        appId: "957063f627aa471581a52d4160f7c054",
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+      ));
+
+      // Configuration des handlers
+      _engine.registerEventHandler(
+        RtcEngineEventHandler(
+          onJoinChannelSuccess: (connection, elapsed) {
+            print("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
+            setState(() => _localUserJoined = true);
+          },
+          onUserJoined: (connection, remoteUid, elapsed) {
+            print("👤 Utilisateur rejoint: $remoteUid");
+            setState(() => _remoteUid = remoteUid);
+          },
+          onUserOffline: (connection, remoteUid, reason) {
+            print("👋 Utilisateur parti: $remoteUid");
+            setState(() => _remoteUid = null);
+          },
+          onCameraReady: () {
+            print("📷 Caméra prête");
+          },
+          onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
+            print("📹 État vidéo UID $remoteUid: $state");
+          },
+        ),
+      );
+
+      await _engine.enableVideo();
+
+      // 🔥 CONFIGURATION SELON TYPE DE LIVE (PREMIUM OU STANDARD)
+      final isPremium = _isLivePremium; // Utilise la durée du live
+
+      // Configuration latence
+      final latencyConfig = isPremium
+          ? AudienceLatencyLevelType.audienceLatencyLevelUltraLowLatency
+          : AudienceLatencyLevelType.audienceLatencyLevelLowLatency;
+
+      // Configuration vidéo
+      _videoConfig = VideoEncoderConfiguration(
+        dimensions: isPremium
+            ? const VideoDimensions(width: 1280, height: 720)  // HD pour live premium
+            : const VideoDimensions(width: 640, height: 360), // SD pour live standard
+        frameRate: isPremium ? 30 : 15,
+        bitrate: isPremium ? 4000 : 1000,
+        minBitrate: isPremium ? 2000 : 500,
+        orientationMode: OrientationMode.orientationModeAdaptive,
+        degradationPreference: isPremium
+            ? DegradationPreference.maintainQuality
+            : DegradationPreference.maintainFramerate,
+        mirrorMode: VideoMirrorModeType.videoMirrorModeAuto,
+      );
+
+      await _engine.setVideoEncoderConfiguration(_videoConfig);
+
+      final role = widget.isHost || _isParticipant
+          ? ClientRoleType.clientRoleBroadcaster
+          : ClientRoleType.clientRoleAudience;
+
+      await _engine.setClientRole(role: role);
+
+      if (widget.isHost || _isParticipant) {
+        await _engine.startPreview();
+      }
+
+      final uid = 0;
+      final token = await _getAgoraToken(
+        channelName: widget.liveId,
+        uid: uid,
+        isHost: widget.isHost || _isParticipant,
+      );
+
+      if (token == null) {
+        throw Exception("Impossible de générer un token Agora");
+      }
+
+      await _engine.joinChannel(
+        token: token,
+        channelId: widget.liveId,
+        uid: uid,
+        options: ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          clientRoleType: role,
+          publishCameraTrack: widget.isHost || _isParticipant,
+          publishMicrophoneTrack: widget.isHost || _isParticipant,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+          audienceLatencyLevel: latencyConfig, // 🔥 Latence configurée
+        ),
+      );
+
+      _joinAsSpectator();
+      setState(() => _isInitialized = true);
+
+      // Log de configuration
+      print("✅ Agora initialisé - Live: ${isPremium ? 'PREMIUM' : 'STANDARD'}");
+      print("   📹 Résolution: ${isPremium ? '1280x720 (HD)' : '640x360 (SD)'}");
+      print("   ⚡ Latence: ${isPremium ? 'Ultra Low (500ms)' : 'Low (2000ms)'}");
+      print("   🎯 Hôte: ${_isHostPremium ? 'PREMIUM' : 'STANDARD'}");
+      print("   ⏰ Durée: ${widget.postLive.safeLiveDurationMinutes} minutes");
+
+    } catch (e) {
+      print("💥 Erreur lors de l'initialisation Agora: $e");
+    }
+  }
+
+  Future<void> _initAgora2() async {
     try {
       print("🔊 Demande des permissions Agora...");
       await [Permission.microphone, Permission.camera].request();

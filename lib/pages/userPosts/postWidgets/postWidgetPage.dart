@@ -8,46 +8,33 @@ import 'package:provider/provider.dart';
 import 'dart:math';
 
 import 'package:afrotok/pages/user/monetisation.dart';
-import 'package:afrotok/pages/userPosts/postColorsWidget.dart';
-import 'package:afrotok/pages/userPosts/postWidgets/postCadeau.dart';
-import 'package:afrotok/pages/userPosts/postWidgets/postUserWidget.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
-import 'package:flutter_linkify/flutter_linkify.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+
 import 'package:hashtagable_v3/widgets/hashtag_text.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../models/model_data.dart';
-import '../../../constant/constColors.dart';
-import '../../../constant/sizeText.dart';
-import '../../../constant/textCustom.dart';
-import '../../../models/model_data.dart';
+
 import '../../../services/linkService.dart';
+import '../../../services/utils/abonnement_utils.dart';
 import '../../home/homeWidget.dart';
 import '../../paiement/newDepot.dart';
 import '../../postComments.dart';
-import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../canaux/detailsCanal.dart';
-import '../../canaux/listCanal.dart';
-import '../../component/consoleWidget.dart';
+
 import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideoListe.dart';
-import '../../socialVideos/afrovideos/afrovideo.dart';
-import '../../user/detailsOtherUser.dart';
+
 
 // Couleurs style Twitter Dark Mode
 const _twitterDarkBg = Color(0xFF000000);
@@ -395,11 +382,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       color: _afroDarkBg,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.verified,
-                      color: _afroBlue,
-                      size: 14,
-                    ),
+                    child:  Icon(Icons.verified, color: Colors.blue, size: 20),
                   ),
                 ),
             ],
@@ -427,7 +410,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         ),
                         SizedBox(width: 4),
                         if (_isVerified())
-                          Icon(Icons.verified, color: _afroBlue, size: 16),
+                          AbonnementUtils.getUserBadge(abonnement: widget.post.user!.abonnement,isVerified: widget.post.user!.isVerify!)
                       ],
                     ),
                   ),
@@ -669,7 +652,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-  Widget _buildMediaContent(double h, bool isLocked) {
+  Widget _buildMediaContent2(double h, bool isLocked) {
     final images = widget.post.images!;
 
     return Stack(
@@ -749,6 +732,415 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             ),
           ),
       ],
+    );
+  }
+  Widget _buildMediaContent(double h, bool isLocked) {
+    final images = widget.post.images!;
+    final imageCount = images.length;
+
+    // Définir la hauteur en fonction du nombre d'images
+    double contentHeight;
+    if (imageCount == 1) {
+      contentHeight = h * 0.4; // Hauteur normale pour 1 image
+    } else if (imageCount == 2) {
+      contentHeight = h * 0.4; // Même hauteur pour 2 images
+    } else if (imageCount == 3) {
+      contentHeight = h * 0.4; // Même hauteur pour 3 images
+    } else {
+      contentHeight = h * 0.4; // Même hauteur pour 4+ images
+    }
+
+    return Container(
+      height: contentHeight, // 🔥 HAUTEUR EXPLICITE POUR ÉVITER L'ERREUR
+      child: Stack(
+        children: [
+          // Conteneur principal pour le grid d'images
+          Container(
+            width: double.infinity,
+            height: contentHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.grey[900],
+            ),
+            child: Opacity(
+              opacity: isLocked ? 0.15 : 1.0,
+              child: _buildImageGrid(contentHeight, imageCount),
+            ),
+          ),
+
+          // Overlay pour contenu verrouillé
+          if (isLocked)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock, color: _afroYellow, size: 50),
+                      SizedBox(height: 8),
+                      Text(
+                        'Contenu verrouillé',
+                        style: TextStyle(
+                          color: _afroYellow,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Abonnez-vous pour voir ce contenu',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Badge indiquant le nombre d'images (si plus de 1)
+          if (imageCount > 1 && !isLocked)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.photo_library, color: Colors.white, size: 14),
+                    SizedBox(width: 5),
+                    Text(
+                      '$imageCount',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+// 🔥 MÉTHODE MODIFIÉE POUR PRENDRE LA HAUTEUR EN PARAMÈTRE
+  Widget _buildImageGrid(double height, int imageCount) {
+    final images = widget.post.images!;
+
+    if (imageCount == 1) {
+      // 1 image : pleine largeur
+      return _buildSingleImage(images[0], height);
+    } else if (imageCount == 2) {
+      // 2 images : côte à côte
+      return _buildTwoImages(images, height);
+    } else if (imageCount == 3) {
+      // 3 images : 1 grande + 2 petites
+      return _buildThreeImages(images, height);
+    } else {
+      // 4+ images : grid 2x2 avec indicateur
+      return _buildMultipleImages(images, height);
+    }
+  }
+
+  Widget _buildSingleImage(String imageUrl, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPost(post: widget.post),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: height,
+          placeholder: (context, url) => Container(
+            color: _afroTextSecondary.withOpacity(0.1),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: _afroTextSecondary.withOpacity(0.1),
+            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTwoImages(List<String> images, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPost(post: widget.post),
+          ),
+        );
+      },
+      child: Row(
+        children: [
+          // Première image - moitié gauche
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: 2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: images[0],
+                  fit: BoxFit.cover,
+                  height: height,
+                  placeholder: (context, url) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Deuxième image - moitié droite
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: images[1],
+                  fit: BoxFit.cover,
+                  height: height,
+                  placeholder: (context, url) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThreeImages(List<String> images, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPost(post: widget.post),
+          ),
+        );
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Première image - 2/3 de la largeur
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: EdgeInsets.only(right: 2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: images[0],
+                  fit: BoxFit.cover,
+                  height: height,
+                  placeholder: (context, url) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: _afroTextSecondary.withOpacity(0.1),
+                    child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Deuxième et troisième images - 1/3 de la largeur, divisées verticalement
+          Expanded(
+            flex: 1,
+            child: Container(
+              height: height,
+              padding: EdgeInsets.only(left: 2),
+              child: Column(
+                children: [
+                  // Deuxième image - moitié supérieure
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 2),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(16),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: images[1],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          placeholder: (context, url) => Container(
+                            color: _afroTextSecondary.withOpacity(0.1),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: _afroTextSecondary.withOpacity(0.1),
+                            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Troisième image - moitié inférieure
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: images[2],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          placeholder: (context, url) => Container(
+                            color: _afroTextSecondary.withOpacity(0.1),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: _afroTextSecondary.withOpacity(0.1),
+                            child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMultipleImages(List<String> images, double height) {
+    final displayedImages = images.take(4).toList(); // Limite à 4 images pour le preview
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPost(post: widget.post),
+          ),
+        );
+      },
+      child: Container(
+        height: height, // 🔥 HAUTEUR FIXE POUR LE GRIDVIEW
+        child: GridView.builder(
+          physics: NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 2,
+            mainAxisSpacing: 2,
+          ),
+          itemCount: displayedImages.length,
+          itemBuilder: (context, index) {
+            BorderRadius borderRadius;
+            if (displayedImages.length == 4) {
+              switch (index) {
+                case 0:
+                  borderRadius = BorderRadius.only(topLeft: Radius.circular(16));
+                  break;
+                case 1:
+                  borderRadius = BorderRadius.only(topRight: Radius.circular(16));
+                  break;
+                case 2:
+                  borderRadius = BorderRadius.only(bottomLeft: Radius.circular(16));
+                  break;
+                case 3:
+                  borderRadius = BorderRadius.only(bottomRight: Radius.circular(16));
+                  break;
+                default:
+                  borderRadius = BorderRadius.circular(0);
+              }
+            } else {
+              borderRadius = BorderRadius.circular(0);
+            }
+
+            bool hasOverlay = index == 3 && images.length > 4;
+
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: borderRadius,
+                  child: CachedNetworkImage(
+                    imageUrl: displayedImages[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    placeholder: (context, url) => Container(
+                      color: _afroTextSecondary.withOpacity(0.1),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: _afroTextSecondary.withOpacity(0.1),
+                      child: Icon(Icons.broken_image, color: _afroTextSecondary),
+                    ),
+                  ),
+                ),
+
+                if (hasOverlay)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.6),
+                      child: Center(
+                        child: Text(
+                          '+${images.length - 4}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 

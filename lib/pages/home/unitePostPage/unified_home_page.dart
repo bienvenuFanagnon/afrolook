@@ -22,6 +22,7 @@ import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/postService/local_viewed_posts_service.dart';
 import '../../../services/postService/mixed_feed_service.dart';
 import '../../chronique/chroniqueform.dart';
+import '../../postComments.dart';
 import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'chronique_section.dart';
 import 'home_components/loading_components.dart';
@@ -88,7 +89,8 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
 
   // 🔥 CONTENU ACTUEL À AFFICHER
   List<dynamic> _currentContent = [];
-
+// Ajoutez cette variable en haut de votre classe
+  final Set<String> _alreadyViewedPosts = Set<String>();
   // 🔥 GESTION VISIBILITÉ
   final Map<String, Timer> _visibilityTimers = {};
 
@@ -819,7 +821,7 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
               offset: Offset(0, 2),
             ),
           ],
-          border: isNewForUser ? Border.all(color: Colors.green, width: 2) : null,
+          // border: isNewForUser ? Border.all(color: Colors.green, width: 2) : null,
         ),
         child: Stack(
           children: [
@@ -845,33 +847,33 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
               onLoved: () => _onPostLoved(post),
             ),
 
-            if (isNewForUser)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.fiber_new, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'Nouveau',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // if (isNewForUser)
+            //   Positioned(
+            //     top: 10,
+            //     right: 10,
+            //     child: Container(
+            //       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            //       decoration: BoxDecoration(
+            //         color: Colors.green,
+            //         borderRadius: BorderRadius.circular(10),
+            //       ),
+            //       child: Row(
+            //         mainAxisSize: MainAxisSize.min,
+            //         children: [
+            //           Icon(Icons.fiber_new, color: Colors.white, size: 14),
+            //           SizedBox(width: 4),
+            //           Text(
+            //             'Nouveau',
+            //             style: TextStyle(
+            //               color: Colors.white,
+            //               fontSize: 10,
+            //               fontWeight: FontWeight.bold,
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
 
             if (post.createdAt != null)
               Positioned(
@@ -1015,58 +1017,59 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
     }
   }
 
-// Ajoutez cette variable en haut de votre classe
-  final Set<String> _alreadyViewedPosts = Set<String>();
+
 
   void _handlePostVisibility(Post post, VisibilityInfo info) {
     final postId = post.id!;
 
-    // 🔥 VÉRIFIER SI DÉJÀ VU
-    if (_alreadyViewedPosts.contains(postId)) {
-      return; // Déjà compté, on ne fait rien
-    }
+    // // 🔥 VÉRIFIER SI DÉJÀ VU
+    // if (_alreadyViewedPosts.contains(postId)) {
+    //   return; // Déjà compté, on ne fait rien
+    // }
 
-    _visibilityTimers[postId]?.cancel();
-
-    if (info.visibleFraction > 0.6) {
-      _visibilityTimers[postId] = Timer(Duration(milliseconds: 400), () {
-        if (mounted && info.visibleFraction > 0.5) {
-          // 🔥 MARQUER COMME VU AVANT L'ENREGISTREMENT
-          _alreadyViewedPosts.add(postId);
-          _markPostAsSeen(post);
-        }
-      });
-    } else if (info.visibleFraction < 0.2) {
-      _visibilityTimers.remove(postId);
+    if (info.visibleFraction > 0.5) {
+      _markPostAsSeen(post);
     }
   }
   Future<void> _markPostAsSeen(Post post) async {
     final currentUserId = _getUserId();
-    if (currentUserId.isEmpty || post.id == null) return;
+    // if (currentUserId.isEmpty || post.id == null) return;
 
     try {
-      await LocalViewedPostsService.markPostAsViewedAndUpdateLast(post.id!);
+      // // Évite double comptage local
+      if (_alreadyViewedPosts.contains(post.id)) return;
+      _alreadyViewedPosts.add(post.id!);
 
-      final mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
-      if (mixedFeedProvider.mixedFeedService != null) {
-        await mixedFeedProvider.mixedFeedService!.markPostAsSeen(post.id!);
-      }
+      // 🔥 Incrémente Firebase
+       incrementPostViews(post.id!, currentUserId);
 
+      // 🔥 Met à jour l'UI instantanément
       if (mounted) {
         setState(() {
           post.vues = (post.vues ?? 0) + 1;
-          post.users_vue_id ??= [];
-          if (!post.users_vue_id!.contains(currentUserId)) {
-            post.users_vue_id!.add(currentUserId);
-          }
+
+          // post.users_vue_id ??= [];
+          // if (!post.users_vue_id!.contains(currentUserId)) {
+          //   post.users_vue_id!.add(currentUserId);
+          // }
         });
       }
 
     } catch (e) {
-      print('❌ Erreur enregistrement vue: $e');
+      print("❌ Erreur lors de l'ajout d'une vue : $e");
     }
   }
+  Future<void> incrementPostViews(String postId, String userId) async {
+    final postRef = FirebaseFirestore.instance.collection('Posts').doc(postId);
+    print('Pste vue vue vue encours');
+    await postRef.update({
+      "vues": FieldValue.increment(1),
+      "users_vue_id": FieldValue.arrayUnion([userId]),
+      // "last_view_at": FieldValue.serverTimestamp(),
+    });
 
+    print('Pste vue vue vue validé');
+  }
   // 🔥 MÉTHODES POUR LES CHRONIQUES
   Future<void> _loadChroniqueData(List<Chronique> chroniques) async {
     if (_isLoadingChroniques) return;
@@ -1259,7 +1262,13 @@ class _UnifiedHomeOptimizedState extends State<UnifiedHomeOptimized> {
   }
 
   void _onPostCommented(Post post) {
-    FeedInteractionService.onPostCommented(post, _getUserId());
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => PostComments(post: post),
+    //   ),
+    // );
+    // FeedInteractionService.onPostCommented(post, _getUserId());
   }
 
   void _onPostShared(Post post) {

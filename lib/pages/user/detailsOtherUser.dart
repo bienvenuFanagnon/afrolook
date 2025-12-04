@@ -39,6 +39,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/profilLikeProvider.dart';
 import '../../providers/userProvider.dart';
+import '../../services/utils/abonnement_utils.dart';
 import '../chat/myChat.dart';
 import '../component/consoleWidget.dart';
 import 'conponent.dart';
@@ -1233,18 +1234,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           ),
                         ),
                         SizedBox(width: 8),
-                        if (widget.user.isVerify!)
-                          Icon(
-                            Icons.verified,
-                            color: Colors.blue,
-                            size: 24,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 10,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
+                          AbonnementUtils.getUserBadge(abonnement: widget.user!.abonnement,isVerified: widget.user!.isVerify!)
                       ],
                     ),
 

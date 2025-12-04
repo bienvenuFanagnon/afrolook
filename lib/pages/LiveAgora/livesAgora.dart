@@ -297,6 +297,164 @@ class PostLive {
   }
 }
 
+// models/live_stats.dart
+class LiveStats {
+  String userId;
+  int monthlyLiveCount; // Nombre de lives ce mois
+  DateTime monthStart; // Début du mois en cours
+  int totalLiveCount; // Total des lives créés
+  DateTime? lastLiveDate; // Date du dernier live
+  Map<String, dynamic> qualityPreferences; // Préférences de qualité
+  bool isPremium; // Si premium actif
+  DateTime? premiumUntil; // Jusqu'à quand premium
+  int maxMonthlyLives; // Nombre max de lives par mois
+  String defaultQuality; // Qualité par défaut
+
+  LiveStats({
+    required this.userId,
+    this.monthlyLiveCount = 0,
+    required this.monthStart,
+    this.totalLiveCount = 0,
+    this.lastLiveDate,
+    this.qualityPreferences = const {},
+    this.isPremium = false,
+    this.premiumUntil,
+    this.maxMonthlyLives = 5,
+    this.defaultQuality = 'standard',
+  }){
+    lastLiveDate ??=  DateTime.now();
+    premiumUntil ??=  DateTime.now();
+
+  }
+
+  factory LiveStats.defaultForUser(String userId) {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+
+    return LiveStats(
+      userId: userId,
+      monthStart: monthStart,
+      monthlyLiveCount: 0,
+      totalLiveCount: 0,
+      lastLiveDate: now,
+      qualityPreferences: {
+        'latency': 2000, // 2 secondes pour gratuit
+        'quality': 'SD',
+        'bitrate': 1000,
+        'resolution': '480p',
+      },
+      isPremium: false,
+      premiumUntil: now,
+      maxMonthlyLives: 5,
+      defaultQuality: 'standard',
+    );
+  }
+
+  factory LiveStats.fromJson(Map<String, dynamic> json) {
+    return LiveStats(
+      userId: json['userId'],
+      monthlyLiveCount: json['monthlyLiveCount'] ?? 0,
+      monthStart: DateTime.parse(json['monthStart']),
+      totalLiveCount: json['totalLiveCount'] ?? 0,
+      lastLiveDate: DateTime.parse(json['lastLiveDate']),
+      qualityPreferences: Map<String, dynamic>.from(json['qualityPreferences'] ?? {}),
+      isPremium: json['isPremium'] ?? false,
+      premiumUntil: DateTime.parse(json['premiumUntil']),
+      maxMonthlyLives: json['maxMonthlyLives'] ?? 5,
+      defaultQuality: json['defaultQuality'] ?? 'standard',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'monthlyLiveCount': monthlyLiveCount,
+      'monthStart': monthStart.toIso8601String(),
+      'totalLiveCount': totalLiveCount,
+      'lastLiveDate': lastLiveDate!.toIso8601String(),
+      'qualityPreferences': qualityPreferences,
+      'isPremium': isPremium,
+      'premiumUntil': premiumUntil!.toIso8601String(),
+      'maxMonthlyLives': maxMonthlyLives,
+      'defaultQuality': defaultQuality,
+    };
+  }
+
+  // Vérifier si peut créer un live
+  bool canCreateLive() {
+    final now = DateTime.now();
+
+    // Si le mois a changé, réinitialiser le compteur
+    if (now.month != monthStart.month || now.year != monthStart.year) {
+      monthlyLiveCount = 0;
+      monthStart = DateTime(now.year, now.month, 1);
+    }
+
+    return monthlyLiveCount < maxMonthlyLives || isPremium;
+  }
+
+  // Nombre de lives restants
+  int get remainingLives {
+    return isPremium ? 999 : maxMonthlyLives - monthlyLiveCount;
+  }
+
+  // Incrémenter le compteur
+  void incrementLiveCount() {
+    monthlyLiveCount++;
+    totalLiveCount++;
+    lastLiveDate = DateTime.now();
+  }
+
+  // Mettre à jour pour premium
+  void updateForPremium({required bool premium, DateTime? premiumUntil}) {
+    isPremium = premium;
+    if (premium) {
+      maxMonthlyLives = 999; // Illimité pour premium
+      defaultQuality = 'HD';
+      qualityPreferences = {
+        'latency': 500, // 500ms pour premium
+        'quality': 'HD',
+        'bitrate': 4000,
+        'resolution': '720p',
+      };
+      if (premiumUntil != null) {
+        this.premiumUntil = premiumUntil;
+      }
+    } else {
+      maxMonthlyLives = 5; // 5 max pour gratuit
+      defaultQuality = 'standard';
+      qualityPreferences = {
+        'latency': 2000, // 2 secondes pour gratuit
+        'quality': 'SD',
+        'bitrate': 1000,
+        'resolution': '480p',
+      };
+    }
+  }
+
+  // Vérifier si premium actif
+  bool get isPremiumActive {
+    if (!isPremium) return false;
+    return DateTime.now().isBefore(premiumUntil!);
+  }
+
+  // Obtenir la latence selon l'abonnement
+  int get latency {
+    if (isPremiumActive) {
+      return qualityPreferences['latency'] ?? 500;
+    }
+    return qualityPreferences['latency'] ?? 2000;
+  }
+
+  // Obtenir la qualité
+  String get quality {
+    if (isPremiumActive) {
+      return qualityPreferences['quality'] ?? 'HD';
+    }
+    return qualityPreferences['quality'] ?? 'SD';
+  }
+}
+
 
 
 class LiveGift {

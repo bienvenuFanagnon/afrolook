@@ -22,6 +22,7 @@ import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
+import '../userAbonnementPage.dart';
 import 'adminprofil.dart';
 
 class UserProfil extends StatefulWidget {
@@ -446,6 +447,42 @@ class _UserProfilState extends State<UserProfil> {
                                         Container(
                                           child: TextCustomerMenu(
                                             titre: "Monétisation",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      ],
+                              
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),  
+                            SizedBox(height: 10,),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen(),));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                child: Container(
+                                  color: ConstColors.buttonsColors,
+                                  // alignment: Alignment.centerLeft,
+                                  width: 180,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Container(
+                                            child: Icon(Icons.card_membership,color: Colors.blue,size: 20,),
+                                          ),
+                                        ),
+                                        Container(
+                                          child: TextCustomerMenu(
+                                            titre: "Abonnement",
                                             fontSize: SizeText.homeProfileTextSize,
                                             couleur: ConstColors.textColors,
                                             fontWeight: FontWeight.w600,

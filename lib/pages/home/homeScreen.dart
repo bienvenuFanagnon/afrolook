@@ -45,6 +45,7 @@ import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/postService/mixed_feed_service.dart';
+import '../../services/utils/abonnement_utils.dart';
 import '../LiveAgora/mesLives.dart';
 import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
@@ -497,14 +498,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   ],
                                 ),
                                 SizedBox(width: 5),
-                                Visibility(
-                                  visible: authProvider.loginUserData!.isVerify!,
-                                  child: const Icon(
-                                    Icons.verified,
-                                    color: Colors.green,
-                                    size: 20,
-                                  ),
-                                ),
+                                AbonnementUtils.getUserBadge(abonnement: authProvider.loginUserData!.abonnement,isVerified: authProvider.loginUserData!.isVerify!)
                               ],
                             ),
                           ],

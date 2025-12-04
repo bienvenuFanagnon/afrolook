@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -611,7 +612,226 @@ class AppDefaultData {
 
 
 
+// models/afrolook_abonnement.dart
+class AfrolookAbonnement {
+  String? id;
+  String type; // 'gratuit' ou 'premium'
+  double prix; // Prix actuel
+  DateTime dateDebut;
+  DateTime dateFin;
+  bool estActif;
+  String? transactionId;
+  int dureeMois;
+  double montantPaye;
+  String methodePaiement; // 'solde', 'carte', 'mobile_money', 'gratuit'
+  DateTime createdAt;
+  DateTime updatedAt;
+  List<String> avantagesActives;
 
+  static const double prixPremiumBase = 200.0;
+  static const Map<int, double> reductions = {
+    3: 100.0,
+    4: 100.0,
+    6: 200.0,
+    12: 400.0,
+  };
+
+  AfrolookAbonnement({
+    this.id,
+    required this.type,
+    required this.prix,
+    required this.dateDebut,
+    required this.dateFin,
+    required this.estActif,
+    this.transactionId,
+    required this.dureeMois,
+    required this.montantPaye,
+    required this.methodePaiement,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.avantagesActives,
+  });
+
+  // Constructeur pour abonnement gratuit
+  factory AfrolookAbonnement.gratuit() {
+    final now = DateTime.now();
+    return AfrolookAbonnement(
+      type: 'gratuit',
+      prix: 0.0,
+      dateDebut: now,
+      dateFin: DateTime(2100, 12, 31),
+      estActif: true,
+      dureeMois: 999,
+      montantPaye: 0.0,
+      methodePaiement: 'gratuit',
+      createdAt: now,
+      updatedAt: now,
+      avantagesActives: getAvantagesGratuits(),
+    );
+  }
+
+  // Constructeur pour abonnement premium
+  factory AfrolookAbonnement.premium({
+    int dureeMois = 1,
+    double? prixPersonnalise,
+  }) {
+    final now = DateTime.now();
+    final prixCalcul = prixPersonnalise ?? calculerPrix(dureeMois);
+
+    return AfrolookAbonnement(
+      type: 'premium',
+      prix: prixCalcul,
+      dateDebut: now,
+      dateFin: now.add(Duration(days: 30 * dureeMois)),
+      estActif: true,
+      dureeMois: dureeMois,
+      montantPaye: prixCalcul,
+      methodePaiement: 'solde',
+      createdAt: now,
+      updatedAt: now,
+      avantagesActives: getAvantagesPremium(),
+    );
+  }
+
+  // Méthode statique pour calculer le prix
+  static double calculerPrix(int dureeMois) {
+    double prixTotal = dureeMois * prixPremiumBase;
+    double reduction = reductions[dureeMois] ?? 0.0;
+    return prixTotal - reduction;
+  }
+
+  // Méthode pour obtenir les avantages gratuits
+  static List<String> getAvantagesGratuits() {
+    return [
+      'live_qualite_base',
+      'live_latence_2s',
+      'post_photo_unique',
+      'restriction_60min',
+      'challenge_limite',
+      'text_image_limite',
+    ];
+  }
+
+  // Méthode pour obtenir les avantages premium
+  static List<String> getAvantagesPremium() {
+    return [
+      'live_qualite_HD',
+      'live_latence_500ms',
+      'post_photos_multiple',
+      'sans_restriction_60min',
+      'challenge_illimite',
+      'text_image_illimite',
+      'evenement_sponsors',
+      'badge_premium',
+      'support_prioritaire',
+      'analyses_avancees',
+    ];
+  }
+
+  factory AfrolookAbonnement.fromJson(Map<String, dynamic> json) {
+    // Vérifier si l'abonnement est expiré
+    final dateFin = DateTime.parse(json['dateFin']);
+    final estExpire = dateFin.isBefore(DateTime.now());
+
+    if (estExpire && json['type'] == 'premium') {
+      // Retourner un abonnement gratuit si premium expiré
+      return AfrolookAbonnement.gratuit();
+    }
+
+    return AfrolookAbonnement(
+      id: json['id'],
+      type: json['type'],
+      prix: (json['prix'] as num).toDouble(),
+      dateDebut: DateTime.parse(json['dateDebut']),
+      dateFin: dateFin,
+      estActif: json['estActif'] && !estExpire,
+      transactionId: json['transactionId'],
+      dureeMois: json['dureeMois'],
+      montantPaye: (json['montantPaye'] as num).toDouble(),
+      methodePaiement: json['methodePaiement'],
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      avantagesActives: List<String>.from(json['avantagesActives']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    // Vérifier l'expiration avant de sauvegarder
+    final maintenant = DateTime.now();
+    if (type == 'premium' && dateFin.isBefore(maintenant)) {
+      // Si premium expiré, retourner gratuit
+      return AfrolookAbonnement.gratuit().toJson();
+    }
+
+    return {
+      'id': id,
+      'type': type,
+      'prix': prix,
+      'dateDebut': dateDebut.toIso8601String(),
+      'dateFin': dateFin.toIso8601String(),
+      'estActif': estActif,
+      'transactionId': transactionId,
+      'dureeMois': dureeMois,
+      'montantPaye': montantPaye,
+      'methodePaiement': methodePaiement,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'avantagesActives': avantagesActives,
+    };
+  }
+
+  // Propriété pour vérifier si premium actif
+  bool get estPremium {
+    if (type != 'premium') return false;
+    if (!estActif) return false;
+    return !dateFin.isBefore(DateTime.now());
+  }
+
+  // Propriété pour vérifier si expiré
+  bool get estExpire {
+    if (type == 'gratuit') return false;
+    return dateFin.isBefore(DateTime.now());
+  }
+
+  // Jours restants
+  int get joursRestants {
+    final maintenant = DateTime.now();
+    final difference = dateFin.difference(maintenant);
+    return difference.inDays.clamp(0, 365);
+  }
+
+  // Expire bientôt
+  bool get expireBientot {
+    if (!estPremium) return false;
+    return joursRestants <= 7 && joursRestants > 0;
+  }
+
+  // Dans la classe AfrolookAbonnement
+// Ajouter cette méthode
+  Map<String, dynamic> getLiveRestrictions() {
+    if (type == 'premium' && estPremium) {
+      return {
+        'maxMonthlyLives': 999, // Illimité
+        'latency': 500, // 500ms
+        'quality': 'HD',
+        'bitrate': 4000,
+        'resolution': '720p',
+        'canChooseHD': true,
+        'canChooseLowLatency': true,
+      };
+    } else {
+      return {
+        'maxMonthlyLives': 5,
+        'latency': 2000, // 2 secondes
+        'quality': 'SD',
+        'bitrate': 1000,
+        'resolution': '480p',
+        'canChooseHD': false,
+        'canChooseLowLatency': false,
+      };
+    }
+  }
+}
 class UserData {
   String? id;
   String? pseudo = "";
@@ -689,6 +909,13 @@ class UserData {
   List<String>? viewedPostIds = []; // IDs des posts déjà vus (max 1000)
   int lastFeedUpdate = 0; // Timestamp de la dernière mise à jour du feed
 
+  // Dans class UserData
+  AfrolookAbonnement? abonnement;
+
+  // Dans class UserData
+  LiveStats? liveStats;
+
+
   UserData(
       {this.reference,
       this.pseudo,
@@ -745,11 +972,32 @@ class UserData {
         this.lastFeedUpdate = 0,
       //this.genreId,
       this.role,
-      this.userGlobalTags});
+        // Dans le constructeur UserData
+        this.abonnement,
+        this.liveStats,
+
+      this.userGlobalTags}){
+    abonnement ??= AfrolookAbonnement.gratuit();
+    liveStats ??= LiveStats.defaultForUser(id ?? '');
+
+  }
+
+
   UserData.fromJson(Map<String, dynamic> json) {
     id = json['id']?.toString() ?? '';
     pseudo = json['pseudo']?.toString() ?? '';
     oneIgnalUserid = json['oneIgnalUserid']?.toString() ?? '';
+// Dans fromJson()
+    abonnement = json['abonnement'] != null
+        ? AfrolookAbonnement.fromJson(
+        Map<String, dynamic>.from(json['abonnement']))
+        : AfrolookAbonnement.gratuit();
+
+// Dans fromJson()
+    liveStats = json['liveStats'] != null
+        ? LiveStats.fromJson(Map<String, dynamic>.from(json['liveStats']))
+        : LiveStats.defaultForUser(id ?? '');
+
 
     nom = json['nom']?.toString() ?? '';
     prenom = json['prenom']?.toString() ?? '';
@@ -851,6 +1099,8 @@ class UserData {
     newPostsFromSubscriptions= List<String>.from(json['newPostsFromSubscriptions'] ?? []);
     viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
     // lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
+
+
   }
 
 
@@ -887,7 +1137,13 @@ class UserData {
     if (this.userPays != null) {
       data['user_pays'] = this.userPays!.toJson();
     }
-
+// Dans toJson()
+    if (this.abonnement != null) {
+      data['abonnement'] = this.abonnement!.toJson();
+    } else {
+      // Toujours s'assurer qu'il y a un abonnement
+      data['abonnement'] = AfrolookAbonnement.gratuit().toJson();
+    }
     // data['isBlocked'] = this.isBlocked;
     data['complete_data'] = this.completeData;
     data['has_entreprise'] = this.hasEntreprise;
@@ -932,6 +1188,10 @@ class UserData {
     data['newPostsFromSubscriptions'] = this.newPostsFromSubscriptions;
     data['viewedPostIds'] = this.viewedPostIds;
     data['lastFeedUpdate'] = this.lastFeedUpdate;
+    // Dans toJson()
+    if (this.liveStats != null) {
+      data['liveStats'] = this.liveStats!.toJson();
+    }
 
     return data;
   }

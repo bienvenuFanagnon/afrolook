@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/utils/abonnement_utils.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -624,8 +625,8 @@ class _PostCommentsState extends State<PostComments> {
                           ),
                         ),
                         SizedBox(width: 6),
-                        if (pcm.user!.isVerify ?? false)
-                          Icon(Icons.verified, size: 14, color: Colors.blue),
+
+                          AbonnementUtils.getUserBadge(abonnement: pcm.user!.abonnement,isVerified: pcm.user!.isVerify!),
                         Spacer(),
                         Text(
                           formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),

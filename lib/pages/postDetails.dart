@@ -39,6 +39,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/authProvider.dart';
 import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
+import '../services/utils/abonnement_utils.dart';
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 
@@ -1464,6 +1465,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ),
                 radius: 25,
               ),
+
               if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
                 Positioned(
                   bottom: 0,
@@ -1474,11 +1476,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       color: _twitterDarkBg,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.verified,
-                      color: _twitterBlue,
-                      size: 14,
-                    ),
+                    child: Icon(Icons.verified, color: Colors.blue, size: 14),
                   ),
                 ),
               if (_isLookChallenge)
@@ -1559,8 +1557,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         ),
                       ),
                       SizedBox(width: 4),
-                      if (user.isVerify ?? false)
-                        Icon(Icons.verified, color: _twitterBlue, size: 16),
+                      AbonnementUtils.getUserBadge(abonnement: user.abonnement,isVerified: user.isVerify!),
+                      // if (user.isVerify ?? false)
+                      //   Icon(Icons.verified, color: _twitterBlue, size: 16),
                       SizedBox(width: 4),
                       if (_isLookChallenge)
                         Container(
@@ -1879,7 +1878,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildMediaContent(Post post) {
+  Widget _buildMediaContent2(Post post) {
     return Container(
       height: 300,
       margin: EdgeInsets.symmetric(vertical: 10),
@@ -1912,7 +1911,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => FullScreenImage(imageUrl: imageUrl),
+                  builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
                 ),
               );
             },
@@ -1934,6 +1933,300 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ))
               .toList(),
         ),
+      ),
+    );
+  }
+
+  // 🔥 Remplacer la méthode _buildMediaContent existante par cette nouvelle version
+  Widget _buildMediaContent(Post post) {
+    final images = post.images!;
+    final imageCount = images.length;
+    final double screenWidth = MediaQuery.of(context).size.width;
+
+    // Définir la hauteur en fonction du nombre d'images
+    double contentHeight;
+    if (imageCount == 1) {
+      contentHeight = screenWidth * 0.8; // Plus grand pour 1 image
+    } else if (imageCount == 2) {
+      contentHeight = screenWidth * 0.7; // Un peu moins haut pour 2 images
+    } else {
+      contentHeight = screenWidth * 0.7; // Même hauteur pour 3+ images
+    }
+
+    return Container(
+      height: contentHeight,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+        border: _isLookChallenge
+            ? Border.all(color: _twitterGreen.withOpacity(0.3))
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: _buildImageGallery(images, contentHeight),
+      ),
+    );
+  }
+
+// 🔥 NOUVELLE MÉTHODE POUR CONSTRUIRE LA GALERIE D'IMAGES
+  Widget _buildImageGallery(List<String> images, double height) {
+    final imageCount = images.length;
+
+    if (imageCount == 1) {
+      return _buildSingleImageFullScreen(images[0], height);
+    } else if (imageCount == 2) {
+      return _buildTwoImagesSideBySide(images, height);
+    } else if (imageCount == 3) {
+      return _buildThreeImagesLayout(images, height);
+    } else {
+      return _buildImageSlideshow(images, height);
+    }
+  }
+
+// 🔥 1 IMAGE : PLEIN ÉCRAN AVEC ZOOM
+  Widget _buildSingleImageFullScreen(String imageUrl, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
+          ),
+        );
+      },
+      child: Hero(
+        tag: imageUrl,
+        child: InteractiveViewer(
+          panEnabled: true,
+          minScale: 0.8,
+          maxScale: 5.0,
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: height,
+            placeholder: (context, url) => Container(
+              color: Colors.grey[800],
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.yellow),
+              ),
+            ),
+            errorWidget: (context, url, error) =>
+                Icon(Icons.error, color: Colors.red, size: 50),
+          ),
+        ),
+      ),
+    );
+  }
+
+// 🔥 2 IMAGES : CÔTE À CÔTE
+  Widget _buildTwoImagesSideBySide(List<String> images, double height) {
+    return Row(
+      children: [
+        // Première image (gauche)
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showFullScreenImage(images[0]),
+            child: Container(
+              margin: EdgeInsets.only(right: 2),
+              child: Hero(
+                tag: images[0],
+                child: CachedNetworkImage(
+                  imageUrl: images[0],
+                  fit: BoxFit.cover,
+                  height: height,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[800],
+                  ),
+                  errorWidget: (context, url, error) =>
+                      Container(
+                        color: Colors.grey[800],
+                        child: Icon(Icons.error, color: Colors.red),
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Deuxième image (droite)
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showFullScreenImage(images[1]),
+            child: Container(
+              margin: EdgeInsets.only(left: 2),
+              child: Hero(
+                tag: images[1],
+                child: CachedNetworkImage(
+                  imageUrl: images[1],
+                  fit: BoxFit.cover,
+                  height: height,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[800],
+                  ),
+                  errorWidget: (context, url, error) =>
+                      Container(
+                        color: Colors.grey[800],
+                        child: Icon(Icons.error, color: Colors.red),
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+// 🔥 3 IMAGES : 1 GRANDE + 2 PETITES
+  Widget _buildThreeImagesLayout(List<String> images, double height) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Première image (2/3 de la largeur)
+        Expanded(
+          flex: 2,
+          child: GestureDetector(
+            onTap: () => _showFullScreenImage(images[0]),
+            child: Container(
+              margin: EdgeInsets.only(right: 2),
+              height: height,
+              child: Hero(
+                tag: images[0],
+                child: CachedNetworkImage(
+                  imageUrl: images[0],
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[800],
+                  ),
+                  errorWidget: (context, url, error) =>
+                      Container(
+                        color: Colors.grey[800],
+                        child: Icon(Icons.error, color: Colors.red),
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Deuxième et troisième images (1/3 de la largeur)
+        Expanded(
+          flex: 1,
+          child: Column(
+            children: [
+              // Deuxième image (moitié supérieure)
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showFullScreenImage(images[1]),
+                  child: Container(
+                    margin: EdgeInsets.only(left: 2, bottom: 2),
+                    child: Hero(
+                      tag: images[1],
+                      child: CachedNetworkImage(
+                        imageUrl: images[1],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[800],
+                        ),
+                        errorWidget: (context, url, error) =>
+                            Container(
+                              color: Colors.grey[800],
+                              child: Icon(Icons.error, color: Colors.red),
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Troisième image (moitié inférieure)
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showFullScreenImage(images[2]),
+                  child: Container(
+                    margin: EdgeInsets.only(left: 2, top: 2),
+                    child: Hero(
+                      tag: images[2],
+                      child: CachedNetworkImage(
+                        imageUrl: images[2],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[800],
+                        ),
+                        errorWidget: (context, url, error) =>
+                            Container(
+                              color: Colors.grey[800],
+                              child: Icon(Icons.error, color: Colors.red),
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+// 🔥 4+ IMAGES : SLIDESHOW AVEC INDICATEURS
+  Widget _buildImageSlideshow(List<String> images, double height) {
+    return ImageSlideshow(
+      initialPage: 0,
+      indicatorColor: _isLookChallenge ? _twitterGreen : Colors.yellow,
+      indicatorBackgroundColor: Colors.grey,
+      onPageChanged: (value) {
+        print('Page changed: $value');
+      },
+      isLoop: true,
+      children: images
+          .map((imageUrl) => GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
+            ),
+          );
+        },
+        child: Hero(
+          tag: imageUrl,
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              color: Colors.grey[800],
+              child: Center(
+                  child:
+                  CircularProgressIndicator(color: Colors.yellow)),
+            ),
+            errorWidget: (context, url, error) =>
+                Icon(Icons.error, color: Colors.red),
+          ),
+        ),
+      ))
+          .toList(),
+    );
+  }
+
+// 🔥 MÉTHODE POUR AFFICHER L'IMAGE PLEIN ÉCRAN
+  void _showFullScreenImage(String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
       ),
     );
   }
@@ -2999,37 +3292,180 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 }
 
-class FullScreenImage extends StatelessWidget {
-  final String imageUrl;
-  const FullScreenImage({required this.imageUrl, super.key});
+class FullScreenImage extends StatefulWidget {
+  final String? singleImageUrl;
+  final List<String>? imageUrls;
+  final int initialIndex;
+
+  const FullScreenImage({
+    super.key,
+    this.singleImageUrl,
+    this.imageUrls,
+    this.initialIndex = 0,
+  });
+
+  @override
+  State<FullScreenImage> createState() => _FullScreenImageState();
+}
+
+class _FullScreenImageState extends State<FullScreenImage> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  List<String> get images {
+    if (widget.imageUrls != null && widget.imageUrls!.isNotEmpty) {
+      return widget.imageUrls!;
+    } else if (widget.singleImageUrl != null) {
+      return [widget.singleImageUrl!];
+    }
+    return [];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Center(
-          child: Hero(
-            tag: imageUrl,
-            child: InteractiveViewer(
-              panEnabled: true,
-              minScale: 1.0,
-              maxScale: 4.0,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (context, url) =>
-                    CircularProgressIndicator(color: Colors.yellow),
-                errorWidget: (context, url, error) =>
-                    Icon(Icons.error, color: Colors.red),
+      body: Stack(
+        children: [
+          // Galerie d'images
+          Positioned.fill(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: images.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.8,
+                  maxScale: 5.0,
+                  child: Center(
+                    child: Hero(
+                      tag: images[index],
+                      child: CachedNetworkImage(
+                        imageUrl: images[index],
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(color: Colors.yellow),
+                        ),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(
+                            Icons.error,
+                            color: Colors.red,
+                            size: 60,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Bouton retour
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ),
-        ),
+
+          // Indicateur de position (si plus d'une image)
+          if (images.length > 1)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_currentIndex + 1}/${images.length}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+
+          // Boutons de navigation (si plus d'une image)
+          if (images.length > 1) ...[
+            // Bouton précédent
+            if (_currentIndex > 0)
+              Positioned(
+                left: 16,
+                top: MediaQuery.of(context).size.height / 2 - 30,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.chevron_left, color: Colors.white, size: 36),
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            // Bouton suivant
+            if (_currentIndex < images.length - 1)
+              Positioned(
+                right: 16,
+                top: MediaQuery.of(context).size.height / 2 - 30,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.chevron_right, color: Colors.white, size: 36),
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
 }
-
 

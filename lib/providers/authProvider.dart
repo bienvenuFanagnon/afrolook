@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 121;
+  late int app_version_code = 123;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -718,7 +718,7 @@ class UserAuthProvider extends ChangeNotifier {
     return users_id.any((item) => item == userIdToCheck);
   }
 
-  Stream<List<NotificationData>> getListNotificationAuth(String user_id) async* {
+  Stream<List<NotificationData>> getListNotificationAuth2(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
         .where("receiver_id",isEqualTo:'${user_id}')
 
@@ -739,6 +739,28 @@ class UserAuthProvider extends ChangeNotifier {
           notifications.add(notification);
         }
       }
+      yield notifications;
+    }
+  }
+  Stream<List<NotificationData>> getListNotificationAuth(String user_id) async* {
+    var postStream = FirebaseFirestore.instance
+        .collection('Notifications')
+        .where("receiver_id", isEqualTo: user_id)
+        .orderBy('created_at', descending: true)
+        .limit(12)                              // 🔥 Limite à 12 résultats
+        .snapshots();
+
+    await for (var snapshot in postStream) {
+      List<NotificationData> notifications = [];
+
+      for (var post in snapshot.docs) {
+        NotificationData notification = NotificationData.fromJson(post.data());
+
+        if (!isIn(notification.users_id_view!, loginUserData.id!)) {
+          notifications.add(notification);
+        }
+      }
+
       yield notifications;
     }
   }
