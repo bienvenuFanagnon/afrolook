@@ -958,7 +958,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
       );
 
       await _firestore.runTransaction((transaction) async {
-        final now = DateTime.now().microsecondsSinceEpoch;
+        final now = DateTime.now().millisecondsSinceEpoch;
 
         // RE-vérifier dans la transaction
         final challengeRef = _firestore.collection('Challenges').doc(_challenge!.id!);

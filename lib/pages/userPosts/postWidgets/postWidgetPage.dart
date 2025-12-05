@@ -409,7 +409,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                           ),
                         ),
                         SizedBox(width: 4),
-                        if (_isVerified())
+                        // if (_isVerified())
                           AbonnementUtils.getUserBadge(abonnement: widget.post.user!.abonnement,isVerified: widget.post.user!.isVerify!)
                       ],
                     ),

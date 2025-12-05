@@ -120,7 +120,7 @@ class UserAuthProvider extends ChangeNotifier {
       "user_id": parrainId,
       "type": "GAIN",
       "statut": "VALIDER",
-      "description": "Commission de parrainage (5%) sur dépôt filleul",
+      "description": "Commission de parrainage (5%) d'un filleul",
       "montant": commission,
       "montant_total": commission,
       "numero_depot": null,
