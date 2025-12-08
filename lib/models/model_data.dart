@@ -1269,6 +1269,8 @@ class Post {
   int? prixGagnant; // Prix pour ce rang
   bool? prixDejaEncaisser = false; // Si le prix a été encaissé
   int? dateEncaissement; // Date d'encaissement
+  List<String> availableCountries = []; // Liste des codes pays (TG, SN, etc.)
+  bool get isAvailableInAllCountries => availableCountries.contains('ALL');
 
   Post({
     this.id,
@@ -1319,7 +1321,11 @@ class Post {
   int compareTo(Post other) {
     return other.createdAt!.compareTo(createdAt!);
   }
-
+  // Méthode helper pour vérifier la disponibilité
+  bool isAvailableForCountry(String countryCode) {
+    return availableCountries.contains('ALL') ||
+        availableCountries.contains(countryCode);
+  }
   Post.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     comments = json['comments'];
@@ -1382,6 +1388,23 @@ class Post {
     prixGagnant = json['prix_gagnant'];
     prixDejaEncaisser = json['prix_deja_encaisser'] ?? false;
     dateEncaissement = json['date_encaissement'];
+
+    // Gérer la migration des anciens posts
+    if (json['is_available_in_all_countries'] == true) {
+      // Ancien format : disponible pour tous
+      availableCountries = ['ALL'];
+    } else if (json['available_countries'] != null) {
+      // Nouveau format : liste de pays
+      availableCountries = List<String>.from(json['available_countries']);
+
+      // Si liste vide = tous les pays (backward compatibility)
+      if (availableCountries.isEmpty) {
+        availableCountries = ['ALL'];
+      }
+    } else {
+      // Aucune info = tous les pays par défaut
+      availableCountries = ['ALL'];
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -1438,6 +1461,11 @@ class Post {
     data['prix_gagnant'] = prixGagnant;
     data['prix_deja_encaisser'] = prixDejaEncaisser;
     data['date_encaissement'] = dateEncaissement;
+    // Toujours stocker la liste des pays
+    data['available_countries'] = availableCountries;
+
+    // Optionnel : garder l'ancien champ pour backward compatibility
+    data['is_available_in_all_countries'] = availableCountries.contains('ALL');
 
     return data;
   }
@@ -4370,4 +4398,77 @@ class ActionPoints {
   static void setPoints(UserAction action, int points) {
     _points[action] = points;
   }
+}
+
+
+// country_data.dart
+class AfricanCountry {
+  final String code;
+  final String name;
+  final String flag;
+
+  AfricanCountry({
+    required this.code,
+    required this.name,
+    required this.flag,
+  });
+
+  // Liste complète des pays africains avec leurs codes et emojis drapeau
+  static List<AfricanCountry> allCountries = [
+    AfricanCountry(code: 'TG', name: 'Togo', flag: '🇹🇬'),
+    AfricanCountry(code: 'BJ', name: 'Bénin', flag: '🇧🇯'),
+    AfricanCountry(code: 'BF', name: 'Burkina Faso', flag: '🇧🇫'),
+    AfricanCountry(code: 'CM', name: 'Cameroun', flag: '🇨🇲'),
+    AfricanCountry(code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮'),
+
+    AfricanCountry(code: 'DZ', name: 'Algérie', flag: '🇩🇿'),
+    AfricanCountry(code: 'AO', name: 'Angola', flag: '🇦🇴'),
+    AfricanCountry(code: 'BW', name: 'Botswana', flag: '🇧🇼'),
+    AfricanCountry(code: 'BI', name: 'Burundi', flag: '🇧🇮'),
+    AfricanCountry(code: 'CV', name: 'Cap-Vert', flag: '🇨🇻'),
+    AfricanCountry(code: 'CF', name: 'République centrafricaine', flag: '🇨🇫'),
+    AfricanCountry(code: 'TD', name: 'Tchad', flag: '🇹🇩'),
+    AfricanCountry(code: 'KM', name: 'Comores', flag: '🇰🇲'),
+    AfricanCountry(code: 'CG', name: 'Congo-Brazzaville', flag: '🇨🇬'),
+    AfricanCountry(code: 'CD', name: 'Congo-Kinshasa', flag: '🇨🇩'),
+    AfricanCountry(code: 'DJ', name: 'Djibouti', flag: '🇩🇯'),
+    AfricanCountry(code: 'EG', name: 'Égypte', flag: '🇪🇬'),
+    AfricanCountry(code: 'GQ', name: 'Guinée équatoriale', flag: '🇬🇶'),
+    AfricanCountry(code: 'ER', name: 'Érythrée', flag: '🇪🇷'),
+    AfricanCountry(code: 'SZ', name: 'Eswatini', flag: '🇸🇿'),
+    AfricanCountry(code: 'ET', name: 'Éthiopie', flag: '🇪🇹'),
+    AfricanCountry(code: 'GA', name: 'Gabon', flag: '🇬🇦'),
+    AfricanCountry(code: 'GM', name: 'Gambie', flag: '🇬🇲'),
+    AfricanCountry(code: 'GH', name: 'Ghana', flag: '🇬🇭'),
+    AfricanCountry(code: 'GN', name: 'Guinée', flag: '🇬🇳'),
+    AfricanCountry(code: 'GW', name: 'Guinée-Bissau', flag: '🇬🇼'),
+    AfricanCountry(code: 'KE', name: 'Kenya', flag: '🇰🇪'),
+    AfricanCountry(code: 'LS', name: 'Lesotho', flag: '🇱🇸'),
+    AfricanCountry(code: 'LR', name: 'Libéria', flag: '🇱🇷'),
+    AfricanCountry(code: 'LY', name: 'Libye', flag: '🇱🇾'),
+    AfricanCountry(code: 'MG', name: 'Madagascar', flag: '🇲🇬'),
+    AfricanCountry(code: 'MW', name: 'Malawi', flag: '🇲🇼'),
+    AfricanCountry(code: 'ML', name: 'Mali', flag: '🇲🇱'),
+    AfricanCountry(code: 'MR', name: 'Mauritanie', flag: '🇲🇷'),
+    AfricanCountry(code: 'MU', name: 'Maurice', flag: '🇲🇺'),
+    AfricanCountry(code: 'MA', name: 'Maroc', flag: '🇲🇦'),
+    AfricanCountry(code: 'MZ', name: 'Mozambique', flag: '🇲🇿'),
+    AfricanCountry(code: 'NA', name: 'Namibie', flag: '🇳🇦'),
+    AfricanCountry(code: 'NE', name: 'Niger', flag: '🇳🇪'),
+    AfricanCountry(code: 'NG', name: 'Nigeria', flag: '🇳🇬'),
+    AfricanCountry(code: 'RW', name: 'Rwanda', flag: '🇷🇼'),
+    AfricanCountry(code: 'ST', name: 'São Tomé-et-Príncipe', flag: '🇸🇹'),
+    AfricanCountry(code: 'SN', name: 'Sénégal', flag: '🇸🇳'),
+    AfricanCountry(code: 'SC', name: 'Seychelles', flag: '🇸🇨'),
+    AfricanCountry(code: 'SL', name: 'Sierra Leone', flag: '🇸🇱'),
+    AfricanCountry(code: 'SO', name: 'Somalie', flag: '🇸🇴'),
+    AfricanCountry(code: 'ZA', name: 'Afrique du Sud', flag: '🇿🇦'),
+    AfricanCountry(code: 'SS', name: 'Soudan du Sud', flag: '🇸🇸'),
+    AfricanCountry(code: 'SD', name: 'Soudan', flag: '🇸🇩'),
+    AfricanCountry(code: 'TZ', name: 'Tanzanie', flag: '🇹🇿'),
+    AfricanCountry(code: 'TN', name: 'Tunisie', flag: '🇹🇳'),
+    AfricanCountry(code: 'UG', name: 'Ouganda', flag: '🇺🇬'),
+    AfricanCountry(code: 'ZM', name: 'Zambie', flag: '🇿🇲'),
+    AfricanCountry(code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼'),
+  ];
 }

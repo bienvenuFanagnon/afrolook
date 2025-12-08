@@ -279,6 +279,13 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
             childAspectRatio: 1.2,
             children: [
               _buildAdvantageCard(
+                icon: Icons.public,
+                title: 'Afrique entière',
+                subtitle: 'Visibilité élargie',
+                color: Colors.orange,
+              ),
+
+              _buildAdvantageCard(
                 icon: Icons.live_tv,
                 title: 'Live HD',
                 subtitle: 'Qualité optimale',
@@ -365,6 +372,11 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildDetailItem(
+                      '✅ Vos posts visibles partout en Afrique (vs pays seulement)',
+                      Colors.orange,
+                    ),
+
+                    _buildDetailItem(
                       '✅ Live en qualité HD (vs Standard)',
                       Colors.green,
                     ),
@@ -373,7 +385,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
                       Colors.blue,
                     ),
                     _buildDetailItem(
-                      '✅ Jusqu\'à 10 photos par look (vs 1)',
+                      '✅ Jusqu\'à 3 photos par look (vs 1)',
                       Colors.purple,
                     ),
                     _buildDetailItem(
@@ -1075,8 +1087,105 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
       _showErrorDialog(e.toString());
     }
   }
-
   void _showRenewalOptions(UserData user) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      isScrollControlled: true, // Important !
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.8, // Le bottomsheet occupe 80% de l'écran
+          child: Container(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Renouveler votre abonnement',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Choisissez une nouvelle durée pour votre abonnement Premium',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                SizedBox(height: 20),
+
+                // 🔥 Le bloc scrollable
+                Expanded(
+                  child: ListView(
+                    children: [
+                      ..._offres.map((offre) {
+                        final duree = offre['mois'];
+                        final prixFinal = offre['prixBase'] - offre['reduction'];
+
+                        return ListTile(
+                          onTap: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              _dureeSelectionnee = duree;
+                            });
+                          },
+                          leading: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFDB813).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$duree mois',
+                              style: TextStyle(
+                                color: Color(0xFFFDB813),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            '$prixFinal FCFA',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Soit ${(prixFinal / duree).toInt()} F/mois',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          trailing: Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                        );
+                      }).toList(),
+
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'ANNULER',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRenewalOptions2(UserData user) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -1087,7 +1196,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
         return Container(
           padding: EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -1106,7 +1215,7 @@ class _AbonnementScreenState extends State<AbonnementScreen> {
               SizedBox(height: 20),
 
               // Options de renouvellement simplifiées
-              ..._offres.take(3).map((offre) {
+              ..._offres.map((offre) {
                 final duree = offre['mois'];
                 final prixFinal = offre['prixBase'] - offre['reduction'];
 

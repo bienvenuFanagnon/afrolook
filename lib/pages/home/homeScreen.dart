@@ -1558,7 +1558,7 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: '🏠 Accueil'),
-                Tab(text: '🕒 Récents'),
+                Tab(text: '🕒 Looks'),
 
                 Tab(text: '🏆 Challenges'),
                 Tab(text: '🌟 Chroniques'),
@@ -1580,10 +1580,10 @@ class _MyHomePageState extends State<MyHomePage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildDiscoverTab(),
           // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          _buildDiscoverTab(),
 
           ChallengesListPage(),
           ChroniqueHomePage(),

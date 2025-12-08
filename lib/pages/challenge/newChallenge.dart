@@ -460,7 +460,8 @@ class _ChallengePostPageState extends State<ChallengePostPage> {
       ..vues = 0
       ..votesChallenge = 0
       ..usersVotesIds = [];
-
+    // Quand l'utilisateur coche "Tous les pays"
+      post.availableCountries = ['ALL'];
     // Transaction
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final challengeRef = FirebaseFirestore.instance.collection('Challenges').doc(challenge.id!);

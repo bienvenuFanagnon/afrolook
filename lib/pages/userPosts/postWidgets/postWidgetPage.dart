@@ -418,15 +418,16 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   // Bouton S'abonner ou menu
                   if (!isCurrentUser && !isAbonne)
                     _buildFollowButton(isCanalPost, postOwner, isAbonne),
-                  SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => _showPostMenu(widget.post),
-                    child: Icon(
-                      Icons.more_horiz,
-                      color: _afroTextSecondary,
-                      size: 20,
-                    ),
-                  ),
+                  SizedBox(width: 5),
+                  _buildCountryBadge(widget.post)
+                  // GestureDetector(
+                  //   onTap: () => _showPostMenu(widget.post),
+                  //   child: Icon(
+                  //     Icons.more_horiz,
+                  //     color: _afroTextSecondary,
+                  //     size: 20,
+                  //   ),
+                  // ),
                 ],
               ),
               SizedBox(height: 2),
@@ -441,6 +442,124 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           ),
         ),
       ],
+    );
+  }
+  Widget _buildCountryBadge(Post post) {
+    final isAllCountries = post.isAvailableInAllCountries == true;
+    final countryCodes = post.availableCountries ?? [];
+
+    // Déterminer le contenu du badge
+    String displayText = '';
+    String flagEmoji = '🌍';
+    int countryCount = 1;
+
+    if (isAllCountries) {
+      displayText = 'Tous';
+      flagEmoji = '🌍';
+    } else if (countryCodes.isNotEmpty) {
+      // Prendre le premier pays comme indicateur
+      final firstCountryCode = countryCodes.first.toUpperCase();
+
+      // Chercher l'emoji du drapeau
+      final country = AfricanCountry.allCountries.firstWhere(
+            (c) => c.code == firstCountryCode,
+        orElse: () => AfricanCountry(
+            code: firstCountryCode,
+            name: firstCountryCode,
+            flag: '🏳️'
+        ),
+      );
+      flagEmoji = country.flag;
+      countryCount = countryCodes.length;
+
+      // Afficher le code du pays ou "+X" pour multiples
+      if (countryCount == 1) {
+        displayText = firstCountryCode;
+      } else {
+        displayText = '+${countryCount - 1}';
+      }
+    }
+
+    // Choisir la couleur selon le type
+    Color backgroundColor;
+    Color textColor;
+    IconData? icon;
+
+    if (isAllCountries) {
+      // "Tous pays" : jaune/or
+      backgroundColor = Color(0xFFFFD700).withOpacity(0.9); // Jaune
+      textColor = Colors.black;
+      icon = Icons.public;
+    } else if (countryCodes.isNotEmpty) {
+      // Pays spécifique : rouge
+      backgroundColor = Color(0xFFE21221).withOpacity(0.9); // Rouge
+      textColor = Colors.white;
+    } else {
+      // Par défaut : gris
+      backgroundColor = Colors.grey[800]!.withOpacity(0.9);
+      textColor = Colors.white;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Icône/drapeau
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Center(
+              child: Text(
+                flagEmoji,
+                style: TextStyle(fontSize: 10),
+              ),
+            ),
+          ),
+
+          SizedBox(width: 6),
+
+          // Texte
+          Text(
+            displayText,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+
+          // Indicateur multi-pays
+          if (countryCodes.length > 1) ...[
+            SizedBox(width: 2),
+            Icon(
+              Icons.add,
+              color: textColor,
+              size: 10,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
