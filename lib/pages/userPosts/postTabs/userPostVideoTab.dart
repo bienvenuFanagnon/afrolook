@@ -1664,9 +1664,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
         print('✅ Post vidéo créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 
         // Notifier les abonnés en arrière-plan
-        if (authProvider.loginUserData.id != null) {
-          _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
-        }
+        // if (authProvider.loginUserData.id != null) {
+        //   _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
+        // }
 
         // Notifications push
         if (widget.canal != null) {
@@ -1684,6 +1684,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
             smallImage: widget.canal!.urlImage,
             isChannel: true,
             channelTitle: widget.canal!.titre,
+              canal: widget.canal!
           );
         } else {
           authProvider.sendPushNotificationToUsers(

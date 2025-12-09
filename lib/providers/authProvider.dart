@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -42,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 126;
+  late int app_version_code = 127;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1162,7 +1163,7 @@ class UserAuthProvider extends ChangeNotifier {
     return listOSUserid;
   }
 
-  Future<void> sendPushNotificationToUsers({
+  Future<void> sendPushNotificationToUsers2({
     required UserData sender,
     required String message,
     required String typeNotif,
@@ -1170,51 +1171,94 @@ class UserAuthProvider extends ChangeNotifier {
     String? postType,
     String? chatId,
     String? smallImage,
-    bool isChannel = false,       // Indique si c’est un canal
-    String? channelTitle,         // Titre du canal si applicable
-  }) async {
+    bool isChannel = false,
+    String? channelTitle,
+    Canal? canal, // 🔹 Canal passé en paramètre
+  })
+  async {
     try {
-      // 🔹 Étape 1 : Déterminer les cibles selon le rôle
-      List<UserData> targets = [];
+      List<String> targetUserIds = [];
 
+      // 🔹 Étape 1 : Préparer les IDs
       if (sender.role == UserRole.ADM.name) {
-        // Admin → tous les utilisateurs
-        targets = await getAllUsers();
+        final allUsers = await getAllUsers();
+        targetUserIds = allUsers.map((u) => u.id!).toList();
       } else {
-        // Utilisateur simple → seulement ses abonnés
         if (sender.userAbonnesIds != null && sender.userAbonnesIds!.isNotEmpty) {
-          targets = await getUsersByIds(sender.userAbonnesIds!);
-        } else {
-          print("⚠️ L'utilisateur ${sender.pseudo} n’a aucun abonné.");
-          return;
+          targetUserIds.addAll(sender.userAbonnesIds!);
+        }
+
+        if (isChannel && canal != null && canal.usersSuiviId != null) {
+          targetUserIds.addAll(canal.usersSuiviId!);
+        }
+        if (isChannel && canal != null && canal.subscribersId != null) {
+          targetUserIds.addAll(canal.subscribersId!);
         }
       }
 
-      if (targets.isEmpty) {
+      targetUserIds = targetUserIds.toSet().toList();
+
+      if (targetUserIds.isEmpty) {
         print("📭 Aucun utilisateur cible trouvé.");
         return;
       }
 
-      // 🔹 Étape 2 : Filtrer les utilisateurs éligibles
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      const oneHour = 60 * 60 * 1000;
+      // 🔹 Étape 2 : Récupérer les objets UserData
+      List<UserData> targets = await getUsersByIds(targetUserIds);
 
+      // 🔹 Étape 3 : Filtrer et envoyer notifications
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final notifcurrentTime = DateTime.now().microsecondsSinceEpoch;
+      const oneHour = 60 * 60 * 1000;
       final List<String> validUserIds = [];
+
+      final firestore = FirebaseFirestore.instance;
+      // 🔹 Étape 4 : Déterminer le nom d’expéditeur pour OneSignal
+      String appName = (isChannel && channelTitle != null && channelTitle.isNotEmpty)
+          ? "#$channelTitle"
+          : "@${sender.pseudo}";
+
+      // 🔹 Enregistrer notification objet dans Firestore
+      final truncatedMessage =
+      message.length > 200 ? message.substring(0, 200) : message;
+
 
       for (final user in targets) {
         final lastNotif = user.lastNotificationTime ?? 0;
         final timeSinceLast = currentTime - lastNotif;
-
         final canReceive = sender.role == 'ADM' || timeSinceLast >= oneHour;
 
+
+        final notifId = firestore.collection('Notifications').doc().id;
+
+        final notification = NotificationData(
+          id: notifId,
+          titre: "${appName} a posté",
+          media_url: isChannel?canal!.urlImage: sender.imageUrl,
+          type: NotificationType.POST.name,
+          description:"a posté: $truncatedMessage" ,
+          user_id: sender.id,
+          receiver_id: user.id,
+          post_id: postId ?? "",
+          post_data_type: postType ?? "",
+          createdAt: notifcurrentTime,
+          updatedAt: notifcurrentTime,
+          status: PostStatus.VALIDE.name,
+          canal_id: isChannel ? canal?.id : null, // 🔹 Ajouter canal_id si canal
+        );
+
+        await firestore.collection('Notifications').doc(notifId).set(notification.toJson());
+        printVm('Notification firebase success');
+        printVm('Notification firebase success ${notification.toJson()}');
         if (canReceive &&
             user.oneIgnalUserid != null &&
             user.oneIgnalUserid!.isNotEmpty &&
             user.oneIgnalUserid!.length > 5) {
-          validUserIds.add(user.oneIgnalUserid!);
 
-          // Mettre à jour la date de dernière notification
+          validUserIds.add(user.oneIgnalUserid!);
           await updateUserLastNotifTime(user.id!, currentTime);
+
+
         }
       }
 
@@ -1223,21 +1267,15 @@ class UserAuthProvider extends ChangeNotifier {
         return;
       }
 
-      // 🔹 Étape 3 : Déterminer l'appName dynamiquement
-      String appName;
-      if (isChannel && channelTitle != null && channelTitle.isNotEmpty) {
-        appName = "#$channelTitle";   // Notification venant d’un canal
-      } else {
-        appName = "@${sender.pseudo}"; // Notification venant d’un utilisateur
-      }
 
-      // 🔹 Étape 4 : Envoi via OneSignal
+
+      // 🔹 Étape 5 : Envoyer la push notification
       await sendNotification(
         appName: appName,
         userIds: validUserIds,
         smallImage: smallImage ?? "",
         send_user_id: sender.id!,
-        recever_user_id: "", // multiple, donc vide
+        recever_user_id: "",
         message: message,
         type_notif: typeNotif,
         post_id: postId ?? "",
@@ -1245,11 +1283,259 @@ class UserAuthProvider extends ChangeNotifier {
         chat_id: chatId ?? "",
       );
 
-      print("✅ Notification envoyée à ${validUserIds.length} utilisateurs !");
+      print("✅ Notification envoyée et enregistrée pour ${validUserIds.length} utilisateurs !");
     } catch (e) {
       print("❌ Erreur lors de l’envoi de la notification : $e");
     }
   }
+
+  Future<void> sendPushNotificationToUsers({
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+    bool isChannel = false,
+    String? channelTitle,
+    Canal? canal,
+  }) async {
+    try {
+      // 🔹 Étape 1 : Préparer les IDs cibles
+      List<String> targetUserIds = [];
+
+      if (sender.role == UserRole.ADM.name) {
+        final allUsers = await getAllUsers();
+        targetUserIds = allUsers.map((u) => u.id!).toList();
+      } else {
+        if (sender.userAbonnesIds != null && sender.userAbonnesIds!.isNotEmpty) {
+          targetUserIds.addAll(sender.userAbonnesIds!);
+        }
+
+        if (isChannel && canal != null) {
+          if (canal.usersSuiviId != null) {
+            targetUserIds.addAll(canal.usersSuiviId!);
+          }
+          if (canal.subscribersId != null) {
+            targetUserIds.addAll(canal.subscribersId!);
+          }
+        }
+      }
+
+      // Éliminer les doublons
+      targetUserIds = targetUserIds.toSet().toList();
+
+      if (targetUserIds.isEmpty) {
+        print("📭 Aucun utilisateur cible trouvé.");
+        return;
+      }
+
+      // 🔹 Étape 2 : Séparer les opérations Firestore et Push
+      final appName = isChannel && channelTitle != null && channelTitle.isNotEmpty
+          ? "#$channelTitle"
+          : "@${sender.pseudo}";
+
+      final truncatedMessage = message.length > 200
+          ? message.substring(0, 200)
+          : message;
+
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final notifTime = DateTime.now().microsecondsSinceEpoch;
+      final oneHour = 60 * 60 * 1000;
+
+      // 🔹 Étape 3 : Traiter en parallèle
+      final List<String> validOneSignalIds = [];
+
+      // Récupérer les utilisateurs par lots
+      const batchSize = 100;
+      for (var i = 0; i < targetUserIds.length; i += batchSize) {
+        final end = i + batchSize > targetUserIds.length
+            ? targetUserIds.length
+            : i + batchSize;
+        final batchIds = targetUserIds.sublist(i, end);
+
+        final usersBatch = await getUsersByIds(batchIds);
+
+        // Traiter ce lot
+        final batchResults = await Future.wait(
+            usersBatch.map((user) => _processUserNotification(
+              user: user,
+              sender: sender,
+              appName: appName,
+              isChannel: isChannel,
+              canal: canal,
+              truncatedMessage: truncatedMessage,
+              postId: postId,
+              postType: postType,
+              notifTime: notifTime,
+              currentTime: currentTime,
+              oneHour: oneHour,
+              smallImage: smallImage,
+            ))
+        );
+
+        // Collecter les IDs OneSignal valides
+        for (final result in batchResults) {
+          if (result.isValid) {
+            validOneSignalIds.add(result.oneSignalId);
+          }
+        }
+      }
+
+      // 🔹 Étape 4 : Envoyer la push notification sans attendre Firestore
+      if (validOneSignalIds.isNotEmpty) {
+        unawaited(_sendPushNotificationNow(
+          appName: appName,
+          userIds: validOneSignalIds,
+          smallImage: smallImage ?? sender.imageUrl ?? "",
+          senderId: sender.id!,
+          message: message,
+          typeNotif: typeNotif,
+          postId: postId,
+          postType: postType,
+          chatId: chatId,
+        ));
+      }
+
+      print("✅ Notifications traitées pour ${targetUserIds.length} utilisateurs !");
+
+    } catch (e) {
+      print("❌ Erreur lors de l’envoi de la notification : $e");
+    }
+  }
+
+// 🔹 Fonction helper pour traiter un utilisateur
+  Future<_UserNotificationResult> _processUserNotification({
+    required UserData user,
+    required UserData sender,
+    required String appName,
+    required bool isChannel,
+    required Canal? canal,
+    required String truncatedMessage,
+    required String? postId,
+    required String? postType,
+    required int notifTime,
+    required int currentTime,
+    required int oneHour,
+    required String? smallImage,
+  }) async {
+    try {
+      final lastNotif = user.lastNotificationTime ?? 0;
+      final timeSinceLast = currentTime - lastNotif;
+      final canReceive = sender.role == 'ADM' || timeSinceLast >= oneHour;
+
+      // 1. Enregistrer dans Firestore (sans attendre la fin)
+      unawaited(_saveToFirestore(
+        sender: sender,
+        user: user,
+        appName: appName,
+        isChannel: isChannel,
+        canal: canal,
+        truncatedMessage: truncatedMessage,
+        postId: postId,
+        postType: postType,
+        notifTime: notifTime,
+        smallImage: smallImage,
+      ));
+
+      // 2. Vérifier si on peut envoyer une push
+      if (canReceive &&
+          user.oneIgnalUserid != null &&
+          user.oneIgnalUserid!.isNotEmpty &&
+          user.oneIgnalUserid!.length > 5) {
+
+        // Mettre à jour le lastNotificationTime
+        unawaited(updateUserLastNotifTime(user.id!, currentTime));
+
+        return _UserNotificationResult(
+          isValid: true,
+          oneSignalId: user.oneIgnalUserid!,
+        );
+      }
+
+      return _UserNotificationResult(isValid: false, oneSignalId: '');
+
+    } catch (e) {
+      print("❌ Erreur traitement utilisateur ${user.id}: $e");
+      return _UserNotificationResult(isValid: false, oneSignalId: '');
+    }
+  }
+
+// 🔹 Fonction pour sauvegarder dans Firestore (exécution différée)
+  Future<void> _saveToFirestore({
+    required UserData sender,
+    required UserData user,
+    required String appName,
+    required bool isChannel,
+    required Canal? canal,
+    required String truncatedMessage,
+    required String? postId,
+    required String? postType,
+    required int notifTime,
+    required String? smallImage,
+  }) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final notifId = firestore.collection('Notifications').doc().id;
+
+      final notification = NotificationData(
+        id: notifId,
+        titre: "$appName a posté",
+        media_url: isChannel ? canal?.urlImage : smallImage ?? sender.imageUrl,
+        type: NotificationType.POST.name,
+        description: "a posté: $truncatedMessage",
+        user_id: sender.id,
+        receiver_id: user.id,
+        post_id: postId ?? "",
+        post_data_type: postType ?? "",
+        createdAt: notifTime,
+        updatedAt: notifTime,
+        status: PostStatus.VALIDE.name,
+        canal_id: isChannel ? canal?.id : null,
+      );
+
+      await firestore.collection('Notifications').doc(notifId).set(notification.toJson());
+
+    } catch (e) {
+      print("❌ Erreur Firestore pour utilisateur ${user.id}: $e");
+    }
+  }
+
+// 🔹 Fonction pour envoyer push notification (exécution différée)
+  Future<void> _sendPushNotificationNow({
+    required String appName,
+    required List<String> userIds,
+    required String smallImage,
+    required String senderId,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+  }) async {
+    try {
+      await sendNotification(
+        appName: appName,
+        userIds: userIds,
+        smallImage: smallImage,
+        send_user_id: senderId,
+        recever_user_id: "",
+        message: message,
+        type_notif: typeNotif,
+        post_id: postId ?? "",
+        post_type: postType ?? "",
+        chat_id: chatId ?? "",
+      );
+
+      print("✅ Push notifications envoyées à ${userIds.length} utilisateurs");
+
+    } catch (e) {
+      print("❌ Erreur push notification: $e");
+    }
+  }
+
+
 
 
   Future<void> updateUserLastNotifTime(String userId, int time) async {
@@ -2490,5 +2776,15 @@ Future<void> addPointsForOtherUserAction(String userid,UserAction action) async 
 
   await appRef.update({
     "appTotalPoints": newAppPoints,
+  });
+}
+// 🔹 Classe pour stocker les résultats
+class _UserNotificationResult {
+  final bool isValid;
+  final String oneSignalId;
+
+  _UserNotificationResult({
+    required this.isValid,
+    required this.oneSignalId,
   });
 }

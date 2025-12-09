@@ -1420,9 +1420,9 @@ class _UserPubTextState extends State<UserPubText> {
         print('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 
         // Notifier les abonnés en arrière-plan
-        if (authProvider.loginUserData.id != null) {
-          _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
-        }
+        // if (authProvider.loginUserData.id != null) {
+        //   _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
+        // }
 
         // Nettoyer le formulaire
         _descriptionController.clear();
@@ -1448,6 +1448,7 @@ class _UserPubTextState extends State<UserPubText> {
             smallImage: widget.canal!.urlImage,
             isChannel: true,
             channelTitle: widget.canal!.titre,
+            canal: widget.canal!
           );
         } else {
           authProvider.sendPushNotificationToUsers(

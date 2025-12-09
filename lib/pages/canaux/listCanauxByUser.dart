@@ -8,6 +8,15 @@ import '../../providers/postProvider.dart';
 import 'detailsCanal.dart';
 import 'newCanal.dart';
 
+import 'package:afrotok/models/model_data.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/authProvider.dart';
+import '../../providers/postProvider.dart';
+import 'detailsCanal.dart';
+import 'newCanal.dart';
+
 class CanalListPageByUser extends StatefulWidget {
   final bool isUserCanals;
 
@@ -18,227 +27,397 @@ class CanalListPageByUser extends StatefulWidget {
 }
 
 class _CanalListPageByUserState extends State<CanalListPageByUser> {
-  List<Canal> canals = [];
-  late UserAuthProvider authProvider =
-  Provider.of<UserAuthProvider>(context, listen: false);
-  late UserProvider userProvider =
-  Provider.of<UserProvider>(context, listen: false);
-  final List<String> noms = ['Alice', 'Bob', 'Charlie'];
-  late PostProvider postProvider =
-  Provider.of<PostProvider>(context, listen: false);
-
-
-  List<Canal> canaux = []; // Liste locale pour stocker les notifications
+  List<Canal> canaux = [];
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  bool isFollowing = false;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // checkIfFollowing();
+    _loadCanaux();
   }
 
-  void checkIfFollowing(Canal canal) {
-    if (canal.usersSuiviId!.contains(authProvider.loginUserData.id)) {
-      setState(() {
-        isFollowing = true;
+  Future<void> _loadCanaux() async {
+    setState(() => isLoading = true);
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    try {
+      final stream = postProvider.getCanauxByUser(authProvider.loginUserData.id!);
+      stream.listen((canal) {
+        if (!canaux.any((c) => c.id == canal.id)) {
+          setState(() {
+            canaux.add(canal);
+            isLoading = false;
+          });
+        }
       });
+    } catch (e) {
+      print("Erreur chargement canaux: $e");
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> suivreCanal(Canal canal) async {
-    if (!isFollowing) {
+  Future<void> _suivreCanal(Canal canal, BuildContext context) async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+
+    if (!canal.usersSuiviId!.contains(authProvider.loginUserData.id)) {
       canal.usersSuiviId!.add(authProvider.loginUserData.id!);
+
       await firestore.collection('Canaux').doc(canal.id).update({
         'usersSuiviId': canal.usersSuiviId,
       });
-      setState(() {
-        isFollowing = true;
-      });
-      // final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      NotificationData notif=NotificationData();
-      notif.id=firestore
-          .collection('Notifications')
-          .doc()
-          .id;
-      notif.titre="Canal 📺";
-      notif.media_url=authProvider.loginUserData.imageUrl;
-      notif.type=NotificationType.ACCEPTINVITATION.name;
-      notif.description="@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!";
-      notif.users_id_view=[];
-      notif.user_id=authProvider.loginUserData.id;
-      notif.receiver_id="";
-      notif.post_id="";
-      notif.post_data_type="";
-      notif.updatedAt =
-          DateTime.now().microsecondsSinceEpoch;
-      notif.createdAt =
-          DateTime.now().microsecondsSinceEpoch;
-      notif.status = PostStatus.VALIDE.name;
-
-      // users.add(pseudo.toJson());
-
-      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-      await authProvider.sendNotification(
-          userIds: [canal.user !.oneIgnalUserid!],
-          smallImage: "${canal.urlImage!}",
-          send_user_id: "${authProvider.loginUserData.id!}",
-          recever_user_id: "${canal!.userId!}",
-          message: "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
-          type_notif: NotificationType.ACCEPTINVITATION.name,
-          post_id: "",
-          post_type: "", chat_id: ''
+      // Créer une notification
+      final notif = NotificationData(
+        id: firestore.collection('Notifications').doc().id,
+        titre: "Canal 📺",
+        media_url: authProvider.loginUserData.imageUrl,
+        type: "FOLLOW_CANAL",
+        description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!}",
+        user_id: authProvider.loginUserData.id,
+        receiver_id: canal.userId,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+        status: "VALIDE",
       );
 
+      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Vous suivez maintenant ce canal.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.green),
+            'Vous suivez maintenant ce canal',
+            style: TextStyle(color: Colors.white),
           ),
+          backgroundColor: Colors.green,
         ),
       );
+
+      setState(() {});
     }
+  }
+
+  Widget _buildCanalCard(Canal canal, BuildContext context) {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final isOwner = canal.userId == authProvider.loginUserData.id;
+    final isFollowing = canal.usersSuiviId!.contains(authProvider.loginUserData.id);
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CanalDetails(canal: canal),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Avatar du canal
+                Stack(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFC62828), Color(0xFFFFD600)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundColor: Colors.white,
+                        backgroundImage: canal.urlImage != null && canal.urlImage!.isNotEmpty
+                            ? NetworkImage(canal.urlImage!)
+                            : null,
+                        child: canal.urlImage == null || canal.urlImage!.isEmpty
+                            ? Icon(
+                          Icons.group,
+                          size: 30,
+                          color: Color(0xFFC62828),
+                        )
+                            : null,
+                      ),
+                    ),
+                    if (canal.isVerify == true)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.blue, width: 1.5),
+                          ),
+                          child: Icon(
+                            Icons.verified,
+                            size: 14,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                SizedBox(width: 16),
+
+                // Infos du canal
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "#${canal.titre ?? 'Sans nom'}",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 4),
+
+                      if (canal.description != null && canal.description!.isNotEmpty)
+                        Text(
+                          canal.description!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                      SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          // Abonnés
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 16,
+                                color: Color(0xFFFFD600),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                "${canal.usersSuiviId?.length ?? 0}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(width: 16),
+
+                          // Publications
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.post_add,
+                                size: 16,
+                                color: Color(0xFFC62828),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                "${canal.publication ?? 0}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Bouton d'action
+                if (!isOwner && !isFollowing)
+                  Container(
+                    margin: EdgeInsets.only(left: 8),
+                    child: ElevatedButton(
+                      onPressed: () => _suivreCanal(canal, context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFC62828),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: Text(
+                        'Suivre',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    canaux = [];
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
+        title: Text(
+          'Mes Canaux',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Color(0xFFC62828),
         iconTheme: IconThemeData(color: Colors.white),
-        title: Text('Mes Canaux',style: TextStyle(color: Colors.white),),
         actions: [
-          IconButton(onPressed: () {
-            setState(() {
-
-            });
-          }, icon: Icon(Icons.refresh))
+          IconButton(
+            onPressed: _loadCanaux,
+            icon: Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Rafraîchir',
+          ),
         ],
-        backgroundColor: Colors.green,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: StreamBuilder<Canal>(
-          stream: postProvider.getCanauxByUser(authProvider.loginUserData.id!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && canaux.isEmpty) {
-              return Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red)));
-            }
-            // Ajouter la nouvelle notification à la liste locale
-            if (snapshot.hasData && !canaux.contains(snapshot.data!)) {
-              // setState(() {
-              // checkIfFollowing(canal);
-
-              canaux.add(snapshot.data!);
-              // });
-            }
-            // // Ajouter les nouveaux canaux à la liste locale
-            // if (snapshot.hasData) {
-            //   for (var doc in snapshot.data!) {
-            //     Canal canal = Canal.fromJson(doc.data() as Map<String, dynamic>);
-            //     if (!canals.contains(canal)) {
-            //       canals.add(canal);
-            //     }
-            //   }
-            // }
-
-            return ListView.builder(
-              itemCount: canaux.length,
-              itemBuilder: (context, index) {
-                Canal canal = canaux[index];
-
-                return Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(5)),
-                      color: Colors.green.shade100,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: ListTile(
-                        title: Row(
-                          children: [
-                            SizedBox(
-                              width: 120,
-                              child: Text("#${canal.titre!}", style: TextStyle(color: Colors.green,fontWeight: FontWeight.w900)),
-                            ),
-                            SizedBox(width: 5),
-                            Visibility(
-                              visible: canal.isVerify == null || canal.isVerify == false ? false : true,
-                              child: Card(
-                                child: const Icon(
-                                  Icons.verified,
-                                  color: Colors.blue,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Abonnés: ${canal.usersSuiviId!.length}'),
-                          ],
-                        ),
-                        leading: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: canal.urlImage != null
-                              ? NetworkImage(canal.urlImage!)
-                              : AssetImage('assets/default_profile.png') as ImageProvider,
-                        ),
-                        trailing: canal.usersSuiviId!.contains(authProvider.loginUserData.id)
-                            ? null
-                            : TextButton(
-                          onPressed: () {
-                            suivreCanal(canal);
-                          },
-                          style: ElevatedButton.styleFrom(
-
-                            backgroundColor: Colors.green, // Background color
-                            // onPrimary: Colors.white, // Text color
-                          ),
-                          child: Text('Suivre', style: TextStyle(color: Colors.white)),
-                        ),
-                        onTap: () {
-                          // Naviguer vers la page de détails du canal
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CanalDetails(canal: canal),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+      body: isLoading && canaux.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC62828)),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Chargement des canaux...',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      )
+          : canaux.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.group_off,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Aucun canal',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Créez votre premier canal',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+              ),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NewCanal()),
                 );
               },
-            );
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFC62828),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
+              child: Text(
+                'Créer un canal',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadCanaux,
+        color: Color(0xFFC62828),
+        child: ListView.builder(
+          physics: AlwaysScrollableScrollPhysics(),
+          itemCount: canaux.length,
+          itemBuilder: (context, index) {
+            return _buildCanalCard(canaux[index], context);
           },
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Naviguer vers la page de création de canal
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => NewCanal()),
           );
         },
-        child: Icon(Icons.add,color: Colors.white,),
-        backgroundColor: Colors.green,
+        backgroundColor: Color(0xFFC62828),
+        foregroundColor: Colors.white,
+        child: Icon(Icons.add, size: 28),
+        shape: CircleBorder(),
       ),
     );
   }

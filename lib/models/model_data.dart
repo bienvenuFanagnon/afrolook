@@ -3440,6 +3440,7 @@ class NotificationData {
   bool? is_open;
   String? description;
   List<String>? users_id_view = [];
+  String? canal_id; // 🔹 Nouveau champ pour canal
 
   int? createdAt;
   int? updatedAt;
@@ -3451,12 +3452,12 @@ class NotificationData {
     this.titre = '',
     this.status = '',
     this.media_url = '',
-    // this.lu=false,
     this.is_open = false,
     this.post_data_type = '',
     this.post_id = '',
     this.user_id = '',
     this.receiver_id = '',
+    this.canal_id, // 🔹 Initialise
     this.createdAt = 0,
     this.updatedAt = 0,
     this.users_id_view,
@@ -3469,38 +3470,34 @@ class NotificationData {
     type = json['type'];
     status = json['status'];
     user_id = json['user_id'];
-    receiver_id = json['receiver_id'] == null ? "" : json['receiver_id'];
-    is_open = json['is_open'] == null ? false : json['is_open'];
-    post_data_type =
-        json['post_data_type'] == null ? "" : json['post_data_type'];
-    post_id = json['post_id'] == null ? "" : json['post_id'];
-    users_id_view = json['users_id_view'] == null
-        ? []
-        : json['users_id_view'].cast<String>();
-
+    receiver_id = json['receiver_id'] ?? "";
+    is_open = json['is_open'] ?? false;
+    post_data_type = json['post_data_type'] ?? "";
+    post_id = json['post_id'] ?? "";
+    users_id_view = json['users_id_view']?.cast<String>() ?? [];
+    canal_id = json['canal_id']; // 🔹 Lire canal_id
     description = json['description'];
     titre = json['titre'];
     media_url = json['media_url'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['created_at'] = this.createdAt;
-    data['updated_at'] = this.updatedAt;
-    data['type'] = this.type;
-    data['user_id'] = this.user_id;
-    data['receiver_id'] = this.receiver_id;
-    data['status'] = this.status;
-    data['is_open'] = this.is_open;
-    data['users_id_view'] = this.users_id_view;
-    data['post_data_type'] = this.post_data_type;
-
-    data['description'] = this.description;
-    data['post_id'] = this.post_id;
-    data['titre'] = this.titre;
-    data['media_url'] = this.media_url;
-
+    final Map<String, dynamic> data = {};
+    data['id'] = id;
+    data['created_at'] = createdAt;
+    data['updated_at'] = updatedAt;
+    data['type'] = type;
+    data['user_id'] = user_id;
+    data['receiver_id'] = receiver_id;
+    data['status'] = status;
+    data['is_open'] = is_open;
+    data['users_id_view'] = users_id_view;
+    data['post_data_type'] = post_data_type;
+    data['description'] = description;
+    data['post_id'] = post_id;
+    data['titre'] = titre;
+    data['media_url'] = media_url;
+    data['canal_id'] = canal_id; // 🔹 Sauvegarder canal_id
     return data;
   }
 }
@@ -4234,6 +4231,7 @@ enum InfoType { APPINFO, GRATUIT }
 enum NotificationType {
   MESSAGE,
   POST,
+  NEWPOST,
   INVITATION,
   ACCEPTINVITATION,
   ABONNER,

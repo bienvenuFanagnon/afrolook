@@ -1451,9 +1451,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         print('✅ Post créé avec ID: $postId, ${_selectedImages.length} images, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
 
         // Notifier les abonnés en arrière-plan
-        if (authProvider.loginUserData.id != null) {
-          _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
-        }
+        // if (authProvider.loginUserData.id != null) {
+        //   _notifySubscribersInBackground(postId, authProvider.loginUserData.id!);
+        // }
 
         // Nettoyer le formulaire
         _descriptionController.clear();
@@ -1477,11 +1477,12 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             smallImage: widget.canal!.urlImage,
             isChannel: true,
             channelTitle: widget.canal!.titre,
+            canal: widget.canal
           );
 
           widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
           widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;
-          await FirebaseFirestore.instance
+           FirebaseFirestore.instance
               .collection('Canaux')
               .doc(widget.canal!.id)
               .update({

@@ -1142,6 +1142,8 @@ class _PostCommentsState extends State<PostComments> {
 
         // Mettre à jour localement immédiatement
         if (success) {
+          FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
+
           _updateCommentLocally(commentSelectedToReply);
         }
       } else {
@@ -1171,12 +1173,13 @@ class _PostCommentsState extends State<PostComments> {
       }
 
       if (success) {
-        await FirebaseFirestore.instance
-            .collection("Posts")
-            .doc(widget.post.id)
-            .update({
-          "comments": FieldValue.increment(1),
-        });
+        // await FirebaseFirestore.instance
+        //     .collection("Posts")
+        //     .doc(widget.post.id)
+        //     .update({
+        //   "comments": FieldValue.increment(1),
+        // });
+        FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
 
         // Envoyer notification au propriétaire du commentaire/post
         await _sendCommentNotification(receiverId, action, textComment);
@@ -1184,7 +1187,6 @@ class _PostCommentsState extends State<PostComments> {
         // Envoyer notifications pour les mentions
         await _sendMentionNotifications(textComment);
       }
-      FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
       setState(() {
         replying = false;
         replyingTo = "";
@@ -1264,24 +1266,142 @@ class _PostCommentsState extends State<PostComments> {
 
   Future<void> _deleteComment(PostComment comment) async {
     setState(() => _isLoading = true);
-    comment.status = PostStatus.SUPPRIMER.name;
-    bool success = await postProvider.updateComment(comment);
-    setState(() => _isLoading = false);
 
-    if (success) {
-      await _loadInitialComments();
+    try {
+      // 1. SUPPRIMER PHYSIQUEMENT le document de Firestore
+      await FirebaseFirestore.instance
+          .collection('PostComments')
+          .doc(comment.id)
+          .delete();
+
+      print('Commentaire supprimé de Firestore - ID: ${comment.id}');
+
+      // 2. Retirer de la liste locale
+      setState(() {
+        comments.removeWhere((c) => c.id == comment.id);
+      });
+
+      // 3. Décrémenter le compteur sur le post
+      await FirebaseFirestore.instance
+          .collection("Posts")
+          .doc(widget.post.id)
+          .update({
+        "comments": FieldValue.increment(-1),
+      });
+
+      // 4. Afficher confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Commentaire supprimé définitivement'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+    } catch (e) {
+      print('Erreur suppression commentaire: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+
+    setState(() => _isLoading = false);
   }
 
   Future<void> _deleteResponse(PostComment parentComment, ResponsePostComment response) async {
     setState(() => _isLoading = true);
-    response.status = PostStatus.SUPPRIMER.name;
-    bool success = await postProvider.updateComment(parentComment);
-    setState(() => _isLoading = false);
 
-    if (success) {
-      await _loadInitialComments();
+    try {
+      // 1. Récupérer le document actuel depuis Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('PostComments')
+          .doc(parentComment.id)
+          .get();
+
+      if (!doc.exists) {
+        throw Exception('Commentaire parent non trouvé');
+      }
+
+      // 2. Parser les données
+      final firebaseComment = PostComment.fromJson(doc.data() as Map<String, dynamic>);
+
+      // 3. Identifier et retirer la réponse (par multiple critères pour être sûr)
+      final initialCount = firebaseComment.responseComments?.length ?? 0;
+
+      firebaseComment.responseComments?.removeWhere((r) {
+        // Critère 1: Même message
+        if (r.message != response.message) return false;
+
+        // Critère 2: Même utilisateur
+        if (r.user_id != response.user_id) return false;
+
+        // Critère 3: Même timestamp (si disponible)
+        if (r.createdAt != null && response.createdAt != null) {
+          if (r.createdAt != response.createdAt) return false;
+        }
+
+        // Critère 4: Même pseudo utilisateur
+        if (r.user_pseudo != response.user_pseudo) return false;
+
+        return true;
+      });
+
+      // 4. Vérifier qu'une réponse a été supprimée
+      if (firebaseComment.responseComments?.length == initialCount) {
+        throw Exception('Réponse non trouvée dans Firestore');
+      }
+
+      print('Réponse supprimée - Réponses restantes: ${firebaseComment.responseComments?.length ?? 0}');
+
+      // 5. Mettre à jour le document dans Firestore
+      await FirebaseFirestore.instance
+          .collection('PostComments')
+          .doc(parentComment.id)
+          .update({
+        'responseComments': firebaseComment.responseComments != null
+            ? firebaseComment.responseComments!.map((r) => r.toJson()).toList()
+            : []
+      });
+
+      // 6. Mettre à jour localement
+      setState(() {
+        final parentIndex = comments.indexWhere((c) => c.id == parentComment.id);
+        if (parentIndex != -1) {
+          comments[parentIndex] = firebaseComment;
+        }
+      });
+
+      // 7. Décrémenter le compteur sur le post
+      await FirebaseFirestore.instance
+          .collection("Posts")
+          .doc(widget.post.id)
+          .update({
+        "comments": FieldValue.increment(-1),
+      });
+
+      // 8. Afficher confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Réponse supprimée définitivement'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+    } catch (e) {
+      print('Erreur suppression réponse: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+
+    setState(() => _isLoading = false);
   }
 
   @override

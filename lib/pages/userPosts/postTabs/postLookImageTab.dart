@@ -399,6 +399,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           smallImage: widget.canal!.urlImage,
           isChannel: true,
           channelTitle: widget.canal!.titre,
+            canal: widget.canal!
         );
 
         widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
