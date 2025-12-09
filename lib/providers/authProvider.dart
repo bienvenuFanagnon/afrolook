@@ -1484,7 +1484,7 @@ class UserAuthProvider extends ChangeNotifier {
         titre: "$appName a posté",
         media_url: isChannel ? canal?.urlImage : smallImage ?? sender.imageUrl,
         type: NotificationType.POST.name,
-        description: "a posté: $truncatedMessage",
+        description: isChannel ? "a posté: $truncatedMessage" : "$appName a posté: $truncatedMessage",
         user_id: sender.id,
         receiver_id: user.id,
         post_id: postId ?? "",
