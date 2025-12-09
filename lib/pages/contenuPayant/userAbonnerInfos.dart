@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
@@ -86,10 +87,16 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: NetworkImage(_owner!.imageUrl ?? ''),
-            backgroundColor: Colors.grey[800],
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu(userId: _owner!.id!,)));
+
+            },
+            child: CircleAvatar(
+              radius: 30,
+              backgroundImage: NetworkImage(_owner!.imageUrl ?? ''),
+              backgroundColor: Colors.grey[800],
+            ),
           ),
           SizedBox(width: 12),
           Expanded(

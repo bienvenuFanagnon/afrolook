@@ -15,120 +15,36 @@ class ContentProvider with ChangeNotifier {
 
   List<ContentPaie> _featuredContentPaies = [];
   Map<String, List<ContentPaie>> _contentPaiesByCategory = {};
-  // List<ContentCategory> _categories
-  // = [
-  // ContentCategory(
-  // id: '1',
-  // name: 'Musique',
-  // description: 'Clips, concerts et tout ce qui bouge 🎶',
-  // imageUrl: 'https://example.com/musique.jpg',
-  // ),
-  // ContentCategory(
-  // id: '2',
-  // name: 'Sport',
-  // description: 'Football, basket, fitness et plus 🏀⚽',
-  // imageUrl: 'https://example.com/sport.jpg',
-  // ),
-  // ContentCategory(
-  // id: '3',
-  // name: 'Éducation',
-  // description: 'Cours, tutos et apprentissage 📚',
-  // imageUrl: 'https://example.com/education.jpg',
-  // ),
-  // ContentCategory(
-  // id: '4',
-  // name: 'Divertissement',
-  // description: 'Humour, films et distractions 😂🎬',
-  // imageUrl: 'https://example.com/divertissement.jpg',
-  // ),
-  // ContentCategory(
-  // id: '5',
-  // name: 'Actualités',
-  // description: 'Infos, débats et tendances 🌍',
-  // imageUrl: 'https://example.com/actualites.jpg',
-  // ),
-  // ContentCategory(
-  // id: '6',
-  // name: 'Mode',
-  // description: 'Styles, looks et tendances 👗👟',
-  // imageUrl: 'https://example.com/mode.jpg',
-  // ),
-  // ];
+  UserData? _otherUserData;
+  List<ContentPaie> _otherUserContentPaies = [];
 
-  List<ContentCategory> _categories2 = [
-    ContentCategory(
-      id: '1',
-      name: 'Musique',
-      description: 'Clips, concerts et tout ce qui bouge 🎶',
-      imageUrl: 'https://example.com/musique.jpg',
-    ),
-    ContentCategory(
-      id: '2',
-      name: 'Sport',
-      description: 'Football, basket, fitness et plus 🏀⚽',
-      imageUrl: 'https://example.com/sport.jpg',
-    ),
-    ContentCategory(
-      id: '3',
-      name: 'Formation',
-      description: 'Cours, tutos et apprentissage 📚',
-      imageUrl: 'https://example.com/education.jpg',
-    ),
-    ContentCategory(
-      id: '3',
-      name: 'Éducation',
-      description: 'Cours, tutos et apprentissage 📚',
-      imageUrl: 'https://example.com/education.jpg',
-    ),
-    ContentCategory(
-      id: '4',
-      name: 'Divertissement',
-      description: 'Humour, films et distractions 😂🎬',
-      imageUrl: 'https://example.com/divertissement.jpg',
-    ),
-    ContentCategory(
-      id: '5',
-      name: 'Actualités',
-      description: 'Infos, débats et tendances 🌍',
-      imageUrl: 'https://example.com/actualites.jpg',
-    ),
-    ContentCategory(
-      id: '6',
-      name: 'Mode',
-      description: 'Styles, looks et tendances 👗👟',
-      imageUrl: 'https://example.com/mode.jpg',
-    ),
-    ContentCategory(
-      id: '7',
-      name: 'Vidéos Virales',
-      description: 'Les vidéos qui font le buzz 🔥😂',
-      imageUrl: 'https://example.com/virales.jpg',
-    ),
-    ContentCategory(
-      id: '8',
-      name: 'Fuites & Exclus',
-      description: 'Contenus inédits et coulisses 🤫🎥',
-      imageUrl: 'https://example.com/fuites.jpg',
-    ),
-    ContentCategory(
-      id: '9',
-      name: 'Challenges',
-      description: 'Moments amusants et nostalgie 🎉👶',
-      imageUrl: 'https://example.com/jeunesse.jpg',
-    ),
-    ContentCategory(
-      id: '10',
-      name: 'Cartoon',
-      description: 'Animations 🐭🎨',
-      imageUrl: 'https://example.com/cartoon.jpg',
-    ),
-    ContentCategory(
-      id: '11',
-      name: 'Manga',
-      description: 'Bandes dessinées japonaises et animés 🇯🇵📖',
-      imageUrl: 'https://example.com/manga.jpg',
-    ),
-  ];
+  UserData? get otherUserData => _otherUserData;
+  List<ContentPaie> get otherUserContentPaies => _otherUserContentPaies;
+
+  Future<void> loadOtherUserContentPaies(String userId) async {
+    try {
+      // Charger les données de l'utilisateur
+      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      if (userDoc.exists) {
+        _otherUserData = UserData.fromJson({...userDoc.data()!, 'id': userDoc.id});
+      }
+
+      // Charger les contenus de l'utilisateur
+      final snapshot = await _firestore
+          .collection('ContentPaies')
+          .where('ownerId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      _otherUserContentPaies = snapshot.docs
+          .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
+          .toList();
+
+      notifyListeners();
+    } catch (e) {
+      print('Error loading other user ContentPaies: $e');
+    }
+  }
   List<ContentCategory> _categories = [
     ContentCategory(
       id: '1',
@@ -297,6 +213,389 @@ class ContentProvider with ChangeNotifier {
   List<ContentPaie> _allContentPaies = [];
 
   List<ContentPaie> get allContentPaies => _allContentPaies;
+
+  // Ajoutez ces méthodes dans votre ContentProvider class
+
+// 1. Fonctions pour gérer les partages
+  Future<void> incrementShares(String contentId, {bool isEpisode = false}) async {
+    try {
+      if (isEpisode) {
+        await _firestore.collection('episodes').doc(contentId).update({
+          'shares': FieldValue.increment(1),
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      } else {
+        await _firestore.collection('ContentPaies').doc(contentId).update({
+          'shares': FieldValue.increment(1),
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+
+      // Recharger les données
+      if (isEpisode) {
+        await loadEpisodes();
+      } else {
+        await loadUserContentPaies();
+        await loadFeaturedContentPaies();
+        await loadContentPaiesByCategory();
+      }
+
+      notifyListeners();
+    } catch (e) {
+      print('Error incrementing shares: $e');
+    }
+  }
+
+// 2. Fonctions pour gérer les likes/dislikes des contenus
+  Future<void> likeContent(String contentId, String userId) async {
+    try {
+      final contentRef = _firestore.collection('ContentPaies').doc(contentId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(contentRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du disliked si présent
+          if (dislikedBy.contains(userId)) {
+            dislikedBy.remove(userId);
+          }
+
+          // Ajouter au liked si pas déjà présent
+          if (!likedBy.contains(userId)) {
+            likedBy.add(userId);
+          }
+
+          transaction.update(contentRef, {
+            'likedBy': likedBy,
+            'dislikedBy': dislikedBy,
+            'likes': likedBy.length,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadUserContentPaies();
+      await loadFeaturedContentPaies();
+      await loadContentPaiesByCategory();
+      notifyListeners();
+    } catch (e) {
+      print('Error liking content: $e');
+    }
+  }
+
+  Future<void> dislikeContent(String contentId, String userId) async {
+    try {
+      final contentRef = _firestore.collection('ContentPaies').doc(contentId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(contentRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du liked si présent
+          if (likedBy.contains(userId)) {
+            likedBy.remove(userId);
+          }
+
+          // Ajouter ou retirer du disliked
+          final bool wasDisliked = dislikedBy.contains(userId);
+          if (!wasDisliked) {
+            dislikedBy.add(userId);
+          } else {
+            dislikedBy.remove(userId);
+          }
+
+          transaction.update(contentRef, {
+            'likedBy': likedBy,
+            'dislikedBy': dislikedBy,
+            'likes': likedBy.length,
+            'dislikes': dislikedBy.length, // Mettre à jour le compteur
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      // Recharger les données
+      notifyListeners();
+    } catch (e) {
+      print('Error disliking content: $e');
+    }
+  }
+
+  Future<void> removeLikeContent(String contentId, String userId) async {
+    try {
+      final contentRef = _firestore.collection('ContentPaies').doc(contentId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(contentRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+
+          // Retirer du liked
+          likedBy.remove(userId);
+
+          transaction.update(contentRef, {
+            'likedBy': likedBy,
+            'likes': likedBy.length,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadUserContentPaies();
+      await loadFeaturedContentPaies();
+      await loadContentPaiesByCategory();
+      notifyListeners();
+    } catch (e) {
+      print('Error removing like from content: $e');
+    }
+  }
+
+  Future<void> removeDislikeContent(String contentId, String userId) async {
+    try {
+      final contentRef = _firestore.collection('ContentPaies').doc(contentId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(contentRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du disliked
+          dislikedBy.remove(userId);
+
+          transaction.update(contentRef, {
+            'dislikedBy': dislikedBy,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadUserContentPaies();
+      await loadFeaturedContentPaies();
+      await loadContentPaiesByCategory();
+      notifyListeners();
+    } catch (e) {
+      print('Error removing dislike from content: $e');
+    }
+  }
+
+// 3. Fonctions pour vérifier l'état du like/dislike
+  Future<bool> isContentLikedByUser(String contentId, String userId) async {
+    try {
+      final doc = await _firestore.collection('ContentPaies').doc(contentId).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+        return likedBy.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if content is liked: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isContentDislikedByUser(String contentId, String userId) async {
+    try {
+      final doc = await _firestore.collection('ContentPaies').doc(contentId).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+        return dislikedBy.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if content is disliked: $e');
+      return false;
+    }
+  }
+
+// 4. Fonctions pour gérer les likes/dislikes des épisodes
+  Future<void> likeEpisode(String episodeId, String userId) async {
+    try {
+      final episodeRef = _firestore.collection('episodes').doc(episodeId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(episodeRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du disliked si présent
+          if (dislikedBy.contains(userId)) {
+            dislikedBy.remove(userId);
+          }
+
+          // Ajouter au liked si pas déjà présent
+          if (!likedBy.contains(userId)) {
+            likedBy.add(userId);
+          }
+
+          transaction.update(episodeRef, {
+            'likedBy': likedBy,
+            'dislikedBy': dislikedBy,
+            'likes': likedBy.length,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadEpisodes();
+      notifyListeners();
+    } catch (e) {
+      print('Error liking episode: $e');
+    }
+  }
+// Dans votre ContentProvider, modifiez les méthodes dislike :
+
+
+// Faites de même pour les épisodes :
+  Future<void> dislikeEpisode(String episodeId, String userId) async {
+    try {
+      final episodeRef = _firestore.collection('episodes').doc(episodeId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(episodeRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du liked si présent
+          if (likedBy.contains(userId)) {
+            likedBy.remove(userId);
+          }
+
+          // Ajouter ou retirer du disliked
+          final bool wasDisliked = dislikedBy.contains(userId);
+          if (!wasDisliked) {
+            dislikedBy.add(userId);
+          } else {
+            dislikedBy.remove(userId);
+          }
+
+          transaction.update(episodeRef, {
+            'likedBy': likedBy,
+            'dislikedBy': dislikedBy,
+            'likes': likedBy.length,
+            'dislikes': dislikedBy.length, // Mettre à jour le compteur
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      // Recharger les données
+      notifyListeners();
+    } catch (e) {
+      print('Error disliking episode: $e');
+    }
+  }
+
+  Future<void> removeLikeEpisode(String episodeId, String userId) async {
+    try {
+      final episodeRef = _firestore.collection('episodes').doc(episodeId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(episodeRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+
+          // Retirer du liked
+          likedBy.remove(userId);
+
+          transaction.update(episodeRef, {
+            'likedBy': likedBy,
+            'likes': likedBy.length,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadEpisodes();
+      notifyListeners();
+    } catch (e) {
+      print('Error removing like from episode: $e');
+    }
+  }
+
+  Future<void> removeDislikeEpisode(String episodeId, String userId) async {
+    try {
+      final episodeRef = _firestore.collection('episodes').doc(episodeId);
+
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(episodeRef);
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+
+          // Retirer du disliked
+          dislikedBy.remove(userId);
+
+          transaction.update(episodeRef, {
+            'dislikedBy': dislikedBy,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
+      });
+
+      await loadEpisodes();
+      notifyListeners();
+    } catch (e) {
+      print('Error removing dislike from episode: $e');
+    }
+  }
+
+// 5. Fonctions pour vérifier l'état des épisodes
+  Future<bool> isEpisodeLikedByUser(String episodeId, String userId) async {
+    try {
+      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> likedBy = List.from(data['likedBy'] ?? []);
+        return likedBy.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if episode is liked: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isEpisodeDislikedByUser(String episodeId, String userId) async {
+    try {
+      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> dislikedBy = List.from(data['dislikedBy'] ?? []);
+        return dislikedBy.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if episode is disliked: $e');
+      return false;
+    }
+  }
 
   Future<void> loadAllContentPaies() async {
     try {
@@ -528,8 +827,8 @@ class ContentProvider with ChangeNotifier {
       }
 
       // Processus d'achat...
-      final ownerEarnings = contentPaie.price * 0.5;
-      final platformEarnings = contentPaie.price * 0.5;
+      final ownerEarnings = contentPaie.price * 0.7;
+      final platformEarnings = contentPaie.price * 0.3;
 
       await _firestore.runTransaction((transaction) async {
         final userRef = _firestore.collection('Users').doc(currentUser.id);
@@ -627,80 +926,6 @@ class ContentProvider with ChangeNotifier {
       print('Error purchasing ContentPaie: $e');
       _showErrorModal(context, e.toString());
       return PurchaseResult.error;
-    }
-  }
-  Future<bool> purchaseContentPaie2(UserData currentUser, ContentPaie contentPaie, BuildContext context) async {
-    if (currentUser == null) return false;
-
-    try {
-      // Vérifier si l'utilisateur a déjà acheté ce contenu
-      final existingPurchase = await _firestore
-          .collection('ContentPaie_purchases')
-          .where('userId', isEqualTo: currentUser!.id)
-          .where('contentId', isEqualTo: contentPaie.id)
-          .get();
-
-      if (existingPurchase.docs.isNotEmpty) {
-        return true; // Déjà acheté
-      }
-
-      // Vérifier le solde de l'utilisateur
-      if (currentUser!.votre_solde_principal! < contentPaie.price) {
-        print('Afficher le modal pour solde insuffisant: ${currentUser!.votre_solde_principal!}');
-
-        // Afficher le modal pour solde insuffisant
-        _showInsufficientBalanceModal(context, contentPaie.price - currentUser!.votre_solde_principal!);
-        return false; // Solde insuffisant
-      }
-
-      // Calculer les gains (50% pour le propriétaire, 50% pour la plateforme)
-      final ownerEarnings = contentPaie.price * 0.5;
-      final platformEarnings = contentPaie.price * 0.5;
-
-      // Mettre à jour le solde de l'utilisateur
-      await _firestore.collection('Users').doc(currentUser!.id).update({
-        'votre_solde_principal': FieldValue.increment(-contentPaie.price),
-      });
-
-      // Mettre à jour le solde du propriétaire du contenu
-      await _firestore.collection('Users').doc(contentPaie.ownerId).update({
-        'votre_solde_contenu': FieldValue.increment(ownerEarnings),
-      });
-
-      // Mettre à jour le solde de la plateforme
-      final appDataDoc = await _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT').get();
-      if (appDataDoc.exists) {
-        await _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT').update({
-          'solde_gain': FieldValue.increment(platformEarnings),
-        });
-      }
-
-      // Créer l'achat
-      final purchase = ContentPurchase(
-        userId: currentUser!.id!,
-        contentId: contentPaie.id!,
-        amountPaid: contentPaie.price,
-        ownerEarnings: ownerEarnings,
-        platformEarnings: platformEarnings,
-        purchaseDate: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      await _firestore.collection('ContentPaie_purchases').add(purchase.toJson());
-
-      // Ajouter le contenu à la liste des vidéos vues par l'utilisateur
-      await _firestore.collection('Users').doc(currentUser!.id).update({
-        'viewedVideos': FieldValue.arrayUnion([contentPaie.id]),
-      });
-
-      // Recharger les données
-      await loadUserPurchases();
-
-      return true;
-    } catch (e) {
-      print('Error purchasing ContentPaie: $e');
-      // Afficher le modal d'erreur
-      _showErrorModal(context, e.toString());
-      return false;
     }
   }
 
@@ -952,74 +1177,6 @@ class ContentProvider with ChangeNotifier {
 
 
 
-  Future<bool> purchaseContentPaie3(ContentPaie contentPaie) async {
-    if (currentUser == null) return false;
-
-    try {
-      // Vérifier si l'utilisateur a déjà acheté ce contenu
-      final existingPurchase = await _firestore
-          .collection('ContentPaie_purchases')
-          .where('userId', isEqualTo: currentUser!.id)
-          .where('contentId', isEqualTo: contentPaie.id)
-          .get();
-
-      if (existingPurchase.docs.isNotEmpty) {
-        return true; // Déjà acheté
-      }
-
-      // Vérifier le solde de l'utilisateur
-      if (currentUser!.votre_solde_principal! < contentPaie.price) {
-        return false; // Solde insuffisant
-      }
-
-      // Calculer les gains (50% pour le propriétaire, 50% pour la plateforme)
-      final ownerEarnings = contentPaie.price * 0.5;
-      final platformEarnings = contentPaie.price * 0.5;
-
-      // Mettre à jour le solde de l'utilisateur
-      await _firestore.collection('Users').doc(currentUser!.id).update({
-        'votre_solde_principal': FieldValue.increment(-contentPaie.price),
-      });
-
-      // Mettre à jour le solde du propriétaire du contenu
-      await _firestore.collection('Users').doc(contentPaie.ownerId).update({
-        'votre_solde_contenu': FieldValue.increment(ownerEarnings),
-      });
-
-      // Mettre à jour le solde de la plateforme
-      final appDataDoc = await _firestore.collection('app_data').doc('default').get();
-      if (appDataDoc.exists) {
-        await _firestore.collection('app_data').doc('default').update({
-          'solde_principal': FieldValue.increment(platformEarnings),
-        });
-      }
-
-      // Créer l'achat
-      final purchase = ContentPurchase(
-        userId: currentUser!.id!,
-        contentId: contentPaie.id!,
-        amountPaid: contentPaie.price,
-        ownerEarnings: ownerEarnings,
-        platformEarnings: platformEarnings,
-        purchaseDate: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      await _firestore.collection('ContentPaie_purchases').add(purchase.toJson());
-
-      // Ajouter le contenu à la liste des vidéos vues par l'utilisateur
-      await _firestore.collection('Users').doc(currentUser!.id).update({
-        'viewedVideos': FieldValue.arrayUnion([contentPaie.id]),
-      });
-
-      // Recharger les données
-      await loadUserPurchases();
-
-      return true;
-    } catch (e) {
-      print('Error purchasing ContentPaie: $e');
-      return false;
-    }
-  }
 
   Future<bool> addContentPaie(ContentPaie contentPaie) async {
 

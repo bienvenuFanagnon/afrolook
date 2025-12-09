@@ -33,20 +33,176 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
   late AnimationController _likeAnimationController;
   bool _isLikedAnimation = false;
   Episode? _currentEpisode;
-
+  bool _isDisliked = false; // NOUVEAU: état pour le dislike
+  bool _showDislikeAnimation = false; // NOUVEAU
   @override
   void initState() {
     super.initState();
     _currentEpisode = widget.episode;
     _initializeVideo();
     _incrementViews();
-
+    // Récupérer l'état actuel du like/dislike de l'utilisateur
+    _checkUserReaction(); // NOUVEAU
     _likeAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 1500),
     );
   }
 
+// NOUVEAU: Méthode pour vérifier la réaction de l'utilisateur
+  void _checkUserReaction() async {
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+    final currentUserId = userProvider.loginUserData?.id;
+
+    if (currentUserId == null) return;
+
+    bool isLiked = false;
+    bool isDisliked = false;
+
+    if (widget.content.isSeries && _currentEpisode != null) {
+      // Pour les épisodes, vous devrez adapter votre ContentProvider
+      // pour récupérer les réactions spécifiques aux épisodes
+      isLiked = await contentProvider.isEpisodeLikedByUser(
+          _currentEpisode!.id!, currentUserId);
+      isDisliked = await contentProvider.isEpisodeDislikedByUser(
+          _currentEpisode!.id!, currentUserId);
+    } else {
+      isLiked = widget.content.isLikedByUser(currentUserId);
+      isDisliked = widget.content.isDislikedByUser(currentUserId);
+    }
+
+    setState(() {
+      _isLiked = isLiked;
+      _isDisliked = isDisliked;
+    });
+  }
+
+  // MODIFIÉ: Gérer le like
+  void _handleLike() async {
+    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = userProvider.loginUserData?.id;
+
+    if (currentUserId == null) return;
+
+    setState(() {
+      if (_isDisliked) {
+        _isDisliked = false;
+      }
+      _isLiked = !_isLiked;
+      _showLikeAnimation = _isLiked;
+    });
+
+    if (_isLiked) {
+      _likeAnimationController.reset();
+      _likeAnimationController.forward();
+      _triggerLikeAnimation();
+    }
+
+    // Gérer le like/dislike dans Firestore
+    if (widget.content.isSeries && _currentEpisode != null) {
+      if (_isLiked) {
+        await contentProvider.likeEpisode(
+            _currentEpisode!.id!, currentUserId);
+      } else {
+        await contentProvider.removeLikeEpisode(
+            _currentEpisode!.id!, currentUserId);
+      }
+    } else {
+      if (_isLiked) {
+        await contentProvider.likeContent(
+            widget.content.id!, currentUserId);
+      } else {
+        await contentProvider.removeLikeContent(
+            widget.content.id!, currentUserId);
+      }
+    }
+  }
+
+  // NOUVEAU: Gérer le dislike
+  void _handleDislike() async {
+    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+    final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = userProvider.loginUserData?.id;
+
+    if (currentUserId == null) return;
+
+    setState(() {
+      if (_isLiked) {
+        _isLiked = false;
+      }
+      _isDisliked = !_isDisliked;
+      _showDislikeAnimation = _isDisliked;
+    });
+
+    if (_isDisliked) {
+      _likeAnimationController.reset();
+      _likeAnimationController.forward();
+      _triggerDislikeAnimation();
+    }
+
+    // Gérer le dislike dans Firestore
+    if (widget.content.isSeries && _currentEpisode != null) {
+      if (_isDisliked) {
+        await contentProvider.dislikeEpisode(
+            _currentEpisode!.id!, currentUserId);
+      } else {
+        await contentProvider.removeDislikeEpisode(
+            _currentEpisode!.id!, currentUserId);
+      }
+    } else {
+      if (_isDisliked) {
+        await contentProvider.dislikeContent(
+            widget.content.id!, currentUserId);
+      } else {
+        await contentProvider.removeDislikeContent(
+            widget.content.id!, currentUserId);
+      }
+    }
+  }
+
+  // NOUVEAU: Animation pour le dislike
+  void _triggerDislikeAnimation() {
+    Future.delayed(Duration(milliseconds: 1000), () {
+      setState(() {
+        _showDislikeAnimation = false;
+      });
+    });
+  }
+// MODIFIÉ: Méthode pour partager
+  void _handleShare() async {
+    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+    final _appLinkService = AppLinkService();
+
+    // Incrémenter le compteur de partages
+    if (widget.content.isSeries && _currentEpisode != null) {
+      await contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true);
+    } else {
+      await contentProvider.incrementShares(widget.content.id!);
+    }
+
+    // Partager le contenu
+    if (widget.episode == null) {
+      _appLinkService.shareContent(
+        type: AppLinkType.contentpaie,
+        id: widget.content.id!,
+        message: "${widget.content.description}",
+        mediaUrl: widget.content.thumbnailUrl!.isNotEmpty
+            ? "${widget.content.thumbnailUrl!}"
+            : "",
+      );
+    } else {
+      _appLinkService.shareContent(
+        type: AppLinkType.contentpaie,
+        id: widget.content.id!,
+        message: "${widget.episode!.description}",
+        mediaUrl: widget.episode!.thumbnailUrl!.isNotEmpty
+            ? "${widget.episode!.thumbnailUrl!}"
+            : "",
+      );
+    }
+  }
 
   void _showDeleteModal() {
     showDialog(
@@ -179,7 +335,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     }
   }
 
-  void _handleLike() async {
+  void _handleLike2() async {
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
 
     setState(() {
@@ -691,78 +847,143 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                       // --- Ici on affiche le widget ContentOwnerInfo ---
                       ContentOwnerInfo(ownerId: widget.content.ownerId),
                       // Actions rapides (Like, Vue, etc.)
+// Actions rapides (Partage, Like, Dislike, Vue)
+// Actions rapides (Partage, Like, Dislike, Vue)
                       Row(
                         children: [
-                          // Bouton Like avec animation
-                          GestureDetector(
-                            onTap: () {
-                              final AppLinkService _appLinkService = AppLinkService();
-                              if(widget.episode==null){
-                                _appLinkService.shareContent(
-                                  type: AppLinkType.contentpaie,
-                                  id: widget.content.id!,
-                                  message: " ${widget.content.description}",
-                                  mediaUrl: widget.content.thumbnailUrl!.isNotEmpty?"${widget.content.thumbnailUrl!}":"",
-                                );
-                              }else{
-                                _appLinkService.shareContent(
-                                  type: AppLinkType.contentpaie,
-                                  id: widget.content.id!,
+                          // Bouton Partage avec compteur
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
 
-                                  // id: widget.episode!.id!,
-                                  message: " ${widget.episode!.description}",
-                                  mediaUrl: widget.episode!.thumbnailUrl!.isNotEmpty?"${widget.episode!.thumbnailUrl!}":"",
-                                );
-                              }
+                            children: [
+                              GestureDetector(
+                                onTap: _handleShare,
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: _afroBlack.withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.share,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 1),
 
-                            },
-                            child: Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _afroBlack.withOpacity(0.5),
-                                shape: BoxShape.circle,
+                              // Compteur des partages
+                              Consumer<ContentProvider>(
+                                builder: (context, contentProvider, child) {
+                                  final shares = widget.content.isSeries && _currentEpisode != null
+                                      ? _currentEpisode?.shares ?? 0
+                                      : widget.content.shares;
+                                  return Text(
+                                    '$shares',
+                                    style: TextStyle(color: _afroWhite, fontSize: 16),
+                                  );
+                                },
                               ),
-                              child: Icon(
-                                Icons.share,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
+                            ],
                           ),
 
-                          SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: _handleLike,
-                            child: Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _afroBlack.withOpacity(0.5),
-                                shape: BoxShape.circle,
+                          SizedBox(width: 5),
+
+                          // Bouton Dislike avec compteur
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: _handleDislike,
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: _afroBlack.withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _isDisliked ? Icons.thumb_down : Icons.thumb_down_outlined,
+                                    color: _isDisliked ? Colors.blue : _afroWhite,
+                                    size: 24,
+                                  ),
+                                ),
                               ),
-                              child: Icon(
-                                _isLiked ? Icons.favorite : Icons.favorite_border,
-                                color: _isLiked ? Colors.red : _afroWhite,
-                                size: 24,
+                              SizedBox(height: 1),
+                              Consumer<ContentProvider>(
+                                builder: (context, contentProvider, child) {
+                                  final dislikes = widget.content.isSeries && _currentEpisode != null
+                                      ? _currentEpisode?.dislikes ?? 0
+                                      : widget.content.dislikes;
+                                  return Text(
+                                    '$dislikes',
+                                    style: TextStyle(
+                                      color: _isDisliked ? Colors.blue : _afroWhite,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
+                            ],
                           ),
-                          SizedBox(width: 1),
-                          Text(
-                            widget.content.isSeries && _currentEpisode != null
-                                ? '${_currentEpisode!.likes}'
-                                : '${widget.content.likes}',
-                            style: TextStyle(color: _afroWhite, fontSize: 16),
+                          SizedBox(width: 5),
+
+                          // Bouton Like avec compteur
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: _handleLike,
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: _afroBlack.withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _isLiked ? Icons.favorite : Icons.favorite_border,
+                                    color: _isLiked ? Colors.red : _afroWhite,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 1),
+                              Consumer<ContentProvider>(
+                                builder: (context, contentProvider, child) {
+                                  final likes = widget.content.isSeries && _currentEpisode != null
+                                      ? _currentEpisode?.likes ?? 0
+                                      : widget.content.likes;
+                                  return Text(
+                                    '$likes',
+                                    style: TextStyle(
+                                      color: _isLiked ? Colors.red : _afroWhite,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 15),
+                          SizedBox(width: 5),
 
                           // Affichage des vues
-                          Icon(Icons.visibility, color: _afroWhite, size: 24),
-                          SizedBox(width: 2),
-                          Text(
-                            widget.content.isSeries && _currentEpisode != null
-                                ? '${_currentEpisode!.views}'
-                                : '${widget.content.views}',
-                            style: TextStyle(color: _afroWhite, fontSize: 16),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.visibility, color: _afroWhite, size: 24),
+                              SizedBox(height: 1),
+                              Consumer<ContentProvider>(
+                                builder: (context, contentProvider, child) {
+                                  final views = widget.content.isSeries && _currentEpisode != null
+                                      ? _currentEpisode?.views ?? 0
+                                      : widget.content.views;
+                                  return Text(
+                                    '$views',
+                                    style: TextStyle(color: _afroWhite, fontSize: 12),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                           Spacer(),
 
@@ -1008,14 +1229,7 @@ const Color _afroBlack = Color(0xFF121212);
 const Color _afroWhite = Color(0xFFFFFFFF);
 const Color _afroGreen = Color(0xFF00C853);
 const Color _afroYellow = Color(0xFFFFD600);
-// Couleurs de l'application AfroLook
-// const _afroGreen = Color(0xFF2ECC71);
-// const _afroDarkGreen = Color(0xFF27AE60);
-// const _afroYellow = Color(0xFFF1C40F);
-// const _afroBlack = Color(0xFF2C3E50);
-// const _afroWhite = Color(0xFFFFFFFF);
 
-// Ajoutez cet enum dans votre fichier model_data.dart ou contentProvider.dart
 enum PurchaseResult {
   success,
   insufficientBalance,

@@ -1558,11 +1558,12 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: '🏠 Accueil'),
+                Tab(text: '🪙 Zone VIP'),
+
                 Tab(text: '🕒 Looks'),
 
                 Tab(text: '🏆 Challenges'),
                 Tab(text: '🌟 Chroniques'),
-                Tab(text: '🪙 Zone VIP'),
                 // Tab(text: '🎥 Vidéos virales'),
 
                 // Tab(text: '🌟 Looks'),
@@ -1583,12 +1584,13 @@ class _MyHomePageState extends State<MyHomePage>
           // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          DashboardContentScreen(),
+
           _buildDiscoverTab(),
 
           ChallengesListPage(),
           ChroniqueHomePage(),
 
-          DashboardContentScreen(),
           // LooksPage(type: TabBarType.LOOKS.name),
 
 

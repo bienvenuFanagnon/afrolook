@@ -3754,21 +3754,26 @@ enum ContentType {
 }
 
 // Modèle pour les épisodes (vidéos et ebooks)
+
 class Episode {
   String? id;
   String seriesId;
   String title;
   String description;
-  String? videoUrl; // Pour les épisodes vidéo
-  String? pdfUrl; // Pour les épisodes ebook
+  String? videoUrl;
+  String? pdfUrl;
   String? thumbnailUrl;
-  int duration; // en secondes pour vidéo
-  int pageCount; // nombre de pages pour ebook
+  int duration;
+  int pageCount;
   int episodeNumber;
   double price;
   bool isFree;
   int views;
   int likes;
+  int dislikes; // NOUVEAU: compteur de dislikes
+  int shares; // NOUVEAU: compteur de partages
+  List<String> likedBy; // NOUVEAU: liste des utilisateurs qui ont liké
+  List<String> dislikedBy; // NOUVEAU: liste des utilisateurs qui ont disliké
   int createdAt;
   int updatedAt;
   ContentType contentType;
@@ -3788,6 +3793,10 @@ class Episode {
     required this.isFree,
     this.views = 0,
     this.likes = 0,
+    this.dislikes = 0, // Initialisé à 0
+    this.shares = 0, // Initialisé à 0
+    this.likedBy = const [], // Initialisé vide
+    this.dislikedBy = const [], // Initialisé vide
     this.createdAt = 0,
     this.updatedAt = 0,
     this.contentType = ContentType.VIDEO,
@@ -3809,11 +3818,15 @@ class Episode {
       isFree: json['isFree'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
+      dislikes: json['dislikes'] ?? 0, // NOUVEAU
+      shares: json['shares'] ?? 0, // NOUVEAU
+      likedBy: List<String>.from(json['likedBy'] ?? []), // NOUVEAU
+      dislikedBy: List<String>.from(json['dislikedBy'] ?? []), // NOUVEAU
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
       contentType: ContentType.values.firstWhere(
-              (e) => e.toString() == 'ContentType.${json['contentType']}',
-          orElse: () => ContentType.VIDEO
+            (e) => e.toString() == 'ContentType.${json['contentType']}',
+        orElse: () => ContentType.VIDEO,
       ),
     );
   }
@@ -3834,6 +3847,10 @@ class Episode {
       'isFree': isFree,
       'views': views,
       'likes': likes,
+      'dislikes': dislikes, // NOUVEAU
+      'shares': shares, // NOUVEAU
+      'likedBy': likedBy, // NOUVEAU
+      'dislikedBy': dislikedBy, // NOUVEAU
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'contentType': contentType.toString().split('.').last,
@@ -3842,8 +3859,50 @@ class Episode {
 
   bool get isVideo => contentType == ContentType.VIDEO;
   bool get isEbook => contentType == ContentType.EBOOK;
-}
 
+  // Méthodes pour gérer les likes/dislikes
+  bool isLikedByUser(String userId) => likedBy.contains(userId);
+  bool isDislikedByUser(String userId) => dislikedBy.contains(userId);
+
+  void toggleLike(String userId) {
+    if (isLikedByUser(userId)) {
+      // Retirer le like
+      likedBy.remove(userId);
+      likes--;
+    } else {
+      // Retirer le dislike si présent
+      if (dislikedBy.contains(userId)) {
+        dislikedBy.remove(userId);
+        dislikes--;
+      }
+      // Ajouter le like
+      likedBy.add(userId);
+      likes++;
+    }
+  }
+
+  void toggleDislike(String userId) {
+    if (isDislikedByUser(userId)) {
+      // Retirer le dislike
+      dislikedBy.remove(userId);
+      dislikes--;
+    } else {
+      // Retirer le like si présent
+      if (likedBy.contains(userId)) {
+        likedBy.remove(userId);
+        likes--;
+      }
+      // Ajouter le dislike
+      dislikedBy.add(userId);
+      dislikes++;
+    }
+  }
+
+  // Méthode pour incrémenter les partages
+  void incrementShares() {
+    shares++;
+  }
+}
 // Modèle pour le contenu (vidéos simples, ebooks, séries) - STRUCTURE EXISTANTE CONSERVÉE
 class ContentPaie {
   String? id;
@@ -3851,20 +3910,24 @@ class ContentPaie {
   String title;
   String description;
   String? videoUrl; // Pour les vidéos simples
-  String? pdfUrl; // NOUVEAU: Pour les ebooks
+  String? pdfUrl; // Pour les ebooks
   String thumbnailUrl;
   List<String> categories;
   List<String> hashtags;
-  bool isSeries; // CONSERVÉ: pour la compatibilité avec les données existantes
-  String? seriesId; // Pour les épisodes
-  ContentType contentType; // NOUVEAU: pour distinguer vidéo/ebook
+  bool isSeries;
+  String? seriesId;
+  ContentType contentType;
   double price;
   bool isFree;
   int views;
   int likes;
+  int dislikes; // NOUVEAU: compteur de dislikes
   int comments;
-  int duration; // en secondes pour les vidéos
-  int pageCount; // NOUVEAU: nombre de pages pour les ebooks
+  int shares; // NOUVEAU: compteur de partages
+  List<String> likedBy; // NOUVEAU: liste des utilisateurs qui ont liké
+  List<String> dislikedBy; // NOUVEAU: liste des utilisateurs qui ont disliké
+  int duration;
+  int pageCount;
   int createdAt;
   int updatedAt;
 
@@ -3874,20 +3937,24 @@ class ContentPaie {
     required this.title,
     required this.description,
     this.videoUrl,
-    this.pdfUrl, // NOUVEAU
+    this.pdfUrl,
     required this.thumbnailUrl,
     required this.categories,
     required this.hashtags,
-    this.isSeries = false, // CONSERVÉ
+    this.isSeries = false,
     this.seriesId,
-    this.contentType = ContentType.VIDEO, // NOUVEAU
+    this.contentType = ContentType.VIDEO,
     required this.price,
     required this.isFree,
     this.views = 0,
     this.likes = 0,
+    this.dislikes = 0, // Initialisé à 0
     this.comments = 0,
+    this.shares = 0, // Initialisé à 0
+    this.likedBy = const [], // Initialisé vide
+    this.dislikedBy = const [], // Initialisé vide
     this.duration = 0,
-    this.pageCount = 0, // NOUVEAU
+    this.pageCount = 0,
     this.createdAt = 0,
     this.updatedAt = 0,
   });
@@ -3899,23 +3966,27 @@ class ContentPaie {
       title: json['title'],
       description: json['description'],
       videoUrl: json['videoUrl'],
-      pdfUrl: json['pdfUrl'], // NOUVEAU
+      pdfUrl: json['pdfUrl'],
       thumbnailUrl: json['thumbnailUrl'],
       categories: List<String>.from(json['categories'] ?? []),
       hashtags: List<String>.from(json['hashtags'] ?? []),
-      isSeries: json['isSeries'] ?? false, // CONSERVÉ
+      isSeries: json['isSeries'] ?? false,
       seriesId: json['seriesId'],
       contentType: ContentType.values.firstWhere(
-              (e) => e.toString() == 'ContentType.${json['contentType']}',
-          orElse: () => ContentType.VIDEO // Par défaut VIDEO pour la compatibilité
+            (e) => e.toString() == 'ContentType.${json['contentType']}',
+        orElse: () => ContentType.VIDEO,
       ),
       price: json['price']?.toDouble() ?? 0.0,
       isFree: json['isFree'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
+      dislikes: json['dislikes'] ?? 0, // NOUVEAU
       comments: json['comments'] ?? 0,
+      shares: json['shares'] ?? 0, // NOUVEAU
+      likedBy: List<String>.from(json['likedBy'] ?? []), // NOUVEAU
+      dislikedBy: List<String>.from(json['dislikedBy'] ?? []), // NOUVEAU
       duration: json['duration'] ?? 0,
-      pageCount: json['pageCount'] ?? 0, // NOUVEAU
+      pageCount: json['pageCount'] ?? 0,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
     );
@@ -3928,20 +3999,24 @@ class ContentPaie {
       'title': title,
       'description': description,
       'videoUrl': videoUrl,
-      'pdfUrl': pdfUrl, // NOUVEAU
+      'pdfUrl': pdfUrl,
       'thumbnailUrl': thumbnailUrl,
       'categories': categories,
       'hashtags': hashtags,
-      'isSeries': isSeries, // CONSERVÉ
+      'isSeries': isSeries,
       'seriesId': seriesId,
-      'contentType': contentType.toString().split('.').last, // NOUVEAU
+      'contentType': contentType.toString().split('.').last,
       'price': price,
       'isFree': isFree,
       'views': views,
       'likes': likes,
+      'dislikes': dislikes, // NOUVEAU
       'comments': comments,
+      'shares': shares, // NOUVEAU
+      'likedBy': likedBy, // NOUVEAU
+      'dislikedBy': dislikedBy, // NOUVEAU
       'duration': duration,
-      'pageCount': pageCount, // NOUVEAU
+      'pageCount': pageCount,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -3952,8 +4027,50 @@ class ContentPaie {
   bool get isEbook => contentType == ContentType.EBOOK;
   bool get isVideoSeries => isSeries && isVideo;
   bool get isEbookSeries => isSeries && isEbook;
-}
 
+  // Méthodes pour gérer les likes/dislikes
+  bool isLikedByUser(String userId) => likedBy.contains(userId);
+  bool isDislikedByUser(String userId) => dislikedBy.contains(userId);
+
+  void toggleLike(String userId) {
+    if (isLikedByUser(userId)) {
+      // Retirer le like
+      likedBy.remove(userId);
+      likes--;
+    } else {
+      // Retirer le dislike si présent
+      if (dislikedBy.contains(userId)) {
+        dislikedBy.remove(userId);
+        dislikes--;
+      }
+      // Ajouter le like
+      likedBy.add(userId);
+      likes++;
+    }
+  }
+
+  void toggleDislike(String userId) {
+    if (isDislikedByUser(userId)) {
+      // Retirer le dislike
+      dislikedBy.remove(userId);
+      dislikes--;
+    } else {
+      // Retirer le like si présent
+      if (likedBy.contains(userId)) {
+        likedBy.remove(userId);
+        likes--;
+      }
+      // Ajouter le dislike
+      dislikedBy.add(userId);
+      dislikes++;
+    }
+  }
+
+  // Méthode pour incrémenter les partages
+  void incrementShares() {
+    shares++;
+  }
+}
 // Modèle pour les achats de contenu (inchangé)
 class ContentPurchase {
   String? id;
