@@ -23,6 +23,7 @@ import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/utils/abonnement_utils.dart';
+import 'dart:ui' as ui; // Add this line
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -433,14 +434,13 @@ class _PostCommentsState extends State<PostComments> {
   }
 
   // Widget pour le texte avec mentions en vert
-  Widget _buildMentionText(String text) {
+  Widget _buildMentionText(String text, {bool isExpanded = false, int maxLinesReduced = 2}) {
     final List<TextSpan> spans = [];
     final RegExp mentionRegex = RegExp(r'@(\w+)');
     final matches = mentionRegex.allMatches(text);
     int lastEnd = 0;
 
     for (final match in matches) {
-      // Texte avant la mention
       if (match.start > lastEnd) {
         spans.add(TextSpan(
           text: text.substring(lastEnd, match.start),
@@ -448,7 +448,6 @@ class _PostCommentsState extends State<PostComments> {
         ));
       }
 
-      // La mention en vert
       spans.add(TextSpan(
         text: match.group(0),
         style: TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.w500),
@@ -457,7 +456,6 @@ class _PostCommentsState extends State<PostComments> {
       lastEnd = match.end;
     }
 
-    // Texte après la dernière mention
     if (lastEnd < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastEnd),
@@ -467,8 +465,11 @@ class _PostCommentsState extends State<PostComments> {
 
     return RichText(
       text: TextSpan(children: spans),
-      maxLines: _commentExpanded[text] ?? false ? null : 2,
-      overflow: _commentExpanded[text] ?? false ? TextOverflow.visible : TextOverflow.ellipsis,
+      // CORRECTION IMPORTANTE :
+      // - Mode réduit : maxLinesReduced lignes (par défaut 2)
+      // - Mode étendu : null (pas de limite)
+      maxLines: isExpanded ? null : maxLinesReduced,
+      overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
     );
   }
 
@@ -586,7 +587,7 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
-  Widget _buildCommentContent(PostComment pcm) {
+  Widget _buildCommentContent2(PostComment pcm) {
     final isLiked = pcm.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
     final likeCount = pcm.likes ?? 0;
 
@@ -740,8 +741,7 @@ class _PostCommentsState extends State<PostComments> {
       ),
     );
   }
-
-  Widget _buildReplyContent(PostComment pcm, ResponsePostComment rpc) {
+  Widget _buildReplyContent2(PostComment pcm, ResponsePostComment rpc) {
     final isLiked = rpc.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
     final likeCount = rpc.likes ?? 0;
 
@@ -898,6 +898,386 @@ class _PostCommentsState extends State<PostComments> {
       ),
     );
   }
+  Widget _buildCommentContent(PostComment pcm) {
+    final isLiked = pcm.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
+    final likeCount = pcm.likes ?? 0;
+
+    // Vérifier si le texte dépasse 2 lignes
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: pcm.message ?? '',
+        style: TextStyle(fontSize: 13, color: Colors.black87),
+      ),
+      maxLines: 2,
+      textDirection: ui.TextDirection.ltr,
+    );
+
+    textPainter.layout(
+      maxWidth: MediaQuery.of(context).size.width - 80,
+    );
+
+    final needsExpandButton = textPainter.didExceedMaxLines;
+    final isExpanded = _commentExpanded[pcm.id!] ?? false;
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  double w = MediaQuery.of(context).size.width;
+                  double h = MediaQuery.of(context).size.height;
+                  showUserDetailsModalDialog(pcm.user!!, w, h, context);
+                },
+                child: CircleAvatar(
+                  radius: 16,
+                  backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
+                  backgroundColor: Colors.grey.shade300,
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "@${pcm.user!.pseudo!}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        AbonnementUtils.getUserBadge(
+                          abonnement: pcm.user!.abonnement,
+                          isVerified: pcm.user!.isVerify!,
+                        ),
+                        Spacer(),
+                        Text(
+                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+
+                    // Texte du commentaire avec 2 lignes max en mode réduit
+                    _buildMentionText(
+                      pcm.message!,
+                      isExpanded: isExpanded,
+                      maxLinesReduced: 2, // CORRECTION : 2 lignes max en mode réduit
+                    ),
+
+                    // Bouton "Lire tout" / "Fermer" - seulement si > 2 lignes
+                    if (needsExpandButton)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _commentExpanded[pcm.id!] = !isExpanded;
+                          });
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            isExpanded ? 'Fermer' : 'Lire tout',
+                            style: TextStyle(
+                              color: Colors.blue.shade600,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _likeComment(pcm),
+                child: Row(
+                  children: [
+                    Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      size: 16,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      formatNumber(likeCount),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 16),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    commentSelectedToReply = pcm;
+                    replyUser_id = pcm.user!.id!;
+                    replyUser_pseudo = pcm.user!.pseudo!;
+                    replyingTo = "@${pcm.user!.pseudo}";
+                    replying = true;
+                  });
+                  _focusNode.requestFocus();
+                },
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 16, color: Colors.grey.shade600),
+                    SizedBox(width: 4),
+                    Text(
+                      'Répondre',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Spacer(),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 16),
+                itemBuilder: (context) => [
+                  if (pcm.user!.id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 16),
+                          SizedBox(width: 8),
+                          Text('Supprimer'),
+                        ],
+                      ),
+                    ),
+                ],
+                onSelected: (value) async {
+                  if (value == 'delete') {
+                    await _deleteComment(pcm);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyContent(PostComment pcm, ResponsePostComment rpc) {
+    final isLiked = rpc.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
+    final likeCount = rpc.likes ?? 0;
+
+    // Vérifier si le texte dépasse 2 lignes
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: rpc.message ?? '',
+        style: TextStyle(fontSize: 13, color: Colors.black87),
+      ),
+      maxLines: 2,
+      textDirection: ui.TextDirection.ltr,
+    );
+
+    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 80);
+
+    final needsExpandButton = textPainter.didExceedMaxLines;
+    final replyKey = '${pcm.id}_${rpc.user_id}_${rpc.createdAt}';
+    final isExpanded = _replyExpanded[replyKey] ?? false;
+
+    return Container(
+      margin: EdgeInsets.only(left: 40, top: 4),
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (rpc.user != null) {
+                    double w = MediaQuery.of(context).size.width;
+                    double h = MediaQuery.of(context).size.height;
+                    showUserDetailsModalDialog(rpc.user!, w, h, context);
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 14,
+                  backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
+                  backgroundColor: Colors.grey.shade300,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "@${rpc.user_pseudo}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.reply, size: 12, color: Colors.grey),
+                              SizedBox(width: 2),
+                              Text(
+                                "@${rpc.user_reply_pseudo}",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        Spacer(),
+                        Text(
+                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+
+                    // Texte de la réponse avec 2 lignes max en mode réduit
+                    _buildMentionText(
+                      rpc.message!,
+                      isExpanded: isExpanded,
+                      maxLinesReduced: 2, // CORRECTION : 2 lignes max en mode réduit
+                    ),
+
+                    // Bouton "Lire tout" / "Fermer" - seulement si > 2 lignes
+                    if (needsExpandButton)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _replyExpanded[replyKey] = !isExpanded;
+                          });
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            isExpanded ? 'Fermer' : 'Lire tout',
+                            style: TextStyle(
+                              color: Colors.blue.shade600,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _likeReply(pcm, rpc),
+                child: Row(
+                  children: [
+                    Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? Colors.red : Colors.grey.shade600,
+                      size: 14,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      formatNumber(likeCount),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    commentSelectedToReply = pcm;
+                    replyUser_id = rpc.user_id!;
+                    replyUser_pseudo = rpc.user_pseudo!;
+                    replyingTo = "@${rpc.user_pseudo}";
+                    replying = true;
+                  });
+                  _focusNode.requestFocus();
+                },
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 14, color: Colors.grey.shade600),
+                    SizedBox(width: 4),
+                    Text(
+                      'Répondre',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Spacer(),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 14),
+                itemBuilder: (context) => [
+                  if (rpc.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 14),
+                          SizedBox(width: 8),
+                          Text('Supprimer'),
+                        ],
+                      ),
+                    ),
+                ],
+                onSelected: (value) async {
+                  if (value == 'delete') {
+                    await _deleteResponse(pcm, rpc);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildUserSuggestions() {
     if (!showUserSuggestions || suggestedUsers.isEmpty) {

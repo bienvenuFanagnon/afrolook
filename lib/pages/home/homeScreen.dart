@@ -46,6 +46,7 @@ import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/postService/mixed_feed_service.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
@@ -1726,7 +1727,7 @@ class _MyHomePageState extends State<MyHomePage>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   badges.Badge(
-                    showBadge: true,
+                    showBadge: false,
                     badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
                     badgeContent: Text('9+', style: TextStyle(fontSize: 8, color: darkBackground)),
                     child: Icon(Icons.video_library, color: textColor, size: 26),
@@ -1737,27 +1738,32 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             ),
             // Bouton Menu
+
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/list_live');
-
-                // authProvider.checkAppVersionAndProceed(context, () async {
-                //   _scaffoldKey.currentState!.openDrawer();
-                //
-                // });
               },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  badges.Badge(
-                    showBadge: true,
-                    badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
-                    badgeContent: Text('5+', style: TextStyle(fontSize: 8, color: darkBackground)),
-                    child: Icon(Icons.live_tv, color: Colors.red, size: 26),
-                  ),
-                  SizedBox(height: 4),
-                  Text('Lives', style: TextStyle(color: textColor, fontSize: 10)),
-                ],
+              child: StreamBuilder<int>(
+                stream: Provider.of<LiveProvider>(context, listen: false).getActiveLivesCountStream(),
+                builder: (context, snapshot) {
+                  int liveCount = snapshot.hasData ? snapshot.data! : 0;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      badges.Badge(
+                        showBadge: liveCount > 0,
+                        badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+                        badgeContent: Text(
+                          liveCount > 9 ? '9+' : '$liveCount',
+                          style: TextStyle(fontSize: 9, color: darkBackground),
+                        ),
+                        child: Icon(Icons.live_tv, color: Colors.red, size: 26),
+                      ),
+                      SizedBox(height: 4),
+                      Text('Lives', style: TextStyle(color: textColor, fontSize: 10)),
+                    ],
+                  );
+                },
               ),
             ),
           ],

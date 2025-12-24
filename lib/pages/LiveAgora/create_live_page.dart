@@ -1650,7 +1650,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       // Créer le nouveau live
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final String liveId = _firestore.collection('lives').doc().id;
-
+      final isAdmin = _liveRestrictions['isAdmin'] == true;
       // Création du live
       final PostLive newLive = PostLive(
         liveId: liveId,
@@ -1659,7 +1659,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         hostImage: authProvider.loginUserData.imageUrl! ?? 'https://via.placeholder.com/150',
         title: _titleController.text.trim(),
         startTime: DateTime.now(),
-
+        liveDurationMinutes: isAdmin?60:30,
         // Paramètres live payant
         isPaidLive: _isPaidLive,
         participationFee: _isPaidLive ? double.parse(_participationFeeController.text) : 0.0,

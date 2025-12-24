@@ -335,7 +335,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     try {
       // Calculer le prix selon la durée
       final liveDurationMinutes = widget.postLive.safeLiveDurationMinutes;
-      final amount = liveDurationMinutes == 60 ? 200.0 : 100.0; // 200 FCFA pour 60min, 100 pour 30min
+      final amount = liveDurationMinutes == 60 ? 100.0 : 100.0; // 200 FCFA pour 60min, 100 pour 30min
 
       await _firestore.collection('lives').doc(widget.liveId).update({
         'paymentRequired': true,
@@ -819,6 +819,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       );
 
       await _engine.enableVideo();
+      print("Live premium : ${widget.postLive.toMap()}");
+      print("Live premium : ${_isLivePremium}");
 
       // 🔥 CONFIGURATION SELON TYPE DE LIVE (PREMIUM OU STANDARD)
       final isPremium = _isLivePremium; // Utilise la durée du live
