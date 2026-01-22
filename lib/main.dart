@@ -66,9 +66,11 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
+import 'package:afrotok/services/LocalNotifications.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/postPrepareService.dart';
 import 'package:afrotok/services/serviceMigrationAncienPost.dart';
+import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
@@ -88,6 +90,7 @@ import 'package:upgrader/upgrader.dart';
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:workmanager/workmanager.dart';
 // Import du service App Links
 
 late List<CameraDescription> _cameras;
@@ -121,6 +124,28 @@ Future<void> main() async {
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
   OneSignal.Notifications.requestPermission(true);
+  initLocalNotifications();
+  await Workmanager().initialize(
+    callbackDispatcher,
+  );
+
+  // processNotificationTask("challengeCheckTask", firstLaunch: true);
+   sendTestAfrolookNotification();
+  //
+  // Workmanager().registerOneOffTask(
+  //   afrolookTestTask,
+  //   afrolookTestTask,
+  //   initialDelay: Duration(seconds: 10),
+  // );
+  Workmanager().registerPeriodicTask(
+    afrolookTask,
+    afrolookTask,
+    frequency: const Duration(hours: 3),
+    // frequency: const Duration(minutes: 15),
+    initialDelay: const Duration(seconds: 10),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+  );
+
   if (kReleaseMode) {
     await FlutterDownloader.initialize(
       debug: false,

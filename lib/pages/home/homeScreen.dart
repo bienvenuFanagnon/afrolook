@@ -41,11 +41,13 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:workmanager/workmanager.dart';
 import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/postService/mixed_feed_service.dart';
 import '../../services/utils/abonnement_utils.dart';
+import '../../services/workManagerService.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../UserServices/ServiceWidget.dart';
@@ -1181,6 +1183,7 @@ class _MyHomePageState extends State<MyHomePage>
       // AdvancedModalManager.showModalsWithSmartDelay(context);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
+
           authProvider.checkAppVersionAndProceed(context, () {
             AdvancedModalManager.showModalsWithSmartDelay(context);
 
