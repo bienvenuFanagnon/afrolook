@@ -135,7 +135,7 @@ Future<void> main() async {
   // Workmanager().registerOneOffTask(
   //   afrolookTestTask,
   //   afrolookTestTask,
-  //   initialDelay: Duration(seconds: 10),
+  //   initialDelay: Duration(seconds: 2),
   // );
   Workmanager().registerPeriodicTask(
     afrolookTask,

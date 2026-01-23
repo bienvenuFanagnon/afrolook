@@ -29,6 +29,8 @@ const List<int> notificationHours = [9, 12, 18, 21];
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
+      print('WORKMANAGER EXECUTÉ: $task à ${DateTime.now()}');
+
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
       if (task == afrolookTestTask) {
@@ -72,17 +74,17 @@ Future<void> _handleAfrolookNotification() async {
   final prefs = await SharedPreferences.getInstance();
   final now = DateTime.now();
 
-  final int? hourToNotify = _getValidHour(now, prefs);
-
-  if (hourToNotify == null) {
-    debugPrint("⏭ No notification for this slot");
-    return;
-  }
+  // final int? hourToNotify = _getValidHour(now, prefs);
+  //
+  // if (hourToNotify == null) {
+  //   debugPrint("⏭ No notification for this slot");
+  //   return;
+  // }
 
   await _sendAfrolookNotification();
-
-  final key = _buildDailyKey(now, hourToNotify);
-  await prefs.setBool(key, true);
+  //
+  // final key = _buildDailyKey(now, hourToNotify);
+  // await prefs.setBool(key, true);
 }
 
 /// =======================================================
@@ -220,7 +222,8 @@ Future<void> initLocalNotifications() async {
 Future<void> _showNotification({
   required String title,
   required String body,
-}) async {
+})
+async {
   const androidDetails = AndroidNotificationDetails(
     'afrolook_channel',
     'Afrolook Notifications',
@@ -253,7 +256,7 @@ Future<void> sendTestAfrolookNotification() async {
   final lastSentDate = prefs.getString('daily_notification_date');
 
   // ❌ Déjà envoyée aujourd’hui → on sort
-  if (lastSentDate == todayKey) return;
+  // if (lastSentDate == todayKey) return;
 
   // ✅ Liste de messages très addictifs et variés
   final List<String> messages = [
