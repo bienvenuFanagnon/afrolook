@@ -487,7 +487,6 @@ class _NewCanalState extends State<NewCanal> {
           });
 
           String id = FirebaseFirestore.instance.collection('Canaux').doc().id;
-
           // Création du canal avec les nouveaux champs
           Canal canal = Canal(
             titre: _titreController.text,
@@ -502,6 +501,10 @@ class _NewCanalState extends State<NewCanal> {
             isPrivate: _isPrivate,
             subscriptionPrice: _isPrivate ? double.parse(_priceController.text) : 0.0,
             subscribersId: [],
+            adminIds: [authProvider.loginUserData.id!],
+            allowedPostersIds: [authProvider.loginUserData.id!],
+            allowAllMembersToPost: false,
+
           );
 
           // Upload image de profil

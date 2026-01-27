@@ -71,7 +71,9 @@ class _DetailsPostState extends State<DetailsPost>
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
+  // Variables pour les favoris
+  bool _isFavorite = false;
+  bool _isProcessingFavorite = false;
   bool _isLoading = false;
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
@@ -90,7 +92,21 @@ class _DetailsPostState extends State<DetailsPost>
   final FirebaseAuth _auth = FirebaseAuth.instance;
   Challenge? _challenge;
   bool _loadingChallenge = false;
-
+  // Méthode pour vérifier si le post est en favoris
+  Future<void> _checkIfFavorite() async {
+    try {
+      final postDoc = await firestore.collection('Posts').doc(widget.post.id).get();
+      if (postDoc.exists) {
+        final data = postDoc.data() as Map<String, dynamic>;
+        final favorites = List<String>.from(data['users_favorite_id'] ?? []);
+        setState(() {
+          _isFavorite = favorites.contains(authProvider.loginUserData.id);
+        });
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification des favoris: $e');
+    }
+  }
   // Vérifier si l'utilisateur a accès au contenu
   bool _hasAccessToContent() {
     // Si c'est un post de canal privé
@@ -137,7 +153,7 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void initState() {
     super.initState();
-
+    _checkIfFavorite();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
@@ -171,6 +187,148 @@ class _DetailsPostState extends State<DetailsPost>
     super.dispose();
   }
 
+  Future<void> _toggleFavorite() async {
+    if (_isProcessingFavorite || !_hasAccessToContent()) return;
+
+    final userId = authProvider.loginUserData.id!;
+    final postId = widget.post.id!;
+
+    setState(() {
+      _isProcessingFavorite = true;
+    });
+
+    try {
+      if (_isFavorite) {
+        // Retirer des favoris
+        await _removeFromFavorites(userId, postId, firestore);
+      } else {
+        // Ajouter aux favoris
+        await _addToFavorites(userId, postId, firestore);
+      }
+
+      // Mettre à jour l'état local
+      setState(() {
+        _isFavorite = !_isFavorite;
+        if (_isFavorite) {
+          widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) + 1;
+          widget.post.users_favorite_id?.add(userId);
+        } else {
+          widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) - 1;
+          widget.post.users_favorite_id?.remove(userId);
+        }
+      });
+
+      // Afficher un feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite
+                ? '✅ Post ajouté aux favoris'
+                : '🗑️ Post retiré des favoris',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: _isFavorite ? _twitterGreen : Colors.grey,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+    } catch (e) {
+      print('Erreur toggle favori: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ Erreur lors de la modification',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessingFavorite = false;
+      });
+    }
+  }
+
+  Future<void> _addToFavorites(String userId, String postId, FirebaseFirestore firestore) async {
+    // Mettre à jour le post
+    await firestore.collection('Posts').doc(postId).update({
+      'users_favorite_id': FieldValue.arrayUnion([userId]),
+      'favorites_count': FieldValue.increment(1),
+      'popularity': FieldValue.increment(2),
+      'updatedAt': DateTime.now().microsecondsSinceEpoch,
+    });
+
+    // Mettre à jour l'utilisateur
+    await firestore.collection('Users').doc(userId).update({
+      'favoritePostsIds': FieldValue.arrayUnion([postId]),
+      'updatedAt': DateTime.now().microsecondsSinceEpoch,
+    });
+
+    // Créer une notification pour l'auteur du post
+    if (widget.post.user_id != userId && widget.post.user != null) {
+      await _createFavoriteNotification(userId);
+    }
+
+    // Ajouter des points pour l'action
+    addPointsForAction(UserAction.favorite);
+    addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+  }
+
+  Future<void> _removeFromFavorites(String userId, String postId, FirebaseFirestore firestore) async {
+    // Mettre à jour le post
+    await firestore.collection('Posts').doc(postId).update({
+      'users_favorite_id': FieldValue.arrayRemove([userId]),
+      'favorites_count': FieldValue.increment(-1),
+      'popularity': FieldValue.increment(-2),
+      'updatedAt': DateTime.now().microsecondsSinceEpoch,
+    });
+
+    // Mettre à jour l'utilisateur
+    await firestore.collection('Users').doc(userId).update({
+      'favoritePostsIds': FieldValue.arrayRemove([postId]),
+      'updatedAt': DateTime.now().microsecondsSinceEpoch,
+    });
+  }
+
+  Future<void> _createFavoriteNotification(String userId) async {
+    try {
+      final notification = NotificationData(
+        id: firestore.collection('Notifications').doc().id,
+        titre: "Favoris ❤️",
+        media_url: authProvider.loginUserData.imageUrl,
+        type: NotificationType.FAVORITE.name,
+        description: "@${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
+        users_id_view: [],
+        user_id: userId,
+        receiver_id: widget.post.user_id!,
+        post_id: widget.post.id!,
+        post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+        updatedAt: DateTime.now().microsecondsSinceEpoch,
+        createdAt: DateTime.now().microsecondsSinceEpoch,
+        status: PostStatus.VALIDE.name,
+      );
+
+      await firestore.collection('Notifications').doc(notification.id).set(notification.toJson());
+
+      // Notification push
+      if (widget.post.user != null && widget.post.user!.oneIgnalUserid != null) {
+        await authProvider.sendNotification(
+          userIds: [widget.post.user!.oneIgnalUserid!],
+          smallImage: authProvider.loginUserData.imageUrl!,
+          send_user_id: userId,
+          recever_user_id: widget.post.user_id!,
+          message: "❤️ @${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
+          type_notif: NotificationType.FAVORITE.name,
+          post_id: widget.post.id!,
+          post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+          chat_id: '',
+        );
+      }
+    } catch (e) {
+      print('Erreur création notification favori: $e');
+    }
+  }
   // Vérifier si c'est un Look Challenge
   bool get _isLookChallenge {
     return widget.post.type == 'CHALLENGEPARTICIPATION';
@@ -2881,7 +3039,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildStatsRow(Post post) {
+  Widget _buildStatsRow2(Post post) {
     final hasAccess = _hasAccessToContent();
 
     return Row(
@@ -2962,8 +3120,97 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ],
     );
   }
+  Widget _buildStatsRow(Post post) {
+    final hasAccess = _hasAccessToContent();
 
-  Widget _buildStatItem({
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildStatItem(
+          icon: Icons.remove_red_eye,
+          count: post.vues ?? 0,
+          label: 'Vues',
+        ),
+        GestureDetector(
+          onTap: hasAccess ? _handleLike : null,
+          child: _buildStatItem(
+            icon: Icons.favorite,
+            count: post.loves ?? 0,
+            label: 'Likes',
+            isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
+            isLocked: !hasAccess,
+          ),
+        ),
+        GestureDetector(
+          onTap: hasAccess ? () {
+            firestore.collection('Posts').doc(widget.post.id).update({
+              'popularity': FieldValue.increment(1),
+            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PostComments(post: widget.post),
+              ),
+            );
+          } : null,
+          child: _buildStatItem(
+            icon: Icons.comment,
+            count: widget.post.comments ?? 0,
+            label: 'Comments',
+            isLocked: !hasAccess,
+          ),
+        ),
+        // NOUVEAU : Compteur de favoris
+        GestureDetector(
+          onTap: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
+          child: _buildStatItem(
+            icon: _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+            count: post.favoritesCount ?? 0,
+            label: 'Favoris',
+            isLiked: _isFavorite,
+            isLocked: !hasAccess,
+          ),
+        ),
+        GestureDetector(
+          onTap: hasAccess ? _showGiftDialog : null,
+          child: _buildStatItem(
+            icon: Icons.card_giftcard,
+            count: post.users_cadeau_id?.length ?? 0,
+            label: 'Cadeaux',
+            isLocked: !hasAccess,
+          ),
+        ),
+        GestureDetector(
+          onTap: hasAccess ? () async {
+            final AppLinkService _appLinkService = AppLinkService();
+            _appLinkService.shareContent(
+              type: AppLinkType.post,
+              id: widget.post.id!,
+              message: " ${widget.post.description}",
+              mediaUrl: widget.post.images!.isNotEmpty
+                  ? "${widget.post.images!}"
+                  : "",
+            );
+            await FirebaseFirestore.instance
+                .collection('Posts')
+                .doc(widget.post.id!)
+                .update({
+              'partage': FieldValue.increment(1),
+            });
+            FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
+            addPointsForAction(UserAction.partagePost);
+          } : null,
+          child: _buildStatItem(
+            icon: Icons.share,
+            count: post.partage ?? 0,
+            label: 'Partages',
+            isLocked: !hasAccess,
+          ),
+        ),
+      ],
+    );
+  }
+  Widget _buildStatItem2({
     required IconData icon,
     required int count,
     required String label,
@@ -2998,8 +3245,57 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ],
     );
   }
+  Widget _buildStatItem({
+    required IconData icon,
+    required int count,
+    required String label,
+    bool isLiked = false,
+    bool isLocked = false,
+  }) {
+    Color iconColor;
 
-  Widget _buildActionButtons(Post post) {
+    // Gestion spéciale pour l'icône bookmark
+    if (icon == Icons.bookmark || icon == Icons.bookmark_border) {
+      iconColor = isLocked
+          ? _twitterTextSecondary.withOpacity(0.3)
+          : (isLiked ? _twitterYellow : Colors.yellow);
+    } else if (icon == Icons.favorite || icon == Icons.favorite_border) {
+      iconColor = isLocked
+          ? _twitterTextSecondary.withOpacity(0.3)
+          : (isLiked ? Colors.red : Colors.yellow);
+    } else {
+      iconColor = isLocked
+          ? _twitterTextSecondary.withOpacity(0.3)
+          : Colors.yellow;
+    }
+
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: iconColor,
+          size: 20,
+        ),
+        SizedBox(height: 5),
+        Text(
+          formatNumber(count),
+          style: TextStyle(
+            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.grey[400],
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+  Widget _buildActionButtons2(Post post) {
     final hasAccess = _hasAccessToContent();
 
     return Container(
@@ -3096,7 +3392,117 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ),
     );
   }
+  Widget _buildActionButtons(Post post) {
+    final hasAccess = _hasAccessToContent();
 
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 15),
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // Bouton Like
+          ScaleTransition(
+            scale: _scaleAnimation,
+            child: IconButton(
+              icon: Icon(
+                isIn(post.users_love_id!, authProvider.loginUserData.id!)
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
+                    ? Colors.red
+                    : Colors.white),
+                size: 30,
+              ),
+              onPressed: hasAccess ? _handleLike : null,
+            ),
+          ),
+
+          // Bouton Commentaire
+          IconButton(
+            icon: Icon(
+                Icons.chat_bubble_outline,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+                size: 30
+            ),
+            onPressed: hasAccess ? () async {
+              await firestore.collection('Posts').doc(widget.post.id).update({
+                'popularity': FieldValue.increment(1),
+              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PostComments(post: widget.post),
+                ),
+              );
+            } : null,
+          ),
+
+          // Bouton Favoris (NOUVEAU)
+          IconButton(
+            icon: Icon(
+                _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : (_isFavorite ? _twitterYellow : Colors.white),
+                size: 30
+            ),
+            onPressed: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
+          ),
+
+          // Bouton Cadeau
+          IconButton(
+            icon: Icon(
+                Icons.card_giftcard,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow,
+                size: 30
+            ),
+            onPressed: hasAccess ? _showGiftDialog : null,
+          ),
+
+          // Bouton Republier
+          IconButton(
+            icon: Icon(
+                Icons.repeat,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.green,
+                size: 30
+            ),
+            onPressed: hasAccess ? _showRepostDialog : null,
+          ),
+
+          // Bouton Partager
+          IconButton(
+            icon: Icon(
+                Icons.share,
+                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+                size: 30
+            ),
+            onPressed: hasAccess ? () async {
+              final AppLinkService _appLinkService = AppLinkService();
+              _appLinkService.shareContent(
+                type: AppLinkType.post,
+                id: widget.post.id!,
+                message: " ${widget.post.description}",
+                mediaUrl: widget.post.images!.isNotEmpty
+                    ? "${widget.post.images!}"
+                    : "",
+              );
+              await FirebaseFirestore.instance
+                  .collection('Posts')
+                  .doc(widget.post.id!)
+                  .update({
+                'partage': FieldValue.increment(1),
+              });
+              FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
+              addPointsForAction(UserAction.partagePost);
+            } : null,
+          ),
+        ],
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final isLocked = _isLockedContent();

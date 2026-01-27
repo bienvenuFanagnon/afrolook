@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -296,4 +297,49 @@ Future<void> sendTestAfrolookNotification() async {
 
   // 💾 Mémoriser la date pour ne pas renvoyer aujourd'hui
   await prefs.setString('daily_notification_date', todayKey);
+}
+
+
+Future<void> initializeCanalFields() async {
+  final firestore = FirebaseFirestore.instance;
+
+  try {
+    print('🚀 Démarrage initialisation des champs des canaux...');
+
+    final canals = await firestore.collection('Canaux').get();
+    int updatedCount = 0;
+
+    for (final doc in canals.docs) {
+      final canalData = doc.data();
+
+      // Vérifier et initialiser les champs
+      final updates = <String, dynamic>{};
+
+      if (canalData['adminIds'] == null) {
+        updates['adminIds'] = [canalData['userId']]; // Le créateur est admin par défaut
+      }
+
+      if (canalData['allowedPostersIds'] == null) {
+        updates['allowedPostersIds'] = [canalData['userId']]; // Le créateur peut poster
+      }
+
+      if (canalData['allowAllMembersToPost'] == null) {
+        updates['allowAllMembersToPost'] = false; // Par défaut, seuls les autorisés peuvent poster
+      }
+
+      // Ajouter timestamp de mise à jour
+      updates['updatedAt'] = DateTime.now().microsecondsSinceEpoch;
+
+      if (updates.isNotEmpty) {
+        await doc.reference.update(updates);
+        updatedCount++;
+        print('✅ Canal ${doc.id} mis à jour');
+      }
+    }
+
+    print('🎉 Initialisation terminée : $updatedCount canaux mis à jour');
+
+  } catch (e) {
+    print('❌ Erreur lors de l\'initialisation: $e');
+  }
 }

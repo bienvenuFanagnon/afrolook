@@ -131,6 +131,7 @@ Future<void> main() async {
 
   // processNotificationTask("challengeCheckTask", firstLaunch: true);
    sendTestAfrolookNotification();
+   // initializeCanalFields();
   //
   // Workmanager().registerOneOffTask(
   //   afrolookTestTask,
@@ -140,7 +141,7 @@ Future<void> main() async {
   Workmanager().registerPeriodicTask(
     afrolookTask,
     afrolookTask,
-    frequency: const Duration(hours: 3),
+    frequency: const Duration(hours: 5),
     // frequency: const Duration(minutes: 15),
     initialDelay: const Duration(seconds: 10),
     existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,

@@ -78,6 +78,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../cryptoMarket/cryptoMarketpage.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
+import '../userPosts/favorites_posts.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
@@ -668,6 +669,21 @@ class _MyHomePageState extends State<MyHomePage>
                   //     );
                   //   },
                   // ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.bookmark_outlined, color: Colors.yellow,size: 30,), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Mes favoris",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => FavoritePostsPage(),
+                      ));
+                    },
+                  ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.store_mall_directory, color: Colors.yellow,size: 35,), // Icône jaune

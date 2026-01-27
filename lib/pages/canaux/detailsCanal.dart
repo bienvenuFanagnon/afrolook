@@ -14,6 +14,7 @@ import '../component/showImage.dart';
 import '../home/slive/utils.dart';
 import '../paiement/newDepot.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
+import 'canal_manage_admins.dart';
 import 'listCanalfollowers.dart';
 
 
@@ -870,7 +871,9 @@ class _CanalDetailsState extends State<CanalDetails> {
 
             SizedBox(height: 16),
 
-            // Boutons d'action
+            // Dans _buildInfoSection() de CanalDetails :
+
+// Boutons d'action
             Row(
               children: [
                 if (!isOwner)
@@ -881,10 +884,10 @@ class _CanalDetailsState extends State<CanalDetails> {
                         onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isFollowing
-                              ? Colors.red // Rouge pour se désabonner
+                              ? Colors.red
                               : (isPrivate ? _primaryYellow : _primaryGreen),
                           foregroundColor: isFollowing
-                              ? Colors.white // Blanc pour le texte de désabonnement
+                              ? Colors.white
                               : (isPrivate ? Colors.black : Colors.white),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
@@ -924,11 +927,10 @@ class _CanalDetailsState extends State<CanalDetails> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _cardColor,
-                          foregroundColor: _textColor,
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
-                            side: BorderSide(color: _primaryGreen),
                           ),
                         ),
                         child: Row(
@@ -943,41 +945,15 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ),
                   ),
                   SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      height: 45,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _primaryGreen,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add, size: 18),
-                            SizedBox(width: 6),
-                            Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ],
             ),
 
-            // if (isOwner || isAdmin) ...[
-            if (isAdmin) ...[
+// Boutons supplémentaires pour le propriétaire seulement
+            if (isOwner) ...[
               SizedBox(height: 12),
+
+              // Bouton GÉRER LES ADMINS
               Container(
                 width: double.infinity,
                 height: 45,
@@ -985,12 +961,14 @@ class _CanalDetailsState extends State<CanalDetails> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!, channelName: widget.canal.titre!,)),
+                      MaterialPageRoute(
+                        builder: (context) => CanalManageAdminsPage(canal: widget.canal),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryYellow,
-                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -998,14 +976,215 @@ class _CanalDetailsState extends State<CanalDetails> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.people, size: 18),
+                      Icon(Icons.admin_panel_settings, size: 18),
                       SizedBox(width: 6),
-                      Text('VOIR MES ABONNÉS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text('GÉRER LES ADMINS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+
+              // Bouton POSTER
+              Container(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 18),
+                      SizedBox(width: 6),
+                      Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
               ),
             ],
+
+// Pour les administrateurs (mais pas propriétaire)
+            if (!isOwner && widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true) ...[
+              SizedBox(height: 12),
+
+              // Bouton POSTER pour admin
+              Container(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 18),
+                      SizedBox(width: 6),
+                      Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // // Boutons d'action
+            // Row(
+            //   children: [
+            //     if (!isOwner)
+            //       Expanded(
+            //         child: Container(
+            //           height: 45,
+            //           child: ElevatedButton(
+            //             onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
+            //             style: ElevatedButton.styleFrom(
+            //               backgroundColor: isFollowing
+            //                   ? Colors.red // Rouge pour se désabonner
+            //                   : (isPrivate ? _primaryYellow : _primaryGreen),
+            //               foregroundColor: isFollowing
+            //                   ? Colors.white // Blanc pour le texte de désabonnement
+            //                   : (isPrivate ? Colors.black : Colors.white),
+            //               shape: RoundedRectangleBorder(
+            //                 borderRadius: BorderRadius.circular(25),
+            //               ),
+            //             ),
+            //             child: (_isProcessingSubscription || _isProcessingUnfollow)
+            //                 ? SizedBox(
+            //               height: 20,
+            //               width: 20,
+            //               child: CircularProgressIndicator(
+            //                 strokeWidth: 2,
+            //                 color: isFollowing ? Colors.white : (isPrivate ? Colors.black : Colors.white),
+            //               ),
+            //             )
+            //                 : Text(
+            //               isFollowing
+            //                   ? 'SE DÉSABONNER'
+            //                   : (isPrivate ? 'S\'ABONNER' : 'SUIVRE'),
+            //               style: TextStyle(
+            //                 fontSize: 14,
+            //                 fontWeight: FontWeight.bold,
+            //               ),
+            //             ),
+            //           ),
+            //         ),
+            //       ),
+            //
+            //     if (isOwner) ...[
+            //       Expanded(
+            //         child: Container(
+            //           height: 45,
+            //           child: ElevatedButton(
+            //             onPressed: () {
+            //               Navigator.push(
+            //                 context,
+            //                 MaterialPageRoute(builder: (context) => EditCanal(canal: widget.canal)),
+            //               );
+            //             },
+            //             style: ElevatedButton.styleFrom(
+            //               backgroundColor: _cardColor,
+            //               foregroundColor: _textColor,
+            //               shape: RoundedRectangleBorder(
+            //                 borderRadius: BorderRadius.circular(25),
+            //                 side: BorderSide(color: _primaryGreen),
+            //               ),
+            //             ),
+            //             child: Row(
+            //               mainAxisAlignment: MainAxisAlignment.center,
+            //               children: [
+            //                 Icon(Icons.edit, size: 18),
+            //                 SizedBox(width: 6),
+            //                 Text('MODIFIER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            //               ],
+            //             ),
+            //           ),
+            //         ),
+            //       ),
+            //       SizedBox(width: 12),
+            //       Expanded(
+            //         child: Container(
+            //           height: 45,
+            //           child: ElevatedButton(
+            //             onPressed: () {
+            //               Navigator.push(
+            //                 context,
+            //                 MaterialPageRoute(builder: (context) => CanalPostForm(canal: widget.canal)),
+            //               );
+            //             },
+            //             style: ElevatedButton.styleFrom(
+            //               backgroundColor: _primaryGreen,
+            //               foregroundColor: Colors.white,
+            //               shape: RoundedRectangleBorder(
+            //                 borderRadius: BorderRadius.circular(25),
+            //               ),
+            //             ),
+            //             child: Row(
+            //               mainAxisAlignment: MainAxisAlignment.center,
+            //               children: [
+            //                 Icon(Icons.add, size: 18),
+            //                 SizedBox(width: 6),
+            //                 Text('POSTER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            //               ],
+            //             ),
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ],
+            // ),
+            //
+            // // if (isOwner || isAdmin) ...[
+            // if (isAdmin) ...[
+            //   SizedBox(height: 12),
+            //   Container(
+            //     width: double.infinity,
+            //     height: 45,
+            //     child: ElevatedButton(
+            //       onPressed: () {
+            //         Navigator.push(
+            //           context,
+            //           MaterialPageRoute(builder: (context) => ChannelFollowersPage(userIds: widget.canal.usersSuiviId!, channelName: widget.canal.titre!,)),
+            //         );
+            //       },
+            //       style: ElevatedButton.styleFrom(
+            //         backgroundColor: _primaryYellow,
+            //         foregroundColor: Colors.black,
+            //         shape: RoundedRectangleBorder(
+            //           borderRadius: BorderRadius.circular(25),
+            //         ),
+            //       ),
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.center,
+            //         children: [
+            //           Icon(Icons.people, size: 18),
+            //           SizedBox(width: 6),
+            //           Text('VOIR MES ABONNÉS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
+            // ],
 
             SizedBox(height: 16),
 

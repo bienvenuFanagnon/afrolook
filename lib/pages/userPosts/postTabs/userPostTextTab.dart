@@ -1279,6 +1279,44 @@ class _UserPubTextState extends State<UserPubText> {
   }
 
   Future<void> _publishPost() async {
+    if (widget.canal != null) {
+      final currentUserId = authProvider.loginUserData.id;
+      final isOwner = currentUserId == widget.canal!.userId;
+      final isAdmin = widget.canal!.adminIds?.contains(currentUserId) == true;
+      final canPost = widget.canal!.allowedPostersIds?.contains(currentUserId) == true;
+      final allowAllMembers = widget.canal!.allowAllMembersToPost == true;
+      final isMember = widget.canal!.usersSuiviId?.contains(currentUserId) == true;
+
+      // Vérifier si l'utilisateur a la permission de poster
+      if (!isAdmin) {
+        if (!canPost) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❌ Vous n\'êtes pas autorisé à poster dans ce canal',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Vérifier s'il est membre du canal
+        if (!isMember) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❌ Vous devez être abonné au canal pour poster',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+          return;
+        }
+      }
+    }
     // Vérifier cooldown
     if (!_canPost && _cooldownMinutes > 0) {
       ScaffoldMessenger.of(context).showSnackBar(

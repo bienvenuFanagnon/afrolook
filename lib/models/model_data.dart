@@ -836,6 +836,7 @@ class UserData {
   String? id;
   String? pseudo = "";
   late String? oneIgnalUserid = "";
+  List<String>? favoritePostsIds = []; // IDs des posts favoris
 
   String? nom;
   String? prenom;
@@ -975,6 +976,7 @@ class UserData {
         // Dans le constructeur UserData
         this.abonnement,
         this.liveStats,
+        this.favoritePostsIds = const [],
 
       this.userGlobalTags}){
     abonnement ??= AfrolookAbonnement.gratuit();
@@ -992,7 +994,9 @@ class UserData {
         ? AfrolookAbonnement.fromJson(
         Map<String, dynamic>.from(json['abonnement']))
         : AfrolookAbonnement.gratuit();
-
+    favoritePostsIds = (json['favoritePostsIds'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
 // Dans fromJson()
     liveStats = json['liveStats'] != null
         ? LiveStats.fromJson(Map<String, dynamic>.from(json['liveStats']))
@@ -1114,6 +1118,8 @@ class UserData {
     data['imageUrl'] = this.imageUrl;
     data['numero_de_telephone'] = this.numeroDeTelephone;
     data['adresse'] = this.adresse;
+    data['favoritePostsIds'] = this.favoritePostsIds;
+
     // data['isVerify'] = this.isVerify;
     // data['state'] = this.state;
     data['mesPubs'] = this.mesPubs;
@@ -1269,6 +1275,10 @@ class Post {
   int? prixGagnant; // Prix pour ce rang
   bool? prixDejaEncaisser = false; // Si le prix a été encaissé
   int? dateEncaissement; // Date d'encaissement
+
+  List<String>? users_favorite_id = []; // Utilisateurs qui ont mis en favoris
+  int? favoritesCount = 0; // Nombre de favoris
+
   List<String> availableCountries = []; // Liste des codes pays (TG, SN, etc.)
   bool get isAvailableInAllCountries => availableCountries.contains('ALL');
 
@@ -1316,6 +1326,8 @@ class Post {
     this.hasBeenSeenByCurrentUser = false,
     this.votesChallenge = 0,
     this.usersVotesIds,
+    this.users_favorite_id,
+    this.favoritesCount = 0,
   });
 
   int compareTo(Post other) {
@@ -1405,6 +1417,11 @@ class Post {
       // Aucune info = tous les pays par défaut
       availableCountries = ['ALL'];
     }
+    users_favorite_id = json['users_favorite_id'] == null ? [] : List<String>.from(json['users_favorite_id']);
+    favoritesCount = json['favorites_count'] ?? 0;
+
+    // Dans toJson()
+
   }
 
   Map<String, dynamic> toJson() {
@@ -1466,7 +1483,8 @@ class Post {
 
     // Optionnel : garder l'ancien champ pour backward compatibility
     data['is_available_in_all_countries'] = availableCountries.contains('ALL');
-
+    data['users_favorite_id'] = users_favorite_id;
+    data['favorites_count'] = favoritesCount;
     return data;
   }
 
@@ -2449,6 +2467,10 @@ class Canal {
   double subscriptionPrice;
   List<String>? subscribersId;
 
+  List<String>? adminIds; // IDs des administrateurs du canal
+  List<String>? allowedPostersIds; // IDs des utilisateurs autorisés à poster
+  bool? allowAllMembersToPost; // Si tous les membres peuvent poster
+
   Canal({
     this.user,
     this.titre,
@@ -2465,10 +2487,37 @@ class Canal {
     this.id,
     this.isPrivate = false,
     this.isVerify = false,
+    this.allowAllMembersToPost = false,
     this.subscriptionPrice = 0.0,
     this.subscribersId,
+    this.adminIds,
+    this.allowedPostersIds,
     this.urlCouverture = "",
   });
+  factory Canal.fromJson(Map<String, dynamic> json) {
+    return Canal(
+      usersSuiviId: List<String>.from(json['usersSuiviId'] ?? []),
+      titre: json['titre'],
+      type: json['type'],
+      id: json['id'],
+      description: json['description'],
+      suivi: json['suivi'],
+      publication: json['publication'],
+      publicash: (json['publicash'] ?? 0).toDouble(),
+      urlImage: json['urlImage'],
+      urlCouverture: json['urlCouverture'],
+      isVerify: json['isVerify'],
+      userId: json['userId'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      isPrivate: json['isPrivate'] ?? false,
+      subscriptionPrice: (json['subscriptionPrice'] ?? 0).toDouble(),
+      subscribersId: List<String>.from(json['subscribersId'] ?? []),
+      adminIds: json['adminIds'] != null ? List<String>.from(json['adminIds']) : [],
+      allowedPostersIds: json['allowedPostersIds'] != null ? List<String>.from(json['allowedPostersIds']) : [],
+      allowAllMembersToPost: json['allowAllMembersToPost'] ?? false,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -2489,30 +2538,12 @@ class Canal {
       'isPrivate': isPrivate,
       'subscriptionPrice': subscriptionPrice,
       'subscribersId': subscribersId,
+      'adminIds': adminIds,
+      'allowedPostersIds': allowedPostersIds,
+      'allowAllMembersToPost': allowAllMembersToPost,
     };
   }
 
-  factory Canal.fromJson(Map<String, dynamic> json) {
-    return Canal(
-      usersSuiviId: List<String>.from(json['usersSuiviId'] ?? []),
-      titre: json['titre'],
-      type: json['type'],
-      id: json['id'],
-      description: json['description'],
-      suivi: json['suivi'],
-      publication: json['publication'],
-      publicash: (json['publicash'] ?? 0).toDouble(),
-      urlImage: json['urlImage'],
-      urlCouverture: json['urlCouverture'],
-      isVerify: json['isVerify'],
-      userId: json['userId'],
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
-      isPrivate: json['isPrivate'] ?? false,
-      subscriptionPrice: (json['subscriptionPrice'] ?? 0).toDouble(),
-      subscribersId: List<String>.from(json['subscribersId'] ?? []),
-    );
-  }
 }
 
 
@@ -4357,7 +4388,7 @@ enum NotificationType {
   CHALLENGE,
   CHRONIQUE,
   SERVICE,
-  USER
+  USER, FAVORITE
 }
 
 enum TypeEntreprise { personnel, partenaire }
@@ -4487,6 +4518,7 @@ enum UserAction {
   autre,
   abonne,
   cadeau,
+  favorite,
 }
 
 class ActionPoints {
@@ -4495,6 +4527,7 @@ class ActionPoints {
     UserAction.inscriptionChallenge: 5,
     UserAction.post: 4,
     UserAction.like: 2,
+    UserAction.favorite: 2,
     UserAction.commentaire: 3,
     UserAction.partagePost: 1,
     UserAction.likeProfil: 2,

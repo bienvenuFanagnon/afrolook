@@ -22,6 +22,7 @@ import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
+import '../../userPosts/favorites_posts.dart';
 import '../userAbonnementPage.dart';
 import 'adminprofil.dart';
 
@@ -611,7 +612,43 @@ class _UserProfilState extends State<UserProfil> {
                             SizedBox(height: 10,),
                             GestureDetector(
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser(isUserCanals: true,),));
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => FavoritePostsPage(),));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),
+                                child: Container(
+                                  color: ConstColors.buttonsColors,
+                                  // alignment: Alignment.centerLeft,
+                                  width: 180,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 5.0),
+                                          child: Container(
+                                            child: Icon(Icons.bookmark_border,size: 20,color: Colors.yellow,),
+                                          ),
+                                        ),
+                                        Container(
+                                          child: TextCustomerMenu(
+                                            titre: "Mes Favoris",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: ConstColors.textColors,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      ],
+
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10,),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser(),));
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.only(topRight: Radius.circular(50),bottomRight: Radius.circular(50)),

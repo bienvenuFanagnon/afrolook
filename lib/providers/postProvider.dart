@@ -905,6 +905,129 @@ class PostProvider extends ChangeNotifier {
     }
   }
 
+  // NOUVELLE MÉTHODE : Récupérer tous les canaux où l'utilisateur est impliqué
+  Stream<Canal> getAllCanauxForUser(String userId) async* {
+    try {
+      // Première requête: Canaux où l'utilisateur est le créateur
+      final creatorQuery = firestore
+          .collection('Canaux')
+          .where("userId", isEqualTo: userId)
+          .orderBy('updatedAt', descending: true)
+          .limit(50);
+
+      // Deuxième requête: Canaux où l'utilisateur est administrateur mais pas créateur
+      final adminQuery = firestore
+          .collection('Canaux')
+          .where("adminIds", arrayContains: userId)
+          .orderBy('updatedAt', descending: true)
+          .limit(50);
+
+      // Exécuter les deux requêtes en parallèle
+      final creatorSnapshot = await creatorQuery.get();
+      final adminSnapshot = await adminQuery.get();
+
+      // Ensemble pour éviter les doublons
+      final Set<String> processedIds = {};
+
+      // Traiter les canaux créés
+      for (var doc in creatorSnapshot.docs) {
+        if (processedIds.contains(doc.id)) continue;
+
+        processedIds.add(doc.id);
+        yield await _enrichCanalData(doc, true); // true = isCreator
+      }
+
+      // Traiter les canaux administrés
+      for (var doc in adminSnapshot.docs) {
+        if (processedIds.contains(doc.id)) continue;
+
+        processedIds.add(doc.id);
+        yield await _enrichCanalData(doc, false); // false = isAdmin only
+      }
+
+    } catch (e) {
+      print("Erreur récupération canaux: $e");
+      throw e;
+    }
+  }
+
+  // Méthode pour enrichir les données du canal
+  Future<Canal> _enrichCanalData(DocumentSnapshot doc, bool isCreator) async {
+    try {
+      Canal canal = Canal.fromJson(doc.data() as Map<String, dynamic>);
+      canal.id = doc.id;
+
+      // Initialiser les listes si elles sont nulles
+      canal.adminIds ??= [];
+      canal.allowedPostersIds ??= [];
+      canal.usersSuiviId ??= [];
+
+      // Récupérer les infos de l'utilisateur créateur
+      if (canal.userId != null) {
+        try {
+          final userDoc = await firestore
+              .collection('Users')
+              .doc(canal.userId)
+              .get();
+
+          if (userDoc.exists) {
+            canal.user = UserData.fromJson(userDoc.data()!);
+          }
+        } catch (e) {
+          print('Erreur récupération créateur: $e');
+        }
+      }
+
+      return canal;
+    } catch (e) {
+      print('Erreur enrichissement canal ${doc.id}: $e');
+      rethrow;
+    }
+  }
+
+  // Méthode pour récupérer seulement les canaux administrés
+  Stream<Canal> getAdminCanaux(String userId) async* {
+    try {
+      final adminStream = firestore
+          .collection('Canaux')
+          .where("adminIds", arrayContains: userId)
+          .orderBy('updatedAt', descending: true)
+          .limit(100)
+          .snapshots();
+
+      await for (var snapshot in adminStream) {
+        for (var doc in snapshot.docs) {
+          final canalData = doc.data() as Map<String, dynamic>;
+
+          // Vérifier que l'utilisateur n'est pas le créateur
+          if (canalData['userId'] != userId) {
+            Canal canal = Canal.fromJson(canalData);
+            canal.id = doc.id;
+
+            // Récupérer les infos du créateur
+            try {
+              final creatorDoc = await firestore
+                  .collection('Users')
+                  .doc(canal.userId)
+                  .get();
+
+              if (creatorDoc.exists) {
+                canal.user = UserData.fromJson(creatorDoc.data()!);
+              }
+            } catch (e) {
+              print('Erreur récupération créateur: $e');
+            }
+
+            yield canal;
+          }
+        }
+      }
+    } catch (e) {
+      print("Erreur récupération canaux admin: $e");
+      throw e;
+    }
+  }
+
 
   Stream<List<NotificationData>> getListNotification2(String user_id) async* {
     var postStream = FirebaseFirestore.instance.collection('Notifications')
