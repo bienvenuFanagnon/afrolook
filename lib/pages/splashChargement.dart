@@ -301,10 +301,10 @@ class _ChargementState extends State<SplahsChargement> {
     }
 
     // 🔥 ATTENDRE QUE LES POSTS IMMÉDIATS SOIENT CHARGÉS
-    if (!_areImmediatePostsLoaded) {
-      print('⏳ En attente des posts immédiats...');
-      return;
-    }
+    // if (!_areImmediatePostsLoaded) {
+    //   print('⏳ En attente des posts immédiats...');
+    //   return;
+    // }
 
     if (widget.postId.isNotEmpty) {
       final AppLinkService linkService = AppLinkService();
@@ -333,7 +333,8 @@ class _ChargementState extends State<SplahsChargement> {
     final width = MediaQuery.of(context).size.width;
 
     // 🔥 VÉRIFIER SI ON PEUT NAVIGUER (auth + posts immédiats + vidéo)
-    if (_isAuthCompleted && _areImmediatePostsLoaded && (isFinished || !shouldPlayVideo)) {
+    // if (_isAuthCompleted && _areImmediatePostsLoaded && (isFinished || !shouldPlayVideo)) {
+    if (_isAuthCompleted  && (isFinished || !shouldPlayVideo)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToDestination();
       });
