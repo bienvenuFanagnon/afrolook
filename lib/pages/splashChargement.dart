@@ -210,8 +210,8 @@ class _ChargementState extends State<SplahsChargement> {
         return;
       }
 
-      // 6. 🔥 CHARGER LES 2 POSTS IMMÉDIATS
-      await _loadImmediatePosts();
+      // // 6. 🔥 CHARGER LES 2 POSTS IMMÉDIATS
+      // await _loadImmediatePosts();
 
       // 7. 🔥 PRÉPARER LES IDs EN BACKGROUND (sans attendre)
       _preparePostsInBackground();
