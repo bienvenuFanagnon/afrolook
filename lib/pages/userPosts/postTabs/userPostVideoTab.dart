@@ -259,7 +259,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     });
   }
 
-  void _toggleSelectAllCountries() {
+  void _toggleSelectAllCountries2() {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
@@ -279,6 +279,35 @@ class _UserPubVideoState extends State<UserPubVideo> {
       if (_selectAllCountries) {
         _selectedCountries.clear();
       }
+    });
+  }
+  void _toggleSelectAllCountries() {
+    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
+    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
+
+    // Vérifier si l'utilisateur peut sélectionner "Tous les pays"
+    if (!isPremium && !isAdmin) {
+      _showPremiumModal(
+        title: 'Fonctionnalité Premium',
+        message: 'L\'option "Tous les pays" est réservée aux abonnés Premium.\n'
+            'Passez à Afrolook Premium pour atteindre toute l\'Afrique.',
+        actionText: 'PASSER À PREMIUM',
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedCountries = List.from(_filteredCountries);
+
+      // _selectAllCountries = !_selectAllCountries;
+      //
+      // if (_selectAllCountries) {
+      //   // ✅ Ajouter tous les pays
+      //   _selectedCountries = List.from(_filteredCountries);
+      // } else {
+      //   // ✅ Désélectionner tout
+      //   // _selectedCountries.clear();
+      // }
     });
   }
 

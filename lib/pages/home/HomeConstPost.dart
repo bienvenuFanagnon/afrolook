@@ -2,57 +2,37 @@ import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/constant/logo.dart';
-import 'package:afrotok/constant/sizeText.dart';
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:intl/intl.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:popup_menu_plus/popup_menu_plus.dart';
+
 import 'package:provider/provider.dart';
-import 'package:random_color/random_color.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:upgrader/upgrader.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import '../../constant/custom_theme.dart';
+
 import '../UserServices/ServiceWidget.dart';
-import '../UserServices/listUserService.dart';
-import '../UserServices/newUserService.dart';
+
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
-import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
-import '../auth/authTest/Screens/Welcome/welcome_screen.dart';
+
 import '../chronique/chroniqueform.dart';
 import '../component/showUserDetails.dart';
-import '../../constant/textCustom.dart';
-import '../../models/chatmodels/message.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
-import '../component/consoleWidget.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../listeUserLikepage.dart';
-import '../user/conponent.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
 import '../../../providers/mixed_feed_service_provider.dart';
-
-
-import 'dart:async';
-import 'dart:math';
 import 'dart:typed_data';
 
 
@@ -783,7 +763,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _applyFilter({
     required String filterType,
     String? countryCode,
-  }) async {
+  }) async
+  {
     // Arrêter le chargement background pendant le changement de filtre
     _backgroundLoadTimer?.cancel();
 
@@ -830,7 +811,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Premier chargement: 3 posts seulement
       int limit = _initialLimit;
-
+printVm("_currentFilter data: ${_currentFilter}");
       switch (_currentFilter) {
         case 'ALL':
           await _loadAllCountriesMixed(loadedIds, newPosts, limit);
@@ -983,7 +964,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       String countryCode, {
         bool isInitialLoad = false,
         int limit = 5,
-      }) async {
+      }) async
+  {
     if (limit <= 0) return;
 
     try {
@@ -1047,7 +1029,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       List<Post> newPosts, {
         bool isInitialLoad = false,
         int limit = 5,
-      }) async {
+      }) async
+  {
     if (limit <= 0) return;
 
     try {
@@ -1112,7 +1095,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         required String excludeCountry,
         bool isInitialLoad = false,
         int limit = 5,
-      }) async {
+      }) async
+  {
     if (limit <= 0) return;
 
     try {

@@ -79,6 +79,8 @@ import '../cryptoMarket/cryptoMarketpage.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../userPosts/favorites_posts.dart';
+import 'HomeConstPost.dart';
+import 'HomePostType.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
@@ -1578,9 +1580,10 @@ class _MyHomePageState extends State<MyHomePage>
               unselectedLabelColor: Colors.grey[400],
               tabs: [
                 Tab(text: '🏠 Accueil'),
+                Tab(text: '⚽ Sport'),
                 Tab(text: '🪙 Zone VIP'),
 
-                Tab(text: '🕒 Looks'),
+                // Tab(text: '🕒 Looks'),
 
                 Tab(text: '🏆 Challenges'),
                 Tab(text: '🌟 Chroniques'),
@@ -1604,6 +1607,10 @@ class _MyHomePageState extends State<MyHomePage>
           // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          // LooksPage(type: TabBarType.SPORT.name,sortType: 'popular',),
+          // SportPage(type: TabBarType.SPORT.name),
+          HomeConstPostTypePage(type: TabBarType.SPORT.name),
+
           DashboardContentScreen(),
 
           _buildDiscoverTab(),
@@ -1614,7 +1621,7 @@ class _MyHomePageState extends State<MyHomePage>
           // LooksPage(type: TabBarType.LOOKS.name),
 
 
-          LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
+          // LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),
 
 
           // VideoFeedTiktokPage(fullPage: false),
