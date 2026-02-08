@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
+import '../../Marketing/adminAffiliationStatsPage.dart';
 import '../monetisation.dart';
 
 class AppInfoPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class AppInfoPage extends StatefulWidget {
 }
 
 class _AppInfoPageState extends State<AppInfoPage> {
+  bool _showDetailedStats = false;
   late UserAuthProvider appDataProvider = Provider.of<UserAuthProvider>(context, listen: false);
   Stream<AppDefaultData>? appDataStream;
   Map<String, int> _retraitStats = {
@@ -25,6 +27,63 @@ class _AppInfoPageState extends State<AppInfoPage> {
     'annule': 0
   };
 
+// Widget helpers pour la version dropdown
+  Widget _buildCompactStat({
+    required String label,
+    required double value,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.grey[400], size: 12),
+          SizedBox(height: 4),
+          Text(
+            "${(value / 1000).toStringAsFixed(1)}K",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required String label,
+    required double value,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[400],
+          ),
+        ),
+        Text(
+          "${value.toStringAsFixed(0)} FCFA",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
   @override
   void initState() {
     super.initState();
@@ -140,66 +199,116 @@ class _AppInfoPageState extends State<AppInfoPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Carte des soldes
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF121212),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        )
-                      ],
+                Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFF121212),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade800),
+                ),
+                child: Column(
+                  children: [
+                    // En-tête avec bouton expand
+                    GestureDetector(
+                      onTap: () => setState(() => _showDetailedStats = !_showDetailedStats),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.analytics, color: Colors.grey[400], size: 16),
+                              SizedBox(width: 8),
+                              Text(
+                                "STATS FINANCIÈRES",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            _showDetailedStats ? Icons.expand_less : Icons.expand_more,
+                            color: Colors.grey[500],
+                            size: 16,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                    // Vue réduite (toujours visible)
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "SOLDE PRINCIPAL",
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2
-                          ),
+                        _buildCompactStat(
+                          label: "Principal",
+                          value: appData.solde_principal ?? 0,
+                          icon: Icons.account_balance_wallet,
                         ),
-                        SizedBox(height: 10),
-                        Text(
-                          "${appData.solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF00CC66),
-                          ),
+                        Container(width: 1, height: 20, color: Colors.grey[800]),
+                        _buildCompactStat(
+                          label: "Gains",
+                          value: appData.solde_gain ?? 0,
+                          icon: Icons.monetization_on,
                         ),
-                        SizedBox(height: 16),
-                        Divider(color: Colors.grey[800], height: 1),
-                        SizedBox(height: 16),
-                        Text(
-                          "GAINS TOTAUX",
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "${appData.solde_gain?.toStringAsFixed(2) ?? '0.00'} FCFA",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF00CC66),
-                          ),
+                        Container(width: 1, height: 20, color: Colors.grey[800]),
+                        _buildCompactStat(
+                          label: "Affiliation",
+                          value: appData.solde_affiliation ?? 0,
+                          icon: Icons.group,
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 24),
+                    ListTile(
+                      leading: Icon(Icons.analytics, color: Colors.red),
+                      title: Text('Statistiques Affiliation'),
+                      trailing: Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.pop(context); // Fermer le drawer
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AdminAffiliationStatsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    // Vue détaillée (seulement si expanded)
+                    if (_showDetailedStats) ...[
+                      SizedBox(height: 12),
+                      Divider(color: Colors.grey[800], height: 1),
+                      SizedBox(height: 12),
+                      Column(
+                        children: [
+                          _buildDetailRow(
+                            label: "Solde Principal",
+                            value: appData.solde_principal ?? 0,
+                          ),
+                          SizedBox(height: 8),
+                          _buildDetailRow(
+                            label: "Gains Totaux",
+                            value: appData.solde_gain ?? 0,
+                          ),
+                          SizedBox(height: 8),
+                          _buildDetailRow(
+                            label: "Affiliation",
+                            value: appData.solde_affiliation ?? 0,
+                          ),
+                          SizedBox(height: 8),
+                          _buildDetailRow(
+                            label: "Commission Crypto",
+                            value: appData.solde_commission_crypto ?? 0,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+                 SizedBox(height: 24),
 
                   // NOUVEAU: Carte des demandes de retrait
                   GestureDetector(

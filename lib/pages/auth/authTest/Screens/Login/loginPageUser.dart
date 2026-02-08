@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 
@@ -28,6 +29,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../component/consoleWidget.dart';
+import '../../../../widgetGlobal.dart';
 import '../../../update_pass_word/confirm_user.dart';
 import '../../components/already_have_an_account_acheck.dart';
 import '../../constants.dart';
@@ -60,7 +62,16 @@ class _LoginPageUserState extends State<LoginPageUser> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showInstallModal(context);
 
+      });
+    }
+  }
   // Fonction de connexion
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;

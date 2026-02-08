@@ -356,147 +356,6 @@ class UserPseudo {
   }
 }
 
-// class AppDefaultData {
-//   String? id;
-//   String? app_link;
-//   String? geminiapiKey;
-//   List<String>? users_id = [];
-//   int? nbr_abonnes = 0;
-//   int? app_version_code = 0;
-//   int? app_version_code_officiel = 0;
-//   int? nbr_likes = 0;
-//   bool? googleVerification = false;
-//   int? nbr_comments = 0;
-//   String? ia_instruction = "";
-//   late String app_logo = "";
-//   late String one_signal_api_key = "";
-//   late String one_signal_app_id = "";
-//   late String one_signal_app_url = "";
-//   double? tarifPubliCash = 2.5;
-//   double? tarifImage = 0.5;
-//   double? tarifPubliCash_to_xof = 250.0;
-//   double? tarifVideo = 1.0;
-//   double? tarifjour = 0.5;
-//   double? solde_principal = 0.0;
-//   double? solde_gain = 0.0;
-//   double? solde_commission_crypto = 0.0;
-//   int? nbr_loves = 0;
-//   int? default_point_new_user = 5;
-//   int? default_point_new_like = 1;
-//   int? default_point_new_love = 1;
-//   // int? default_point_new_comment=2;
-//   List<String>? allPostIds = []; // Nouveau champ pour stocker les IDs de tous les posts
-//
-//   AppDefaultData(
-//       {this.id,
-//       this.users_id,
-//       this.allPostIds,
-//       this.nbr_abonnes = 0,
-//       this.ia_instruction = "",
-//       this.geminiapiKey = "",
-//       this.app_link,
-//       this.googleVerification,
-//       this.app_version_code = 0,
-//       this.app_version_code_officiel = 0,
-//       this.tarifPubliCash_to_xof = 250.0,
-//       this.tarifPubliCash = 2.5,
-//       this.tarifjour = 0.5,
-//       this.tarifImage = 0.5,
-//       this.tarifVideo = 1.0,
-//       this.nbr_likes = 0,
-//       this.solde_principal = 0.0,
-//       this.solde_gain = 0.0,
-//       this.solde_commission_crypto = 0.0,
-//       this.nbr_comments = 0,
-//       this.nbr_loves = 0,
-//       this.default_point_new_user = 5,
-//       this.default_point_new_like = 1,
-//       this.default_point_new_love = 1});
-//
-//   AppDefaultData.fromJson(Map<String, dynamic> json) {
-//     id = json['id'];
-//     nbr_comments = json['nbr_comments'];
-//     nbr_likes = json['nbr_likes'];
-//     nbr_comments = json['nbr_comments'];
-//     app_link = json['app_link'] == null ? "" : json['app_link'];
-//     geminiapiKey = json['geminiapiKey'] == null ? "" : json['geminiapiKey'];
-//     ia_instruction =
-//         json['ia_instruction'] == null ? "" : json['ia_instruction'];
-//     app_version_code_officiel =
-//         json['app_version_code_officiel'] == null ? 0 : json['app_version_code_officiel'];
-//     solde_principal =
-//         json['solde_principal'] == null ? 0.0 : json['solde_principal'];
-//     solde_gain =
-//         json['solde_gain'] == null ? 0.0 : json['solde_gain'];
-//     solde_commission_crypto =
-//         json['solde_commission_crypto'] == null ? 0.0 : json['solde_commission_crypto'];
-//     app_version_code =
-//         json['app_version_code'] == null ? 0 : json['app_version_code'];
-//     googleVerification =
-//         json['googleVerification'] == null ? false : json['googleVerification'];
-//     nbr_loves = json['nbr_loves'];
-//     nbr_abonnes = json['nbr_abonnes'];
-//     tarifPubliCash = json['tarifPubliCash'];
-//     tarifImage = json['tarifImage'];
-//     tarifVideo = json['tarifVideo'];
-//     tarifjour = json['tarifjour'];
-//     tarifPubliCash_to_xof = json['tarifPubliCash_to_xof'];
-//     default_point_new_user = json['default_point_new_user'];
-//     default_point_new_like = json['default_point_new_like'];
-//     default_point_new_love = json['default_point_new_love'];
-//
-//     app_logo = json['app_logo'];
-//     one_signal_api_key = json['one_signal_api_key'];
-//     one_signal_app_id = json['one_signal_app_id'];
-//     one_signal_app_url = json['one_signal_app_url'];
-//     if (json['users_id'] != null) {
-//       users_id = <String>[];
-//       json['users_id'].forEach((v) {
-//         users_id!.add(v);
-//       });
-//     }
-//     allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((v) => v.toString()).toList() ?? [];
-//
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     final Map<String, dynamic> data = new Map<String, dynamic>();
-//     data['id'] = this.id;
-//     data['nbr_comments'] = this.nbr_comments;
-//     data['allPostIds'] = this.allPostIds;
-//
-//     data['nbr_likes'] = this.nbr_likes;
-//     data['nbr_comments'] = this.nbr_comments;
-//     data['nbr_abonnes'] = this.nbr_abonnes;
-//     data['app_version_code'] = this.app_version_code;
-//     data['ia_instruction'] = this.ia_instruction;
-//     data['geminiapiKey'] = this.geminiapiKey;
-//
-//     data['tarifPubliCash'] = this.tarifPubliCash;
-//     data['googleVerification'] = this.googleVerification;
-//     data['tarifImage'] = this.tarifImage;
-//     data['tarifVideo'] = this.tarifVideo;
-//     data['app_link'] = this.app_link;
-//     data['tarifjour'] = this.tarifjour;
-//     data['solde_principal'] = this.solde_principal;
-//     data['solde_gain'] = this.solde_gain;
-//     data['app_version_code_officiel'] = this.app_version_code_officiel;
-//     data['tarifPubliCash_to_xof'] = this.tarifPubliCash_to_xof;
-//     data['users_id'] = users_id!.map((alphabets) => alphabets).toList();
-//
-//     data['nbr_loves'] = this.nbr_loves;
-//     data['default_point_new_user'] = this.default_point_new_user;
-//     data['default_point_new_like'] = this.default_point_new_like;
-//     data['default_point_new_love'] = this.default_point_new_love;
-//
-//     data['app_logo'] = this.app_logo;
-//     data['one_signal_app_url'] = this.one_signal_app_url;
-//     data['one_signal_app_id'] = this.one_signal_app_id;
-//     data['one_signal_api_key'] = this.one_signal_api_key;
-//
-//     return data;
-//   }
-// }
 class AppDefaultData {
   String? id;
   String? app_link;
@@ -534,7 +393,9 @@ class AppDefaultData {
 
   /// 📌 Nouveau champ total des points de l'application
   int appTotalPoints = 0;
-
+  double? solde_affiliation = 0.0;
+  double? total_gains_affiliation = 0.0;
+  int? nbr_affiliations_actives = 0;
   AppDefaultData();
 
   AppDefaultData.fromJson(Map<String, dynamic> json) {
@@ -573,6 +434,10 @@ class AppDefaultData {
     allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
 
     appTotalPoints = json['appTotalPoints'] ?? 0;
+
+    solde_affiliation = (json['solde_affiliation'] as num?)?.toDouble() ?? 0.0;
+    total_gains_affiliation = (json['total_gains_affiliation'] as num?)?.toDouble() ?? 0.0;
+    nbr_affiliations_actives = json['nbr_affiliations_actives'] ?? 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -606,6 +471,10 @@ class AppDefaultData {
       "one_signal_api_key": one_signal_api_key,
       "users_id": users_id,
       // "appTotalPoints": appTotalPoints,
+
+      // "solde_affiliation": solde_affiliation,
+      // "total_gains_affiliation": total_gains_affiliation,
+      // "nbr_affiliations_actives": nbr_affiliations_actives,
     };
   }
 }
@@ -916,6 +785,20 @@ class UserData {
   // Dans class UserData
   LiveStats? liveStats;
 
+  // Marketing et affiliation
+  double? solde_marketing = 0.0;
+  double? total_gains_marketing = 0.0;
+  List<String>? usersParrainerActifs = []; // Utilisateurs actifs en marketing
+  List<String>? usersParrainerHistorique = []; // Tous les utilisateurs parrainés
+  int? lastMarketingActivationDate;
+  int? marketingSubscriptionEndDate;
+  bool? marketingActivated = false;
+
+  // Stats marketing
+  int? nbrParrainagesActifs = 0;
+  int? nbrParrainagesTotal = 0;
+  double? commissionTotalParrainage = 0.0;
+
 
   UserData(
       {this.reference,
@@ -977,10 +860,21 @@ class UserData {
         this.abonnement,
         this.liveStats,
         this.favoritePostsIds = const [],
-
+        this.solde_marketing = 0.0,
+        this.total_gains_marketing = 0.0,
+        this.usersParrainerActifs = const [],
+        this.usersParrainerHistorique = const [],
+        this.lastMarketingActivationDate,
+        this.marketingSubscriptionEndDate,
+        this.marketingActivated = false,
+        this.nbrParrainagesActifs = 0,
+        this.nbrParrainagesTotal = 0,
+        this.commissionTotalParrainage = 0.0,
       this.userGlobalTags}){
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
+
+
 
   }
 
@@ -1104,6 +998,25 @@ class UserData {
     viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
     // lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
 
+    // Marketing
+    solde_marketing = (json['solde_marketing'] as num?)?.toDouble() ?? 0.0;
+    total_gains_marketing = (json['total_gains_marketing'] as num?)?.toDouble() ?? 0.0;
+    marketingActivated = json['marketingActivated'] ?? false;
+    lastMarketingActivationDate = json['lastMarketingActivationDate'];
+    marketingSubscriptionEndDate = json['marketingSubscriptionEndDate'];
+
+    usersParrainerActifs = (json['usersParrainerActifs'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    usersParrainerHistorique = (json['usersParrainerHistorique'] as List<dynamic>?)
+        ?.map((v) => v.toString())
+        .toList() ?? [];
+
+    nbrParrainagesActifs = json['nbrParrainagesActifs'] ?? 0;
+    nbrParrainagesTotal = json['nbrParrainagesTotal'] ?? 0;
+    commissionTotalParrainage = (json['commissionTotalParrainage'] as num?)?.toDouble() ?? 0.0;
+
 
   }
 
@@ -1198,6 +1111,17 @@ class UserData {
     if (this.liveStats != null) {
       data['liveStats'] = this.liveStats!.toJson();
     }
+    // Marketing
+    data['solde_marketing'] = this.solde_marketing;
+    data['total_gains_marketing'] = this.total_gains_marketing;
+    data['marketingActivated'] = this.marketingActivated;
+    data['lastMarketingActivationDate'] = this.lastMarketingActivationDate;
+    data['marketingSubscriptionEndDate'] = this.marketingSubscriptionEndDate;
+    data['usersParrainerActifs'] = this.usersParrainerActifs;
+    data['usersParrainerHistorique'] = this.usersParrainerHistorique;
+    data['nbrParrainagesActifs'] = this.nbrParrainagesActifs;
+    data['nbrParrainagesTotal'] = this.nbrParrainagesTotal;
+    data['commissionTotalParrainage'] = this.commissionTotalParrainage;
 
     return data;
   }
@@ -4388,7 +4312,7 @@ enum NotificationType {
   CHALLENGE,
   CHRONIQUE,
   SERVICE,
-  USER, FAVORITE
+  USER, FAVORITE, MARKETING
 }
 
 enum TypeEntreprise { personnel, partenaire }

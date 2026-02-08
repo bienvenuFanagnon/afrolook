@@ -50,6 +50,7 @@ import '../../services/utils/abonnement_utils.dart';
 import '../../services/workManagerService.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
+import '../Marketing/affiliationMarketing.dart';
 import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
 import '../UserServices/newUserService.dart';
@@ -545,6 +546,22 @@ class _MyHomePageState extends State<MyHomePage>
                       Navigator.pop(context); // Fermer le menu
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => AddListAmis(), // Page de recherche
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Marketing",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => MarketingAffiliationPage(),
                       ));
                     },
                   ),

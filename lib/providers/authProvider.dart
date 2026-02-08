@@ -59,6 +59,50 @@ class UserAuthProvider extends ChangeNotifier {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
+
+  /// Rafraîchit les données de l'utilisateur connecté depuis Firestore
+  Future<void> refreshUserData() async {
+    try {
+      // Vérifier si l'utilisateur est connecté
+      if (loginUserData.id == null || loginUserData.id!.isEmpty) {
+        print('❌ Impossible de rafraîchir: Aucun ID utilisateur trouvé');
+        return;
+      }
+
+
+      // Récupérer les données fraîches depuis Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(loginUserData.id!)
+          .get();
+
+      if (!userDoc.exists) {
+        print('❌ Utilisateur non trouvé dans Firestore');
+        return;
+      }
+
+      // Mettre à jour les données locales
+      final updatedData = UserData.fromJson(userDoc.data()!);
+
+      // Conserver certaines données non modifiées dans Firestore
+      updatedData.oneIgnalUserid = loginUserData.oneIgnalUserid;
+
+      // Mettre à jour l'objet principal
+      loginUserData = updatedData;
+
+      // Notifier les listeners du changement
+      notifyListeners();
+
+      print('✅ Données utilisateur rafraîchies avec succès');
+
+    } catch (e) {
+      print('❌ Erreur lors du rafraîchissement: $e');
+      rethrow;
+    } finally {
+    }
+  }
+
+
   initializeData() {
     registerUser = UserData();
   }

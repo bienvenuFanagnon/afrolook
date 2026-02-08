@@ -69,5 +69,31 @@
     });
   });
 </script>
+  <script>
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Empêche la bannière automatique de s'afficher tout de suite
+      e.preventDefault();
+      deferredPrompt = e;
+
+      console.log("PWA: L'app peut être installée.");
+
+      // Optionnel : Tu peux envoyer un message à Flutter ici pour afficher ton propre bouton
+      // window.parent.postMessage("pwa-install-available", "*");
+    });
+
+    // Fonction que tu pourras appeler depuis Flutter plus tard si tu veux
+    window.installPWA = async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Utilisateur a répondu : ${outcome}`);
+        deferredPrompt = null;
+      } else {
+        alert("L'application est déjà installée ou votre navigateur ne supporte pas l'installation automatique.");
+      }
+    };
+  </script>
 </body>
 </html>

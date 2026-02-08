@@ -86,7 +86,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:upgrader/upgrader.dart';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -110,11 +110,11 @@ Future<void> main() async {
   );
 
   // App Check - Attention: le mode debug peut parfois bloquer sur Chrome Web
-  await FirebaseAppCheck.instance.activate(
-    webProvider: ReCaptchaV3Provider('ton-site-key'), // Optionnel pour le web
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
-  );
+  // await FirebaseAppCheck.instance.activate(
+  //   webProvider: ReCaptchaV3Provider('ton-site-key'), // Optionnel pour le web
+  //   androidProvider: AndroidProvider.debug,
+  //   appleProvider: AppleProvider.debug,
+  // );
 
   // Le reste de ton code...
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
@@ -389,6 +389,7 @@ class _MyAppState extends State<MyApp> {
       // MigrationAncienPostService.migrateOldPostsToCountrySystem();
       // MigrationAncienPostService.migrateOldPostsSimple();
       initDeepLinks();
+
     });
   }
 

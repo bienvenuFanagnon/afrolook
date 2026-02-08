@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,6 +62,7 @@ class _ChargementState extends State<SplahsChargement> {
   String _loadingText = "Initialisation...";
 
   final int app_version_code = 36;
+
 
   @override
   void initState() {

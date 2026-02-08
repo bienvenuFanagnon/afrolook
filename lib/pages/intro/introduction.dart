@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Login/loginPageUser.dart';
+
+import '../widgetGlobal.dart';
 
 // Couleurs de luxe Afrolook
 const Color primaryGreen = Color(0xFF25D366);
@@ -41,6 +44,9 @@ class _IntroductionPageState extends State<IntroductionPage> {
     // Lancer après le premier build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadImages();
+      if (kIsWeb) {
+          showInstallModal(context);
+      }
     });
     // Auto-scroll toutes les 5 secondes
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
