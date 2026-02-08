@@ -94,23 +94,29 @@ import 'package:workmanager/workmanager.dart';
 // Import du service App Links
 
 late List<CameraDescription> _cameras;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _cameras = await availableCameras();
+
+  // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
+  try {
+    _cameras = await availableCameras();
+  } catch (e) {
+    print("Erreur initialisation caméra : $e");
+    _cameras = []; // On initialise avec une liste vide pour éviter l'erreur 'late initialization'
+  }
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Activate app check after initialization, but before
-  // usage of any Firebase services.
+  // App Check - Attention: le mode debug peut parfois bloquer sur Chrome Web
   await FirebaseAppCheck.instance.activate(
+    webProvider: ReCaptchaV3Provider('ton-site-key'), // Optionnel pour le web
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
 
-  // Vérifier l'état d'authentification au démarrage
+  // Le reste de ton code...
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
       print('Utilisateur non connecté');
@@ -118,46 +124,103 @@ Future<void> main() async {
       print('Utilisateur connecté: ${user.uid}');
     }
   });
-  // Initialiser l'ID d'appareil au démarrage
+
   await DeviceInfoService.initializeDeviceId();
-  //Remove this method to stop OneSignal Debugging
-  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-  OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
-  OneSignal.Notifications.requestPermission(true);
+
+  // OneSignal ne fonctionne pas toujours bien sur le Web, on l'isole
+  if (!kIsWeb) {
+    OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+    OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
+    OneSignal.Notifications.requestPermission(true);
+  }
+
   initLocalNotifications();
-  await Workmanager().initialize(
-    callbackDispatcher,
-  );
 
-  // processNotificationTask("challengeCheckTask", firstLaunch: true);
-   sendTestAfrolookNotification();
-   // initializeCanalFields();
-  //
-  // Workmanager().registerOneOffTask(
-  //   afrolookTestTask,
-  //   afrolookTestTask,
-  //   initialDelay: Duration(seconds: 2),
-  // );
-  Workmanager().registerPeriodicTask(
-    afrolookTask,
-    afrolookTask,
-    frequency: const Duration(hours: 5),
-    // frequency: const Duration(minutes: 15),
-    initialDelay: const Duration(seconds: 10),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-  );
+  // Workmanager n'est PAS supporté sur le Web
+  if (!kIsWeb) {
+    await Workmanager().initialize(callbackDispatcher);
+    Workmanager().registerPeriodicTask(
+      afrolookTask,
+      afrolookTask,
+      frequency: const Duration(hours: 5),
+      initialDelay: const Duration(seconds: 10),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    );
+  }
 
-  if (kReleaseMode) {
+  // FlutterDownloader n'est PAS supporté sur le Web
+  if (!kIsWeb) {
     await FlutterDownloader.initialize(
-      debug: false,
-      ignoreSsl: false,
-    );      } else {
-    await FlutterDownloader.initialize(
-      debug: true,
-      ignoreSsl: true,
-    );      }
+      debug: !kReleaseMode,
+      ignoreSsl: !kReleaseMode,
+    );
+  }
+
   runApp(const MyApp());
 }
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   _cameras = await availableCameras();
+//
+//   await Firebase.initializeApp(
+//     options: DefaultFirebaseOptions.currentPlatform,
+//   );
+//
+//   // Activate app check after initialization, but before
+//   // usage of any Firebase services.
+//   await FirebaseAppCheck.instance.activate(
+//     androidProvider: AndroidProvider.debug,
+//     appleProvider: AppleProvider.debug,
+//   );
+//
+//   // Vérifier l'état d'authentification au démarrage
+//   FirebaseAuth.instance.authStateChanges().listen((User? user) {
+//     if (user == null) {
+//       print('Utilisateur non connecté');
+//     } else {
+//       print('Utilisateur connecté: ${user.uid}');
+//     }
+//   });
+//   // Initialiser l'ID d'appareil au démarrage
+//   await DeviceInfoService.initializeDeviceId();
+//   //Remove this method to stop OneSignal Debugging
+//   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+//   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
+//   OneSignal.Notifications.requestPermission(true);
+//   initLocalNotifications();
+//   await Workmanager().initialize(
+//     callbackDispatcher,
+//   );
+//
+//   // processNotificationTask("challengeCheckTask", firstLaunch: true);
+//    sendTestAfrolookNotification();
+//    // initializeCanalFields();
+//   //
+//   // Workmanager().registerOneOffTask(
+//   //   afrolookTestTask,
+//   //   afrolookTestTask,
+//   //   initialDelay: Duration(seconds: 2),
+//   // );
+//   Workmanager().registerPeriodicTask(
+//     afrolookTask,
+//     afrolookTask,
+//     frequency: const Duration(hours: 5),
+//     // frequency: const Duration(minutes: 15),
+//     initialDelay: const Duration(seconds: 10),
+//     existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+//   );
+//
+//   if (kReleaseMode) {
+//     await FlutterDownloader.initialize(
+//       debug: false,
+//       ignoreSsl: false,
+//     );      } else {
+//     await FlutterDownloader.initialize(
+//       debug: true,
+//       ignoreSsl: true,
+//     );      }
+//   runApp(const MyApp());
+// }
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
