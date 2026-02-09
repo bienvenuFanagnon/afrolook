@@ -57,7 +57,7 @@ class UserAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
   /// Rafraîchit les données de l'utilisateur connecté depuis Firestore
@@ -101,7 +101,53 @@ class UserAuthProvider extends ChangeNotifier {
     } finally {
     }
   }
+  /// durée par défaut = 7 jours
+  static Duration postRefreshDuration = const Duration(days: 7);
 
+  /// Permet de changer dynamiquement la durée
+  static void setRefreshDuration(Duration duration) {
+    postRefreshDuration = duration;
+  }
+
+  /// Fonction principale
+   Future<void> checkAndRefreshPostDates(String postId) async {
+    try {
+      print("✅ Post checkAndRefreshPostDates $postId encours de changement de date");
+
+      final doc = await _firestore
+          .collection('Posts')
+          .doc(postId)
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data()!;
+      final int? updatedAt = data['updated_at'];
+      print("✅ Post checkAndRefreshPostDates updatedAt $updatedAt");
+
+      if (updatedAt == null) return;
+
+      final now = DateTime.now().microsecondsSinceEpoch;
+
+      final age = now - updatedAt;
+
+      if (age >= postRefreshDuration.inMicroseconds) {
+
+        await _firestore
+            .collection('Posts')
+            .doc(postId)
+            .update({
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        print("✅ Post checkAndRefreshPostDates $postId rafraîchi automatiquement");
+      }
+
+    } catch (e) {
+      print("❌ checkAndRefreshPostDates error: $e");
+    }
+  }
 
   initializeData() {
     registerUser = UserData();

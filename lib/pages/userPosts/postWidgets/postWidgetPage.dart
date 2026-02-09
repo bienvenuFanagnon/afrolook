@@ -2070,11 +2070,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       'partage': FieldValue.increment(1),
       'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
     });
+    authProvider.checkAndRefreshPostDates(widget.post.id!);
+
     if (!isIn(widget.post.users_partage_id!, authProvider.loginUserData.id!)) {
 
       addPointsForAction(UserAction.partagePost);
       addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-
       // 🔥 APPEL DU CALLBACK LOVE
       widget.onShared?.call();
 

@@ -3,28 +3,20 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
-import 'package:afrotok/pages/chat/deepseek.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
-import 'package:afrotok/pages/home/homeActu.dart';
-import 'package:afrotok/pages/home/homeEvent.dart';
+
 import 'package:afrotok/pages/home/homeLooks.dart';
-import 'package:afrotok/pages/home/homeOffre.dart';
-import 'package:afrotok/pages/home/homeSport.dart';
-import 'package:afrotok/pages/home/slive/utils.dart';
+
 import 'package:afrotok/pages/home/listTopModal.dart';
-import 'package:afrotok/pages/home/unitePage.dart';
 import 'package:afrotok/pages/home/unitePostPage/unified_home_page.dart';
 
 import 'package:animated_icon/animated_icon.dart';
-import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
-import 'package:auto_animated/auto_animated.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/constant/logo.dart';
 import 'package:afrotok/constant/sizeText.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -47,22 +39,15 @@ import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../services/postService/mixed_feed_service.dart';
 import '../../services/utils/abonnement_utils.dart';
-import '../../services/workManagerService.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../Marketing/affiliationMarketing.dart';
-import '../UserServices/ServiceWidget.dart';
 import '../UserServices/listUserService.dart';
-import '../UserServices/newUserService.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
-import '../afroshop/marketPlace/component.dart';
-import '../afroshop/marketPlace/modalView/bottomSheetModalView.dart';
-import '../challenge/challengeDashbord.dart';
+
 import '../challenge/listChallengePost.dart';
-import '../challenge/main_challenge_integration.dart';
-import '../challenge/newChallenge.dart';
+
 import '../challenge/userlistchallenge.dart';
-import '../chronique/chroniqueform.dart';
 import '../chronique/chroniquehome.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
@@ -80,7 +65,7 @@ import '../cryptoMarket/cryptoMarketpage.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../userPosts/favorites_posts.dart';
-import 'HomeConstPost.dart';
+import '../widgetGlobal.dart';
 import 'HomePostType.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
@@ -1219,6 +1204,9 @@ class _MyHomePageState extends State<MyHomePage>
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
 
+            if (kIsWeb) {
+              showInstallModal(context);
+            }
           authProvider.checkAppVersionAndProceed(context, () {
             AdvancedModalManager.showModalsWithSmartDelay(context);
 

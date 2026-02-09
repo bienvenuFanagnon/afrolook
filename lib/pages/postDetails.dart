@@ -3386,6 +3386,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   .update({
                 'partage': FieldValue.increment(1),
               });
+              authProvider.checkAndRefreshPostDates(widget.post.id!);
             } : null,
           ),
         ],

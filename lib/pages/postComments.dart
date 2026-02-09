@@ -1566,6 +1566,7 @@ class _PostCommentsState extends State<PostComments> {
 
         // Envoyer notifications pour les mentions
         await _sendMentionNotifications(textComment);
+        authProvider.checkAndRefreshPostDates(widget.post.id!);
       }
       setState(() {
         replying = false;
