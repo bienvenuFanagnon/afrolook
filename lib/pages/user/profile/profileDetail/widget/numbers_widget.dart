@@ -20,7 +20,7 @@ class NumbersWidget extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          buildButton(context, '${taux.toStringAsFixed(2)}%', 'Popularité'),
+          buildButton(context, '${(taux/100).toStringAsFixed(2)}%', 'Popularité'),
           buildDivider(),
           buildButton(context, '${formatNumber(followers)}', 'Abonné(s)'),
           buildDivider(),
@@ -48,7 +48,7 @@ class NumbersWidget extends StatelessWidget {
             SizedBox(height: 2),
             Text(
               text,
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),
             ),
           ],
         ),
