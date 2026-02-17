@@ -1507,7 +1507,7 @@ class _UserPubTextState extends State<UserPubText> {
 
           authProvider.sendPushNotificationToUsers(
             sender: authProvider.loginUserData,
-            message: "${post.description}",
+            message: "Text ✍️: ${post.description}",
             typeNotif: NotificationType.POST.name,
             postId: post.id!,
             postType: PostDataType.TEXT.name,
@@ -1520,7 +1520,7 @@ class _UserPubTextState extends State<UserPubText> {
         } else {
           authProvider.sendPushNotificationToUsers(
             sender: authProvider.loginUserData,
-            message: "${post.description}",
+            message: "Text ✍️: ${post.description}",
             typeNotif: NotificationType.POST.name,
             postId: post.id!,
             postType: PostDataType.TEXT.name,

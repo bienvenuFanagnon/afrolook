@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
@@ -12,6 +13,7 @@ import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postUserWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/providers/postProvider.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -23,6 +25,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
@@ -30,6 +33,7 @@ import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:provider/provider.dart';
 
@@ -149,6 +153,498 @@ class _DetailsPostState extends State<DetailsPost>
     return false;
   }
 
+// ========== GESTION AUDIO ==========
+  final Map<String, File> _cachedAudioFiles = {};
+  final Map<String, AudioPlayer> _activePlayers = {};
+  String? _currentlyPlayingAudioId;
+  bool _isAudioPlaying = false;
+  Duration _currentAudioPosition = Duration.zero;
+  Duration _currentAudioDuration = Duration.zero;
+  bool _isAudioLoading = false;
+
+// Initialiser le lecteur audio
+  void _initAudioPlayer(String postId) {
+    if (!_activePlayers.containsKey(postId)) {
+      final player = AudioPlayer();
+
+      player.onDurationChanged.listen((duration) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _currentAudioDuration = duration;
+          });
+        }
+      });
+
+      player.onPositionChanged.listen((position) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _currentAudioPosition = position;
+          });
+        }
+      });
+
+      player.onPlayerComplete.listen((event) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _isAudioPlaying = false;
+            _currentlyPlayingAudioId = null;
+            _currentAudioPosition = Duration.zero;
+          });
+        }
+      });
+
+      _activePlayers[postId] = player;
+    }
+  }
+
+// Précharger l'audio en cache
+  Future<File?> _precacheAudio(String audioUrl, String postId) async {
+    if (_cachedAudioFiles.containsKey(postId)) {
+      return _cachedAudioFiles[postId];
+    }
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'audio_$postId.${_getAudioExtension(audioUrl)}';
+      final file = File('${tempDir.path}/$fileName');
+
+      if (await file.exists()) {
+        _cachedAudioFiles[postId] = file;
+        return file;
+      }
+
+      final storageRef = FirebaseStorage.instance.refFromURL(audioUrl);
+      final maxSize = 10 * 1024 * 1024; // 10 MB
+      final data = await storageRef.getData(maxSize);
+
+      if (data != null) {
+        await file.writeAsBytes(data);
+        _cachedAudioFiles[postId] = file;
+        return file;
+      }
+    } catch (e) {
+      print('Erreur préchargement audio $postId: $e');
+    }
+
+    return null;
+  }
+
+  String _getAudioExtension(String url) {
+    if (url.contains('.mp3')) return 'mp3';
+    if (url.contains('.m4a')) return 'm4a';
+    if (url.contains('.aac')) return 'aac';
+    if (url.contains('.opus')) return 'opus';
+    if (url.contains('.webm')) return 'webm';
+    return 'm4a';
+  }
+
+// Lire l'audio
+  Future<void> _playAudio(String postId, String audioUrl) async {
+    try {
+      _initAudioPlayer(postId);
+      final player = _activePlayers[postId]!;
+
+      if (_currentlyPlayingAudioId == postId && _isAudioPlaying) {
+        await player.pause();
+        setState(() {
+          _isAudioPlaying = false;
+        });
+      } else if (_currentlyPlayingAudioId == postId && !_isAudioPlaying) {
+        await player.resume();
+        setState(() {
+          _isAudioPlaying = true;
+        });
+      } else {
+        if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
+          await _activePlayers[_currentlyPlayingAudioId]!.stop();
+        }
+
+        setState(() {
+          _currentlyPlayingAudioId = postId;
+          _currentAudioPosition = Duration.zero;
+          _currentAudioDuration = Duration.zero;
+          _isAudioLoading = true;
+        });
+
+        if (_cachedAudioFiles.containsKey(postId)) {
+          await player.play(DeviceFileSource(_cachedAudioFiles[postId]!.path));
+        } else {
+          await player.play(UrlSource(audioUrl));
+        }
+
+        setState(() {
+          _isAudioPlaying = true;
+          _isAudioLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Erreur lecture audio: $e');
+      _showAudioError();
+      setState(() {
+        _isAudioLoading = false;
+      });
+    }
+  }
+
+  void _seekAudio(double value, String postId) {
+    if (_activePlayers.containsKey(postId)) {
+      _activePlayers[postId]!.seek(Duration(seconds: value.toInt()));
+    }
+  }
+
+  Widget _buildAudioContent(Post post, bool isLocked) {
+    final audioUrl = post.url_media ?? '';
+    final postId = post.id!;
+    final isCurrentlyPlaying = _currentlyPlayingAudioId == postId && _isAudioPlaying;
+    final duration = _currentlyPlayingAudioId == postId ? _currentAudioDuration : Duration.zero;
+    final position = _currentlyPlayingAudioId == postId ? _currentAudioPosition : Duration.zero;
+
+    // Image de couverture (si disponible)
+    final coverImage = post.images != null && post.images!.isNotEmpty ? post.images!.first : null;
+
+    // Précharger l'audio
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _precacheAudio(audioUrl, postId);
+    });
+
+    return GestureDetector(
+      onTap: coverImage != null
+          ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FullScreenImage(singleImageUrl: coverImage),
+          ),
+        );
+      }
+          : null,
+      child: Container(
+        width: double.infinity,
+        height: 380, // Hauteur fixe pour un meilleur rendu
+        margin: EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 15,
+              spreadRadius: 3,
+              offset: Offset(0, 5),
+            ),
+          ],
+          border: _isLookChallenge
+              ? Border.all(color: _twitterGreen.withOpacity(0.5), width: 2)
+              : null,
+        ),
+        child: Stack(
+          children: [
+            // Image de fond (si disponible)
+            if (coverImage != null)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image(
+                    image: CachedNetworkImageProvider(coverImage),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+
+            // Overlay dégradé pour meilleure lisibilité
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.8),
+                      Colors.black,
+                    ],
+                    stops: [0.0, 0.3, 0.7, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Overlay verrouillage
+            if (isLocked)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock, color: _twitterYellow, size: 60),
+                        SizedBox(height: 20),
+                        Text(
+                          'Audio verrouillé',
+                          style: TextStyle(
+                            color: _twitterYellow,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            'Abonnez-vous au canal pour écouter',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            if (!isLocked)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.7),
+                        Colors.black,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // En-tête avec badge audio
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.audiotrack, color: Colors.white, size: 14),
+                                SizedBox(width: 6),
+                                Text(
+                                  'AUDIO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            _formatDuration(duration),
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Titre ou description
+                      if (post.description != null)
+                        Text(
+                          post.description!,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                      SizedBox(height: 20),
+
+                      // Contrôles de lecture
+                      Row(
+                        children: [
+                          // Bouton Play/Pause avec effet de glow
+                          GestureDetector(
+                            onTap: () => _playAudio(postId, audioUrl),
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.4),
+                                    blurRadius: 15,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: _isAudioLoading && _currentlyPlayingAudioId == postId
+                                  ? Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  color: Colors.white,
+                                ),
+                              )
+                                  : Icon(
+                                isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(width: 20),
+
+                          // Barre de progression
+                          Expanded(
+                            child: Column(
+                              children: [
+                                SliderTheme(
+                                  data: SliderThemeData(
+                                    trackHeight: 4,
+                                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+                                    overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
+                                  ),
+                                  child: Slider(
+                                    value: position.inSeconds.toDouble(),
+                                    min: 0,
+                                    max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
+                                    onChanged: (value) => _seekAudio(value, postId),
+                                    activeColor: Colors.blue,
+                                    inactiveColor: Colors.white.withOpacity(0.3),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _formatDuration(position),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatDuration(duration),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Vagues audio animées
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(40, (index) {
+                          final height = 4.0 + (index % 8) * 3.0;
+                          return AnimatedContainer(
+                            duration: Duration(milliseconds: 300),
+                            width: 3,
+                            height: isCurrentlyPlaying && index % 3 == 0
+                                ? height * 1.5
+                                : height,
+                            margin: EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              color: isCurrentlyPlaying && index % 3 == 0
+                                  ? Colors.blue
+                                  : Colors.white.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      // Indication de clic sur l'image
+                      SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          '👆 Cliquez sur l\'image pour l\'agrandir',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+  void _showAudioError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Erreur lors de la lecture audio'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
+  }
+
+// Nettoyer les ressources audio
 
   @override
   void initState() {
@@ -184,6 +680,10 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void dispose() {
     _animationController.dispose();
+    for (var player in _activePlayers.values) {
+      player.dispose();
+    }
+    _activePlayers.clear();
     super.dispose();
   }
 
@@ -1718,6 +2218,33 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       AbonnementUtils.getUserBadge(abonnement: user.abonnement,isVerified: user.isVerify!),
                       // if (user.isVerify ?? false)
                       //   Icon(Icons.verified, color: _twitterBlue, size: 16),
+
+                      // Dans _buildUserHeader, après AbonnementUtils.getUserBadge()
+                      if (post.dataType == PostDataType.AUDIO.name)
+                        Container(
+                          margin: EdgeInsets.only(left: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.audiotrack, color: Colors.blue, size: 10),
+                              SizedBox(width: 2),
+                              Text(
+                                'AUDIO',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       SizedBox(width: 4),
                       if (_isLookChallenge)
                         Container(
@@ -1867,7 +2394,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildPostContent(Post post) {
+  Widget _buildPostContent2(Post post) {
     final isLocked = _isLockedContent();
     final text = post.description ?? "";
 
@@ -1936,7 +2463,83 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ],
     );
   }
+  Widget _buildPostContent(Post post) {
+    final isLocked = _isLockedContent();
+    final text = post.description ?? "";
 
+    // Pour le contenu verrouillé, limiter l'affichage
+    if (isLocked) {
+      final words = text.split(' ');
+      final limitedText = words.length > 50
+          ? words.take(50).join(' ') + '...'
+          : text;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTextContent(limitedText, isLocked: true),
+                  SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _twitterYellow.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _twitterYellow),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock, color: _twitterYellow, size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Contenu réservé aux abonnés du canal',
+                            style: TextStyle(
+                              color: _twitterYellow,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Affichage selon le type de média
+          if (post.dataType == PostDataType.AUDIO.name)
+            _buildAudioContent(post, true)
+          else if (post.images != null && post.images!.isNotEmpty)
+            _buildLockedMediaContent(),
+        ],
+      );
+    }
+
+    // Contenu déverrouillé
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (text.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: _buildTextContent(text),
+          ),
+
+        // Affichage selon le type de média
+        if (post.dataType == PostDataType.AUDIO.name)
+          _buildAudioContent(post, false)
+        else if (post.images != null && post.images!.isNotEmpty)
+          _buildMediaContent(post),
+      ],
+    );
+  }
   Widget _buildTextContent(String text, {bool isLocked = false}) {
     final words = text.split(' ');
     final isLong = words.length > 100;

@@ -9,6 +9,7 @@ import '../../constant/logo.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
+import '../userPosts/postTabs/userPostAudioTab.dart';
 import '../userPosts/postTabs/userPostImageTab.dart';
 import '../userPosts/postTabs/userPostTextTab.dart';
 import '../userPosts/postTabs/userPostVideoTab.dart';
@@ -281,6 +282,23 @@ class _CanalPostFormState extends State<CanalPostForm> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                Icon(Icons.audiotrack, size: 20, color: _textColor),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Audio",
+                                  style: TextStyle(
+                                    color: _textColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Tab(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                                 Icon(Icons.text_fields, size: 20, color: _textColor),
                                 SizedBox(width: 8),
                                 Text(
@@ -338,6 +356,10 @@ class _CanalPostFormState extends State<CanalPostForm> {
                         ),
                         views: [
                           // Onglet Texte
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            child: UserPostLookAudioTab(canal: widget.canal),
+                          ),
                           Container(
                             padding: EdgeInsets.all(8),
                             child: UserPubText(canal: widget.canal),

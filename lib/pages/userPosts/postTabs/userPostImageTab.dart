@@ -1538,7 +1538,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         if (widget.canal != null) {
           authProvider.sendPushNotificationToUsers(
             sender: authProvider.loginUserData,
-            message: "${post.description}",
+            message: "Image 🖼️: ${post.description}",
             typeNotif: NotificationType.POST.name,
             postId: post.id!,
             postType: PostDataType.IMAGE.name,
@@ -1561,7 +1561,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         } else {
           authProvider.sendPushNotificationToUsers(
             sender: authProvider.loginUserData,
-            message: "${post.description}",
+            message: "Image 🖼️: ${post.description}",
             typeNotif: NotificationType.POST.name,
             postId: post.id!,
             postType: PostDataType.IMAGE.name,

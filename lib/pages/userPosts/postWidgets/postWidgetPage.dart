@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -123,6 +125,169 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   // CONFIGURATION - Paiement pour abonnés existants
   final bool _requirePaymentForExistingSubscribers = false;
+// ========== GESTION AUDIO ==========
+
+// Cache pour les fichiers audio préchargés
+  final Map<String, File> _cachedAudioFiles = {};
+  final Map<String, AudioPlayer> _activePlayers = {};
+  String? _currentlyPlayingAudioId;
+  bool _isAudioPlaying = false;
+  Duration _currentAudioPosition = Duration.zero;
+  Duration _currentAudioDuration = Duration.zero;
+
+// Initialiser le lecteur audio
+  void _initAudioPlayer(String postId) {
+    if (!_activePlayers.containsKey(postId)) {
+      final player = AudioPlayer();
+
+      player.onDurationChanged.listen((duration) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _currentAudioDuration = duration;
+          });
+        }
+      });
+
+      player.onPositionChanged.listen((position) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _currentAudioPosition = position;
+          });
+        }
+      });
+
+      player.onPlayerComplete.listen((event) {
+        if (mounted && _currentlyPlayingAudioId == postId) {
+          setState(() {
+            _isAudioPlaying = false;
+            _currentlyPlayingAudioId = null;
+            _currentAudioPosition = Duration.zero;
+          });
+        }
+      });
+
+      _activePlayers[postId] = player;
+    }
+  }
+
+// Précharger l'audio en cache
+  Future<File?> _precacheAudio(String audioUrl, String postId) async {
+    // Vérifier si déjà en cache
+    if (_cachedAudioFiles.containsKey(postId)) {
+      return _cachedAudioFiles[postId];
+    }
+
+    try {
+      // Télécharger l'audio
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'audio_$postId.${_getAudioExtension(audioUrl)}';
+      final file = File('${tempDir.path}/$fileName');
+
+      // Si le fichier existe déjà, le retourner
+      if (await file.exists()) {
+        _cachedAudioFiles[postId] = file;
+        return file;
+      }
+
+      // Télécharger depuis Firebase Storage
+      final storageRef = FirebaseStorage.instance.refFromURL(audioUrl);
+      final maxSize = 10 * 1024 * 1024; // 10 MB
+      final data = await storageRef.getData(maxSize);
+
+      if (data != null) {
+        await file.writeAsBytes(data);
+        _cachedAudioFiles[postId] = file;
+        return file;
+      }
+    } catch (e) {
+      print('Erreur préchargement audio $postId: $e');
+    }
+
+    return null;
+  }
+
+  String _getAudioExtension(String url) {
+    if (url.contains('.mp3')) return 'mp3';
+    if (url.contains('.m4a')) return 'm4a';
+    if (url.contains('.aac')) return 'aac';
+    if (url.contains('.opus')) return 'opus';
+    if (url.contains('.webm')) return 'webm';
+    return 'm4a';
+  }
+
+// Lire l'audio
+  Future<void> _playAudio(String postId, String audioUrl) async {
+    try {
+      // Initialiser le lecteur si nécessaire
+      _initAudioPlayer(postId);
+
+      final player = _activePlayers[postId]!;
+
+      if (_currentlyPlayingAudioId == postId && _isAudioPlaying) {
+        // Mettre en pause
+        await player.pause();
+        setState(() {
+          _isAudioPlaying = false;
+        });
+      } else if (_currentlyPlayingAudioId == postId && !_isAudioPlaying) {
+        // Reprendre
+        await player.resume();
+        setState(() {
+          _isAudioPlaying = true;
+        });
+      } else {
+        // Arrêter le précédent
+        if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
+          await _activePlayers[_currentlyPlayingAudioId]!.stop();
+        }
+
+        // Jouer le nouveau
+        setState(() {
+          _currentlyPlayingAudioId = postId;
+          _currentAudioPosition = Duration.zero;
+          _currentAudioDuration = Duration.zero;
+        });
+
+        // Utiliser le fichier en cache s'il existe
+        if (_cachedAudioFiles.containsKey(postId)) {
+          await player.play(DeviceFileSource(_cachedAudioFiles[postId]!.path));
+        } else {
+          await player.play(UrlSource(audioUrl));
+        }
+
+        setState(() {
+          _isAudioPlaying = true;
+        });
+      }
+    } catch (e) {
+      print('Erreur lecture audio: $e');
+      _showAudioError();
+    }
+  }
+
+  void _seekAudio(double value, String postId) {
+    if (_activePlayers.containsKey(postId)) {
+      _activePlayers[postId]!.seek(Duration(seconds: value.toInt()));
+    }
+  }
+
+  void _showAudioError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Erreur lors de la lecture audio'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
+  }
+
+// Nettoyer les ressources audio quand le widget est détruit
 
   @override
   void initState() {
@@ -140,8 +305,259 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   @override
   void dispose() {
+    for (var player in _activePlayers.values) {
+      player.dispose();
+    }
+    _activePlayers.clear();
     super.dispose();
   }
+
+  Widget _buildAudioContent(double h, bool isLocked) {
+    final audioUrl = widget.post.url_media ?? '';
+    final postId = widget.post.id!;
+    final isCurrentlyPlaying = _currentlyPlayingAudioId == postId && _isAudioPlaying;
+    final duration = _currentlyPlayingAudioId == postId ? _currentAudioDuration : Duration.zero;
+    final position = _currentlyPlayingAudioId == postId ? _currentAudioPosition : Duration.zero;
+
+    // Image de couverture (si disponible)
+    final coverImage = widget.post.images != null && widget.post.images!.isNotEmpty
+        ? widget.post.images!.first
+        : null;
+
+    // Précharger l'audio en arrière-plan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _precacheAudio(audioUrl, postId);
+    });
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPost(post: widget.post),
+          ),
+        );
+      },
+      child: Stack(
+        children: [
+          // Fond avec dégradé
+          Container(
+            width: double.infinity,
+            height: 140, // Hauteur fixe réduite (au lieu de h * 0.25)
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2196F3).withOpacity(0.3), // Bleu audio
+                  Color(0xFF9C27B0).withOpacity(0.3), // Violet
+                ],
+              ),
+            ),
+          ),
+
+          // Overlay verrouillage
+          if (isLocked)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock, color: _afroYellow, size: 40),
+                      SizedBox(height: 8),
+                      Text(
+                        'Audio verrouillé',
+                        style: TextStyle(
+                          color: _afroYellow,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Abonnez-vous pour écouter',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Contenu audio
+          if (!isLocked)
+            Padding(
+              padding: EdgeInsets.all(12), // Padding réduit
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Image de couverture (optionnelle)
+                  if (coverImage != null)
+                    Container(
+                      width: 80, // Image plus grande
+                      height: 80,
+                      margin: EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: CachedNetworkImageProvider(coverImage),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+
+                  // Contrôles audio (prennent l'espace restant)
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // En-tête compact
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Color(0xFF2196F3).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.audiotrack,
+                                color: Color(0xFF2196F3),
+                                size: 16,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Audio',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Spacer(),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _formatDuration(duration),
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 10),
+
+                        // Contrôles de lecture
+                        Row(
+                          children: [
+                            // Bouton Play/Pause (plus petit)
+                            GestureDetector(
+                              onTap: () => _playAudio(postId, audioUrl),
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF2196F3),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(width: 12),
+
+                            // Barre de progression compacte
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Slider(
+                                    value: position.inSeconds.toDouble(),
+                                    min: 0,
+                                    max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
+                                    onChanged: (value) => _seekAudio(value, postId),
+                                    activeColor: Color(0xFF2196F3),
+                                    inactiveColor: Colors.grey[700],
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 4),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _formatDuration(position),
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 9,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatDuration(duration),
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 9,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Vagues audio réduites
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(15, (index) {
+                            final barHeight = 3.0 + (index % 4) * 1.5;
+                            return Container(
+                              width: 2,
+                              height: barHeight,
+                              margin: EdgeInsets.symmetric(horizontal: 1),
+                              decoration: BoxDecoration(
+                                color: isCurrentlyPlaying && index % 2 == 0
+                                    ? Color(0xFF2196F3)
+                                    : Colors.grey[600],
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _checkIfFavorite() {
     final userId = authProvider.loginUserData.id!;
     setState(() {
@@ -434,11 +850,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 SizedBox(height: 12),
 
                 // Médias (images/vidéos) - verrouillés si pas d'accès
-                if (widget.post.images?.isNotEmpty ?? false)
+
+              if (widget.post.dataType == PostDataType.AUDIO.name)
+    _buildAudioContent(h, isLocked),
+        if (widget.post.dataType == PostDataType.AUDIO.name)
+
+    SizedBox(height: 12),
+
+                if ((widget.post.images?.isNotEmpty ?? false)&&widget.post.dataType != PostDataType.AUDIO.name)
                   _buildMediaContent(h, isLocked),
 
                 if (_isVideoPost(widget.post))
                   _buildVideoContent(h, isLocked),
+
+
 
                 // Bouton d'abonnement si contenu verrouillé
                 if (isLocked) _buildSubscribeButton(),
@@ -929,88 +1354,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-  Widget _buildMediaContent2(double h, bool isLocked) {
-    final images = widget.post.images!;
-
-    return Stack(
-      children: [
-        // Image ou vidéo en arrière-plan
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: images.isNotEmpty
-              ? Opacity(
-            opacity: isLocked ? 0.15 : 1.0, // réduit la visibilité si verrouillé
-            child: GestureDetector(
-              onTap: () {
-                if(widget.post.dataType==PostDataType.VIDEO.name){
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
-                    ),
-                  );
-                }else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailsPost(post: widget.post),
-                    ),
-                  );
-                }
-              },
-              child: CachedNetworkImage(
-                imageUrl: images.first,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: h * 0.4,
-                placeholder: (context, url) =>
-                    Container(color: _afroTextSecondary.withOpacity(0.1)),
-                errorWidget: (context, url, error) =>
-                    Container(color: _afroTextSecondary.withOpacity(0.1)),
-              ),
-            ),
-          )
-              : Container(color: _afroTextSecondary.withOpacity(0.1)),
-        ),
-
-        // Overlay pour contenu verrouillé
-        if (isLocked)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock, color: _afroYellow, size: 50),
-                    SizedBox(height: 8),
-                    Text(
-                      'Contenu verrouillé',
-                      style: TextStyle(
-                        color: _afroYellow,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Abonnez-vous pour voir ce contenu',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
   Widget _buildMediaContent(double h, bool isLocked) {
     final images = widget.post.images!;
     final imageCount = images.length;

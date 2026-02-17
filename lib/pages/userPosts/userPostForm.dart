@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
+import 'package:afrotok/pages/userPosts/postTabs/userPostAudioTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostImageTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostTextTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostVideoTab.dart';
@@ -180,6 +181,22 @@ class _UserProfilState extends State<UserPostForm> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(Icons.audiotrack, size: 20, color: _textColor),
+                          SizedBox(width: 8),
+                          Text(
+                            "Audio",
+                            style: TextStyle(
+                              color: _textColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           Icon(Icons.text_fields, size: 20, color: _textColor),
                           SizedBox(width: 8),
                           Text(
@@ -224,6 +241,7 @@ class _UserProfilState extends State<UserPostForm> {
                         ],
                       ),
                     ),
+
                   ],
                   tabBarProperties: TabBarProperties(
                     height: 50.0,
@@ -242,6 +260,8 @@ class _UserProfilState extends State<UserPostForm> {
                     ),
                   ),
                   views: [
+                    UserPostLookAudioTab(canal: null),
+
                     UserPubText(canal: null),
                     UserPostLookImageTab(canal: null,),
                     // UserPubImage(),
