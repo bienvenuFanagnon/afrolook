@@ -391,7 +391,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    migratePostsCountries();
+    // migratePostsCountries();
     onClickNotification();
     // CryptoInitializer.initializeCryptos();
     // Initialiser les deep links
