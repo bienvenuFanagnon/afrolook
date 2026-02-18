@@ -88,6 +88,7 @@
                 android:name="flutter_deeplinking_enabled"
                 android:value="true" />
 
+
             <!-- App Links -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -173,6 +174,10 @@
             </intent-filter>
 
         </activity>
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4937249920200692~5171972878"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

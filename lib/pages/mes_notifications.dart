@@ -19,19 +19,6 @@ import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import 'UserServices/detailsUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
-
-import 'package:afrotok/pages/postDetails.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-
-import '../providers/authProvider.dart';
-import '../providers/postProvider.dart';
-import 'UserServices/detailsUserService.dart';
-import 'UserServices/listUserService.dart';
-import 'afroshop/marketPlace/acceuil/produit_details.dart';
 import 'component/showUserDetails.dart';
 
 
@@ -51,26 +38,55 @@ class _MesNotificationState extends State<MesNotification> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   bool _isHandlingNotification = false;
+  bool _showFilterMenu = false;
+  String? _selectedTypeFilter;
+  List<String> _availableTypes = [];
+
   DocumentSnapshot? _lastDocument;
   final int _pageSize = 20;
 
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
 
+  // Types par défaut à afficher
+  final List<String> _defaultTypes = [
+    'NEWPOST',
+    'INVITATION',
+    'PARRAINAGE',
+    'COMMENT',
+    'COMMENTAIRE',
+    'FAVORITE'
+  ];
+
   @override
   void initState() {
     super.initState();
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
+    _loadAvailableTypes();
     _loadInitialNotifications();
   }
 
+  Future<void> _loadAvailableTypes() async {
+    try {
+      // Récupérer uniquement les types distincts de l'enum
+      setState(() {
+        _availableTypes = NotificationType.values
+            .map((e) => e.toString().split('.').last)
+            .toList();
+      });
+    } catch (e) {
+      print("Erreur chargement types: $e");
+    }
+  }
   Future<void> _loadInitialNotifications() async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
       _notifications.clear();
+      _lastDocument = null;
+      _hasMore = true;
     });
 
     try {
@@ -106,9 +122,17 @@ class _MesNotificationState extends State<MesNotification> {
   Future<void> _loadNotificationsBatch() async {
     Query query = _firestore
         .collection('Notifications')
-        .where("receiver_id", isEqualTo: _authProvider.loginUserData.id!)
-        .orderBy('created_at', descending: true)
-        .limit(_pageSize);
+        .where("receiver_id", isEqualTo: _authProvider.loginUserData.id!);
+
+    // Appliquer le filtre de type si sélectionné
+    if (_selectedTypeFilter != null && _selectedTypeFilter!.isNotEmpty) {
+      query = query.where("type", isEqualTo: _selectedTypeFilter);
+    } else {
+      // Sinon, filtrer par types par défaut
+      // query = query.where("type", whereIn: _defaultTypes);
+    }
+
+    query = query.orderBy('created_at', descending: true).limit(_pageSize);
 
     if (_lastDocument != null) {
       query = query.startAfterDocument(_lastDocument!);
@@ -189,7 +213,6 @@ class _MesNotificationState extends State<MesNotification> {
       if (canalSnapshot.docs.isNotEmpty) {
         final canalData = Canal.fromJson(canalSnapshot.docs.first.data() as Map<String, dynamic>);
         _canalCache[canalId] = canalData;
-
         setState(() {});
       }
     } catch (e) {
@@ -202,88 +225,41 @@ class _MesNotificationState extends State<MesNotification> {
 
     switch (notification.type) {
       case 'MESSAGE':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.message, color: Colors.red, size: iconSize),
-        );
+        return _buildIconContainer(Icons.message, Colors.red, iconSize);
       case 'POST':
       case 'NEWPOST':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.post_add, color: Colors.red, size: iconSize),
-        );
+        return _buildIconContainer(Icons.post_add, Colors.red, iconSize);
       case 'INVITATION':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.yellow.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.person_add, color: Colors.yellow, size: iconSize),
-        );
+        return _buildIconContainer(Icons.person_add, Colors.yellow, iconSize);
       case 'ARTICLE':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.shopping_bag, color: Colors.blue, size: iconSize),
-        );
+        return _buildIconContainer(Icons.shopping_bag, Colors.blue, iconSize);
       case 'SERVICE':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.handyman, color: Colors.green, size: iconSize),
-        );
+        return _buildIconContainer(Icons.handyman, Colors.green, iconSize);
       case 'CHALLENGE':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.emoji_events, color: Colors.orange, size: iconSize),
-        );
+        return _buildIconContainer(Icons.emoji_events, Colors.orange, iconSize);
       case 'ACCEPTINVITATION':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.purple.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.people, color: Colors.purple, size: iconSize),
-        );
+        return _buildIconContainer(Icons.people, Colors.purple, iconSize);
       case 'PARRAINAGE':
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.teal.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.attach_money, color: Colors.teal, size: iconSize),
-        );
+        return _buildIconContainer(Icons.attach_money, Colors.teal, iconSize);
+      case 'FAVORITE':
+        return _buildIconContainer(Icons.favorite, Colors.red, iconSize);
+      case 'COMMENT':
+      case 'COMMENTAIRE':
+        return _buildIconContainer(Icons.comment, Colors.blue, iconSize);
       default:
-        return Container(
-          padding: EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.notifications, color: Colors.grey, size: iconSize),
-        );
+        return _buildIconContainer(Icons.notifications, Colors.grey, iconSize);
     }
+  }
+
+  Widget _buildIconContainer(IconData icon, Color color, double size) {
+    return Container(
+      padding: EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: size),
+    );
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -319,7 +295,6 @@ class _MesNotificationState extends State<MesNotification> {
   void _navigateToCanal(String canalId) {
     final canal = _canalCache[canalId];
     if (canal != null) {
-      // Naviguer vers la page du canal
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -355,7 +330,7 @@ class _MesNotificationState extends State<MesNotification> {
         });
       }
 
-      // Naviguer vers la cible - SANS fermer le loading ici
+      // Naviguer vers la cible
       await _navigateToNotificationTarget(notification);
 
     } catch (e) {
@@ -466,6 +441,14 @@ class _MesNotificationState extends State<MesNotification> {
             });
           });
           break;
+        case 'FAVORITE':
+        // Pour les favoris, on va sur le post
+          await _handlePostNotification(notification);
+          break;
+        case 'COMMENT':
+        case 'COMMENTAIRE':
+          await _handlePostNotification(notification);
+          break;
         default:
           _hideLoadingOverlay();
           setState(() {
@@ -546,10 +529,32 @@ class _MesNotificationState extends State<MesNotification> {
           }
           break;
         default:
-          _hideLoadingOverlay();
-          setState(() {
-            _isHandlingNotification = false;
-          });
+        // Pour les favoris, essayer de récupérer le post
+          try {
+            final posts = await _postProvider.getPostsImagesById(notification.post_id!);
+            if (posts.isNotEmpty) {
+              _hideLoadingOverlay();
+              Navigator.push(context, MaterialPageRoute(
+                builder: (context) => DetailsPost(post: posts.first),
+              )).then((_) {
+                setState(() {
+                  _isHandlingNotification = false;
+                });
+              });
+            } else {
+              _hideLoadingOverlay();
+              _showErrorSnackBar("Publication non trouvée");
+              setState(() {
+                _isHandlingNotification = false;
+              });
+            }
+          } catch (e) {
+            _hideLoadingOverlay();
+            _showErrorSnackBar("Erreur lors du chargement");
+            setState(() {
+              _isHandlingNotification = false;
+            });
+          }
           break;
       }
     } catch (e) {
@@ -654,6 +659,24 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                 ),
               ),
+            // Badge spécial pour les favoris
+            if (notification.type == 'FAVORITE')
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.favorite,
+                    color: Colors.red,
+                    size: 12,
+                  ),
+                ),
+              ),
           ],
         ),
       );
@@ -708,6 +731,24 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                 ),
               ),
+            // Badge spécial pour les favoris
+            if (notification.type == 'FAVORITE')
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.favorite,
+                    color: Colors.red,
+                    size: 12,
+                  ),
+                ),
+              ),
           ],
         ),
       );
@@ -732,17 +773,30 @@ class _MesNotificationState extends State<MesNotification> {
 
     // Déterminer si c'est une notification de canal
     final isCanalNotification = notification.canal_id != null && notification.canal_id!.isNotEmpty;
+    final isFavorite = notification.type == 'FAVORITE';
+    final isComment = notification.type == 'COMMENT' || notification.type == 'COMMENTAIRE';
+
+    // Couleur spécifique selon le type
+    Color getUnreadColor() {
+      if (isFavorite) return Colors.red;
+      if (isComment) return Colors.blue;
+      if (isCanalNotification) return Colors.blue;
+      return Colors.red;
+    }
 
     return Container(
       decoration: BoxDecoration(
         color: isUnread
-            ? (isCanalNotification ? Colors.blue.withOpacity(0.08) : Colors.red.withOpacity(0.08))
+            ? (isFavorite
+            ? Colors.red.withOpacity(0.08)
+            : (isCanalNotification
+            ? Colors.blue.withOpacity(0.08)
+            : Colors.red.withOpacity(0.08)))
             : Colors.transparent,
         border: isUnread
             ? Border.all(
-            color: isCanalNotification ? Colors.blue.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-            width: 1
-        )
+            color: getUnreadColor().withOpacity(0.2),
+            width: 1)
             : null,
         borderRadius: BorderRadius.circular(12),
       ),
@@ -768,12 +822,14 @@ class _MesNotificationState extends State<MesNotification> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isUnread
-                              ? (isCanalNotification ? Colors.blue : Colors.red)
+                              ? (isFavorite
+                              ? Colors.red
+                              : (isCanalNotification ? Colors.blue : Colors.red))
                               : Colors.black,
                         ),
                       ),
                       TextSpan(
-                        text: ' ${notification.description}',
+                        text: ' ${notification.description ?? ""}',
                         style: TextStyle(
                           color: isUnread ? Colors.black87 : Colors.black54,
                         ),
@@ -813,11 +869,61 @@ class _MesNotificationState extends State<MesNotification> {
                       ],
                     ),
                   ),
+                if (isFavorite)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    margin: EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.favorite, size: 12, color: Colors.red),
+                        SizedBox(width: 2),
+                        Text(
+                          'Favori',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (isComment)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    margin: EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.comment, size: 12, color: Colors.blue),
+                        SizedBox(width: 2),
+                        Text(
+                          'Commentaire',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Text(
                   _formatDateTime(DateTime.fromMicrosecondsSinceEpoch(notification.createdAt!)),
                   style: TextStyle(
                     color: isUnread
-                        ? (isCanalNotification ? Colors.blue.shade600 : Colors.red.shade600)
+                        ? (isFavorite
+                        ? Colors.red.shade600
+                        : (isCanalNotification ? Colors.blue.shade600 : Colors.red.shade600))
                         : Colors.grey.shade600,
                     fontSize: 12,
                     fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
@@ -831,11 +937,11 @@ class _MesNotificationState extends State<MesNotification> {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: isCanalNotification ? Colors.blue : Colors.red,
+              color: getUnreadColor(),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isCanalNotification ? Colors.blue : Colors.red).withOpacity(0.5),
+                  color: getUnreadColor().withOpacity(0.5),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
@@ -845,6 +951,35 @@ class _MesNotificationState extends State<MesNotification> {
               : null,
         ),
       ),
+    );
+  }
+
+  Widget _buildFilterChip(String type) {
+    final isSelected = _selectedTypeFilter == type;
+    final isDefault = _defaultTypes.contains(type);
+
+    return FilterChip(
+      label: Text(
+        type,
+        style: TextStyle(
+          fontSize: 12,
+          color: isSelected ? Colors.white : (isDefault ? Colors.red : Colors.grey.shade700),
+          fontWeight: isDefault ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedTypeFilter = selected ? type : null;
+          _loadInitialNotifications();
+        });
+      },
+      backgroundColor: Colors.grey.shade100,
+      selectedColor: isDefault ? Colors.red : Colors.blue,
+      checkmarkColor: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     );
   }
 
@@ -912,6 +1047,19 @@ class _MesNotificationState extends State<MesNotification> {
           ),
         ),
         actions: [
+          if (_availableTypes.isNotEmpty)
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _showFilterMenu = !_showFilterMenu;
+                });
+              },
+              icon: Icon(
+                _showFilterMenu ? Icons.filter_alt_off : Icons.filter_alt,
+                color: _selectedTypeFilter != null ? Colors.red : Colors.grey,
+              ),
+              tooltip: 'Filtrer par type',
+            ),
           if (_notifications.any((n) => !n.is_open!))
             IconButton(
               onPressed: _markAllAsRead,
@@ -920,123 +1068,202 @@ class _MesNotificationState extends State<MesNotification> {
             ),
         ],
       ),
-      body: _isLoading && _notifications.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Chargement des notifications...',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      )
-          : _notifications.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.notifications_off,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Aucune notification',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 16,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Vous serez notifié des nouvelles activités',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      )
-          : NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification scrollInfo) {
-          if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
-            _loadMoreNotifications();
-          }
-          return false;
-        },
-        child: Column(
-          children: [
+      body: Column(
+        children: [
+          if (_showFilterMenu && _availableTypes.isNotEmpty)
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              height: 50,
               color: Colors.white,
-              child: Row(
-                children: [
-                  Text(
-                    '${_notifications.where((n) => !n.is_open!).length} non lue(s)',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Spacer(),
-                  if (_notifications.any((n) => n.canal_id != null && n.canal_id!.isNotEmpty))
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${_notifications.where((n) => n.canal_id != null && n.canal_id!.isNotEmpty).length} canal(s)',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(height: 4),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _notifications.length + (_hasMore ? 1 : 0),
-                separatorBuilder: (context, index) => SizedBox(height: 4),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                itemCount: _availableTypes.length + 1,
                 itemBuilder: (context, index) {
-                  if (index == _notifications.length) {
-                    return _isLoadingMore
-                        ? Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  if (index == 0) {
+                    return Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: FilterChip(
+                        label: Text(
+                          'Tous',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _selectedTypeFilter == null ? Colors.white : Colors.grey.shade700,
+                          ),
                         ),
+                        selected: _selectedTypeFilter == null,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedTypeFilter = null;
+                            _loadInitialNotifications();
+                          });
+                        },
+                        backgroundColor: Colors.grey.shade100,
+                        selectedColor: Colors.red,
+                        checkmarkColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       ),
-                    )
-                        : SizedBox.shrink();
+                    );
                   }
-                  return _buildNotificationItem(_notifications[index]);
+                  return Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: _buildFilterChip(_availableTypes[index - 1]),
+                  );
                 },
               ),
             ),
-          ],
-        ),
+          Expanded(
+            child: _isLoading && _notifications.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Chargement des notifications...',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : _notifications.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_off,
+                    size: 80,
+                    color: Colors.grey.shade300,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Aucune notification',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Vous serez notifié des nouvelles activités',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                  _loadMoreNotifications();
+                }
+                return false;
+              },
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: Colors.white,
+                    child: Row(
+                      children: [
+                        Text(
+                          '${_notifications.where((n) => !n.is_open!).length} non lue(s)',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Spacer(),
+                        if (_selectedTypeFilter != null)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Filtre: $_selectedTypeFilter',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (_selectedTypeFilter == null)
+                          ..._buildTypeCounts(),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: _notifications.length + (_hasMore ? 1 : 0),
+                      separatorBuilder: (context, index) => SizedBox(height: 4),
+                      itemBuilder: (context, index) {
+                        if (index == _notifications.length) {
+                          return _isLoadingMore
+                              ? Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                              ),
+                            ),
+                          )
+                              : SizedBox.shrink();
+                        }
+                        return _buildNotificationItem(_notifications[index]);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  List<Widget> _buildTypeCounts() {
+    Map<String, int> counts = {};
+    for (var notif in _notifications) {
+      final type = notif.type ?? 'AUTRE';
+      counts[type] = (counts[type] ?? 0) + 1;
+    }
+
+    return counts.entries.map((entry) {
+      return Padding(
+        padding: EdgeInsets.only(left: 8),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _defaultTypes.contains(entry.key) ? Colors.red.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '${entry.key}: ${entry.value}',
+            style: TextStyle(
+              color: _defaultTypes.contains(entry.key) ? Colors.red : Colors.grey,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
 }
+//
 // class MesNotification extends StatefulWidget {
 //   const MesNotification({super.key});
 //
@@ -1048,6 +1275,7 @@ class _MesNotificationState extends State<MesNotification> {
 //   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 //   final List<NotificationData> _notifications = [];
 //   final Map<String, UserData> _userCache = {};
+//   final Map<String, Canal> _canalCache = {};
 //   bool _isLoading = false;
 //   bool _isLoadingMore = false;
 //   bool _hasMore = true;
@@ -1137,8 +1365,14 @@ class _MesNotificationState extends State<MesNotification> {
 //
 //       _notifications.add(notification);
 //
-//       // Charger les données utilisateur en arrière-plan
-//       _loadUserData(notification.user_id!);
+//       // Charger les données utilisateur OU canal en arrière-plan
+//       if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
+//         // C'est une notification d'un canal
+//         _loadCanalData(notification.canal_id!);
+//       } else {
+//         // C'est une notification d'un utilisateur
+//         _loadUserData(notification.user_id!);
+//       }
 //     }
 //
 //     setState(() {});
@@ -1160,7 +1394,7 @@ class _MesNotificationState extends State<MesNotification> {
 //
 //         // Mettre à jour les notifications avec les données utilisateur
 //         for (var notif in _notifications) {
-//           if (notif.user_id == userId) {
+//           if (notif.user_id == userId && notif.canal_id == null) {
 //             notif.userData = userData;
 //           }
 //         }
@@ -1168,6 +1402,27 @@ class _MesNotificationState extends State<MesNotification> {
 //       }
 //     } catch (e) {
 //       print("Erreur chargement user $userId: $e");
+//     }
+//   }
+//
+//   Future<void> _loadCanalData(String canalId) async {
+//     if (_canalCache.containsKey(canalId)) return;
+//
+//     try {
+//       final canalSnapshot = await _firestore
+//           .collection('Canaux')
+//           .where("id", isEqualTo: canalId)
+//           .limit(1)
+//           .get();
+//
+//       if (canalSnapshot.docs.isNotEmpty) {
+//         final canalData = Canal.fromJson(canalSnapshot.docs.first.data() as Map<String, dynamic>);
+//         _canalCache[canalId] = canalData;
+//
+//         setState(() {});
+//       }
+//     } catch (e) {
+//       print("Erreur chargement canal $canalId: $e");
 //     }
 //   }
 //
@@ -1185,6 +1440,7 @@ class _MesNotificationState extends State<MesNotification> {
 //           child: Icon(Icons.message, color: Colors.red, size: iconSize),
 //         );
 //       case 'POST':
+//       case 'NEWPOST':
 //         return Container(
 //           padding: EdgeInsets.all(6),
 //           decoration: BoxDecoration(
@@ -1238,6 +1494,8 @@ class _MesNotificationState extends State<MesNotification> {
 //           ),
 //           child: Icon(Icons.people, color: Colors.purple, size: iconSize),
 //         );
+//
+//
 //       case 'PARRAINAGE':
 //         return Container(
 //           padding: EdgeInsets.all(6),
@@ -1286,6 +1544,21 @@ class _MesNotificationState extends State<MesNotification> {
 //       double w = MediaQuery.of(context).size.width;
 //       double h = MediaQuery.of(context).size.height;
 //       showUserDetailsModalDialog(user, w, h, context);
+//     }
+//   }
+//
+//   void _navigateToCanal(String canalId) {
+//     final canal = _canalCache[canalId];
+//     if (canal != null) {
+//       // Naviguer vers la page du canal
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (context) => CanalDetails(canal: canal),
+//         ),
+//       );
+//     } else {
+//       _showErrorSnackBar("Canal non trouvé");
 //     }
 //   }
 //
@@ -1375,7 +1648,7 @@ class _MesNotificationState extends State<MesNotification> {
 //         case 'MESSAGE':
 //           await _handlePostNotification(notification);
 //           break;
-//           case 'POST':
+//         case 'POST':
 //           await _handlePostNotification(notification);
 //           break;
 //         case 'NEWPOST':
@@ -1558,6 +1831,254 @@ class _MesNotificationState extends State<MesNotification> {
 //     }
 //   }
 //
+//   Widget _buildProfileAvatar(NotificationData notification) {
+//     final isUnread = !notification.is_open!;
+//
+//     // Vérifier si c'est une notification d'un canal
+//     if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
+//       final canal = _canalCache[notification.canal_id];
+//
+//       return GestureDetector(
+//         onTap: () {
+//           if (canal != null) {
+//             _navigateToCanal(notification.canal_id!);
+//           }
+//         },
+//         child: Stack(
+//           children: [
+//             Container(
+//               width: 50,
+//               height: 50,
+//               decoration: BoxDecoration(
+//                 shape: BoxShape.circle,
+//                 border: Border.all(
+//                   color: isUnread ? Colors.red : Colors.blue.shade300,
+//                   width: isUnread ? 2 : 1,
+//                 ),
+//               ),
+//               child: CircleAvatar(
+//                 radius: 22,
+//                 backgroundColor: Colors.blue.shade50,
+//                 backgroundImage: canal?.urlImage != null && canal!.urlImage!.isNotEmpty
+//                     ? NetworkImage(canal.urlImage!)
+//                     : null,
+//                 child: canal?.urlImage == null || canal!.urlImage!.isEmpty
+//                     ? Icon(Icons.group, color: Colors.blue)
+//                     : null,
+//               ),
+//             ),
+//             if (canal?.isVerify ?? false)
+//               Positioned(
+//                 bottom: 0,
+//                 right: 0,
+//                 child: Container(
+//                   padding: EdgeInsets.all(2),
+//                   decoration: BoxDecoration(
+//                     color: Colors.white,
+//                     shape: BoxShape.circle,
+//                     border: Border.all(color: Colors.blue.shade300),
+//                   ),
+//                   child: Icon(
+//                     Icons.verified,
+//                     color: Colors.blue,
+//                     size: 14,
+//                   ),
+//                 ),
+//               ),
+//           ],
+//         ),
+//       );
+//     } else {
+//       // C'est une notification d'un utilisateur
+//       final user = _userCache[notification.user_id];
+//
+//       return GestureDetector(
+//         onTap: () {
+//           if (user != null) {
+//             _showUserProfile(notification.user_id!);
+//           }
+//         },
+//         child: Stack(
+//           children: [
+//             Container(
+//               width: 50,
+//               height: 50,
+//               decoration: BoxDecoration(
+//                 shape: BoxShape.circle,
+//                 border: Border.all(
+//                   color: isUnread ? Colors.red : Colors.grey.shade300,
+//                   width: isUnread ? 2 : 1,
+//                 ),
+//               ),
+//               child: CircleAvatar(
+//                 radius: 22,
+//                 backgroundColor: Colors.grey.shade300,
+//                 backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
+//                     ? NetworkImage(user.imageUrl!)
+//                     : null,
+//                 child: user?.imageUrl == null || user!.imageUrl!.isEmpty
+//                     ? Icon(Icons.person, color: Colors.grey)
+//                     : null,
+//               ),
+//             ),
+//             if (user?.isVerify ?? false)
+//               Positioned(
+//                 bottom: 0,
+//                 right: 0,
+//                 child: Container(
+//                   padding: EdgeInsets.all(2),
+//                   decoration: BoxDecoration(
+//                     color: Colors.white,
+//                     shape: BoxShape.circle,
+//                     border: Border.all(color: Colors.grey.shade300),
+//                   ),
+//                   child: Icon(
+//                     Icons.verified,
+//                     color: Colors.blue,
+//                     size: 14,
+//                   ),
+//                 ),
+//               ),
+//           ],
+//         ),
+//       );
+//     }
+//   }
+//
+//   String _getSenderName(NotificationData notification) {
+//     // Vérifier si c'est une notification d'un canal
+//     if (notification.canal_id != null && notification.canal_id!.isNotEmpty) {
+//       final canal = _canalCache[notification.canal_id];
+//       return canal?.titre ?? 'Canal';
+//     } else {
+//       // C'est une notification d'un utilisateur
+//       final user = _userCache[notification.user_id];
+//       return user?.prenom ?? 'Utilisateur';
+//     }
+//   }
+//
+//   Widget _buildNotificationItem(NotificationData notification) {
+//     final isUnread = !notification.is_open!;
+//     final senderName = _getSenderName(notification);
+//
+//     // Déterminer si c'est une notification de canal
+//     final isCanalNotification = notification.canal_id != null && notification.canal_id!.isNotEmpty;
+//
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: isUnread
+//             ? (isCanalNotification ? Colors.blue.withOpacity(0.08) : Colors.red.withOpacity(0.08))
+//             : Colors.transparent,
+//         border: isUnread
+//             ? Border.all(
+//             color: isCanalNotification ? Colors.blue.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+//             width: 1
+//         )
+//             : null,
+//         borderRadius: BorderRadius.circular(12),
+//       ),
+//       margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//       child: Material(
+//         color: Colors.transparent,
+//         child: ListTile(
+//           onTap: () => _handleNotificationTap(notification),
+//           leading: _buildProfileAvatar(notification),
+//           title: Row(
+//             children: [
+//               Expanded(
+//                 child: RichText(
+//                   text: TextSpan(
+//                     style: TextStyle(
+//                       color: Colors.black,
+//                       fontSize: 14,
+//                       fontWeight: FontWeight.w500,
+//                     ),
+//                     children: [
+//                       TextSpan(
+//                         text: senderName,
+//                         style: TextStyle(
+//                           fontWeight: FontWeight.bold,
+//                           color: isUnread
+//                               ? (isCanalNotification ? Colors.blue : Colors.red)
+//                               : Colors.black,
+//                         ),
+//                       ),
+//                       TextSpan(
+//                         text: ' ${notification.description}',
+//                         style: TextStyle(
+//                           color: isUnread ? Colors.black87 : Colors.black54,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//               _getNotificationIcon(notification),
+//             ],
+//           ),
+//           subtitle: Padding(
+//             padding: EdgeInsets.only(top: 4),
+//             child: Row(
+//               children: [
+//                 if (isCanalNotification)
+//                   Container(
+//                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+//                     margin: EdgeInsets.only(right: 6),
+//                     decoration: BoxDecoration(
+//                       color: Colors.blue.withOpacity(0.1),
+//                       borderRadius: BorderRadius.circular(10),
+//                     ),
+//                     child: Row(
+//                       mainAxisSize: MainAxisSize.min,
+//                       children: [
+//                         Icon(Icons.group, size: 12, color: Colors.blue),
+//                         SizedBox(width: 2),
+//                         Text(
+//                           'Canal',
+//                           style: TextStyle(
+//                             color: Colors.blue,
+//                             fontSize: 10,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 Text(
+//                   _formatDateTime(DateTime.fromMicrosecondsSinceEpoch(notification.createdAt!)),
+//                   style: TextStyle(
+//                     color: isUnread
+//                         ? (isCanalNotification ? Colors.blue.shade600 : Colors.red.shade600)
+//                         : Colors.grey.shade600,
+//                     fontSize: 12,
+//                     fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           trailing: isUnread
+//               ? Container(
+//             width: 10,
+//             height: 10,
+//             decoration: BoxDecoration(
+//               color: isCanalNotification ? Colors.blue : Colors.red,
+//               shape: BoxShape.circle,
+//               boxShadow: [
+//                 BoxShadow(
+//                   color: (isCanalNotification ? Colors.blue : Colors.red).withOpacity(0.5),
+//                   blurRadius: 4,
+//                   spreadRadius: 1,
+//                 ),
+//               ],
+//             ),
+//           )
+//               : null,
+//         ),
+//       ),
+//     );
+//   }
+//
 //   Future<void> _markAllAsRead() async {
 //     try {
 //       final batch = _firestore.batch();
@@ -1604,140 +2125,6 @@ class _MesNotificationState extends State<MesNotification> {
 //
 //   bool isIn(List<String> list, String item) {
 //     return list.any((element) => element == item);
-//   }
-//
-//   Widget _buildNotificationItem(NotificationData notification) {
-//     final user = _userCache[notification.user_id];
-//     final isUnread = !notification.is_open!;
-//     printVm("_buildNotificationItem data : ${notification.toJson()}");
-//
-//     return Container(
-//       decoration: BoxDecoration(
-//         color: isUnread
-//             ? Colors.red.withOpacity(0.08)
-//             : Colors.transparent,
-//         border: isUnread
-//             ? Border.all(color: Colors.red.withOpacity(0.2), width: 1)
-//             : null,
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//       margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//       child: Material(
-//         color: Colors.transparent,
-//         child: ListTile(
-//           onTap: () => _handleNotificationTap(notification),
-//           leading: GestureDetector(
-//             onTap: () {
-//               if (user != null) {
-//                 _showUserProfile(notification.user_id!);
-//               }
-//             },
-//             child: Stack(
-//               children: [
-//                 Container(
-//                   width: 50,
-//                   height: 50,
-//                   decoration: BoxDecoration(
-//                     shape: BoxShape.circle,
-//                     border: Border.all(
-//                       color: isUnread ? Colors.red : Colors.grey.shade300,
-//                       width: isUnread ? 2 : 1,
-//                     ),
-//                   ),
-//                   child: CircleAvatar(
-//                     radius: 22,
-//                     backgroundColor: Colors.grey.shade300,
-//                     backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
-//                         ? NetworkImage(user.imageUrl!)
-//                         : null,
-//                     child: user?.imageUrl == null || user!.imageUrl!.isEmpty
-//                         ? Icon(Icons.person, color: Colors.grey)
-//                         : null,
-//                   ),
-//                 ),
-//                 if (user?.isVerify ?? false)
-//                   Positioned(
-//                     bottom: 0,
-//                     right: 0,
-//                     child: Container(
-//                       padding: EdgeInsets.all(2),
-//                       decoration: BoxDecoration(
-//                         color: Colors.white,
-//                         shape: BoxShape.circle,
-//                         border: Border.all(color: Colors.grey.shade300),
-//                       ),
-//                       child: Icon(
-//                         Icons.verified,
-//                         color: Colors.blue,
-//                         size: 14,
-//                       ),
-//                     ),
-//                   ),
-//               ],
-//             ),
-//           ),
-//           title: Row(
-//             children: [
-//               Expanded(
-//                 child: RichText(
-//                   text: TextSpan(
-//                     style: TextStyle(
-//                       color: Colors.black,
-//                       fontSize: 14,
-//                       fontWeight: FontWeight.w500,
-//                     ),
-//                     children: [
-//                       TextSpan(
-//                         text: user?.prenom ?? 'Utilisateur',
-//                         style: TextStyle(
-//                           fontWeight: FontWeight.bold,
-//                           color: isUnread ? Colors.red : Colors.black,
-//                         ),
-//                       ),
-//                       TextSpan(
-//                         text: ' ${notification.description}',
-//                         style: TextStyle(
-//                           color: isUnread ? Colors.black87 : Colors.black54,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//               _getNotificationIcon(notification),
-//             ],
-//           ),
-//           subtitle: Padding(
-//             padding: EdgeInsets.only(top: 4),
-//             child: Text(
-//               _formatDateTime(DateTime.fromMicrosecondsSinceEpoch(notification.createdAt!)),
-//               style: TextStyle(
-//                 color: isUnread ? Colors.red.shade600 : Colors.grey.shade600,
-//                 fontSize: 12,
-//                 fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
-//               ),
-//             ),
-//           ),
-//           trailing: isUnread
-//               ? Container(
-//             width: 10,
-//             height: 10,
-//             decoration: BoxDecoration(
-//               color: Colors.red,
-//               shape: BoxShape.circle,
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: Colors.red.withOpacity(0.5),
-//                   blurRadius: 4,
-//                   spreadRadius: 1,
-//                 ),
-//               ],
-//             ),
-//           )
-//               : null,
-//         ),
-//       ),
-//     );
 //   }
 //
 //   @override
@@ -1833,6 +2220,23 @@ class _MesNotificationState extends State<MesNotification> {
 //                       fontSize: 14,
 //                     ),
 //                   ),
+//                   Spacer(),
+//                   if (_notifications.any((n) => n.canal_id != null && n.canal_id!.isNotEmpty))
+//                     Container(
+//                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+//                       decoration: BoxDecoration(
+//                         color: Colors.blue.withOpacity(0.1),
+//                         borderRadius: BorderRadius.circular(10),
+//                       ),
+//                       child: Text(
+//                         '${_notifications.where((n) => n.canal_id != null && n.canal_id!.isNotEmpty).length} canal(s)',
+//                         style: TextStyle(
+//                           color: Colors.blue,
+//                           fontSize: 12,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                     ),
 //                 ],
 //               ),
 //             ),

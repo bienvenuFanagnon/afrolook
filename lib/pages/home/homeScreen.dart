@@ -67,6 +67,7 @@ import '../user/amis/pageMesInvitations.dart';
 import '../userPosts/favorites_posts.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
+import 'homeSportPost.dart';
 
 const Color primaryGreen = Color(0xFF25D366);
 const Color accentYellow = Color(0xFFFFD700);
@@ -1180,6 +1181,7 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+
     _initializeFeedService();
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
@@ -1221,7 +1223,19 @@ class _MyHomePageState extends State<MyHomePage>
     // });
 
 
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    // _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
+    // Écouter le changement d'onglet
+    _tabController!.addListener(() {
+      if (_tabController!.index == 1) { // 1 = deuxième onglet (Sport)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeSportPostPage(type: TabBarType.SPORT.name),
+          ),
+        ).then((_) => _tabController!.animateTo(0)); // Retour à l'accueil
+      }
+    });
 
     // hasShownDialogToday().then((value) async {
     //   final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1606,14 +1620,18 @@ class _MyHomePageState extends State<MyHomePage>
       ),
       drawer: menu(context, width, MediaQuery.of(context).size.height),
       body: TabBarView(
+
         controller: _tabController,
         children: [
           // UnifiedHomeOptimized(),
           // UnifiedHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'recent',),
+          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
+
           // LooksPage(type: TabBarType.SPORT.name,sortType: 'popular',),
           // SportPage(type: TabBarType.SPORT.name),
-          HomeConstPostTypePage(type: TabBarType.SPORT.name),
+          // HomeConstPostTypePage(type: TabBarType.SPORT.name),
+          // HomeSportPostPage(type: TabBarType.SPORT.name),
 
           DashboardContentScreen(),
           ChallengesListPage(),

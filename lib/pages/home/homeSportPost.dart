@@ -39,22 +39,32 @@ import 'dart:typed_data';
 
 // Constantes de couleur
 const Color primaryGreen = Color(0xFF25D366);
-const Color darkBackground = Color(0xFF121212);
+const Color darkBackground = Colors.black;
 const Color lightBackground = Color(0xFF1E1E1E);
 const Color textColor = Colors.white;
 const Color accentYellow = Color(0xFFFFD700);
 
-class HomeConstPostPage extends StatefulWidget {
+// Types disponibles basés sur votre enum TabBarType
+const List<String> availablePostTypes = [
+  'ACTUALITES',
+  'LOOKS',
+  'SPORT',
+  'EVENEMENT',
+  'OFFRES',
+  'GAMER'
+];
+
+class HomeSportPostPage extends StatefulWidget {
   final String type;
   final String? sortType;
 
-  HomeConstPostPage({super.key, required this.type, this.sortType});
+  HomeSportPostPage({super.key, required this.type, this.sortType});
 
   @override
-  State<HomeConstPostPage> createState() => _HomeConstPostPageState();
+  State<HomeSportPostPage> createState() => _HomeSportPostPageState();
 }
 
-class _HomeConstPostPageState extends State<HomeConstPostPage>
+class _HomeSportPostPageState extends State<HomeSportPostPage>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   // Providers
   late UserAuthProvider authProvider;
@@ -82,22 +92,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   DocumentSnapshot? _lastOtherDocument;
   Set<String> _loadedPostIds = Set();
   int _totalPostsLoaded = 0;
-  int _backgroundPostsLoaded = 0; // Compteur des posts chargés en background
-  final int _initialLimit = 4; // Premier chargement: 4 posts
-  final int _backgroundLoadLimit = 5; // Chargement background: 5 posts
-  final int _manualLoadLimit = 5; // Chargement manuel: 5 posts
-  final int _maxBackgroundPosts = 20; // MAX posts en background
-  final int _maxTotalPosts = 1000; // Limite totale
+  int _backgroundPostsLoaded = 0;
+  final int _initialLimit = 3;
+  final int _backgroundLoadLimit = 5;
+  final int _manualLoadLimit = 5;
+  final int _maxBackgroundPosts = 20;
+  final int _maxTotalPosts = 1000;
   Timer? _backgroundLoadTimer;
-  bool _useBackgroundLoading = true; // Active/désactive le chargement background
+  bool _useBackgroundLoading = true;
 
   // Filtrage par pays
   String? _selectedCountryCode;
-  String _currentFilter = 'MIXED'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
-  // String _currentFilter = 'ALL'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
+  // String _currentFilter = 'MIXED';
+  String _currentFilter = 'ALL';
   bool _isFirstLoad = true;
 
-  // Données supplémentaires - chargement séparé
+  // Filtrage par type (le paramètre principal de cette page)
+  String _selectedPostType = 'ACTUALITES';
+
+  // Données supplémentaires
   List<ArticleData> _articles = [];
   bool _isLoadingArticles = false;
 
@@ -126,10 +139,28 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // Utilitaires
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  int _currentTitleIndex = 0;
+  Timer? _titleTimer;
+
+  void _startTitleAnimation() {
+    _titleTimer?.cancel();
+    _titleTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (mounted && _selectedPostType == 'SPORT') {
+        setState(() {
+          _currentTitleIndex = (_currentTitleIndex + 1) % _sportTitles.length;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _startTitleAnimation();
+    _sportTitles.shuffle();
+
+    // Initialiser le type de post
+    _selectedPostType = widget.type.toUpperCase();
 
     // Initialisation des providers
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -145,9 +176,77 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _setupLifecycleObservers();
     _initializeData();
   }
+// Ajoutez cette méthode pour les titres sportifs dynamiques
+  String _getSportTitle() {
+    if (_selectedPostType != 'SPORT') return _selectedPostType;
+
+    List<String> sportTitles = [
+      '⚽ Actualité du football',
+      '🏆 Ligue des Champions',
+      '⚡ Transferts et rumeurs',
+      '⭐ Mbappé, Messi, Ronaldo...',
+      '🌍 CAN 2024',
+      '🇫🇷 Équipe de France',
+      '🏟️ Résultats en direct',
+      '🎯 Tops buteurs',
+    ];
+    return sportTitles[_random.nextInt(sportTitles.length)];
+  }
+
+// Ajoutez cette méthode pour les sous-titres
+  String _getSportSubtitle() {
+    if (_selectedPostType != 'SPORT') return _getFilterDescription();
+
+    List<String> sportSubtitles = [
+      'Toute l\'actu foot en direct',
+      'Analyses et débats sportifs',
+      'Les stars du ballon rond',
+      'Matchs et compétitions',
+      'Mercato et transferts',
+      'Exclu interviews',
+    ];
+    return sportSubtitles[_random.nextInt(sportSubtitles.length)];
+  }
+
+// Ajoutez cette méthode pour les hashtags
+  Widget _buildSportTags() {
+    List<String> tags = [
+      '#Football', '#LDC', '#Ligue1', '#PremierLeague',
+      '#Liga', '#Basketball', '#NBA', '#Handball',
+      '#LigueAfricaine', '#LigueEuropa', '#ChampionsLeague',
+    ];
+
+    // Mélanger pour variété
+    tags.shuffle();
+    tags = tags.take(6).toList(); // Garder 6 tags
+
+    return Container(
+      height: 36,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: tags.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: EdgeInsets.only(right: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Text(
+              tags[index],
+              style: TextStyle(color: Colors.green, fontSize: 11),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   void dispose() {
+    _titleTimer?.cancel();
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
     _backgroundLoadTimer?.cancel();
@@ -184,22 +283,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     print('Pays utilisateur détecté: ${_selectedCountryCode}');
+    print('Type de post sélectionné: $_selectedPostType');
 
-    // 2. Par défaut: mode "Tous les pays"
-    _currentFilter = 'MIXED';
-    // _currentFilter = 'ALL';
+    // 2. Par défaut: mode "Mix" pour variété
+    // _currentFilter = 'MIXED';
+    _currentFilter = 'ALL';
     _isFirstLoad = true;
-    _useBackgroundLoading = true; // Activer le chargement background initial
-    _backgroundPostsLoaded = 0; // Réinitialiser le compteur
+    _useBackgroundLoading = true;
+    _backgroundPostsLoaded = 0;
 
-    // 3. Réinitialiser et charger les posts initiaux (3 posts)
+    // 3. Réinitialiser et charger les posts initiaux
     _resetPagination();
     await _loadInitialPosts();
 
-    // 4. Démarrer le chargement background (si activé)
+    // 4. Démarrer le chargement background
     _startBackgroundLoading();
 
-    // 5. Charger les autres données EN PARALLÈLE (non bloquant)
+    // 5. Charger les autres données EN PARALLÈLE
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAllAdditionalDataInParallel();
     });
@@ -219,26 +319,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   // ===========================================================================
-  // SYSTÈME HYBRIDE DE CHARGEMENT (Background + Manuel)
+  // SYSTÈME HYBRIDE DE CHARGEMENT
   // ===========================================================================
 
   void _startBackgroundLoading() {
     if (!_useBackgroundLoading) return;
 
-    // Arrêter tout timer existant
     _backgroundLoadTimer?.cancel();
 
-    print('🚀 Démarrage du chargement background (max: $_maxBackgroundPosts posts)');
+    print('🚀 Démarrage du chargement background pour $_selectedPostType');
 
-    // Démarrer un nouveau timer pour le chargement background
     _backgroundLoadTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
-      // Conditions pour charger en background :
-      // 1. Background activé
-      // 2. Pas déjà en cours de chargement background
-      // 3. Pas de chargement manuel en cours
-      // 4. Il reste des posts à charger
-      // 5. On n'a pas dépassé la limite de background
-      // 6. L'utilisateur ne scroll pas activement
       if (_useBackgroundLoading &&
           !_isLoadingBackground &&
           !_isLoadingMorePosts &&
@@ -246,26 +337,31 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _backgroundPostsLoaded < _maxBackgroundPosts &&
           _totalPostsLoaded < _maxTotalPosts &&
           !_isUserScrolling()) {
-
         await _loadBackgroundPosts();
       }
 
-      // Arrêter le timer si :
-      // 1. On a atteint la limite de background
-      // 2. Il n'y a plus de posts à charger
-      // 3. Le background est désactivé
       if (_backgroundPostsLoaded >= _maxBackgroundPosts ||
           !_hasMorePosts ||
           !_useBackgroundLoading) {
-        print('⏹️ Arrêt du chargement background (posts background: $_backgroundPostsLoaded)');
+        print('⏹️ Arrêt du chargement background');
         timer.cancel();
-        _useBackgroundLoading = false; // Passer en mode manuel
+        _useBackgroundLoading = false;
       }
     });
   }
 
   bool _isUserScrolling() {
-    return _scrollController.position.isScrollingNotifier.value;
+    // Vérifier si le controller est attaché avant d'accéder à position
+    if (!_scrollController.hasClients) {
+      return false; // Pas encore attaché, donc l'utilisateur ne scroll pas
+    }
+
+    try {
+      return _scrollController.position.isScrollingNotifier.value;
+    } catch (e) {
+      print('Erreur isUserScrolling: $e');
+      return false;
+    }
   }
 
   Future<void> _loadBackgroundPosts() async {
@@ -276,7 +372,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       return;
     }
 
-    print('🔄 Chargement background... ($_backgroundPostsLoaded/$_maxBackgroundPosts)');
+    print('🔄 Chargement background...');
 
     setState(() {
       _isLoadingBackground = true;
@@ -288,7 +384,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       await _loadMorePostsByFilter(loadedIds, newPosts, _backgroundLoadLimit);
 
-      // Ajouter les nouveaux posts à la liste
       if (newPosts.isNotEmpty) {
         setState(() {
           _posts.addAll(newPosts);
@@ -297,16 +392,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           _backgroundPostsLoaded += newPosts.length;
         });
 
-        print('✅ ${newPosts.length} posts chargés en background (total: $_totalPostsLoaded, background: $_backgroundPostsLoaded)');
+        print('✅ ${newPosts.length} posts chargés en background');
       }
 
-      // Vérifier s'il reste des posts à charger
       _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
 
-      // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
         _useBackgroundLoading = false;
-        print('📊 Passage en mode chargement manuel (limite background atteinte)');
       }
 
     } catch (e) {
@@ -319,7 +411,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   // ===========================================================================
-  // MODAL DE FILTRE PAR PAYS - VERSION AMÉLIORÉE
+  // FILTRES PAR PAYS
   // ===========================================================================
 
   void _showCountryFilterModal() {
@@ -333,13 +425,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            // Fonction pour mettre à jour la recherche
             void updateSearch(String query) {
               searchQuery = query.toLowerCase();
               setModalState(() {});
             }
 
-            // Filtrer les pays
             List<AfricanCountry> filteredCountries = AfricanCountry.allCountries
                 .where((country) {
               if (searchQuery.isEmpty) return true;
@@ -359,7 +449,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               ),
               child: Column(
                 children: [
-                  // Poignée
                   Container(
                     height: 4,
                     width: 40,
@@ -371,7 +460,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   ),
                   SizedBox(height: 12),
 
-                  // Titre et bouton fermer
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -394,7 +482,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     ),
                   ),
 
-                  // Barre de recherche AMÉLIORÉE
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Container(
@@ -436,14 +523,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     ),
                   ),
 
-                  // Options rapides sur UNE SEULE LIGNE
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Option "Tous les pays"
                           _buildQuickFilterOption(
                             icon: Icons.public,
                             label: 'Tous',
@@ -456,7 +541,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                           ),
                           SizedBox(width: 8),
 
-                          // Option "Mon pays"
                           if (_selectedCountryCode != null)
                             _buildQuickFilterOption(
                               icon: null,
@@ -472,7 +556,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
                           if (_selectedCountryCode != null) SizedBox(width: 8),
 
-                          // Option "Mix"
                           if (_selectedCountryCode != null)
                             _buildQuickFilterOption(
                               icon: Icons.blender,
@@ -489,13 +572,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                     ),
                   ),
 
-                  // Séparateur
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Divider(color: Colors.grey[800], thickness: 1),
                   ),
 
-                  // Titre liste pays
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -521,12 +602,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                   ),
                   SizedBox(height: 8),
 
-                  // Liste des pays avec recherche fonctionnelle
                   Expanded(
                     child: _buildCountryList(filteredCountries, searchQuery),
                   ),
 
-                  // Bouton fermer
                   Padding(
                     padding: EdgeInsets.all(16),
                     child: SizedBox(
@@ -766,7 +845,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     String? countryCode,
   }) async
   {
-    // Arrêter le chargement background pendant le changement de filtre
     _backgroundLoadTimer?.cancel();
 
     setState(() {
@@ -776,14 +854,227 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
       _isLoadingPosts = true;
       _isFirstLoad = true;
-      _useBackgroundLoading = true; // Réactiver le background pour le nouveau filtre
-      _backgroundPostsLoaded = 0; // Réinitialiser le compteur
+      _useBackgroundLoading = true;
+      _backgroundPostsLoaded = 0;
+    });
+
+    _resetPagination();
+    await _loadInitialPosts();
+
+    _startBackgroundLoading();
+
+    setState(() {
+      _isLoadingPosts = false;
+    });
+
+    print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode - Type: $_selectedPostType');
+  }
+  void _showTypeFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final TextEditingController searchController = TextEditingController();
+            String searchQuery = '';
+
+            void updateSearch(String query) {
+              searchQuery = query.toLowerCase();
+              setModalState(() {});
+            }
+
+            // Filtrer les types selon la recherche
+            List<String> filteredTypes = availablePostTypes
+                .where((type) => searchQuery.isEmpty ||
+                type.toLowerCase().contains(searchQuery))
+                .toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: darkBackground,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Poignée
+                  Container(
+                    height: 4,
+                    width: 40,
+                    margin: EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[600],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+
+                  // Titre et bouton fermer
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '📝 Choisir un type',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.grey[400], size: 24),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Barre de recherche
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[900],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[700]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(left: 16),
+                            child: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: searchController,
+                              onChanged: updateSearch,
+                              style: TextStyle(color: Colors.white, fontSize: 15),
+                              decoration: InputDecoration(
+                                hintText: 'Rechercher un type...',
+                                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
+                          ),
+                          if (searchController.text.isNotEmpty)
+                            IconButton(
+                              icon: Icon(Icons.clear, size: 18, color: Colors.grey[500]),
+                              onPressed: () {
+                                searchController.clear();
+                                updateSearch('');
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Titre liste
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Types disponibles',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Spacer(),
+                        Text(
+                          '${filteredTypes.length} types',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+
+                  // Liste des types
+                  Expanded(
+                    child: ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      itemCount: filteredTypes.length,
+                      itemBuilder: (context, index) {
+                        final type = filteredTypes[index];
+                        final isSelected = _selectedPostType == type;
+
+                        return _buildTypeOption(
+                          type: type,
+                          isSelected: isSelected,
+                          onTap: () => _applyTypeFilter(type),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Bouton fermer
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[800],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Fermer',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  Future<void> _applyTypeFilter(String newType) async {
+    // Arrêter le chargement background pendant le changement de filtre
+    _backgroundLoadTimer?.cancel();
+
+    print('🔄 Changement de type: $_selectedPostType -> $newType');
+
+    setState(() {
+      _selectedPostType = newType;
+      _isLoadingPosts = true;
+      _isFirstLoad = true;
+      _useBackgroundLoading = true;
+      _backgroundPostsLoaded = 0;
     });
 
     // Réinitialiser la pagination
     _resetPagination();
 
-    // Charger les posts initiaux (3 posts)
+    // Charger les posts initiaux avec le nouveau type
     await _loadInitialPosts();
 
     // Redémarrer le chargement background
@@ -793,11 +1084,104 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isLoadingPosts = false;
     });
 
-    print('✅ Filtre appliqué: $_currentFilter - Pays: $_selectedCountryCode');
+    print('✅ Type changé: $newType');
+  }
+  Widget _buildTypeOption({
+    required String type,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context); // Fermer le modal
+            onTap(); // Appliquer le filtre
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.purple.withOpacity(0.2) : Colors.grey[900],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? Colors.purple : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      _getTypeIcon(type),
+                      color: isSelected ? Colors.purple : Colors.grey[400],
+                      size: 22,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        type,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.grey[300],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _getTypeDescription(type),
+                        style: TextStyle(
+                          color: isSelected ? Colors.grey[300] : Colors.grey[500],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: Colors.purple, size: 22),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
+  String _getTypeDescription(String type) {
+    switch (type.toUpperCase()) {
+      case 'ACTUALITES':
+        return 'Actualités et informations';
+      case 'LOOKS':
+        return 'Mode, style et looks';
+      case 'SPORT':
+        return 'Sports et compétitions';
+      case 'EVENEMENT':
+        return 'Événements et manifestations';
+      case 'OFFRES':
+        return 'Offres et promotions';
+      case 'GAMER':
+        return 'Jeux vidéo et e-sport';
+      default:
+        return 'Contenu de type $type';
+    }
+  }
   // ===========================================================================
-  // CHARGEMENT DES POSTS
+  // CHARGEMENT DES POSTS AVEC FILTRES TYPE + PAYS
   // ===========================================================================
 
   Future<void> _loadInitialPosts() async {
@@ -810,48 +1194,46 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       Set<String> loadedIds = Set();
       List<Post> newPosts = [];
 
-      // Premier chargement: 3 posts seulement
       int limit = _initialLimit;
-printVm("_currentFilter data: ${_currentFilter}");
+
       switch (_currentFilter) {
         case 'ALL':
-          await _loadAllCountriesMixed(loadedIds, newPosts, limit);
+          await _loadPostsWithTypeAndCountry(
+            loadedIds,
+            newPosts,
+            postType: _selectedPostType,
+            countryCode: null, // Tous les pays
+            isInitialLoad: true,
+            limit: limit,
+          );
           break;
 
         case 'COUNTRY':
           if (_selectedCountryCode != null) {
-            await _loadCountrySpecificPosts(
+            await _loadPostsWithTypeAndCountry(
               loadedIds,
               newPosts,
-              _selectedCountryCode!,
+              postType: _selectedPostType,
+              countryCode: _selectedCountryCode,
               isInitialLoad: true,
               limit: limit,
             );
-
-            // Compléter avec posts ALL si pas assez
-            if (newPosts.length < limit) {
-              await _loadAllCountriesPosts(
-                loadedIds,
-                newPosts,
-                isInitialLoad: true,
-                limit: limit - newPosts.length,
-              );
-            }
           }
           break;
 
         case 'MIXED':
           if (_selectedCountryCode != null) {
-            await _loadMixedPostsSmart(loadedIds, newPosts, _selectedCountryCode!, limit);
+            await _loadMixedPostsWithType(loadedIds, newPosts, limit);
           }
           break;
 
         case 'CUSTOM':
           if (_selectedCountryCode != null) {
-            await _loadCountrySpecificPosts(
+            await _loadPostsWithTypeAndCountry(
               loadedIds,
               newPosts,
-              _selectedCountryCode!,
+              postType: _selectedPostType,
+              countryCode: _selectedCountryCode,
               isInitialLoad: true,
               limit: limit,
             );
@@ -859,7 +1241,6 @@ printVm("_currentFilter data: ${_currentFilter}");
           break;
       }
 
-      // Mettre à jour la liste des posts
       setState(() {
         _posts = newPosts;
         _loadedPostIds.addAll(loadedIds);
@@ -867,7 +1248,7 @@ printVm("_currentFilter data: ${_currentFilter}");
         _isFirstLoad = false;
       });
 
-      print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter');
+      print('✅ ${newPosts.length} posts chargés avec filtre: $_currentFilter - Type: $_selectedPostType');
 
     } catch (e) {
       print('❌ Erreur chargement posts: $e');
@@ -881,125 +1262,71 @@ printVm("_currentFilter data: ${_currentFilter}");
     }
   }
 
-  // ===========================================================================
-  // ALGORITHMES DE CHARGEMENT SPÉCIFIQUES
-  // ===========================================================================
-
-  Future<void> _loadAllCountriesMixed(Set<String> loadedIds, List<Post> newPosts, int limit) async {
-    print('🌍 Chargement mode "Tous les pays" - limite: $limit');
-
-    int attempts = 0;
-    int maxAttempts = 3;
-
-    while (newPosts.length < limit && attempts < maxAttempts) {
-      // 1. Posts ALL (60%)
-      if (newPosts.length < limit) {
-        int needed = (limit * 0.6).ceil();
-        await _loadAllCountriesPosts(
-          loadedIds,
-          newPosts,
-          isInitialLoad: attempts == 0,
-          limit: needed,
-        );
-      }
-
-      // 2. Autres pays (40%)
-      if (_selectedCountryCode != null && newPosts.length < limit) {
-        int needed = limit - newPosts.length;
-        await _loadOtherCountriesPosts(
-          loadedIds,
-          newPosts,
-          excludeCountry: _selectedCountryCode!,
-          isInitialLoad: attempts == 0,
-          limit: needed,
-        );
-      }
-
-      attempts++;
-    }
-
-    // Mélanger pour variété
-    if (newPosts.length > 1) {
-      newPosts.shuffle();
-    }
-  }
-
-  Future<void> _loadMixedPostsSmart(Set<String> loadedIds, List<Post> newPosts, String userCountryCode, int limit) async {
-    print('🔄 Chargement mode "Mix intelligent" - limite: $limit');
-
-    // 1. Posts du pays utilisateur (40%)
-    int countryPostsNeeded = (limit * 0.4).ceil();
-    await _loadCountrySpecificPosts(
-      loadedIds,
-      newPosts,
-      userCountryCode,
-      isInitialLoad: true,
-      limit: countryPostsNeeded,
-    );
-
-    // 2. Posts ALL (40%)
-    // int allPostsNeeded = (limit * 0.4).ceil();
-    // await _loadAllCountriesPosts(
-    //   loadedIds,
-    //   newPosts,
-    //   isInitialLoad: true,
-    //   limit: allPostsNeeded,
-    // );
-
-    // 3. Posts autres pays (60%)
-    int otherPostsNeeded = limit - newPosts.length;
-    if (otherPostsNeeded > 0) {
-      await _loadOtherCountriesPosts(
-        loadedIds,
-        newPosts,
-        excludeCountry: userCountryCode,
-        isInitialLoad: true,
-        limit: otherPostsNeeded,
-      );
-    }
-  }
-
-  Future<void> _loadCountrySpecificPosts(
+  // Méthode principale pour charger les posts avec type et pays
+  Future<void> _loadPostsWithTypeAndCountry(
       Set<String> loadedIds,
-      List<Post> newPosts,
-      String countryCode, {
+      List<Post> newPosts, {
+        required String postType,
+        String? countryCode,
         bool isInitialLoad = false,
         int limit = 5,
-      }) async
-  {
+      }) async {
     if (limit <= 0) return;
 
     try {
-      print('🎯 Chargement posts pays: $countryCode - limite: $limit');
+      print('🎯 Chargement posts - Type: $postType - Pays: ${countryCode ?? "ALL"}');
 
       Query query = _firestore.collection('Posts');
 
-      // Essayer différents noms de champs
-      try {
-        query = query.where("available_countries", arrayContains: countryCode);
-      } catch (e) {
+      // 1. Filtrer par TYPE (requête Firebase)
+      query = query.where("typeTabbar", isEqualTo: postType);
+
+      // 2. Filtrer par PAYS si spécifié
+      if (countryCode != null) {
+        // Essayer différents noms de champs pour le pays
         try {
-          query = query.where("availableCountries", arrayContains: countryCode);
-        } catch (e2) {
-          query = query.where("country", isEqualTo: countryCode);
+          query = query.where("available_countries", arrayContains: countryCode);
+        } catch (e) {
+          try {
+            query = query.where("availableCountries", arrayContains: countryCode);
+          } catch (e2) {
+            query = query.where("country", isEqualTo: countryCode);
+          }
         }
       }
+      else {
+        // Sinon, charger les posts disponibles dans tous les pays
+        // try {
+        //   query = query.where("available_countries", arrayContains: "ALL");
+        // } catch (e) {
+        //   try {
+        //     query = query.where("availableCountries", arrayContains: "ALL");
+        //   } catch (e2) {
+        //     query = query.where("is_available_in_all_countries", isEqualTo: true);
+        //   }
+        // }
+      }
 
+      // 3. Trier par date
       query = query.orderBy("created_at", descending: true);
 
+      // 4. Pagination
       if (!isInitialLoad && _lastCountryDocument != null) {
         query = query.startAfterDocument(_lastCountryDocument!);
       }
 
+      // 5. Limite
       query = query.limit(limit * 2);
 
       final snapshot = await query.get();
+      printVm('snapshot.docs.length: ${snapshot.docs.length}');
 
       if (snapshot.docs.isNotEmpty) {
         _lastCountryDocument = snapshot.docs.last;
       }
 
       int added = 0;
+      snapshot.docs.shuffle();
       for (var doc in snapshot.docs) {
         if (added >= limit) break;
 
@@ -1012,164 +1339,71 @@ printVm("_currentFilter data: ${_currentFilter}");
             newPosts.add(post);
             loadedIds.add(post.id!);
             added++;
-            newPosts.shuffle();
           }
         } catch (e) {
           print('Erreur parsing post: $e');
         }
       }
+      newPosts.shuffle();
 
-      print('✅ $added posts du pays $countryCode ajoutés');
+      print('✅ $added posts chargés (Type: $postType, Pays: ${countryCode ?? "ALL"})');
 
     } catch (e) {
-      print('❌ Erreur chargement pays $countryCode: $e');
+      print('❌ Erreur chargement posts: $e');
     }
   }
-
-  Future<void> _loadAllCountriesPosts(
-      Set<String> loadedIds,
-      List<Post> newPosts, {
-        bool isInitialLoad = false,
-        int limit = 5,
-      }) async
-  {
-    if (limit <= 0) return;
-
-    try {
-      print('🌐 Chargement posts ALL - limite: $limit');
-
-      Query query = _firestore.collection('Posts');
-
-      // Essayer différents noms de champs
-      // try {
-      //   query = query.where("available_countries", arrayContains: "ALL");
-      // } catch (e) {
-      //   try {
-      //     query = query.where("availableCountries", arrayContains: "ALL");
-      //   } catch (e2) {
-      //     query = query.where("is_available_in_all_countries", isEqualTo: true);
-      //   }
-      // }
-
-      query = query.orderBy("created_at", descending: true);
-
-      if (!isInitialLoad && _lastAllDocument != null) {
-        query = query.startAfterDocument(_lastAllDocument!);
-      }
-
-      query = query.limit(limit * 2);
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastAllDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-            newPosts.shuffle();
-
-          }
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
-      }
-
-      print('✅ $added posts ALL ajoutés');
-
-    } catch (e) {
-      print('❌ Erreur chargement posts ALL: $e');
-    }
+  Widget _buildAdBanner({required String key}) {
+    return SizedBox.shrink();
+    // return Container(
+    //   key: ValueKey(key),
+    //   margin: EdgeInsets.symmetric(vertical: 16),
+    //   decoration: BoxDecoration(
+    //     color: Colors.grey[100],
+    //     borderRadius: BorderRadius.circular(12),
+    //     border: Border.all(color: Colors.grey[300]!),
+    //   ),
+    //   child: BannerAdWidget(
+    //     onAdLoaded: () {
+    //       print('✅ Bannière Afrolook chargée: $key');
+    //     },
+    //   ),
+    // );
   }
 
-  Future<void> _loadOtherCountriesPosts(
-      Set<String> loadedIds,
-      List<Post> newPosts, {
-        required String excludeCountry,
-        bool isInitialLoad = false,
-        int limit = 5,
-      }) async
-  {
-    if (limit <= 0) return;
+  // Méthode pour les posts MIXED (mélange intelligent)
+  Future<void> _loadMixedPostsWithType(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+    print('🔄 Chargement mode "Mix" avec type: $_selectedPostType');
+    print('🔄 Chargement mode "Mix" avec type et pays: $_selectedCountryCode');
 
-    try {
-      print('🌍 Chargement autres pays (exclure: $excludeCountry) - limite: $limit');
+    if (_selectedCountryCode == null) return;
 
-      Query query = _firestore.collection('Posts')
-          .orderBy("created_at", descending: true);
+    // 1. Posts du pays utilisateur (60%)
+    int countryPostsNeeded = (limit * 0.6).ceil();
+    await _loadPostsWithTypeAndCountry(
+      loadedIds,
+      newPosts,
+      postType: _selectedPostType,
+      countryCode: _selectedCountryCode,
+      isInitialLoad: true,
+      limit: countryPostsNeeded,
+    );
 
-      if (!isInitialLoad && _lastOtherDocument != null) {
-        query = query.startAfterDocument(_lastOtherDocument!);
-      }
-
-      query = query.limit(limit * 4);
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastOtherDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) {
-            continue;
-          }
-
-          // Filtrer manuellement
-          bool isExcluded = false;
-
-          // if (post.availableCountries.contains(excludeCountry)) {
-          //   isExcluded = true;
-          // }
-          //
-          // if (post.availableCountries.contains("ALL")) {
-          //   isExcluded = true;
-          // }
-          //
-          // if (post.availableCountries.isEmpty) {
-          //   isExcluded = true;
-          // }
-
-          if (!isExcluded) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-            newPosts.shuffle();
-
-          }
-        } catch (e) {
-          print('Erreur parsing post: $e');
-        }
-      }
-
-      print('✅ $added posts autres pays ajoutés');
-
-    } catch (e) {
-      print('❌ Erreur chargement autres pays: $e');
+    // 2. Posts ALL (40%)
+    int allPostsNeeded = limit - newPosts.length;
+    if (allPostsNeeded > 0) {
+      await _loadPostsWithTypeAndCountry(
+        loadedIds,
+        newPosts,
+        postType: _selectedPostType,
+        countryCode: null, // Tous les pays
+        isInitialLoad: true,
+        limit: allPostsNeeded,
+      );
     }
   }
 
   // ===========================================================================
-  // PAGINATION - CHARGEMENT MANUEL (Après les 20 posts background)
+  // PAGINATION - CHARGEMENT MANUEL
   // ===========================================================================
 
   void _scrollListener() {
@@ -1179,7 +1413,7 @@ printVm("_currentFilter data: ${_currentFilter}");
         !_isLoadingBackground &&
         _hasMorePosts &&
         _totalPostsLoaded < _maxTotalPosts &&
-        !_useBackgroundLoading) { // Seulement en mode manuel
+        !_useBackgroundLoading) {
       _loadMorePostsManually();
     }
   }
@@ -1199,7 +1433,6 @@ printVm("_currentFilter data: ${_currentFilter}");
 
       await _loadMorePostsByFilter(loadedIds, newPosts, _manualLoadLimit);
 
-      // Ajouter les nouveaux posts
       if (newPosts.isNotEmpty) {
         setState(() {
           _posts.addAll(newPosts);
@@ -1207,7 +1440,7 @@ printVm("_currentFilter data: ${_currentFilter}");
           _totalPostsLoaded += newPosts.length;
         });
 
-        print('📱 ${newPosts.length} posts chargés manuellement (total: $_totalPostsLoaded)');
+        print('📱 ${newPosts.length} posts chargés manuellement');
       }
 
       _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
@@ -1225,123 +1458,53 @@ printVm("_currentFilter data: ${_currentFilter}");
   Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit) async {
     switch (_currentFilter) {
       case 'ALL':
-        await _loadMoreAllCountriesMixed(loadedIds, newPosts, limit);
+        await _loadPostsWithTypeAndCountry(
+          loadedIds,
+          newPosts,
+          postType: _selectedPostType,
+          countryCode: null,
+          isInitialLoad: false,
+          limit: limit,
+        );
         break;
 
       case 'COUNTRY':
         if (_selectedCountryCode != null) {
-          await _loadMoreCountrySpecific(loadedIds, newPosts, _selectedCountryCode!, limit);
+          await _loadPostsWithTypeAndCountry(
+            loadedIds,
+            newPosts,
+            postType: _selectedPostType,
+            countryCode: _selectedCountryCode,
+            isInitialLoad: false,
+            limit: limit,
+          );
         }
         break;
 
       case 'MIXED':
-        if (_selectedCountryCode != null) {
-          await _loadMoreMixed(loadedIds, newPosts, _selectedCountryCode!, limit);
-        }
+        await _loadMixedPostsWithType(loadedIds, newPosts, limit);
         break;
 
       case 'CUSTOM':
         if (_selectedCountryCode != null) {
-          await _loadMoreCountrySpecific(loadedIds, newPosts, _selectedCountryCode!, limit);
+          await _loadPostsWithTypeAndCountry(
+            loadedIds,
+            newPosts,
+            postType: _selectedPostType,
+            countryCode: _selectedCountryCode,
+            isInitialLoad: false,
+            limit: limit,
+          );
         }
         break;
     }
   }
 
-  Future<int> _loadMoreAllCountriesMixed(Set<String> loadedIds, List<Post> newPosts, int limit) async {
-    int added = 0;
-    int attempts = 0;
-
-    while (added < limit && attempts < 2) {
-      int needed = limit - added;
-      await _loadAllCountriesPosts(
-        loadedIds,
-        newPosts,
-        isInitialLoad: false,
-        limit: needed,
-      );
-
-      if (_selectedCountryCode != null && added < limit) {
-        needed = limit - added;
-        await _loadOtherCountriesPosts(
-          loadedIds,
-          newPosts,
-          excludeCountry: _selectedCountryCode!,
-          isInitialLoad: false,
-          limit: needed,
-        );
-      }
-
-      added = newPosts.length;
-      attempts++;
-    }
-
-    return added;
-  }
-
-  Future<int> _loadMoreCountrySpecific(Set<String> loadedIds, List<Post> newPosts, String countryCode, int limit) async {
-    await _loadCountrySpecificPosts(
-      loadedIds,
-      newPosts,
-      countryCode,
-      isInitialLoad: false,
-      limit: limit,
-    );
-
-    int added = newPosts.length;
-
-    if (added < limit) {
-      int needed = limit - added;
-      await _loadAllCountriesPosts(
-        loadedIds,
-        newPosts,
-        isInitialLoad: false,
-        limit: needed,
-      );
-      added = newPosts.length;
-    }
-
-    return added;
-  }
-
-  Future<int> _loadMoreMixed(Set<String> loadedIds, List<Post> newPosts, String countryCode, int limit) async {
-    int countryNeeded = (limit * 0.4).ceil();
-    await _loadCountrySpecificPosts(
-      loadedIds,
-      newPosts,
-      countryCode,
-      isInitialLoad: false,
-      limit: countryNeeded,
-    );
-
-    int allNeeded = (limit * 0.4).ceil();
-    await _loadAllCountriesPosts(
-      loadedIds,
-      newPosts,
-      isInitialLoad: false,
-      limit: allNeeded,
-    );
-
-    int otherNeeded = limit - newPosts.length;
-    if (otherNeeded > 0) {
-      await _loadOtherCountriesPosts(
-        loadedIds,
-        newPosts,
-        excludeCountry: countryCode,
-        isInitialLoad: false,
-        limit: otherNeeded,
-      );
-    }
-
-    return newPosts.length;
-  }
-
   // ===========================================================================
-  // CHARGEMENT DES DONNÉES SUPPLÉMENTAIRES (SÉPARÉ)
+  // CHARGEMENT DES DONNÉES SUPPLÉMENTAIRES
   // ===========================================================================
 
   Future<void> _loadAllAdditionalDataInParallel() async {
-    // Charger tout en parallèle sans bloquer
     _loadSuggestedUsersInBackground();
     _loadArticlesInBackground();
     _loadCanauxInBackground();
@@ -1359,7 +1522,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       final users = await userProvider.getProfileUsers(
         authProvider.loginUserData.id!,
         context,
-        8, // Limité à 8 pour la performance
+        8,
       );
 
       setState(() {
@@ -1433,7 +1596,6 @@ printVm("_currentFilter data: ${_currentFilter}");
           .limit(6)
           .get();
 
-      final now = DateTime.now();
       final List<Chronique> validChroniques = [];
 
       for (final doc in snapshot.docs) {
@@ -1451,7 +1613,6 @@ printVm("_currentFilter data: ${_currentFilter}");
         _chroniques = validChroniques;
       });
 
-      // Charger les données utilisateurs en arrière-plan
       if (validChroniques.isNotEmpty) {
         _loadChroniqueUserDataInBackground(validChroniques);
       }
@@ -1480,7 +1641,6 @@ printVm("_currentFilter data: ${_currentFilter}");
         }
       }
 
-      // Mettre à jour l'UI si nécessaire
       if (mounted) {
         setState(() {});
       }
@@ -1514,14 +1674,12 @@ printVm("_currentFilter data: ${_currentFilter}");
         ),
         child: Stack(
           children: [
-            // Badge de disponibilité
             Positioned(
               top: 8,
               left: 8,
               child: _buildAvailabilityBadge(post),
             ),
 
-            // Contenu du post
             post.type == PostType.CHALLENGEPARTICIPATION.name
                 ? LookChallengePostWidget(post: post, height: height, width: width)
                 : HomePostUsersWidget(
@@ -1581,10 +1739,6 @@ printVm("_currentFilter data: ${_currentFilter}");
     ];
     return colors[_random.nextInt(colors.length)];
   }
-
-  // ===========================================================================
-  // FILTRES CHIPS (Pour le contenu principal)
-  // ===========================================================================
 
   Widget _buildFilterChips() {
     return Container(
@@ -1659,7 +1813,7 @@ printVm("_currentFilter data: ${_currentFilter}");
   }
 
   // ===========================================================================
-  // SECTION CHRONIQUES
+  // SECTIONS SUPPLÉMENTAIRES
   // ===========================================================================
 
   Widget _buildChroniquesSection() {
@@ -1687,10 +1841,6 @@ printVm("_currentFilter data: ${_currentFilter}");
     }
     return grouped;
   }
-
-  // ===========================================================================
-  // SECTION PROFILS UTILISATEURS
-  // ===========================================================================
 
   Widget _buildProfilesSection() {
     if (_isLoadingSuggestedUsers) {
@@ -1888,16 +2038,11 @@ printVm("_currentFilter data: ${_currentFilter}");
   void _showUserDetails(UserData user) async {
     final users = await authProvider.getUserById(user.id!);
     if (users.isNotEmpty && mounted) {
-      // Utiliser votre fonction showUserDetailsModalDialog
-     double  width = MediaQuery.of(context).size.width;
-     double height = MediaQuery.of(context).size.height;
+      double width = MediaQuery.of(context).size.width;
+      double height = MediaQuery.of(context).size.height;
       showUserDetailsModalDialog(users.first, width, height, context);
     }
   }
-
-  // ===========================================================================
-  // SECTION ARTICLES
-  // ===========================================================================
 
   Widget _buildArticlesSection() {
     if (_isLoadingArticles) {
@@ -1961,10 +2106,6 @@ printVm("_currentFilter data: ${_currentFilter}");
       ),
     );
   }
-
-  // ===========================================================================
-  // SECTION CANAUX
-  // ===========================================================================
 
   Widget _buildCanauxSection() {
     if (_isLoadingCanaux) {
@@ -2031,41 +2172,42 @@ printVm("_currentFilter data: ${_currentFilter}");
 
   Widget _buildLoadingSection(String title) {
     return Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-    decoration: BoxDecoration(
-    color: darkBackground,
-    borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Padding(
-    padding: EdgeInsets.all(12),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    Text(
-    title,
-    style: TextStyle(
-    color: textColor,
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    ),
-    ),
-    SizedBox(
-    width: 18,
-    height: 18,
-    child: CircularProgressIndicator(
-    strokeWidth: 2,
-    color: primaryGreen,
-    ),
-    ),
-    ],
-    ),
-    ),
-    SizedBox(height: 8),
-    ],
-    ));
+      margin: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: darkBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: primaryGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
+      ),
+    );
   }
 
   // ===========================================================================
@@ -2260,39 +2402,6 @@ printVm("_currentFilter data: ${_currentFilter}");
       ],
     );
   }
-// 🎯 Widget pour afficher une bannière AdMob
-  Widget _buildAdBanner({required String key}) {
-    return SizedBox.shrink();
-
-    // return Container(
-    //   key: ValueKey(key),
-    //   margin: EdgeInsets.symmetric(vertical: 16),
-    //   decoration: BoxDecoration(
-    //     color: Colors.grey[100],
-    //     borderRadius: BorderRadius.circular(12),
-    //     border: Border.all(color: Colors.grey[300]!),
-    //   ),
-    //   child: BannerAdWidget(
-    //     onAdLoaded: () {
-    //       print('✅ Bannière Afrolook chargée: $key');
-    //     },
-    //   ),
-    // );
-  }
-  String _getEndMessage() {
-    switch (_currentFilter) {
-      case 'ALL':
-        return 'Vous avez vu tous les contenus disponibles';
-      case 'COUNTRY':
-        return 'Fin des contenus en ${_selectedCountryCode ?? "ce pays"}';
-      case 'MIXED':
-        return 'Fin des contenus pour le mix actuel';
-      case 'CUSTOM':
-        return 'Fin des contenus pour ${_selectedCountryCode ?? "ce pays"}';
-      default:
-        return 'Fin des contenus';
-    }
-  }
 
   // ===========================================================================
   // WIDGETS D'ÉTAT
@@ -2393,35 +2502,62 @@ printVm("_currentFilter data: ${_currentFilter}");
   }
 
   String _getEmptyMessage() {
+    String typeMsg = ' de type $_selectedPostType';
+
     switch (_currentFilter) {
       case 'ALL':
-        return 'Aucun contenu disponible pour tous les pays';
+        return 'Aucun contenu disponible pour tous les pays$typeMsg';
       case 'COUNTRY':
-        return 'Aucun contenu disponible en ${_selectedCountryCode ?? "ce pays"}';
+        return 'Aucun contenu disponible en ${_selectedCountryCode ?? "ce pays"}$typeMsg';
       case 'MIXED':
-        return 'Aucun contenu disponible pour le moment';
+        return 'Aucun contenu disponible pour le moment$typeMsg';
       case 'CUSTOM':
-        return 'Aucun contenu disponible pour ${_selectedCountryCode ?? "ce pays"}';
+        return 'Aucun contenu disponible pour ${_selectedCountryCode ?? "ce pays"}$typeMsg';
       default:
-        return 'Aucun contenu disponible';
+        return 'Aucun contenu disponible$typeMsg';
+    }
+  }
+
+  String _getEndMessage() {
+    String typeMsg = ' de type $_selectedPostType';
+
+    switch (_currentFilter) {
+      case 'ALL':
+        return 'Vous avez vu tous les contenus disponibles$typeMsg';
+      case 'COUNTRY':
+        return 'Fin des contenus en ${_selectedCountryCode ?? "ce pays"}$typeMsg';
+      case 'MIXED':
+        return 'Fin des contenus pour le mix actuel$typeMsg';
+      case 'CUSTOM':
+        return 'Fin des contenus pour ${_selectedCountryCode ?? "ce pays"}$typeMsg';
+      default:
+        return 'Fin des contenus$typeMsg';
     }
   }
 
   String _getFilterDescription() {
+    String countryDesc = '';
+    String typeDesc = 'Type: $_selectedPostType';
+
     switch (_currentFilter) {
       case 'ALL':
-        return '🌍 Tous les pays';
+        countryDesc = '🌍 Tous les pays';
+        break;
       case 'COUNTRY':
-        return '📍 ${_selectedCountryCode ?? "Mon pays"}';
+        countryDesc = '📍 ${_selectedCountryCode ?? "Mon pays"}';
+        break;
       case 'MIXED':
-        return '🔄 Mix intelligent';
+        countryDesc = '🔄 Mix intelligent';
+        break;
       case 'CUSTOM':
-        return '⚙️ ${_selectedCountryCode ?? "Pays spécifique"}';
+        countryDesc = '⚙️ ${_selectedCountryCode ?? "Pays spécifique"}';
+        break;
       default:
-        return 'Filtrer par pays';
+        countryDesc = 'Filtrer par pays';
     }
-  }
 
+    return '$countryDesc • $typeDesc';
+  }
   Widget _getFilterIcon() {
     switch (_currentFilter) {
       case 'ALL':
@@ -2436,6 +2572,27 @@ printVm("_currentFilter data: ${_currentFilter}");
         return Icon(Icons.blender, color: Colors.white, size: 18);
       default:
         return Icon(Icons.filter_alt, color: Colors.white, size: 18);
+    }
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type.toUpperCase()) {
+      case 'SPORT':
+        return Icons.sports_soccer;
+      case 'MUSIC':
+        return Icons.music_note;
+      case 'ACTUALITES':
+        return Icons.newspaper;
+      case 'LOOKS':
+        return Icons.style;
+      case 'EVENEMENT':
+        return Icons.event;
+      case 'OFFRES':
+        return Icons.local_offer;
+      case 'GAMER':
+        return Icons.videogame_asset;
+      default:
+        return Icons.category;
     }
   }
 
@@ -2528,20 +2685,18 @@ printVm("_currentFilter data: ${_currentFilter}");
   }
 
   Future<void> _refreshData() async {
-    // Arrêter le chargement background pendant le refresh
     _backgroundLoadTimer?.cancel();
 
     setState(() {
       _isLoadingPosts = true;
       _isFirstLoad = true;
-      _useBackgroundLoading = true; // Réactiver le background
-      _backgroundPostsLoaded = 0; // Réinitialiser le compteur
+      _useBackgroundLoading = true;
+      _backgroundPostsLoaded = 0;
     });
 
     _resetPagination();
     await _loadInitialPosts();
 
-    // Redémarrer le chargement background
     _startBackgroundLoading();
 
     setState(() {
@@ -2565,6 +2720,32 @@ printVm("_currentFilter data: ${_currentFilter}");
       _setUserOffline();
     }
   }
+// Dans votre classe, ajoutez ces listes
+  final List<String> _sportTitles = [
+    '⚽ LIGUE DES CHAMPIONS',
+    '⚽ LIGUE EUROPA',
+
+    '🏆 LIGA - REAL MADRID',
+    '🏆 LIGA - BARÇA',
+    '🏆 LIGA - ATLETICO MADRID',
+
+    '⚽ LIGUE 1 - PSG',
+    '⚽ LIGUE 1 - MARSEILLE',
+
+    '⚽ PREMIER LEAGUE',
+    '⚽ PREMIER LEAGUE - MANCHESTER CITY',
+    '⚽ PREMIER LEAGUE - LIVERPOOL',
+
+    '⚽ LDC - CAN',
+    '⚽ LIGUE AFRICAINE',
+    '⚽ CAF - AL AHLY',
+    '⚽ CAF - ZAMALEK',
+    '⚽ CAF - TP MAZEMBE',
+    '⚽ CAF - WYDAD CASABLANCA',
+
+    '🏀 BASKETBALL - NBA',
+    '🤾 HANDBALL',
+  ];
 
   void _setUserOnline() {
     if (authProvider.loginUserData != null) {
@@ -2600,11 +2781,23 @@ printVm("_currentFilter data: ${_currentFilter}");
         return Colors.grey;
     }
   }
-
+  String _getFilterLabel() {
+    switch (_currentFilter) {
+      case 'ALL':
+        return 'Tous';
+      case 'COUNTRY':
+        return 'Mon pays';
+      case 'MIXED':
+        return 'Mix';
+      case 'CUSTOM':
+        return _selectedCountryCode ?? 'Pays';
+      default:
+        return 'Filtre';
+    }
+  }
   // ===========================================================================
   // BUILD
   // ===========================================================================
-
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -2612,71 +2805,226 @@ printVm("_currentFilter data: ${_currentFilter}");
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: darkBackground,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.black,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        body: SafeArea(
+          child: Column(
             children: [
-              Text(
-                'Découvrir',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              // ============================================================
+              // LIGNE 1: Titre animé + bouton retour (compact)
+              // ============================================================
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                color: Colors.black,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Bouton retour
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                      ),
+                    ),
+                    SizedBox(width: 10,),
+
+
+                    // Titre animé (expand)
+                    Container(
+                      child: _selectedPostType == 'SPORT'
+                          ? _buildCompactSportTitle()
+                          : Text(
+                        _selectedPostType,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 2),
-              Text(
-                _getFilterDescription(),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[400],
-                ),
-              ),
-            ],
-          ),
-          elevation: 0,
-          actions: [
-            // Bouton filtre avec icône personnalisée
-            InkWell(
-              onTap: _showCountryFilterModal,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 36,
-                height: 36,
-                margin: EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: _getFilterBorderColor(),
-                    width: 1.5,
+
+              // ============================================================
+              // LIGNE 2: Boutons d'action + hashtags (scroll horizontal)
+              // ============================================================
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                color: Colors.black,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Bouton Poster compact
+                      _buildCompactButton(
+                        label: 'Poster',
+                        icon: Icons.add,
+                        color: Colors.green,
+                        onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
+                      ),
+
+                      SizedBox(width: 6),
+
+                      // Bouton Type compact
+                      _buildCompactButton(
+                        label: _selectedPostType,
+                        icon: _getTypeIcon(_selectedPostType),
+                        color: Colors.purple,
+                        onTap: _showTypeFilterModal,
+                      ),
+
+                      SizedBox(width: 6),
+
+                      // Bouton Filtre compact
+                      _buildCompactButton(
+                        label: _getFilterLabel(),
+                        iconDataWidget: _getFilterIcon(),
+                        color: _getFilterBorderColor(),
+                        onTap: _showCountryFilterModal,
+                      ),
+
+                      SizedBox(width: 6),
+
+                      // Bouton Rafraîchir
+                      InkWell(
+                        onTap: _refreshData,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(Icons.refresh, color: Colors.white, size: 14),
+                        ),
+                      ),
+
+                      // Hashtags sport (sur la même ligne que les boutons)
+                      if (_selectedPostType == 'SPORT') ...[
+                        SizedBox(width: 8),
+                        _buildCompactSportTags(),
+                      ],
+                    ],
                   ),
                 ),
-                child: Center(
-                  child: _getFilterIcon(),
-                ),
               ),
-            ),
-            // Bouton rafraîchir
-            IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _refreshData,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-            ),
-            SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Container(
-            color: Colors.black,
-            child: _buildContent(),
+
+              // ============================================================
+              // CONTENU PRINCIPAL
+              // ============================================================
+              Expanded(
+                child: _buildContent(),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
+// Titre sport compact animé
+// Titre sport compact animé (version corrigée)
+  Widget _buildCompactSportTitle() {
+    if (_selectedPostType != 'SPORT') {
+      return Text(
+        _selectedPostType,
+        style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: 500),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: Offset(0.2, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: Text(
+        _sportTitles[_currentTitleIndex],
+        key: ValueKey(_currentTitleIndex),
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.green,
+          fontWeight: FontWeight.bold,
+        ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      ),
+    );
+  }
+// Bouton compact
+  Widget _buildCompactButton({
+    required String label,
+    IconData? icon,
+    Widget? iconDataWidget,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null)
+              Icon(icon, color: Colors.white, size: 12)
+            else if (iconDataWidget != null)
+              Container(width: 16, height: 16, child: Center(child: iconDataWidget)),
+
+            if (label.isNotEmpty) ...[
+              SizedBox(width: 4),
+              Text(
+                label.length > 6 ? '${label.substring(0, 4)}..' : label,
+                style: TextStyle(color: Colors.white, fontSize: 10),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+// Hashtags sport compacts (une seule ligne avec les boutons)
+  Widget _buildCompactSportTags() {
+    List<String> tags = ['#Football', '#LDC', '#Ligue1', '#NBA', '#Handball', '#Liga'];
+    tags.shuffle();
+    tags = tags.take(3).toList(); // Seulement 3 tags pour garder compact
+
+    return Row(
+      children: tags.map((tag) => Container(
+        margin: EdgeInsets.only(right: 4),
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Text(
+          tag,
+          style: TextStyle(color: Colors.green, fontSize: 9),
+        ),
+      )).toList(),
+    );
+  }
+}

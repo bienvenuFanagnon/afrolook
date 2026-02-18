@@ -4304,15 +4304,18 @@ enum NotificationType {
   MESSAGE,
   POST,
   NEWPOST,
+  FAVORITE,
+  PARRAINAGE,
+  MARKETING,
   INVITATION,
+
   ACCEPTINVITATION,
   ABONNER,
-  PARRAINAGE,
   ARTICLE,
   CHALLENGE,
   CHRONIQUE,
   SERVICE,
-  USER, FAVORITE, MARKETING
+  USER
 }
 
 enum TypeEntreprise { personnel, partenaire }

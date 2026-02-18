@@ -236,28 +236,6 @@ class _UserPubTextState extends State<UserPubText> {
     });
   }
 
-  void _toggleSelectAllCountries2() {
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
-    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-
-    // Vérifier si l'utilisateur peut sélectionner "Tous les pays"
-    if (!isPremium && !isAdmin) {
-      _showPremiumModal(
-        title: 'Fonctionnalité Premium',
-        message: 'L\'option "Tous les pays" est réservée aux abonnés Premium.\n'
-            'Passez à Afrolook Premium pour atteindre toute l\'Afrique.',
-        actionText: 'PASSER À PREMIUM',
-      );
-      return;
-    }
-
-    setState(() {
-      _selectAllCountries = !_selectAllCountries;
-      if (_selectAllCountries) {
-        _selectedCountries.clear();
-      }
-    });
-  }
   void _toggleSelectAllCountries() {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/LiveAgora/create_live_page.dart';
@@ -67,6 +68,7 @@ import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/LocalNotifications.dart';
+import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/postPrepareService.dart';
 import 'package:afrotok/services/postService/cachvideoService.dart';
@@ -83,6 +85,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
@@ -98,6 +101,20 @@ late List<CameraDescription> _cameras;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialiser AdMob seulement sur mobile
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await MobileAds.instance.initialize();
+
+    // Configurer votre appareil comme appareil de test
+    // Remplacer par l'ID obtenu dans les logs
+    await MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        testDeviceIds: ['33BE2250B43518CCDA7DE426D04EE231'], // Votre ID de test
+      ),);
+
+    // Mode TEST (true) / PRODUCTION (false)
+    AdService.setMode(true); // À changer avant publication
+  }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {
     _cameras = await availableCameras();
@@ -159,69 +176,61 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   _cameras = await availableCameras();
-//
-//   await Firebase.initializeApp(
-//     options: DefaultFirebaseOptions.currentPlatform,
-//   );
-//
-//   // Activate app check after initialization, but before
-//   // usage of any Firebase services.
-//   await FirebaseAppCheck.instance.activate(
-//     androidProvider: AndroidProvider.debug,
-//     appleProvider: AppleProvider.debug,
-//   );
-//
-//   // Vérifier l'état d'authentification au démarrage
-//   FirebaseAuth.instance.authStateChanges().listen((User? user) {
-//     if (user == null) {
-//       print('Utilisateur non connecté');
-//     } else {
-//       print('Utilisateur connecté: ${user.uid}');
-//     }
-//   });
-//   // Initialiser l'ID d'appareil au démarrage
-//   await DeviceInfoService.initializeDeviceId();
-//   //Remove this method to stop OneSignal Debugging
-//   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-//   OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
-//   OneSignal.Notifications.requestPermission(true);
-//   initLocalNotifications();
-//   await Workmanager().initialize(
-//     callbackDispatcher,
-//   );
-//
-//   // processNotificationTask("challengeCheckTask", firstLaunch: true);
-//    sendTestAfrolookNotification();
-//    // initializeCanalFields();
-//   //
-//   // Workmanager().registerOneOffTask(
-//   //   afrolookTestTask,
-//   //   afrolookTestTask,
-//   //   initialDelay: Duration(seconds: 2),
-//   // );
-//   Workmanager().registerPeriodicTask(
-//     afrolookTask,
-//     afrolookTask,
-//     frequency: const Duration(hours: 5),
-//     // frequency: const Duration(minutes: 15),
-//     initialDelay: const Duration(seconds: 10),
-//     existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-//   );
-//
-//   if (kReleaseMode) {
-//     await FlutterDownloader.initialize(
-//       debug: false,
-//       ignoreSsl: false,
-//     );      } else {
-//     await FlutterDownloader.initialize(
-//       debug: true,
-//       ignoreSsl: true,
-//     );      }
-//   runApp(const MyApp());
-// }
+Future<void> migratePostsCountries() async {
+  try {
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+    // Récupérer UNIQUEMENT les posts avec is_available_in_all_countries = true
+    final postsSnapshot = await _firestore
+        .collection('Posts')
+        .where('is_available_in_all_countries', isEqualTo: true)
+        .get();
+
+    int totalPosts = postsSnapshot.docs.length;
+    int updatedCount = 0;
+
+    print("🚀 Début de la migration de $totalPosts posts avec is_available_in_all_countries = true...");
+
+    if (totalPosts == 0) {
+      print("✅ Aucun post à migrer");
+      return;
+    }
+
+    // Liste de tous les codes pays
+    List<String> allCountryCodes = AfricanCountry.allCountries
+        .map((country) => country.code)
+        .toList();
+
+    // Traitement par lots de 500 (limite Firestore)
+    for (var i = 0; i < postsSnapshot.docs.length; i += 500) {
+      final batch = _firestore.batch();
+      int end = (i + 500 < postsSnapshot.docs.length) ? i + 500 : postsSnapshot.docs.length;
+
+      for (var j = i; j < end; j++) {
+        final doc = postsSnapshot.docs[j];
+
+        // Mettre à jour le post
+        batch.update(doc.reference, {
+          'available_countries': allCountryCodes,
+          'is_available_in_all_countries': false, // Désactiver l'ancien champ
+        });
+
+        updatedCount++;
+        print("✅ Post ${doc.id} migré");
+      }
+
+      // Exécuter le batch
+      await batch.commit();
+      print("📦 Lot ${i ~/ 500 + 1} traité avec succès (${end - i} posts)");
+    }
+
+    print("🎉 Migration terminée !");
+    print("📊 Total posts migrés: $updatedCount");
+
+  } catch (e) {
+    print("❌ Erreur lors de la migration: $e");
+  }
+}
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -382,6 +391,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    migratePostsCountries();
     onClickNotification();
     // CryptoInitializer.initializeCryptos();
     // Initialiser les deep links
