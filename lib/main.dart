@@ -69,6 +69,7 @@ import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/LocalNotifications.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/postPrepareService.dart';
+import 'package:afrotok/services/postService/cachvideoService.dart';
 import 'package:afrotok/services/serviceMigrationAncienPost.dart';
 import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
@@ -378,7 +379,6 @@ class _MyAppState extends State<MyApp> {
     });
   }
   final DynamicLinkService _dynamicLinkService = DynamicLinkService();
-
   @override
   void initState() {
     super.initState();
@@ -447,7 +447,8 @@ class _MyAppState extends State<MyApp> {
               case '/home':
                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
               case '/videos':
-                return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
+                // return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
+                return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
               case '/home_profile_user':
                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
               case '/profile_entreprise':
