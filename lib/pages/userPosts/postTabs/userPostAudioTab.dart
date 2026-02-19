@@ -2136,7 +2136,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                                     Icon(Icons.send, color: Colors.white, size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      'PUBLIER VOTRE TEXTE',
+                                      'PUBLIER VOTRE POST',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
