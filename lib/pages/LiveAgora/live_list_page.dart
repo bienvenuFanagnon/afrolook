@@ -1,11 +1,13 @@
 // pages/lives/live_list_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:intl/intl.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../pub/native_ad_widget.dart';
 import 'create_live_page.dart';
 import 'livePage.dart';
 import 'livesAgora.dart';
@@ -260,7 +262,24 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
 
     return result;
   }
-
+// Ajoutez cette fonction dans votre classe _LiveListPageState
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // Utilisez small pour les lives
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans LivePage: $key');
+        },
+      ),
+    );
+  }
   Widget _buildLivesTab(List<PostLive> lives, UserAuthProvider authProvider, RefreshController controller) {
     if (lives.isEmpty) return _buildEmptyState();
 
@@ -294,11 +313,168 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         },
       ),
       child: CustomScrollView(
-        slivers: _buildSliverList(activeLives, endedLives, displayLives, authProvider),
+        slivers: _buildSliverListWithAds( // ✅ Utilisez cette nouvelle fonction
+          activeLives,
+          endedLives,
+          displayLives,
+          authProvider,
+          selectedTab: _selectedTab, // Passez l'onglet sélectionné
+        ),
       ),
     );
   }
 
+// ✅ Nouvelle fonction avec intégration des pubs
+  List<Widget> _buildSliverListWithAds(
+      List<PostLive> activeLives,
+      List<PostLive> endedLives,
+      List<PostLive> displayLives,
+      UserAuthProvider authProvider, {
+        required int selectedTab,
+      }) {
+    final slivers = <Widget>[];
+
+    // Pour le tab "En cours" - afficher avec pub en première position
+    if (selectedTab == 1) {
+      // ✅ Ajouter la pub en première position
+      slivers.add(
+        SliverToBoxAdapter(
+          child: _buildAdBanner(key: 'live_tab_active_first'),
+        ),
+      );
+
+      // Ajouter un espacement
+      slivers.add(
+        SliverToBoxAdapter(
+          child: SizedBox(height: 8),
+        ),
+      );
+
+      // Ensuite la grille des lives
+      if (displayLives.isNotEmpty) {
+        slivers.add(
+          SliverPadding(
+            padding: EdgeInsets.all(16),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildLiveGridItem(displayLives[index], authProvider),
+                childCount: displayLives.length,
+              ),
+            ),
+          ),
+        );
+      } else {
+        slivers.add(
+          SliverFillRemaining(
+            child: _buildEmptyState(),
+          ),
+        );
+      }
+
+      return slivers;
+    }
+
+    // Pour le tab "Tous les lives" avec sections séparées
+
+    // ✅ Ajouter la pub en première position
+    slivers.add(
+      SliverToBoxAdapter(
+        child: _buildAdBanner(key: 'live_tab_all_first'),
+      ),
+    );
+
+    // Ajouter un espacement
+    slivers.add(
+      SliverToBoxAdapter(
+        child: SizedBox(height: 8),
+      ),
+    );
+
+    // Section Lives Actifs
+    if (activeLives.isNotEmpty) {
+      slivers.addAll([
+        SliverPadding(
+          padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              '🔴 Lives en cours (${activeLives.length})',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.all(16),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.85,
+            ),
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildLiveGridItem(activeLives[index], authProvider),
+              childCount: activeLives.length,
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    // Section Lives Terminés
+    if (endedLives.isNotEmpty) {
+      slivers.addAll([
+        SliverPadding(
+          padding: EdgeInsets.only(top: activeLives.isNotEmpty ? 32 : 16, left: 16, right: 16),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              '📁 Lives terminés (${endedLives.length})',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.all(16),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.85,
+            ),
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildLiveGridItem(endedLives[index], authProvider),
+              childCount: endedLives.length,
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    // Si aucune vie
+    if (activeLives.isEmpty && endedLives.isEmpty) {
+      slivers.add(
+        SliverFillRemaining(
+          child: _buildEmptyState(),
+        ),
+      );
+    }
+
+    return slivers;
+  }
   List<Widget> _buildSliverList(
       List<PostLive> activeLives,
       List<PostLive> endedLives,
@@ -414,6 +590,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          _buildAdBanner(key: 'live_tab_active_first'),
           Icon(Icons.videocam_off, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(

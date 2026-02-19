@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -15,6 +16,7 @@ import '../../providers/userProvider.dart';
 import '../auth/authTest/constants.dart';
 import '../component/showUserDetails.dart';
 import '../home/listTopModal.dart';
+import '../pub/native_ad_widget.dart';
 import '../user/detailsOtherUser.dart';
 
 class UserClassement extends StatefulWidget {
@@ -42,7 +44,7 @@ class _UserClassementState extends State<UserClassement> {
 
   Future<void> _loadData() async {
     // Simuler un temps de chargement pour voir l'effet shimmer
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 1));
     setState(() {
       _isLoading = false;
     });
@@ -135,26 +137,32 @@ class _UserClassementState extends State<UserClassement> {
 
             SizedBox(height: 16),
 
-            // Liste des top 10
+            // Liste des top 10 avec pub en premier élément
             ListView.builder(
-              itemCount: topUsers.length,
+              itemCount: topUsers.length + 1, // +1 pour la pub
               shrinkWrap: true,
               padding: EdgeInsets.only(top: 8, bottom: 20),
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
+                // Premier élément (index 0) = la pub
+                if (index == 0) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: _buildAdBanner(key: 'top10_first_ad'),
+                  );
+                }
+
+                // Ajuster l'index pour les utilisateurs
+                final userIndex = index - 1;
+
                 return GestureDetector(
                   onTap: () {
-                    showUserDetailsModalDialog(topUsers[index], width, height,context);
+                    showUserDetailsModalDialog(topUsers[userIndex], width, height, context);
                   },
                   child: TopFiveUserItem(
-                    user: topUsers[index],
-                    rank: index + 1,
+                    user: topUsers[userIndex],
+                    rank: userIndex + 1,
                   ),
-                  // child: _UserRankItem(
-                  //   user: topUsers[index],
-                  //   rank: index + 1,
-                  //   isTop3: index < 3,
-                  // ),
                 );
               },
             ),
@@ -164,12 +172,31 @@ class _UserClassementState extends State<UserClassement> {
     );
   }
 
+// ✅ Version avec shimmer loading incluant la pub
   Widget _buildShimmerLoading() {
     return ListView.builder(
-      itemCount: 10,
+      itemCount: 11, // +1 pour la pub
       shrinkWrap: true,
       padding: EdgeInsets.only(top: 16),
       itemBuilder: (context, index) {
+        // Premier élément (index 0) = placeholder de pub
+        if (index == 0) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey[800]!,
+              highlightColor: Colors.grey[700]!,
+              child: Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          );
+        }
+
         return Shimmer.fromColors(
           baseColor: Colors.grey[800]!,
           highlightColor: Colors.grey[700]!,
@@ -222,19 +249,22 @@ class _UserClassementState extends State<UserClassement> {
     );
   }
 
-  void _showUserDetailsModalDialog(UserData user, double w, double h) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: DetailsOtherUser(
-            user: user,
-            w: w,
-            h: h,
-          ),
-        );
-      },
+// ✅ Ajoutez cette fonction dans votre classe
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small,
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans top10: $key');
+        },
+      ),
     );
   }
 }

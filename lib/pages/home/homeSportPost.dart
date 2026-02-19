@@ -13,6 +13,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:provider/provider.dart';
 
@@ -31,6 +32,7 @@ import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../listeUserLikepage.dart';
 import '../pub/banner_ad_widget.dart';
+import '../pub/native_ad_widget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../../providers/mixed_feed_service_provider.dart';
@@ -1353,21 +1355,29 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
   }
   Widget _buildAdBanner({required String key}) {
-    return SizedBox.shrink();
-    // return Container(
-    //   key: ValueKey(key),
-    //   margin: EdgeInsets.symmetric(vertical: 16),
-    //   decoration: BoxDecoration(
-    //     color: Colors.grey[100],
-    //     borderRadius: BorderRadius.circular(12),
-    //     border: Border.all(color: Colors.grey[300]!),
-    //   ),
-    //   child: BannerAdWidget(
-    //     onAdLoaded: () {
-    //       print('✅ Bannière Afrolook chargée: $key');
-    //     },
-    //   ),
-    // );
+    // return SizedBox.shrink();
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
   }
 
   // Méthode pour les posts MIXED (mélange intelligent)

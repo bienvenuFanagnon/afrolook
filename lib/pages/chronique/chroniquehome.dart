@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/authProvider.dart';
+import '../pub/native_ad_widget.dart';
 import 'chroniquedetails.dart';
 import 'chroniqueform.dart';
 import 'mychroniquepage.dart';
@@ -239,6 +241,31 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       ),
     );
   }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
 
   Widget _buildChroniqueList() {
     if (_isFirstLoad && _isLoading) {
@@ -258,7 +285,14 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
 
     if (_groupedChroniques.isEmpty && !_isLoading) {
-      return _buildEmptyState();
+      return ListView(
+        children: [
+          // ✅ La pub en premier (même si pas de chroniques)
+          _buildAdBanner(key: 'chroniques_empty_top'),
+          SizedBox(height: 16),
+          _buildEmptyState(),
+        ],
+      );
     }
 
     final sortedChroniques = _getSortedChroniques();
@@ -270,28 +304,53 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         }
         return false;
       },
-      child: Padding(
+      child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: GridView.builder(
-          controller: _scrollController,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: sortedChroniques.length + (_hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == sortedChroniques.length) {
-              return _buildLoadMoreIndicator();
-            }
-            return _buildUserChroniqueCard(sortedChroniques[index]);
-          },
-        ),
+        itemCount: (sortedChroniques.length / 2).ceil() + 1 + (_hasMore ? 1 : 0), // +1 pour la pub
+        itemBuilder: (context, index) {
+          // Premier élément (index 0) = la pub
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildAdBanner(key: 'chroniques_first_ad'),
+            );
+          }
+
+          // Ajuster l'index pour les lignes de chroniques
+          final rowIndex = index - 1;
+
+          // Indicateur de chargement à la fin
+          if (rowIndex == (sortedChroniques.length / 2).ceil() && _hasMore) {
+            return _buildLoadMoreIndicator();
+          }
+
+          // Construire une ligne avec 2 chroniques
+          final startIdx = rowIndex * 2;
+          if (startIdx >= sortedChroniques.length) return SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                // Première chronique de la ligne
+                Expanded(
+                  child: _buildUserChroniqueCard(sortedChroniques[startIdx]),
+                ),
+                SizedBox(width: 8),
+                // Deuxième chronique de la ligne (si existe)
+                Expanded(
+                  child: startIdx + 1 < sortedChroniques.length
+                      ? _buildUserChroniqueCard(sortedChroniques[startIdx + 1])
+                      : Container(), // Vide si pas de deuxième
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
-
   Widget _buildUserChroniqueCard(List<Chronique> userChroniques) {
     if (userChroniques.isEmpty) return SizedBox();
 

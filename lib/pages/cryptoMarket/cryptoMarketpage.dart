@@ -1,6 +1,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
 import '../../models/crypto_model.dart';
@@ -9,6 +10,7 @@ import '../../providers/crypto_market_provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../pub/native_ad_widget.dart';
 import 'admin_crypto_page.dart';
 import 'crypto_detail_page.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -715,9 +717,13 @@ String timetrade = '24H';
               SliverToBoxAdapter(
                 child: _buildExcitationBanner(),
               ),
+// ✅ Ajoutez cette fonction dans votre classe
 
               // Activités récentes dynamiques
               SliverToBoxAdapter(
+                child: _buildAdBanner(key: 'market_top'),
+              ),
+      SliverToBoxAdapter(
                 child: _buildActivityFeed(),
               ),
 
@@ -752,7 +758,24 @@ String timetrade = '24H';
       },
     );
   }
-
+// ✅ Ajoutez cette fonction dans votre classe
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small,
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans top10: $key');
+        },
+      ),
+    );
+  }
   Widget _buildExcitationBanner() {
     final message = _excitationMessages[_currentExcitationIndex];
 

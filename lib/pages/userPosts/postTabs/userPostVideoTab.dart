@@ -15,6 +15,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../services/postService/massNotificationService.dart';
 import '../../../services/utils/abonnement_utils.dart';
+import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
 
 class UserPubVideo extends StatefulWidget {
@@ -84,7 +85,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
   final Color _hintColor = Colors.grey[400]!;
   final Color _successColor = Color(0xFF4CAF50);
   late MassNotificationService _notificationService;
-
+// ✅ Ajoutez la clé pour la pub récompensée
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
   @override
   void initState() {
     super.initState();
@@ -960,54 +963,98 @@ class _UserPubVideoState extends State<UserPubVideo> {
         color: _cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _secondaryColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.timer, color: _secondaryColor, size: 24),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Temps d\'attente',
-                  style: TextStyle(
-                    color: _textColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+          Row(
+            children: [
+              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Temps d\'attente',
+                        style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(height: 4),
+                    Text('Prochain post dans: $_timeRemaining',
+                        style: TextStyle(color: _hintColor, fontSize: 14)),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Prochain post dans: $_timeRemaining',
-                  style: TextStyle(
-                    color: _hintColor,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _secondaryColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _timeRemaining,
-              style: TextStyle(
-                color: _secondaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
               ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _secondaryColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(_timeRemaining,
+                    style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 16),
+
+          // ✅ Option de publicité récompensée
+          Container(
+            width: double.infinity,
+            child: Column(
+              children: [
+                Divider(color: Colors.grey[800]),
+                SizedBox(height: 12),
+                Text('OU',
+                    style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                SizedBox(height: 12),
+                RewardedAdWidget(
+                  key: _rewardedAdKey,
+                  onUserEarnedReward: (reward) {
+                    setState(() {
+                      _canPost = true;
+                      _timeRemaining = '';
+                      _showRewardedAd = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Merci ! Vous pouvez poster maintenant !',
+                            style: TextStyle(color: Colors.green)),
+                        backgroundColor: _cardColor,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  onAdDismissed: () {
+                    setState(() => _showRewardedAd = false);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _secondaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.play_circle_filled, color: Colors.black, size: 24),
+                        SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('PUBLICITÉ RÉCOMPENSÉE',
+                                style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text('Regardez une pub pour poster maintenant',
+                                style: TextStyle(color: Colors.black54, fontSize: 10)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _hintColor, fontSize: 11)),
+              ],
             ),
           ),
         ],
@@ -1311,6 +1358,70 @@ class _UserPubVideoState extends State<UserPubVideo> {
       ),
     );
   }
+  void _showRewardedAdOption() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.timer, color: _secondaryColor),
+            SizedBox(width: 10),
+            Text('Temps d\'attente',
+                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Vous devez attendre $_timeRemaining avant de pouvoir publier.',
+              style: TextStyle(color: _hintColor),
+            ),
+            SizedBox(height: 20),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _secondaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _secondaryColor),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  SizedBox(height: 8),
+                  Text('Regardez une publicité',
+                      style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('et publiez immédiatement !',
+                      style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ATTENDRE', style: TextStyle(color: _hintColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _showRewardedAd = true);
+              RewardedAdWidget.showAd(_rewardedAdKey);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _secondaryColor,
+              foregroundColor: Colors.black,
+            ),
+            child: Text('REGARDER LA PUB'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showPremiumModal({String? reason, String? title, String? message, String? actionText}) {
     if (title == null) {
@@ -1508,15 +1619,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     }
     // Vérifier cooldown
     if (!_canPost && _cooldownMinutes > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Veuillez attendre $_timeRemaining avant de poster à nouveau',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
-      );
+      _showRewardedAdOption(); // Proposer la pub
       return;
     }
 

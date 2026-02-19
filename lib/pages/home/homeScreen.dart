@@ -535,22 +535,22 @@ class _MyHomePageState extends State<MyHomePage>
                       ));
                     },
                   ),
-                  // ListTile(
-                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                  //   leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
-                  //   title: TextCustomerMenu(
-                  //     titre: "Marketing",
-                  //     fontSize: SizeText.homeProfileTextSize,
-                  //     couleur: Colors.white, // Texte blanc
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  //   onTap: () async {
-                  //
-                  //     Navigator.push(context, MaterialPageRoute(
-                  //       builder: (context) => MarketingAffiliationPage(),
-                  //     ));
-                  //   },
-                  // ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Marketing",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => MarketingAffiliationPage(),
+                      ));
+                    },
+                  ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
@@ -1227,15 +1227,21 @@ class _MyHomePageState extends State<MyHomePage>
     _tabController = TabController(length: 6, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
-      if (_tabController!.index == 1) { // 1 = deuxième onglet (Sport)
+      if (_tabController!.indexIsChanging) return;
+
+      if (_tabController!.index == 1) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeSportPostPage(type: TabBarType.SPORT.name),
+            builder: (context) =>
+                HomeSportPostPage(type: TabBarType.SPORT.name),
           ),
-        ).then((_) => _tabController!.animateTo(0)); // Retour à l'accueil
+        ).then((_) {
+          _tabController!.animateTo(0);
+        });
       }
     });
+
 
     // hasShownDialogToday().then((value) async {
     //   final SharedPreferences prefs = await SharedPreferences.getInstance();

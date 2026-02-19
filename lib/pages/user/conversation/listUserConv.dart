@@ -980,6 +980,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
@@ -1003,6 +1004,8 @@ import 'package:page_transition/page_transition.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/chat_service.dart';
 import 'package:afrotok/pages/chat/myChat.dart';
+
+import '../../pub/native_ad_widget.dart';
 
 class ListUserChatsOptimized extends StatefulWidget {
   const ListUserChatsOptimized({super.key});
@@ -1335,6 +1338,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
     return _buildChatList(_loadedChats);
   }
+
   Widget _buildChatList(List<ChatWithLastMessage> chatsWithMessages) {
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollNotification) {
@@ -1345,13 +1349,30 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       },
       child: ListView.builder(
         controller: _scrollController,
-        itemCount: chatsWithMessages.length + (_hasMoreChats ? 1 : 0),
+        itemCount: chatsWithMessages.length + 1 + (_hasMoreChats ? 1 : 0), // +1 pour la pub
         itemBuilder: (context, index) {
-          if (index == chatsWithMessages.length) {
+          // Premier élément (index 0) = la pub
+          if (index == 0) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: _buildAdBanner(key: 'chat_list_first_ad'),
+            );
+          }
+
+          // Ajuster l'index pour les chats
+          final chatIndex = index - 1;
+
+          // Indicateur de chargement à la fin
+          if (chatIndex == chatsWithMessages.length && _hasMoreChats) {
             return _buildLoadMoreIndicator();
           }
 
-          final chatWithMessage = chatsWithMessages[index];
+          // Éviter les débordements
+          if (chatIndex >= chatsWithMessages.length) {
+            return SizedBox.shrink();
+          }
+
+          final chatWithMessage = chatsWithMessages[chatIndex];
           final Chat chat = chatWithMessage.chat;
           final Message? lastMessage = chatWithMessage.lastMessage;
 
@@ -1394,13 +1415,32 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     }
 
     if (_searchResults.isEmpty) {
-      return _buildNoSearchResults();
+      return ListView(
+        children: [
+          // ✅ La pub en premier même si pas de résultats
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: _buildAdBanner(key: 'search_empty_ad'),
+          ),
+          SizedBox(height: 16),
+          _buildNoSearchResults(),
+        ],
+      );
     }
 
     return ListView.builder(
-      itemCount: _searchResults.length,
+      itemCount: _searchResults.length + 1, // +1 pour la pub
       itemBuilder: (context, index) {
-        final Chat chat = _searchResults[index];
+        // Premier élément (index 0) = la pub
+        if (index == 0) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: _buildAdBanner(key: 'search_results_first_ad'),
+          );
+        }
+
+        final searchIndex = index - 1;
+        final Chat chat = _searchResults[searchIndex];
         final bool isSearchResult = chat.id!.startsWith('search_');
         final int unreadCount = _getUnreadCount(chat);
         final bool isOnline = chat.chatFriend?.state == UserState.ONLINE.name;
@@ -1423,6 +1463,100 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
+  Widget _buildErrorWidget() {
+    return ListView(
+      children: [
+        // ✅ La pub en premier même en cas d'erreur
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: _buildAdBanner(key: 'error_ad'),
+        ),
+        SizedBox(height: 16),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: primaryYellow, size: 48),
+              SizedBox(height: 16),
+              Text(
+                "Erreur de chargement",
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 8),
+              TextButton(
+                onPressed: () => setState(() {}),
+                child: Text(
+                  "Réessayer",
+                  style: TextStyle(color: primaryYellow),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return ListView(
+      children: [
+        // ✅ La pub en premier même quand la liste est vide
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: _buildAdBanner(key: 'empty_state_ad'),
+        ),
+        SizedBox(height: 16),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.chat_bubble_outline, color: primaryYellow, size: 48),
+              SizedBox(height: 16),
+              Text(
+                "Aucune conversation",
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Commencez une conversation avec vos amis",
+                style: TextStyle(color: lightGrey, fontSize: 12),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/amis');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryGreen,
+                  foregroundColor: primaryBlack,
+                ),
+                child: Text("Voir mes amis"),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+// ✅ Ajoutez cette fonction dans votre classe
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small,
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans conversations: $key');
+        },
+      ),
+    );
+  }
   // CORRECTION : Méthode pour obtenir le texte d'aperçu du message
   String _getMessagePreview(Message? lastMessage) {
     if (lastMessage == null) return 'Aucun message';
@@ -1492,29 +1626,6 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: primaryYellow, size: 48),
-          SizedBox(height: 16),
-          Text(
-            "Erreur de chargement",
-            style: TextStyle(color: Colors.white),
-          ),
-          SizedBox(height: 8),
-          TextButton(
-            onPressed: () => setState(() {}),
-            child: Text(
-              "Réessayer",
-              style: TextStyle(color: primaryYellow),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
@@ -1535,37 +1646,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chat_bubble_outline, color: primaryYellow, size: 48),
-          SizedBox(height: 16),
-          Text(
-            "Aucune conversation",
-            style: TextStyle(color: Colors.white),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Commencez une conversation avec vos amis",
-            style: TextStyle(color: lightGrey, fontSize: 12),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/amis');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: primaryBlack,
-            ),
-            child: Text("Voir mes amis"),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildNoSearchResults() {
     return Center(

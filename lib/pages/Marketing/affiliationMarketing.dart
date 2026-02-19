@@ -3,6 +3,7 @@
 import 'package:afrotok/pages/Marketing/pageExplicationMarketing.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,6 +14,7 @@ import '../../providers/authProvider.dart';
 import '../../models/model_data.dart';
 import '../component/showUserDetails.dart';
 import '../paiement/newDepot.dart';
+import '../pub/native_ad_widget.dart';
 
 
 class MarketingAffiliationPage extends StatefulWidget {
@@ -72,6 +74,23 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
       }
     }
   }
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small,
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans invitations: $key');
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,21 +139,24 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildAdBanner(key: 'participants_empty_top'),
+                  SizedBox(height: 10),
+
                   // En-tête marketing
                   _buildMarketingHeader(user, isMarketingActive, daysLeft, isAdmin, hasParrain),
-                  SizedBox(height: 20),
+                  SizedBox(height: 10),
 
                   // Section Ajouter Parrain (si pas de parrain)
                   if (!hasParrain && !showAddParrainForm)
                     _buildNoParrainSection(),
                   if (!hasParrain && !showAddParrainForm)
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
 
                   // Formulaire ajout parrain
                   if (showAddParrainForm)
                     _buildAddParrainForm(),
                   if (showAddParrainForm)
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
 
                   // Section Parrain (si parrain existe)
                   if (hasParrain && parrainData != null)
@@ -1317,9 +1339,10 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         ),
 
         // Bouton encaissement si actif
-        if (isActive && !canRenew && !isAdmin && (user.solde_marketing ?? 0) > 0)
+        if (isActive && !canRenew && (user.solde_marketing ?? 0) > 0)
           SizedBox(height: 12),
-        if (isActive && !canRenew && !isAdmin && (user.solde_marketing ?? 0) > 0)
+        // if (isActive && !canRenew && !isAdmin && (user.solde_marketing ?? 0) > 0)
+        if (isActive && !canRenew && (user.solde_marketing ?? 0) > 0)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

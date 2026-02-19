@@ -5,12 +5,14 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../pub/native_ad_widget.dart';
 
 
 // Couleurs pour le thème
@@ -103,6 +105,31 @@ class _ChallengesListPageState extends State<ChallengesListPage> {
       ),
     );
   }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +163,7 @@ class _ChallengesListPageState extends State<ChallengesListPage> {
             padding: EdgeInsets.all(16),
             child: _buildFilterChips(),
           ),
-
+// ✅ AJOUT: Bannière native en première position
           // Liste des challenges
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -178,18 +205,30 @@ class _ChallengesListPageState extends State<ChallengesListPage> {
 
                 final challenges = snapshot.data!.docs;
 
+                // ✅ Construction de la liste avec la pub en PREMIER élément
                 return ListView.builder(
                   padding: EdgeInsets.all(16),
-                  itemCount: challenges.length,
+                  itemCount: challenges.length + 1, // +1 pour la pub
                   itemBuilder: (context, index) {
+                    // Premier élément (index 0) = la pub
+                    if (index == 0) {
+                      return Column(
+                        children: [
+                          _buildAdBanner(key: 'challenges_first_ad'),
+                          SizedBox(height: 16), // Espacement après la pub
+                        ],
+                      );
+                    }
+
+                    // Ensuite les challenges (décalés d'un index)
+                    final challengeIndex = index - 1;
                     final challengeData =
-                        challenges[index].data() as Map<String, dynamic>;
+                    challenges[challengeIndex].data() as Map<String, dynamic>;
                     final challenge = Challenge.fromJson(challengeData);
 
                     return _buildChallengeCard(challenge, context);
                   },
-                );
-              },
+                );              },
             ),
           ),
         ],

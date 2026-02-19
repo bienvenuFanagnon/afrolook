@@ -19,6 +19,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../services/postService/massNotificationService.dart';
 import '../../../services/utils/abonnement_utils.dart';
+import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
 
 class UserPostLookImageTab extends StatefulWidget {
@@ -80,7 +81,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
   int _maxImages = 1;
   int _maxCharacters = 300;
   int _cooldownMinutes = 60;
-
+// ✅ Ajoutez la clé pour la pub récompensée
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
   @override
   void initState() {
     super.initState();
@@ -973,54 +976,98 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         color: _cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _secondaryColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.timer, color: _secondaryColor, size: 24),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Temps d\'attente',
-                  style: TextStyle(
-                    color: _textColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+          Row(
+            children: [
+              Icon(Icons.timer, color: _secondaryColor, size: 24),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Temps d\'attente',
+                        style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(height: 4),
+                    Text('Prochain post dans: $_timeRemaining',
+                        style: TextStyle(color: _hintColor, fontSize: 14)),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Prochain post dans: $_timeRemaining',
-                  style: TextStyle(
-                    color: _hintColor,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _secondaryColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _timeRemaining,
-              style: TextStyle(
-                color: _secondaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
               ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _secondaryColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(_timeRemaining,
+                    style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 16),
+
+          // ✅ Option de publicité récompensée
+          Container(
+            width: double.infinity,
+            child: Column(
+              children: [
+                Divider(color: Colors.grey[800]),
+                SizedBox(height: 12),
+                Text('OU',
+                    style: TextStyle(color: _hintColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                SizedBox(height: 12),
+                RewardedAdWidget(
+                  key: _rewardedAdKey,
+                  onUserEarnedReward: (reward) {
+                    setState(() {
+                      _canPost = true;
+                      _timeRemaining = '';
+                      _showRewardedAd = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Merci ! Vous pouvez poster maintenant !',
+                            style: TextStyle(color: Colors.green)),
+                        backgroundColor: _cardColor,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  onAdDismissed: () {
+                    setState(() => _showRewardedAd = false);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _secondaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.play_circle_filled, color: Colors.black, size: 24),
+                        SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('PUBLICITÉ RÉCOMPENSÉE',
+                                style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text('Regardez une pub pour poster maintenant',
+                                style: TextStyle(color: Colors.black54, fontSize: 10)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text('Regardez une courte publicité pour\npublier immédiatement sans attendre',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _hintColor, fontSize: 11)),
+              ],
             ),
           ),
         ],
@@ -1301,19 +1348,76 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       ),
     );
   }
+  void _showRewardedAdOption() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.timer, color: _secondaryColor),
+            SizedBox(width: 10),
+            Text('Temps d\'attente',
+                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Vous devez attendre $_timeRemaining avant de pouvoir publier.',
+              style: TextStyle(color: _hintColor),
+            ),
+            SizedBox(height: 20),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _secondaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _secondaryColor),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.play_circle_filled, color: _secondaryColor, size: 40),
+                  SizedBox(height: 8),
+                  Text('Regardez une publicité',
+                      style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('et publiez immédiatement !',
+                      style: TextStyle(color: _secondaryColor, fontSize: 14)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ATTENDRE', style: TextStyle(color: _hintColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _showRewardedAd = true);
+              RewardedAdWidget.showAd(_rewardedAdKey);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _secondaryColor,
+              foregroundColor: Colors.black,
+            ),
+            child: Text('REGARDER LA PUB'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _publishPost() async {
     // Vérifier cooldown
     if (!_canPost && _cooldownMinutes > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Veuillez attendre $_timeRemaining avant de poster à nouveau',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
-      );
+      _showRewardedAdOption(); // Proposer la pub
+
       return;
     }
 
@@ -1492,6 +1596,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           // Quand il sélectionne des pays spécifiques
           post.availableCountries = _selectedCountries.map((c) => c.code).toList();
         }
+
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
           post.categorie = "CANAL";
@@ -2047,12 +2152,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                         SizedBox(height: 20),
 
                         // Bouton de publication
+// Bouton de publication
                         Container(
                           width: double.infinity,
                           height: 55,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: onTap || (!_canPost && _cooldownMinutes > 0) || _selectedImages.isEmpty
+                              colors: onTap || (!_canPost && _cooldownMinutes > 0)
                                   ? [Colors.grey, Colors.grey]
                                   : [_primaryColor, Color(0xFFFF5252)],
                               begin: Alignment.centerLeft,
@@ -2071,7 +2177,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(25),
-                              onTap: onTap || (!_canPost && _cooldownMinutes > 0) || _selectedImages.isEmpty
+                              onTap: onTap || (!_canPost && _cooldownMinutes > 0)
                                   ? null
                                   : _publishPost,
                               child: Center(
@@ -2082,22 +2188,57 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                   rightDotColor: _secondaryColor,
                                 )
                                     : (!_canPost && _cooldownMinutes > 0)
-                                    ? Text(
-                                  'Attendez $_timeRemaining',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                )
-                                    : _selectedImages.isEmpty
                                     ? Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.photo, color: Colors.white, size: 20),
+                                    Icon(Icons.timer, color: Colors.white, size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      'AJOUTEZ UNE IMAGE',
+                                      'Attendez $_timeRemaining',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _secondaryColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: InkWell(
+                                        onTap: () {
+                                          // ✅ Utilisation de la méthode statique avec la clé
+                                          RewardedAdWidget.showAd(_rewardedAdKey);
+                                        },
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.play_arrow, color: Colors.black, size: 16),
+                                            Text(
+                                              'Pub',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                                    : _selectedCountries.isEmpty && !_selectAllCountries
+                                    ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.warning, color: Colors.white, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'SÉLECTIONNEZ UN PAYS',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -2112,7 +2253,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                     Icon(Icons.send, color: Colors.white, size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      'PUBLIER',
+                                      'PUBLIER VOTRE TEXTE',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -2127,7 +2268,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        '${_selectedImages.length}',
+                                        _selectAllCountries ? '🌍' : '${_selectedCountries.length}',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

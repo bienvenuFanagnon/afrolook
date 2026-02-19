@@ -6,6 +6,7 @@ import 'package:afrotok/services/api.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -15,6 +16,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../auth/authTest/constants.dart';
+import '../../pub/native_ad_widget.dart';
 import '../detailsOtherUser.dart';
 
 
@@ -349,99 +351,164 @@ class _MesInvitationsState extends State<MesInvitationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Mes Invitations'),
-        ),
-        body: SingleChildScrollView(
-
-          child: Column(
-
-            children: [
-              Padding(
-                padding: EdgeInsets.only(top: 16,left: 16,right: 16),
-                child: TextField(
-                  cursorColor: kPrimaryColor,
-                  decoration: InputDecoration(
-                    focusColor: ConstColors.buttonColors,
-                    focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: kPrimaryColor)),
-                    hintText: "Search...",
-                    hintStyle: TextStyle(color: Colors.grey.shade600),
-                    prefixIcon: Icon(Icons.search,color: Colors.grey.shade600, size: 20,),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    contentPadding: EdgeInsets.all(8),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade100
-                        )
-                    ),
-                  ),
+      appBar: AppBar(
+        title: Text('Mes Invitations'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+              child: TextField(
+                cursorColor: kPrimaryColor,
+                decoration: InputDecoration(
+                  focusColor: ConstColors.buttonColors,
+                  focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: kPrimaryColor)),
+                  hintText: "Search...",
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  prefixIcon: Icon(Icons.search,
+                      color: Colors.grey.shade600, size: 20),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: EdgeInsets.all(8),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(color: Colors.grey.shade100)),
                 ),
               ),
+            ),
 
-              StreamBuilder<List<Invitation>>(
-                //initialData: [],
-                stream: getData()!,
+            StreamBuilder<List<Invitation>>(
+              stream: getData()!,
+              builder: (context, AsyncSnapshot<List<Invitation>> snapshot) {
+                if (snapshot.hasData) {
+                  final invitations = snapshot.data!;
 
-                // key: _formKey,
+                  // ✅ Si la liste est vide, afficher la pub + message vide
+                  if (invitations.isEmpty) {
+                    return Column(
+                      children: [
+                        // La pub en premier
+                        _buildAdBanner(key: 'invitations_empty_ad'),
+                        SizedBox(height: 20),
+                        Center(
+                          child: Column(
+                            children: [
+                              Image.asset('assets/images/404.png',
+                                  height: 200, width: 200),
+                              SizedBox(height: 16),
+                              Text(
+                                "Aucune invitation",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "Vous n'avez pas d'invitation en attente",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }
 
-                builder: (context, AsyncSnapshot<List<Invitation>> snapshot) {
+                  // ✅ Liste avec pub en premier élément
+                  return Column(
+                    children: [
+                      // La pub en premier
+                      _buildAdBanner(key: 'invitations_list_first_ad'),
+                      SizedBox(height: 8),
 
-
-
-                  if (snapshot.hasData) {
-
-                    return
+                      // Ensuite la liste des invitations
                       ListView.builder(
                         scrollDirection: Axis.vertical,
-
-                        itemCount: snapshot.data!.length!,
-
+                        itemCount: invitations.length,
                         shrinkWrap: true,
                         padding: EdgeInsets.only(top: 16),
                         physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index){
-
+                        itemBuilder: (context, index) {
                           return GestureDetector(
                             onTap: () {
                               //Navigator.pushNamed(context, '/basic_chat');
                             },
-                            child:  invitationData(snapshot.data![index]!
-
-                            ),
+                            child: invitationData(invitations[index]!),
                           );
                         },
-                      );
-                  }
-                  else if (snapshot.hasError) {
-                    return    Center(
-                      child: Column(
-                        children: [
-                          Image.asset('assets/images/404.png',height: 500,width: 500,),
-                          Text("Erreurs lors du chargement",style: TextStyle(color: Colors.red),),
-                          TextButton(
-                            child: Text('Réessayer',style: TextStyle(color: Colors.green),),
-                            onPressed: () {
-
-                              // Réessayez de charger la page.
-                            },
-                          ),
-                        ],
                       ),
-                    );
-                  } else {
-                    // Utiliser les données de snapshot.data
+                    ],
+                  );
+                } else if (snapshot.hasError) {
+                  // ✅ En cas d'erreur, afficher la pub + message d'erreur
+                  return Column(
+                    children: [
+                      _buildAdBanner(key: 'invitations_error_ad'),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Column(
+                          children: [
+                            Image.asset('assets/images/404.png',
+                                height: 200, width: 200),
+                            Text(
+                              "Erreurs lors du chargement",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            TextButton(
+                              child: Text(
+                                'Réessayer',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                              onPressed: () {
+                                // Réessayez de charger la page.
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // ✅ Pendant le chargement, afficher un skeleton
+                  return Column(
+                    children: [
+                      _buildAdBanner(key: 'invitations_loading_ad'),
+                      SizedBox(height: 20),
+                      Center(
+                        child: CircularProgressIndicator(color: Colors.green),
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    return SizedBox();
-                  }
-                },
-              ),
-
-            ],
-          ),
-        ));
+// ✅ Ajoutez cette fonction dans votre classe
+  Widget _buildAdBanner({required String key}) {
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small,
+        onAdLoaded: () {
+          print('✅ Native Ad chargée dans invitations: $key');
+        },
+      ),
+    );
   }
 }
 

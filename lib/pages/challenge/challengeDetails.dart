@@ -7,12 +7,14 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import '../postDetailsVideoListe.dart';
+import '../pub/native_ad_widget.dart';
 import 'newChallenge.dart';
 import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -1508,6 +1510,31 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
       default: return _buildDetailsTab();
     }
   }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
 
 // REMPLACER ceci dans _buildDetailsTab():
   Widget _buildDetailsTab() {
@@ -1523,7 +1550,9 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 
           SizedBox(height: 20),
           _buildChallengeHeader(),
-          SizedBox(height: 20),
+          SizedBox(height: 5),
+          _buildAdBanner(key: 'challenges_first_ad'),
+          SizedBox(height: 5),
 
           // Section des prix des gagnants
           _buildPrixGagnantsSection(),
@@ -1545,14 +1574,23 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
     final aVote = _challenge!.aVote(user?.uid);
 
     if (_posts.isEmpty) {
-      return _buildEmptyState(
-        _challenge!.isEnCours ? Icons.photo_library : Icons.schedule,
-        _challenge!.isEnCours
-            ? 'Aucune publication'
-            : 'En attente du début du challenge',
-        _challenge!.isEnCours
-            ? 'Les participants publieront bientôt leurs contenus'
-            : 'Revenez quand le challenge aura débuté',
+      return Column(
+        children: [
+          // ✅ La pub en premier (même si pas de posts)
+          _buildAdBanner(key: 'posts_empty_top'),
+
+          Expanded(
+            child: _buildEmptyState(
+              _challenge!.isEnCours ? Icons.photo_library : Icons.schedule,
+              _challenge!.isEnCours
+                  ? 'Aucune publication'
+                  : 'En attente du début du challenge',
+              _challenge!.isEnCours
+                  ? 'Les participants publieront bientôt leurs contenus'
+                  : 'Revenez quand le challenge aura débuté',
+            ),
+          ),
+        ],
       );
     }
 
@@ -1579,21 +1617,35 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
               ],
             ),
           ),
+
         Expanded(
-          child: GridView.builder(
+          child: ListView(
             padding: EdgeInsets.all(12),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: _posts.length,
-            itemBuilder: (context, index) {
-              return _buildPostGridItem(_posts[index], index);
-            },
+            children: [
+              // ✅ La pub en premier dans le ListView
+              _buildAdBanner(key: 'posts_grid_top'),
+
+              SizedBox(height: 16),
+
+              // Ensuite la grille des posts
+              GridView.builder(
+                shrinkWrap: true, // Important pour ListView
+                physics: NeverScrollableScrollPhysics(), // Désactive le scroll interne
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: _posts.length,
+                itemBuilder: (context, index) {
+                  return _buildPostGridItem(_posts[index], index);
+                },
+              ),
+            ],
           ),
         ),
+
         Container(
           padding: EdgeInsets.all(16),
           child: ElevatedButton(
@@ -2181,24 +2233,50 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
   }
 
   Widget _buildParticipantsTab() {
-    return _participants.isEmpty
-        ? _buildEmptyState(
-        Icons.people_outline,
-        'Aucun participant',
-        'Soyez le premier à participer à ce challenge !'
-    )
-        : Column(
+    if (_participants.isEmpty) {
+      return Column(
+        children: [
+          // La pub en premier
+          _buildAdBanner(key: 'participants_empty_top'),
+          SizedBox(height: 16),
+
+          // Message d'état vide
+          Expanded(
+            child: _buildEmptyState(
+                Icons.people_outline,
+                'Aucun participant',
+                'Soyez le premier à participer à ce challenge !'
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
       children: [
         Expanded(
           child: ListView.builder(
             padding: EdgeInsets.all(16),
-            itemCount: _participants.length,
+            itemCount: _participants.length + 1, // +1 pour la pub
             itemBuilder: (context, index) {
-              final participant = _participants[index];
+              // Premier élément (index 0) = la pub
+              if (index == 0) {
+                return Column(
+                  children: [
+                    _buildAdBanner(key: 'participants_list_first'),
+                    SizedBox(height: 16),
+                  ],
+                );
+              }
+
+              // Participants
+              final participantIndex = index - 1;
+              final participant = _participants[participantIndex];
               return _buildParticipantListItem(participant);
             },
           ),
         ),
+
         Container(
           padding: EdgeInsets.all(16),
           child: ElevatedButton(
@@ -2723,16 +2801,38 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
             // Liste
             Expanded(
               child: _participants.isEmpty
-                  ? _buildEmptyModalState(
-                  Icons.people_outline,
-                  'Aucun participant',
-                  'Aucun utilisateur ne participe à ce challenge.'
+                  ? ListView(
+                padding: EdgeInsets.all(16),
+                children: [
+                  // La pub en premier
+                  _buildAdBanner(key: 'participants_empty_ad'),
+                  SizedBox(height: 16),
+
+                  // Message d'état vide
+                  _buildEmptyModalState(
+                      Icons.people_outline,
+                      'Aucun participant',
+                      'Aucun utilisateur ne participe à ce challenge.'
+                  ),
+                ],
               )
                   : ListView.builder(
                 padding: EdgeInsets.all(16),
-                itemCount: _participants.length,
+                itemCount: _participants.length + 1, // +1 pour la pub
                 itemBuilder: (context, index) {
-                  return _buildParticipantListItem(_participants[index]);
+                  // Premier élément (index 0) = la pub
+                  if (index == 0) {
+                    return Column(
+                      children: [
+                        _buildAdBanner(key: 'participants_first_ad'),
+                        SizedBox(height: 16),
+                      ],
+                    );
+                  }
+
+                  // Participants
+                  final participantIndex = index - 1;
+                  return _buildParticipantListItem(_participants[participantIndex]);
                 },
               ),
             ),
@@ -2791,32 +2891,43 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 
             // Grille
             Expanded(
-              child: _posts.isEmpty
-                  ? _buildEmptyModalState(
-                  Icons.photo_library,
-                  'Aucune publication',
-                  'Aucune publication pour ce challenge.'
-              )
-                  : GridView.builder(
-                padding: EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: _posts.length,
-                itemBuilder: (context, index) {
-                  return _buildPostGridItem(_posts[index], index,isTreeGrid: true);
-                },
+              child: Column(
+                children: [
+                  // ✅ La pub en premier (avant la grille)
+                  _buildAdBanner(key: 'posts_before_grid'),
+
+                  SizedBox(height: 16), // Espacement
+
+                  // Ensuite la grille des publications
+                  Expanded(
+                    child: _posts.isEmpty
+                        ? _buildEmptyModalState(
+                        Icons.photo_library,
+                        'Aucune publication',
+                        'Aucune publication pour ce challenge.'
+                    )
+                        : GridView.builder(
+                      padding: EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.75,
+                      ),
+                      itemCount: _posts.length,
+                      itemBuilder: (context, index) {
+                        return _buildPostGridItem(_posts[index], index, isTreeGrid: true);
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ),          ],
         ),
       ),
     );
   }
-
+// Version spéciale pour la grille (format carré)
   Widget _buildEmptyModalState(IconData icon, String title, String subtitle) {
     return Center(
       child: Padding(

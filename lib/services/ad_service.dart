@@ -14,7 +14,10 @@ class AdService {
 
   // Mode TEST/PROD
   static bool _useTestAds = true; // Mettre à false pour la production
-
+// ✅ NATIVE AD
+  static String get _testNativeId => Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/2247696110'   // Native Ad TEST Android
+      : 'ca-app-pub-3940256099942544/3986624511';  // Native Ad TEST iOS
   // IDs de TEST (officiels Google)
   static String get _testBannerId => Platform.isAndroid
       ? 'ca-app-pub-3940256099942544/6300978111'
@@ -30,11 +33,13 @@ class AdService {
 
   // VOS IDs DE PRODUCTION (à remplacer par les vôtres)
   static const String _prodBannerId = 'ca-app-pub-4937249920200692/7937737015';
+  static const String _prodNativeAdId = 'ca-app-pub-4937249920200692/6034871678';
   static const String _prodInterstitialId = 'ca-app-pub-4937249920200692/XXXXXXXXXX'; // À créer
-  static const String _prodRewardedId = 'ca-app-pub-4937249920200692/XXXXXXXXXX'; // À créer
+  static const String _prodRewardedId = 'ca-app-pub-4937249920200692/8962511249'; // À créer
 
   // Getters publics
   static String get bannerAdId => _useTestAds ? _testBannerId : _prodBannerId;
+  static String get nativeAdId => _useTestAds ? _testNativeId : _prodNativeAdId;
   static String get interstitialAdId => _useTestAds ? _testInterstitialId : _prodInterstitialId;
   static String get rewardedAdId => _useTestAds ? _testRewardedId : _prodRewardedId;
 
