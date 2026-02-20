@@ -109,11 +109,11 @@ Future<void> main() async {
     // Remplacer par l'ID obtenu dans les logs
     await MobileAds.instance.updateRequestConfiguration(
       RequestConfiguration(
-        testDeviceIds: ['33BE2250B43518CCDA7DE426D04EE231'], // Votre ID de test
+        testDeviceIds: ['011935FC78A51EF87681BE382AACD2B4','84A5B8717F83446C0B570C4358962A6A'], // Votre ID de test
       ),);
 
     // Mode TEST (true) / PRODUCTION (false)
-    AdService.setMode(true); // À changer avant publication
+    AdService.setMode(false); // À changer avant publication
   }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {
@@ -457,8 +457,8 @@ class _MyAppState extends State<MyApp> {
               case '/home':
                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
               case '/videos':
-                // return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
-                return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+                return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
+                // return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
               case '/home_profile_user':
                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
               case '/profile_entreprise':

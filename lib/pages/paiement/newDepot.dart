@@ -793,4 +793,3 @@ class _PaymentMethodCard extends StatelessWidget {
     );
   }
 }
-

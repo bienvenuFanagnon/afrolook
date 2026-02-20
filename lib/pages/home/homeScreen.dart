@@ -535,22 +535,22 @@ class _MyHomePageState extends State<MyHomePage>
                       ));
                     },
                   ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "Marketing",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => MarketingAffiliationPage(),
-                      ));
-                    },
-                  ),
+                  // ListTile(
+                  //   trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                  //   leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
+                  //   title: TextCustomerMenu(
+                  //     titre: "Marketing",
+                  //     fontSize: SizeText.homeProfileTextSize,
+                  //     couleur: Colors.white, // Texte blanc
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  //   onTap: () async {
+                  //
+                  //     Navigator.push(context, MaterialPageRoute(
+                  //       builder: (context) => MarketingAffiliationPage(),
+                  //     ));
+                  //   },
+                  // ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
