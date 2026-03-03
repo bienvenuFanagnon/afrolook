@@ -5,6 +5,7 @@ import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/postDetailsVideoListe.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
@@ -475,7 +476,7 @@ class _MesNotificationState extends State<MesNotification> {
           if (videos.isNotEmpty) {
             _hideLoadingOverlay();
             Navigator.push(context, MaterialPageRoute(
-              builder: (context) => OnlyPostVideo(videos: videos),
+              builder: (context) => VideoTikTokPageDetails(initialPost: videos.first),
             )).then((_) {
               setState(() {
                 _isHandlingNotification = false;

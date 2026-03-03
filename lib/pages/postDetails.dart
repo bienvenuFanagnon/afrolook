@@ -111,6 +111,240 @@ class _DetailsPostState extends State<DetailsPost>
       print('Erreur lors de la vérification des favoris: $e');
     }
   }
+
+  // Modifications à apporter à DetailsPost (ajouter ces méthodes et widgets)
+
+// 1. Ajouter dans l'état de _DetailsPostState :
+
+// Variables pour la publicité
+  Advertisement? _advertisement;
+  bool _isLoadingAd = false;
+  bool _isAd = false;
+
+// 2. Ajouter dans initState() :
+
+
+// 3. Ajouter la méthode de chargement :
+  Future<void> _loadAdvertisement() async {
+  if (widget.post.advertisementId == null) return;
+
+  setState(() => _isLoadingAd = true);
+
+  try {
+  final adDoc = await firestore
+      .collection('Advertisements')
+      .doc(widget.post.advertisementId)
+      .get();
+
+  if (adDoc.exists) {
+  setState(() {
+  _advertisement = Advertisement.fromJson(adDoc.data() as Map<String, dynamic>);
+  });
+  }
+  } catch (e) {
+  print('Erreur chargement publicité: $e');
+  } finally {
+  setState(() => _isLoadingAd = false);
+  }
+  }
+
+// 4. Ajouter ce widget dans la partie supérieure de la page (après l'en-tête) :
+
+  Widget _buildAdvertisementHeader() {
+  if (!_isAd || _advertisement == null) return SizedBox.shrink();
+
+  final ad = _advertisement!;
+
+  return Container(
+  margin: EdgeInsets.only(bottom: 16),
+  padding: EdgeInsets.all(5),
+  decoration: BoxDecoration(
+  color: Color(0xFFFFD600).withOpacity(0.1),
+  borderRadius: BorderRadius.circular(12),
+  border: Border.all(color: Color(0xFFFFD600), width: 1),
+  ),
+  child: Column(
+  children: [
+  Row(
+  children: [
+  Container(
+  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  decoration: BoxDecoration(
+  color: Color(0xFFFFD600),
+  borderRadius: BorderRadius.circular(8),
+  ),
+  child: Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+  Icon(Icons.campaign, color: Colors.black, size: 14),
+  SizedBox(width: 4),
+  Text(
+  'PUBLICITÉ',
+  style: TextStyle(
+  color: Colors.black,
+  fontSize: 10,
+  fontWeight: FontWeight.bold,
+  ),
+  ),
+  ],
+  ),
+  ),
+  SizedBox(width: 8),
+  Expanded(
+  child: Text(
+  'Ce post est une publicité',
+  style: TextStyle(
+  color: Colors.grey[400],
+  fontSize: 12,
+  ),
+  ),
+  ),
+  ],
+  ),
+  if(authProvider.loginUserData.role!=UserRole.ADM.name)
+  Column(
+    children: [
+      SizedBox(height: 8),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calendar_today, color: Colors.grey, size: 12),
+              SizedBox(width: 4),
+              Text(
+                'Durée: ${ad.durationDays} jours',
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ],
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: ad.isActive
+                  ? Colors.green.withOpacity(0.2)
+                  : Colors.orange.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              ad.isActive ? 'Active' : 'En attente',
+              style: TextStyle(
+                color: ad.isActive ? Colors.green : Colors.orange,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      if (ad.endDate != null)
+        Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(Icons.timer, color: Colors.grey, size: 12),
+              SizedBox(width: 4),
+              Text(
+                'Fin: ${DateFormat('dd/MM/yyyy').format(DateTime.fromMicrosecondsSinceEpoch(ad.endDate!))}',
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+    ],
+  ),
+
+  ],
+  ),
+  );
+  }
+
+// 5. Ajouter ce widget pour le bouton d'action dans la publicité :
+
+  Widget _buildAdvertisementActionButton() {
+  if (!_isAd || _advertisement == null) return SizedBox.shrink();
+
+  final ad = _advertisement!;
+
+  return Padding(
+  padding: EdgeInsets.symmetric(vertical: 5),
+  child: InkWell(
+  onTap: () async {
+  if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+  final url = Uri.parse(ad.actionUrl!);
+  if (await canLaunchUrl(url)) {
+  await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+  }
+  },
+  child: Container(
+  width: double.infinity,
+  padding: EdgeInsets.symmetric(vertical: 14),
+  decoration: BoxDecoration(
+  gradient: LinearGradient(
+  colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+  begin: Alignment.centerLeft,
+  end: Alignment.centerRight,
+  ),
+  borderRadius: BorderRadius.circular(12),
+  boxShadow: [
+  BoxShadow(
+  color: Color(0xFFE21221).withOpacity(0.3),
+  blurRadius: 10,
+  offset: Offset(0, 4),
+  ),
+  ],
+  ),
+  child: Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+  Icon(
+  ad.actionType == 'download'
+  ? Icons.download
+      : ad.actionType == 'visit'
+  ? Icons.language
+      : Icons.info,
+  color: Colors.white,
+  size: 20,
+  ),
+  SizedBox(width: 8),
+  Text(
+  ad.getActionButtonText().toUpperCase(),
+  style: TextStyle(
+  color: Colors.white,
+  fontWeight: FontWeight.bold,
+  fontSize: 16,
+  ),
+  ),
+  SizedBox(width: 4),
+  Icon(
+  Icons.arrow_forward,
+  color: Colors.white,
+  size: 18,
+  ),
+  ],
+  ),
+  ),
+  ),
+  );
+  }
+
+// 6. Modifier la méthode build pour inclure ces nouveaux widgets
+// Dans le build de DetailsPost, après _buildUserHeader et avant _buildPostContent :
+
+// Ajouter :
+//   if (_isLoadingAd) {
+//   return Center(
+//   child: Padding(
+//   padding: EdgeInsets.all(20),
+//   child: CircularProgressIndicator(color: Color(0xFFFFD600)),
+//   ),
+//   );
+//   }
+
+// // Ajouter dans le Column :
+//   _buildAdvertisementHeader(),
+//   _buildAdvertisementActionButton(),
   // Vérifier si l'utilisateur a accès au contenu
   bool _hasAccessToContent() {
     // Si c'est un post de canal privé
@@ -649,6 +883,10 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void initState() {
     super.initState();
+    _isAd = widget.post.isAdvertisement == true;
+    if (_isAd && widget.post.advertisementId != null) {
+      _loadAdvertisement();
+    }
     _checkIfFavorite();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
@@ -2394,75 +2632,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildPostContent2(Post post) {
-    final isLocked = _isLockedContent();
-    final text = post.description ?? "";
-
-    // Pour le contenu verrouillé, limiter l'affichage
-    if (isLocked) {
-      final words = text.split(' ');
-      final limitedText = words.length > 50
-          ? words.take(50).join(' ') + '...'
-          : text;
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTextContent(limitedText, isLocked: true),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _twitterYellow.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _twitterYellow),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.lock, color: _twitterYellow, size: 16),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Contenu réservé aux abonnés du canal',
-                            style: TextStyle(
-                              color: _twitterYellow,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (post.images != null && post.images!.isNotEmpty)
-            _buildLockedMediaContent(),
-        ],
-      );
-    }
-
-    // Contenu déverrouillé
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (text.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: _buildTextContent(text),
-          ),
-        if (post.images != null && post.images!.isNotEmpty)
-          _buildMediaContent(post),
-      ],
-    );
-  }
   Widget _buildPostContent(Post post) {
     final isLocked = _isLockedContent();
     final text = post.description ?? "";
@@ -4158,7 +4327,14 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
           updatedPost.user = widget.post.user;
           updatedPost.canal = widget.post.canal;
-
+          if (_isLoadingAd) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(color: Color(0xFFFFD600)),
+              ),
+            );
+          }
           return _isLoading
               ? Center(child: CircularProgressIndicator(color: Colors.yellow))
               : SingleChildScrollView(
@@ -4167,7 +4343,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildUserHeader(updatedPost),
-                SizedBox(height: 20),
+                SizedBox(height: 5),
+
+                _buildAdvertisementHeader(),
+                _buildAdvertisementActionButton(),
                 _buildPostContent(updatedPost),
 
                 if (_isLookChallenge)

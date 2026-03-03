@@ -42,6 +42,7 @@ import '../../providers/userProvider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../chat/myChat.dart';
 import '../component/consoleWidget.dart';
+import '../widgetGlobal.dart';
 import 'conponent.dart';
 import 'operation.dart';
 import 'otherUser/otherUser.dart';
@@ -1124,34 +1125,44 @@ class _UserProfileModalState extends State<UserProfileModal> {
     bool isInvited = isInvite(widget.user, authProvider.loginUserData);
     bool isAbonne = isUserAbonne(widget.user.userAbonnesIds!, authProvider.loginUserData.id!);
     bool isOwnProfile = authProvider.loginUserData.id == widget.user.id;
-
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.black,
       ),
       child: Stack(
         children: [
-          // Image de fond en plein écran
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            child: CachedNetworkImage(
-              imageUrl: widget.user.imageUrl ?? '',
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[900],
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFFFD700),
+
+          /// =========================
+          /// IMAGE CLIQUABLE PLEIN ÉCRAN
+          /// =========================
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FullScreenImageViewer(
+                      imageUrl: widget.user.imageUrl ?? '',
+                    ),
+                  ),
+                );
+              },
+              child: CachedNetworkImage(
+                imageUrl: widget.user.imageUrl ?? '',
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[900],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFFFD700),
+                    ),
                   ),
                 ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[900],
-                child: Center(
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[900],
                   child: Icon(
                     Icons.person,
-                    color: Colors.grey[600],
+                    color: Colors.grey,
                     size: 80,
                   ),
                 ),
@@ -1159,28 +1170,36 @@ class _UserProfileModalState extends State<UserProfileModal> {
             ),
           ),
 
-          // Overlay gradient pour meilleure lisibilité
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                  Colors.black.withOpacity(0.9),
-                ],
-                stops: [0.0, 0.5, 1.0],
+          /// =========================
+          /// GRADIENT (N'INTERCEPTE PAS LES CLICS)
+          /// =========================
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: true,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.9),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
               ),
             ),
           ),
 
-          // Contenu superposé
+          /// =========================
+          /// CONTENU SUPERPOSÉ
+          /// =========================
           Column(
             children: [
-              // Header avec bouton fermer
+
+              /// HEADER
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -1194,7 +1213,11 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: Icon(Icons.close, color: Colors.white, size: 24),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
@@ -1203,22 +1226,27 @@ class _UserProfileModalState extends State<UserProfileModal> {
                 ),
               ),
 
-              Spacer(),
+              const Spacer(),
 
-              // Informations utilisateur
+              /// =========================
+              /// SECTION BAS PROFIL
+              /// =========================
               Container(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    // Nom et badge vérifié
+
+                    /// NOM + BADGE
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          constraints: BoxConstraints(maxWidth: widget.w * 0.7),
+                          constraints: BoxConstraints(
+                            maxWidth: widget.w * 0.7,
+                          ),
                           child: Text(
                             '@${widget.user.pseudo ?? "Utilisateur"}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -1233,20 +1261,26 @@ class _UserProfileModalState extends State<UserProfileModal> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        SizedBox(width: 8),
-                          AbonnementUtils.getUserBadge(abonnement: widget.user!.abonnement,isVerified: widget.user!.isVerify!)
+                        const SizedBox(width: 8),
+                        AbonnementUtils.getUserBadge(
+                          abonnement: widget.user!.abonnement,
+                          isVerified: widget.user!.isVerify!,
+                        ),
                       ],
                     ),
 
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                    // Statistiques
+                    /// STATISTIQUES
                     Container(
-                      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20, horizontal: 24),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1254,12 +1288,12 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           _buildStatItem(
                             formatNumber(widget.user.userAbonnesIds!.length),
                             'Abonnés',
-                            Color(0xFFFFD700),
+                            const Color(0xFFFFD700),
                           ),
                           _buildStatItem(
                             '${taux.toStringAsFixed(1)}%',
                             'Popularité',
-                            Color(0xFF8B0000),
+                            const Color(0xFF8B0000),
                           ),
                           _buildStatItem(
                             widget.user.usersParrainer!.length.toString(),
@@ -1270,44 +1304,60 @@ class _UserProfileModalState extends State<UserProfileModal> {
                       ),
                     ),
 
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     _buildProfileLikesSection(),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                    // Actions
+                    /// BOUTONS ACTION
                     if (!isOwnProfile) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          // Bouton Message/Invitation
+
+                          /// MESSAGE / INVITATION
                           _buildActionButton(
                             text: isFriend
                                 ? 'Message'
-                                : (isInvited ? 'Invitation envoyée' : 'Inviter'),
-                            color: isFriend ? Colors.green : (isInvited ? Colors.grey : Colors.blue),
+                                : (isInvited
+                                ? 'Invitation envoyée'
+                                : 'Inviter'),
+                            color: isFriend
+                                ? Colors.green
+                                : (isInvited
+                                ? Colors.grey
+                                : Colors.blue),
                             isDisabled: isInvited,
                             isLoading: inviteTap,
-                            icon: isFriend ? Icons.message : Icons.person_add,
+                            icon: isFriend
+                                ? Icons.message
+                                : Icons.person_add,
                             width: isFriend ? 140 : 160,
                             onPressed: isFriend
                                 ? () async {
                               try {
-                                Chat chat = await getChatsData(widget.user);
+                                Chat chat =
+                                await getChatsData(widget.user);
                                 Navigator.of(context).pop();
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => MyChat(
-                                      title: 'Chat avec ${widget.user.pseudo}',
+                                      title:
+                                      'Chat avec ${widget.user.pseudo}',
                                       chat: chat,
                                     ),
                                   ),
                                 );
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
                                   SnackBar(
                                     backgroundColor: Colors.red,
-                                    content: Text('Erreur: $e', style: TextStyle(color: Colors.white)),
+                                    content: Text(
+                                      'Erreur: $e',
+                                      style: const TextStyle(
+                                          color: Colors.white),
+                                    ),
                                   ),
                                 );
                               }
@@ -1315,37 +1365,45 @@ class _UserProfileModalState extends State<UserProfileModal> {
                                 : () => _sendInvitation(widget.user),
                           ),
 
-                          // Bouton Abonnement
+                          /// ABONNEMENT
                           _buildActionButton(
-                            text: isAbonne ? 'Abonné' : "S'abonner",
-                            color: isAbonne ? Colors.green : Colors.red,
+                            text: isAbonne
+                                ? 'Abonné'
+                                : "S'abonner",
+                            color: isAbonne
+                                ? Colors.green
+                                : Colors.red,
                             isDisabled: isAbonne,
                             isLoading: abonneTap,
-                            icon: isAbonne ? Icons.check : Icons.add,
+                            icon:
+                            isAbonne ? Icons.check : Icons.add,
                             width: 140,
-                            onPressed: () => _toggleAbonnement(widget.user),
+                            onPressed: () =>
+                                _toggleAbonnement(widget.user),
                           ),
                         ],
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                     ],
 
-                    // Bouton Voir le profil complet
+                    /// VOIR PROFIL COMPLET
                     Container(
                       width: double.infinity,
                       height: 50,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFFD700), Color(0xFF8B0000)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFFD700),
+                            Color(0xFF8B0000)
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Color(0xFFFFD700).withOpacity(0.4),
+                            color: const Color(0xFFFFD700)
+                                .withOpacity(0.4),
                             blurRadius: 15,
-                            offset: Offset(0, 5),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
@@ -1355,14 +1413,18 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => OtherUserPage(otherUser: widget.user),
+                              builder: (context) =>
+                                  OtherUserPage(
+                                      otherUser: widget.user),
                             ),
                           );
                         },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: const Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.remove_red_eye, color: Colors.white, size: 20),
+                            Icon(Icons.remove_red_eye,
+                                color: Colors.white, size: 20),
                             SizedBox(width: 8),
                             Text(
                               'Voir le profil complet',
@@ -1377,7 +1439,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                       ),
                     ),
 
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -1386,6 +1448,279 @@ class _UserProfileModalState extends State<UserProfileModal> {
         ],
       ),
     );
+    // return Container(
+    //   decoration: BoxDecoration(
+    //     color: Colors.black,
+    //   ),
+    //   child: Stack(
+    //     children: [
+    //       // Image de fond en plein écran
+    //       GestureDetector(
+    //         onTap: () {
+    //           Navigator.push(
+    //             context,
+    //             MaterialPageRoute(
+    //               builder: (_) => FullScreenImageViewer(
+    //                 imageUrl: widget.user.imageUrl ?? '',
+    //               ),
+    //             ),
+    //           );
+    //         },
+    //         child: Container(
+    //           width: double.infinity,
+    //           height: double.infinity,
+    //           child: CachedNetworkImage(
+    //             imageUrl: widget.user.imageUrl ?? '',
+    //             fit: BoxFit.cover,
+    //             placeholder: (context, url) => Container(
+    //               color: Colors.grey[900],
+    //               child: Center(
+    //                 child: CircularProgressIndicator(
+    //                   color: Color(0xFFFFD700),
+    //                 ),
+    //               ),
+    //             ),
+    //             errorWidget: (context, url, error) => Container(
+    //               color: Colors.grey[900],
+    //               child: Center(
+    //                 child: Icon(
+    //                   Icons.person,
+    //                   color: Colors.grey[600],
+    //                   size: 80,
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //       ),
+    //
+    //       // Overlay gradient pour meilleure lisibilité
+    //       Container(
+    //         width: double.infinity,
+    //         height: double.infinity,
+    //         decoration: BoxDecoration(
+    //           gradient: LinearGradient(
+    //             begin: Alignment.topCenter,
+    //             end: Alignment.bottomCenter,
+    //             colors: [
+    //               Colors.transparent,
+    //               Colors.black.withOpacity(0.7),
+    //               Colors.black.withOpacity(0.9),
+    //             ],
+    //             stops: [0.0, 0.5, 1.0],
+    //           ),
+    //         ),
+    //       ),
+    //
+    //       // Contenu superposé
+    //       Column(
+    //         children: [
+    //           // Header avec bouton fermer
+    //           SafeArea(
+    //             child: Padding(
+    //               padding: const EdgeInsets.all(16.0),
+    //               child: Row(
+    //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //                 children: [
+    //                   _buildCountryInfo(),
+    //                   Container(
+    //                     decoration: BoxDecoration(
+    //                       color: Colors.black.withOpacity(0.7),
+    //                       shape: BoxShape.circle,
+    //                     ),
+    //                     child: IconButton(
+    //                       icon: Icon(Icons.close, color: Colors.white, size: 24),
+    //                       onPressed: () => Navigator.of(context).pop(),
+    //                     ),
+    //                   ),
+    //                 ],
+    //               ),
+    //             ),
+    //           ),
+    //
+    //           Spacer(),
+    //
+    //           // Informations utilisateur
+    //           Container(
+    //             padding: EdgeInsets.all(24),
+    //             child: Column(
+    //               children: [
+    //                 // Nom et badge vérifié
+    //                 Row(
+    //                   mainAxisAlignment: MainAxisAlignment.center,
+    //                   children: [
+    //                     Container(
+    //                       constraints: BoxConstraints(maxWidth: widget.w * 0.7),
+    //                       child: Text(
+    //                         '@${widget.user.pseudo ?? "Utilisateur"}',
+    //                         style: TextStyle(
+    //                           fontSize: 28,
+    //                           fontWeight: FontWeight.bold,
+    //                           color: Colors.white,
+    //                           shadows: [
+    //                             Shadow(
+    //                               blurRadius: 10,
+    //                               color: Colors.black,
+    //                             ),
+    //                           ],
+    //                         ),
+    //                         textAlign: TextAlign.center,
+    //                         overflow: TextOverflow.ellipsis,
+    //                       ),
+    //                     ),
+    //                     SizedBox(width: 8),
+    //                       AbonnementUtils.getUserBadge(abonnement: widget.user!.abonnement,isVerified: widget.user!.isVerify!)
+    //                   ],
+    //                 ),
+    //
+    //                 SizedBox(height: 10),
+    //
+    //                 // Statistiques
+    //                 Container(
+    //                   padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+    //                   decoration: BoxDecoration(
+    //                     color: Colors.black.withOpacity(0.6),
+    //                     borderRadius: BorderRadius.circular(20),
+    //                     border: Border.all(color: Colors.white.withOpacity(0.2)),
+    //                   ),
+    //                   child: Row(
+    //                     mainAxisAlignment: MainAxisAlignment.spaceAround,
+    //                     children: [
+    //                       _buildStatItem(
+    //                         formatNumber(widget.user.userAbonnesIds!.length),
+    //                         'Abonnés',
+    //                         Color(0xFFFFD700),
+    //                       ),
+    //                       _buildStatItem(
+    //                         '${taux.toStringAsFixed(1)}%',
+    //                         'Popularité',
+    //                         Color(0xFF8B0000),
+    //                       ),
+    //                       _buildStatItem(
+    //                         widget.user.usersParrainer!.length.toString(),
+    //                         'Parrainages',
+    //                         Colors.lightBlue,
+    //                       ),
+    //                     ],
+    //                   ),
+    //                 ),
+    //
+    //                 SizedBox(height: 5),
+    //                 _buildProfileLikesSection(),
+    //                 SizedBox(height: 10),
+    //
+    //                 // Actions
+    //                 if (!isOwnProfile) ...[
+    //                   Row(
+    //                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    //                     children: [
+    //                       // Bouton Message/Invitation
+    //                       _buildActionButton(
+    //                         text: isFriend
+    //                             ? 'Message'
+    //                             : (isInvited ? 'Invitation envoyée' : 'Inviter'),
+    //                         color: isFriend ? Colors.green : (isInvited ? Colors.grey : Colors.blue),
+    //                         isDisabled: isInvited,
+    //                         isLoading: inviteTap,
+    //                         icon: isFriend ? Icons.message : Icons.person_add,
+    //                         width: isFriend ? 140 : 160,
+    //                         onPressed: isFriend
+    //                             ? () async {
+    //                           try {
+    //                             Chat chat = await getChatsData(widget.user);
+    //                             Navigator.of(context).pop();
+    //                             Navigator.push(
+    //                               context,
+    //                               MaterialPageRoute(
+    //                                 builder: (context) => MyChat(
+    //                                   title: 'Chat avec ${widget.user.pseudo}',
+    //                                   chat: chat,
+    //                                 ),
+    //                               ),
+    //                             );
+    //                           } catch (e) {
+    //                             ScaffoldMessenger.of(context).showSnackBar(
+    //                               SnackBar(
+    //                                 backgroundColor: Colors.red,
+    //                                 content: Text('Erreur: $e', style: TextStyle(color: Colors.white)),
+    //                               ),
+    //                             );
+    //                           }
+    //                         }
+    //                             : () => _sendInvitation(widget.user),
+    //                       ),
+    //
+    //                       // Bouton Abonnement
+    //                       _buildActionButton(
+    //                         text: isAbonne ? 'Abonné' : "S'abonner",
+    //                         color: isAbonne ? Colors.green : Colors.red,
+    //                         isDisabled: isAbonne,
+    //                         isLoading: abonneTap,
+    //                         icon: isAbonne ? Icons.check : Icons.add,
+    //                         width: 140,
+    //                         onPressed: () => _toggleAbonnement(widget.user),
+    //                       ),
+    //                     ],
+    //                   ),
+    //                   SizedBox(height: 16),
+    //                 ],
+    //
+    //                 // Bouton Voir le profil complet
+    //                 Container(
+    //                   width: double.infinity,
+    //                   height: 50,
+    //                   decoration: BoxDecoration(
+    //                     gradient: LinearGradient(
+    //                       colors: [Color(0xFFFFD700), Color(0xFF8B0000)],
+    //                       begin: Alignment.centerLeft,
+    //                       end: Alignment.centerRight,
+    //                     ),
+    //                     borderRadius: BorderRadius.circular(25),
+    //                     boxShadow: [
+    //                       BoxShadow(
+    //                         color: Color(0xFFFFD700).withOpacity(0.4),
+    //                         blurRadius: 15,
+    //                         offset: Offset(0, 5),
+    //                       ),
+    //                     ],
+    //                   ),
+    //                   child: TextButton(
+    //                     onPressed: () {
+    //                       Navigator.of(context).pop();
+    //                       Navigator.push(
+    //                         context,
+    //                         MaterialPageRoute(
+    //                           builder: (context) => OtherUserPage(otherUser: widget.user),
+    //                         ),
+    //                       );
+    //                     },
+    //                     child: Row(
+    //                       mainAxisAlignment: MainAxisAlignment.center,
+    //                       children: [
+    //                         Icon(Icons.remove_red_eye, color: Colors.white, size: 20),
+    //                         SizedBox(width: 8),
+    //                         Text(
+    //                           'Voir le profil complet',
+    //                           style: TextStyle(
+    //                             color: Colors.white,
+    //                             fontWeight: FontWeight.w600,
+    //                             fontSize: 16,
+    //                           ),
+    //                         ),
+    //                       ],
+    //                     ),
+    //                   ),
+    //                 ),
+    //
+    //                 SizedBox(height: 10),
+    //               ],
+    //             ),
+    //           ),
+    //         ],
+    //       ),
+    //     ],
+    //   ),
+    // );
   }
 
   Widget _buildStatItem(String value, String label, Color color) {

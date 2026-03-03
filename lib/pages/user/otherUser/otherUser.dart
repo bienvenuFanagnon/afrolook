@@ -17,6 +17,8 @@ import 'package:afrotok/constant/textCustom.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/widget/numbers_widget.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import '../../widgetGlobal.dart';
+
 class OtherUserPage extends StatefulWidget {
   final UserData otherUser;
 
@@ -237,16 +239,28 @@ class _OtherUserPageState extends State<OtherUserPage> {
                               ),
                             ),
                             child: ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: widget.otherUser.imageUrl ?? '',
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey[800],
-                                  child: Icon(Icons.person, color: Colors.grey),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[800],
-                                  child: Icon(Icons.person, color: Colors.grey),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FullScreenImageViewer(
+                                        imageUrl: widget.otherUser.imageUrl ?? '',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.otherUser.imageUrl ?? '',
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey[800],
+                                    child: Icon(Icons.person, color: Colors.grey),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: Colors.grey[800],
+                                    child: Icon(Icons.person, color: Colors.grey),
+                                  ),
                                 ),
                               ),
                             ),

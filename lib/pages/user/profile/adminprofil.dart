@@ -2,6 +2,7 @@ import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
 import '../../Marketing/adminAffiliationStatsPage.dart';
+import '../../admin/ad_admin_page.dart';
 import '../monetisation.dart';
 
 class AppInfoPage extends StatefulWidget {
@@ -170,6 +172,16 @@ class _AppInfoPageState extends State<AppInfoPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => TransactionsListPage()),
+              );
+            },
+            tooltip: "Voir transactions",
+          ),
+          IconButton(
+            icon: Icon(MaterialCommunityIcons.home_analytics, color: Colors.red),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AdAdminPage()),
               );
             },
             tooltip: "Voir transactions",

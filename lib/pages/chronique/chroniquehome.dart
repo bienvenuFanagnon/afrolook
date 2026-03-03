@@ -382,55 +382,114 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
           ),
         );
       },
-      child: Container(
-        margin: EdgeInsets.all(4),
-        child: Stack(
-          children: [
-            // Carte principale
-            _buildChroniquePreview(oldestChronique),
+      child: SizedBox(
+        height: 220, // 👈 OBLIGATOIRE
+        child: Container(
+          margin: EdgeInsets.all(4),
+          child: Stack(
+            fit: StackFit.expand, // 👈 important
+            children: [
+              _buildChroniquePreview(oldestChronique),
 
-            // Badge nombre de chroniques
-            if (hasMultiple)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Color(0xFFFFD700), width: 1.5),
-                  ),
-                  child: Text(
-                    '+${chroniqueCount - 1}',
-                    style: TextStyle(
-                      color: Color(0xFFFFD700),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              if (hasMultiple)
+                Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Color(0xFFFFD700), width: 1.5),
+                                    ),
+                                    child: Text(
+                                      '+${chroniqueCount - 1}',
+                                      style: TextStyle(
+                                        color: Color(0xFFFFD700),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                 ),
+
+              Positioned(
+                bottom: 8,
+                left: 8,
+                right: 8,
+                child: _buildStatsInfo(totalViews, totalLikes, totalComments),
               ),
 
-            // Stats en bas
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: _buildStatsInfo(totalViews, totalLikes, totalComments),
-            ),
-
-            // Profil utilisateur avec chrono en haut
-            Positioned(
-              top: 8,
-              left: 8,
-              right: 8,
-              child: _buildUserInfoWithTimer(oldestChronique),
-            ),
-          ],
+              Positioned(
+                top: 8,
+                left: 8,
+                right: 8,
+                child: _buildUserInfoWithTimer(oldestChronique),
+              ),
+            ],
+          ),
         ),
       ),
-    );
+    );    // return GestureDetector(
+    //   onTap: () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //         builder: (context) => ChroniqueDetailPage(
+    //           userChroniques: userChroniques,
+    //         ),
+    //       ),
+    //     );
+    //   },
+    //   child: Container(
+    //     margin: EdgeInsets.all(4),
+    //     child: Stack(
+    //       children: [
+    //         // Carte principale
+    //         _buildChroniquePreview(oldestChronique),
+    //
+    //         // Badge nombre de chroniques
+    //         if (hasMultiple)
+    //           Positioned(
+    //             top: 8,
+    //             right: 8,
+    //             child: Container(
+    //               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    //               decoration: BoxDecoration(
+    //                 color: Colors.black.withOpacity(0.9),
+    //                 borderRadius: BorderRadius.circular(12),
+    //                 border: Border.all(color: Color(0xFFFFD700), width: 1.5),
+    //               ),
+    //               child: Text(
+    //                 '+${chroniqueCount - 1}',
+    //                 style: TextStyle(
+    //                   color: Color(0xFFFFD700),
+    //                   fontSize: 10,
+    //                   fontWeight: FontWeight.bold,
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //
+    //         // Stats en bas
+    //         Positioned(
+    //           bottom: 8,
+    //           left: 8,
+    //           right: 8,
+    //           child: _buildStatsInfo(totalViews, totalLikes, totalComments),
+    //         ),
+    //
+    //         // Profil utilisateur avec chrono en haut
+    //         Positioned(
+    //           top: 8,
+    //           left: 8,
+    //           right: 8,
+    //           child: _buildUserInfoWithTimer(oldestChronique),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 
   Widget _buildChroniquePreview(Chronique chronique) {

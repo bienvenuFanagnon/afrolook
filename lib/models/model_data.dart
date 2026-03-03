@@ -1205,7 +1205,8 @@ class Post {
 
   List<String> availableCountries = []; // Liste des codes pays (TG, SN, etc.)
   bool get isAvailableInAllCountries => availableCountries.contains('ALL');
-
+  String? advertisementId; // Référence à la publicité si c'en est une
+  bool? isAdvertisement; // Pour faciliter les requêtes
   Post({
     this.id,
     this.comments,
@@ -1252,6 +1253,8 @@ class Post {
     this.usersVotesIds,
     this.users_favorite_id,
     this.favoritesCount = 0,
+    this.advertisementId,
+    this.isAdvertisement = false,
   });
 
   int compareTo(Post other) {
@@ -1345,7 +1348,8 @@ class Post {
     favoritesCount = json['favorites_count'] ?? 0;
 
     // Dans toJson()
-
+    advertisementId = json['advertisementId'];
+    isAdvertisement = json['isAdvertisement'] ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -1409,6 +1413,9 @@ class Post {
     data['is_available_in_all_countries'] = availableCountries.contains('ALL');
     data['users_favorite_id'] = users_favorite_id;
     data['favorites_count'] = favoritesCount;
+
+    data['advertisementId'] = advertisementId;
+    data['isAdvertisement'] = isAdvertisement;
     return data;
   }
 
@@ -1430,7 +1437,163 @@ class Post {
     return engagementPerHour > 5.0;
   }
 }
+// models/advertisement_model.dart
+// models/advertisement_model.dart
+// models/advertisement_model.dart
+class Advertisement {
+  String? id;
+  String? postId; // Référence au post original
+  String? actionType; // 'download', 'visit', 'learn_more'
+  String? actionUrl; // Lien cliquable
+  String? actionButtonText; // Texte du bouton (Télécharger, Visiter, En savoir plus)
+  int? durationDays; // Nombre de jours (7 à 365)
+  int? startDate; // Timestamp début
+  int? endDate; // Timestamp fin
+  String? status; // 'pending', 'active', 'expired', 'rejected', 'cancelled'
+  bool? isRenewable; // Peut être renouvelé
+  int? renewalCount; // Nombre de renouvellements
+  String? rejectionReason; // Motif si rejeté
+  String? createdBy; // ID admin qui a créé
+  int? createdAt;
+  int? updatedAt;
 
+  // Statistiques
+  int? views = 0; // Nombre de vues
+  int? clicks = 0; // Nombre de clics sur le bouton d'action
+  int? uniqueClicks = 0; // Clics uniques
+  int? uniqueViews = 0; // Clics uniques
+  Map<String, int>? dailyStats; // Statistiques journalières {timestamp: vues}
+  List<String>? viewersIds; // IDs des utilisateurs qui ont vu
+  List<String>? clickersIds; // IDs des utilisateurs qui ont cliqué
+
+  Advertisement({
+    this.id,
+    this.postId,
+    this.actionType,
+    this.actionUrl,
+    this.actionButtonText,
+    this.durationDays,
+    this.startDate,
+    this.endDate,
+    this.status,
+    this.isRenewable = true,
+    this.renewalCount = 0,
+    this.rejectionReason,
+    this.createdBy,
+    this.createdAt,
+    this.updatedAt,
+    this.views = 0,
+    this.clicks = 0,
+    this.uniqueClicks = 0,
+    this.uniqueViews = 0,
+    this.dailyStats,
+    this.viewersIds,
+    this.clickersIds,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'postId': postId,
+      'actionType': actionType,
+      'actionUrl': actionUrl,
+      'actionButtonText': actionButtonText,
+      'durationDays': durationDays,
+      'startDate': startDate,
+      'endDate': endDate,
+      'status': status,
+      'isRenewable': isRenewable,
+      'renewalCount': renewalCount,
+      'rejectionReason': rejectionReason,
+      'createdBy': createdBy,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'views': views,
+      'clicks': clicks,
+      'uniqueClicks': uniqueClicks,
+      'uniqueViews': uniqueViews,
+      'dailyStats': dailyStats,
+      'viewersIds': viewersIds,
+      'clickersIds': clickersIds,
+    };
+  }
+
+  factory Advertisement.fromJson(Map<String, dynamic> json) {
+    return Advertisement(
+      id: json['id'],
+      postId: json['postId'],
+      actionType: json['actionType'],
+      actionUrl: json['actionUrl'],
+      actionButtonText: json['actionButtonText'],
+      durationDays: json['durationDays'],
+      startDate: json['startDate'],
+      endDate: json['endDate'],
+      status: json['status'],
+      isRenewable: json['isRenewable'] ?? true,
+      renewalCount: json['renewalCount'] ?? 0,
+      rejectionReason: json['rejectionReason'],
+      createdBy: json['createdBy'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      views: json['views'] ?? 0,
+      clicks: json['clicks'] ?? 0,
+      uniqueClicks: json['uniqueClicks'] ?? 0,
+      uniqueViews: json['uniqueViews'] ?? 0,
+      dailyStats: json['dailyStats'] != null
+          ? Map<String, int>.from(
+        (json['dailyStats'] as Map).map(
+              (key, value) => MapEntry(key.toString(), value is int ? value : 0),
+        ),
+      )
+          : {},
+      viewersIds: json['viewersIds'] != null
+          ? List<String>.from(json['viewersIds'])
+          : [],
+      clickersIds: json['clickersIds'] != null
+          ? List<String>.from(json['clickersIds'])
+          : [],
+    );
+  }
+
+  // Méthodes utilitaires
+  bool get isActive => status == 'active' && endDate != null && endDate! > DateTime.now().millisecondsSinceEpoch;
+  bool get isPending => status == 'pending';
+  bool get isExpired => status == 'expired' || (endDate != null && endDate! <= DateTime.now().millisecondsSinceEpoch);
+
+  int get remainingDays => endDate != null
+      ? ((endDate! - DateTime.now().millisecondsSinceEpoch) / (24 * 60 * 60 * 1000000)).ceil()
+      : 0;
+
+  double get ctr => views != null && views! > 0
+      ? ((clicks ?? 0) / views!) * 100
+      : 0; // Click Through Rate
+
+  String getActionButtonText() {
+    switch(actionType) {
+      case 'download':
+        return 'Télécharger';
+      case 'visit':
+        return 'Visiter';
+      case 'learn_more':
+        return 'En savoir plus';
+      default:
+        return actionButtonText ?? 'En savoir plus';
+    }
+  }
+
+  IconData getActionIcon() {
+    switch(actionType) {
+      case 'download':
+        return Icons.download;
+      case 'visit':
+        return Icons.language;
+      case 'learn_more':
+        return Icons.info;
+      default:
+        return Icons.ads_click;
+    }
+  }
+}
 class PendingTransaction {
   String? id;
   String? userId;

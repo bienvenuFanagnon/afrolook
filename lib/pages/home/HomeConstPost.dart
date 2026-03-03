@@ -21,6 +21,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../UserServices/ServiceWidget.dart';
 
+import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 
@@ -986,7 +987,8 @@ printVm("_currentFilter data: ${_currentFilter}");
           query = query.where("country", isEqualTo: countryCode);
         }
       }
-
+// 🔹 Filtrer uniquement les posts non publicitaires
+//       query = query.where("isAdvertisement", isEqualTo: false);
       query = query.orderBy("created_at", descending: true);
 
       if (!isInitialLoad && _lastCountryDocument != null) {
@@ -1009,17 +1011,76 @@ printVm("_currentFilter data: ${_currentFilter}");
           final post = Post.fromJson(doc.data() as Map<String, dynamic>);
           post.id = doc.id;
 
+          // ❌ Ignorer les pubs
+          if (post.isAdvertisement == true) continue;
+
           if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
             post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
             loadedIds.add(post.id!);
             added++;
-            newPosts.shuffle();
+
+            // Séparer récents et anciens
+            final now = DateTime.now().millisecondsSinceEpoch;
+            final postTime = post.createdAt ?? 0;
+            final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
+
+            if (differenceInHours < 24) {
+              // Post récent (<24h) -> reste en tête
+              newPosts.insert(0, post);
+            } else {
+              // Post ancien -> ajouter à la fin
+              newPosts.add(post);
+            }
           }
         } catch (e) {
           print('Erreur parsing post: $e');
         }
       }
+
+// 🔀 Mélange séparé après ajout de tous les posts
+      final now = DateTime.now().millisecondsSinceEpoch;
+      List<Post> recentPosts = [];
+      List<Post> oldPosts = [];
+
+      for (var p in newPosts) {
+        final pTime = p.createdAt ?? 0;
+        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
+
+        if (diffHours < 24) {
+          recentPosts.add(p);
+        } else {
+          oldPosts.add(p);
+        }
+      }
+
+// Mélanger chaque groupe
+      recentPosts.shuffle();
+      oldPosts.shuffle();
+
+// Recomposer la liste finale
+      newPosts
+        ..clear()
+        ..addAll(recentPosts)
+        ..addAll(oldPosts);
+      // for (var doc in snapshot.docs) {
+      //   if (added >= limit) break;
+      //
+      //   try {
+      //     final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+      //     post.id = doc.id;
+      //
+      //     if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
+      //       post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+      //       newPosts.add(post);
+      //       loadedIds.add(post.id!);
+      //       added++;
+      //       newPosts.shuffle();
+      //
+      //     }
+      //   } catch (e) {
+      //     print('Erreur parsing post: $e');
+      //   }
+      // }
 
       print('✅ $added posts du pays $countryCode ajoutés');
 
@@ -1033,27 +1094,15 @@ printVm("_currentFilter data: ${_currentFilter}");
       List<Post> newPosts, {
         bool isInitialLoad = false,
         int limit = 5,
-      }) async
-  {
+      }) async {
     if (limit <= 0) return;
 
     try {
       print('🌐 Chargement posts ALL - limite: $limit');
 
-      Query query = _firestore.collection('Posts');
-
-      // Essayer différents noms de champs
-      // try {
-      //   query = query.where("available_countries", arrayContains: "ALL");
-      // } catch (e) {
-      //   try {
-      //     query = query.where("availableCountries", arrayContains: "ALL");
-      //   } catch (e2) {
-      //     query = query.where("is_available_in_all_countries", isEqualTo: true);
-      //   }
-      // }
-
-      query = query.orderBy("created_at", descending: true);
+      Query query = _firestore.collection('Posts')
+          // .where("isAdvertisement", isEqualTo: false) // jamais récupérer les pubs
+          .orderBy("created_at", descending: true);
 
       if (!isInitialLoad && _lastAllDocument != null) {
         query = query.startAfterDocument(_lastAllDocument!);
@@ -1068,6 +1117,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       }
 
       int added = 0;
+
       for (var doc in snapshot.docs) {
         if (added >= limit) break;
 
@@ -1075,18 +1125,55 @@ printVm("_currentFilter data: ${_currentFilter}");
           final post = Post.fromJson(doc.data() as Map<String, dynamic>);
           post.id = doc.id;
 
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-            newPosts.shuffle();
+          // ❌ Ne pas ajouter si déjà chargé
+          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
 
+          // ❌ Ne jamais ajouter une pub même si le champ manquait
+          if (post.isAdvertisement == true) continue;
+
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          loadedIds.add(post.id!);
+          added++;
+
+          // 🔹 Séparer récents et anciens
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final postTime = post.createdAt ?? 0;
+          final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
+
+          if (differenceInHours < 24) {
+            newPosts.insert(0, post); // récent <24h en tête
+          } else {
+            newPosts.add(post); // ancien
           }
+
         } catch (e) {
           print('Erreur parsing post: $e');
         }
       }
+
+      // 🔀 Mélange séparé des récents et anciens
+      final now = DateTime.now().millisecondsSinceEpoch;
+      List<Post> recentPosts = [];
+      List<Post> oldPosts = [];
+
+      for (var p in newPosts) {
+        final pTime = p.createdAt ?? 0;
+        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
+
+        if (diffHours < 24) {
+          recentPosts.add(p);
+        } else {
+          oldPosts.add(p);
+        }
+      }
+
+      recentPosts.shuffle();
+      oldPosts.shuffle();
+
+      newPosts
+        ..clear()
+        ..addAll(recentPosts)
+        ..addAll(oldPosts);
 
       print('✅ $added posts ALL ajoutés');
 
@@ -1094,22 +1181,23 @@ printVm("_currentFilter data: ${_currentFilter}");
       print('❌ Erreur chargement posts ALL: $e');
     }
   }
-
   Future<void> _loadOtherCountriesPosts(
       Set<String> loadedIds,
       List<Post> newPosts, {
         required String excludeCountry,
         bool isInitialLoad = false,
         int limit = 5,
-      }) async
-  {
+      })
+  async {
     if (limit <= 0) return;
 
     try {
       print('🌍 Chargement autres pays (exclure: $excludeCountry) - limite: $limit');
 
+      // 🔹 Base query
       Query query = _firestore.collection('Posts')
           .orderBy("created_at", descending: true);
+          // .where("isAdvertisement", isEqualTo: false); // jamais récupérer les pubs
 
       if (!isInitialLoad && _lastOtherDocument != null) {
         query = query.startAfterDocument(_lastOtherDocument!);
@@ -1124,6 +1212,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       }
 
       int added = 0;
+
       for (var doc in snapshot.docs) {
         if (added >= limit) break;
 
@@ -1131,37 +1220,58 @@ printVm("_currentFilter data: ${_currentFilter}");
           final post = Post.fromJson(doc.data() as Map<String, dynamic>);
           post.id = doc.id;
 
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) {
-            continue;
+          // ❌ Ne pas ajouter si déjà chargé
+          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+
+          // ❌ Ne jamais ajouter une pub même si le champ manquait
+          if (post.isAdvertisement == true) continue;
+
+          // ❌ Filtrer le pays exclu
+          if (post.availableCountries.contains(excludeCountry)) continue;
+
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          loadedIds.add(post.id!);
+          added++;
+
+          // 🔹 Séparer récents et anciens
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final postTime = post.createdAt ?? 0;
+          final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
+
+          if (differenceInHours < 24) {
+            newPosts.insert(0, post); // récent <24h en tête
+          } else {
+            newPosts.add(post); // ancien
           }
 
-          // Filtrer manuellement
-          bool isExcluded = false;
-
-          // if (post.availableCountries.contains(excludeCountry)) {
-          //   isExcluded = true;
-          // }
-          //
-          // if (post.availableCountries.contains("ALL")) {
-          //   isExcluded = true;
-          // }
-          //
-          // if (post.availableCountries.isEmpty) {
-          //   isExcluded = true;
-          // }
-
-          if (!isExcluded) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-            newPosts.shuffle();
-
-          }
         } catch (e) {
           print('Erreur parsing post: $e');
         }
       }
+
+      // 🔀 Mélange séparé des récents et anciens
+      final now = DateTime.now().millisecondsSinceEpoch;
+      List<Post> recentPosts = [];
+      List<Post> oldPosts = [];
+
+      for (var p in newPosts) {
+        final pTime = p.createdAt ?? 0;
+        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
+
+        if (diffHours < 24) {
+          recentPosts.add(p);
+        } else {
+          oldPosts.add(p);
+        }
+      }
+
+      recentPosts.shuffle();
+      oldPosts.shuffle();
+
+      newPosts
+        ..clear()
+        ..addAll(recentPosts)
+        ..addAll(oldPosts);
 
       print('✅ $added posts autres pays ajoutés');
 
@@ -1169,6 +1279,80 @@ printVm("_currentFilter data: ${_currentFilter}");
       print('❌ Erreur chargement autres pays: $e');
     }
   }
+  // Future<void> _loadOtherCountriesPosts(
+  //     Set<String> loadedIds,
+  //     List<Post> newPosts, {
+  //       required String excludeCountry,
+  //       bool isInitialLoad = false,
+  //       int limit = 5,
+  //     }) async
+  // {
+  //   if (limit <= 0) return;
+  //
+  //   try {
+  //     print('🌍 Chargement autres pays (exclure: $excludeCountry) - limite: $limit');
+  //
+  //     Query query = _firestore.collection('Posts')
+  //         .orderBy("created_at", descending: true);
+  //
+  //     if (!isInitialLoad && _lastOtherDocument != null) {
+  //       query = query.startAfterDocument(_lastOtherDocument!);
+  //     }
+  //
+  //     query = query.limit(limit * 4);
+  //
+  //     final snapshot = await query.get();
+  //
+  //     if (snapshot.docs.isNotEmpty) {
+  //       _lastOtherDocument = snapshot.docs.last;
+  //     }
+  //
+  //     int added = 0;
+  //     for (var doc in snapshot.docs) {
+  //       if (added >= limit) break;
+  //
+  //       try {
+  //         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+  //         post.id = doc.id;
+  //
+  //         if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) {
+  //           continue;
+  //         }
+  //
+  //         // Filtrer manuellement
+  //         bool isExcluded = false;
+  //
+  //         // if (post.availableCountries.contains(excludeCountry)) {
+  //         //   isExcluded = true;
+  //         // }
+  //         //
+  //         // if (post.availableCountries.contains("ALL")) {
+  //         //   isExcluded = true;
+  //         // }
+  //         //
+  //         // if (post.availableCountries.isEmpty) {
+  //         //   isExcluded = true;
+  //         // }
+  //
+  //         if (!isExcluded) {
+  //           post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+  //           newPosts.add(post);
+  //           loadedIds.add(post.id!);
+  //           added++;
+  //           newPosts.shuffle();
+  //
+  //         }
+  //       } catch (e) {
+  //         print('Erreur parsing post: $e');
+  //       }
+  //     }
+  //
+  //     print('✅ $added posts autres pays ajoutés');
+  //
+  //   } catch (e) {
+  //     print('❌ Erreur chargement autres pays: $e');
+  //   }
+  // }
 
   // ===========================================================================
   // PAGINATION - CHARGEMENT MANUEL (Après les 20 posts background)
@@ -2127,7 +2311,8 @@ printVm("_currentFilter data: ${_currentFilter}");
       // 🔴 AJOUT DES BANNIÈRES ADMOB
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 1) {
-        contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
       }
 
       // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
@@ -2274,18 +2459,29 @@ printVm("_currentFilter data: ${_currentFilter}");
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
-        templateType: TemplateType.small, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
+      // child: NativeAdWidget(
+      //   templateType: TemplateType.small, // ou TemplateType.small
+      //
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     print('✅ Native Ad Afrolook chargée: $key');
       //   },
       // ),
+      child: BannerAdWidget(
+        onAdLoaded: () {
+          print('✅ Bannière Afrolook chargée: $key');
+        },
+      ),
+    );
+  }
+  Widget _buildAdAdvertisement({required String key}) {
+    // return SizedBox.shrink();
+    final height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+    return  AdvertisementCarouselWidget(
+      height: height,
+      width: width,
+      autoPlayDuration: Duration(seconds: 5),
+      showIndicators: true,
     );
   }
   String _getEndMessage() {

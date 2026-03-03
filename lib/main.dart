@@ -107,13 +107,14 @@ Future<void> main() async {
 
     // Configurer votre appareil comme appareil de test
     // Remplacer par l'ID obtenu dans les logs
-    await MobileAds.instance.updateRequestConfiguration(
-      RequestConfiguration(
-        testDeviceIds: ['011935FC78A51EF87681BE382AACD2B4','84A5B8717F83446C0B570C4358962A6A'], // Votre ID de test
-      ),);
+    // await MobileAds.instance.updateRequestConfiguration(
+    //   RequestConfiguration(
+    //     testDeviceIds: ['011935FC78A51EF87681BE382AACD2B4','84A5B8717F83446C0B570C4358962A6A'], // Votre ID de test
+    //   ),);
+
 
     // Mode TEST (true) / PRODUCTION (false)
-    AdService.setMode(false); // À changer avant publication
+    AdService.setMode(true); // À changer avant publication
   }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {

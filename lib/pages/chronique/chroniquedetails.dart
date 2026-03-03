@@ -1133,6 +1133,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   Widget _buildMainContent(Chronique chronique) {
     switch (chronique.type) {
       case ChroniqueType.TEXT:
+
         return Container(
           width: double.infinity,
           height: double.infinity,
@@ -1168,15 +1169,19 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(15),
-              child: CachedNetworkImage(
-                imageUrl: chronique.mediaUrl!,
-                fit: BoxFit.cover,
+              child: SizedBox(
                 width: double.infinity,
-                height: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[800],
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+                child: CachedNetworkImage(
+                  imageUrl: chronique.mediaUrl!,
+                  fit: BoxFit.fitWidth, // 👈 important
+                  placeholder: (context, url) => Container(
+                    height: 250,
+                    color: Colors.grey[800],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFFFD700),
+                      ),
+                    ),
                   ),
                 ),
               ),

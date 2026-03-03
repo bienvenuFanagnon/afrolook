@@ -21,6 +21,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../UserServices/ServiceWidget.dart';
 
+import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 
@@ -1278,14 +1279,13 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     try {
       print('🎯 Chargement posts - Type: $postType - Pays: ${countryCode ?? "ALL"}');
 
-      Query query = _firestore.collection('Posts');
+      Query query = _firestore.collection('Posts')
+          .where("typeTabbar", isEqualTo: postType)
+          // .where("isAdvertisement", isEqualTo: false) // jamais récupérer les pubs
+          .orderBy("created_at", descending: true);
 
-      // 1. Filtrer par TYPE (requête Firebase)
-      query = query.where("typeTabbar", isEqualTo: postType);
-
-      // 2. Filtrer par PAYS si spécifié
+      // Filtrer par pays si spécifié
       if (countryCode != null) {
-        // Essayer différents noms de champs pour le pays
         try {
           query = query.where("available_countries", arrayContains: countryCode);
         } catch (e) {
@@ -1296,39 +1296,23 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           }
         }
       }
-      else {
-        // Sinon, charger les posts disponibles dans tous les pays
-        // try {
-        //   query = query.where("available_countries", arrayContains: "ALL");
-        // } catch (e) {
-        //   try {
-        //     query = query.where("availableCountries", arrayContains: "ALL");
-        //   } catch (e2) {
-        //     query = query.where("is_available_in_all_countries", isEqualTo: true);
-        //   }
-        // }
-      }
 
-      // 3. Trier par date
-      query = query.orderBy("created_at", descending: true);
-
-      // 4. Pagination
+      // Pagination
       if (!isInitialLoad && _lastCountryDocument != null) {
         query = query.startAfterDocument(_lastCountryDocument!);
       }
 
-      // 5. Limite
       query = query.limit(limit * 2);
 
       final snapshot = await query.get();
-      printVm('snapshot.docs.length: ${snapshot.docs.length}');
+      print('snapshot.docs.length: ${snapshot.docs.length}');
 
       if (snapshot.docs.isNotEmpty) {
         _lastCountryDocument = snapshot.docs.last;
       }
 
       int added = 0;
-      snapshot.docs.shuffle();
+
       for (var doc in snapshot.docs) {
         if (added >= limit) break;
 
@@ -1336,17 +1320,55 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           final post = Post.fromJson(doc.data() as Map<String, dynamic>);
           post.id = doc.id;
 
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
+          // ❌ Ignorer si déjà chargé
+          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+
+          // ❌ Ignorer les pubs même si le champ manquait
+          if (post.isAdvertisement == true) continue;
+
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          loadedIds.add(post.id!);
+          added++;
+
+          // 🔹 Séparer récents et anciens
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final postTime = post.createdAt ?? 0;
+          final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
+
+          if (differenceInHours < 24) {
+            newPosts.insert(0, post); // récent <24h en tête
+          } else {
+            newPosts.add(post); // ancien
           }
+
         } catch (e) {
           print('Erreur parsing post: $e');
         }
       }
-      newPosts.shuffle();
+
+      // 🔀 Mélange séparé des récents et anciens
+      final now = DateTime.now().millisecondsSinceEpoch;
+      List<Post> recentPosts = [];
+      List<Post> oldPosts = [];
+
+      for (var p in newPosts) {
+        final pTime = p.createdAt ?? 0;
+        final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
+
+        if (diffHours < 24) {
+          recentPosts.add(p);
+        } else {
+          oldPosts.add(p);
+        }
+      }
+
+      recentPosts.shuffle();
+      oldPosts.shuffle();
+
+      newPosts
+        ..clear()
+        ..addAll(recentPosts)
+        ..addAll(oldPosts);
 
       print('✅ $added posts chargés (Type: $postType, Pays: ${countryCode ?? "ALL"})');
 
@@ -1354,6 +1376,19 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       print('❌ Erreur chargement posts: $e');
     }
   }
+
+  Widget _buildAdAdvertisement({required String key}) {
+    // return SizedBox.shrink();
+    final height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+    return  AdvertisementCarouselWidget(
+      height: height,
+      width: width,
+      autoPlayDuration: Duration(seconds: 5),
+      showIndicators: true,
+    );
+  }
+
   Widget _buildAdBanner({required String key}) {
     // return SizedBox.shrink();
     return Container(
@@ -2277,7 +2312,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // 🔴 AJOUT DES BANNIÈRES ADMOB
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 1) {
-        contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
       }
 
       // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
