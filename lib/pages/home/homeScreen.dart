@@ -535,6 +535,7 @@ class _MyHomePageState extends State<MyHomePage>
                       ));
                     },
                   ),
+                  if(authProvider.loginUserData.role == UserRole.ADM.name)
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
