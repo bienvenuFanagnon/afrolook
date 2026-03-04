@@ -276,6 +276,7 @@ class _DetailsPostState extends State<DetailsPost>
   await launchUrl(url, mode: LaunchMode.externalApplication);
   }
   }
+  _recordAdClick(_advertisement!, widget.post);
   },
   child: Container(
   width: double.infinity,
@@ -523,6 +524,63 @@ class _DetailsPostState extends State<DetailsPost>
   void _seekAudio(double value, String postId) {
     if (_activePlayers.containsKey(postId)) {
       _activePlayers[postId]!.seek(Duration(seconds: value.toInt()));
+    }
+  }
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final Set<String> _clickedInSession = {};
+  Future<void> _recordAdClick(Advertisement ad, Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || ad.id == null) return;
+
+    // Éviter les doubles comptages dans la même session
+    final clickKey = '${ad.id}_$currentUserId';
+    if (_clickedInSession.contains(clickKey)) return;
+
+    _clickedInSession.add(clickKey);
+
+    try {
+      final adRef = _firestore.collection('Advertisements').doc(ad.id);
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await _firestore.runTransaction((transaction) async {
+        final adDoc = await transaction.get(adRef);
+        if (!adDoc.exists) return;
+
+        final currentAd = Advertisement.fromJson(adDoc.data()!);
+
+        // Préparer les mises à jour
+        Map<String, dynamic> updates = {
+          'clicks': FieldValue.increment(1),
+          'updatedAt': DateTime.now().microsecondsSinceEpoch,
+        };
+
+        // Mettre à jour dailyStats
+        if (currentAd.dailyStats != null) {
+          updates['dailyStats.$today.clicks'] = FieldValue.increment(1);
+        }
+
+        // Vérifier si c'est un clic unique
+        final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
+        if (!hasClicked) {
+          updates['uniqueClicks'] = FieldValue.increment(1);
+          updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
+        }
+
+        transaction.update(adRef, updates);
+      });
+
+      // Mettre à jour l'objet local
+      // ad.clicks = (ad.clicks ?? 0) + 1;
+
+      // Notifier le parent
+      // widget.onAdClicked?.call(post, ad);
+
+      print('✅ Clic enregistré pour la pub: ${ad.id}');
+
+    } catch (e) {
+      print('❌ Erreur lors de l\'enregistrement du clic: $e');
+      _clickedInSession.remove(clickKey);
     }
   }
 

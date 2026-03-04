@@ -37,6 +37,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Map<String, dynamic>> _activeAds = [];
+  late PageController _pageController;
   int _currentIndex = 0;
   int _lastShownIndex = -1;
   Timer? _autoPlayTimer;
@@ -54,12 +55,14 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    _pageController = PageController();
     _loadActiveAds();
   }
 
   @override
   void dispose() {
     _autoPlayTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -145,7 +148,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
     }
   }
 
-  void _goToNextAd() {
+  void _goToNextAd2() {
     if (_activeAds.isEmpty) return;
 
     setState(() {
@@ -158,7 +161,19 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
       _lastShownIndex = _currentIndex;
     });
   }
+  void _goToNextAd() {
+    if (_activeAds.isEmpty) return;
+    if (!_pageController.hasClients) return;
 
+    int nextIndex =
+        (_currentIndex + 1) % _activeAds.length;
+
+    _pageController.animateToPage(
+      nextIndex,
+      duration: Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
   // ===========================================================================
   // MISE À JOUR DES STATISTIQUES DANS FIRESTORE
   // ===========================================================================
@@ -207,7 +222,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
       });
 
       // Mettre à jour l'objet local
-      ad.views = (ad.views ?? 0) + 1;
+      // ad.views = (ad.views ?? 0) + 1;
 
       // Notifier le parent
       widget.onAdViewed?.call(post, ad);
@@ -394,7 +409,8 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                 ),
                 child: PageView.builder(
                   itemCount: _activeAds.length,
-                  controller: PageController(initialPage: _currentIndex),
+                  // controller: PageController(initialPage: _currentIndex),
+                  controller: _pageController,
                   onPageChanged: (index) {
                     setState(() {
                       _currentIndex = index;
@@ -432,7 +448,10 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                             _currentIndex = index;
                             _lastShownIndex = index;
                           });
-                          _startAutoPlay();
+                          // _startAutoPlay();
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _startAutoPlay();
+                          });
                         },
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 300),
