@@ -114,7 +114,7 @@ Future<void> main() async {
 
 
     // Mode TEST (true) / PRODUCTION (false)
-    AdService.setMode(true); // À changer avant publication
+    AdService.setMode(false); // À changer avant publication
   }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {
