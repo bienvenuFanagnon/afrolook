@@ -1071,7 +1071,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(jour['date'] as DateTime),
+                  DateFormat('EEEE MMMM yyyy').format(jour['date'] as DateTime),
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 Text(

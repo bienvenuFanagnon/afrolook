@@ -346,7 +346,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   Future<void> _startRecording() async {
     try {
       if (kIsWeb) {
-        showWebUnavailableModal(context,'Enregistrement audio');
+         showWebUnavailableModal(context,'Enregistrement audio');
         return;
       }
       if (await Permission.microphone.request().isGranted) {

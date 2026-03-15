@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../services/remuneration_service.dart';
+import '../postDetails.dart';
+import '../postDetailsVideoListe.dart';
 
 // ============================================
 // PAGE PRINCIPALE DES GAINS
@@ -675,6 +677,25 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
         border: Border.all(color: Color(0xFFFFD700).withOpacity(0.1)),
       ),
       child: ListTile(
+        onTap: () {
+          if(post.dataType==PostDataType.VIDEO.name){
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VideoTikTokPageDetails(initialPost: post),
+              ),
+            );
+
+          }else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailsPost(post: post),
+              ),
+            );
+
+          }
+        },
         contentPadding: EdgeInsets.all(12),
         leading: Container(
           width: 50,
