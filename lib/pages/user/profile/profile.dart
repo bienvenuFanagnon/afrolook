@@ -25,6 +25,7 @@ import '../../challenge/challengeDashbord.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
+import '../remuneration_home_page.dart';
 import '../userAbonnementPage.dart';
 import 'adminprofil.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -439,10 +440,11 @@ class _UserProfilState extends State<UserProfil> {
                         ),
                         _buildMenuButton(
                           icon: Icons.monetization_on,
-                          label: "Monétisation",
+                          label: "Monétisations",
                           color: Colors.green,
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
+                            // Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
                           },
                         ),
                       ],
@@ -493,7 +495,7 @@ class _UserProfilState extends State<UserProfil> {
                             label: "AppData",
                             color: Colors.blue,
                             onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => AppInfoPage()));
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminHubPage()));
                             },
                           ),
                           _buildMenuButton(
@@ -533,39 +535,6 @@ class _UserProfilState extends State<UserProfil> {
                       SizedBox(height: 15),
                     ],
 
-                    // Bouton déconnexion
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            primaryRed.withOpacity(0.1),
-                            primaryRed.withOpacity(0.05)
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: primaryRed.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          // Action de déconnexion
-                        },
-                        icon: Icon(
-                          Icons.exit_to_app,
-                          color: primaryRed,
-                        ),
-                        label: Text(
-                          "Déconnexion",
-                          style: TextStyle(
-                            color: primaryRed,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

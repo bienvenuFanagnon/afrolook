@@ -61,8 +61,6 @@ class _ChargementState extends State<SplahsChargement> {
   bool _hasError = false;
   String _loadingText = "Initialisation...";
 
-  final int app_version_code = 36;
-
 
   @override
   void initState() {
@@ -271,9 +269,7 @@ class _ChargementState extends State<SplahsChargement> {
     }
   }
 
-  // 🔥 NOUVELLE MÉTHODE : PRÉPARER LES IDs EN BACKGROUND
-// Dans SplahsChargement
-// 🔥 LANCER LA PRÉPARATION PROGRESSIVE
+
   void _preparePostsInBackground() {
     WidgetsBinding.instance?.addPostFrameCallback((_) async {
       try {

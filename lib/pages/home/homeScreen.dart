@@ -223,115 +223,6 @@ class _MyHomePageState extends State<MyHomePage>
   Widget _buildDiscoverTab() {
     return UnifiedHomeOptimized();
   }
-  Future<Chat> getIAChatsData(UserIACompte amigo) async {
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId',
-          isEqualTo: '${authProvider.loginUserData.id}${amigo.id}'),
-      Filter('docId',
-          isEqualTo: '${amigo.id}${authProvider.loginUserData.id}'),
-    ))
-        .snapshots();
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-      Chat chat = Chat(
-        docId: '${amigo.id}${authProvider.loginUserData.id}',
-        id: chatId,
-        senderId: '${authProvider.loginUserData.id}',
-        receiverId: '${amigo.id}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now()
-            .millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .set(chat.toJson());
-      usersChat = chat;
-    } else {
-      printVm("le chat existe  ");
-      printVm("stream :${friendsStream}");
-      usersChat = await friendsStream.first.then((value) async {
-        printVm("stream value l :${value.docs.length}");
-        if (value.docs.length <= 0) {
-          printVm("pas de chat ");
-          String chatId =
-              FirebaseFirestore.instance.collection('Chats').doc().id;
-          Chat chat = Chat(
-            docId: '${amigo.id}${authProvider.loginUserData.id}',
-            id: chatId,
-            senderId: '${authProvider.loginUserData.id}',
-            receiverId: '${amigo.id}',
-            lastMessage: 'hi',
-
-            type: ChatType.USER.name,
-            createdAt: DateTime.now()
-                .millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance
-              .collection('Chats')
-              .doc(chatId)
-              .set(chat.toJson());
-          usersChat = chat;
-          return chat;
-        } else {
-          return Chat.fromJson(value.docs.first.data());
-        }
-      });
-      CollectionReference messageCollect =
-      await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      if (messageList.isEmpty) {
-        usersChat.messages = [];
-        userProvider.chat = usersChat;
-        printVm("messgae vide ");
-      } else {
-        printVm("have messages");
-        usersChat.messages = messageList;
-        userProvider.chat = usersChat;
-      }
-
-      /////////////ami//////////
-      /*
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').get();
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').get();
-
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      usersChat.receiver=receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      usersChat.sender=senderUserList.first;
-
-       */
-    }
-
-    return usersChat;
-  }
 
 
 
@@ -1205,15 +1096,17 @@ class _MyHomePageState extends State<MyHomePage>
       //   ChallengeIntegration.initialize();
       // AdvancedModalManager.showModalsWithSmartDelay(context);
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
 
             if (kIsWeb) {
               showInstallModal(context);
             }
-          authProvider.checkAppVersionAndProceed(context, () {
-            AdvancedModalManager.showModalsWithSmartDelay(context);
+          await authProvider.checkAppVersionAndProceed(context, () {
+            // AdvancedModalManager.showModalsWithSmartDelay(context);
+            showRemunerationAnnounceModal(context,authProvider.loginUserData.id!);
 
           });
+            // Appeler cette fonction quand tu veux afficher le modal
 
         });
 

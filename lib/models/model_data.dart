@@ -1437,9 +1437,7 @@ class Post {
     return engagementPerHour > 5.0;
   }
 }
-// models/advertisement_model.dart
-// models/advertisement_model.dart
-// models/advertisement_model.dart
+
 class Advertisement {
   String? id;
   String? postId; // Référence au post original
@@ -4709,4 +4707,324 @@ class AfricanCountry {
     AfricanCountry(code: 'ZM', name: 'Zambie', flag: '🇿🇲'),
     AfricanCountry(code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼'),
   ];
+}
+
+
+// models/remuneration_models.dart
+
+
+// ============================================
+// CONFIGURATION DE LA RÉMUNÉRATION
+// ============================================
+class RemunerationConfig {
+  String? id;
+  String nom;
+  double montantParPalier; // ex: 200 F
+  int nombreVuesParPalier; // ex: 100 vues
+  String devise; // "FCFA", "EUR", etc.
+  bool estActif;
+  int? createdAt;
+  int? updatedAt;
+
+  // Paliers personnalisés (optionnel)
+  List<RemunerationPalier>? paliersSpeciaux;
+
+  RemunerationConfig({
+    this.id,
+    required this.nom,
+    required this.montantParPalier,
+    required this.nombreVuesParPalier,
+    this.devise = "FCFA",
+    this.estActif = true,
+    this.createdAt,
+    this.updatedAt,
+    this.paliersSpeciaux,
+  });
+
+  factory RemunerationConfig.fromJson(Map<String, dynamic> json) {
+    return RemunerationConfig(
+      id: json['id'],
+      nom: json['nom'] ?? 'Configuration par défaut',
+      montantParPalier: (json['montantParPalier'] as num?)?.toDouble() ?? 200.0,
+      nombreVuesParPalier: json['nombreVuesParPalier'] ?? 100,
+      devise: json['devise'] ?? 'FCFA',
+      estActif: json['estActif'] ?? true,
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      paliersSpeciaux: (json['paliersSpeciaux'] as List<dynamic>?)
+          ?.map((p) => RemunerationPalier.fromJson(p))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nom': nom,
+      'montantParPalier': montantParPalier,
+      'nombreVuesParPalier': nombreVuesParPalier,
+      'devise': devise,
+      'estActif': estActif,
+      'createdAt': createdAt ?? DateTime.now().millisecondsSinceEpoch,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      'paliersSpeciaux': paliersSpeciaux?.map((p) => p.toJson()).toList(),
+    };
+  }
+
+  // Calculer le nombre de paliers pour un nombre de vues donné
+  int calculerNombrePaliers(int nombreVues) {
+    return nombreVues ~/ nombreVuesParPalier;
+  }
+
+  // Calculer le montant pour un nombre de vues donné
+  double calculerMontant(int nombreVues) {
+    int paliers = calculerNombrePaliers(nombreVues);
+    return paliers * montantParPalier;
+  }
+}
+
+class RemunerationPalier {
+  String nom;
+  int nombreVuesMinimum;
+  double montant;
+
+  RemunerationPalier({
+    required this.nom,
+    required this.nombreVuesMinimum,
+    required this.montant,
+  });
+
+  factory RemunerationPalier.fromJson(Map<String, dynamic> json) {
+    return RemunerationPalier(
+      nom: json['nom'],
+      nombreVuesMinimum: json['nombreVuesMinimum'],
+      montant: (json['montant'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nom': nom,
+      'nombreVuesMinimum': nombreVuesMinimum,
+      'montant': montant,
+    };
+  }
+}
+
+// ============================================
+// HISTORIQUE D'ENCAISSEMENT DES POSTS
+// ============================================
+class EncaissementPost {
+  String? id;
+  String userId;
+  String postId;
+  int nombreVuesAuMomentEncaissement;
+  int paliersEncaisses; // Nombre de paliers déjà payés
+  double montantEncaisser;
+  String periodeId; // Référence à PeriodeRemuneration.id
+  int dateEncaissement;
+
+  // Statistiques au moment de l'encaissement
+  Map<String, dynamic>? statistiques;
+
+  // Référence à la transaction principale
+  String? transactionSoldeId;
+
+  // Référence à l'encaissement détaillé (optionnel)
+  String? encaissementDetailsId;
+
+  EncaissementPost({
+    this.id,
+    required this.userId,
+    required this.postId,
+    required this.nombreVuesAuMomentEncaissement,
+    required this.paliersEncaisses,
+    required this.montantEncaisser,
+    required this.periodeId,
+    required this.dateEncaissement,
+    this.statistiques,
+    this.transactionSoldeId,
+    this.encaissementDetailsId,
+  });
+
+  factory EncaissementPost.fromJson(Map<String, dynamic> json) {
+    return EncaissementPost(
+      id: json['id'],
+      userId: json['userId'],
+      postId: json['postId'],
+      nombreVuesAuMomentEncaissement: json['nombreVuesAuMomentEncaissement'],
+      paliersEncaisses: json['paliersEncaisses'],
+      montantEncaisser: (json['montantEncaisser'] as num).toDouble(),
+      periodeId: json['periodeId'],
+      dateEncaissement: json['dateEncaissement'],
+      statistiques: json['statistiques'],
+      transactionSoldeId: json['transactionSoldeId'],
+      encaissementDetailsId: json['encaissementDetailsId'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'postId': postId,
+      'nombreVuesAuMomentEncaissement': nombreVuesAuMomentEncaissement,
+      'paliersEncaisses': paliersEncaisses,
+      'montantEncaisser': montantEncaisser,
+      'periodeId': periodeId,
+      'dateEncaissement': dateEncaissement,
+      'statistiques': statistiques,
+      'transactionSoldeId': transactionSoldeId,
+      'encaissementDetailsId': encaissementDetailsId,
+    };
+  }
+}
+
+// ============================================
+// PÉRIODE DE RÉMUNÉRATION (MOIS/ANNÉE)
+// ============================================
+class PeriodeRemuneration {
+  String? id;
+  String userId;
+  int annee;
+  int mois; // 1-12
+  double totalGainsPeriode;
+  double totalEncaisser;
+  double resteAEncaisser;
+  List<String> postsEncaissesIds; // IDs des posts encaissés
+  List<String> encaissementsPostIds; // IDs des EncaissementPost
+  String? transactionPrincipaleId; // Transaction principale de la période
+  int derniereMiseAJour;
+
+  // Statistiques de la période
+  Map<String, dynamic> statistiques;
+
+  PeriodeRemuneration({
+    this.id,
+    required this.userId,
+    required this.annee,
+    required this.mois,
+    this.totalGainsPeriode = 0.0,
+    this.totalEncaisser = 0.0,
+    this.resteAEncaisser = 0.0,
+    this.postsEncaissesIds = const [],
+    this.encaissementsPostIds = const [],
+    this.transactionPrincipaleId,
+    required this.derniereMiseAJour,
+    this.statistiques = const {},
+  });
+
+  factory PeriodeRemuneration.fromJson(Map<String, dynamic> json) {
+    return PeriodeRemuneration(
+      id: json['id'],
+      userId: json['userId'],
+      annee: json['annee'],
+      mois: json['mois'],
+      totalGainsPeriode: (json['totalGainsPeriode'] as num?)?.toDouble() ?? 0.0,
+      totalEncaisser: (json['totalEncaisser'] as num?)?.toDouble() ?? 0.0,
+      resteAEncaisser: (json['resteAEncaisser'] as num?)?.toDouble() ?? 0.0,
+      postsEncaissesIds: List<String>.from(json['postsEncaissesIds'] ?? []),
+      encaissementsPostIds: List<String>.from(json['encaissementsPostIds'] ?? []),
+      transactionPrincipaleId: json['transactionPrincipaleId'],
+      derniereMiseAJour: json['derniereMiseAJour'],
+      statistiques: json['statistiques'] ?? {},
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'annee': annee,
+      'mois': mois,
+      'totalGainsPeriode': totalGainsPeriode,
+      'totalEncaisser': totalEncaisser,
+      'resteAEncaisser': resteAEncaisser,
+      'postsEncaissesIds': postsEncaissesIds,
+      'encaissementsPostIds': encaissementsPostIds,
+      'transactionPrincipaleId': transactionPrincipaleId,
+      'derniereMiseAJour': derniereMiseAJour,
+      'statistiques': statistiques,
+    };
+  }
+
+  String get periodeNom {
+    DateTime date = DateTime(annee, mois);
+    return "${_getMoisNom(mois)} $annee";
+  }
+
+  String _getMoisNom(int mois) {
+    const moisNoms = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    return moisNoms[mois - 1];
+  }
+}
+
+// ============================================
+// ENCAISSEMENT DÉTAILLÉ (NOUVEAU MODÈLE)
+// ============================================
+class EncaissementDetails {
+  String? id;
+  String userId;
+  String periodeId;
+  double montantTotal;
+  String statut; // "EN_ATTENTE", "VALIDE", "ECHEC"
+  String methodePaiement;
+  Map<String, dynamic> detailsPaiement;
+  List<Map<String, dynamic>> postsDetails; // Détail de chaque post inclus
+  int dateDemande;
+  int? dateTraitement;
+  String? transactionSoldeId; // Référence à la transaction principale
+  String? commentaire;
+
+  EncaissementDetails({
+    this.id,
+    required this.userId,
+    required this.periodeId,
+    required this.montantTotal,
+    required this.statut,
+    required this.methodePaiement,
+    required this.detailsPaiement,
+    required this.postsDetails,
+    required this.dateDemande,
+    this.dateTraitement,
+    this.transactionSoldeId,
+    this.commentaire,
+  });
+
+  factory EncaissementDetails.fromJson(Map<String, dynamic> json) {
+    return EncaissementDetails(
+      id: json['id'],
+      userId: json['userId'],
+      periodeId: json['periodeId'],
+      montantTotal: (json['montantTotal'] as num).toDouble(),
+      statut: json['statut'],
+      methodePaiement: json['methodePaiement'],
+      detailsPaiement: Map<String, dynamic>.from(json['detailsPaiement']),
+      postsDetails: List<Map<String, dynamic>>.from(json['postsDetails']),
+      dateDemande: json['dateDemande'],
+      dateTraitement: json['dateTraitement'],
+      transactionSoldeId: json['transactionSoldeId'],
+      commentaire: json['commentaire'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'periodeId': periodeId,
+      'montantTotal': montantTotal,
+      'statut': statut,
+      'methodePaiement': methodePaiement,
+      'detailsPaiement': detailsPaiement,
+      'postsDetails': postsDetails,
+      'dateDemande': dateDemande,
+      'dateTraitement': dateTraitement,
+      'transactionSoldeId': transactionSoldeId,
+      'commentaire': commentaire,
+    };
+  }
 }

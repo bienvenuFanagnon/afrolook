@@ -14,7 +14,7 @@ import 'package:afrotok/providers/userProvider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skeletonizer/skeletonizer.dart';
@@ -130,10 +130,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  late SharedPreferences _prefs;
+  final String _lastViewDatePrefix = 'last_view_date_';
+
+// 🔥 NOUVELLE MÉTHODE
+  Future<void> _initSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
   @override
   void initState() {
     super.initState();
-
+    _initSharedPreferences();
     // Initialisation des providers
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     authProviderShop = Provider.of<UserShopAuthProvider>(context, listen: false);
@@ -2681,8 +2688,85 @@ printVm("_currentFilter data: ${_currentFilter}");
       _visibilityTimers.remove(postId);
     }
   }
-
+  // 🔥 NOUVELLE MÉTHODE UTILITAIRE
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month}-${now.day}';
+  }
   Future<void> _recordPostView(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    // 🔥 Vérification avec SharedPreferences (une fois par jour)
+    String todayDate = _getTodayDateString();
+    String viewKey = '${_lastViewDatePrefix}${currentUserId}_${post.id}';
+
+    // Récupérer la dernière date de vue pour ce post par cet utilisateur
+    String? lastViewDate = _prefs.getString(viewKey);
+
+    // Si déjà vu aujourd'hui, NE PAS COMPTER la vue
+    if (lastViewDate == todayDate) {
+      print('⏭️ Post ${post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
+
+      // ✅ On met quand même à jour l'UI locale pour montrer que le post est vu
+      if (!post.users_vue_id!.contains(currentUserId)) {
+        setState(() {
+          post.users_vue_id!.add(currentUserId);
+          post.hasBeenSeenByCurrentUser = true;
+        });
+      }
+      return; // On ne compte pas la vue
+    }
+
+    // ✅ SUPPRIMER la vérification _postsViewedInSession qui empêcherait
+    // de compter la vue si l'utilisateur a déjà vu le post dans une session précédente
+    // On garde seulement la vérification SharedPreferences (une fois par jour)
+
+    try {
+      // 🔥 Sauvegarder la date dans SharedPreferences
+      await _prefs.setString(viewKey, todayDate);
+
+      // Mise à jour locale de l'UI
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id ??= [];
+        if (!post.users_vue_id!.contains(currentUserId)) {
+          post.users_vue_id!.add(currentUserId);
+        }
+      });
+
+      // Mise à jour Firestore avec batch pour atomicité
+      final batch = _firestore.batch();
+
+      // 1. Incrémenter les vues du post
+      final postRef = _firestore.collection('Posts').doc(post.id);
+      batch.update(postRef, {
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // 2. Ajouter l'ID du post à l'historique de l'utilisateur
+      final userRef = _firestore.collection('Users').doc(currentUserId);
+      batch.update(userRef, {
+        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
+      });
+
+      await batch.commit();
+
+      // Mettre à jour le provider local
+      authProvider.loginUserData.viewedPostIds ??= [];
+      if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
+        authProvider.loginUserData.viewedPostIds!.add(post.id!);
+      }
+
+      print('✅ Vue comptée pour post ${post.id} par $currentUserId le $todayDate');
+
+    } catch (e) {
+      print('Error recording post view: $e');
+    }
+  }
+  Future<void> _recordPostView2(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
 

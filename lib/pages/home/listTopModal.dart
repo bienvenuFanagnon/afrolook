@@ -21,6 +21,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/models/model_data.dart';
 
 import '../info.dart';
+import '../user/mes_gains_post_page.dart';
 class TopFiveModal {
   static Future<void> showTopFiveModal(
       BuildContext context, List<UserData> topUsers) async {
@@ -3167,177 +3168,225 @@ if(userProvider.listAllUsers.isNotEmpty){
   }
 }
 
-class AdvancedModalManager2 {
-  static const String _lastProductModalKey = 'last_product_modal3';
-  static const String _lastLiveModalKey = 'last_live_modal2';
-  static const String _lastChallengeModalKey = 'last_challenge_modal2';
-  static const String _lastModalTypeKey = 'last_modal_type';
-  static const int _modalIntervalHours = 4;
-  static bool _isShowingModal = false;
 
-  static Future<void> showModalsWithSmartDelay(BuildContext context) async {
-    if (_isShowingModal) {
-      return;
-    }
+// Widget helper pour les stats
+void showRemunerationAnnounceModal(BuildContext context, String userId) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return WillPopScope(
+        onWillPop: () async => false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFFFFD700).withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icône principale
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFFD700).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.monetization_on_rounded,
+                    color: Color(0xFFFFD700),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-    _isShowingModal = true;
+                // Titre
+                Text(
+                  '💰 GAGNE DE L\'ARGENT !',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-    try {
-      await Future.delayed(Duration(milliseconds: 1500));
+                // Message principal
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Afrolook rémunère tes publications :',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
 
-      // 🔥 NOUVELLE LOGIQUE : Toujours vérifier les challenges en premier
-      final activeChallenge = await _getActiveChallenge();
+                      // Taux
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildRateChip('100', 'VUES'),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Icon(Icons.arrow_forward, color: Color(0xFFFFD700), size: 16),
+                          ),
+                          _buildRateChip('200', 'FCFA'),
+                        ],
+                      ),
 
-      if (activeChallenge != null && context.mounted) {
-        // 🎯 IL Y A UN CHALLENGE ACTIF - On l'affiche sans vérifier l'intervalle
-        print('🏆 Challenge actif trouvé: ${activeChallenge.titre}');
+                      const SizedBox(height: 8),
 
-        await _showChallengeModal(context, activeChallenge);
-        return; // On s'arrête ici, pas d'autres modals
-      }
+                      // Likes & commentaires
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.thumb_up, color: Colors.blue, size: 14),
+                          const SizedBox(width: 4),
+                          Text('Likes', style: TextStyle(color: Colors.blue.shade300, fontSize: 11)),
+                          const SizedBox(width: 12),
+                          Icon(Icons.comment, color: Colors.green, size: 14),
+                          const SizedBox(width: 4),
+                          Text('Commentaires', style: TextStyle(color: Colors.green.shade300, fontSize: 11)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-      // 🚫 AUCUN CHALLENGE ACTIF - On continue avec les autres modals
-      print('❌ Aucun challenge actif, affichage des autres modals');
-      final prefs = await SharedPreferences.getInstance();
-      final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'live';
+                // Message d'invitation
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFFD700).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '👉 Rends-toi dans la page MONÉTISATIONS pour voir tes gains et les encaisser !',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-      if (lastModalType == 'products') {
-        await _tryShowLiveModal(context, prefs);
-      } else {
-        await _tryShowProductModal(context, prefs);
-      }
+                // Boutons
+                Row(
+                  children: [
+                    // Bouton Plus tard
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'PLUS TARD',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
 
-    } finally {
-      _isShowingModal = false;
-    }
-  }
-
-  static Future<Challenge?> _getActiveChallenge() async {
-    try {
-      // Récupération directe depuis Firebase
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Challenges')
-          .where('statut', whereIn: ['en_attente', 'en_cours'])
-          .where('disponible', isEqualTo: true)
-          // .where('isAprouved', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        final challengeData = snapshot.docs.first.data();
-        challengeData['id'] = snapshot.docs.first.id;
-        // FirebaseFirestore.instance.collection('Challenges').doc(snapshot.docs.first.id).update({
-        //   'vues': FieldValue.increment(1),
-        // });
-
-        return Challenge.fromJson(challengeData);
-      }
-      return null;
-    } catch (e) {
-      print('❌ Erreur lors de la récupération du challenge: $e');
-      return null;
-    }
-  }
-
-  static Future<void> _showChallengeModal(BuildContext context, Challenge challenge) async {
-
-    print('🏆 Affichage du modal du challenge: ${challenge.titre}');
-    await ChallengeModal.showChallengeModal(context, challenge);
-
-    // On marque quand même l'affichage pour le debug, mais sans bloquer les prochains
-    await _markModalShown(_lastChallengeModalKey);
-  }
-
-  // 🚫 LES AUTRES MODALS NE S'AFFICHENT QUE SI PAS DE CHALLENGE
-  static Future<void> _tryShowProductModal(BuildContext context, SharedPreferences prefs) async {
-    final shouldShowProducts = await _shouldShowModal(_lastProductModalKey);
-    if (shouldShowProducts && context.mounted) {
-      await _showProductModal(context);
-      await prefs.setString(_lastModalTypeKey, 'products');
-    } else {
-      print('⏰ Modal produits non affiché (intervalle pas encore écoulé)');
-    }
-  }
-
-  static Future<void> _tryShowLiveModal(BuildContext context, SharedPreferences prefs) async {
-    final shouldShowLives = await _shouldShowModal(_lastLiveModalKey);
-    if (shouldShowLives && context.mounted) {
-      await _showLiveModal(context);
-      await prefs.setString(_lastModalTypeKey, 'lives');
-    } else {
-      print('⏰ Modal lives non affiché (intervalle pas encore écoulé)');
-    }
-  }
-
-  static Future<void> _showProductModal(BuildContext context) async {
-    print('🛒 Affichage du modal des produits boostés');
-    await TopProductsGridModal.showTopProductsGridModal(context);
-    await _markModalShown(_lastProductModalKey);
-  }
-
-  static Future<void> _showLiveModal(BuildContext context) async {
-    print('🎥 Affichage du modal des lives');
-    await TopLiveGridModal.showTopLiveGridModal(context);
-    await _markModalShown(_lastLiveModalKey);
-  }
-
-  static Future<bool> _shouldShowModal(String modalKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastShowTime = prefs.getInt(modalKey) ?? 0;
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-    final intervalMs = _modalIntervalHours * 60 * 60 * 1000;
-
-    return currentTime - lastShowTime > intervalMs;
-  }
-
-  static Future<void> _markModalShown(String modalKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(modalKey, DateTime.now().millisecondsSinceEpoch);
-    print('✅ Modal $modalKey marqué comme affiché à ${DateTime.now()}');
-  }
-
-  static Future<void> debugModalStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final productTime = prefs.getInt(_lastProductModalKey) ?? 0;
-    final liveTime = prefs.getInt(_lastLiveModalKey) ?? 0;
-    final challengeTime = prefs.getInt(_lastChallengeModalKey) ?? 0;
-    final lastModalType = prefs.getString(_lastModalTypeKey) ?? 'aucun';
-
-    final now = DateTime.now();
-    final productShown = productTime > 0 ? DateTime.fromMillisecondsSinceEpoch(productTime) : null;
-    final liveShown = liveTime > 0 ? DateTime.fromMillisecondsSinceEpoch(liveTime) : null;
-    final challengeShown = challengeTime > 0 ? DateTime.fromMillisecondsSinceEpoch(challengeTime) : null;
-
-    // Vérifier les challenges actifs
-    final activeChallenge = await _getActiveChallenge();
-
-    print('🔍 État des modals:');
-    print('   - Dernier modal: $lastModalType');
-    print('   - Challenge actif: ${activeChallenge != null ? "OUI (" + activeChallenge.titre! + ")" : "NON"}');
-    print('   - Produits affichés: ${productShown ?? "jamais"}');
-    print('   - Lives affichés: ${liveShown ?? "jamais"}');
-    print('   - Challenges affichés: ${challengeShown ?? "jamais"}');
-
-    if (activeChallenge != null) {
-      print('   🎯 PRIORITÉ: Les challenges bloquent les autres modals');
-    } else {
-      print('   🚫 Aucun challenge actif - les autres modals peuvent s\'afficher');
-    }
-  }
-
-  static Future<void> resetAllModals() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_lastProductModalKey);
-    await prefs.remove(_lastLiveModalKey);
-    await prefs.remove(_lastChallengeModalKey);
-    await prefs.remove(_lastModalTypeKey);
-    print('🔄 Tous les modals ont été réinitialisés');
-  }
-
-  // 🔥 NOUVELLE MÉTHODE : Vérifier rapidement s'il y a des challenges
-  static Future<bool> hasActiveChallenges() async {
-    final challenge = await _getActiveChallenge();
-    return challenge != null;
-  }
+                    // Bouton Voir mes gains
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MesGainsPage(userId: userId),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFFFD700),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'VOIR MES GAINS',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
+// Petit helper pour les chips de taux
+Widget _buildRateChip(String value, String label) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: Color(0xFFFFD700).withOpacity(0.15),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: Color(0xFFFFD700),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    ),
+  );
+}

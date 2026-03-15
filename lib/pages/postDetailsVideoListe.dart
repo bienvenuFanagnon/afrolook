@@ -19,6 +19,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _twitterDarkBg = Color(0xFF000000);
 const _twitterCardBg = Color(0xFF16181C);
@@ -53,7 +54,8 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   late PostProvider postProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  late SharedPreferences _prefs;
+  final String _lastViewDatePrefix = 'last_view_date_';
   // Paramètres de chargement
   final int _initialLimit = 5;
   final int _loadMoreLimit = 5;
@@ -111,7 +113,6 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
     return widget.initialPost.type == 'CHALLENGEPARTICIPATION';
   }
 
-  // ==================== CONTRÔLE D'ACCÈS CANAL ====================
 
   // Vérifier si l'utilisateur a accès au contenu
   bool _hasAccessToContent(Post post) {
@@ -226,6 +227,8 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   @override
   void initState() {
     super.initState();
+    // 🔥 NOUVEAU : Initialiser SharedPreferences
+    _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadPostRelations();
@@ -238,7 +241,10 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
     _checkIfUserHasVoted();
     _loadInitialVideos();
   }
-
+// 🔥 NOUVELLE MÉTHODE
+  Future<void> _initSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
   @override
   void dispose() {
     _pageController.dispose();
@@ -1209,7 +1215,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       setState(() => _isVideoInitialized = false);
     }
   }
-
+// 🔥 NOUVELLE MÉTHODE UTILITAIRE
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month}-${now.day}';
+  }
+// 🔥 MODIFIÉE : Marquer le post comme vu sans compter
   Future<void> _markPostAsSeen(Post post) async {
     if (post.id == null) return;
 
@@ -1231,21 +1242,58 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
+// 🔥 NOUVELLE VERSION : Enregistrer la vue avec contrôle journalier
   Future<void> _recordPostView(Post post) async {
     if (post.id == null) return;
 
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
     try {
+      // 🔥 Vérification avec SharedPreferences (une fois par jour)
+      String todayDate = _getTodayDateString();
+      String viewKey = '${_lastViewDatePrefix}${currentUserId}_${post.id}';
+
+      // Récupérer la dernière date de vue pour ce post par cet utilisateur
+      String? lastViewDate = _prefs.getString(viewKey);
+
+      // Marquer le post comme vu dans la session (pour l'UI)
       await _markPostAsSeen(post);
 
-      if (!post.users_vue_id!.contains(authProvider.loginUserData.id)) {
-        await _firestore.collection('Posts').doc(post.id).update({
-          'vues': FieldValue.increment(1),
-          'users_vue_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
-        });
+      // Si déjà vu aujourd'hui, NE PAS COMPTER la vue
+      if (lastViewDate == todayDate) {
+        print('⏭️ Vidéo ${post.id} déjà vue aujourd\'hui par $currentUserId - Vue NON comptée');
 
-        post.vues = (post.vues ?? 0) + 1;
-        post.users_vue_id!.add(authProvider.loginUserData.id!);
+        // Mettre à jour l'UI locale si nécessaire
+        if (!post.users_vue_id!.contains(currentUserId)) {
+          setState(() {
+            post.users_vue_id!.add(currentUserId);
+            // On n'incrémente PAS vues
+          });
+        }
+        return; // On ne compte pas la vue
       }
+
+      // 🔥 PREMIÈRE VUE AUJOURD'HUI : On compte la vue
+      print('✅ Première vue du jour pour vidéo ${post.id} par $currentUserId');
+
+      // Sauvegarder la date dans SharedPreferences
+      await _prefs.setString(viewKey, todayDate);
+
+      // Mettre à jour Firestore (incrémenter le compteur)
+      await _firestore.collection('Posts').doc(post.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // Mettre à jour localement
+      setState(() {
+        post.vues = (post.vues ?? 0) + 1;
+        if (!post.users_vue_id!.contains(currentUserId)) {
+          post.users_vue_id!.add(currentUserId);
+        }
+      });
+
     } catch (e) {
       print('❌ Erreur enregistrement vue: $e');
     }

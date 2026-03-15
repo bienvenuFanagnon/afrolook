@@ -43,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 143;
+  late int app_version_code = 144;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -2478,121 +2478,127 @@ class UserAuthProvider extends ChangeNotifier {
       enableDrag: false,    // ❌ Empêche de glisser pour fermer
       backgroundColor: Colors.transparent, // Pour avoir un fond arrondi stylé
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(25),
-              topRight: Radius.circular(25),
+        return WillPopScope(
+          onWillPop: () async {
+            // Retourne false pour empêcher la fermeture
+            return false;
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.yellow.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.yellow.withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Barre décorative verte
-              Container(
-                width: 60,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.greenAccent.shade400,
-                  borderRadius: BorderRadius.circular(10),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Barre décorative verte
+                Container(
+                  width: 60,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.shade400,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Icône principale 🟡
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.yellow.shade600,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.yellow.withOpacity(0.4),
-                      blurRadius: 15,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.system_update_rounded,
-                  color: Colors.black,
-                  size: 45,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Titre 💚
-              Text(
-                'Mise à jour disponible !',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.greenAccent.shade400,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Description 🖤
-              Text(
-                'Une nouvelle version d’AfroLook est disponible.\n\n'
-                    'Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d’une meilleure sécurité et d’une expérience encore plus fluide !',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 15,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 25),
-
-              // Bouton principal 💛
-              ElevatedButton.icon(
-                onPressed: () {
-                  _launchUrl(Uri.parse('${appDefaultData.app_link}'));
-                },
-                icon: const Icon(Icons.play_arrow, color: Colors.black),
-                label: const Text(
-                  'Mettre à jour sur Play Store',
-                  style: TextStyle(
+                // Icône principale 🟡
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow.shade600,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.yellow.withOpacity(0.4),
+                        blurRadius: 15,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.system_update_rounded,
                     color: Colors.black,
+                    size: 45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Titre 💚
+                Text(
+                  'Mise à jour disponible !',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.greenAccent.shade400,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow.shade600,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-              const SizedBox(height: 10),
+                const SizedBox(height: 12),
 
-              // Bouton secondaire (désactivé ou non selon ton besoin)
-              TextButton(
-                onPressed: () {
-                  // 👇 Si tu veux le rendre 100% obligatoire, commente cette ligne :
-                  // Navigator.of(context).pop();
-                },
-                child: Text(
-                  'Plus tard',
+                // Description 🖤
+                Text(
+                  'Une nouvelle version d’AfroLook est disponible.\n\n'
+                      'Téléchargez-la maintenant pour profiter des dernières fonctionnalités, d’une meilleure sécurité et d’une expérience encore plus fluide !',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    fontSize: 15,
+                    height: 1.5,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 25),
+
+                // Bouton principal 💛
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _launchUrl(Uri.parse('${appDefaultData.app_link}'));
+                  },
+                  icon: const Icon(Icons.play_arrow, color: Colors.black),
+                  label: const Text(
+                    'Mettre à jour sur Play Store',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.yellow.shade600,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Bouton secondaire (désactivé ou non selon ton besoin)
+                TextButton(
+                  onPressed: () {
+                    // 👇 Si tu veux le rendre 100% obligatoire, commente cette ligne :
+                    // Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Plus tard',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

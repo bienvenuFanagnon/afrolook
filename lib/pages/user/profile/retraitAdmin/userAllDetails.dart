@@ -8,6 +8,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
+import '../../mes_gains_post_page.dart';
 import '../../userTransactionListe.dart';
 
 
@@ -607,6 +608,25 @@ class _UserManagementPageState extends State<UserManagementPage> {
             ),
             icon: Icon(Iconsax.receipt),
             label: Text('VOIR LES TRANSACTIONS'),
+          ),
+          SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigation vers la page des transactions de l'utilisateur
+              Navigator.push(context, MaterialPageRoute(builder: (context) => MesGainsPage(userId: widget.userId!,)));
+
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[800],
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: Size(double.infinity, 50), // Pleine largeur
+            ),
+            icon: Icon(Iconsax.money),
+            label: Text('Post Monétisation'),
           ),
           if (_isUpdating) ...[
             SizedBox(height: 16),

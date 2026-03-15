@@ -17,13 +17,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/constant/iconGradient.dart';
-import 'package:afrotok/constant/logo.dart';
-import 'package:afrotok/constant/sizeText.dart';
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/services/api.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +44,7 @@ import 'canaux/detailsCanal.dart';
 
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _twitterDarkBg = Color(0xFF000000);
 const _twitterCardBg = Color(0xFF16181C);
@@ -120,8 +116,8 @@ class _DetailsPostState extends State<DetailsPost>
   Advertisement? _advertisement;
   bool _isLoadingAd = false;
   bool _isAd = false;
-
-// 2. Ajouter dans initState() :
+  late SharedPreferences _prefs;
+  final String _lastViewDatePrefix = 'last_view_date_';
 
 
 // 3. Ajouter la méthode de chargement :
@@ -937,10 +933,14 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
 // Nettoyer les ressources audio
-
+// 🔥 NOUVELLE MÉTHODE
+  Future<void> _initSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
   @override
   void initState() {
     super.initState();
+    _initSharedPreferences();
     _isAd = widget.post.isAdvertisement == true;
     if (_isAd && widget.post.advertisementId != null) {
       _loadAdvertisement();
@@ -1179,8 +1179,70 @@ class _DetailsPostState extends State<DetailsPost>
       print('Erreur lors de la vérification du vote: $e');
     }
   }
-
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month}-${now.day}';
+  }
   Future<void> _incrementViews() async {
+    try {
+      if (authProvider.loginUserData == null ||
+          widget.post == null ||
+          widget.post.id == null) return;
+
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
+
+      // 🔥 Vérification avec SharedPreferences (une fois par jour)
+      String todayDate = _getTodayDateString();
+      String viewKey = '${_lastViewDatePrefix}${currentUserId}_${widget.post.id}';
+
+      // Récupérer la dernière date de vue pour ce post par cet utilisateur
+      String? lastViewDate = _prefs.getString(viewKey);
+
+      // Si déjà vu aujourd'hui, NE PAS COMPTER la vue, mais permettre la visualisation
+      if (lastViewDate == todayDate) {
+        print('⏭️ Post ${widget.post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
+
+        // ✅ SUPPRIMER LA VÉRIFICATION : On met à jour l'UI même si déjà vu
+        // pour que l'utilisateur puisse voir le post sans que la vue soit recompée
+        if (!widget.post.users_vue_id!.contains(currentUserId)) {
+          setState(() {
+            widget.post.users_vue_id!.add(currentUserId);
+          });
+        }
+        return; // On retourne sans incrémenter le compteur
+      }
+
+      // 🔥 PREMIÈRE VUE AUJOURD'HUI : On compte la vue
+      // ✅ SUPPRIMER LA VÉRIFICATION users_vue_id car on veut compter même si
+      // l'utilisateur a déjà vu le post les jours précédents
+
+      // Sauvegarder la date dans SharedPreferences
+      await _prefs.setString(viewKey, todayDate);
+
+      // Mettre à jour localement
+      setState(() {
+        widget.post.vues = (widget.post.vues ?? 0) + 1;
+        if (!widget.post.users_vue_id!.contains(currentUserId)) {
+          widget.post.users_vue_id!.add(currentUserId);
+        }
+      });
+
+      // Mettre à jour dans Firestore
+      await firestore.collection('Posts').doc(widget.post.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+        'popularity': FieldValue.increment(2),
+      });
+
+      print('✅ Vue comptée pour post ${widget.post.id} par $currentUserId le $todayDate');
+
+    } catch (e) {
+      print("Erreur incrémentation vues: $e");
+    }
+  }
+
+  Future<void> _incrementViews2() async {
     try {
       if (authProvider.loginUserData!=null&&widget.post!=null&&widget.post.users_vue_id!=null) {
         if (!widget.post.users_vue_id!.contains(authProvider.loginUserData.id)) {
@@ -1204,6 +1266,7 @@ class _DetailsPostState extends State<DetailsPost>
       print("Erreur incrémentation vues: $e");
     }
   }
+
 
   // FONCTIONNALITÉ DE VOTE
   Future<void> _loadChallengeData() async {
@@ -1880,8 +1943,98 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
-
+  bool _isProcessing = false;
   Future<void> _handleLike() async {
+    // Éviter les doubles clics au niveau UI
+    if (_isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final userId = authProvider.loginUserData.id!;
+      final postId = widget.post.id!;
+      final postRef = firestore.collection('Posts').doc(postId);
+
+      // Utiliser une transaction pour garantir l'atomicité
+      await firestore.runTransaction((transaction) async {
+        // 1. Lire l'état actuel du post dans la transaction
+        final postSnapshot = await transaction.get(postRef);
+
+        if (!postSnapshot.exists) {
+          throw Exception('Post non trouvé');
+        }
+
+        final postData = postSnapshot.data() as Map<String, dynamic>;
+        final usersLoveId = List<String>.from(postData['users_love_id'] ?? []);
+        final currentLoves = postData['loves'] ?? 0;
+
+        // 2. VÉRIFICATION CRITIQUE : L'utilisateur a-t-il déjà liké ?
+        if (usersLoveId.contains(userId)) {
+          throw Exception('Vous avez déjà liké ce post');
+        }
+
+        // 3. Mise à jour atomique
+        transaction.update(postRef, {
+          'loves': currentLoves + 1,
+          'users_love_id': FieldValue.arrayUnion([userId]),
+          'popularity': FieldValue.increment(3),
+          // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
+        });
+      });
+
+      // 4. Mettre à jour l'UI seulement après le succès de la transaction
+      setState(() {
+        // widget.post.loves = (widget.post.loves ?? 0) + 1;
+        // widget.post.users_love_id!.add(userId);
+      });
+
+      // 5. Actions post-like (notifications, points, etc.)
+      await Future.wait([
+        FeedInteractionService.onPostLoved(widget.post, userId),
+    authProvider.sendNotification(
+    userIds: [widget.post.user!.oneIgnalUserid!],
+    smallImage: "${authProvider.loginUserData.imageUrl!}",
+    send_user_id: "${authProvider.loginUserData.id!}",
+    recever_user_id: "${widget.post.user_id!}",
+    message:
+    "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+    type_notif: NotificationType.POST.name,
+    post_id: "${widget.post!.id!}",
+    post_type: PostDataType.IMAGE.name,
+    chat_id: ''),
+        addPointsForAction(UserAction.like),
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre),
+      ]);
+
+      _animationController.forward().then((_) => _animationController.reverse());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('+ de points ajoutés à votre compte'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+    } catch (e) {
+      print("Erreur like: $e");
+
+      // Message d'erreur spécifique
+      String errorMessage = "Erreur lors du like";
+      if (e.toString().contains("déjà liké")) {
+        errorMessage = "Vous avez déjà liké ce post";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+  Future<void> _handleLike2() async {
     try {
       if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
         setState(() {
