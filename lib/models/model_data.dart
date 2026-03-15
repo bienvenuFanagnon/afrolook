@@ -878,7 +878,25 @@ class UserData {
 
   }
 
+  int _parseDateToMicroseconds(dynamic value) {
+    if (value == null) return 0;
 
+    // si déjà un int
+    if (value is int) {
+      return value;
+    }
+
+    // si string ISO
+    if (value is String) {
+      try {
+        return DateTime.parse(value).microsecondsSinceEpoch;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    return 0;
+  }
   UserData.fromJson(Map<String, dynamic> json) {
     id = json['id']?.toString() ?? '';
     pseudo = json['pseudo']?.toString() ?? '';
@@ -951,6 +969,13 @@ class UserData {
 
     password = json['password']?.toString() ?? '';
     role = json['role']?.toString() ?? '';
+    createdAt = json['createdAt'] != null
+        ? _parseDateToMicroseconds(json['createdAt'])
+        : null;
+
+    updatedAt = json['updatedAt'] != null
+        ? _parseDateToMicroseconds(json['updatedAt'])
+        : null;
     // createdAt = json['createdAt'] ?? 0;
     // updatedAt = json['updatedAt'] ?? 0;
 

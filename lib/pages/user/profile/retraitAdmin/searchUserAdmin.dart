@@ -219,16 +219,20 @@ class _UserSearchPageState extends State<UserSearchPage> {
     );
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return 'Date inconnue';
+  String _formatDate(int? microseconds) {
+    if (microseconds == null || microseconds == 0) {
+      return 'Date inconnue';
+    }
+
     try {
-      DateTime date = DateTime.parse(dateStr);
+      DateTime date =
+      DateTime.fromMicrosecondsSinceEpoch(microseconds);
+
       return DateFormat('dd/MM/yyyy HH:mm').format(date);
     } catch (e) {
-      return dateStr;
+      return 'Date inconnue';
     }
   }
-
   String _getSearchHintText() {
     switch (_searchType) {
       case 'email':
@@ -659,7 +663,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Inscription: ${_formatDate(user.createdAt?.toString())}',
+                        'Inscription: ${_formatDate(user.createdAt??0)}',
                         style: TextStyle(
                           color: Colors.grey[500],
                           fontSize: 11,
