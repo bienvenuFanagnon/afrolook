@@ -56,7 +56,6 @@ class PostProvider extends ChangeNotifier {
   String? get selectedCategory => _selectedCategory;
   String? get selectedCountry => _selectedCountry;
   String? get selectedCity => _selectedCity;
-
   Future<List<UserServiceData>> getUserServices({
     bool loadMore = false,
     int limit = 6,
@@ -64,47 +63,73 @@ class PostProvider extends ChangeNotifier {
     String? country,
     String? city,
     String searchQuery = '',
+    bool fromUserCountry = false, // Nouveau paramètre optionnel
   }) async {
     if (_isLoadingServices) return _userServices;
 
     _isLoadingServices = true;
+    notifyListeners(); // Notifier immédiatement pour afficher le loader
 
     if (!loadMore) {
       _userServices = [];
       _lastServiceDocument = null;
       _hasMoreServices = true;
-      _selectedCategory = category;
-      _selectedCountry = country;
-      _selectedCity = city;
-      _searchQuery = searchQuery;
+
+      // Mettre à jour les filtres seulement si de nouvelles valeurs sont fournies
+      if (category != null) _selectedCategory = category.isNotEmpty ? category : null;
+      if (country != null) _selectedCountry = country.isNotEmpty ? country : null;
+      if (city != null) _selectedCity = city.isNotEmpty ? city : null;
+      if (searchQuery.isNotEmpty) _searchQuery = searchQuery;
     }
 
     try {
       CollectionReference servicesCollection =
       FirebaseFirestore.instance.collection('UserServices');
 
+      // Construction de la requête de base
       Query query = servicesCollection
           .where("disponible", isEqualTo: true);
 
-      // Appliquer les filtres
-      if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
-        query = query.where("category", isEqualTo: _selectedCategory);
+      // IMPORTANT: Vérifier que les champs existent avant d'appliquer les filtres
+      // pour éviter les erreurs "needs an index"
+
+      // Appliquer les filtres avec gestion d'erreurs
+      try {
+        if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+          query = query.where("category", isEqualTo: _selectedCategory);
+        }
+      } catch (e) {
+        print('⚠️ Erreur filtre catégorie (peut-être besoin d\'index): $e');
+        // Continuer sans ce filtre
       }
 
-      if (_selectedCountry != null && _selectedCountry!.isNotEmpty) {
-        query = query.where("country", isEqualTo: _selectedCountry);
+      try {
+        if (_selectedCountry != null && _selectedCountry!.isNotEmpty) {
+          query = query.where("country", isEqualTo: _selectedCountry);
+        }
+      } catch (e) {
+        print('⚠️ Erreur filtre pays (peut-être besoin d\'index): $e');
+        // Continuer sans ce filtre
       }
 
-      if (_selectedCity != null && _selectedCity!.isNotEmpty) {
-        query = query.where("city", isEqualTo: _selectedCity);
+      try {
+        if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+          query = query.where("city", isEqualTo: _selectedCity);
+        }
+      } catch (e) {
+        print('⚠️ Erreur filtre ville (peut-être besoin d\'index): $e');
+        // Continuer sans ce filtre
       }
 
+      // Trier par date de création
       query = query.orderBy('createdAt', descending: true).limit(limit);
 
-      if (_lastServiceDocument != null) {
+      // Pagination
+      if (loadMore && _lastServiceDocument != null) {
         query = query.startAfterDocument(_lastServiceDocument!);
       }
 
+      // Exécuter la requête
       QuerySnapshot querySnapshot = await query.get();
 
       if (querySnapshot.docs.isEmpty) {
@@ -114,65 +139,212 @@ class PostProvider extends ChangeNotifier {
 
         List<UserServiceData> newServices = [];
 
+        // Traiter chaque document
         for (var doc in querySnapshot.docs) {
-          UserServiceData service = UserServiceData.fromJson(
-              doc.data() as Map<String, dynamic>
-          );
-
-          // Récupérer les données utilisateur
           try {
-            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-                .collection('Users')
-                .doc(service.userId)
-                .get();
+            UserServiceData service = UserServiceData.fromJson(
+                doc.data() as Map<String, dynamic>
+            );
 
-            if (userSnapshot.exists) {
-              UserData user = UserData.fromJson(
-                  userSnapshot.data() as Map<String, dynamic>
+            // Ajouter l'ID du document
+            service.id = doc.id;
+
+            // Récupérer les données utilisateur de manière asynchrone mais sans bloquer
+            try {
+              DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(service.userId)
+                  .get();
+
+              if (userSnapshot.exists) {
+                UserData user = UserData.fromJson(
+                    userSnapshot.data() as Map<String, dynamic>
+                );
+                service.user = user;
+              }
+            } catch (e) {
+              print('❌ Erreur récupération user pour service ${service.id}: $e');
+              // Créer un utilisateur minimal pour éviter les nulls
+              service.user = UserData(
+                // id: service.userId,
+                pseudo: 'Utilisateur',
               );
-              service.user = user;
             }
-          } catch (e) {
-            print('Erreur récupération user: $e');
-          }
 
-          newServices.add(service);
+            newServices.add(service);
+          } catch (e) {
+            print('❌ Erreur parsing service: $e');
+            continue; // Ignorer ce service et passer au suivant
+          }
         }
 
-        // Filtrage côté client pour la recherche texte
+        // Filtrage côté client pour la recherche texte (plus flexible)
         if (_searchQuery.isNotEmpty) {
+          final searchLower = _searchQuery.toLowerCase().trim();
           newServices = newServices.where((service) {
             final titleLower = service.titre?.toLowerCase() ?? '';
             final descriptionLower = service.description?.toLowerCase() ?? '';
             final categoryLower = service.category?.toLowerCase() ?? '';
             final cityLower = service.city?.toLowerCase() ?? '';
             final countryLower = service.country?.toLowerCase() ?? '';
-            final searchLower = _searchQuery.toLowerCase();
+            final userPseudo = service.user?.pseudo?.toLowerCase() ?? '';
 
             return titleLower.contains(searchLower) ||
                 descriptionLower.contains(searchLower) ||
                 categoryLower.contains(searchLower) ||
                 cityLower.contains(searchLower) ||
-                countryLower.contains(searchLower);
+                countryLower.contains(searchLower) ||
+                userPseudo.contains(searchLower);
           }).toList();
         }
 
+        // Ajouter les nouveaux services à la liste
         if (loadMore) {
           _userServices.addAll(newServices);
         } else {
           _userServices = newServices;
         }
 
+        // Déterminer s'il y a plus de services à charger
         _hasMoreServices = newServices.length == limit;
       }
     } catch (e) {
-      print('Erreur chargement services: $e');
+      print('❌ Erreur critique chargement services: $e');
+
+      // En cas d'erreur, réinitialiser pour permettre une nouvelle tentative
+      if (!loadMore) {
+        _userServices = [];
+      }
+      _hasMoreServices = false;
+
+      // Afficher un message d'erreur (vous pouvez utiliser un SnackBar ou un dialog)
+      // Vous pouvez ajouter un mécanisme de retry ici
+    } finally {
+      _isLoadingServices = false;
+      notifyListeners(); // Important: notifier la fin du chargement
     }
 
-    _isLoadingServices = false;
-    notifyListeners();
     return _userServices;
   }
+
+
+  // Future<List<UserServiceData>> getUserServices({
+  //   bool loadMore = false,
+  //   int limit = 6,
+  //   String? category,
+  //   String? country,
+  //   String? city,
+  //   String searchQuery = '',
+  // }) async
+  // {
+  //   if (_isLoadingServices) return _userServices;
+  //
+  //   _isLoadingServices = true;
+  //
+  //   if (!loadMore) {
+  //     _userServices = [];
+  //     _lastServiceDocument = null;
+  //     _hasMoreServices = true;
+  //     _selectedCategory = category;
+  //     _selectedCountry = country;
+  //     _selectedCity = city;
+  //     _searchQuery = searchQuery;
+  //   }
+  //
+  //   try {
+  //     CollectionReference servicesCollection =
+  //     FirebaseFirestore.instance.collection('UserServices');
+  //
+  //     Query query = servicesCollection
+  //         .where("disponible", isEqualTo: true);
+  //
+  //     // Appliquer les filtres
+  //     if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+  //       query = query.where("category", isEqualTo: _selectedCategory);
+  //     }
+  //
+  //     if (_selectedCountry != null && _selectedCountry!.isNotEmpty) {
+  //       query = query.where("country", isEqualTo: _selectedCountry);
+  //     }
+  //
+  //     if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+  //       query = query.where("city", isEqualTo: _selectedCity);
+  //     }
+  //
+  //     query = query.orderBy('createdAt', descending: true).limit(limit);
+  //
+  //     if (_lastServiceDocument != null) {
+  //       query = query.startAfterDocument(_lastServiceDocument!);
+  //     }
+  //
+  //     QuerySnapshot querySnapshot = await query.get();
+  //
+  //     if (querySnapshot.docs.isEmpty) {
+  //       _hasMoreServices = false;
+  //     } else {
+  //       _lastServiceDocument = querySnapshot.docs.last;
+  //
+  //       List<UserServiceData> newServices = [];
+  //
+  //       for (var doc in querySnapshot.docs) {
+  //         UserServiceData service = UserServiceData.fromJson(
+  //             doc.data() as Map<String, dynamic>
+  //         );
+  //
+  //         // Récupérer les données utilisateur
+  //         try {
+  //           DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+  //               .collection('Users')
+  //               .doc(service.userId)
+  //               .get();
+  //
+  //           if (userSnapshot.exists) {
+  //             UserData user = UserData.fromJson(
+  //                 userSnapshot.data() as Map<String, dynamic>
+  //             );
+  //             service.user = user;
+  //           }
+  //         } catch (e) {
+  //           print('Erreur récupération user: $e');
+  //         }
+  //
+  //         newServices.add(service);
+  //       }
+  //
+  //       // Filtrage côté client pour la recherche texte
+  //       if (_searchQuery.isNotEmpty) {
+  //         newServices = newServices.where((service) {
+  //           final titleLower = service.titre?.toLowerCase() ?? '';
+  //           final descriptionLower = service.description?.toLowerCase() ?? '';
+  //           final categoryLower = service.category?.toLowerCase() ?? '';
+  //           final cityLower = service.city?.toLowerCase() ?? '';
+  //           final countryLower = service.country?.toLowerCase() ?? '';
+  //           final searchLower = _searchQuery.toLowerCase();
+  //
+  //           return titleLower.contains(searchLower) ||
+  //               descriptionLower.contains(searchLower) ||
+  //               categoryLower.contains(searchLower) ||
+  //               cityLower.contains(searchLower) ||
+  //               countryLower.contains(searchLower);
+  //         }).toList();
+  //       }
+  //
+  //       if (loadMore) {
+  //         _userServices.addAll(newServices);
+  //       } else {
+  //         _userServices = newServices;
+  //       }
+  //
+  //       _hasMoreServices = newServices.length == limit;
+  //     }
+  //   } catch (e) {
+  //     print('Erreur chargement services: $e');
+  //   }
+  //
+  //   _isLoadingServices = false;
+  //   notifyListeners();
+  //   return _userServices;
+  // }
 
   Future<List<UserServiceData>> getUserServiceById2(String id) async {
     try {
@@ -256,6 +428,7 @@ class PostProvider extends ChangeNotifier {
     _selectedCountry = null;
     _selectedCity = null;
     _searchQuery = '';
+    _userServices = [];
     notifyListeners();
   }
 

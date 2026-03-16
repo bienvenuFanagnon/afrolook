@@ -583,6 +583,40 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: AnimateIcon(
+                      key: UniqueKey(),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => UserServiceListPage(),
+                        ));
+                      },
+                      iconType: IconType.continueAnimation,
+                      height: 30,
+                      width: 30,
+                      color: Colors.yellow, // Icône jaune
+                      animateIcon: AnimateIcons.settings,
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "🛠️Services & Jobs 💼",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    subtitle: TextCustomerMenu(
+                      titre: "Chercher des gens pour bosser",
+                      fontSize: 9,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => UserServiceListPage(),
+                      ));
+                    },
+                  ),
+
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Icon(Icons.store_mall_directory, color: Colors.yellow,size: 35,), // Icône jaune
                     title: TextCustomerMenu(
                       titre: "Afroshop Market",
@@ -712,39 +746,6 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
 
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: AnimateIcon(
-                      key: UniqueKey(),
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => UserServiceListPage(),
-                        ));
-                      },
-                      iconType: IconType.continueAnimation,
-                      height: 30,
-                      width: 30,
-                      color: Colors.yellow, // Icône jaune
-                      animateIcon: AnimateIcons.settings,
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "🛠️Services & Jobs 💼",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    subtitle: TextCustomerMenu(
-                      titre: "Chercher des gens pour bosser",
-                      fontSize: 9,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserServiceListPage(),
-                      ));
-                    },
-                  ),
 // Dans votre menu principal
 
 
