@@ -102,7 +102,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   bool get wantKeepAlive => true;
   bool _isExpanded = false;
-
+  bool _isSharing = false;
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   late UserProvider userProvider;
@@ -134,7 +134,37 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isAudioPlaying = false;
   Duration _currentAudioPosition = Duration.zero;
   Duration _currentAudioDuration = Duration.zero;
+  Future<void> recordUniquePostView() async {
 
+     String userId = authProvider.loginUserData.id!;
+     String postId = widget.post.id!;
+    try {
+      final postRef = FirebaseFirestore.instance.collection('Posts').doc(postId);
+
+      final postDoc = await postRef.get();
+
+      if (!postDoc.exists) return;
+
+      List usersViewed = postDoc.data()?['users_vue_id'] ?? [];
+
+      // Vérifier si l'utilisateur a déjà vu
+      if (usersViewed.contains(userId)) {
+        print("⏭️ L'utilisateur a déjà vu ce post");
+        return;
+      }
+
+      // Enregistrer la vue
+      await postRef.update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([userId]),
+      });
+
+      print("✅ Vue enregistrée pour $userId");
+
+    } catch (e) {
+      print("Erreur enregistrement vue : $e");
+    }
+  }
 // Initialiser le lecteur audio
   void _initAudioPlayer(String postId) {
     if (!_activePlayers.containsKey(postId)) {
@@ -1988,6 +2018,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             color: _afroTextSecondary,
             onPressed: hasAccess ? () {
               _showCommentsModal(widget.post);
+              recordUniquePostView();
               // 🔥 APPEL DU CALLBACK
               widget.onCommented?.call();
             } : null,
@@ -2000,6 +2031,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             color: _afroGreen,
             onPressed: hasAccess ? () {
               _handleRepost();
+              recordUniquePostView();
               // 🔥 APPEL DU CALLBACK
               widget.onViewed?.call();
             } : null,
@@ -2012,6 +2044,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             color: isLiked ? _afroRed : _afroTextSecondary,
             onPressed: hasAccess ? () {
               _handleLike();
+              recordUniquePostView();
               // 🔥 APPEL DU CALLBACK
               widget.onLiked?.call();
             } : null,
@@ -2025,20 +2058,30 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             count: widget.post.users_cadeau_id?.length ?? 0,
             color: _afroYellow,
             onPressed: hasAccess ? () {
+              recordUniquePostView();
               _handleGift();
               // 🔥 APPEL DU CALLBACK (optionnel pour cadeau)
             } : null,
           ),
 
           // Partager
-          _buildActionButton(
+          _isSharing
+              ? const SizedBox(
+            width: 40, // Ajustez selon la taille de vos boutons
+            height: 40,
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
+            ),
+          )
+              : _buildActionButton(
             icon: Icons.share,
             count: widget.post.partage ?? 0,
             color: _afroTextSecondary,
             onPressed: hasAccess ? () {
               _handleShare();
-              // 🔥 APPEL DU CALLBACK
-              widget.onShared?.call();
+              recordUniquePostView();
+              // Le callback est déjà appelé dans _handleShare ou ici
             } : null,
           ),
         ],
@@ -2396,14 +2439,49 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
 
   // 🔥 MÉTHODE SHARE AVEC CALLBACK
-  void _handleShare() async {
+  void _handleShare2() async {
+
+    // 1. GESTION DU THUMBNAIL POUR LES VIDÉOS
+    // On vérifie si c'est une vidéo et s'il n'y a pas encore de thumbnail
+    if (widget.post.dataType == "VIDEO" &&
+        (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty)) {
+
+      // Afficher un petit indicateur de chargement si nécessaire
+      // ou simplement générer en arrière-plan
+      await checkAndGenerateThumbnail(
+        postId: widget.post.id!,
+        videoUrl: widget.post.url_media!, // Assurez-vous que ce champ existe
+        currentThumbnail: widget.post.thumbnail,
+      );
+
+      // On met à jour l'objet local pour que le service de partage utilise la nouvelle image
+      // Note: checkAndGenerateThumbnail doit retourner l'URL pour être parfait,
+      // ou vous récupérez la version mise à jour.
+    }
+
+    // 2. PRÉPARATION DES DONNÉES DE PARTAGE
+    // Si c'est une vidéo, on utilise le thumbnail, sinon la première image
+    String shareImageUrl = "";
+    if (widget.post.dataType == PostDataType.VIDEO.name) {
+      shareImageUrl = widget.post.thumbnail ?? "";
+    } else {
+      shareImageUrl = (widget.post.images?.isNotEmpty ?? false) ? widget.post.images!.first : "";
+    }
+
     final AppLinkService _appLinkService = AppLinkService();
     _appLinkService.shareContent(
       type: AppLinkType.post,
       id: widget.post.id!,
       message: widget.post.description ?? "",
-      mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
+      mediaUrl: shareImageUrl, // On passe l'image (ou thumbnail) ici
     );
+    // final AppLinkService _appLinkService = AppLinkService();
+    // _appLinkService.shareContent(
+    //   type: AppLinkType.post,
+    //   id: widget.post.id!,
+    //   message: widget.post.description ?? "",
+    //   mediaUrl: widget.post.images?.isNotEmpty ?? false ? widget.post.images!.first : "",
+    // );
     setState(() {
       widget.post.partage = widget.post.partage! + 1;
       widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
@@ -2434,7 +2512,79 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
 
   }
+  void _handleShare() async {
+    // Activer le mode chargement
+    setState(() { _isSharing = true; });
 
+    try {
+      // 1. GESTION DU THUMBNAIL POUR LES VIDÉOS
+      if (widget.post.dataType == "VIDEO" &&
+          (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty)) {
+
+        // On attend la fin de la génération avant de continuer
+        await checkAndGenerateThumbnail(
+          postId: widget.post.id!,
+          videoUrl: widget.post.url_media!,
+          currentThumbnail: widget.post.thumbnail,
+        );
+      }
+
+      // 2. PRÉPARATION DU PARTAGE
+      String shareImageUrl = "";
+      if (widget.post.dataType == "VIDEO") {
+        shareImageUrl = widget.post.thumbnail ?? "";
+      } else {
+        shareImageUrl = (widget.post.images?.isNotEmpty ?? false) ? widget.post.images!.first : "";
+      }
+
+      final AppLinkService _appLinkService = AppLinkService();
+      await _appLinkService.shareContent(
+        type: AppLinkType.post,
+        id: widget.post.id!,
+        message: widget.post.description ?? "",
+        mediaUrl: shareImageUrl,
+      );
+
+      // 3. MISE À JOUR FIREBASE & UI (Code existant)
+      setState(() {
+        widget.post.partage = (widget.post.partage ?? 0) + 1;
+        widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
+      });
+
+      await firestore.collection('Posts').doc(widget.post.id).update({
+        'partage': FieldValue.increment(1),
+        'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+      });
+
+      authProvider.checkAndRefreshPostDates(widget.post.id!);
+
+      if (!isIn(widget.post.users_partage_id!, authProvider.loginUserData.id!)) {
+
+        addPointsForAction(UserAction.partagePost);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+        // 🔥 APPEL DU CALLBACK LOVE
+        widget.onShared?.call();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+ de points ajoutés à votre compte',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+      }
+
+    } catch (e) {
+      print("Erreur partage: $e");
+    } finally {
+      // Désactiver le chargement même en cas d'erreur
+      if (mounted) {
+        setState(() { _isSharing = false; });
+      }
+    }
+  }
   // Méthode pour supprimer un post
   Future<void> _deletePost(Post post) async {
     final firestore = FirebaseFirestore.instance;

@@ -21,6 +21,8 @@ import 'UserServices/deviceService.dart';
 import 'canaux/detailsCanal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'home/homeWidget.dart';
+
 const _twitterDarkBg = Color(0xFF000000);
 const _twitterCardBg = Color(0xFF16181C);
 const _twitterTextPrimary = Color(0xFFFFFFFF);
@@ -75,6 +77,7 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   int _totalVideoCount = 1000;
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
+  bool _isSharing = false;
 
   // Variables pour le vote
   bool _hasVoted = false;
@@ -1243,7 +1246,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
 // 🔥 NOUVELLE VERSION : Enregistrer la vue avec contrôle journalier
-  Future<void> _recordPostView(Post post) async {
+  Future<void> _recordPostView2(Post post) async {
     if (post.id == null) return;
 
     final currentUserId = authProvider.loginUserData.id;
@@ -1293,6 +1296,43 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           post.users_vue_id!.add(currentUserId);
         }
       });
+
+    } catch (e) {
+      print('❌ Erreur enregistrement vue: $e');
+    }
+  }
+
+  Future<void> _recordPostView(Post post) async {
+    if (post.id == null) return;
+
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    try {
+      // Marquer le post comme vu pour l'UI
+      await _markPostAsSeen(post);
+
+      post.users_vue_id ??= [];
+
+      // 🔥 Vérifier si l'utilisateur a déjà vu
+      if (post.users_vue_id!.contains(currentUserId)) {
+        print('⏭️ Vidéo ${post.id} déjà vue par $currentUserId');
+        return;
+      }
+
+      // ✅ Mise à jour Firestore
+      await _firestore.collection('Posts').doc(post.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      // ✅ Mise à jour locale
+      setState(() {
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id!.add(currentUserId);
+      });
+
+      print('✅ Vue unique enregistrée pour vidéo ${post.id}');
 
     } catch (e) {
       print('❌ Erreur enregistrement vue: $e');
@@ -2180,9 +2220,18 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           Column(
             children: [
               // Partager
-              IconButton(
+              _isSharing
+                  ? const SizedBox(
+                width: 40, // Ajustez selon la taille de vos boutons
+                height: 40,
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
+                ),
+              )
+                  : IconButton(
                 icon: Icon(Icons.share, color: Colors.white, size: 30),
-                onPressed: hasAccess ? () => _sharePost(post) : null,
+                onPressed: hasAccess ? () => _sharePost() : null,
               ),
               Text(
                 _formatCount(post.partage ?? 0),
@@ -2540,8 +2589,85 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     return list.contains(value);
   }
 
+  void _sharePost() async {
+    // Activer le mode chargement
+    setState(() {
+      _isSharing = true;
+    });
 
-  Future<void> _sharePost(Post post) async {
+    try {
+      // 1. GESTION DU THUMBNAIL POUR LES VIDÉOS
+      if (widget.initialPost.dataType == "VIDEO" &&
+          (widget.initialPost.thumbnail == null || widget.initialPost.thumbnail!.isEmpty)) {
+        // On attend la fin de la génération avant de continuer
+        await checkAndGenerateThumbnail(
+          postId: widget.initialPost.id!,
+          videoUrl: widget.initialPost.url_media!,
+          currentThumbnail: widget.initialPost.thumbnail,
+        );
+      }
+
+      // 2. PRÉPARATION DU PARTAGE
+      String shareImageUrl = "";
+      if (widget.initialPost.dataType == "VIDEO") {
+        shareImageUrl = widget.initialPost.thumbnail ?? "";
+      } else {
+        shareImageUrl = (widget.initialPost.images?.isNotEmpty ?? false)
+            ? widget.initialPost.images!.first
+            : "";
+      }
+
+      final AppLinkService _appLinkService = AppLinkService();
+      await _appLinkService.shareContent(
+        type: AppLinkType.post,
+        id: widget.initialPost.id!,
+        message: widget.initialPost.description ?? "",
+        mediaUrl: shareImageUrl,
+      );
+
+      // 3. MISE À JOUR FIREBASE & UI (Code existant)
+      setState(() {
+        widget.initialPost.partage = (widget.initialPost.partage ?? 0) + 1;
+        widget.initialPost.users_partage_id!.add(authProvider.loginUserData.id!);
+      });
+
+      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+        'partage': FieldValue.increment(1),
+        'users_partage_id':
+        FieldValue.arrayUnion([authProvider.loginUserData.id]),
+      });
+
+      authProvider.checkAndRefreshPostDates(widget.initialPost.id!);
+
+      if (!isIn(
+          widget.initialPost.users_partage_id!, authProvider.loginUserData.id!)) {
+        addPointsForAction(UserAction.partagePost);
+        addPointsForOtherUserAction(widget.initialPost.user_id!, UserAction.autre);
+
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+ de points ajoutés à votre compte',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Erreur partage: $e");
+    } finally {
+      // Désactiver le chargement même en cas d'erreur
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _sharePost2(Post post) async {
     final AppLinkService _appLinkService = AppLinkService();
     _appLinkService.shareContent(
       type: AppLinkType.post,

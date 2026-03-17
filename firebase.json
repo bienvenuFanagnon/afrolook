@@ -8,7 +8,13 @@
     ],
     "frameworksBackend": {
       "region": "us-central1"
-    }
+    },
+    "rewrites": [
+      {
+        "source": "/share/**",
+        "function": "sharePostLink"
+      }
+    ]
   },
   "functions": [
     {

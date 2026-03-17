@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/models/tiktokModel.dart';
@@ -17,6 +18,8 @@ import 'package:afrotok/constant/textCustom.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/widget/numbers_widget.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import '../../../providers/userProvider.dart';
+import '../../../services/linkService.dart';
 import '../../widgetGlobal.dart';
 
 class OtherUserPage extends StatefulWidget {
@@ -38,20 +41,368 @@ class _OtherUserPageState extends State<OtherUserPage> {
   DocumentSnapshot? _lastDocument;
   String _selectedFilter = 'all';
   final int _postsPerPage = 5;
+  bool _isSharing = false;
+  bool _abonneTap = false; // Pour gérer le chargement de l'abonnement
+  late UserAuthProvider authProvider;
 
+  // Nouvelle variable pour les likes du profil en temps réel
+  int _profileLikes = 0;
+
+  // Subscription pour écouter les changements
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
   @override
   void initState() {
     super.initState();
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    // Écouter les changements en temps réel
+    _listenToUserChanges();
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
   }
+// Méthode pour écouter les changements de l'utilisateur
+  void _listenToUserChanges() {
+    _userSubscription = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.otherUser.id)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final newLikes = data['profileLikesCount'] ?? 0;
 
+        // Mettre à jour uniquement si la valeur a changé
+        if (_profileLikes != newLikes) {
+          setState(() {
+            _profileLikes = newLikes;
+          });
+        }
+      }
+    }, onError: (error) {
+      print('Erreur écoute utilisateur: $error');
+    });
+  }
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
+  Future<void> _toggleAbonnement() async {
+    if (_abonneTap) return; // Éviter les doubles clics
+
+    setState(() => _abonneTap = true);
+
+    try {
+      if (_isAbonne) {
+        // Se désabonner
+        await _desabonner(widget.otherUser);
+      } else {
+        // S'abonner
+        await authProvider.abonner(widget.otherUser, context);
+      }
+
+      // Rafraîchir les données du profil
+      await _refreshUserData();
+
+    } catch (e) {
+      print('Erreur lors de l\'opération: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'Erreur lors de l\'opération',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _abonneTap = false);
+      }
+    }
+  }
+
+  Future<void> _desabonner(UserData userToUnfollow) async {
+    try {
+      final currentUserId = authProvider.loginUserData.id!;
+
+      // Vérifier si l'utilisateur est bien abonné
+      if (!_isAbonne) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Vous n\'êtes pas abonné à ce compte'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Mise à jour dans Firestore
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userToUnfollow.id)
+          .update({
+        'userAbonnesIds': FieldValue.arrayRemove([currentUserId]),
+        'abonnes': FieldValue.increment(-1),
+        // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
+      });
+
+      // Supprimer la relation d'abonnement si elle existe
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('UserAbonnes')
+          .where('compteUserId', isEqualTo: currentUserId)
+          .where('abonneUserId', isEqualTo: userToUnfollow.id)
+          .limit(1)
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // Mise à jour locale
+      authProvider.loginUserData.userAbonnes?.removeWhere(
+              (abonne) => abonne.abonneUserId == userToUnfollow.id
+      );
+
+      userToUnfollow.userAbonnesIds?.remove(currentUserId);
+      userToUnfollow.abonnes = (userToUnfollow.abonnes ?? 1) - 1;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Vous ne suivez plus @${userToUnfollow.pseudo}',
+              textAlign: TextAlign.center,
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+
+    } catch (e) {
+      print("Erreur lors du désabonnement : $e");
+      throw e; // Relancer l'erreur pour la gestion dans _toggleAbonnement
+    }
+  }
+
+  Future<void> _refreshUserData() async {
+    try {
+      // Recharger les données de l'utilisateur depuis Firestore
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.otherUser.id)
+          .get();
+
+      if (docSnapshot.exists) {
+        final updatedUser = UserData.fromJson(docSnapshot.data()!);
+        setState(() {
+          widget.otherUser.userAbonnesIds = updatedUser.userAbonnesIds;
+          widget.otherUser.abonnes = updatedUser.abonnes;
+        });
+      }
+    } catch (e) {
+      print('Erreur refresh user data: $e');
+    }
+  }
+  Future<void> _shareProfile() async {
+    if (_isSharing) return;
+
+    setState(() => _isSharing = true);
+
+    try {
+      final appLinkService = AppLinkService();
+
+      // Message court et accrocheur
+      String shareMessage =
+          "🚀 @${widget.otherUser.pseudo} sur Afrolook !\n"
+          "👥 ${widget.otherUser.userAbonnesIds?.length ?? 0} followers, "
+          "❤️ ${_profileLikes  ?? 0} likes, "
+          "💰 Dès 100 vues, tu es rémunéré !\n"
+          "🎁 Utilise MON CODE à l'inscription: ${widget.otherUser.codeParrainage}\n"
+          "📱 Afrolook - Le réseau social qui paie ton talent";
+
+      await appLinkService.shareProfil(
+        type: AppLinkType.profil,
+        id: widget.otherUser.id!,
+        message: shareMessage,
+        mediaUrl: widget.otherUser.imageUrl ?? '',
+      );
+
+    } catch (e) {
+      print('Erreur partage profil: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du partage'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+      }
+    }
+  }
+
+  bool get _isAbonne {
+    final currentUserId = authProvider.loginUserData.id;
+    return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
+  }
+
+  Widget _buildFollowButton() {
+    final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
+
+    if (isOwnProfile) return SizedBox(); // Ne pas afficher pour son propre profil
+
+    return Container(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isAbonne ? Colors.grey[800] : Colors.green,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: _isAbonne ? BorderSide(color: Colors.green, width: 1.5) : BorderSide.none,
+        ),
+        onPressed: _abonneTap ? null : _toggleAbonnement,
+        child: _abonneTap
+            ? SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+            : Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isAbonne ? Icons.person_remove : Icons.person_add,
+              size: 20,
+            ),
+            SizedBox(width: 8),
+            Text(
+              _isAbonne ? 'SE DÉSABONNER' : "S'ABONNER",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareButton() {
+    return GestureDetector(
+      onTap: _isSharing ? null : _shareProfile,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _isSharing ? Colors.grey : Colors.green,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: _isSharing
+            ? SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+            : Icon(
+          Icons.share,
+          color: Colors.white,
+          size: 24,
+        ),
+      ),
+    );
+  }
+  Widget _buildReferralCodeCompact() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.yellow.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.yellow),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Code de parrainage",
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 12,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                "${widget.otherUser.codeParrainage}",
+                style: TextStyle(
+                  color: Colors.yellow,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.group, color: Colors.blue, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      "${widget.otherUser.usersParrainer?.length ?? 0}",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(
+                      text: "${widget.otherUser.codeParrainage}"));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Code copié !'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: Icon(Icons.copy, color: Colors.yellow, size: 20),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
   Future<void> _loadInitialPosts() async {
     try {
       setState(() => _loading = true);
@@ -297,37 +648,116 @@ class _OtherUserPageState extends State<OtherUserPage> {
             ),
 
             // Section statistiques
+            // SliverToBoxAdapter(
+            //   child: Padding(
+            //     padding: EdgeInsets.all(16),
+            //     child: Column(
+            //       children: [
+            //         NumbersWidget(
+            //
+            //           followers: widget.otherUser.userAbonnesIds?.length ?? 0,
+            //           taux: widget.otherUser.popularite!,
+            //           points: widget.otherUser.pointContribution!,
+            //         ),
+            //         SizedBox(height: 16),
+            //
+            //         // Likes
+            //         Container(
+            //           padding:
+            //               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //           decoration: BoxDecoration(
+            //             color: Colors.green.withOpacity(0.1),
+            //             borderRadius: BorderRadius.circular(12),
+            //             border: Border.all(color: Colors.green),
+            //           ),
+            //           child: Text(
+            //             "${_formatNumber(widget.otherUser.userlikes!)} like(s)",
+            //             style: TextStyle(
+            //               color: Colors.green,
+            //               fontSize: 16,
+            //               fontWeight: FontWeight.bold,
+            //             ),
+            //           ),
+            //         ),
+            //         SizedBox(height: 16),
+            //
+            //         // À propos
+            //         _buildAboutSection(),
+            //         SizedBox(height: 16),
+            //
+            //         // Filtres
+            //         _buildFilterSection(),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+
+            // Grille des posts
+            // Dans votre SliverToBoxAdapter
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    // Statistiques
                     NumbersWidget(
-
                       followers: widget.otherUser.userAbonnesIds?.length ?? 0,
                       taux: widget.otherUser.popularite!,
                       points: widget.otherUser.pointContribution!,
                     ),
+
                     SizedBox(height: 16),
 
-                    // Likes
+                    // Ligne des actions
+                    Row(
+                      children: [
+                        // Bouton S'abonner (prend plus d'espace)
+                        Expanded(
+                          flex: 4,
+                          child: _buildFollowButton(),
+                        ),
+                        SizedBox(width: 12),
+
+                        // Bouton Partager
+                        Expanded(
+                          flex: 1,
+                          child: _buildShareButton(),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 16),
+
+                    // Code de parrainage (si vous voulez le mettre ici au lieu de l'AppBar)
+                    _buildReferralCodeCompact(),
+
+                    SizedBox(height: 16),
+
+                    // Likes du profil
                     Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.green),
                       ),
-                      child: Text(
-                        "${_formatNumber(widget.otherUser.userlikes!)} like(s)",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.favorite, color: Colors.red, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            "${_formatNumber(widget.otherUser.userlikes ?? 0)} like(s) reçus",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
                     SizedBox(height: 16),
 
                     // À propos
@@ -340,8 +770,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 ),
               ),
             ),
-
-            // Grille des posts
             if (_loading)
               SliverToBoxAdapter(
                 child: Container(

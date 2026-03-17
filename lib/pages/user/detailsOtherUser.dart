@@ -1806,8 +1806,127 @@ class _UserProfileModalState extends State<UserProfileModal> {
       },
     );
   }
-
   Widget _buildProfileLikeButton() {
+    final authProvider = Provider.of<UserAuthProvider>(context);
+    final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
+
+    // Variable pour gérer l'état de chargement
+    bool _isLiking = false;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return FutureBuilder<bool>(
+          future: profileLikeProvider.hasLikedProfile(widget.user.id!, authProvider.loginUserData.id!),
+          builder: (context, snapshot) {
+            final hasLiked = snapshot.data ?? false;
+
+            return GestureDetector(
+              onTap: _isLiking ? null : () async {
+                // Éviter les doubles clics
+                if (_isLiking) return;
+
+                setState(() => _isLiking = true);
+
+                try {
+                  if (hasLiked) {
+                    await profileLikeProvider.unlikeProfile(
+                        widget.user.id!,
+                        authProvider.loginUserData.id!
+                    );
+                  } else {
+                    await profileLikeProvider.likeProfile(
+                        widget.user.id!,
+                        authProvider.loginUserData.id!
+                    );
+
+                    // Envoyer notification en arrière-plan sans bloquer
+                    if (widget.user.oneIgnalUserid != null &&
+                        widget.user.oneIgnalUserid!.isNotEmpty) {
+                      unawaited(
+                          authProvider.sendNotification(
+                            appName: '@${authProvider.loginUserData.pseudo!}',
+                            userIds: [widget.user.oneIgnalUserid!],
+                            smallImage: authProvider.loginUserData.imageUrl!,
+                            send_user_id: authProvider.loginUserData.id!,
+                            recever_user_id: widget.user.id!,
+                            message: "❤️ a aimé votre profil !",
+                            type_notif: 'PROFILE_LIKE',
+                            post_id: "",
+                            post_type: "",
+                            chat_id: '',
+                          )
+                      );
+                    }
+                  }
+
+                  // Rafraîchir les données
+                  // await profileLikeProvider.refreshLikes(widget.user.id!);
+
+                } catch (e) {
+                  print('Erreur like profil: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors du like'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                } finally {
+                  if (context.mounted) {
+                    setState(() => _isLiking = false);
+                  }
+                }
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: hasLiked ? Colors.red : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: hasLiked ? Colors.red : Colors.grey[600]!,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isLiking)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: hasLiked ? Colors.white : Colors.red,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    else
+                      Icon(
+                        hasLiked ? Icons.favorite : Icons.favorite_border,
+                        color: hasLiked ? Colors.white : Colors.grey[400],
+                        size: 16,
+                      ),
+                    SizedBox(width: 6),
+                    Text(
+                      _isLiking
+                          ? 'Patientez...'
+                          : (hasLiked ? 'Liked' : 'Like'),
+                      style: TextStyle(
+                        color: hasLiked ? Colors.white : Colors.grey[400],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  Widget _buildProfileLikeButton2() {
     final authProvider = Provider.of<UserAuthProvider>(context);
     final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
 

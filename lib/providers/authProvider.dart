@@ -43,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 145;
+  late int app_version_code = 147;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -137,7 +137,7 @@ class UserAuthProvider extends ChangeNotifier {
             .collection('Posts')
             .doc(postId)
             .update({
-          'created_at': now,
+          // 'created_at': now,
           'updated_at': now,
         });
 
@@ -1877,7 +1877,7 @@ class UserAuthProvider extends ChangeNotifier {
           .update({
         'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
         'abonnes': FieldValue.increment(1),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
+        // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
 
       // Mise à jour locale

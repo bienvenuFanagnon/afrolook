@@ -146,6 +146,7 @@ class AppLinkService {
   }
   // Génération des liens de partage
   String generateLink(AppLinkType type, String id, {Map<String, String>? params}) {
+    // final baseUrl = 'https://afrolookmedia.com/share';
     final baseUrl = 'https://afrolooki.web.app/share';
     final typePath = getTypePath(type);
 
@@ -188,37 +189,72 @@ class AppLinkService {
   async {
     final link = generateLink(type, id, params: params);
 
-    final fullMessage = "${_getTypeMessage(type)}: ${message ?? ''}\n\n$link";
+    final fullMessage = "${_getTypeMessage(type)}\n$link";
+    // final fullMessage = "${_getTypeMessage(type)}: ${message ?? ''}\n\n$link";
 
     if (mediaUrl != null && mediaUrl.isNotEmpty) {
       // Cas avec image/vidéo en local OU téléchargée
       // ⚠️ SharePlus partage des fichiers locaux, pas directement des URLs
       // Si ton mediaUrl est une URL, il faut le télécharger d’abord
       await Share.share(fullMessage, subject: "AfroLook");
+
     } else {
       // Cas simple : juste message + lien
       await Share.share(fullMessage, subject: "AfroLook");
+      // await Share.share(fullMessage, subject: "AfroLook");
+    }
+  }
+
+
+  Future<void> shareProfil({
+    required AppLinkType type,
+    required String id,
+    String? message,
+    String? mediaUrl, // image ou vidéo
+    Map<String, String>? params,
+  })
+  async {
+    final link = generateLink(type, id, params: params);
+
+    // final fullMessage = "${_getTypeMessage(type)}\n$link";
+    final fullMessage = "${message ?? ''}\n$link";
+
+    if (mediaUrl != null && mediaUrl.isNotEmpty) {
+      // Cas avec image/vidéo en local OU téléchargée
+      // ⚠️ SharePlus partage des fichiers locaux, pas directement des URLs
+      // Si ton mediaUrl est une URL, il faut le télécharger d’abord
+      await Share.share(fullMessage, subject: "AfroLook");
+
+    } else {
+      // Cas simple : juste message + lien
+      await Share.share(fullMessage, subject: "AfroLook");
+      // await Share.share(fullMessage, subject: "AfroLook");
     }
   }
   String _getTypeMessage(AppLinkType type) {
     switch (type) {
       case AppLinkType.profil:
-        return "Découvrez ce profil unique sur AfroLook 👤 ";
+        return "Découvre ce profil sur AfroLook ! Gagne de l'argent dès 100 vues. Utilise mon code de parrainage à l'inscription.";
+
       case AppLinkType.contentpaie:
-        return "Accédez à ce contenu vidéo virale ";
+        return "Contenu exclusif sur AfroLook ! Gagne de l'argent dès 100 vues. Le réseau social africain qui paie.";
+
       case AppLinkType.live:
-        return "Rejoignez le live en cours 🎥 ";
+        return "Live en cours sur AfroLook ! Gagne de l'argent dès 100 viewers. Rejoins maintenant.";
+
       case AppLinkType.post:
-        return "Regardez cette publication intéressante 📝 ";
+        return "Publication sur AfroLook ! 100 vues = argent gagné. Utilise mon code de parrainage.";
+
       case AppLinkType.article:
-        return "Lisez cet article captivant 📖 ";
+        return "Article sur AfroLook ! Gagne dès 100 lectures. Le réseau qui valorise les talents africains.";
+
       case AppLinkType.service:
-        return "Découvrez ce service disponible 💼";
+        return "Service sur AfroLook ! Monétise tes compétences dès 100 vues. Opportunités et revenus.";
+
       default:
-        return "Contenu AfroLook 🌍";
+        return "AfroLook - Le réseau social africain qui paie ton talent ! Gagne de l'argent dès 100 vues. Utilise mon code de parrainage.";
     }
   }
-
   // Partage de lien
   Future<void> shareLink(AppLinkType type, String id,
       {String? message, Map<String, String>? params}) async {
@@ -235,7 +271,6 @@ class AppLinkService {
   // Stream pour écouter les liens entrants
   Stream<PendingLink> get linkStream => _linkController.stream;
 
-  // Traitement de la navigation
   Future<void> handleNavigation(BuildContext context, String id,String type) async {
     printVm("Lien handleNavigation Id ${id}, type: ${type}");
 
@@ -248,17 +283,23 @@ class AppLinkService {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
 
-    bool userLoaded = false;
-    if (firebaseUser != null) {
-      userLoaded = await authProvider.getLoginUser(firebaseUser.uid);
-    }
-    printVm("Lien userLoaded $userLoaded");
+    final token = await authProvider.getToken(); // fonction qui récupère le token
 
-    if (!userLoaded) {
-      // Rediriger vers la page de connexion
+    if (token == null || token.isEmpty) {
       Navigator.pushReplacementNamed(context, '/login');
       return;
     }
+    // bool userLoaded = false;
+    // if (firebaseUser != null) {
+    //   userLoaded = await authProvider.getLoginUser(firebaseUser.uid);
+    // }
+    // printVm("Lien userLoaded $userLoaded");
+    //
+    // if (!userLoaded) {
+    //   // Rediriger vers la page de connexion
+    //   Navigator.pushReplacementNamed(context, '/login');
+    //   return;
+    // }
 
     // Toujours naviguer vers la home d'abord
     await _navigateToHome(context);
@@ -283,7 +324,51 @@ class AppLinkService {
         await _navigateToHome(context);
     }
   }
-  // Navigation vers la home
+
+  Future<void> handleNavigation2(BuildContext context, String id, String type) async {
+    printVm("Lien handleNavigation Id $id, type: $type");
+
+    if (id.isEmpty || type.isEmpty) {
+      await _navigateToHome(context);
+      return;
+    }
+
+    // Vérifier si le token existe
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final token = await authProvider.getToken(); // fonction qui récupère le token
+
+    if (token == null || token.isEmpty) {
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    // Aller d'abord sur la home
+    await _navigateToHome(context);
+
+    // Puis vers la bonne page
+    switch (type) {
+      case 'profil':
+        await _navigateToProfile(context, id);
+        break;
+
+      case 'contentpaie':
+        await _navigateToContentPaie(context, id);
+        break;
+
+      case 'live':
+        await _navigateToLive(context, id);
+        break;
+
+      case 'post':
+        await _navigateToPost(context, id);
+        break;
+
+      default:
+        await _navigateToHome(context);
+    }
+  }
+
+
   Future<void> _navigateToHome(BuildContext context) async {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage(title: "",isOpenLink: true,),),
           (route) => false,);

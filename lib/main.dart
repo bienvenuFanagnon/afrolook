@@ -373,6 +373,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initDeepLinks() async {
+    printVm("Lien deeplink cliqiable");
     _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
       if (uri != null) {
         final segments = uri.pathSegments;

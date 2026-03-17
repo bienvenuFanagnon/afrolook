@@ -411,40 +411,68 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
   }
 
   // MODIFIÉ: Méthode pour partager avec compteur
+// Dans votre State, ajoutez cette variable
+  bool _isSharing = false;
+
+// Modifiez votre fonction _handleShare
   void _handleShare() async {
-    final contentProvider = Provider.of<ContentProvider>(context, listen: false);
-    final _appLinkService = AppLinkService();
+    // Éviter les doubles clics
+    if (_isSharing) return;
 
-    // NOUVEAU: Incrémenter le compteur de partages
-    if (widget.content.isSeries && _currentEpisode != null) {
-      await contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true);
-    } else {
-      await contentProvider.incrementShares(widget.content.id!);
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+      final _appLinkService = AppLinkService();
+
+      // Préparer le message de partage
+      String shareMessage;
+      String? shareMediaUrl;
+
+      if (widget.content.isSeries && _currentEpisode != null) {
+        shareMessage = "${_currentEpisode!.description}";
+        shareMediaUrl = _currentEpisode!.thumbnailUrl?.isNotEmpty == true
+            ? "${_currentEpisode!.thumbnailUrl!}"
+            : "";
+      } else {
+        shareMessage = "${widget.content.description}";
+        shareMediaUrl = widget.content.thumbnailUrl?.isNotEmpty == true
+            ? "${widget.content.thumbnailUrl!}"
+            : "";
+      }
+
+      // Lancer le partage (ne pas attendre le retour utilisateur)
+      _appLinkService.shareContent(
+        type: AppLinkType.contentpaie,
+        id: widget.content.id!,
+        message: shareMessage,
+        mediaUrl: shareMediaUrl,
+      );
+
+      // Incrémenter le compteur en arrière-plan
+      if (widget.content.isSeries && _currentEpisode != null) {
+        contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true);
+      } else {
+        contentProvider.incrementShares(widget.content.id!);
+      }
+
+      // Petit délai pour éviter un flash trop rapide
+      await Future.delayed(Duration(milliseconds: 500));
+
+    } catch (e) {
+      // Gérer l'erreur silencieusement ou afficher un message
+      print('Erreur lors du partage: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
     }
-
-    // Partager le contenu
-    String shareMessage;
-    String? shareMediaUrl;
-
-    if (widget.content.isSeries && _currentEpisode != null) {
-      shareMessage = "${_currentEpisode!.description}";
-      shareMediaUrl = _currentEpisode!.thumbnailUrl?.isNotEmpty == true
-          ? "${_currentEpisode!.thumbnailUrl!}"
-          : "";
-    } else {
-      shareMessage = "${widget.content.description}";
-      shareMediaUrl = widget.content.thumbnailUrl?.isNotEmpty == true
-          ? "${widget.content.thumbnailUrl!}"
-          : "";
-    }
-
-    _appLinkService.shareContent(
-      type: AppLinkType.contentpaie,
-      id: widget.content.id!,
-      message: shareMessage,
-      mediaUrl: shareMediaUrl,
-    );
   }
+
   Future<void> _downloadEbook() async {
     try {
       final pdfUrl = widget.content.isSeries && widget.episode != null
@@ -1488,19 +1516,30 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                       Row(
                         children: [
                           // Bouton Partage avec compteur
+// Dans votre SliverToBoxAdapter, modifiez le bouton de partage :
+
+// Bouton Partage avec compteur et indicateur de chargement
                           Column(
                             mainAxisSize: MainAxisSize.min,
-
                             children: [
                               GestureDetector(
-                                onTap: _handleShare,
+                                onTap: _isSharing ? null : _handleShare, // Désactive le bouton pendant le partage
                                 child: Container(
                                   padding: EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: _afroBlack.withOpacity(0.5),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(
+                                  child: _isSharing
+                                      ? SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: _afroYellow,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                      : Icon(
                                     Icons.share,
                                     color: Colors.white,
                                     size: 24,
@@ -1523,7 +1562,6 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                               ),
                             ],
                           ),
-
                           SizedBox(width: 5),
 
                           // Bouton Dislike avec compteur

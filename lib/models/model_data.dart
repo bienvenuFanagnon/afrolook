@@ -1173,6 +1173,7 @@ class Post {
   String? colorSecondaire;
   String? description;
   String? isPostLink;
+  String? thumbnail;
   String? contact_whatsapp;
   int? nombreCollaborateur;
   double? publiCashTotal;
@@ -1271,6 +1272,7 @@ class Post {
     this.createdAt,
     this.updatedAt,
     this.user,
+    this.thumbnail,
     this.seenByUsersCount = 0,
     this.seenByUsersMap,
     this.hasBeenSeenByCurrentUser = false,
@@ -1303,6 +1305,7 @@ class Post {
     dataType = json['dataType'];
     url_media = json['url_media'];
     contact_whatsapp = json['contact_whatsapp'] ?? "";
+    thumbnail = json['thumbnail'] ?? "";
     typeTabbar = json['typeTabbar'] ?? "";
     isPostLink = json['isPostLink'] ?? "NON";
     colorSecondaire = json['colorSecondaire'];
@@ -1413,6 +1416,7 @@ class Post {
     data['nombreImage'] = nombreImage;
     data['nombrePersonneParJour'] = nombrePersonneParJour;
     data['comments'] = comments;
+    data['thumbnail'] = thumbnail;
 
     // Champs challenge
     data['votes_challenge'] = votesChallenge;

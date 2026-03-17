@@ -303,6 +303,7 @@ class _ChargementState extends State<SplahsChargement> {
     //   print('⏳ En attente des posts immédiats...');
     //   return;
     // }
+    //   print('Deeplink: ${widget.postId}');
 
     if (widget.postId.isNotEmpty) {
       final AppLinkService linkService = AppLinkService();

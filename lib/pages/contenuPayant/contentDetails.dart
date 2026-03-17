@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -170,8 +172,73 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       });
     });
   }
-// MODIFIÉ: Méthode pour partager
+// Dans votre widget, ajoutez cette variable d'état
+  bool _isSharing = false;
+
+// Version optimisée de _handleShare
   void _handleShare() async {
+    // Éviter les doubles clics
+    if (_isSharing) return;
+
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+      final _appLinkService = AppLinkService();
+
+      // Lancer le partage immédiatement (ne pas attendre)
+      if (widget.episode == null) {
+        _appLinkService.shareContent(
+          type: AppLinkType.contentpaie,
+          id: widget.content.id!,
+          message: "${widget.content.description}",
+          mediaUrl: widget.content.thumbnailUrl!.isNotEmpty
+              ? "${widget.content.thumbnailUrl!}"
+              : "",
+        );
+      } else {
+        _appLinkService.shareContent(
+          type: AppLinkType.contentpaie,
+          id: widget.content.id!,
+          message: "${widget.episode!.description}",
+          mediaUrl: widget.episode!.thumbnailUrl!.isNotEmpty
+              ? "${widget.episode!.thumbnailUrl!}"
+              : "",
+        );
+      }
+
+      // Incrémenter le compteur en arrière-plan (ne pas bloquer avec await)
+      unawaited(
+          (widget.content.isSeries && _currentEpisode != null)
+              ? contentProvider.incrementShares(_currentEpisode!.id!, isEpisode: true)
+              : contentProvider.incrementShares(widget.content.id!)
+      );
+
+      // Petit délai pour éviter un flash trop rapide (optionnel)
+      await Future.delayed(Duration(milliseconds: 500));
+
+    } catch (e) {
+      print('Erreur lors du partage: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du partage'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+  void _handleShare2() async {
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     final _appLinkService = AppLinkService();
 
@@ -854,17 +921,25 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           // Bouton Partage avec compteur
                           Column(
                             mainAxisSize: MainAxisSize.min,
-
                             children: [
                               GestureDetector(
-                                onTap: _handleShare,
+                                onTap: _isSharing ? null : _handleShare, // Désactive le bouton pendant le partage
                                 child: Container(
                                   padding: EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: _afroBlack.withOpacity(0.5),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(
+                                  child: _isSharing
+                                      ? SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: _afroYellow,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                      : Icon(
                                     Icons.share,
                                     color: Colors.white,
                                     size: 24,

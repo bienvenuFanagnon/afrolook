@@ -2693,7 +2693,79 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     final now = DateTime.now();
     return '${now.year}-${now.month}-${now.day}';
   }
+  Future<void> _recordPostView3(Post post) async {
+
+  }
   Future<void> _recordPostView(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    String viewKey = '${_lastViewDatePrefix}${currentUserId}_${post.id}';
+
+    String? lastViewDateStr = _prefs.getString(viewKey);
+
+    if (lastViewDateStr != null) {
+      DateTime lastViewDate = DateTime.parse(lastViewDateStr);
+      DateTime now = DateTime.now();
+
+      int difference = now.difference(lastViewDate).inDays;
+
+      // ❌ Si moins de 2 jours -> ne pas compter
+      if (difference < 2) {
+        print(
+            '⏭️ Post ${post.id} déjà vu il y a $difference jour(s) par $currentUserId - Vue NON comptée');
+
+        if (!post.users_vue_id!.contains(currentUserId)) {
+          setState(() {
+            post.users_vue_id!.add(currentUserId);
+            post.hasBeenSeenByCurrentUser = true;
+          });
+        }
+
+        return;
+      }
+    }
+
+    try {
+      // 🔥 Sauvegarder la date actuelle
+      await _prefs.setString(viewKey, DateTime.now().toIso8601String());
+
+      setState(() {
+        post.hasBeenSeenByCurrentUser = true;
+        post.vues = (post.vues ?? 0) + 1;
+        post.users_vue_id ??= [];
+        if (!post.users_vue_id!.contains(currentUserId)) {
+          post.users_vue_id!.add(currentUserId);
+        }
+      });
+
+      final batch = _firestore.batch();
+
+      final postRef = _firestore.collection('Posts').doc(post.id);
+      batch.update(postRef, {
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      final userRef = _firestore.collection('Users').doc(currentUserId);
+      batch.update(userRef, {
+        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
+      });
+
+      await batch.commit();
+
+      authProvider.loginUserData.viewedPostIds ??= [];
+      if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
+        authProvider.loginUserData.viewedPostIds!.add(post.id!);
+      }
+
+      print('✅ Vue comptée pour post ${post.id} par $currentUserId');
+
+    } catch (e) {
+      print('Error recording post view: $e');
+    }
+  }
+  Future<void> _recordPostView4(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
 

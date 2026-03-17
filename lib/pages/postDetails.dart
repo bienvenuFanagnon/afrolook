@@ -56,7 +56,6 @@ const _twitterGreen = Color(0xFF00BA7C);
 const _twitterYellow = Color(0xFFFFD400);
 const _afroBlack = Color(0xFF000000);
 
-
 class DetailsPost extends StatefulWidget {
   final Post post;
 
@@ -95,7 +94,8 @@ class _DetailsPostState extends State<DetailsPost>
   // Méthode pour vérifier si le post est en favoris
   Future<void> _checkIfFavorite() async {
     try {
-      final postDoc = await firestore.collection('Posts').doc(widget.post.id).get();
+      final postDoc =
+          await firestore.collection('Posts').doc(widget.post.id).get();
       if (postDoc.exists) {
         final data = postDoc.data() as Map<String, dynamic>;
         final favorites = List<String>.from(data['users_favorite_id'] ?? []);
@@ -118,212 +118,213 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isAd = false;
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
-
+  bool _isSharing = false;
 
 // 3. Ajouter la méthode de chargement :
   Future<void> _loadAdvertisement() async {
-  if (widget.post.advertisementId == null) return;
+    if (widget.post.advertisementId == null) return;
 
-  setState(() => _isLoadingAd = true);
+    setState(() => _isLoadingAd = true);
 
-  try {
-  final adDoc = await firestore
-      .collection('Advertisements')
-      .doc(widget.post.advertisementId)
-      .get();
+    try {
+      final adDoc = await firestore
+          .collection('Advertisements')
+          .doc(widget.post.advertisementId)
+          .get();
 
-  if (adDoc.exists) {
-  setState(() {
-  _advertisement = Advertisement.fromJson(adDoc.data() as Map<String, dynamic>);
-  });
-  }
-  } catch (e) {
-  print('Erreur chargement publicité: $e');
-  } finally {
-  setState(() => _isLoadingAd = false);
-  }
+      if (adDoc.exists) {
+        setState(() {
+          _advertisement =
+              Advertisement.fromJson(adDoc.data() as Map<String, dynamic>);
+        });
+      }
+    } catch (e) {
+      print('Erreur chargement publicité: $e');
+    } finally {
+      setState(() => _isLoadingAd = false);
+    }
   }
 
 // 4. Ajouter ce widget dans la partie supérieure de la page (après l'en-tête) :
 
   Widget _buildAdvertisementHeader() {
-  if (!_isAd || _advertisement == null) return SizedBox.shrink();
+    if (!_isAd || _advertisement == null) return SizedBox.shrink();
 
-  final ad = _advertisement!;
+    final ad = _advertisement!;
 
-  return Container(
-  margin: EdgeInsets.only(bottom: 16),
-  padding: EdgeInsets.all(5),
-  decoration: BoxDecoration(
-  color: Color(0xFFFFD600).withOpacity(0.1),
-  borderRadius: BorderRadius.circular(12),
-  border: Border.all(color: Color(0xFFFFD600), width: 1),
-  ),
-  child: Column(
-  children: [
-  Row(
-  children: [
-  Container(
-  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-  decoration: BoxDecoration(
-  color: Color(0xFFFFD600),
-  borderRadius: BorderRadius.circular(8),
-  ),
-  child: Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-  Icon(Icons.campaign, color: Colors.black, size: 14),
-  SizedBox(width: 4),
-  Text(
-  'PUBLICITÉ',
-  style: TextStyle(
-  color: Colors.black,
-  fontSize: 10,
-  fontWeight: FontWeight.bold,
-  ),
-  ),
-  ],
-  ),
-  ),
-  SizedBox(width: 8),
-  Expanded(
-  child: Text(
-  'Ce post est une publicité',
-  style: TextStyle(
-  color: Colors.grey[400],
-  fontSize: 12,
-  ),
-  ),
-  ),
-  ],
-  ),
-  if(authProvider.loginUserData.role!=UserRole.ADM.name)
-  Column(
-    children: [
-      SizedBox(height: 8),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Color(0xFFFFD600).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFFFD600), width: 1),
+      ),
+      child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.calendar_today, color: Colors.grey, size: 12),
-              SizedBox(width: 4),
-              Text(
-                'Durée: ${ad.durationDays} jours',
-                style: TextStyle(color: Colors.grey, fontSize: 11),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFD600),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.campaign, color: Colors.black, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'PUBLICITÉ',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Ce post est une publicité',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: ad.isActive
-                  ? Colors.green.withOpacity(0.2)
-                  : Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+          if (authProvider.loginUserData.role != UserRole.ADM.name)
+            Column(
+              children: [
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            color: Colors.grey, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          'Durée: ${ad.durationDays} jours',
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ad.isActive
+                            ? Colors.green.withOpacity(0.2)
+                            : Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        ad.isActive ? 'Active' : 'En attente',
+                        style: TextStyle(
+                          color: ad.isActive ? Colors.green : Colors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (ad.endDate != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.timer, color: Colors.grey, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          'Fin: ${DateFormat('dd/MM/yyyy').format(DateTime.fromMicrosecondsSinceEpoch(ad.endDate!))}',
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-            child: Text(
-              ad.isActive ? 'Active' : 'En attente',
-              style: TextStyle(
-                color: ad.isActive ? Colors.green : Colors.orange,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
-      if (ad.endDate != null)
-        Padding(
-          padding: EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              Icon(Icons.timer, color: Colors.grey, size: 12),
-              SizedBox(width: 4),
-              Text(
-                'Fin: ${DateFormat('dd/MM/yyyy').format(DateTime.fromMicrosecondsSinceEpoch(ad.endDate!))}',
-                style: TextStyle(color: Colors.grey, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-    ],
-  ),
-
-  ],
-  ),
-  );
+    );
   }
 
 // 5. Ajouter ce widget pour le bouton d'action dans la publicité :
 
   Widget _buildAdvertisementActionButton() {
-  if (!_isAd || _advertisement == null) return SizedBox.shrink();
+    if (!_isAd || _advertisement == null) return SizedBox.shrink();
 
-  final ad = _advertisement!;
+    final ad = _advertisement!;
 
-  return Padding(
-  padding: EdgeInsets.symmetric(vertical: 5),
-  child: InkWell(
-  onTap: () async {
-  if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-  final url = Uri.parse(ad.actionUrl!);
-  if (await canLaunchUrl(url)) {
-  await launchUrl(url, mode: LaunchMode.externalApplication);
-  }
-  }
-  _recordAdClick(_advertisement!, widget.post);
-  },
-  child: Container(
-  width: double.infinity,
-  padding: EdgeInsets.symmetric(vertical: 14),
-  decoration: BoxDecoration(
-  gradient: LinearGradient(
-  colors: [Color(0xFFE21221), Color(0xFFFF5252)],
-  begin: Alignment.centerLeft,
-  end: Alignment.centerRight,
-  ),
-  borderRadius: BorderRadius.circular(12),
-  boxShadow: [
-  BoxShadow(
-  color: Color(0xFFE21221).withOpacity(0.3),
-  blurRadius: 10,
-  offset: Offset(0, 4),
-  ),
-  ],
-  ),
-  child: Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-  Icon(
-  ad.actionType == 'download'
-  ? Icons.download
-      : ad.actionType == 'visit'
-  ? Icons.language
-      : Icons.info,
-  color: Colors.white,
-  size: 20,
-  ),
-  SizedBox(width: 8),
-  Text(
-  ad.getActionButtonText().toUpperCase(),
-  style: TextStyle(
-  color: Colors.white,
-  fontWeight: FontWeight.bold,
-  fontSize: 16,
-  ),
-  ),
-  SizedBox(width: 4),
-  Icon(
-  Icons.arrow_forward,
-  color: Colors.white,
-  size: 18,
-  ),
-  ],
-  ),
-  ),
-  ),
-  );
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 5),
+      child: InkWell(
+        onTap: () async {
+          if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+            final url = Uri.parse(ad.actionUrl!);
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+            }
+          }
+          _recordAdClick(_advertisement!, widget.post);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFFE21221).withOpacity(0.3),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                ad.actionType == 'download'
+                    ? Icons.download
+                    : ad.actionType == 'visit'
+                        ? Icons.language
+                        : Icons.info,
+                color: Colors.white,
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                ad.getActionButtonText().toUpperCase(),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(width: 4),
+              Icon(
+                Icons.arrow_forward,
+                color: Colors.white,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
 // 6. Modifier la méthode build pour inclure ces nouveaux widgets
@@ -347,15 +348,18 @@ class _DetailsPostState extends State<DetailsPost>
     // Si c'est un post de canal privé
     if (widget.post.canal != null) {
       final isPrivate = widget.post.canal!.isPrivate == true;
-      final isSubscribed = widget.post.canal!.usersSuiviId?.contains(authProvider.loginUserData.id) ?? false;
+      final isSubscribed = widget.post.canal!.usersSuiviId
+              ?.contains(authProvider.loginUserData.id) ??
+          false;
       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-      final isCurrentUser = authProvider.loginUserData.id == widget.post.user_id;
+      final isCurrentUser =
+          authProvider.loginUserData.id == widget.post.user_id;
 
       // Accès autorisé si :
       // - Le canal n’est pas privé
       // - OU l’utilisateur est abonné
       // - OU c’est un admin
-      if (!isPrivate || isSubscribed || isAdmin|| isCurrentUser) {
+      if (!isPrivate || isSubscribed || isAdmin || isCurrentUser) {
         return true;
       }
 
@@ -371,15 +375,18 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isLockedContent() {
     if (widget.post.canal != null) {
       final isPrivate = widget.post.canal!.isPrivate == true;
-      final isSubscribed = widget.post.canal!.usersSuiviId?.contains(authProvider.loginUserData.id) ?? false;
+      final isSubscribed = widget.post.canal!.usersSuiviId
+              ?.contains(authProvider.loginUserData.id) ??
+          false;
       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-      final isCurrentUser = authProvider.loginUserData.id == widget.post.user_id;
+      final isCurrentUser =
+          authProvider.loginUserData.id == widget.post.user_id;
 
       // Le contenu est verrouillé uniquement si :
       // - Le canal est privé
       // - L'utilisateur n'est pas abonné
       // - Et ce n'est pas un administrateur
-      return isPrivate && !isSubscribed && !isAdmin&& !isCurrentUser;
+      return isPrivate && !isSubscribed && !isAdmin && !isCurrentUser;
     }
     return false;
   }
@@ -486,7 +493,8 @@ class _DetailsPostState extends State<DetailsPost>
           _isAudioPlaying = true;
         });
       } else {
-        if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
+        if (_currentlyPlayingAudioId != null &&
+            _activePlayers.containsKey(_currentlyPlayingAudioId)) {
           await _activePlayers[_currentlyPlayingAudioId]!.stop();
         }
 
@@ -522,6 +530,7 @@ class _DetailsPostState extends State<DetailsPost>
       _activePlayers[postId]!.seek(Duration(seconds: value.toInt()));
     }
   }
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final Set<String> _clickedInSession = {};
@@ -557,7 +566,8 @@ class _DetailsPostState extends State<DetailsPost>
         }
 
         // Vérifier si c'est un clic unique
-        final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
+        final hasClicked =
+            currentAd.clickersIds?.contains(currentUserId) ?? false;
         if (!hasClicked) {
           updates['uniqueClicks'] = FieldValue.increment(1);
           updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
@@ -573,7 +583,6 @@ class _DetailsPostState extends State<DetailsPost>
       // widget.onAdClicked?.call(post, ad);
 
       print('✅ Clic enregistré pour la pub: ${ad.id}');
-
     } catch (e) {
       print('❌ Erreur lors de l\'enregistrement du clic: $e');
       _clickedInSession.remove(clickKey);
@@ -583,12 +592,19 @@ class _DetailsPostState extends State<DetailsPost>
   Widget _buildAudioContent(Post post, bool isLocked) {
     final audioUrl = post.url_media ?? '';
     final postId = post.id!;
-    final isCurrentlyPlaying = _currentlyPlayingAudioId == postId && _isAudioPlaying;
-    final duration = _currentlyPlayingAudioId == postId ? _currentAudioDuration : Duration.zero;
-    final position = _currentlyPlayingAudioId == postId ? _currentAudioPosition : Duration.zero;
+    final isCurrentlyPlaying =
+        _currentlyPlayingAudioId == postId && _isAudioPlaying;
+    final duration = _currentlyPlayingAudioId == postId
+        ? _currentAudioDuration
+        : Duration.zero;
+    final position = _currentlyPlayingAudioId == postId
+        ? _currentAudioPosition
+        : Duration.zero;
 
     // Image de couverture (si disponible)
-    final coverImage = post.images != null && post.images!.isNotEmpty ? post.images!.first : null;
+    final coverImage = post.images != null && post.images!.isNotEmpty
+        ? post.images!.first
+        : null;
 
     // Précharger l'audio
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -598,13 +614,13 @@ class _DetailsPostState extends State<DetailsPost>
     return GestureDetector(
       onTap: coverImage != null
           ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FullScreenImage(singleImageUrl: coverImage),
-          ),
-        );
-      }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FullScreenImage(singleImageUrl: coverImage),
+                ),
+              );
+            }
           : null,
       child: Container(
         width: double.infinity,
@@ -727,7 +743,8 @@ class _DetailsPostState extends State<DetailsPost>
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.blue.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(20),
@@ -742,7 +759,8 @@ class _DetailsPostState extends State<DetailsPost>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.audiotrack, color: Colors.white, size: 14),
+                                Icon(Icons.audiotrack,
+                                    color: Colors.white, size: 14),
                                 SizedBox(width: 6),
                                 Text(
                                   'AUDIO',
@@ -804,19 +822,22 @@ class _DetailsPostState extends State<DetailsPost>
                                   ),
                                 ],
                               ),
-                              child: _isAudioLoading && _currentlyPlayingAudioId == postId
+                              child: _isAudioLoading &&
+                                      _currentlyPlayingAudioId == postId
                                   ? Padding(
-                                padding: EdgeInsets.all(16),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: Colors.white,
-                                ),
-                              )
+                                      padding: EdgeInsets.all(16),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: Colors.white,
+                                      ),
+                                    )
                                   : Icon(
-                                isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                                size: 28,
-                              ),
+                                      isCurrentlyPlaying
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
                             ),
                           ),
 
@@ -829,22 +850,29 @@ class _DetailsPostState extends State<DetailsPost>
                                 SliderTheme(
                                   data: SliderThemeData(
                                     trackHeight: 4,
-                                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
-                                    overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
+                                    thumbShape: RoundSliderThumbShape(
+                                        enabledThumbRadius: 8),
+                                    overlayShape: RoundSliderOverlayShape(
+                                        overlayRadius: 16),
                                   ),
                                   child: Slider(
                                     value: position.inSeconds.toDouble(),
                                     min: 0,
-                                    max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
-                                    onChanged: (value) => _seekAudio(value, postId),
+                                    max: duration.inSeconds > 0
+                                        ? duration.inSeconds.toDouble()
+                                        : 1.0,
+                                    onChanged: (value) =>
+                                        _seekAudio(value, postId),
                                     activeColor: Colors.blue,
-                                    inactiveColor: Colors.white.withOpacity(0.3),
+                                    inactiveColor:
+                                        Colors.white.withOpacity(0.3),
                                   ),
                                 ),
                                 Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 8),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         _formatDuration(position),
@@ -916,6 +944,7 @@ class _DetailsPostState extends State<DetailsPost>
       ),
     );
   }
+
   void _showAudioError() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -937,6 +966,7 @@ class _DetailsPostState extends State<DetailsPost>
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
   }
+
   @override
   void initState() {
     super.initState();
@@ -1027,7 +1057,6 @@ class _DetailsPostState extends State<DetailsPost>
           duration: Duration(seconds: 2),
         ),
       );
-
     } catch (e) {
       print('Erreur toggle favori: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1046,7 +1075,8 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-  Future<void> _addToFavorites(String userId, String postId, FirebaseFirestore firestore) async {
+  Future<void> _addToFavorites(
+      String userId, String postId, FirebaseFirestore firestore) async {
     // Mettre à jour le post
     await firestore.collection('Posts').doc(postId).update({
       'users_favorite_id': FieldValue.arrayUnion([userId]),
@@ -1071,7 +1101,8 @@ class _DetailsPostState extends State<DetailsPost>
     addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
   }
 
-  Future<void> _removeFromFavorites(String userId, String postId, FirebaseFirestore firestore) async {
+  Future<void> _removeFromFavorites(
+      String userId, String postId, FirebaseFirestore firestore) async {
     // Mettre à jour le post
     await firestore.collection('Posts').doc(postId).update({
       'users_favorite_id': FieldValue.arrayRemove([userId]),
@@ -1094,7 +1125,8 @@ class _DetailsPostState extends State<DetailsPost>
         titre: "Favoris ❤️",
         media_url: authProvider.loginUserData.imageUrl,
         type: NotificationType.FAVORITE.name,
-        description: "@${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
+        description:
+            "@${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
         users_id_view: [],
         user_id: userId,
         receiver_id: widget.post.user_id!,
@@ -1105,16 +1137,21 @@ class _DetailsPostState extends State<DetailsPost>
         status: PostStatus.VALIDE.name,
       );
 
-      await firestore.collection('Notifications').doc(notification.id).set(notification.toJson());
+      await firestore
+          .collection('Notifications')
+          .doc(notification.id)
+          .set(notification.toJson());
 
       // Notification push
-      if (widget.post.user != null && widget.post.user!.oneIgnalUserid != null) {
+      if (widget.post.user != null &&
+          widget.post.user!.oneIgnalUserid != null) {
         await authProvider.sendNotification(
           userIds: [widget.post.user!.oneIgnalUserid!],
           smallImage: authProvider.loginUserData.imageUrl!,
           send_user_id: userId,
           recever_user_id: widget.post.user_id!,
-          message: "❤️ @${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
+          message:
+              "❤️ @${authProvider.loginUserData.pseudo!} a ajouté votre post à ses favoris",
           type_notif: NotificationType.FAVORITE.name,
           post_id: widget.post.id!,
           post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
@@ -1125,6 +1162,7 @@ class _DetailsPostState extends State<DetailsPost>
       print('Erreur création notification favori: $e');
     }
   }
+
   // Vérifier si c'est un Look Challenge
   bool get _isLookChallenge {
     return widget.post.type == 'CHALLENGEPARTICIPATION';
@@ -1166,7 +1204,7 @@ class _DetailsPostState extends State<DetailsPost>
   Future<void> _checkIfUserHasVoted() async {
     try {
       final postDoc =
-      await firestore.collection('Posts').doc(widget.post.id).get();
+          await firestore.collection('Posts').doc(widget.post.id).get();
       if (postDoc.exists) {
         final data = postDoc.data() as Map<String, dynamic>;
         final voters = List<String>.from(data['users_votes_ids'] ?? []);
@@ -1179,10 +1217,12 @@ class _DetailsPostState extends State<DetailsPost>
       print('Erreur lors de la vérification du vote: $e');
     }
   }
+
   String _getTodayDateString() {
     final now = DateTime.now();
     return '${now.year}-${now.month}-${now.day}';
   }
+
   Future<void> _incrementViews() async {
     try {
       if (authProvider.loginUserData == null ||
@@ -1192,35 +1232,73 @@ class _DetailsPostState extends State<DetailsPost>
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
 
-      // 🔥 Vérification avec SharedPreferences (une fois par jour)
-      String todayDate = _getTodayDateString();
-      String viewKey = '${_lastViewDatePrefix}${currentUserId}_${widget.post.id}';
+      widget.post.users_vue_id ??= [];
 
-      // Récupérer la dernière date de vue pour ce post par cet utilisateur
-      String? lastViewDate = _prefs.getString(viewKey);
-
-      // Si déjà vu aujourd'hui, NE PAS COMPTER la vue, mais permettre la visualisation
-      if (lastViewDate == todayDate) {
-        print('⏭️ Post ${widget.post.id} déjà vu aujourd\'hui par $currentUserId - Vue NON comptée');
-
-        // ✅ SUPPRIMER LA VÉRIFICATION : On met à jour l'UI même si déjà vu
-        // pour que l'utilisateur puisse voir le post sans que la vue soit recompée
-        if (!widget.post.users_vue_id!.contains(currentUserId)) {
-          setState(() {
-            widget.post.users_vue_id!.add(currentUserId);
-          });
-        }
-        return; // On retourne sans incrémenter le compteur
+      // 🔥 Vérifier si l'utilisateur a déjà vu le post
+      if (widget.post.users_vue_id!.contains(currentUserId)) {
+        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        return;
       }
 
-      // 🔥 PREMIÈRE VUE AUJOURD'HUI : On compte la vue
-      // ✅ SUPPRIMER LA VÉRIFICATION users_vue_id car on veut compter même si
-      // l'utilisateur a déjà vu le post les jours précédents
+      // ✅ Mise à jour locale
+      setState(() {
+        widget.post.vues = (widget.post.vues ?? 0) + 1;
+        widget.post.users_vue_id!.add(currentUserId);
+      });
 
-      // Sauvegarder la date dans SharedPreferences
-      await _prefs.setString(viewKey, todayDate);
+      // ✅ Mise à jour Firestore
+      await firestore.collection('Posts').doc(widget.post.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+        'popularity': FieldValue.increment(2),
+      });
 
-      // Mettre à jour localement
+      print('✅ Vue unique enregistrée pour ${widget.post.id}');
+    } catch (e) {
+      print("Erreur incrémentation vues: $e");
+    }
+  }
+
+  Future<void> _incrementViewsOnly() async {
+    try {
+      if (authProvider.loginUserData == null ||
+          widget.post == null ||
+          widget.post.id == null) return;
+
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
+
+      widget.post.users_vue_id ??= [];
+
+      String viewKey =
+          '${_lastViewDatePrefix}${currentUserId}_${widget.post.id}';
+      String? lastViewDateStr = _prefs.getString(viewKey);
+
+      if (lastViewDateStr != null) {
+        DateTime lastViewDate = DateTime.parse(lastViewDateStr);
+        DateTime now = DateTime.now();
+
+        int difference = now.difference(lastViewDate).inDays;
+
+        // ❌ Si moins de 2 jours -> ne pas compter
+        if (difference < 2) {
+          print(
+              '⏭️ Post ${widget.post.id} déjà vu il y a $difference jour(s) - Vue NON comptée');
+
+          if (!widget.post.users_vue_id!.contains(currentUserId)) {
+            setState(() {
+              widget.post.users_vue_id!.add(currentUserId);
+            });
+          }
+
+          return;
+        }
+      }
+
+      // 🔥 Sauvegarder la nouvelle date
+      await _prefs.setString(viewKey, DateTime.now().toIso8601String());
+
+      // ✅ Mise à jour locale
       setState(() {
         widget.post.vues = (widget.post.vues ?? 0) + 1;
         if (!widget.post.users_vue_id!.contains(currentUserId)) {
@@ -1228,45 +1306,18 @@ class _DetailsPostState extends State<DetailsPost>
         }
       });
 
-      // Mettre à jour dans Firestore
+      // ✅ Mise à jour Firestore
       await firestore.collection('Posts').doc(widget.post.id).update({
         'vues': FieldValue.increment(1),
         'users_vue_id': FieldValue.arrayUnion([currentUserId]),
         'popularity': FieldValue.increment(2),
       });
 
-      print('✅ Vue comptée pour post ${widget.post.id} par $currentUserId le $todayDate');
-
+      print('✅ Vue enregistrée pour ${widget.post.id}');
     } catch (e) {
       print("Erreur incrémentation vues: $e");
     }
   }
-
-  Future<void> _incrementViews2() async {
-    try {
-      if (authProvider.loginUserData!=null&&widget.post!=null&&widget.post.users_vue_id!=null) {
-        if (!widget.post.users_vue_id!.contains(authProvider.loginUserData.id)) {
-          // Mettre à jour localement
-          setState(() {
-            widget.post.vues = (widget.post.vues ?? 0) + 1;
-            widget.post.users_vue_id!.add(authProvider.loginUserData.id!);
-          });
-
-          // Mettre à jour dans Firestore
-          await firestore.collection('Posts').doc(widget.post.id).update({
-            'vues': FieldValue.increment(1),
-            'users_vue_id':
-            FieldValue.arrayUnion([authProvider.loginUserData.id]),
-            'popularity': FieldValue.increment(2),
-          });
-        }
-
-      }
-    } catch (e) {
-      print("Erreur incrémentation vues: $e");
-    }
-  }
-
 
   // FONCTIONNALITÉ DE VOTE
   Future<void> _loadChallengeData() async {
@@ -1442,6 +1493,7 @@ class _DetailsPostState extends State<DetailsPost>
       }
     }
   }
+
   Future<void> _processVoteWithChallenge(String userId) async {
     try {
       await _reloadChallengeData();
@@ -1457,11 +1509,13 @@ class _DetailsPostState extends State<DetailsPost>
       // Vérifier si l'appareil a déjà voté (uniquement si ID valide)
       if (DeviceInfoService.isDeviceIdValid(deviceId) &&
           _challenge!.aVoteAvecAppareil(deviceId)) {
-        throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter dans ce challenge. L\'utilisation de comptes multiples est strictement interdite.');
+        throw Exception(
+            '🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter dans ce challenge. L\'utilisation de comptes multiples est strictement interdite.');
       }
 
       await firestore.runTransaction((transaction) async {
-        final challengeRef = firestore.collection('Challenges').doc(_challenge!.id!);
+        final challengeRef =
+            firestore.collection('Challenges').doc(_challenge!.id!);
         final challengeDoc = await transaction.get(challengeRef);
 
         if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
@@ -1479,7 +1533,8 @@ class _DetailsPostState extends State<DetailsPost>
         // Vérification supplémentaire de l'appareil dans la transaction
         if (DeviceInfoService.isDeviceIdValid(deviceId) &&
             currentChallenge.aVoteAvecAppareil(deviceId)) {
-          throw Exception('🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter. Utilisation de comptes multiples interdite.');
+          throw Exception(
+              '🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter. Utilisation de comptes multiples interdite.');
         }
 
         final postRef = firestore.collection('Posts').doc(widget.post.id);
@@ -1488,11 +1543,8 @@ class _DetailsPostState extends State<DetailsPost>
         if (!postDoc.exists) throw Exception('Post non trouvé');
 
         if (!_challenge!.voteGratuit!) {
-          await _debiterUtilisateur(
-              userId,
-              _challenge!.prixVote!,
-              'Vote pour le challenge ${_challenge!.titre}'
-          );
+          await _debiterUtilisateur(userId, _challenge!.prixVote!,
+              'Vote pour le challenge ${_challenge!.titre}');
         }
 
         // Mettre à jour le post
@@ -1511,7 +1563,8 @@ class _DetailsPostState extends State<DetailsPost>
 
         // Ajouter l'ID appareil uniquement s'il est valide
         if (DeviceInfoService.isDeviceIdValid(deviceId)) {
-          challengeUpdates['devices_votants_ids'] = FieldValue.arrayUnion([deviceId]);
+          challengeUpdates['devices_votants_ids'] =
+              FieldValue.arrayUnion([deviceId]);
         }
 
         transaction.update(challengeRef, challengeUpdates);
@@ -1535,26 +1588,22 @@ class _DetailsPostState extends State<DetailsPost>
         smallImage: authProvider.loginUserData.imageUrl!,
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: widget.post.user_id!,
-        message: "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
+        message:
+            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
         type_notif: NotificationType.POST.name,
         post_id: widget.post.id!,
         post_type: PostDataType.IMAGE.name,
         chat_id: '',
       );
 
-      postProvider.interactWithPostAndIncrementSolde(
-          widget.post.id!,
-          authProvider.loginUserData.id!,
-          "vote_look",
-          widget.post.user_id!
-      );
+      postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
+          authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
 
-      _showSuccess('✅ VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
+      _showSuccess(
+          '✅ VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
       _envoyerNotificationVote(
           userVotant: authProvider.loginUserData!,
-          userVote: widget.post!.user!
-      );
-
+          userVote: widget.post!.user!);
     } catch (e) {
       print("Erreur lors du vote avec challenge: $e");
 
@@ -1568,7 +1617,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
 📞 Contactez le support si vous pensez qu'il s'agit d'une erreur.''');
       } else {
-        _showError('❌ ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
+        _showError(
+            '❌ ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
       }
     } finally {
       if (mounted) {
@@ -1578,6 +1628,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
     }
   }
+
   Future<void> _processVoteWithChallenge2(String userId) async {
     try {
       await _reloadChallengeData();
@@ -1588,7 +1639,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
       await firestore.runTransaction((transaction) async {
         final challengeRef =
-        firestore.collection('Challenges').doc(_challenge!.id!);
+            firestore.collection('Challenges').doc(_challenge!.id!);
         final challengeDoc = await transaction.get(challengeRef);
 
         if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
@@ -1642,7 +1693,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: widget.post.user_id!,
         message:
-        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
+            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
         type_notif: NotificationType.POST.name,
         post_id: widget.post.id!,
         post_type: PostDataType.IMAGE.name,
@@ -1654,7 +1705,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
       _showSuccess(
           'VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
-      _envoyerNotificationVote(userVotant:  authProvider.loginUserData!, userVote:widget.post!.user!);
+      _envoyerNotificationVote(
+          userVotant: authProvider.loginUserData!,
+          userVote: widget.post!.user!);
     } catch (e) {
       print("Erreur lors du vote avec challenge: $e");
       _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
@@ -1721,7 +1774,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: widget.post.user_id!,
         message:
-        "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
+            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
         type_notif: NotificationType.POST.name,
         post_id: widget.post.id!,
         post_type: PostDataType.IMAGE.name,
@@ -1757,9 +1810,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         .update({'votre_solde_principal': FieldValue.increment(-montant)});
     String appDataId = authProvider.appDefaultData.id!;
 
-    await firestore.collection('AppData').doc(appDataId).set({
-      'solde_gain': FieldValue.increment(montant)
-    }, SetOptions(merge: true));
+    await firestore.collection('AppData').doc(appDataId).set(
+        {'solde_gain': FieldValue.increment(montant)}, SetOptions(merge: true));
     await _createTransaction(
         TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
   }
@@ -1790,10 +1842,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title:
-        Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
+            Text('SOLDE INSUFFISANT', style: TextStyle(color: Colors.yellow)),
         content: Text(
           'Il vous manque $montantManquant FCFA pour pouvoir voter.\n\n'
-              'Rechargez votre compte pour soutenir votre look préféré !',
+          'Rechargez votre compte pour soutenir votre look préféré !',
           style: TextStyle(color: Colors.grey[300]),
         ),
         actions: [
@@ -1839,7 +1891,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             ),
             content: Text(
               'Ce vote vous coûtera ${_challenge!.prixVote} FCFA.\n\n'
-                  'Voulez-vous continuer ?',
+              'Voulez-vous continuer ?',
               style: TextStyle(color: _twitterTextPrimary),
               textAlign: TextAlign.center,
             ),
@@ -1943,6 +1995,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
+
   bool _isProcessing = false;
   Future<void> _handleLike() async {
     // Éviter les doubles clics au niveau UI
@@ -1991,22 +2044,24 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       // 5. Actions post-like (notifications, points, etc.)
       await Future.wait([
         FeedInteractionService.onPostLoved(widget.post, userId),
-    authProvider.sendNotification(
-    userIds: [widget.post.user!.oneIgnalUserid!],
-    smallImage: "${authProvider.loginUserData.imageUrl!}",
-    send_user_id: "${authProvider.loginUserData.id!}",
-    recever_user_id: "${widget.post.user_id!}",
-    message:
-    "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
-    type_notif: NotificationType.POST.name,
-    post_id: "${widget.post!.id!}",
-    post_type: PostDataType.IMAGE.name,
-    chat_id: ''),
+        authProvider.sendNotification(
+            userIds: [widget.post.user!.oneIgnalUserid!],
+            smallImage: "${authProvider.loginUserData.imageUrl!}",
+            send_user_id: "${authProvider.loginUserData.id!}",
+            recever_user_id: "${widget.post.user_id!}",
+            message:
+                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+            type_notif: NotificationType.POST.name,
+            post_id: "${widget.post!.id!}",
+            post_type: PostDataType.IMAGE.name,
+            chat_id: ''),
         addPointsForAction(UserAction.like),
         addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre),
       ]);
 
-      _animationController.forward().then((_) => _animationController.reverse());
+      _animationController
+          .forward()
+          .then((_) => _animationController.reverse());
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2014,7 +2069,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           backgroundColor: Colors.green,
         ),
       );
-
     } catch (e) {
       print("Erreur like: $e");
 
@@ -2034,6 +2088,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       setState(() => _isProcessing = false);
     }
   }
+
   Future<void> _handleLike2() async {
     try {
       if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
@@ -2045,10 +2100,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         await firestore.collection('Posts').doc(widget.post.id).update({
           'loves': FieldValue.increment(1),
           'users_love_id':
-          FieldValue.arrayUnion([authProvider.loginUserData.id]),
+              FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(3),
         });
-        FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
+        FeedInteractionService.onPostLoved(
+            widget.post, authProvider.loginUserData.id!);
 
         await authProvider.sendNotification(
             userIds: [widget.post.user!.oneIgnalUserid!],
@@ -2056,7 +2112,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             send_user_id: "${authProvider.loginUserData.id!}",
             recever_user_id: "${widget.post.user_id!}",
             message:
-            "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
             type_notif: NotificationType.POST.name,
             post_id: "${widget.post!.id!}",
             post_type: PostDataType.IMAGE.name,
@@ -2086,8 +2142,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   Future<void> _createTransaction(
-      String type, double montant, String description, String userid) async
-  {
+      String type, double montant, String description, String userid) async {
     try {
       final transaction = TransactionSolde()
         ..id = firestore.collection('TransactionSoldes').doc().id
@@ -2124,7 +2179,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
       final senderData = senderSnap.data() as Map<String, dynamic>;
       final double senderBalance =
-      (senderData['votre_solde_principal'] ?? 0.0).toDouble();
+          (senderData['votre_solde_principal'] ?? 0.0).toDouble();
 
       if (senderBalance >= amount) {
         final double gainDestinataire = amount * 0.7;
@@ -2142,54 +2197,51 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
         String appDataId = authProvider.appDefaultData.id!;
 
-        if(widget.post.user!.codeParrain!=null){
-
-          if(authProvider.loginUserData!.codeParrain!=null){
+        if (widget.post.user!.codeParrain != null) {
+          if (authProvider.loginUserData!.codeParrain != null) {
             final double gainApplication = amount * 0.25;
 
             await firestore.collection('AppData').doc(appDataId).update({
               'solde_gain': FieldValue.increment(gainApplication),
             });
-            authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
-            authProvider.ajouterCadeauCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
-
-          }
-          else{
+            authProvider.ajouterCadeauCommissionParrain(
+                codeParrainage: authProvider.loginUserData!.codeParrain!,
+                montant: amount);
+            authProvider.ajouterCadeauCommissionParrain(
+                codeParrainage: widget.post.user!.codeParrain!,
+                montant: amount);
+          } else {
             final double gainApplication = amount * 0.25;
 
             await firestore.collection('AppData').doc(appDataId).update({
               'solde_gain': FieldValue.increment(gainApplication),
             });
-            authProvider.ajouterCommissionParrain(codeParrainage: widget.post.user!.codeParrain!, montant: amount);
-
+            authProvider.ajouterCommissionParrain(
+                codeParrainage: widget.post.user!.codeParrain!,
+                montant: amount);
           }
-
-        }else{
-          if(authProvider.loginUserData!.codeParrain!=null){
+        } else {
+          if (authProvider.loginUserData!.codeParrain != null) {
             final double gainApplication = amount * 0.25;
 
             await firestore.collection('AppData').doc(appDataId).update({
               'solde_gain': FieldValue.increment(gainApplication),
             });
-            authProvider.ajouterCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: amount);
-
-          }
-          else{
+            authProvider.ajouterCommissionParrain(
+                codeParrainage: authProvider.loginUserData!.codeParrain!,
+                montant: amount);
+          } else {
             final double gainApplication = amount * 0.3;
 
             await firestore.collection('AppData').doc(appDataId).update({
               'solde_gain': FieldValue.increment(gainApplication),
             });
-
           }
         }
 
-
-
-
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_cadeau_id':
-          FieldValue.arrayUnion([authProvider.loginUserData.id]),
+              FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(5),
         });
 
@@ -2203,7 +2255,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             gainDestinataire,
             "Cadeau reçu de @${authProvider.loginUserData.pseudo}",
             widget.post.user_id!);
-        FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
+        FeedInteractionService.onPostLoved(
+            widget.post, authProvider.loginUserData.id!);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2375,14 +2428,49 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   List<double> giftPrices = [
-    10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000,
-    2500, 5000, 7000, 10000, 15000, 20000, 30000,
-    50000, 75000, 100000
+    10,
+    25,
+    50,
+    100,
+    200,
+    300,
+    500,
+    700,
+    1500,
+    2000,
+    2500,
+    5000,
+    7000,
+    10000,
+    15000,
+    20000,
+    30000,
+    50000,
+    75000,
+    100000
   ];
 
   List<String> giftIcons = [
-    '🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕',
-    '🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'
+    '🌹',
+    '❤️',
+    '👑',
+    '💎',
+    '🏎️',
+    '⭐',
+    '🍫',
+    '🧰',
+    '🌵',
+    '🍕',
+    '🍦',
+    '💻',
+    '🚗',
+    '🏠',
+    '🛩️',
+    '🛥️',
+    '🏰',
+    '💎',
+    '🏎️',
+    '🚗'
   ];
 
   Future<void> _repostForCash() async {
@@ -2398,7 +2486,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       final userData = userDoc.data();
       if (userData == null) throw Exception("Utilisateur introuvable !");
       final double soldeActuel =
-      (userData['votre_solde_principal'] ?? 0.0).toDouble();
+          (userData['votre_solde_principal'] ?? 0.0).toDouble();
 
       if (soldeActuel >= _selectedRepostPrice) {
         await firestore
@@ -2417,7 +2505,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
         await firestore.collection('Posts').doc(widget.post.id).update({
           'users_republier_id':
-          FieldValue.arrayUnion([authProvider.loginUserData.id]),
+              FieldValue.arrayUnion([authProvider.loginUserData.id]),
           'popularity': FieldValue.increment(4),
           'created_at': DateTime.now().microsecondsSinceEpoch,
           'updated_at': DateTime.now().microsecondsSinceEpoch,
@@ -2572,7 +2660,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ),
                 radius: 25,
               ),
-
               if ((canal?.isVerify ?? false) || (user?.isVerify ?? false))
                 Positioned(
                   bottom: 0,
@@ -2664,7 +2751,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         ),
                       ),
                       SizedBox(width: 4),
-                      AbonnementUtils.getUserBadge(abonnement: user.abonnement,isVerified: user.isVerify!),
+                      AbonnementUtils.getUserBadge(
+                          abonnement: user.abonnement,
+                          isVerified: user.isVerify!),
                       // if (user.isVerify ?? false)
                       //   Icon(Icons.verified, color: _twitterBlue, size: 16),
 
@@ -2672,16 +2761,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       if (post.dataType == PostDataType.AUDIO.name)
                         Container(
                           margin: EdgeInsets.only(left: 4),
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.blue.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                            border:
+                                Border.all(color: Colors.blue.withOpacity(0.5)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.audiotrack, color: Colors.blue, size: 10),
+                              Icon(Icons.audiotrack,
+                                  color: Colors.blue, size: 10),
                               SizedBox(width: 2),
                               Text(
                                 'AUDIO',
@@ -2698,7 +2790,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       if (_isLookChallenge)
                         Container(
                           padding:
-                          EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _twitterGreen.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
@@ -2768,7 +2860,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 Icons.flag,
                 "Signaler",
                 _twitterTextPrimary,
-                    () async {
+                () async {
                   post.status = PostStatus.SIGNALER.name;
                   final value = await postProvider.updateVuePost(post, context);
                   Navigator.pop(context);
@@ -2778,7 +2870,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       value ? 'Post signalé !' : 'Échec du signalement !',
                       textAlign: TextAlign.center,
                       style:
-                      TextStyle(color: value ? Colors.green : Colors.red),
+                          TextStyle(color: value ? Colors.green : Colors.red),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -2790,7 +2882,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 Icons.delete,
                 "Supprimer",
                 Colors.red,
-                    () async {
+                () async {
                   if (authProvider.loginUserData.role == UserRole.ADM.name) {
                     await deletePost(post, context);
                   } else {
@@ -2814,9 +2906,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 height: 0.5, color: _twitterTextSecondary.withOpacity(0.3)),
             SizedBox(height: 8),
             _buildMenuOption(Icons.cancel, "Annuler", _twitterTextSecondary,
-                    () {
-                  Navigator.pop(context);
-                }),
+                () {
+              Navigator.pop(context);
+            }),
           ],
         ),
       ),
@@ -2850,9 +2942,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     // Pour le contenu verrouillé, limiter l'affichage
     if (isLocked) {
       final words = text.split(' ');
-      final limitedText = words.length > 50
-          ? words.take(50).join(' ') + '...'
-          : text;
+      final limitedText =
+          words.length > 50 ? words.take(50).join(' ') + '...' : text;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2920,6 +3011,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ],
     );
   }
+
   Widget _buildTextContent(String text, {bool isLocked = false}) {
     final words = text.split(' ');
     final isLong = words.length > 100;
@@ -3048,30 +3140,31 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           isLoop: true,
           children: post.images!
               .map((imageUrl) => GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
-                ),
-              );
-            },
-            child: Hero(
-              tag: imageUrl,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[800],
-                  child: Center(
-                      child:
-                      CircularProgressIndicator(color: Colors.yellow)),
-                ),
-                errorWidget: (context, url, error) =>
-                    Icon(Icons.error, color: Colors.red),
-              ),
-            ),
-          ))
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              FullScreenImage(singleImageUrl: imageUrl),
+                        ),
+                      );
+                    },
+                    child: Hero(
+                      tag: imageUrl,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[800],
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.yellow)),
+                        ),
+                        errorWidget: (context, url, error) =>
+                            Icon(Icons.error, color: Colors.red),
+                      ),
+                    ),
+                  ))
               .toList(),
         ),
       ),
@@ -3187,11 +3280,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   placeholder: (context, url) => Container(
                     color: Colors.grey[800],
                   ),
-                  errorWidget: (context, url, error) =>
-                      Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.error, color: Colors.red),
-                      ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[800],
+                    child: Icon(Icons.error, color: Colors.red),
+                  ),
                 ),
               ),
             ),
@@ -3213,11 +3305,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   placeholder: (context, url) => Container(
                     color: Colors.grey[800],
                   ),
-                  errorWidget: (context, url, error) =>
-                      Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.error, color: Colors.red),
-                      ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[800],
+                    child: Icon(Icons.error, color: Colors.red),
+                  ),
                 ),
               ),
             ),
@@ -3248,11 +3339,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   placeholder: (context, url) => Container(
                     color: Colors.grey[800],
                   ),
-                  errorWidget: (context, url, error) =>
-                      Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.error, color: Colors.red),
-                      ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[800],
+                    child: Icon(Icons.error, color: Colors.red),
+                  ),
                 ),
               ),
             ),
@@ -3279,11 +3369,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         placeholder: (context, url) => Container(
                           color: Colors.grey[800],
                         ),
-                        errorWidget: (context, url, error) =>
-                            Container(
-                              color: Colors.grey[800],
-                              child: Icon(Icons.error, color: Colors.red),
-                            ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[800],
+                          child: Icon(Icons.error, color: Colors.red),
+                        ),
                       ),
                     ),
                   ),
@@ -3305,11 +3394,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                         placeholder: (context, url) => Container(
                           color: Colors.grey[800],
                         ),
-                        errorWidget: (context, url, error) =>
-                            Container(
-                              color: Colors.grey[800],
-                              child: Icon(Icons.error, color: Colors.red),
-                            ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[800],
+                          child: Icon(Icons.error, color: Colors.red),
+                        ),
                       ),
                     ),
                   ),
@@ -3334,30 +3422,30 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       isLoop: true,
       children: images
           .map((imageUrl) => GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
-            ),
-          );
-        },
-        child: Hero(
-          tag: imageUrl,
-          child: CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Colors.grey[800],
-              child: Center(
-                  child:
-                  CircularProgressIndicator(color: Colors.yellow)),
-            ),
-            errorWidget: (context, url, error) =>
-                Icon(Icons.error, color: Colors.red),
-          ),
-        ),
-      ))
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenImage(singleImageUrl: imageUrl),
+                    ),
+                  );
+                },
+                child: Hero(
+                  tag: imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[800],
+                      child: Center(
+                          child:
+                              CircularProgressIndicator(color: Colors.yellow)),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.error, color: Colors.red),
+                  ),
+                ),
+              ))
           .toList(),
     );
   }
@@ -3379,9 +3467,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     return FutureBuilder<DocumentSnapshot>(
       future: widget.post.challenge_id != null
           ? firestore
-          .collection('Challenges')
-          .doc(widget.post.challenge_id)
-          .get()
+              .collection('Challenges')
+              .doc(widget.post.challenge_id)
+              .get()
           : null,
       builder: (context, challengeSnapshot) {
         if (challengeSnapshot.connectionState == ConnectionState.waiting) {
@@ -3406,7 +3494,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         }
 
         final challengeData =
-        challengeSnapshot.data!.data() as Map<String, dynamic>;
+            challengeSnapshot.data!.data() as Map<String, dynamic>;
         final challenge = Challenge.fromJson(challengeData);
         final bool challengeTermine = challenge.isTermine ||
             DateTime.now().microsecondsSinceEpoch > (challenge.finishedAt ?? 0);
@@ -3415,16 +3503,16 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         return FutureBuilder<DocumentSnapshot>(
           future: challenge.postChallengeId != null
               ? firestore
-              .collection('Posts')
-              .doc(challenge.postChallengeId)
-              .get()
+                  .collection('Posts')
+                  .doc(challenge.postChallengeId)
+                  .get()
               : null,
           builder: (context, postChallengeSnapshot) {
             Post? postChallenge;
             if (postChallengeSnapshot.hasData &&
                 postChallengeSnapshot.data!.exists) {
               final postData =
-              postChallengeSnapshot.data!.data() as Map<String, dynamic>;
+                  postChallengeSnapshot.data!.data() as Map<String, dynamic>;
               postChallenge = Post.fromJson(postData);
             }
 
@@ -3473,10 +3561,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ],
                   ),
                   SizedBox(height: 12),
-
                   if (postChallenge != null)
                     _buildChallengePostPreview(challenge, postChallenge),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -3507,7 +3593,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ],
                   ),
                   SizedBox(height: 16),
-
                   if (challenge.description != null &&
                       challenge.description!.isNotEmpty)
                     Container(
@@ -3600,7 +3685,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           ),
                         ),
                       SizedBox(height: 16),
-
                       Row(
                         children: [
                           if (peutVoter)
@@ -3618,28 +3702,28 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                 ),
                                 child: _isVoting
                                     ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.how_to_vote, size: 18),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'VOTER',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.how_to_vote, size: 18),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'VOTER',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
                               ),
                             )
                           else
@@ -3671,9 +3755,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                                 ),
                               ),
                             ),
-
                           SizedBox(width: 12),
-
                           ElevatedButton(
                             onPressed: () {
                               if (challenge.id != null) {
@@ -3713,7 +3795,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       ),
                     ],
                   ),
-
                   if (_votersList.isNotEmpty) ...[
                     SizedBox(height: 16),
                     Text(
@@ -3942,27 +4023,27 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ),
                 child: _isVoting
                     ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.how_to_vote, size: 20),
-                    SizedBox(width: 10),
-                    Text(
-                      'VOTER POUR CE LOOK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.how_to_vote, size: 20),
+                          SizedBox(width: 10),
+                          Text(
+                            'VOTER POUR CE LOOK',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             )
           else
@@ -3996,9 +4077,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   Widget _buildChallengeStatItem(
       {required IconData icon,
-        required String value,
-        required String label,
-        required Color color}) {
+      required String value,
+      required String label,
+      required Color color}) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
@@ -4022,87 +4103,84 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildStatsRow2(Post post) {
-    final hasAccess = _hasAccessToContent();
+  void _handleShare() async {
+    // Activer le mode chargement
+    setState(() {
+      _isSharing = true;
+    });
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildStatItem(
-          icon: Icons.remove_red_eye,
-          count: post.vues ?? 0,
-          label: 'Vues',
-        ),
-        GestureDetector(
-          onTap: hasAccess ? _handleLike : null,
-          child: _buildStatItem(
-            icon: Icons.favorite,
-            count: post.loves ?? 0,
-            label: 'Likes',
-            isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
-            isLocked: !hasAccess,
-          ),
-        ),
-        GestureDetector(
-          onTap: hasAccess ? () {
-            firestore.collection('Posts').doc(widget.post.id).update({
-              'popularity': FieldValue.increment(1),
-            });
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostComments(post: widget.post),
-              ),
-            );
-          } : null,
-          child: _buildStatItem(
-            icon: Icons.comment,
-            count: widget.post.comments ?? 0,
-            label: 'Comments',
-            isLocked: !hasAccess,
-          ),
-        ),
-        GestureDetector(
-          onTap: hasAccess ? _showGiftDialog : null,
-          child: _buildStatItem(
-            icon: Icons.card_giftcard,
-            count: post.users_cadeau_id?.length ?? 0,
-            label: 'Cadeaux',
-            isLocked: !hasAccess,
-          ),
-        ),
-        GestureDetector(
-          onTap: hasAccess ? () async {
-            final AppLinkService _appLinkService = AppLinkService();
-            _appLinkService.shareContent(
-              type: AppLinkType.post,
-              id: widget.post.id!,
-              message: " ${widget.post.description}",
-              mediaUrl: widget.post.images!.isNotEmpty
-                  ? "${widget.post.images!}"
-                  : "",
-            );
-            await FirebaseFirestore.instance
-                .collection('Posts')
-                .doc(widget.post.id!)
-                .update({
-              'partage': FieldValue.increment(1),
-            });
-            FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
+    try {
+      // 1. GESTION DU THUMBNAIL POUR LES VIDÉOS
+      if (widget.post.dataType == "VIDEO" &&
+          (widget.post.thumbnail == null || widget.post.thumbnail!.isEmpty)) {
+        // On attend la fin de la génération avant de continuer
+        await checkAndGenerateThumbnail(
+          postId: widget.post.id!,
+          videoUrl: widget.post.url_media!,
+          currentThumbnail: widget.post.thumbnail,
+        );
+      }
 
-            addPointsForAction(UserAction.partagePost);
+      // 2. PRÉPARATION DU PARTAGE
+      String shareImageUrl = "";
+      if (widget.post.dataType == "VIDEO") {
+        shareImageUrl = widget.post.thumbnail ?? "";
+      } else {
+        shareImageUrl = (widget.post.images?.isNotEmpty ?? false)
+            ? widget.post.images!.first
+            : "";
+      }
 
-          } : null,
-          child: _buildStatItem(
-            icon: Icons.share,
-            count: post.partage ?? 0,
-            label: 'Partages',
-            isLocked: !hasAccess,
+      final AppLinkService _appLinkService = AppLinkService();
+      await _appLinkService.shareContent(
+        type: AppLinkType.post,
+        id: widget.post.id!,
+        message: widget.post.description ?? "",
+        mediaUrl: shareImageUrl,
+      );
+
+      // 3. MISE À JOUR FIREBASE & UI (Code existant)
+      setState(() {
+        widget.post.partage = (widget.post.partage ?? 0) + 1;
+        widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
+      });
+
+      await firestore.collection('Posts').doc(widget.post.id).update({
+        'partage': FieldValue.increment(1),
+        'users_partage_id':
+            FieldValue.arrayUnion([authProvider.loginUserData.id]),
+      });
+
+      authProvider.checkAndRefreshPostDates(widget.post.id!);
+
+      if (!isIn(
+          widget.post.users_partage_id!, authProvider.loginUserData.id!)) {
+        addPointsForAction(UserAction.partagePost);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+ de points ajoutés à votre compte',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
           ),
-        ),
-      ],
-    );
+        );
+      }
+    } catch (e) {
+      print("Erreur partage: $e");
+    } finally {
+      // Désactiver le chargement même en cas d'erreur
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
   }
+
   Widget _buildStatsRow(Post post) {
     final hasAccess = _hasAccessToContent();
 
@@ -4125,17 +4203,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         ),
         GestureDetector(
-          onTap: hasAccess ? () {
-            firestore.collection('Posts').doc(widget.post.id).update({
-              'popularity': FieldValue.increment(1),
-            });
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostComments(post: widget.post),
-              ),
-            );
-          } : null,
+          onTap: hasAccess
+              ? () {
+                  firestore.collection('Posts').doc(widget.post.id).update({
+                    'popularity': FieldValue.increment(1),
+                  });
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PostComments(post: widget.post),
+                    ),
+                  );
+                }
+              : null,
           child: _buildStatItem(
             icon: Icons.comment,
             count: widget.post.comments ?? 0,
@@ -4163,26 +4243,22 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             isLocked: !hasAccess,
           ),
         ),
-        GestureDetector(
-          onTap: hasAccess ? () async {
-            final AppLinkService _appLinkService = AppLinkService();
-            _appLinkService.shareContent(
-              type: AppLinkType.post,
-              id: widget.post.id!,
-              message: " ${widget.post.description}",
-              mediaUrl: widget.post.images!.isNotEmpty
-                  ? "${widget.post.images!}"
-                  : "",
-            );
-            await FirebaseFirestore.instance
-                .collection('Posts')
-                .doc(widget.post.id!)
-                .update({
-              'partage': FieldValue.increment(1),
-            });
-            FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
-            addPointsForAction(UserAction.partagePost);
-          } : null,
+        _isSharing
+            ? const SizedBox(
+          width: 40, // Ajustez selon la taille de vos boutons
+          height: 40,
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
+          ),
+        )
+            :GestureDetector(
+          onTap: hasAccess
+              ? () async {
+            _handleShare();
+
+                }
+              : null,
           child: _buildStatItem(
             icon: Icons.share,
             count: post.partage ?? 0,
@@ -4193,41 +4269,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       ],
     );
   }
-  Widget _buildStatItem2({
-    required IconData icon,
-    required int count,
-    required String label,
-    bool isLiked = false,
-    bool isLocked = false,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: isLocked
-              ? _twitterTextSecondary.withOpacity(0.3)
-              : (isLiked ? Colors.red : Colors.yellow),
-          size: 20,
-        ),
-        SizedBox(height: 5),
-        Text(
-          formatNumber(count),
-          style: TextStyle(
-            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.grey[400],
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
-  }
+
+
   Widget _buildStatItem({
     required IconData icon,
     required int count,
@@ -4247,9 +4290,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ? _twitterTextSecondary.withOpacity(0.3)
           : (isLiked ? Colors.red : Colors.yellow);
     } else {
-      iconColor = isLocked
-          ? _twitterTextSecondary.withOpacity(0.3)
-          : Colors.yellow;
+      iconColor =
+          isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow;
     }
 
     return Column(
@@ -4263,7 +4305,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         Text(
           formatNumber(count),
           style: TextStyle(
-            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
+            color: isLocked
+                ? _twitterTextSecondary.withOpacity(0.3)
+                : Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -4271,13 +4315,16 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         Text(
           label,
           style: TextStyle(
-            color: isLocked ? _twitterTextSecondary.withOpacity(0.3) : Colors.grey[400],
+            color: isLocked
+                ? _twitterTextSecondary.withOpacity(0.3)
+                : Colors.grey[400],
             fontSize: 10,
           ),
         ),
       ],
     );
   }
+
   Widget _buildActionButtons2(Post post) {
     final hasAccess = _hasAccessToContent();
 
@@ -4298,8 +4345,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 color: !hasAccess
                     ? _twitterTextSecondary.withOpacity(0.3)
                     : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                    ? Colors.red
-                    : Colors.white),
+                        ? Colors.red
+                        : Colors.white),
                 size: 30,
               ),
               onPressed: hasAccess ? _handleLike : null,
@@ -4308,74 +4355,82 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
           // Bouton Commentaire
           IconButton(
-            icon: Icon(
-                Icons.chat_bubble_outline,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
-                size: 30
-            ),
-            onPressed: hasAccess ? () async {
-              await firestore.collection('Posts').doc(widget.post.id).update({
-                'popularity': FieldValue.increment(1),
-              });
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PostComments(post: widget.post),
-                ),
-              );
-            } : null,
+            icon: Icon(Icons.chat_bubble_outline,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.white,
+                size: 30),
+            onPressed: hasAccess
+                ? () async {
+                    await firestore
+                        .collection('Posts')
+                        .doc(widget.post.id)
+                        .update({
+                      'popularity': FieldValue.increment(1),
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostComments(post: widget.post),
+                      ),
+                    );
+                  }
+                : null,
           ),
 
           // Bouton Cadeau
           IconButton(
-            icon: Icon(
-                Icons.card_giftcard,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow,
-                size: 30
-            ),
+            icon: Icon(Icons.card_giftcard,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.yellow,
+                size: 30),
             onPressed: hasAccess ? _showGiftDialog : null,
           ),
 
           // Bouton Republier
           IconButton(
-            icon: Icon(
-                Icons.repeat,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.green,
-                size: 30
-            ),
+            icon: Icon(Icons.repeat,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.green,
+                size: 30),
             onPressed: hasAccess ? _showRepostDialog : null,
           ),
 
           // Bouton Partager
           IconButton(
-            icon: Icon(
-                Icons.share,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
-                size: 30
-            ),
-            onPressed: hasAccess ? () async {
-              final AppLinkService _appLinkService = AppLinkService();
-              _appLinkService.shareContent(
-                type: AppLinkType.post,
-                id: widget.post.id!,
-                message: " ${widget.post.description}",
-                mediaUrl: widget.post.images!.isNotEmpty
-                    ? "${widget.post.images!}"
-                    : "",
-              );
-              await FirebaseFirestore.instance
-                  .collection('Posts')
-                  .doc(widget.post.id!)
-                  .update({
-                'partage': FieldValue.increment(1),
-              });
-              authProvider.checkAndRefreshPostDates(widget.post.id!);
-            } : null,
+            icon: Icon(Icons.share,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.white,
+                size: 30),
+            onPressed: hasAccess
+                ? () async {
+                    final AppLinkService _appLinkService = AppLinkService();
+                    _appLinkService.shareContent(
+                      type: AppLinkType.post,
+                      id: widget.post.id!,
+                      message: " ${widget.post.description}",
+                      mediaUrl: widget.post.images!.isNotEmpty
+                          ? "${widget.post.images!}"
+                          : "",
+                    );
+                    await FirebaseFirestore.instance
+                        .collection('Posts')
+                        .doc(widget.post.id!)
+                        .update({
+                      'partage': FieldValue.increment(1),
+                    });
+                    authProvider.checkAndRefreshPostDates(widget.post.id!);
+                  }
+                : null,
           ),
         ],
       ),
     );
   }
+
   Widget _buildActionButtons(Post post) {
     final hasAccess = _hasAccessToContent();
 
@@ -4396,8 +4451,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 color: !hasAccess
                     ? _twitterTextSecondary.withOpacity(0.3)
                     : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                    ? Colors.red
-                    : Colors.white),
+                        ? Colors.red
+                        : Colors.white),
                 size: 30,
               ),
               onPressed: hasAccess ? _handleLike : null,
@@ -4406,87 +4461,88 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
           // Bouton Commentaire
           IconButton(
-            icon: Icon(
-                Icons.chat_bubble_outline,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
-                size: 30
-            ),
-            onPressed: hasAccess ? () async {
-              await firestore.collection('Posts').doc(widget.post.id).update({
-                'popularity': FieldValue.increment(1),
-              });
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PostComments(post: widget.post),
-                ),
-              );
-            } : null,
+            icon: Icon(Icons.chat_bubble_outline,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.white,
+                size: 30),
+            onPressed: hasAccess
+                ? () async {
+                    await firestore
+                        .collection('Posts')
+                        .doc(widget.post.id)
+                        .update({
+                      'popularity': FieldValue.increment(1),
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostComments(post: widget.post),
+                      ),
+                    );
+                  }
+                : null,
           ),
 
           // Bouton Favoris (NOUVEAU)
           IconButton(
-            icon: Icon(
-                _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+            icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border,
                 color: !hasAccess
                     ? _twitterTextSecondary.withOpacity(0.3)
                     : (_isFavorite ? _twitterYellow : Colors.white),
-                size: 30
-            ),
-            onPressed: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
+                size: 30),
+            onPressed:
+                hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
           ),
 
           // Bouton Cadeau
           IconButton(
-            icon: Icon(
-                Icons.card_giftcard,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.yellow,
-                size: 30
-            ),
+            icon: Icon(Icons.card_giftcard,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.yellow,
+                size: 30),
             onPressed: hasAccess ? _showGiftDialog : null,
           ),
 
           // Bouton Republier
           IconButton(
-            icon: Icon(
-                Icons.repeat,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.green,
-                size: 30
-            ),
+            icon: Icon(Icons.repeat,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.green,
+                size: 30),
             onPressed: hasAccess ? _showRepostDialog : null,
           ),
 
           // Bouton Partager
-          IconButton(
-            icon: Icon(
-                Icons.share,
-                color: !hasAccess ? _twitterTextSecondary.withOpacity(0.3) : Colors.white,
-                size: 30
+          _isSharing
+              ? const SizedBox(
+            width: 40, // Ajustez selon la taille de vos boutons
+            height: 40,
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber), // ou votre couleur _afroTextSecondary
             ),
-            onPressed: hasAccess ? () async {
-              final AppLinkService _appLinkService = AppLinkService();
-              _appLinkService.shareContent(
-                type: AppLinkType.post,
-                id: widget.post.id!,
-                message: " ${widget.post.description}",
-                mediaUrl: widget.post.images!.isNotEmpty
-                    ? "${widget.post.images!}"
-                    : "",
-              );
-              await FirebaseFirestore.instance
-                  .collection('Posts')
-                  .doc(widget.post.id!)
-                  .update({
-                'partage': FieldValue.increment(1),
-              });
-              FeedInteractionService.onPostShared(widget.post, authProvider.loginUserData.id!);
-              addPointsForAction(UserAction.partagePost);
-            } : null,
+          )
+              :IconButton(
+            icon: Icon(Icons.share,
+                color: !hasAccess
+                    ? _twitterTextSecondary.withOpacity(0.3)
+                    : Colors.white,
+                size: 30),
+            onPressed: hasAccess
+                ? () async {
+              _handleShare();
+
+                  }
+                : null,
           ),
         ],
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final isLocked = _isLockedContent();
@@ -4535,7 +4591,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           }
 
           final updatedPost =
-          Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
+              Post.fromJson(snapshot.data!.data() as Map<String, dynamic>);
           updatedPost.user = widget.post.user;
           updatedPost.canal = widget.post.canal;
           if (_isLoadingAd) {
@@ -4549,96 +4605,96 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           return _isLoading
               ? Center(child: CircularProgressIndicator(color: Colors.yellow))
               : SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUserHeader(updatedPost),
-                SizedBox(height: 5),
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildUserHeader(updatedPost),
+                      SizedBox(height: 5),
 
-                _buildAdvertisementHeader(),
-                _buildAdvertisementActionButton(),
-                _buildPostContent(updatedPost),
+                      _buildAdvertisementHeader(),
+                      _buildAdvertisementActionButton(),
+                      _buildPostContent(updatedPost),
 
-                if (_isLookChallenge)
-                  _buildLookChallengeSection(updatedPost),
+                      if (_isLookChallenge)
+                        _buildLookChallengeSection(updatedPost),
 
-                // Bouton d'abonnement si contenu verrouillé
-                if (isLocked) _buildSubscribeButton(),
+                      // Bouton d'abonnement si contenu verrouillé
+                      if (isLocked) _buildSubscribeButton(),
 
-                SizedBox(height: 20),
-                Divider(color: Colors.grey[700]),
-                _buildStatsRow(updatedPost),
-                Divider(color: Colors.grey[700]),
-                _buildActionButtons(updatedPost),
+                      SizedBox(height: 20),
+                      Divider(color: Colors.grey[700]),
+                      _buildStatsRow(updatedPost),
+                      Divider(color: Colors.grey[700]),
+                      _buildActionButtons(updatedPost),
 
-                // Section des cadeaux récents
-                if (updatedPost.users_cadeau_id != null &&
-                    updatedPost.users_cadeau_id!.isNotEmpty &&
-                    _hasAccessToContent())
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Derniers cadeaux',
-                          style: TextStyle(
-                            color: Colors.yellow,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Container(
-                          height: 60,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount:
-                            updatedPost.users_cadeau_id!.length,
-                            itemBuilder: (context, index) {
-                              return FutureBuilder<DocumentSnapshot>(
-                                future: firestore
-                                    .collection('Users')
-                                    .doc(updatedPost
-                                    .users_cadeau_id![index])
-                                    .get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData &&
-                                      snapshot.data!.exists) {
-                                    var userData = UserData.fromJson(
-                                        snapshot.data!.data()
-                                        as Map<String, dynamic>);
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 10),
-                                      child: Column(
-                                        children: [
-                                          CircleAvatar(
-                                            backgroundImage: NetworkImage(
-                                                userData.imageUrl ?? ''),
-                                            radius: 15,
-                                          ),
-                                          SizedBox(height: 2),
-                                          Text('🎁',
-                                              style:
-                                              TextStyle(fontSize: 8)),
-                                        ],
-                                      ),
+                      // Section des cadeaux récents
+                      if (updatedPost.users_cadeau_id != null &&
+                          updatedPost.users_cadeau_id!.isNotEmpty &&
+                          _hasAccessToContent())
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Derniers cadeaux',
+                                style: TextStyle(
+                                  color: Colors.yellow,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              Container(
+                                height: 60,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount:
+                                      updatedPost.users_cadeau_id!.length,
+                                  itemBuilder: (context, index) {
+                                    return FutureBuilder<DocumentSnapshot>(
+                                      future: firestore
+                                          .collection('Users')
+                                          .doc(updatedPost
+                                              .users_cadeau_id![index])
+                                          .get(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData &&
+                                            snapshot.data!.exists) {
+                                          var userData = UserData.fromJson(
+                                              snapshot.data!.data()
+                                                  as Map<String, dynamic>);
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                                right: 10),
+                                            child: Column(
+                                              children: [
+                                                CircleAvatar(
+                                                  backgroundImage: NetworkImage(
+                                                      userData.imageUrl ?? ''),
+                                                  radius: 15,
+                                                ),
+                                                SizedBox(height: 2),
+                                                Text('🎁',
+                                                    style:
+                                                        TextStyle(fontSize: 8)),
+                                              ],
+                                            ),
+                                          );
+                                        }
+                                        return SizedBox();
+                                      },
                                     );
-                                  }
-                                  return SizedBox();
-                                },
-                              );
-                            },
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          );
+                );
         },
       ),
     );
@@ -4762,7 +4818,8 @@ class _FullScreenImageState extends State<FullScreenImage> {
                         imageUrl: images[index],
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(color: Colors.yellow),
+                          child:
+                              CircularProgressIndicator(color: Colors.yellow),
                         ),
                         errorWidget: (context, url, error) => Center(
                           child: Icon(
@@ -4830,7 +4887,8 @@ class _FullScreenImageState extends State<FullScreenImage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_left, color: Colors.white, size: 36),
+                    icon:
+                        Icon(Icons.chevron_left, color: Colors.white, size: 36),
                     onPressed: () {
                       _pageController.previousPage(
                         duration: Duration(milliseconds: 300),
@@ -4852,7 +4910,8 @@ class _FullScreenImageState extends State<FullScreenImage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_right, color: Colors.white, size: 36),
+                    icon: Icon(Icons.chevron_right,
+                        color: Colors.white, size: 36),
                     onPressed: () {
                       _pageController.nextPage(
                         duration: Duration(milliseconds: 300),
@@ -4868,4 +4927,3 @@ class _FullScreenImageState extends State<FullScreenImage> {
     );
   }
 }
-
