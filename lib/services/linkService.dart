@@ -239,8 +239,8 @@ class AppLinkService {
             "🎁 Code parrainage à l'inscription.";
 
       case AppLinkType.contentpaie:
-        return "🔥 Vends tes contenus sur AfroLook !\n"
-            "💰 Formation, Vidéo virale ou Livre : gagne jusqu'à 500 000 FCFA/mois !\n"
+        return "🔥 Vends tes contenus sur AfroLook !: "
+            "💰 Formation, Vidéo virale ou Livre - gagne jusqu'à 500 000 FCFA/mois !\n"
             "⚡️ Dès 100 vues, ton talent te rapporte de l'argent !";
 
       case AppLinkType.live:
@@ -250,8 +250,7 @@ class AppLinkService {
 
       case AppLinkType.post:
         return "📱 Publication sur AfroLook !\n"
-            "⚡️ 100 vues = Jusqu'à 25 000 FCFA/mois !\n"
-            "🎁 Utilise mon code de parrainage.";
+            "⚡️ 100 vues - Gagne Jusqu'à 25 000 FCFA/mois!";
 
       case AppLinkType.article:
         return "🛍️ Vends tes produits sur AfroLook !\n"
