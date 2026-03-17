@@ -234,25 +234,39 @@ class AppLinkService {
   String _getTypeMessage(AppLinkType type) {
     switch (type) {
       case AppLinkType.profil:
-        return "Découvre ce profil sur AfroLook ! Gagne de l'argent dès 100 vues. Utilise mon code de parrainage à l'inscription.";
+        return "🚀 Découvre ce profil sur AfroLook !\n"
+            "💰 À partir de 100 vues, gagne jusqu'à 25 000 FCFA/mois !\n"
+            "🎁 Code parrainage à l'inscription.";
 
       case AppLinkType.contentpaie:
-        return "Contenu exclusif sur AfroLook ! Gagne de l'argent dès 100 vues. Le réseau social africain qui paie.";
+        return "🔥 Vends tes contenus sur AfroLook !\n"
+            "💰 Formation, Vidéo virale ou Livre : gagne jusqu'à 500 000 FCFA/mois !\n"
+            "⚡️ Dès 100 vues, ton talent te rapporte de l'argent !";
 
       case AppLinkType.live:
-        return "Live en cours sur AfroLook ! Gagne de l'argent dès 100 viewers. Rejoins maintenant.";
+        return "🎥 Live en cours sur AfroLook !\n"
+            "💰 Gagne jusqu'à 30 000 FCFA/mois dès 100 viewers !\n"
+            "📱 Rejoins maintenant.";
 
       case AppLinkType.post:
-        return "Publication sur AfroLook ! 100 vues = argent gagné. Utilise mon code de parrainage.";
+        return "📱 Publication sur AfroLook !\n"
+            "⚡️ 100 vues = Jusqu'à 25 000 FCFA/mois !\n"
+            "🎁 Utilise mon code de parrainage.";
 
       case AppLinkType.article:
-        return "Article sur AfroLook ! Gagne dès 100 lectures. Le réseau qui valorise les talents africains.";
+        return "🛍️ Vends tes produits sur AfroLook !\n"
+            "💰 Jusqu'à 500 000 FCFA/mois de chiffre d'affaires !\n"
+            "📦 Mode, Beauté, Électronique, Alimentation... Tout se vend !";
 
       case AppLinkType.service:
-        return "Service sur AfroLook ! Monétise tes compétences dès 100 vues. Opportunités et revenus.";
+        return "💼 Service sur AfroLook !\n"
+            "💰 Monétise tes compétences : jusqu'à 100 000 FCFA/mois dès 100 vues !\n"
+            "🚀 Opportunités et revenus garantis.";
 
       default:
-        return "AfroLook - Le réseau social africain qui paie ton talent ! Gagne de l'argent dès 100 vues. Utilise mon code de parrainage.";
+        return "🌟 AfroLook - Le réseau social africain qui paie ton talent !\n"
+            "💰 À partir de 100 vues, gagne entre 15 000 et 100 000 FCFA/mois !\n"
+            "🎁 Utilise mon code de parrainage à l'inscription.";
     }
   }
   // Partage de lien

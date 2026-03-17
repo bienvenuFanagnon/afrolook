@@ -217,11 +217,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
       // Message court et accrocheur
       String shareMessage =
-          "🚀 @${widget.otherUser.pseudo} sur Afrolook !\n"
+          "🚀 @${widget.otherUser.pseudo} sur Afrolook !: "
           "👥 ${widget.otherUser.userAbonnesIds?.length ?? 0} followers, "
-          "❤️ ${_profileLikes  ?? 0} likes, "
-          "💰 Dès 100 vues, tu es rémunéré !\n"
-          "🎁 Utilise MON CODE à l'inscription: ${widget.otherUser.codeParrainage}\n"
+          "❤️ ${_profileLikes  ?? 0} likes.\n "
+          "💰 Dès 100 vues, tu es rémunéré (+25 000 FCFA/mois)!\n"
+          "🎁 Cliquez sur mon lien et utiliser MON CODE à l'inscription: ${widget.otherUser.codeParrainage}\n"
           "📱 Afrolook - Le réseau social qui paie ton talent";
 
       await appLinkService.shareProfil(
