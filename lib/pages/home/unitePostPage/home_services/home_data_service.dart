@@ -13,6 +13,7 @@ import 'package:afrotok/providers/chroniqueProvider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../chronique/chroniqueform.dart';
+import '../../../widgetGlobal.dart';
 
 class HomeDataService {
   // Providers
@@ -511,7 +512,7 @@ class HomeDataService {
 
   Future<AppDefaultData> _getAppData() async {
     try {
-      final appDataRef = FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      final appDataRef = FirebaseFirestore.instance.collection('AppData').doc(appId);
       final appDataSnapshot = await appDataRef.get();
 
       if (appDataSnapshot.exists) {

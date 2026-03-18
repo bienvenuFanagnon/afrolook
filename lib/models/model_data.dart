@@ -4478,7 +4478,7 @@ enum UserState { ONLINE, OFFLINE }
 
 enum MessageState { LU, NONLU }
 
-enum PostType { POST, PUB,ARTICLE,CHALLENGE,CHALLENGEPARTICIPATION,SERVICE }
+enum PostType { POST, PUB,ARTICLE,CHALLENGE,CHALLENGEPARTICIPATION,SERVICE,PRONOSTIC }
 
 enum PostDataType { IMAGE, VIDEO, TEXT, COMMENT, EBOOK, AUDIO }
 
@@ -5055,5 +5055,284 @@ class EncaissementDetails {
       'transactionSoldeId': transactionSoldeId,
       'commentaire': commentaire,
     };
+  }
+}
+
+
+
+// models/pronostic_models.dart
+
+// Modèle Équipe (simple, pour le stockage dans Pronostic)
+class Equipe {
+  String id;
+  String nom;
+  String urlLogo;
+
+  Equipe({
+    required this.id,
+    required this.nom,
+    required this.urlLogo,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nom': nom,
+      'urlLogo': urlLogo,
+    };
+  }
+
+  factory Equipe.fromJson(Map<String, dynamic> json) {
+    return Equipe(
+      id: json['id'] ?? '',
+      nom: json['nom'] ?? '',
+      urlLogo: json['urlLogo'] ?? '',
+    );
+  }
+}
+
+// Modèle Participation (pour chaque utilisateur qui pronostique)
+class ParticipationPronostic {
+  String userId;
+  String userPseudo;
+  String userImageUrl;
+  int scoreEquipeA;
+  int scoreEquipeB;
+  double montantPaye; // 0 si gratuit
+  DateTime dateParticipation;
+  bool estGagnant; // Sera mis à jour après distribution
+
+  ParticipationPronostic({
+    required this.userId,
+    required this.userPseudo,
+    required this.userImageUrl,
+    required this.scoreEquipeA,
+    required this.scoreEquipeB,
+    required this.montantPaye,
+    required this.dateParticipation,
+    this.estGagnant = false,
+  });
+
+  String get scoreKey => '$scoreEquipeA-$scoreEquipeB';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'userPseudo': userPseudo,
+      'userImageUrl': userImageUrl,
+      'scoreEquipeA': scoreEquipeA,
+      'scoreEquipeB': scoreEquipeB,
+      'montantPaye': montantPaye,
+      'dateParticipation': dateParticipation.microsecondsSinceEpoch,
+      'estGagnant': estGagnant,
+    };
+  }
+
+  factory ParticipationPronostic.fromJson(Map<String, dynamic> json) {
+    return ParticipationPronostic(
+      userId: json['userId'] ?? '',
+      userPseudo: json['userPseudo'] ?? '',
+      userImageUrl: json['userImageUrl'] ?? '',
+      scoreEquipeA: json['scoreEquipeA'] ?? 0,
+      scoreEquipeB: json['scoreEquipeB'] ?? 0,
+      montantPaye: (json['montantPaye'] ?? 0).toDouble(),
+      dateParticipation: json['dateParticipation'] != null
+          ? DateTime.fromMicrosecondsSinceEpoch(json['dateParticipation'])
+          : DateTime.now(),
+      estGagnant: json['estGagnant'] ?? false,
+    );
+  }
+}
+
+// Énumération des statuts du pronostic
+enum PronosticStatut {
+  OUVERT, // Les inscriptions sont ouvertes
+  EN_COURS, // Match en cours, plus de participations
+  TERMINE, // Match terminé, score saisi
+  GAINS_DISTRIBUES // Gains distribués aux gagnants
+}
+
+// Modèle principal Pronostic
+class Pronostic {
+  String id;
+  String postId; // Référence au Post principal
+  String createurId; // ID de l'utilisateur qui a créé le pronostic
+
+  // Équipes
+  Equipe equipeA;
+  Equipe equipeB;
+
+  // Configuration
+  String typeAcces; // "GRATUIT" ou "PAYANT"
+  double prixParticipation; // 0 si gratuit
+  double cagnotte; // Montant total en jeu
+  int quotaMaxParScore; // 10 comme demandé
+  PronosticStatut statut;
+  Post? post;
+
+  // Gestion des scores
+  Map<String, List<String>> participationsParScore; // "2-1" -> [userId1, userId2]
+  List<ParticipationPronostic> toutesParticipations; // Liste complète
+
+  // Score final
+  int? scoreFinalEquipeA;
+  int? scoreFinalEquipeB;
+
+  // Résultats
+  List<String> gagnantsIds;
+  double? gainParGagnant;
+
+  // Timestamps
+  DateTime dateCreation;
+  DateTime? dateDebutMatch; // Quand l'admin clique sur DÉMARRER
+  DateTime? dateFinMatch; // Quand l'admin clique sur TERMINER
+  DateTime? dateDistributionGains;
+
+  // Pour pagination/comptage
+  int nombreParticipants;
+  int nombrePronosticsUniques; // Nombre de scores différents
+
+  Pronostic({
+    required this.id,
+    required this.postId,
+    required this.createurId,
+    required this.equipeA,
+    required this.equipeB,
+    required this.typeAcces,
+    required this.prixParticipation,
+    required this.cagnotte,
+    this.quotaMaxParScore = 10,
+    required this.statut,
+    this.participationsParScore = const {},
+    this.toutesParticipations = const [],
+    this.scoreFinalEquipeA,
+    this.scoreFinalEquipeB,
+    this.gagnantsIds = const [],
+    this.gainParGagnant,
+    required this.dateCreation,
+    this.dateDebutMatch,
+    this.dateFinMatch,
+    this.dateDistributionGains,
+    this.nombreParticipants = 0,
+    this.nombrePronosticsUniques = 0,
+  });
+
+  // Vérifier si un score est disponible
+  bool isScoreDisponible(int scoreA, int scoreB) {
+    String key = '$scoreA-$scoreB';
+    List<String>? participants = participationsParScore[key];
+    return participants == null || participants.length < quotaMaxParScore;
+  }
+
+  // Vérifier si un utilisateur a déjà participé
+  bool aDejaParticipe(String userId) {
+    return toutesParticipations.any((p) => p.userId == userId);
+  }
+
+  // Obtenir le nombre de participants pour un score
+  int getNombreParticipantsPourScore(int scoreA, int scoreB) {
+    String key = '$scoreA-$scoreB';
+    return participationsParScore[key]?.length ?? 0;
+  }
+
+  // Vérifier si le pronostic est ouvert aux participations
+  bool get estOuvert => statut == PronosticStatut.OUVERT;
+
+  // Vérifier si le match est en cours
+  bool get estEnCours => statut == PronosticStatut.EN_COURS;
+
+  // Vérifier si le match est terminé
+  bool get estTermine => statut == PronosticStatut.TERMINE;
+
+  // Vérifier si les gains sont distribués
+  bool get gainsDistribues => statut == PronosticStatut.GAINS_DISTRIBUES;
+
+  // Obtenir le score final formaté
+  String? get scoreFinalFormate {
+    if (scoreFinalEquipeA != null && scoreFinalEquipeB != null) {
+      return '$scoreFinalEquipeA - $scoreFinalEquipeB';
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'postId': postId,
+      'createurId': createurId,
+      'equipeA': equipeA.toJson(),
+      'equipeB': equipeB.toJson(),
+      'typeAcces': typeAcces,
+      'prixParticipation': prixParticipation,
+      'cagnotte': cagnotte,
+      'quotaMaxParScore': quotaMaxParScore,
+      'statut': statut.name,
+      'participationsParScore': participationsParScore,
+      'toutesParticipations': toutesParticipations.map((p) => p.toJson()).toList(),
+      'scoreFinalEquipeA': scoreFinalEquipeA,
+      'scoreFinalEquipeB': scoreFinalEquipeB,
+      'gagnantsIds': gagnantsIds,
+      'gainParGagnant': gainParGagnant,
+      'dateCreation': dateCreation.microsecondsSinceEpoch,
+      'dateDebutMatch': dateDebutMatch?.microsecondsSinceEpoch,
+      'dateFinMatch': dateFinMatch?.microsecondsSinceEpoch,
+      'dateDistributionGains': dateDistributionGains?.microsecondsSinceEpoch,
+      'nombreParticipants': nombreParticipants,
+      'nombrePronosticsUniques': nombrePronosticsUniques,
+    };
+  }
+
+  factory Pronostic.fromJson(Map<String, dynamic> json) {
+    return Pronostic(
+      id: json['id'] ?? '',
+      postId: json['postId'] ?? '',
+      createurId: json['createurId'] ?? '',
+      equipeA: Equipe.fromJson(json['equipeA'] ?? {}),
+      equipeB: Equipe.fromJson(json['equipeB'] ?? {}),
+      typeAcces: json['typeAcces'] ?? 'GRATUIT',
+      prixParticipation: (json['prixParticipation'] ?? 0).toDouble(),
+      cagnotte: (json['cagnotte'] ?? 0).toDouble(),
+      quotaMaxParScore: json['quotaMaxParScore'] ?? 10,
+      statut: PronosticStatut.values.firstWhere(
+            (e) => e.name == json['statut'],
+        orElse: () => PronosticStatut.OUVERT,
+      ),
+      // CORRECTION ICI : Conversion explicite en List<String>
+      participationsParScore: (json['participationsParScore'] as Map<String, dynamic>?)?.map(
+              (key, value) => MapEntry(
+              key,
+              List<String>.from(value ?? [])
+          )
+      ) ?? {},
+
+      // CORRECTION ICI : Conversion explicite
+      toutesParticipations: (json['toutesParticipations'] as List? ?? [])
+          .map((p) => ParticipationPronostic.fromJson(p as Map<String, dynamic>))
+          .toList(),
+
+      scoreFinalEquipeA: json['scoreFinalEquipeA'],
+      scoreFinalEquipeB: json['scoreFinalEquipeB'],
+
+      // CORRECTION ICI
+      gagnantsIds: (json['gagnantsIds'] as List? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+
+      gainParGagnant: (json['gainParGagnant'] as num?)?.toDouble(),
+      dateCreation: json['dateCreation'] != null
+          ? DateTime.fromMicrosecondsSinceEpoch(json['dateCreation'])
+          : DateTime.now(),
+      dateDebutMatch: json['dateDebutMatch'] != null
+          ? DateTime.fromMicrosecondsSinceEpoch(json['dateDebutMatch'])
+          : null,
+      dateFinMatch: json['dateFinMatch'] != null
+          ? DateTime.fromMicrosecondsSinceEpoch(json['dateFinMatch'])
+          : null,
+      dateDistributionGains: json['dateDistributionGains'] != null
+          ? DateTime.fromMicrosecondsSinceEpoch(json['dateDistributionGains'])
+          : null,
+      nombreParticipants: json['nombreParticipants'] ?? 0,
+      nombrePronosticsUniques: json['nombrePronosticsUniques'] ?? 0,
+    );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -974,7 +975,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   Future<void> _getAppData() async {
     try {
-      final appDataRef = _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      final appDataRef = _firestore.collection('AppData').doc(appId);
       final appDataSnapshot = await appDataRef.get();
 
       if (appDataSnapshot.exists) {
@@ -2796,7 +2797,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
       await _firestore.collection('Posts').doc(post.id).delete();
       // 🔹 Retirer l'ID de allPostIds
-      final appDefaultRef = _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT'); // Remplace par ton docId réel
+      final appDefaultRef = _firestore.collection('AppData').doc(appId); // Remplace par ton docId réel
 
       await appDefaultRef.update({
         'allPostIds': FieldValue.arrayRemove([post.id]),

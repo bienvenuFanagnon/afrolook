@@ -43,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 149;
+  late int app_version_code = 150;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1253,132 +1253,6 @@ class UserAuthProvider extends ChangeNotifier {
     return listOSUserid;
   }
 
-  Future<void> sendPushNotificationToUsers2({
-    required UserData sender,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
-    bool isChannel = false,
-    String? channelTitle,
-    Canal? canal, // 🔹 Canal passé en paramètre
-  })
-  async {
-    try {
-      List<String> targetUserIds = [];
-
-      // 🔹 Étape 1 : Préparer les IDs
-      if (sender.role == UserRole.ADM.name) {
-        final allUsers = await getAllUsers();
-        targetUserIds = allUsers.map((u) => u.id!).toList();
-      } else {
-        if (sender.userAbonnesIds != null && sender.userAbonnesIds!.isNotEmpty) {
-          targetUserIds.addAll(sender.userAbonnesIds!);
-        }
-
-        if (isChannel && canal != null && canal.usersSuiviId != null) {
-          targetUserIds.addAll(canal.usersSuiviId!);
-        }
-        if (isChannel && canal != null && canal.subscribersId != null) {
-          targetUserIds.addAll(canal.subscribersId!);
-        }
-      }
-
-      targetUserIds = targetUserIds.toSet().toList();
-
-      if (targetUserIds.isEmpty) {
-        print("📭 Aucun utilisateur cible trouvé.");
-        return;
-      }
-
-      // 🔹 Étape 2 : Récupérer les objets UserData
-      List<UserData> targets = await getUsersByIds(targetUserIds);
-
-      // 🔹 Étape 3 : Filtrer et envoyer notifications
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final notifcurrentTime = DateTime.now().microsecondsSinceEpoch;
-      const oneHour = 60 * 60 * 1000;
-      final List<String> validUserIds = [];
-
-      final firestore = FirebaseFirestore.instance;
-      // 🔹 Étape 4 : Déterminer le nom d’expéditeur pour OneSignal
-      String appName = (isChannel && channelTitle != null && channelTitle.isNotEmpty)
-          ? "#$channelTitle"
-          : "@${sender.pseudo}";
-
-      // 🔹 Enregistrer notification objet dans Firestore
-      final truncatedMessage =
-      message.length > 200 ? message.substring(0, 200) : message;
-
-
-      for (final user in targets) {
-        final lastNotif = user.lastNotificationTime ?? 0;
-        final timeSinceLast = currentTime - lastNotif;
-        final canReceive = sender.role == 'ADM' || timeSinceLast >= oneHour;
-
-
-        final notifId = firestore.collection('Notifications').doc().id;
-
-        final notification = NotificationData(
-          id: notifId,
-          titre: "${appName} a posté",
-          media_url: isChannel?canal!.urlImage: sender.imageUrl,
-          type: NotificationType.POST.name,
-          description:"a posté: $truncatedMessage" ,
-          user_id: sender.id,
-          receiver_id: user.id,
-          post_id: postId ?? "",
-          post_data_type: postType ?? "",
-          createdAt: notifcurrentTime,
-          updatedAt: notifcurrentTime,
-          status: PostStatus.VALIDE.name,
-          canal_id: isChannel ? canal?.id : null, // 🔹 Ajouter canal_id si canal
-        );
-
-        await firestore.collection('Notifications').doc(notifId).set(notification.toJson());
-        printVm('Notification firebase success');
-        printVm('Notification firebase success ${notification.toJson()}');
-        if (canReceive &&
-            user.oneIgnalUserid != null &&
-            user.oneIgnalUserid!.isNotEmpty &&
-            user.oneIgnalUserid!.length > 5) {
-
-          validUserIds.add(user.oneIgnalUserid!);
-          await updateUserLastNotifTime(user.id!, currentTime);
-
-
-        }
-      }
-
-      if (validUserIds.isEmpty) {
-        print("📭 Aucun utilisateur éligible à recevoir la notification.");
-        return;
-      }
-
-
-
-      // 🔹 Étape 5 : Envoyer la push notification
-      await sendNotification(
-        appName: appName,
-        userIds: validUserIds,
-        smallImage: smallImage ?? "",
-        send_user_id: sender.id!,
-        recever_user_id: "",
-        message: message,
-        type_notif: typeNotif,
-        post_id: postId ?? "",
-        post_type: postType ?? "",
-        chat_id: chatId ?? "",
-      );
-
-      print("✅ Notification envoyée et enregistrée pour ${validUserIds.length} utilisateurs !");
-    } catch (e) {
-      print("❌ Erreur lors de l’envoi de la notification : $e");
-    }
-  }
-
   Future<void> sendPushNotificationToUsers({
     required UserData sender,
     required String message,
@@ -1390,7 +1264,8 @@ class UserAuthProvider extends ChangeNotifier {
     bool isChannel = false,
     String? channelTitle,
     Canal? canal,
-  }) async {
+  })
+  async {
     try {
       // 🔹 Étape 1 : Préparer les IDs cibles
       List<String> targetUserIds = [];
@@ -1495,6 +1370,88 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> sendPushToSpecificUsers({
+    required List<String> userIds,
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+  }) async {
+    try {
+      if (userIds.isEmpty) {
+        print("📭 Aucun utilisateur cible.");
+        return;
+      }
+
+      // 🔹 Nettoyage des doublons
+      final targetUserIds = userIds.toSet().toList();
+
+      final appName = "@${sender.pseudo}";
+
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final notifTime = DateTime.now().microsecondsSinceEpoch;
+      final oneHour = 60 * 60 * 1000;
+
+      final List<String> validOneSignalIds = [];
+
+      const batchSize = 100;
+
+      for (var i = 0; i < targetUserIds.length; i += batchSize) {
+        final end = i + batchSize > targetUserIds.length
+            ? targetUserIds.length
+            : i + batchSize;
+
+        final batchIds = targetUserIds.sublist(i, end);
+
+        final usersBatch = await getUsersByIds(batchIds);
+
+        final batchResults = await Future.wait(
+          usersBatch.map((user) => _processUserNotification(
+            user: user,
+            sender: sender,
+            appName: appName,
+            isChannel: false,
+            canal: null,
+            truncatedMessage: message,
+            postId: postId,
+            postType: postType,
+            notifTime: notifTime,
+            currentTime: currentTime,
+            oneHour: oneHour,
+            smallImage: smallImage,
+          )),
+        );
+
+        for (final result in batchResults) {
+          if (result.isValid) {
+            validOneSignalIds.add(result.oneSignalId);
+          }
+        }
+      }
+
+      // 🔥 Envoi direct push
+      if (validOneSignalIds.isNotEmpty) {
+        await _sendPushNotificationNow(
+          appName: appName,
+          userIds: validOneSignalIds,
+          smallImage: smallImage ?? sender.imageUrl ?? "",
+          senderId: sender.id!,
+          message: message,
+          typeNotif: typeNotif,
+          postId: postId,
+          postType: postType,
+          chatId: chatId,
+        );
+      }
+
+      print("✅ Push envoyée à ${targetUserIds.length} utilisateurs !");
+    } catch (e) {
+      print("❌ Erreur envoi push : $e");
+    }
+  }
 // 🔹 Fonction helper pour traiter un utilisateur
   Future<_UserNotificationResult> _processUserNotification({
     required UserData user,
@@ -1509,7 +1466,8 @@ class UserAuthProvider extends ChangeNotifier {
     required int currentTime,
     required int oneHour,
     required String? smallImage,
-  }) async {
+  })
+  async {
     try {
       final lastNotif = user.lastNotificationTime ?? 0;
       final timeSinceLast = currentTime - lastNotif;
@@ -1564,7 +1522,8 @@ class UserAuthProvider extends ChangeNotifier {
     required String? postType,
     required int notifTime,
     required String? smallImage,
-  }) async {
+  })
+  async {
     try {
       final firestore = FirebaseFirestore.instance;
       final notifId = firestore.collection('Notifications').doc().id;

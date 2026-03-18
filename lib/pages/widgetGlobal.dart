@@ -14,6 +14,7 @@ final Color _textColor = Colors.white;
 final Color _hintColor = Colors.grey[400]!;
 final Color _successColor = Color(0xFF4CAF50);
 final Color _audioColor = Color(0xFF2196F3);
+final String appId = 'XgkSxKc10vWsJJ2uBraT';
 
 Future<void> showInstallModal(BuildContext context) async {
   if (!kIsWeb) return;

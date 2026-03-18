@@ -65,6 +65,7 @@ import 'package:afrotok/providers/crypto_portfolio_controller.dart';
 import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
+import 'package:afrotok/providers/pronostic_provider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/LocalNotifications.dart';
@@ -176,61 +177,6 @@ Future<void> main() async {
   }
 
   runApp(const MyApp());
-}
-Future<void> migratePostsCountries() async {
-  try {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-    // Récupérer UNIQUEMENT les posts avec is_available_in_all_countries = true
-    final postsSnapshot = await _firestore
-        .collection('Posts')
-        .where('is_available_in_all_countries', isEqualTo: true)
-        .get();
-
-    int totalPosts = postsSnapshot.docs.length;
-    int updatedCount = 0;
-
-    print("🚀 Début de la migration de $totalPosts posts avec is_available_in_all_countries = true...");
-
-    if (totalPosts == 0) {
-      print("✅ Aucun post à migrer");
-      return;
-    }
-
-    // Liste de tous les codes pays
-    List<String> allCountryCodes = AfricanCountry.allCountries
-        .map((country) => country.code)
-        .toList();
-
-    // Traitement par lots de 500 (limite Firestore)
-    for (var i = 0; i < postsSnapshot.docs.length; i += 500) {
-      final batch = _firestore.batch();
-      int end = (i + 500 < postsSnapshot.docs.length) ? i + 500 : postsSnapshot.docs.length;
-
-      for (var j = i; j < end; j++) {
-        final doc = postsSnapshot.docs[j];
-
-        // Mettre à jour le post
-        batch.update(doc.reference, {
-          'available_countries': allCountryCodes,
-          'is_available_in_all_countries': false, // Désactiver l'ancien champ
-        });
-
-        updatedCount++;
-        print("✅ Post ${doc.id} migré");
-      }
-
-      // Exécuter le batch
-      await batch.commit();
-      print("📦 Lot ${i ~/ 500 + 1} traité avec succès (${end - i} posts)");
-    }
-
-    print("🎉 Migration terminée !");
-    print("📊 Total posts migrés: $updatedCount");
-
-  } catch (e) {
-    print("❌ Erreur lors de la migration: $e");
-  }
 }
 
 class MyApp extends StatefulWidget {
@@ -444,6 +390,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
+        ChangeNotifierProvider(create: (_) => PronosticProvider()),
         // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),

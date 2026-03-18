@@ -19,6 +19,7 @@ import '../models/chatmodels/message.dart';
 
 import '../pages/component/consoleWidget.dart';
 import '../pages/userPosts/postColorsWidget.dart';
+import '../pages/widgetGlobal.dart';
 import '../services/auth/authService.dart';
 import 'authProvider.dart';
 
@@ -764,7 +765,7 @@ class PostProvider extends ChangeNotifier {
 
     try {
       final appDefaultRef =
-      FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+      FirebaseFirestore.instance.collection('AppData').doc(appId);
       // 🔹 remplace 'main' par l’ID de ton document AppDefaultData
 
       await appDefaultRef.update({

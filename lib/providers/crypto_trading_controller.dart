@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/crypto_model.dart';
+import '../pages/widgetGlobal.dart';
 
 
 // ✅ CLASSES POUR LA SÉCURITÉ
@@ -584,7 +585,7 @@ class CryptoTradingProvider with ChangeNotifier {
         });
 
         // Commission
-        final appDefaultRef = _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+        final appDefaultRef = _firestore.collection('AppData').doc(appId);
         transaction.update(appDefaultRef, {
           'solde_commission_crypto': FieldValue.increment(commission),
         });
@@ -750,7 +751,7 @@ class CryptoTradingProvider with ChangeNotifier {
         });
 
         // Commission
-        final appDefaultRef = _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+        final appDefaultRef = _firestore.collection('AppData').doc(appId);
         transaction.update(appDefaultRef, {
           'solde_commission_crypto': FieldValue.increment(commission),
         });

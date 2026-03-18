@@ -32,6 +32,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../listeUserLikepage.dart';
+import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/banner_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
@@ -1715,7 +1716,8 @@ printVm("_currentFilter data: ${_currentFilter}");
             ),
 
             // Contenu du post
-            post.type == PostType.CHALLENGEPARTICIPATION.name
+            post.type == PostType.PRONOSTIC.name?SizedBox.shrink():  post.type == PostType.CHALLENGEPARTICIPATION.name
+
                 ? LookChallengePostWidget(post: post, height: height, width: width)
                 : HomePostUsersWidget(
               post: post,
@@ -2304,7 +2306,10 @@ printVm("_currentFilter data: ${_currentFilter}");
     int postIndex = 0;
     for (int i = 0; i < _posts.length; i++) {
       final post = _posts[i];
-
+      if (postIndex == 0) {
+        contentWidgets.add( const PronosticsCarouselWidget(),);
+        // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+      }
       // Ajouter le post
       contentWidgets.add(
         GestureDetector(
@@ -2317,14 +2322,16 @@ printVm("_currentFilter data: ${_currentFilter}");
 
       // 🔴 AJOUT DES BANNIÈRES ADMOB
       // Après le PREMIER post (postIndex == 1)
-      if (postIndex == 1) {
+      if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
       }
 
       // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
       if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
-        contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+
+        // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
       }
 
       // Garder vos sections spéciales existantes

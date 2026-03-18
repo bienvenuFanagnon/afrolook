@@ -22,6 +22,7 @@ import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
+import '../../pronostics/admin_pronostics_page.dart';
 import '../../tiktokProjet/userTiktokVide.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
@@ -517,7 +518,8 @@ class _UserProfilState extends State<UserProfil> {
                         ],
                       ),
                       SizedBox(height: 15),
-                    ],       if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
+                    ],
+                    if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
@@ -529,10 +531,19 @@ class _UserProfilState extends State<UserProfil> {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdvertisementManagementPage()));
                             },
                           ),
+                          _buildMenuButton(
+                            icon: MaterialIcons.sports_soccer,
+                            label: "Pronostique",
+                            color: Colors.green,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPronosticsPage()));
+                            },
+                          ),
 
                         ],
                       ),
                       SizedBox(height: 15),
+
                     ],
 
                   ],

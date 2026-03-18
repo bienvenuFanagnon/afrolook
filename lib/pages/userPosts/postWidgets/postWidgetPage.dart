@@ -36,6 +36,7 @@ import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideoListe.dart';
+import '../../widgetGlobal.dart';
 
 
 // Couleurs style Twitter Dark Mode
@@ -2588,7 +2589,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   // Méthode pour supprimer un post
   Future<void> _deletePost(Post post) async {
     final firestore = FirebaseFirestore.instance;
-    final appDefaultRef = firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+    final appDefaultRef = firestore.collection('AppData').doc(appId);
 
     try {
       // 🔹 Supprimer le post de Firestore

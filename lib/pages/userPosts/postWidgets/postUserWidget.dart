@@ -41,6 +41,7 @@ import '../../postDetails.dart';
 import '../../socialVideos/afrolive/afrolookLive.dart';
 import '../../user/conponent.dart';
 import '../../user/otherUser/otherUser.dart';
+import '../../widgetGlobal.dart';
 String formatNumber(int number) {
   if (number >= 1000) {
     double nombre = number / 1000;
@@ -70,7 +71,7 @@ Future<void> deletePost(Post post, BuildContext context) async {
         .delete();
 
     // 🔹 Retirer l'ID de allPostIds
-    final appDefaultRef = FirebaseFirestore.instance.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT'); // Remplace par ton docId réel
+    final appDefaultRef = FirebaseFirestore.instance.collection('AppData').doc(appId); // Remplace par ton docId réel
 
     await appDefaultRef.update({
       'allPostIds': FieldValue.arrayRemove([post.id]),

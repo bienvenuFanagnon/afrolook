@@ -477,7 +477,7 @@ class _PostCommentsState extends State<PostComments> {
     final post = widget.post;
     final isCanal = post.canal != null;
 
-    return Container(
+    return post.user==null?SizedBox.shrink(): Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1454,7 +1454,10 @@ class _PostCommentsState extends State<PostComments> {
         );
 
         success = await postProvider.newComment(comment);
-        receiverId = widget.post.user!.id!;
+        if(widget.post.user!=null){
+          receiverId = widget.post.user!.id!;
+
+        }
         action = "commenté votre publication";
       }
 
@@ -1465,10 +1468,12 @@ class _PostCommentsState extends State<PostComments> {
             .update({
           "comments": FieldValue.increment(1),
         });
+        if(widget.post.user!=null){
+          // Envoyer notification au propriétaire du commentaire/post
+          await _sendCommentNotification(receiverId, action, textComment);
 
-        // Envoyer notification au propriétaire du commentaire/post
-        await _sendCommentNotification(receiverId, action, textComment);
 
+        }
         // Envoyer notifications pour les mentions
         await _sendMentionNotifications(textComment);
       }
@@ -1543,7 +1548,10 @@ class _PostCommentsState extends State<PostComments> {
         );
 
         success = await postProvider.newComment(comment);
-        receiverId = widget.post.user!.id!;
+        if(widget.post.user!=null){
+          receiverId = widget.post.user!.id!;
+
+        }
         action = "commenté votre publication";
 
         // Ajouter localement immédiatement
@@ -1560,10 +1568,12 @@ class _PostCommentsState extends State<PostComments> {
         //   "comments": FieldValue.increment(1),
         // });
         FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
+if(widget.post.user!=null){
+  // Envoyer notification au propriétaire du commentaire/post
+  await _sendCommentNotification(receiverId, action, textComment);
 
-        // Envoyer notification au propriétaire du commentaire/post
-        await _sendCommentNotification(receiverId, action, textComment);
 
+}
         // Envoyer notifications pour les mentions
         await _sendMentionNotifications(textComment);
         authProvider.checkAndRefreshPostDates(widget.post.id!);

@@ -7,6 +7,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/paiement/newDepot.dart';
+import '../pages/widgetGlobal.dart';
 import 'authProvider.dart';
 
 class ContentProvider with ChangeNotifier {
@@ -834,7 +835,7 @@ class ContentProvider with ChangeNotifier {
         final userRef = _firestore.collection('Users').doc(currentUser.id);
         final ownerRef = _firestore.collection('Users').doc(contentPaie.ownerId);
         final appDataRef =
-        _firestore.collection('AppData').doc('XgkSxKc10vWsJJ2uBraT');
+        _firestore.collection('AppData').doc(appId);
 
         // 🔹 Débiter l'acheteur
         transaction.update(userRef, {

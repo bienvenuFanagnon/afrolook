@@ -62,6 +62,7 @@ import '../contenuPayant/TableauDeBord.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cryptoMarket/cryptoMarketpage.dart';
+import '../pronostics/pronostics_feed_page.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../userPosts/favorites_posts.dart';
@@ -456,6 +457,22 @@ class _MyHomePageState extends State<MyHomePage>
 
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => UserClassement(),
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Pronostics & Betting",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => PronosticsFeedPage(),
                       ));
                     },
                   ),
