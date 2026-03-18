@@ -93,7 +93,7 @@ class AppLinkService {
     print('Lien reçu (initial: $isInitial): $uri');
 
     // Vérifier le domaine et le préfixe
-    if (uri.host == 'afrolooki.web.app' && uri.path.startsWith('/share')) {
+    if (uri.host == '$domaineName' && uri.path.startsWith('/share')) {
       final segments = uri.pathSegments;
 
       if (segments.length >= 2) {
@@ -144,10 +144,12 @@ class AppLinkService {
         return AppLinkType.unknown;
     }
   }
+  // final domaineName = 'https://afrolooki.web.app';
+  final domaineName = 'https://afrolookmedia.com';
   // Génération des liens de partage
   String generateLink(AppLinkType type, String id, {Map<String, String>? params}) {
     // final baseUrl = 'https://afrolookmedia.com/share';
-    final baseUrl = 'https://afrolooki.web.app/share';
+    final baseUrl = '$domaineName/share';
     final typePath = getTypePath(type);
 
     var link = '$baseUrl/$typePath/$id';

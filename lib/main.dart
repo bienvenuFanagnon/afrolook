@@ -377,11 +377,27 @@ class _MyAppState extends State<MyApp> {
     _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {
       if (uri != null) {
         final segments = uri.pathSegments;
+        // if (segments.length >= 3 && segments[0] == 'share') {
+        //   final typeStr = segments[1];
+        //   final id = segments[2];
+        //   print("Type1: $typeStr");
+        //   print("ID: $id");
+        //   _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
+        // }
         if (segments.length >= 3 && segments[0] == 'share') {
+          // Nettoie l'ID en enlevant tout ce qui vient après ? ou #
+          String rawId = segments[2];
+
+          // Supprime les paramètres de requête (tout ce qui suit ? ou #)
+          final cleanId = rawId.split('?')[0].split('#')[0];
+
           final typeStr = segments[1];
-          final id = segments[2];
+          final id = cleanId; // Utilise l'ID nettoyé
+
           print("Type1: $typeStr");
-          print("ID: $id");
+          print("ID original: $rawId");
+          print("ID nettoyé: $id");
+
           _appLinkService.handleNavigation(navigatorKey.currentContext!, id, typeStr);
         }
       }
