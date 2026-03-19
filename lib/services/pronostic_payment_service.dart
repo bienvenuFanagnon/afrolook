@@ -62,8 +62,8 @@ class PronosticPaymentService {
         });
 
         // 4. Créditer le solde de l'application (cagnotte)
-        String appDataId = await _getAppDataId();
-        DocumentReference appDataRef = _firestore.collection('AppData').doc(appDataId);
+        String? appDataId = await _getAppDataId();
+        DocumentReference appDataRef = _firestore.collection('AppData').doc(appDataId!);
 
         transaction.set(appDataRef, {
           'solde_gain': FieldValue.increment(montant),
@@ -86,9 +86,100 @@ class PronosticPaymentService {
       return false;
     }
   }
-
-  // Créditer les gagnants
+// Créditer les gagnants
   Future<bool> crediterGagnants({
+    required Pronostic pronostic,
+    required List<String> gagnantsIds,
+    required double montantParGagnant,
+    required UserAuthProvider authProvider,
+  }) async {
+    try {
+      // ✅ 1. Vérification
+      if (gagnantsIds.isEmpty) {
+        print('Aucun gagnant à créditer');
+        return false;
+      }
+
+      // 🔹 Supprimer doublons
+      final uniqueIds = gagnantsIds.toSet().toList();
+
+      // ✅ 2. TRANSACTION (UNIQUEMENT FIRESTORE)
+      bool success = await _firestore.runTransaction<bool>((transaction) async {
+        for (String userId in uniqueIds) {
+          if (userId.isEmpty) continue;
+
+          DocumentReference userRef =
+          _firestore.collection('Users').doc(userId);
+
+          // 🔥 Pas besoin de get → on utilise increment (safe)
+          transaction.update(userRef, {
+            'votre_solde_principal':
+            FieldValue.increment(montantParGagnant),
+          });
+        }
+
+        return true;
+      });
+
+      if (!success) return false;
+
+      print("✅ Soldes crédités avec succès");
+
+      // ✅ 3. CRÉER LES TRANSACTIONS (hors transaction Firestore)
+      await Future.wait(
+        uniqueIds.map((userId) => _createTransaction(
+          TypeTransaction.GAIN.name,
+          montantParGagnant,
+          'Gain pronostic: ${pronostic.equipeA.nom} vs ${pronostic.equipeB.nom}',
+          userId,
+          postId: pronostic.postId,
+          pronosticId: pronostic.id,
+        )),
+      );
+
+      print("✅ Transactions enregistrées");
+
+      // ✅ 4. ENVOI NOTIFICATION
+      final message =
+          "🎉 Félicitations ! Vous faites partie des gagnants du pronostic ⚽\n"
+          "💰 Votre compte a été crédité de ${montantParGagnant.toStringAsFixed(0)} FCFA.\n"
+          "🚀 Continuez à jouer sur AfroLook !";
+
+      await authProvider.sendPushToSpecificUsers(
+        userIds: uniqueIds,
+        sender: authProvider.loginUserData,
+        message: message,
+        typeNotif: NotificationType.GAIN.name,
+        postId: pronostic.postId,
+        postType: 'PRONOSTIC',
+        chatId: '',
+      );
+
+      print("✅ Notifications envoyées");
+
+      return true;
+    } catch (e, stack) {
+      print('❌ Erreur lors du crédit des gains: $e');
+      print('Stack trace: $stack');
+      return false;
+    }
+  }
+
+// ✅ Améliorer _getAppDataId()
+  Future<String?> _getAppDataId() async {
+    try {
+      var snapshot = await _firestore.collection('AppData').limit(1).get();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.id;
+      }
+      return null;
+    } catch (e) {
+      print('Erreur dans _getAppDataId: $e');
+      return null;
+    }
+  }
+  // Créditer les gagnants
+  Future<bool> crediterGagnants2({
     required Pronostic pronostic,
     required List<String> gagnantsIds,
     required double montantParGagnant,
@@ -96,13 +187,13 @@ class PronosticPaymentService {
   }) async {
     try {
       bool success = await _firestore.runTransaction<bool>((transaction) async {
-        String appDataId = await _getAppDataId();
-        DocumentReference appDataRef = _firestore.collection('AppData').doc(appDataId);
-
-        DocumentSnapshot appDataSnapshot = await transaction.get(appDataRef);
-        double soldeApp = (appDataSnapshot.get('solde_gain') ?? 0).toDouble();
-
-        double totalADebiter = montantParGagnant * gagnantsIds.length;
+        // String appDataId = await _getAppDataId();
+        // DocumentReference appDataRef = _firestore.collection('AppData').doc(appDataId);
+        //
+        // DocumentSnapshot appDataSnapshot = await transaction.get(appDataRef);
+        // double soldeApp = (appDataSnapshot.get('solde_gain') ?? 0).toDouble();
+        //
+        // double totalADebiter = montantParGagnant * gagnantsIds.length;
 
         // if (soldeApp < totalADebiter) {
         //   throw Exception('Fonds insuffisants dans l\'application');
@@ -144,7 +235,7 @@ class PronosticPaymentService {
             "💰 Votre compte a été crédité de ${montantParGagnant.toStringAsFixed(0)} FCFA.\n"
             "🚀 Continuez à jouer sur AfroLook !";
 
-        await authProvider.sendPushToSpecificUsers(
+         authProvider.sendPushToSpecificUsers(
           userIds: gagnantsIds,
           sender: authProvider.loginUserData,
           message: message,
@@ -163,7 +254,7 @@ class PronosticPaymentService {
   }
 
   // Récupérer l'ID de AppData
-  Future<String> _getAppDataId() async {
+  Future<String> _getAppDataId2() async {
     // À adapter selon votre logique
     // Peut-être stocké dans authProvider ou ailleurs
     return appId; // À remplacer

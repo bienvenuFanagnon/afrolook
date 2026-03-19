@@ -2328,11 +2328,11 @@ printVm("_currentFilter data: ${_currentFilter}");
       }
 
       // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
-      if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
-        contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-
-        // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
-      }
+      // if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
+      //   contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+      //
+      //   // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+      // }
 
       // Garder vos sections spéciales existantes
       if (postIndex % 3 == 0) {

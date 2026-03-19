@@ -63,7 +63,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
           IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => UserRetraitPage()),
               );

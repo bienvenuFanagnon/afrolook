@@ -643,7 +643,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '+${_formatMontant(tx['montant'] ?? 0)}',
+                '+${_formatMontant((tx['montant'] as num).toDouble())}',
                 style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
               ),
               Text(
@@ -703,7 +703,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> with Sing
                   border: Border.all(color: Colors.green.withOpacity(0.3)),
                 ),
                 child: Text(
-                  '+${_formatMontant(tx['montant'] ?? 0)}',
+                  '+${_formatMontant((tx['montant'] as num).toDouble())}',
                   style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
               ),

@@ -277,8 +277,8 @@ class RemunerationService {
           ..description = 'Encaissement de $montantTotal FCFA (${gainsParPost.length} posts)'
           ..montant = montantTotal
           ..methode_paiement = "solde_principal"
-          ..createdAt = DateTime.now().microsecondsSinceEpoch
-          ..updatedAt = DateTime.now().microsecondsSinceEpoch;
+          ..createdAt = DateTime.now().millisecondsSinceEpoch
+          ..updatedAt = DateTime.now().millisecondsSinceEpoch;
 
         transaction.set(
             _firestore.collection('TransactionSoldes').doc(transactionDoc.id!),
@@ -290,7 +290,7 @@ class RemunerationService {
         transaction.update(userRef, {
           'votre_solde_principal': FieldValue.increment(montantTotal),
           'votre_solde': FieldValue.increment(montantTotal),
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
+          // 'updatedAt': DateTime.now().microsecondsSinceEpoch,
         });
 
         return transactionDoc.id!;

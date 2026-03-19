@@ -4505,7 +4505,7 @@ enum NotificationType {
   CHALLENGE,
   CHRONIQUE,
   SERVICE,
-  USER
+  USER, GAIN
 }
 
 enum TypeEntreprise { personnel, partenaire }

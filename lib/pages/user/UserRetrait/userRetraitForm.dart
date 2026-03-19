@@ -117,7 +117,7 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
           ),
           SizedBox(height: 8),
           Text(
-            'Solde minimum de retrait: 1 000 FCFA',
+            'Solde minimum de retrait: 2 500 FCFA',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 12,
@@ -170,8 +170,8 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
               return 'Veuillez entrer un montant';
             }
             final montant = double.tryParse(value);
-            if (montant == null || montant < 1000) {
-              return 'Le montant minimum est de 1 000 FCFA';
+            if (montant == null || montant < 2500) {
+              return 'Le montant minimum est de 2 500 FCFA';
             }
             return null;
           },

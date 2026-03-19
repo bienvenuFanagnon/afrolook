@@ -871,7 +871,8 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                 }
 
                 if (context.mounted) {
-                  Navigator.pop(context); // Fermer le dialog de traitement
+                  Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('✅ Match démarré pour ${pronostic.equipeA.nom} vs ${pronostic.equipeB.nom}'),
@@ -881,7 +882,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  Navigator.pop(context);
+                  Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('❌ Erreur: $e'),
@@ -1117,7 +1118,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                     );
 
                     if (context.mounted) {
-                      Navigator.pop(context);
+                      Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('✅ Score mis à jour: $scoreA - $scoreB'),
@@ -1127,7 +1128,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      Navigator.pop(context);
+                      Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ Erreur: $e'),
@@ -1272,7 +1273,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                     );
 
                     if (context.mounted) {
-                      Navigator.pop(context);
+                      Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('✅ Match terminé: $scoreA - $scoreB'),
@@ -1282,7 +1283,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      Navigator.pop(context);
+                      Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ Erreur: $e'),
@@ -1410,7 +1411,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                   );
 
                   if (context.mounted) {
-                    Navigator.pop(context);
+                    Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -1423,11 +1424,12 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                     );
                   }
                 } else {
+
                   throw Exception('Échec du paiement');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  Navigator.pop(context);
+                  Navigator.of(context, rootNavigator: true).pop(); // 🔥 ferme le loader
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('❌ Erreur: $e'),
@@ -1452,6 +1454,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (context) => const Center(
         child: CircularProgressIndicator(),
       ),
@@ -1459,12 +1462,6 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
       // Optionnel: code à exécuter après la fermeture du dialog
     });
 
-    // Fermer automatiquement après 1 seconde
-    Future.delayed(const Duration(seconds: 1), () {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-    });
   }
   Widget _buildInfoRow(String label, String value, Color valueColor) {
     return Padding(
