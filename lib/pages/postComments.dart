@@ -1438,7 +1438,8 @@ class _PostCommentsState extends State<PostComments> {
         success = await postProvider.updateComment(commentSelectedToReply);
         receiverId = replyUser_id;
         action = "répondu à votre commentaire";
-      } else {
+      }
+      else {
         final comment = PostComment(
           user_id: authProvider.loginUserData.id,
           user: authProvider.loginUserData,
@@ -1468,6 +1469,17 @@ class _PostCommentsState extends State<PostComments> {
             .update({
           "comments": FieldValue.increment(1),
         });
+        await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+
+        authProvider. notifySubscribersOfInteraction(
+          actionUserId: authProvider.loginUserData.id!,
+          postOwnerId: widget.post.user_id!,
+          postId: widget.post.id!,
+          actionType: 'comment',
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.images?.first,
+          postDataType: widget.post.dataType,
+        );
         if(widget.post.user!=null){
           // Envoyer notification au propriétaire du commentaire/post
           await _sendCommentNotification(receiverId, action, textComment);

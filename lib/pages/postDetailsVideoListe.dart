@@ -231,9 +231,12 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   @override
   void initState() {
     super.initState();
+
     // 🔥 NOUVEAU : Initialiser SharedPreferences
     _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadPostRelations();
     _pageController = PageController();
@@ -2217,6 +2220,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ],
+          ),
+          // Vue
+          Column(
+            children: [
+              IconButton(
+                icon: Icon(Icons.bar_chart, color: Colors.blue, size: 35),
+                onPressed: hasAccess ? () {} : null,
+              ),
+              Text(
+                _formatCount(post.totalInteractions ?? 0),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),    // Vue
           Column(
             children: [
@@ -2255,7 +2271,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   // ==================== MÉTHODES D'INTERACTION ====================
 
-  Future<void> _handleLike(Post post) async {
+  Future<void> _handleLike2(Post post) async {
     try {
       if (!post.users_love_id!.contains(authProvider.loginUserData.id)) {
         await _firestore.collection('Posts').doc(post.id).update({
@@ -2275,7 +2291,120 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
+  Future<void> _handleLike(Post post) async {
+    try {
+      if (!post.users_love_id!.contains(authProvider.loginUserData.id)) {
+        // ✅ Mise à jour du post (toujours effectuée)
+        await _firestore.collection('Posts').doc(post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
+        });
+
+        await postProvider.interactWithPostAndIncrementSolde(
+            post.id!,
+            authProvider.loginUserData.id!,
+            "like",
+            post.user_id!
+        );
+
+        // ✅ Récupérer l'utilisateur qui a créé le post
+        final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
+
+          // ✅ Récupérer le dernier timestamp de notification
+          final lastNotificationTime = userData?['lastNotificationTime'] ?? 0;
+
+          // 20 minutes en microsecondes = 20 * 60 * 1000 * 1000
+          const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
+          final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
+
+          // ✅ Vérification si 20 minutes se sont écoulées
+          if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
+
+            // =====================================================
+            // ✅ 1. ENREGISTRER LA NOTIFICATION DANS FIREBASE
+            // =====================================================
+            final notificationId = _firestore.collection('Notifications').doc().id;
+
+            final notification = NotificationData(
+              id: notificationId,
+              titre: "Like ❤️",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: "@${authProvider.loginUserData.pseudo!} a aimé votre post",
+              users_id_view: [],
+              user_id: authProvider.loginUserData.id!,
+              receiver_id: post.user_id!,
+              post_id: post.id!,
+              post_data_type: post.dataType ?? PostDataType.IMAGE.name,
+              updatedAt: currentTimeMicroseconds,
+              createdAt: currentTimeMicroseconds,
+              status: PostStatus.VALIDE.name,
+            );
+
+            // Sauvegarder la notification
+            await _firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+            print("✅ Notification Firebase enregistrée pour @${userData?['pseudo']}");
+
+            // =====================================================
+            // ✅ 2. ENVOYER LA PUSH NOTIFICATION (OneSignal)
+            // =====================================================
+            if (userData?['oneIgnalUserid'] != null &&
+                (userData!['oneIgnalUserid'] as String).isNotEmpty) {
+
+              await authProvider.sendNotification(
+                userIds: [userData['oneIgnalUserid']],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: authProvider.loginUserData.id!,
+                recever_user_id: post.user_id!,
+                message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre post",
+                type_notif: NotificationType.POST.name,
+                post_id: post.id!,
+                post_type: post.dataType ?? PostDataType.IMAGE.name,
+                chat_id: '',
+              );
+              print("✅ Push notification envoyée à @${userData['pseudo']}");
+            }
+
+            // =====================================================
+            // ✅ 3. METTRE À JOUR LE TIMESTAMP
+            // =====================================================
+            await _firestore.collection('Users').doc(post.user_id).update({
+              'lastNotificationTime': currentTimeMicroseconds
+            });
+
+          } else {
+            // ⏱️ LIMITE ATTEINTE - NI NOTIFICATION NI PUSH
+            final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
+            final minutesRemaining = ((twentyMinutesMicroseconds - timeSinceLastNotification) / (60 * 1000 * 1000)).toStringAsFixed(1);
+
+            print("⏱️ Notification limitée pour @${userData?['pseudo']} - Dernière notification il y a $minutesPassed min");
+            print("⏱️ Prochaine notification possible dans $minutesRemaining min");
+          }
+          await authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+
+          authProvider. notifySubscribersOfInteraction(
+            actionUserId: authProvider.loginUserData.id!,
+            postOwnerId: widget.initialPost.user_id!,
+            postId: widget.initialPost.id!,
+            actionType: 'like',
+            postDescription: widget.initialPost.description,
+            postImageUrl: widget.initialPost.images?.first,
+            postDataType: widget.initialPost.dataType,
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur like: $e');
+    }
+  }
+
   void _showCommentsModal(Post post) {
+    authProvider. incrementPostTotalInteractions(postId:post.id!);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2656,6 +2785,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         );
       }
+      authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+
+      authProvider. notifySubscribersOfInteraction(
+        actionUserId: authProvider.loginUserData.id!,
+        postOwnerId: widget.initialPost.user_id!,
+        postId: widget.initialPost.id!,
+        actionType: 'share',
+        postDescription: widget.initialPost.description,
+        postImageUrl: widget.initialPost.images?.first,
+        postDataType: widget.initialPost.dataType,
+      );
     } catch (e) {
       print("Erreur partage: $e");
     } finally {

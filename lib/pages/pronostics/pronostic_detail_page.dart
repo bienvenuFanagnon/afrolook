@@ -635,7 +635,12 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
           return;
         }
       }
-
+      String message = "🔥 Je viens de participer aux pronostics sur AfroLook ! ⚽\n"
+          "📌 ${pronostic.equipeA.nom} 🆚 ${pronostic.equipeB.nom}\n"
+          "🔥 Mon pronostic : ${_scoreA} - ${_scoreB}\n"
+          "💰 Plus de 55 000 FCFA à gagner !\n"
+          "⏳ Match en approche… participe vite avant le coup d’envoi !\n"
+          "👉 Et toi, quel est ton score ? 🚀";
       var participation = ParticipationPronostic(
         userId: userId,
         userPseudo: _authProvider.loginUserData.pseudo ?? 'Utilisateur',
@@ -652,6 +657,18 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
       );
 
       if (result['success']) {
+
+         _authProvider.sendPushNotificationToUsers(
+          sender: _authProvider.loginUserData,
+          message: message,
+          typeNotif: NotificationType.POST.name,
+          postId: widget.postId,
+          postType: 'PRONOSTIC',
+          chatId: '',
+          smallImage: _authProvider.loginUserData.imageUrl,
+          isChannel: false,
+        );
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

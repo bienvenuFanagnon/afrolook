@@ -2328,11 +2328,11 @@ printVm("_currentFilter data: ${_currentFilter}");
       }
 
       // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
-      // if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
-      //   contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-      //
-      //   // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
-      // }
+      if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
+        // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+
+        contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+      }
 
       // Garder vos sections spéciales existantes
       if (postIndex % 3 == 0) {
@@ -2711,13 +2711,14 @@ printVm("_currentFilter data: ${_currentFilter}");
 
     String? lastViewDateStr = _prefs.getString(viewKey);
 
+    // ✅ 1. GESTION DES VUES (inchangée)
     if (lastViewDateStr != null) {
       DateTime lastViewDate = DateTime.parse(lastViewDateStr);
       DateTime now = DateTime.now();
 
       int difference = now.difference(lastViewDate).inDays;
 
-      // ❌ Si moins de 2 jours -> ne pas compter
+      // ❌ Si moins de 2 jours -> ne pas compter la vue
       if (difference < 2) {
         print(
             '⏭️ Post ${post.id} déjà vu il y a $difference jour(s) par $currentUserId - Vue NON comptée');
@@ -2729,12 +2730,14 @@ printVm("_currentFilter data: ${_currentFilter}");
           });
         }
 
+        // ✅ Même si la vue n'est pas comptée, on vérifie l'interaction par session
+        await _checkAndIncrementInteraction(post);
         return;
       }
     }
 
     try {
-      // 🔥 Sauvegarder la date actuelle
+      // 🔥 Sauvegarder la date actuelle pour les vues
       await _prefs.setString(viewKey, DateTime.now().toIso8601String());
 
       setState(() {
@@ -2768,10 +2771,35 @@ printVm("_currentFilter data: ${_currentFilter}");
 
       print('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
+      // ✅ 2. GESTION DE L'INTERACTION (par session)
+      await _checkAndIncrementInteraction(post);
+
     } catch (e) {
       print('Error recording post view: $e');
     }
   }
+
+// ✅ Nouvelle fonction dédiée à l'interaction (session uniquement)
+  Future<void> _checkAndIncrementInteraction(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null || post.id == null) return;
+
+    // Clé de session pour l'interaction
+    String interactionKey = 'session_interaction_${currentUserId}_${post.id}';
+
+    // Vérifier si déjà interagi dans cette session
+    bool alreadyInteracted = _prefs.getBool(interactionKey) ?? false;
+
+    if (!alreadyInteracted) {
+      // Incrémenter l'interaction UNE SEULE FOIS par session
+      await authProvider.incrementPostTotalInteractions(postId: post.id!);
+      await _prefs.setBool(interactionKey, true);
+      print('✅ Total interactions +1 pour le post ${post.id} (première vue de la session)');
+    } else {
+      print('⏭️ Interaction déjà comptée dans cette session pour le post ${post.id}');
+    }
+  }
+
   Future<void> _recordPostView4(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
@@ -2796,6 +2824,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       }
       return; // On ne compte pas la vue
     }
+
 
     // ✅ SUPPRIMER la vérification _postsViewedInSession qui empêcherait
     // de compter la vue si l'utilisateur a déjà vu le post dans une session précédente

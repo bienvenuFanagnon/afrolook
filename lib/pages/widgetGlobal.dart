@@ -425,3 +425,79 @@ class FullScreenImageViewer extends StatelessWidget {
     );
   }
 }
+
+
+Widget buildTotalInteractions({
+  required int totalCount,
+  Color color = const Color(0xFFFFD700), // Jaune par défaut
+  double iconSize = 15,
+  double fontSize = 10,
+  bool showLabel = true,
+}) {
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.grey[900]!.withOpacity(0.8),
+          Colors.grey[850]!.withOpacity(0.8),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: color.withOpacity(0.3),
+        width: 1,
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icône d'interactions
+        Icon(
+          Icons.bar_chart, // Icône représentant les interactions
+          size: iconSize,
+          color: color,
+        ),
+
+        SizedBox(width: 8),
+
+        // Texte "interactions"
+        if (showLabel) ...[
+          Text(
+            'interactions',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize ,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
+
+        // Valeur
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            formatCount(totalCount),
+            style: TextStyle(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+String formatCount(int count) {
+  if (count < 1000) return count.toString();
+  if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
+  return '${(count / 1000000).toStringAsFixed(1)}M';
+}

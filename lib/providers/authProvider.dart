@@ -43,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 150;
+  late int app_version_code = 152;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -152,7 +152,25 @@ class UserAuthProvider extends ChangeNotifier {
   initializeData() {
     registerUser = UserData();
   }
+  Future<void> incrementPostTotalInteractions({
+    required String postId,
+    int incrementValue = 1,
+  }) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(postId)
+          .update({
+        'totalInteractions': FieldValue.increment(incrementValue),
+        'updatedAt': DateTime.now().microsecondsSinceEpoch,
+      });
 
+      print("✅ totalInteractions +$incrementValue pour le post $postId");
+
+    } catch (e) {
+      print("❌ Erreur incrementPostTotalInteractions: $e");
+    }
+  }
   Future<void> ajouterCommissionParrainViaUserId({
     required String userId,
     required double montant,
@@ -1219,7 +1237,89 @@ class UserAuthProvider extends ChangeNotifier {
 
     return list;
   }
+  Future<void> sendPushToSpecificUsers({
+    required List<String> userIds,
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+  }) async
+  {
+    try {
+      if (userIds.isEmpty) {
+        print("📭 Aucun utilisateur cible.");
+        return;
+      }
 
+      // 🔹 Nettoyage des doublons
+      final targetUserIds = userIds.toSet().toList();
+
+      final appName = "@${sender.pseudo}";
+
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final notifTime = DateTime.now().microsecondsSinceEpoch;
+      final oneHour = 60 * 60 * 1000;
+
+      final List<String> validOneSignalIds = [];
+
+      const batchSize = 100;
+
+      for (var i = 0; i < targetUserIds.length; i += batchSize) {
+        final end = i + batchSize > targetUserIds.length
+            ? targetUserIds.length
+            : i + batchSize;
+
+        final batchIds = targetUserIds.sublist(i, end);
+
+        final usersBatch = await getUsersByIds(batchIds);
+
+        final batchResults = await Future.wait(
+          usersBatch.map((user) => _processUserNotification(
+            user: user,
+            sender: sender,
+            appName: appName,
+            isChannel: false,
+            canal: null,
+            truncatedMessage: message,
+            postId: postId,
+            postType: postType,
+            notifTime: notifTime,
+            currentTime: currentTime,
+            oneHour: oneHour,
+            smallImage: smallImage,
+          )),
+        );
+
+        for (final result in batchResults) {
+          if (result.isValid) {
+            validOneSignalIds.add(result.oneSignalId);
+          }
+        }
+      }
+
+      // 🔥 Envoi direct push
+      if (validOneSignalIds.isNotEmpty) {
+        await _sendPushNotificationNow(
+          appName: appName,
+          userIds: validOneSignalIds,
+          smallImage: smallImage ?? sender.imageUrl ?? "",
+          senderId: sender.id!,
+          message: message,
+          typeNotif: typeNotif,
+          postId: postId,
+          postType: postType,
+          chatId: chatId,
+        );
+      }
+
+      print("✅ Push envoyée à ${targetUserIds.length} utilisateurs !");
+    } catch (e) {
+      print("❌ Erreur envoi push : $e");
+    }
+  }
   Future<List<String>> getAllUsersOneSignaUserId() async {
     late List<UserData> list = [];
 
@@ -1254,6 +1354,61 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
   Future<void> sendPushNotificationToUsers({
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+    bool isChannel = false,
+    String? channelTitle,
+    Canal? canal,
+  })
+  async {
+    try {
+      // Déterminer le type de cible
+      String targetType = "subscribers";
+      List<String>? specificUserIds;
+
+      if (sender.role == UserRole.ADM.name) {
+        targetType = "all";
+      } else if (isChannel && canal != null) {
+        targetType = "channel";
+      }
+
+      // ✅ Appel à la fonction cloud - tout est géré côté serveur
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('sendBulkNotification')
+          .call({
+        'senderId': sender.id,
+        'message': message,
+        'typeNotif': typeNotif,
+        'postId': postId,
+        'postType': postType,
+        'chatId': chatId,
+        'smallImage': smallImage,
+        'isChannel': isChannel,
+        'channelTitle': channelTitle,
+        'canalId': canal?.id,
+        'targetType': targetType,
+        'specificUserIds': specificUserIds,
+      });
+
+      print('✅ Notifications traitées: ${result.data}');
+
+      // Afficher les stats
+      final data = result.data as Map;
+      print('📊 Statistiques:');
+      print('   - Notifications enregistrées: ${data['notificationsSaved']}');
+      print('   - Push notifications envoyées: ${data['pushSent']}');
+      print('   - Push limitées (1h): ${data['pushLimited']}');
+
+    } catch (e) {
+      print('❌ Erreur: $e');
+    }
+  }
+  Future<void> sendPushNotificationToUsers2({
     required UserData sender,
     required String message,
     required String typeNotif,
@@ -1370,86 +1525,167 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> sendPushToSpecificUsers({
-    required List<String> userIds,
-    required UserData sender,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
+  Future<void> notifySubscribersOfInteraction({
+    required String actionUserId,      // L'utilisateur qui fait l'action
+    required String postOwnerId,       // Le propriétaire du post
+    required String postId,            // Le post concerné
+    required String actionType,        // like, comment, favorite, share
+    String? postDescription,
+    String? postImageUrl,
+    String? postDataType,
   }) async {
     try {
-      if (userIds.isEmpty) {
-        print("📭 Aucun utilisateur cible.");
-        return;
+      // ✅ 1. Récupérer les infos de l'utilisateur qui fait l'action
+      final actionUserDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(actionUserId)
+          .get();
+
+      if (!actionUserDoc.exists) return;
+
+      final actionUserData = actionUserDoc.data()!;
+      final actionUserPseudo = actionUserData['pseudo'] ?? 'Utilisateur';
+      final actionUserImage = actionUserData['imageUrl'] ?? '';
+
+      // ✅ 2. Récupérer les infos du propriétaire du post
+      final postOwnerDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(postOwnerId)
+          .get();
+
+      if (!postOwnerDoc.exists) return;
+
+      final postOwnerData = postOwnerDoc.data()!;
+      final postOwnerPseudo = postOwnerData['pseudo'] ?? 'Utilisateur';
+
+      // ✅ 3. Récupérer les abonnés du propriétaire
+      List<String> subscriberIds = [];
+      if (postOwnerData['userAbonnesIds'] != null) {
+        subscriberIds = List<String>.from(postOwnerData['userAbonnesIds']);
       }
 
-      // 🔹 Nettoyage des doublons
-      final targetUserIds = userIds.toSet().toList();
+      if (subscriberIds.isEmpty) return;
 
-      final appName = "@${sender.pseudo}";
+      // ✅ 4. Messages selon le type d'action
+      String actionMessage = "a aimé";
+      String actionTitle = "Like ❤️";
 
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final notifTime = DateTime.now().microsecondsSinceEpoch;
-      final oneHour = 60 * 60 * 1000;
+      switch (actionType) {
+        case 'comment':
+          actionMessage = "a commenté";
+          actionTitle = "Commentaire 💬";
+          break;
+        case 'favorite':
+          actionMessage = "a ajouté en favoris";
+          actionTitle = "Favoris ⭐";
+          break;
+        case 'share':
+          actionMessage = "a partagé";
+          actionTitle = "Partage 🔄";
+          break;
+      }
 
-      final List<String> validOneSignalIds = [];
+      // ✅ 5. Préparer la description du post
+      String finalDescription = postDescription ?? '';
+      if (finalDescription.length > 100) {
+        finalDescription = finalDescription.substring(0, 100) + '...';
+      }
 
-      const batchSize = 100;
+      // ✅ 6. Image à utiliser
+      String imageUrl = postImageUrl ?? actionUserImage;
 
-      for (var i = 0; i < targetUserIds.length; i += batchSize) {
-        final end = i + batchSize > targetUserIds.length
-            ? targetUserIds.length
-            : i + batchSize;
+      // ✅ 7. Timestamp actuel
+      final currentTime = DateTime.now().microsecondsSinceEpoch;
+      const twentyMinutes = 20 * 60 * 1000 * 1000; // 20 minutes en microsecondes
 
-        final batchIds = targetUserIds.sublist(i, end);
+      // ✅ 8. Traiter les abonnés par lots (Firestore 'in' limit: 30)
+      for (int i = 0; i < subscriberIds.length; i += 30) {
+        final end = i + 30 > subscriberIds.length ? subscriberIds.length : i + 30;
+        final batchIds = subscriberIds.sublist(i, end);
 
-        final usersBatch = await getUsersByIds(batchIds);
+        final usersBatch = await FirebaseFirestore.instance
+            .collection('Users')
+            .where('id', whereIn: batchIds)
+            .get();
 
-        final batchResults = await Future.wait(
-          usersBatch.map((user) => _processUserNotification(
-            user: user,
-            sender: sender,
-            appName: appName,
-            isChannel: false,
-            canal: null,
-            truncatedMessage: message,
-            postId: postId,
-            postType: postType,
-            notifTime: notifTime,
-            currentTime: currentTime,
-            oneHour: oneHour,
-            smallImage: smallImage,
-          )),
-        );
+        final List<String> oneSignalIds = [];
+        final List<String> oneSignalUserIds = []; // Pour stocker les IDs des users avec OneSignal
 
-        for (final result in batchResults) {
-          if (result.isValid) {
-            validOneSignalIds.add(result.oneSignalId);
+        for (var userDoc in usersBatch.docs) {
+          final userData = userDoc.data();
+          final lastNotifTime = userData['lastNotificationTime'] ?? 0;
+
+          // ✅ Vérifier le délai de 20 minutes
+          if (currentTime - lastNotifTime >= twentyMinutes || lastNotifTime == 0) {
+
+            // ✅ Créer la notification Firebase
+            final notifId = FirebaseFirestore.instance
+                .collection('Notifications')
+                .doc()
+                .id;
+
+            final notification = {
+              'id': notifId,
+              'titre': actionTitle,
+              'media_url': imageUrl,
+              'type': actionType.toUpperCase(),
+              'description': "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo : \"$finalDescription\"",
+              'users_id_view': [],
+              'user_id': actionUserId,
+              'receiver_id': userDoc.id,
+              'post_id': postId,
+              'post_data_type': postDataType ?? 'IMAGE',
+              'createdAt': currentTime,
+              'updatedAt': currentTime,
+              'status': 'VALIDE',
+            };
+
+            // ✅ Sauvegarder la notification
+            await FirebaseFirestore.instance
+                .collection('Notifications')
+                .doc(notifId)
+                .set(notification);
+
+            // ✅ Mettre à jour le timestamp
+            await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(userDoc.id)
+                .update({'lastNotificationTime': currentTime});
+
+            // ✅ Collecter pour la push notification
+            if (userData['oneIgnalUserid'] != null &&
+                (userData['oneIgnalUserid'] as String).length > 5) {
+              oneSignalIds.add(userData['oneIgnalUserid']);
+              oneSignalUserIds.add(userDoc.id);
+            }
           }
         }
+
+        // ✅ Envoyer les push notifications avec votre fonction existante
+        if (oneSignalIds.isNotEmpty) {
+          final pushMessage = "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo";
+
+          // Utiliser votre sendNotification existante
+          await sendNotification(
+            appName: actionTitle,
+            userIds: oneSignalIds,
+            smallImage: imageUrl,
+            send_user_id: actionUserId,
+            recever_user_id: '', // Pas de receveur unique car multiple
+            message: pushMessage,
+            type_notif: actionType.toUpperCase(),
+            post_id: postId,
+            post_type: postDataType ?? 'IMAGE',
+            chat_id: '',
+          );
+        }
+
+        // Petite pause entre les lots
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
-      // 🔥 Envoi direct push
-      if (validOneSignalIds.isNotEmpty) {
-        await _sendPushNotificationNow(
-          appName: appName,
-          userIds: validOneSignalIds,
-          smallImage: smallImage ?? sender.imageUrl ?? "",
-          senderId: sender.id!,
-          message: message,
-          typeNotif: typeNotif,
-          postId: postId,
-          postType: postType,
-          chatId: chatId,
-        );
-      }
-
-      print("✅ Push envoyée à ${targetUserIds.length} utilisateurs !");
     } catch (e) {
-      print("❌ Erreur envoi push : $e");
+      print('❌ Erreur notifySubscribersOfInteraction: $e');
     }
   }
 // 🔹 Fonction helper pour traiter un utilisateur
@@ -1562,7 +1798,8 @@ class UserAuthProvider extends ChangeNotifier {
     String? postId,
     String? postType,
     String? chatId,
-  }) async {
+  })
+  async {
     try {
       await sendNotification(
         appName: appName,
@@ -2167,7 +2404,8 @@ class UserAuthProvider extends ChangeNotifier {
 
   // CHANGE THIS parameter to true if you want to test GDPR privacy consent
   Future<void> sendNotification({  String? appName, // ✅ paramètre optionnel
-    required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async {
+    required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async
+  {
     final String usedAppName = appName ?? "AfroLook"; // valeur par défaut
 
     String oneSignalUrl = '';

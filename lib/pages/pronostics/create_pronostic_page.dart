@@ -797,10 +797,11 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
       // 5. Notifications
       String message = "🔮 Nouveau pronostic en ligne sur AfroLook ! ⚽\n"
           "${_equipeANomController.text} vs ${_equipeBNomController.text}\n"
-          "💰 Donnez vite votre pronostic pour remporter ${_cagnotte.toStringAsFixed(0)} FCFA !";
+          // "💰 Donnez vite votre pronostic pour remporter ${_cagnotte.toStringAsFixed(0)} FCFA !";
+          "💰 Donnez vite votre pronostic et tentez de remporter plus de 45 000 FCFA !";
 
       if (widget.canal != null) {
-        await _authProvider.sendPushNotificationToUsers(
+         _authProvider.sendPushNotificationToUsers(
           sender: _authProvider.loginUserData,
           message: message,
           typeNotif: NotificationType.POST.name,
@@ -813,7 +814,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
           canal: widget.canal,
         );
       } else {
-        await _authProvider.sendPushNotificationToUsers(
+         _authProvider.sendPushNotificationToUsers(
           sender: _authProvider.loginUserData,
           message: message,
           typeNotif: NotificationType.POST.name,

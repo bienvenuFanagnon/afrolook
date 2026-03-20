@@ -1233,6 +1233,9 @@ class Post {
   bool get isAvailableInAllCountries => availableCountries.contains('ALL');
   String? advertisementId; // Référence à la publicité si c'en est une
   bool? isAdvertisement; // Pour faciliter les requêtes
+
+  int? totalInteractions;  // Compteur de toutes les interactions (likes + commentaires + favoris + partages)
+
   Post({
     this.id,
     this.comments,
@@ -1246,6 +1249,7 @@ class Post {
     this.publiCashTotal = 0,
     this.nombreImage = 0,
     this.nombrePersonneParJour = 0,
+    this.totalInteractions = 0,
     this.type,
     this.images,
     this.isPostLink,
@@ -1378,6 +1382,8 @@ class Post {
     // Dans toJson()
     advertisementId = json['advertisementId'];
     isAdvertisement = json['isAdvertisement'] ?? false;
+    totalInteractions= json['totalInteractions'] ?? 0;
+
   }
 
   Map<String, dynamic> toJson() {

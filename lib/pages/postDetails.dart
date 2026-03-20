@@ -970,6 +970,7 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void initState() {
     super.initState();
+
     _initSharedPreferences();
     _isAd = widget.post.isAdvertisement == true;
     if (_isAd && widget.post.advertisementId != null) {
@@ -978,6 +979,7 @@ class _DetailsPostState extends State<DetailsPost>
     _checkIfFavorite();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
+    authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
     _animationController = AnimationController(
       vsync: this,
@@ -1043,7 +1045,17 @@ class _DetailsPostState extends State<DetailsPost>
           widget.post.users_favorite_id?.remove(userId);
         }
       });
+      await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
+      authProvider. notifySubscribersOfInteraction(
+        actionUserId: authProvider.loginUserData.id!,
+        postOwnerId: widget.post.user_id!,
+        postId: widget.post.id!,
+        actionType: 'favorite',
+        postDescription: widget.post.description,
+        postImageUrl: widget.post.images?.first,
+        postDataType: widget.post.dataType,
+      );
       // Afficher un feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1997,7 +2009,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
   bool _isProcessing = false;
-  Future<void> _handleLike() async {
+  Future<void> _handleLike2() async {
     // Éviter les doubles clics au niveau UI
     if (_isProcessing) return;
 
@@ -2089,7 +2101,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
-  Future<void> _handleLike2() async {
+  Future<void> _handleLike1() async {
     try {
       if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
         setState(() {
@@ -2140,7 +2152,135 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       print("Erreur like: $e");
     }
   }
+  Future<void> _handleLike() async {
+    try {
+      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+        setState(() {
+          widget.post.loves = widget.post.loves! + 1;
+          widget.post.users_love_id!.add(authProvider.loginUserData.id!);
+        });
 
+        await firestore.collection('Posts').doc(widget.post.id).update({
+          'loves': FieldValue.increment(1),
+          'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
+          'popularity': FieldValue.increment(3),
+        });
+
+        FeedInteractionService.onPostLoved(widget.post, authProvider.loginUserData.id!);
+
+        // ✅ TIMESTAMP ACTUEL EN MICROSECONDES
+        final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
+
+        // ✅ RÉCUPÉRER L'UTILISATEUR CIBLE (propriétaire du post)
+        final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+
+          // ✅ Récupérer le dernier timestamp de notification
+          final lastNotificationTime = userData?['lastNotificationTime'] ?? 0;
+
+          // 20 minutes en microsecondes = 20 * 60 * 1000 * 1000
+          const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
+          final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
+
+          // ✅ VÉRIFICATION SI 20 MINUTES SE SONT ÉCOULÉES
+          if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
+
+            // =====================================================
+            // ✅ 1. ENREGISTRER LA NOTIFICATION DANS FIREBASE
+            // =====================================================
+            final notificationId = firestore.collection('Notifications').doc().id;
+
+            final notification = NotificationData(
+              id: notificationId,
+              titre: "Like ❤️",
+              media_url: authProvider.loginUserData.imageUrl,
+              type: NotificationType.POST.name,
+              description: "@${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+              users_id_view: [],
+              user_id: authProvider.loginUserData.id!,
+              receiver_id: widget.post.user_id!,
+              post_id: widget.post.id!,
+              post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+              updatedAt: currentTimeMicroseconds,
+              createdAt: currentTimeMicroseconds,
+              status: PostStatus.VALIDE.name,
+            );
+
+            // Sauvegarder la notification
+            await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+            print("✅ Notification Firebase enregistrée pour @${widget.post.user!.pseudo}");
+
+            // =====================================================
+            // ✅ 2. ENVOYER LA PUSH NOTIFICATION (OneSignal)
+            // =====================================================
+            if (widget.post.user!.oneIgnalUserid != null && widget.post.user!.oneIgnalUserid!.isNotEmpty) {
+              await authProvider.sendNotification(
+                userIds: [widget.post.user!.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl!,
+                send_user_id: authProvider.loginUserData.id!,
+                recever_user_id: widget.post.user_id!,
+                message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+                type_notif: NotificationType.POST.name,
+                post_id: widget.post.id!,
+                post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+                chat_id: '',
+              );
+              print("✅ Push notification envoyée à @${widget.post.user!.pseudo}");
+            }
+
+            // =====================================================
+            // ✅ 3. METTRE À JOUR LE TIMESTAMP (un seul champ)
+            // =====================================================
+            await firestore.collection('Users').doc(widget.post.user_id!).update({
+              'lastNotificationTime': currentTimeMicroseconds
+            });
+
+          }
+          else {
+            // ⏱️ LIMITE ATTEINTE - NI NOTIFICATION NI PUSH
+            final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
+            final minutesRemaining = ((twentyMinutesMicroseconds - timeSinceLastNotification) / (60 * 1000 * 1000)).toStringAsFixed(1);
+
+            print("⏱️ Notification limitée pour @${widget.post.user!.pseudo} - Dernière notification il y a $minutesPassed minutes");
+            print("⏱️ Prochaine notification possible dans $minutesRemaining minutes");
+          }
+          await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+
+          authProvider. notifySubscribersOfInteraction(
+            actionUserId: authProvider.loginUserData.id!,
+            postOwnerId: widget.post.user_id!,
+            postId: widget.post.id!,
+            actionType: 'like',
+            postDescription: widget.post.description,
+            postImageUrl: widget.post.images?.first,
+            postDataType: widget.post.dataType,
+          );
+        }
+
+        // ✅ ACTIONS STANDARD (points, animation, etc.)
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
+        _animationController.forward().then((_) {
+          _animationController.reverse();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '+ de points ajoutés à votre compte',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("❌ Erreur like: $e");
+    }
+  }
   Future<void> _createTransaction(
       String type, double montant, String description, String userid) async {
     try {
@@ -4169,6 +4309,17 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         );
       }
+      await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+
+      authProvider. notifySubscribersOfInteraction(
+        actionUserId: authProvider.loginUserData.id!,
+        postOwnerId: widget.post.user_id!,
+        postId: widget.post.id!,
+        actionType: 'share',
+        postDescription: widget.post.description,
+        postImageUrl: widget.post.images?.first,
+        postDataType: widget.post.dataType,
+      );
     } catch (e) {
       print("Erreur partage: $e");
     } finally {

@@ -95,6 +95,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
             const Text(
               'Gestion des pronostics',
               style: TextStyle(
+                fontSize: 12,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -1425,7 +1426,7 @@ class _AdminPronosticsPageState extends State<AdminPronosticsPage> {
                   }
                 } else {
 
-                  throw Exception('Échec du paiement');
+                  throw Exception('Échec du paiement ou pas de gagnant');
                 }
               } catch (e) {
                 if (context.mounted) {

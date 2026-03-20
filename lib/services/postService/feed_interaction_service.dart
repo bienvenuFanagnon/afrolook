@@ -62,11 +62,11 @@ class FeedInteractionService {
   // 📈 Mettre à jour le score quand un utilisateur aime (love)
   static Future<void> onPostLoved(Post post, String userId) async {
     try {
-      await _firestore.collection('Posts').doc(post.id).update({
-        'loves': FieldValue.increment(1),
-        'users_love_id': FieldValue.arrayUnion([userId]),
-        'recentEngagement': FieldValue.increment(1),
-      });
+      // await _firestore.collection('Posts').doc(post.id).update({
+      //   // 'loves': FieldValue.increment(1),
+      //   // 'users_love_id': FieldValue.arrayUnion([userId]),
+      //   'recentEngagement': FieldValue.increment(1),
+      // });
 
       await _updatePostScore(post.id!);
       print('✅ Love enregistré et score mis à jour');
