@@ -197,18 +197,7 @@ class _ChargementState extends State<SplahsChargement> {
 
       setState(() => _isAuthCompleted = true);
 
-      // 5. VÉRIFIER LES DONNÉES PAYS
-      if (authProvider.loginUserData.countryData?["countryCode"] == null) {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
-            ),
-          );
-        }
-        return;
-      }
+
 
       // // 6. 🔥 CHARGER LES 2 POSTS IMMÉDIATS
       // await _loadImmediatePosts();
@@ -304,7 +293,17 @@ class _ChargementState extends State<SplahsChargement> {
     //   return;
     // }
     //   print('Deeplink: ${widget.postId}');
+    // 5. VÉRIFIER LES DONNÉES PAYS
+    if (authProvider.loginUserData.countryData?["countryCode"] == null&&authProvider.loginUserData.countryData?["country"] == null) {
 
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
+          ),
+        );
+
+    }else
     if (widget.postId.isNotEmpty) {
       final AppLinkService linkService = AppLinkService();
       linkService.handleNavigation(context, widget.postId, widget.postType);

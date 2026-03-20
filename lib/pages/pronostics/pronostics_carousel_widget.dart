@@ -163,6 +163,8 @@ class _PronosticsCarouselWidgetState extends State<PronosticsCarouselWidget> {
 
     if (_pronostics.isEmpty) {
       return const SizedBox.shrink();
+    }else{
+      _pronostics.shuffle();
     }
 
     final maxCagnotte = _getMaxCagnotte();

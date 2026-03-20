@@ -658,7 +658,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
 
       if (result['success']) {
 
-         _authProvider.sendPushNotificationToUsers(
+         _authProvider.sendPushNotificationToUsersPronostic(
           sender: _authProvider.loginUserData,
           message: message,
           typeNotif: NotificationType.POST.name,

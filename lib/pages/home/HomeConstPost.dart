@@ -25,6 +25,7 @@ import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../afroshop/marketPlace/component.dart';
 
+import '../auth/authTest/Screens/updateUserData.dart';
 import '../chronique/chroniqueform.dart';
 import '../component/showUserDetails.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
@@ -813,7 +814,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Future<void> _loadInitialPosts() async {
     try {
-      setState(() {
+      if (authProvider.loginUserData.countryData?["countryCode"] == null&&authProvider.loginUserData.countryData?["country"] == null) {
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
+          ),
+        );
+
+      }
+
+        setState(() {
         _isLoadingPosts = true;
         _hasErrorPosts = false;
       });

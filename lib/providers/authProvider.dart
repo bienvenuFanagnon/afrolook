@@ -43,7 +43,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 153;
+  late int app_version_code = 154;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1376,6 +1376,60 @@ class UserAuthProvider extends ChangeNotifier {
       } else if (isChannel && canal != null) {
         targetType = "channel";
       }
+
+      // ✅ Appel à la fonction cloud - tout est géré côté serveur
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('sendBulkNotification')
+          .call({
+        'senderId': sender.id,
+        'message': message,
+        'typeNotif': typeNotif,
+        'postId': postId,
+        'postType': postType,
+        'chatId': chatId,
+        'smallImage': smallImage,
+        'isChannel': isChannel,
+        'channelTitle': channelTitle,
+        'canalId': canal?.id,
+        'targetType': targetType,
+        'specificUserIds': specificUserIds,
+      });
+
+      print('✅ Notifications traitées: ${result.data}');
+
+      // Afficher les stats
+      final data = result.data as Map;
+      print('📊 Statistiques:');
+      print('   - Notifications enregistrées: ${data['notificationsSaved']}');
+      print('   - Push notifications envoyées: ${data['pushSent']}');
+      print('   - Push limitées (1h): ${data['pushLimited']}');
+
+    } catch (e) {
+      print('❌ Erreur: $e');
+    }
+  }  Future<void> sendPushNotificationToUsersPronostic({
+    required UserData sender,
+    required String message,
+    required String typeNotif,
+    String? postId,
+    String? postType,
+    String? chatId,
+    String? smallImage,
+    bool isChannel = false,
+    String? channelTitle,
+    Canal? canal,
+  })
+  async {
+    try {
+      // Déterminer le type de cible
+      String targetType = "all";
+      List<String>? specificUserIds;
+
+      // if (sender.role == UserRole.ADM.name) {
+      //   targetType = "all";
+      // } else if (isChannel && canal != null) {
+      //   targetType = "channel";
+      // }
 
       // ✅ Appel à la fonction cloud - tout est géré côté serveur
       final result = await FirebaseFunctions.instance
