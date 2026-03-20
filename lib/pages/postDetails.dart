@@ -12,6 +12,7 @@ import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postUserWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
+import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -3182,23 +3183,46 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           options: LinkifyOptions(humanize: false),
         ),
         if (isLong && !isLocked)
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _isExpanded ? "Voir moins" : "Voir plus",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: _twitterBlue,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _isExpanded ? "Voir moins" : "Voir plus",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _twitterBlue,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              buildTotalInteractions(
+                totalCount: widget.post.totalInteractions ?? 0,
+                color: Colors.blue,
+                showLabel: true,
+              ),
+            ],
+          ),
+
+        if (!isLong)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+
+              buildTotalInteractions(
+                totalCount: widget.post.totalInteractions ?? 0,
+                color: Colors.blue,
+                showLabel: true,
+              ),
+            ],
           ),
       ],
     );

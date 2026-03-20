@@ -276,7 +276,51 @@ class Invitation {
     return data;
   }
 }
+class EmailNotificationSettings {
+  bool interactions; // likes, commentaires, partages
+  bool newPosts; // nouveaux posts des abonnements
+  bool marketing; // offres promotionnelles
+  bool security; // sécurité et connexions
+  bool dailyDigest; // résumé quotidien
 
+  EmailNotificationSettings({
+    required this.interactions,
+    required this.newPosts,
+    required this.marketing,
+    required this.security,
+    required this.dailyDigest,
+  });
+
+  factory EmailNotificationSettings.defaultSettings() {
+    return EmailNotificationSettings(
+      interactions: true,
+      newPosts: true,
+      marketing: false, // offres marketing désactivées par défaut
+      security: true,
+      dailyDigest: false,
+    );
+  }
+
+  factory EmailNotificationSettings.fromJson(Map<String, dynamic> json) {
+    return EmailNotificationSettings(
+      interactions: json['interactions'] ?? true,
+      newPosts: json['newPosts'] ?? true,
+      marketing: json['marketing'] ?? true,
+      security: json['security'] ?? true,
+      dailyDigest: json['dailyDigest'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'interactions': interactions,
+      'newPosts': newPosts,
+      'marketing': marketing,
+      'security': security,
+      'dailyDigest': dailyDigest,
+    };
+  }
+}
 class UserPays {
   String? id;
   String? name;
@@ -799,6 +843,9 @@ class UserData {
   int? nbrParrainagesTotal = 0;
   double? commissionTotalParrainage = 0.0;
 
+  // Préférences de notification par email
+  EmailNotificationSettings? emailNotifications;
+
 
   UserData(
       {this.reference,
@@ -870,7 +917,9 @@ class UserData {
         this.nbrParrainagesActifs = 0,
         this.nbrParrainagesTotal = 0,
         this.commissionTotalParrainage = 0.0,
-      this.userGlobalTags}){
+        this.emailNotifications,
+
+        this.userGlobalTags}){
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
 
@@ -913,7 +962,9 @@ class UserData {
     liveStats = json['liveStats'] != null
         ? LiveStats.fromJson(Map<String, dynamic>.from(json['liveStats']))
         : LiveStats.defaultForUser(id ?? '');
-
+    emailNotifications = json['emailNotifications'] != null
+        ? EmailNotificationSettings.fromJson(json['emailNotifications'])
+        : EmailNotificationSettings.defaultSettings();
 
     nom = json['nom']?.toString() ?? '';
     prenom = json['prenom']?.toString() ?? '';
@@ -5342,3 +5393,4 @@ class Pronostic {
     );
   }
 }
+

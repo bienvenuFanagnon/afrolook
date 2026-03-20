@@ -19,6 +19,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
+import '../../admin/admin_email_screen.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
@@ -529,6 +530,13 @@ class _UserProfilState extends State<UserProfil> {
                             color: Colors.deepPurple,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdvertisementManagementPage()));
+                            },
+                          ),        _buildMenuButton(
+                            icon: Icons.add_card_outlined,
+                            label: "Emailing",
+                            color: Colors.deepPurple,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminEmailScreen()));
                             },
                           ),
                           _buildMenuButton(
