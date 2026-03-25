@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../pages/UserServices/deviceService.dart';
-import '../pages/story/afroStory/repository.dart';
 import 'chatmodels/message.dart';
 
 import 'package:json_annotation/json_annotation.dart';
@@ -745,6 +744,471 @@ class AfrolookAbonnement {
     }
   }
 }
+// class UserData {
+//   String? id;
+//   String? pseudo = "";
+//   late String? oneIgnalUserid = "";
+//   List<String>? favoritePostsIds = []; // IDs des posts favoris
+//
+//   String? nom;
+//   String? prenom;
+//   String? imageUrl = "";
+//
+//   String? numeroDeTelephone;
+//   String? adresse = "";
+//   String? email = "";
+//   String? genre = "";
+//   String? codeParrainage;
+//   String? codeParrain;
+//   String? state;
+//   UserPays? userPays;
+//
+//   double? publi_cash = 0.0;
+//   double? votre_solde = 0.0;
+//   double? votre_solde_contenu = 0.0;
+//   double? votre_solde_principal = 0.0;
+//   double? votre_solde_cadeau = 0.0;
+//   double? tiktokviewerSolde = 0.0;
+//   int? pubEntreprise = 0;
+//   int? mesPubs = 0;
+//   int? mesTiktokPubs = 0;
+//   int? partage = 0;
+//   int? last_time_active = 0;
+//   int? pointContribution = 0;
+//   int? userlikes = 0;
+//   int? userjaimes = 0;
+//   int? likes = 0;
+//   int? jaimes = 0;
+//   int? comments = 0;
+//   int? abonnes = 0;
+//   double? compteTarif = 0.0;
+//   double? popularite = 0.0;
+//   double? latitude;
+//   double? longitude;
+//   String? apropos;
+//   bool? isConnected = false;
+//   bool? isBlocked = false;
+//   bool? completeData = false;
+//   bool? hasEntreprise = false;
+//   bool? isVerify = false;
+//   File? image;
+//   String? password;
+//   //int? genreId;
+//   String? role;
+//   int? createdAt;
+//   int? updatedAt;
+//   List<int>? userGlobalTags;
+//   List<UserAbonnes>? userAbonnes = [];
+//   List<String>? userAbonnesIds = [];
+//   List<String>? usersParrainer = [];
+//   List<String>? friendsIds = [];
+//   List<Friends>? friends = [];
+//
+//   List<Invitation>? mesInvitationsEnvoyer = [];
+//   List<Invitation>? autreInvitationsEnvoyer = [];
+//   List<String>? mesInvitationsEnvoyerId = [];
+//   List<String>? autreInvitationsEnvoyerId = [];
+//   DocumentReference? reference;
+//   Map<String, String>? countryData;
+//   // List<Map<String, dynamic>>? stories = [];
+//   List<WhatsappStory>? stories = [];
+//   List<String> viewedVideos = []; // Liste des vidéos déjà vues
+//   int? lastNotificationTime;
+//   int totalPoints = 0;
+//   int? lastFeedVisitTime; // Timestamp de la dernière consultation du feed
+//
+//
+//   List<String> newPostsFromSubscriptions = []; // IDs des nouveaux posts des abonnements (max 1000)
+//   List<String>? viewedPostIds = []; // IDs des posts déjà vus (max 1000)
+//   int lastFeedUpdate = 0; // Timestamp de la dernière mise à jour du feed
+//
+//   // Dans class UserData
+//   AfrolookAbonnement? abonnement;
+//
+//   // Dans class UserData
+//   LiveStats? liveStats;
+//
+//   // Marketing et affiliation
+//   double? solde_marketing = 0.0;
+//   double? total_gains_marketing = 0.0;
+//   List<String>? usersParrainerActifs = []; // Utilisateurs actifs en marketing
+//   List<String>? usersParrainerHistorique = []; // Tous les utilisateurs parrainés
+//   int? lastMarketingActivationDate;
+//   int? marketingSubscriptionEndDate;
+//   bool? marketingActivated = false;
+//
+//   // Stats marketing
+//   int? nbrParrainagesActifs = 0;
+//   int? nbrParrainagesTotal = 0;
+//   double? commissionTotalParrainage = 0.0;
+//
+//   // Préférences de notification par email
+//   EmailNotificationSettings? emailNotifications;
+//
+//
+//   UserData(
+//       {this.reference,
+//       this.pseudo,
+//       this.nom,
+//       this.prenom,
+//       this.email,
+//       this.numeroDeTelephone,
+//       this.adresse,
+//       this.genre,
+//       this.codeParrainage,
+//       this.oneIgnalUserid = "",
+//       this.userPays,
+//       this.publi_cash = 0,
+//       this.pubEntreprise = 0,
+//       this.mesPubs = 0,
+//       this.mesTiktokPubs,
+//       this.pointContribution = 0,
+//       this.lastNotificationTime = 0,
+//       this.likes = 0,
+//       this.jaimes = 0,
+//       this.userlikes = 0,
+//       this.partage = 0,
+//       this.userjaimes = 0,
+//       this.votre_solde_contenu = 0.0,
+//       this.votre_solde_principal = 0.0,
+//       this.votre_solde_cadeau = 0.0,
+//       this.tiktokviewerSolde = 0.0,
+//       this.comments = 0,
+//       this.createdAt = 0,
+//       this.updatedAt = 0,
+//       this.abonnes = 0,
+//       this.totalPoints = 0,
+//       this.compteTarif = 0,
+//       this.popularite = 0.0,
+//       this.votre_solde = 0.0,
+//       this.latitude = 0.0,
+//       this.longitude = 0.0,
+//       this.isBlocked = false,
+//       this.isVerify = false,
+//       this.isConnected = false,
+//       this.completeData = false,
+//       this.hasEntreprise = false,
+//       this.apropos,
+//       this.password = "",
+//       this.codeParrain,
+//       this.countryData,
+//       this.usersParrainer,
+//       this.stories,
+//       this.state = "OFFLINE",
+//         this.viewedVideos = const [],
+//         this.userAbonnesIds = const [],
+//         this.newPostsFromSubscriptions = const [],
+//         this.viewedPostIds = const [],
+//         this.lastFeedUpdate = 0,
+//       //this.genreId,
+//       this.role,
+//         // Dans le constructeur UserData
+//         this.abonnement,
+//         this.liveStats,
+//         this.favoritePostsIds = const [],
+//         this.solde_marketing = 0.0,
+//         this.total_gains_marketing = 0.0,
+//         this.usersParrainerActifs = const [],
+//         this.usersParrainerHistorique = const [],
+//         this.lastMarketingActivationDate,
+//         this.marketingSubscriptionEndDate,
+//         this.marketingActivated = false,
+//         this.nbrParrainagesActifs = 0,
+//         this.nbrParrainagesTotal = 0,
+//         this.commissionTotalParrainage = 0.0,
+//         this.emailNotifications,
+//
+//         this.userGlobalTags}){
+//     abonnement ??= AfrolookAbonnement.gratuit();
+//     liveStats ??= LiveStats.defaultForUser(id ?? '');
+//
+//
+//
+//   }
+//
+//   int _parseDateToMicroseconds(dynamic value) {
+//     if (value == null) return 0;
+//
+//     // si déjà un int
+//     if (value is int) {
+//       return value;
+//     }
+//
+//     // si string ISO
+//     if (value is String) {
+//       try {
+//         return DateTime.parse(value).microsecondsSinceEpoch;
+//       } catch (e) {
+//         return 0;
+//       }
+//     }
+//
+//     return 0;
+//   }
+//   UserData.fromJson(Map<String, dynamic> json) {
+//     id = json['id']?.toString() ?? '';
+//     pseudo = json['pseudo']?.toString() ?? '';
+//     oneIgnalUserid = json['oneIgnalUserid']?.toString() ?? '';
+// // Dans fromJson()
+//     abonnement = json['abonnement'] != null
+//         ? AfrolookAbonnement.fromJson(
+//         Map<String, dynamic>.from(json['abonnement']))
+//         : AfrolookAbonnement.gratuit();
+//     favoritePostsIds = (json['favoritePostsIds'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+// // Dans fromJson()
+//     liveStats = json['liveStats'] != null
+//         ? LiveStats.fromJson(Map<String, dynamic>.from(json['liveStats']))
+//         : LiveStats.defaultForUser(id ?? '');
+//     emailNotifications = json['emailNotifications'] != null
+//         ? EmailNotificationSettings.fromJson(json['emailNotifications'])
+//         : EmailNotificationSettings.defaultSettings();
+//
+//     nom = json['nom']?.toString() ?? '';
+//     prenom = json['prenom']?.toString() ?? '';
+//     imageUrl = json['imageUrl']?.toString() ?? '';
+//
+//     numeroDeTelephone = json['numero_de_telephone']?.toString() ?? '';
+//     adresse = json['adresse']?.toString() ?? '';
+//     email = json['email']?.toString() ?? '';
+//     genre = json['genre']?.toString() ?? '';
+//     codeParrainage = json['code_parrainage']?.toString() ?? '';
+//     codeParrain = json['code_parrain']?.toString() ?? '';
+//     state = json['state']?.toString() ?? '';
+//
+//     userPays = json['user_pays'] != null
+//         ? UserPays.fromJson(json['user_pays'] as Map<String, dynamic>)
+//         : null;
+//
+//     publi_cash = (json['publi_cash'] as num?)?.toDouble() ?? 0.0;
+//     votre_solde = (json['votre_solde'] as num?)?.toDouble() ?? 0.0;
+//     votre_solde_contenu = (json['votre_solde_contenu'] as num?)?.toDouble() ?? 0.0;
+//     votre_solde_principal = (json['votre_solde_principal'] as num?)?.toDouble() ?? 0.0;
+//     votre_solde_cadeau = (json['votre_solde_cadeau'] as num?)?.toDouble() ?? 0.0;
+//     tiktokviewerSolde = double.tryParse(json['tiktokviewerSolde']?.toString() ?? '0') ?? 0.0;
+//
+//     pubEntreprise = json['pub_entreprise'] ?? 0;
+//     mesPubs = json['mesPubs'] ?? 0;
+//     mesTiktokPubs = json['mesTiktokPubs'] ?? 0;
+//     partage = json['partage'] ?? 0;
+//     // last_time_active = json['last_time_active'] is Timestamp
+//     //     ? (json['last_time_active'] as Timestamp).millisecondsSinceEpoch
+//     //     : (json['last_time_active'] is int
+//     //     ? json['last_time_active'] as int
+//     //     : 0);
+//     pointContribution = json['pointContribution'] ?? 0;
+//     userlikes = json['userlikes'] ?? 0;
+//     userjaimes = json['userjaimes'] ?? 0;
+//     likes = json['likes'] ?? 0;
+//     jaimes = json['jaimes'] ?? 0;
+//     comments = json['comments'] ?? 0;
+//     abonnes = json['abonnes'] ?? 0;
+//
+//     compteTarif = (json['compte_tarif'] as num?)?.toDouble() ?? 0.0;
+//     popularite = double.tryParse(json['popularite']?.toString() ?? '0') ?? 0.0;
+//     latitude = double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0;
+//     longitude = double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0;
+//
+//     apropos = json['apropos']?.toString() ?? '';
+//     isConnected = json['isConnected'] ?? false;
+//     isBlocked = json['isBlocked'] ?? false;
+//     completeData = json['completeData'] ?? false;
+//     hasEntreprise = json['hasEntreprise'] ?? false;
+//     isVerify = json['isVerify'] ?? false;
+//
+//     password = json['password']?.toString() ?? '';
+//     role = json['role']?.toString() ?? '';
+//     createdAt = json['createdAt'] != null
+//         ? _parseDateToMicroseconds(json['createdAt'])
+//         : null;
+//
+//     updatedAt = json['updatedAt'] != null
+//         ? _parseDateToMicroseconds(json['updatedAt'])
+//         : null;
+//     // createdAt = json['createdAt'] ?? 0;
+//     // updatedAt = json['updatedAt'] ?? 0;
+//
+//     userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
+//         ?.map((e) => int.tryParse(e.toString()) ?? 0)
+//         .toList() ?? [];
+//
+//     userAbonnesIds = (json['userAbonnesIds'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     usersParrainer = (json['usersParrainer'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     friendsIds = (json['friendsIds'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     stories = (json['stories'] as List<dynamic>?)
+//         ?.map((v) => WhatsappStory.fromJson(v as Map<String, dynamic>))
+//         .toList() ?? [];
+//
+//     mesInvitationsEnvoyerId = (json['mesInvitationsEnvoyerId'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     autreInvitationsEnvoyerId = (json['autreInvitationsEnvoyerId'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     countryData = json['countryData'] != null
+//         ? Map<String, String>.from(json['countryData'])
+//         : {};
+//
+//     viewedVideos = List<String>.from(json['viewedVideos'] ?? []);
+//     viewedPostIds = (json['viewedPostIds'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//     lastNotificationTime = json['lastNotificationTime'] ?? 0;
+//     totalPoints = json['totalPoints'] ?? 0;
+//     lastFeedVisitTime = json['lastFeedVisitTime'] ??
+//         DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
+//     newPostsFromSubscriptions= List<String>.from(json['newPostsFromSubscriptions'] ?? []);
+//     viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
+//     // lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
+//
+//     // Marketing
+//     solde_marketing = (json['solde_marketing'] as num?)?.toDouble() ?? 0.0;
+//     total_gains_marketing = (json['total_gains_marketing'] as num?)?.toDouble() ?? 0.0;
+//     marketingActivated = json['marketingActivated'] ?? false;
+//     lastMarketingActivationDate = json['lastMarketingActivationDate'];
+//     marketingSubscriptionEndDate = json['marketingSubscriptionEndDate'];
+//
+//     usersParrainerActifs = (json['usersParrainerActifs'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     usersParrainerHistorique = (json['usersParrainerHistorique'] as List<dynamic>?)
+//         ?.map((v) => v.toString())
+//         .toList() ?? [];
+//
+//     nbrParrainagesActifs = json['nbrParrainagesActifs'] ?? 0;
+//     nbrParrainagesTotal = json['nbrParrainagesTotal'] ?? 0;
+//     commissionTotalParrainage = (json['commissionTotalParrainage'] as num?)?.toDouble() ?? 0.0;
+//
+//
+//   }
+//
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     data['id'] = this.id;
+//     data['pseudo'] = this.pseudo;
+//     data['nom'] = this.nom;
+//     data['prenom'] = this.prenom;
+//     data['email'] = this.email;
+//     data['imageUrl'] = this.imageUrl;
+//     data['numero_de_telephone'] = this.numeroDeTelephone;
+//     data['adresse'] = this.adresse;
+//     data['favoritePostsIds'] = this.favoritePostsIds;
+//
+//     // data['isVerify'] = this.isVerify;
+//     // data['state'] = this.state;
+//     data['mesPubs'] = this.mesPubs;
+//     // data['mesTiktokPubs'] = this.mesTiktokPubs;
+//     data['code_parrainage'] = this.codeParrainage;
+//     data['usersParrainer'] = this.usersParrainer;
+//     // data['publi_cash'] = this.publi_cash;
+//     // data['votre_solde'] = this.votre_solde;
+//     // data['votre_solde_contenu'] = this.votre_solde_contenu;
+//     // data['votre_solde_principal'] = this.votre_solde_principal;
+//     // data['votre_solde_cadeau'] = this.votre_solde_cadeau;
+//     // data['code_parrain'] = this.codeParrain;
+//     // autres données
+//       data['countryData'] = this.countryData;
+//     if (stories != null) {
+//       data['stories'] = stories!.map((story) => story.toJson()).toList();
+//     } else {
+//       data['stories'] = [];
+//     }
+//
+//     if (this.userPays != null) {
+//       data['user_pays'] = this.userPays!.toJson();
+//     }
+// // Dans toJson()
+//     if (this.abonnement != null) {
+//       data['abonnement'] = this.abonnement!.toJson();
+//     } else {
+//       // Toujours s'assurer qu'il y a un abonnement
+//       data['abonnement'] = AfrolookAbonnement.gratuit().toJson();
+//     }
+//     // data['isBlocked'] = this.isBlocked;
+//     data['complete_data'] = this.completeData;
+//     data['has_entreprise'] = this.hasEntreprise;
+//
+//     data['latitude'] = this.latitude;
+//     data['oneIgnalUserid'] = this.oneIgnalUserid;
+//     // data['image'] = this.image;
+//     data['longitude'] = this.longitude;
+//     data['apropos'] = this.apropos;
+//     // data['password'] = this.password;
+//     data['genre'] = this.genre;
+//     // data['userlikes'] = this.userlikes;
+//     // data['partage'] = this.partage;
+//     // data['userjaimes'] = this.userjaimes;
+//     // data['genre_id'] = this.genreId;
+//     data['isConnected'] = this.isConnected;
+//     data['role'] = this.role;
+//     // data['tiktokviewerSolde'] = this.tiktokviewerSolde;
+//
+//     data['pub_entreprise'] = this.pubEntreprise;
+//     data['point_contribution'] = this.pointContribution;
+//     // data['likes'] = this.likes;
+//     // data['jaimes'] = this.jaimes;
+//     data['updatedAt'] = this.updatedAt;
+//     data['createdAt'] = this.createdAt;
+//     data['comments'] = this.comments;
+//     data['abonnes'] = this.abonnes;
+//     data['compte_tarif'] = this.compteTarif;
+//     // data['popularite'] = this.popularite;
+//     // data['userAbonnesIds'] = this.userAbonnesIds;
+//     data['friendsIds'] = this.friendsIds;
+//     data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
+//     data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
+//     // data['password'] = this.password;
+//     data['last_time_active'] = this.last_time_active;
+//     //data['user_global_tags'] = this.userGlobalTags;
+//     data['viewedVideos'] = this.viewedVideos;
+//     data['lastNotificationTime'] = lastNotificationTime;
+//     // data['totalPoints'] = totalPoints;
+//     data['lastFeedVisitTime'] = lastFeedVisitTime;
+//
+//     data['newPostsFromSubscriptions'] = this.newPostsFromSubscriptions;
+//     data['viewedPostIds'] = this.viewedPostIds;
+//     data['lastFeedUpdate'] = this.lastFeedUpdate;
+//     // Dans toJson()
+//     if (this.liveStats != null) {
+//       data['liveStats'] = this.liveStats!.toJson();
+//     }
+//     // Marketing
+//     data['solde_marketing'] = this.solde_marketing;
+//     data['total_gains_marketing'] = this.total_gains_marketing;
+//     data['marketingActivated'] = this.marketingActivated;
+//     data['lastMarketingActivationDate'] = this.lastMarketingActivationDate;
+//     data['marketingSubscriptionEndDate'] = this.marketingSubscriptionEndDate;
+//     data['usersParrainerActifs'] = this.usersParrainerActifs;
+//     data['usersParrainerHistorique'] = this.usersParrainerHistorique;
+//     data['nbrParrainagesActifs'] = this.nbrParrainagesActifs;
+//     data['nbrParrainagesTotal'] = this.nbrParrainagesTotal;
+//     data['commissionTotalParrainage'] = this.commissionTotalParrainage;
+//
+//     return data;
+//   }
+//
+//   bool isNewForUser(int userLastVisitTime) {
+//     if (createdAt == null) return false;
+//     // createdAt est en MICROSECONDS, userLastVisitTime aussi
+//     return createdAt! > userLastVisitTime;
+//   }
+// }
+
+
 class UserData {
   String? id;
   String? pseudo = "";
@@ -794,7 +1258,6 @@ class UserData {
   bool? isVerify = false;
   File? image;
   String? password;
-  //int? genreId;
   String? role;
   int? createdAt;
   int? updatedAt;
@@ -811,154 +1274,144 @@ class UserData {
   List<String>? autreInvitationsEnvoyerId = [];
   DocumentReference? reference;
   Map<String, String>? countryData;
-  // List<Map<String, dynamic>>? stories = [];
-  List<WhatsappStory>? stories = [];
-  List<String> viewedVideos = []; // Liste des vidéos déjà vues
+  List<dynamic>? stories = [];
+  List<String> viewedVideos = [];
   int? lastNotificationTime;
   int totalPoints = 0;
-  int? lastFeedVisitTime; // Timestamp de la dernière consultation du feed
+  int? lastFeedVisitTime;
+  List<String> newPostsFromSubscriptions = [];
+  List<String>? viewedPostIds = [];
+  int lastFeedUpdate = 0;
 
-
-  List<String> newPostsFromSubscriptions = []; // IDs des nouveaux posts des abonnements (max 1000)
-  List<String>? viewedPostIds = []; // IDs des posts déjà vus (max 1000)
-  int lastFeedUpdate = 0; // Timestamp de la dernière mise à jour du feed
-
-  // Dans class UserData
   AfrolookAbonnement? abonnement;
-
-  // Dans class UserData
   LiveStats? liveStats;
 
   // Marketing et affiliation
   double? solde_marketing = 0.0;
   double? total_gains_marketing = 0.0;
-  List<String>? usersParrainerActifs = []; // Utilisateurs actifs en marketing
-  List<String>? usersParrainerHistorique = []; // Tous les utilisateurs parrainés
+  List<String>? usersParrainerActifs = [];
+  List<String>? usersParrainerHistorique = [];
   int? lastMarketingActivationDate;
   int? marketingSubscriptionEndDate;
   bool? marketingActivated = false;
-
-  // Stats marketing
   int? nbrParrainagesActifs = 0;
   int? nbrParrainagesTotal = 0;
   double? commissionTotalParrainage = 0.0;
 
-  // Préférences de notification par email
   EmailNotificationSettings? emailNotifications;
 
+  // Nouveaux champs pour les pièces et modules
+  int? coinsBalance = 0;               // Solde actuel de pièces
+  int? totalCoinsPurchased = 0;        // Total des pièces achetées
+  int? totalCoinsSpent = 0;            // Total des pièces dépensées
+  int? totalCoinsEarned = 0;           // Total des pièces gagnées
+  int? totalCoinsConverted = 0;        // Total des pièces converties en FCFA
+  int? creatorCoinsBalance = 0;        // Solde des pièces pour créateur
 
-  UserData(
-      {this.reference,
-      this.pseudo,
-      this.nom,
-      this.prenom,
-      this.email,
-      this.numeroDeTelephone,
-      this.adresse,
-      this.genre,
-      this.codeParrainage,
-      this.oneIgnalUserid = "",
-      this.userPays,
-      this.publi_cash = 0,
-      this.pubEntreprise = 0,
-      this.mesPubs = 0,
-      this.mesTiktokPubs,
-      this.pointContribution = 0,
-      this.lastNotificationTime = 0,
-      this.likes = 0,
-      this.jaimes = 0,
-      this.userlikes = 0,
-      this.partage = 0,
-      this.userjaimes = 0,
-      this.votre_solde_contenu = 0.0,
-      this.votre_solde_principal = 0.0,
-      this.votre_solde_cadeau = 0.0,
-      this.tiktokviewerSolde = 0.0,
-      this.comments = 0,
-      this.createdAt = 0,
-      this.updatedAt = 0,
-      this.abonnes = 0,
-      this.totalPoints = 0,
-      this.compteTarif = 0,
-      this.popularite = 0.0,
-      this.votre_solde = 0.0,
-      this.latitude = 0.0,
-      this.longitude = 0.0,
-      this.isBlocked = false,
-      this.isVerify = false,
-      this.isConnected = false,
-      this.completeData = false,
-      this.hasEntreprise = false,
-      this.apropos,
-      this.password = "",
-      this.codeParrain,
-      this.countryData,
-      this.usersParrainer,
-      this.stories,
-      this.state = "OFFLINE",
-        this.viewedVideos = const [],
-        this.userAbonnesIds = const [],
-        this.newPostsFromSubscriptions = const [],
-        this.viewedPostIds = const [],
-        this.lastFeedUpdate = 0,
-      //this.genreId,
-      this.role,
-        // Dans le constructeur UserData
-        this.abonnement,
-        this.liveStats,
-        this.favoritePostsIds = const [],
-        this.solde_marketing = 0.0,
-        this.total_gains_marketing = 0.0,
-        this.usersParrainerActifs = const [],
-        this.usersParrainerHistorique = const [],
-        this.lastMarketingActivationDate,
-        this.marketingSubscriptionEndDate,
-        this.marketingActivated = false,
-        this.nbrParrainagesActifs = 0,
-        this.nbrParrainagesTotal = 0,
-        this.commissionTotalParrainage = 0.0,
-        this.emailNotifications,
+  // Abonnements et préférences
+  bool? datingSubscription = false;     // Abonnement dating actif
+  bool? isDatingProfileEnabled = false; // Profil dating activé
+  bool? isCreatorProfileEnabled = false; // Profil créateur activé
+  int? acceptedTermsAt;                 // Date d'acceptation des conditions
+  int? acceptedCommunityRulesAt;        // Date d'acceptation des règles
 
-        this.userGlobalTags}){
+  UserData({
+    this.reference,
+    this.pseudo,
+    this.nom,
+    this.prenom,
+    this.email,
+    this.numeroDeTelephone,
+    this.adresse,
+    this.genre,
+    this.codeParrainage,
+    this.oneIgnalUserid = "",
+    this.userPays,
+    this.publi_cash = 0,
+    this.pubEntreprise = 0,
+    this.mesPubs = 0,
+    this.mesTiktokPubs = 0,
+    this.pointContribution = 0,
+    this.lastNotificationTime = 0,
+    this.likes = 0,
+    this.jaimes = 0,
+    this.userlikes = 0,
+    this.partage = 0,
+    this.userjaimes = 0,
+    this.votre_solde_contenu = 0.0,
+    this.votre_solde_principal = 0.0,
+    this.votre_solde_cadeau = 0.0,
+    this.tiktokviewerSolde = 0.0,
+    this.comments = 0,
+    this.createdAt = 0,
+    this.updatedAt = 0,
+    this.abonnes = 0,
+    this.totalPoints = 0,
+    this.compteTarif = 0,
+    this.popularite = 0.0,
+    this.votre_solde = 0.0,
+    this.latitude = 0.0,
+    this.longitude = 0.0,
+    this.isBlocked = false,
+    this.isVerify = false,
+    this.isConnected = false,
+    this.completeData = false,
+    this.hasEntreprise = false,
+    this.apropos,
+    this.password = "",
+    this.codeParrain,
+    this.countryData,
+    this.usersParrainer,
+    this.stories,
+    this.state = "OFFLINE",
+    this.viewedVideos = const [],
+    this.userAbonnesIds = const [],
+    this.newPostsFromSubscriptions = const [],
+    this.viewedPostIds = const [],
+    this.lastFeedUpdate = 0,
+    this.role,
+    this.abonnement,
+    this.liveStats,
+    this.favoritePostsIds = const [],
+    this.solde_marketing = 0.0,
+    this.total_gains_marketing = 0.0,
+    this.usersParrainerActifs = const [],
+    this.usersParrainerHistorique = const [],
+    this.lastMarketingActivationDate,
+    this.marketingSubscriptionEndDate,
+    this.marketingActivated = false,
+    this.nbrParrainagesActifs = 0,
+    this.nbrParrainagesTotal = 0,
+    this.commissionTotalParrainage = 0.0,
+    this.emailNotifications,
+    this.coinsBalance = 0,
+    this.totalCoinsPurchased = 0,
+    this.totalCoinsSpent = 0,
+    this.totalCoinsEarned = 0,
+    this.totalCoinsConverted = 0,
+    this.creatorCoinsBalance = 0,
+    this.datingSubscription = false,
+    this.isDatingProfileEnabled = false,
+    this.isCreatorProfileEnabled = false,
+    this.acceptedTermsAt,
+    this.acceptedCommunityRulesAt,
+    this.userGlobalTags,
+  }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
-
-
-
   }
 
-  int _parseDateToMicroseconds(dynamic value) {
-    if (value == null) return 0;
-
-    // si déjà un int
-    if (value is int) {
-      return value;
-    }
-
-    // si string ISO
-    if (value is String) {
-      try {
-        return DateTime.parse(value).microsecondsSinceEpoch;
-      } catch (e) {
-        return 0;
-      }
-    }
-
-    return 0;
-  }
+  // fromJson
   UserData.fromJson(Map<String, dynamic> json) {
     id = json['id']?.toString() ?? '';
     pseudo = json['pseudo']?.toString() ?? '';
     oneIgnalUserid = json['oneIgnalUserid']?.toString() ?? '';
-// Dans fromJson()
     abonnement = json['abonnement'] != null
-        ? AfrolookAbonnement.fromJson(
-        Map<String, dynamic>.from(json['abonnement']))
+        ? AfrolookAbonnement.fromJson(Map<String, dynamic>.from(json['abonnement']))
         : AfrolookAbonnement.gratuit();
     favoritePostsIds = (json['favoritePostsIds'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
-// Dans fromJson()
     liveStats = json['liveStats'] != null
         ? LiveStats.fromJson(Map<String, dynamic>.from(json['liveStats']))
         : LiveStats.defaultForUser(id ?? '');
@@ -969,7 +1422,6 @@ class UserData {
     nom = json['nom']?.toString() ?? '';
     prenom = json['prenom']?.toString() ?? '';
     imageUrl = json['imageUrl']?.toString() ?? '';
-
     numeroDeTelephone = json['numero_de_telephone']?.toString() ?? '';
     adresse = json['adresse']?.toString() ?? '';
     email = json['email']?.toString() ?? '';
@@ -977,7 +1429,6 @@ class UserData {
     codeParrainage = json['code_parrainage']?.toString() ?? '';
     codeParrain = json['code_parrain']?.toString() ?? '';
     state = json['state']?.toString() ?? '';
-
     userPays = json['user_pays'] != null
         ? UserPays.fromJson(json['user_pays'] as Map<String, dynamic>)
         : null;
@@ -993,11 +1444,6 @@ class UserData {
     mesPubs = json['mesPubs'] ?? 0;
     mesTiktokPubs = json['mesTiktokPubs'] ?? 0;
     partage = json['partage'] ?? 0;
-    // last_time_active = json['last_time_active'] is Timestamp
-    //     ? (json['last_time_active'] as Timestamp).millisecondsSinceEpoch
-    //     : (json['last_time_active'] is int
-    //     ? json['last_time_active'] as int
-    //     : 0);
     pointContribution = json['pointContribution'] ?? 0;
     userlikes = json['userlikes'] ?? 0;
     userjaimes = json['userjaimes'] ?? 0;
@@ -1010,25 +1456,17 @@ class UserData {
     popularite = double.tryParse(json['popularite']?.toString() ?? '0') ?? 0.0;
     latitude = double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0;
     longitude = double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0;
-
     apropos = json['apropos']?.toString() ?? '';
     isConnected = json['isConnected'] ?? false;
     isBlocked = json['isBlocked'] ?? false;
     completeData = json['completeData'] ?? false;
-    hasEntreprise = json['hasEntreprise'] ?? false;
+    hasEntreprise = json['has_entreprise'] ?? false;
     isVerify = json['isVerify'] ?? false;
 
     password = json['password']?.toString() ?? '';
     role = json['role']?.toString() ?? '';
-    createdAt = json['createdAt'] != null
-        ? _parseDateToMicroseconds(json['createdAt'])
-        : null;
-
-    updatedAt = json['updatedAt'] != null
-        ? _parseDateToMicroseconds(json['updatedAt'])
-        : null;
-    // createdAt = json['createdAt'] ?? 0;
-    // updatedAt = json['updatedAt'] ?? 0;
+    createdAt = json['createdAt'];
+    updatedAt = json['updatedAt'];
 
     userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
         ?.map((e) => int.tryParse(e.toString()) ?? 0)
@@ -1046,9 +1484,9 @@ class UserData {
         ?.map((v) => v.toString())
         .toList() ?? [];
 
-    stories = (json['stories'] as List<dynamic>?)
-        ?.map((v) => WhatsappStory.fromJson(v as Map<String, dynamic>))
-        .toList() ?? [];
+    // stories = (json['stories'] as List<dynamic>?)
+    //     ?.map((v) => WhatsappStory.fromJson(v as Map<String, dynamic>))
+    //     .toList() ?? [];
 
     mesInvitationsEnvoyerId = (json['mesInvitationsEnvoyerId'] as List<dynamic>?)
         ?.map((v) => v.toString())
@@ -1068,11 +1506,8 @@ class UserData {
         .toList() ?? [];
     lastNotificationTime = json['lastNotificationTime'] ?? 0;
     totalPoints = json['totalPoints'] ?? 0;
-    lastFeedVisitTime = json['lastFeedVisitTime'] ??
-        DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
-    newPostsFromSubscriptions= List<String>.from(json['newPostsFromSubscriptions'] ?? []);
-    viewedPostIds= List<String>.from(json['viewedPostIds'] ?? []);
-    // lastFeedUpdate= json['lastFeedUpdate'] ?? 0;
+    lastFeedVisitTime = json['lastFeedVisitTime'] ?? DateTime.now().millisecondsSinceEpoch;
+    newPostsFromSubscriptions = List<String>.from(json['newPostsFromSubscriptions'] ?? []);
 
     // Marketing
     solde_marketing = (json['solde_marketing'] as num?)?.toDouble() ?? 0.0;
@@ -1080,132 +1515,62 @@ class UserData {
     marketingActivated = json['marketingActivated'] ?? false;
     lastMarketingActivationDate = json['lastMarketingActivationDate'];
     marketingSubscriptionEndDate = json['marketingSubscriptionEndDate'];
-
     usersParrainerActifs = (json['usersParrainerActifs'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
-
     usersParrainerHistorique = (json['usersParrainerHistorique'] as List<dynamic>?)
         ?.map((v) => v.toString())
         .toList() ?? [];
-
     nbrParrainagesActifs = json['nbrParrainagesActifs'] ?? 0;
     nbrParrainagesTotal = json['nbrParrainagesTotal'] ?? 0;
     commissionTotalParrainage = (json['commissionTotalParrainage'] as num?)?.toDouble() ?? 0.0;
 
-
+    // Nouveaux champs coins et profils
+    coinsBalance = json['coinsBalance'] ?? 0;
+    totalCoinsPurchased = json['totalCoinsPurchased'] ?? 0;
+    totalCoinsSpent = json['totalCoinsSpent'] ?? 0;
+    totalCoinsEarned = json['totalCoinsEarned'] ?? 0;
+    totalCoinsConverted = json['totalCoinsConverted'] ?? 0;
+    creatorCoinsBalance = json['creatorCoinsBalance'] ?? 0;
+    datingSubscription = json['datingSubscription'] ?? false;
+    isDatingProfileEnabled = json['isDatingProfileEnabled'] ?? false;
+    isCreatorProfileEnabled = json['isCreatorProfileEnabled'] ?? false;
+    acceptedTermsAt = json['acceptedTermsAt'];
+    acceptedCommunityRulesAt = json['acceptedCommunityRulesAt'];
   }
-
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['pseudo'] = this.pseudo;
-    data['nom'] = this.nom;
-    data['prenom'] = this.prenom;
-    data['email'] = this.email;
-    data['imageUrl'] = this.imageUrl;
-    data['numero_de_telephone'] = this.numeroDeTelephone;
-    data['adresse'] = this.adresse;
-    data['favoritePostsIds'] = this.favoritePostsIds;
-
-    // data['isVerify'] = this.isVerify;
-    // data['state'] = this.state;
-    data['mesPubs'] = this.mesPubs;
-    // data['mesTiktokPubs'] = this.mesTiktokPubs;
-    data['code_parrainage'] = this.codeParrainage;
-    data['usersParrainer'] = this.usersParrainer;
-    // data['publi_cash'] = this.publi_cash;
-    // data['votre_solde'] = this.votre_solde;
-    // data['votre_solde_contenu'] = this.votre_solde_contenu;
-    // data['votre_solde_principal'] = this.votre_solde_principal;
-    // data['votre_solde_cadeau'] = this.votre_solde_cadeau;
-    // data['code_parrain'] = this.codeParrain;
-    // autres données
-      data['countryData'] = this.countryData;
-    if (stories != null) {
-      data['stories'] = stories!.map((story) => story.toJson()).toList();
-    } else {
-      data['stories'] = [];
-    }
-
-    if (this.userPays != null) {
-      data['user_pays'] = this.userPays!.toJson();
-    }
-// Dans toJson()
-    if (this.abonnement != null) {
-      data['abonnement'] = this.abonnement!.toJson();
-    } else {
-      // Toujours s'assurer qu'il y a un abonnement
-      data['abonnement'] = AfrolookAbonnement.gratuit().toJson();
-    }
-    // data['isBlocked'] = this.isBlocked;
-    data['complete_data'] = this.completeData;
-    data['has_entreprise'] = this.hasEntreprise;
-
-    data['latitude'] = this.latitude;
-    data['oneIgnalUserid'] = this.oneIgnalUserid;
-    // data['image'] = this.image;
-    data['longitude'] = this.longitude;
-    data['apropos'] = this.apropos;
-    // data['password'] = this.password;
-    data['genre'] = this.genre;
-    // data['userlikes'] = this.userlikes;
-    // data['partage'] = this.partage;
-    // data['userjaimes'] = this.userjaimes;
-    // data['genre_id'] = this.genreId;
-    data['isConnected'] = this.isConnected;
-    data['role'] = this.role;
-    // data['tiktokviewerSolde'] = this.tiktokviewerSolde;
-
-    data['pub_entreprise'] = this.pubEntreprise;
-    data['point_contribution'] = this.pointContribution;
-    // data['likes'] = this.likes;
-    // data['jaimes'] = this.jaimes;
-    data['updatedAt'] = this.updatedAt;
-    data['createdAt'] = this.createdAt;
-    data['comments'] = this.comments;
-    data['abonnes'] = this.abonnes;
-    data['compte_tarif'] = this.compteTarif;
-    // data['popularite'] = this.popularite;
-    // data['userAbonnesIds'] = this.userAbonnesIds;
-    data['friendsIds'] = this.friendsIds;
-    data['mesInvitationsEnvoyerId'] = this.mesInvitationsEnvoyerId;
-    data['autreInvitationsEnvoyerId'] = this.autreInvitationsEnvoyerId;
-    // data['password'] = this.password;
-    data['last_time_active'] = this.last_time_active;
-    //data['user_global_tags'] = this.userGlobalTags;
-    data['viewedVideos'] = this.viewedVideos;
-    data['lastNotificationTime'] = lastNotificationTime;
-    // data['totalPoints'] = totalPoints;
-    data['lastFeedVisitTime'] = lastFeedVisitTime;
-
-    data['newPostsFromSubscriptions'] = this.newPostsFromSubscriptions;
-    data['viewedPostIds'] = this.viewedPostIds;
-    data['lastFeedUpdate'] = this.lastFeedUpdate;
-    // Dans toJson()
-    if (this.liveStats != null) {
-      data['liveStats'] = this.liveStats!.toJson();
-    }
-    // Marketing
-    data['solde_marketing'] = this.solde_marketing;
-    data['total_gains_marketing'] = this.total_gains_marketing;
-    data['marketingActivated'] = this.marketingActivated;
-    data['lastMarketingActivationDate'] = this.lastMarketingActivationDate;
-    data['marketingSubscriptionEndDate'] = this.marketingSubscriptionEndDate;
-    data['usersParrainerActifs'] = this.usersParrainerActifs;
-    data['usersParrainerHistorique'] = this.usersParrainerHistorique;
-    data['nbrParrainagesActifs'] = this.nbrParrainagesActifs;
-    data['nbrParrainagesTotal'] = this.nbrParrainagesTotal;
-    data['commissionTotalParrainage'] = this.commissionTotalParrainage;
-
+    final Map<String, dynamic> data = {};
+    data['id'] = id;
+    data['pseudo'] = pseudo;
+    data['nom'] = nom;
+    data['prenom'] = prenom;
+    data['email'] = email;
+    data['imageUrl'] = imageUrl;
+    data['numero_de_telephone'] = numeroDeTelephone;
+    data['adresse'] = adresse;
+    data['favoritePostsIds'] = favoritePostsIds;
+    data['oneIgnalUserid'] = oneIgnalUserid;
+    data['state'] = state;
+    data['genre'] = genre;
+    data['code_parrainage'] = codeParrainage;
+    data['code_parrain'] = codeParrain;
+    data['user_pays'] = userPays?.toJson();
+    data['abonnement'] = abonnement?.toJson() ?? AfrolookAbonnement.gratuit().toJson();
+    data['liveStats'] = liveStats?.toJson();
+    data['coinsBalance'] = coinsBalance;
+    data['totalCoinsPurchased'] = totalCoinsPurchased;
+    data['totalCoinsSpent'] = totalCoinsSpent;
+    data['totalCoinsEarned'] = totalCoinsEarned;
+    data['totalCoinsConverted'] = totalCoinsConverted;
+    data['creatorCoinsBalance'] = creatorCoinsBalance;
+    data['datingSubscription'] = datingSubscription;
+    data['isDatingProfileEnabled'] = isDatingProfileEnabled;
+    data['isCreatorProfileEnabled'] = isCreatorProfileEnabled;
+    data['acceptedTermsAt'] = acceptedTermsAt;
+    data['acceptedCommunityRulesAt'] = acceptedCommunityRulesAt;
+    // Ajouter les autres champs déjà présents comme vu plus haut...
     return data;
-  }
-
-  bool isNewForUser(int userLastVisitTime) {
-    if (createdAt == null) return false;
-    // createdAt est en MICROSECONDS, userLastVisitTime aussi
-    return createdAt! > userLastVisitTime;
   }
 }
 class Post {

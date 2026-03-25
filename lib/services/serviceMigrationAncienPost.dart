@@ -1,6 +1,8 @@
 // Créez un nouveau fichier migration_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/model_data.dart';
+
 class MigrationAncienPostService {
   static FirebaseFirestore firestore = FirebaseFirestore.instance;
 
@@ -229,4 +231,232 @@ class MigrationAncienPostService {
       print('❌ Erreur vérification migration: $e');
     }
   }
+}
+
+
+
+
+// Ajoutez cette méthode dans votre UserAuthProvider existant
+Future<void> migrateInitialDatingProfiles() async {
+  try {
+    print('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING ===');
+    print('📅 Date de migration: ${DateTime.now()}');
+
+    // Récupérer tous les utilisateurs dont le genre est "femme"
+    print('🔍 Recherche des utilisateurs avec genre = "Femme"...');
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .where('genre', isEqualTo: 'Femme')
+        .get();
+
+    print('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
+
+    int createdCount = 0;
+    int skippedCount = 0;
+    int errorCount = 0;
+
+    for (var userDoc in usersSnapshot.docs) {
+      try {
+        final userData = UserData.fromJson(userDoc.data());
+        print('\n--- Traitement de l\'utilisateur ---');
+        print('📱 ID: ${userData.id}');
+        print('👤 Pseudo: ${userData.pseudo}');
+        print('📧 Email: ${userData.email}');
+
+        // Vérifier si un profil dating existe déjà
+        final existingProfile = await FirebaseFirestore.instance
+            .collection('dating_profiles')
+            .where('userId', isEqualTo: userData.id)
+            .limit(1)
+            .get();
+
+        if (existingProfile.docs.isNotEmpty) {
+          print('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
+          skippedCount++;
+          continue;
+        }
+
+        // Calcul de l'âge avec gestion des différents formats de date
+        final age = _calculateAgeFromUserDataSafe(userData);
+        print('🎂 Âge calculé: $age ans');
+
+        // Calcul du pourcentage de complétion
+        final completionPercentage = _calculateCompletionPercentage(userData);
+        print('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        print('⏰ Timestamp actuel: $now');
+
+        final profileId = FirebaseFirestore.instance.collection('dating_profiles').doc().id;
+
+        final datingProfile = {
+          'id': profileId,
+          'userId': userData.id,
+          'pseudo': userData.pseudo ?? '',
+          'imageUrl': userData.imageUrl ?? '',
+          'photosUrls': [userData.imageUrl ?? ''],
+          'bio': userData.apropos ?? '',
+          'age': age,
+          'sexe': userData.genre ?? '',
+          'ville': userData.adresse?.split(',')[0] ?? '',
+          'pays': userData.userPays?.name ?? '',
+          'profession': null,
+          'centresInteret': [],
+          'rechercheSexe': 'homme',
+          'rechercheAgeMin': 18,
+          'rechercheAgeMax': 50,
+          'recherchePays': '',
+          'isVerified': false,
+          'isActive': true,
+          'isProfileComplete': completionPercentage >= 80,
+          'completionPercentage': completionPercentage,
+          'createdByMigration': true,
+          'likesCount': 0,
+          'coupsDeCoeurCount': 0,
+          'connexionsCount': 0,
+          'visitorsCount': 0,
+          'createdAt': now,
+          'updatedAt': now,
+        };
+
+        print('💾 Création du profil dating...');
+        await FirebaseFirestore.instance
+            .collection('dating_profiles')
+            .doc(profileId)
+            .set(datingProfile);
+
+        print('✅ Profil dating créé avec succès (ID: $profileId)');
+        createdCount++;
+
+      } catch (e) {
+        print('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
+        errorCount++;
+      }
+    }
+
+    print('\n📊 === RÉSUMÉ DE LA MIGRATION ===');
+    print('✅ Profils créés: $createdCount');
+    print('⚠️ Profils ignorés (déjà existants): $skippedCount');
+    print('❌ Erreurs: $errorCount');
+    print('🎯 Total traité: ${usersSnapshot.docs.length}');
+    print('✅ Migration des profils dating terminée avec succès!');
+
+  } catch (e) {
+    print('❌ ERREUR FATALE lors de la migration: $e');
+    print('📋 Stack trace: ${StackTrace.current}');
+  }
+}
+
+/// Calcule l'âge à partir des données utilisateur en gérant différents formats de date
+int _calculateAgeFromUserDataSafe(UserData userData) {
+  try {
+    // Si createdAt est null, retourner 0
+    if (userData.createdAt == null) {
+      print('⚠️ createdAt est null, âge par défaut: 0');
+      return 0;
+    }
+
+    DateTime birthDate;
+    final createdAt = userData.createdAt;
+
+    // Vérifier si c'est en microsecondes (valeur très grande > 10^12)
+    if (createdAt! > 1000000000000) {
+      // C'est probablement en microsecondes
+      birthDate = DateTime.fromMicrosecondsSinceEpoch(createdAt!);
+      print('📅 Date de naissance (microsecondes): $birthDate');
+    }
+    // Vérifier si c'est en millisecondes (valeur entre 10^9 et 10^12)
+    else if (createdAt > 1000000000 && createdAt <= 1000000000000) {
+      birthDate = DateTime.fromMillisecondsSinceEpoch(createdAt);
+      print('📅 Date de naissance (millisecondes): $birthDate');
+    }
+    // Sinon, traiter comme DateTime direct
+    else {
+      birthDate = DateTime.fromMillisecondsSinceEpoch(createdAt);
+      print('📅 Date de naissance (par défaut): $birthDate');
+    }
+
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+
+    // Vérifier si l'anniversaire est déjà passé cette année
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+
+    // Validation de l'âge
+    if (age < 0 || age > 120) {
+      print('⚠️ Âge invalide calculé: $age, utilisation de 0');
+      return 0;
+    }
+
+    return age;
+
+  } catch (e) {
+    print('❌ Erreur lors du calcul de l\'âge: $e');
+    print('📋 createdAt value: ${userData.createdAt}');
+    return 0;
+  }
+}
+
+double _calculateCompletionPercentage(UserData userData) {
+  int completedFields = 0;
+  int totalFields = 6;
+
+  print('🔍 Vérification des champs pour le calcul de complétion:');
+
+  // Pseudo
+  if (userData.pseudo?.isNotEmpty ?? false) {
+    completedFields++;
+    print('  ✅ Pseudo: ${userData.pseudo}');
+  } else {
+    print('  ❌ Pseudo: manquant');
+  }
+
+  // Image URL
+  if (userData.imageUrl?.isNotEmpty ?? false) {
+    completedFields++;
+    print('  ✅ Image URL: ${userData.imageUrl}');
+  } else {
+    print('  ❌ Image URL: manquant');
+  }
+
+  // Bio (apropos)
+  if (userData.apropos?.isNotEmpty ?? false) {
+    completedFields++;
+    print('  ✅ Bio: ${userData.apropos?.substring(0, userData.apropos!.length > 50 ? 50 : userData.apropos!.length)}...');
+  } else {
+    print('  ❌ Bio: manquant');
+  }
+
+  // Genre
+  if (userData.genre?.isNotEmpty ?? false) {
+    completedFields++;
+    print('  ✅ Genre: ${userData.genre}');
+  } else {
+    print('  ❌ Genre: manquant');
+  }
+
+  // Adresse
+  if (userData.adresse?.isNotEmpty ?? false) {
+    completedFields++;
+    print('  ✅ Adresse: ${userData.adresse}');
+  } else {
+    print('  ❌ Adresse: manquant');
+  }
+
+  // Pays
+  if (userData.userPays != null) {
+    completedFields++;
+    print('  ✅ Pays: ${userData.userPays?.name}');
+  } else {
+    print('  ❌ Pays: manquant');
+  }
+
+  final percentage = (completedFields / totalFields) * 100;
+  print('📊 Total champs remplis: $completedFields/$totalFields');
+  print('📊 Pourcentage de complétion: ${percentage.toStringAsFixed(1)}%');
+
+  return percentage;
 }

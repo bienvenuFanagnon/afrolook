@@ -82,19 +82,10 @@ class _UpdateUserDataState extends State<UpdateUserData> {
   }
 
   Future<String?> getCountryCode() async {
-    // Sur le web, retourner null car la géolocalisation ne fonctionne pas
-    if (kIsWeb) {
-      print("Plateforme Web: Pas de code pays par géolocalisation");
-      return null;
-    }
+    if (kIsWeb) return null;
 
-    // Utiliser le code pays détecté en arrière-plan
-    if (detectedCountryCode != null && detectedCountryCode!.isNotEmpty) {
-      return detectedCountryCode;
-    }
-
-    // Si pas encore détecté, essayer de le récupérer maintenant
-    PermissionStatus permission = await Permission.location.status;
+    // ✅ toujours demander la permission ici
+    PermissionStatus permission = await Permission.location.request();
 
     if (permission.isGranted) {
       try {
@@ -102,19 +93,20 @@ class _UpdateUserDataState extends State<UpdateUserData> {
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: Duration(seconds: 5),
         );
+
         List<Placemark> placemarks = await placemarkFromCoordinates(
-            position.latitude,
-            position.longitude
+          position.latitude,
+          position.longitude,
         );
 
         if (placemarks.isNotEmpty) {
           return placemarks[0].isoCountryCode;
         }
       } catch (e) {
-        print("Erreur lors de la récupération du pays: $e");
-        return null;
+        print("Erreur: $e");
       }
     }
+
     return null;
   }
 
@@ -146,7 +138,8 @@ class _UpdateUserDataState extends State<UpdateUserData> {
       // Sur mobile, on récupère le vrai code pays en arrière-plan
       if (!kIsWeb) {
         String? realCountryCode = await getCountryCode();
-        userData["countryCode"] = realCountryCode ?? "";
+
+        userData["countryCode"] = realCountryCode ?? detectedCountryCode ?? "";
         userData["realCountry"] = detectedCountryName ?? "";
 
         print("=== Informations utilisateur (Mobile) ===");

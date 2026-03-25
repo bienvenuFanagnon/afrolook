@@ -25,6 +25,7 @@ import '../providers/userProvider.dart';
 import '../services/linkService.dart';
 
 import '../services/postService/mixed_feed_service.dart';
+import '../services/serviceMigrationAncienPost.dart';
 import 'component/consoleWidget.dart';
 
 import 'dart:async';
@@ -82,7 +83,15 @@ class _ChargementState extends State<SplahsChargement> {
       isFinished = false;
       _loadingText = "Vérification de la vidéo...";
     });
-
+// Appeler la migration après la première connexion
+//     final prefs = await SharedPreferences.getInstance();
+//     final migrationDone = prefs.getBool('dating_migration_done') ?? false;
+//     if (!migrationDone) {
+//       print('🔄 Première connexion - Lancement de la migration des profils dating...');
+//       await migrateInitialDatingProfiles();
+//       await prefs.setBool('dating_migration_done', true);
+//       print('✅ Migration marquée comme terminée');
+//     }
     await _checkIfShouldPlayVideo();
 
     // 🔥 LANCER L'AUTHENTIFICATION ET PRÉPARATION DES POSTS

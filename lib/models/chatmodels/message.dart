@@ -27,6 +27,7 @@ import 'package:afrotok/models/chatmodels/reply_message.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
+import '../enums.dart';
 import 'models.dart';
 
 class Message {

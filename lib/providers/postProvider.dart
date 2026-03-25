@@ -3,14 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/story/afroStory/repository.dart';
 import 'package:afrotok/services/user/userService.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_story_presenter/flutter_story_presenter.dart';
-
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -3450,46 +3446,6 @@ class PostProvider extends ChangeNotifier {
     return null;
   }
 
-  Future<List<PostComment>> getStoryCommentsNoStream(WhatsappStory w) async{
-    List<PostComment> postComment = [];
-    listConstpostsComment = [];
-    CollectionReference userCollect =
-    FirebaseFirestore.instance.collection('PostComments');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshotUser = await userCollect
-        .where("post_id",isEqualTo:'${w.createdAt}')
-        .orderBy('created_at', descending: true)
-        .get();
-
-    // Afficher la liste
-    listConstpostsComment = querySnapshotUser.docs.map((doc) =>
-        PostComment.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-    //  UserData userData=UserData();
-
-
-
-    for (var postcmt in listConstpostsComment) {
-      //  printVm("post : ${jsonDecode(post.toString())}");
-      //PostComment pm=PostComment.fromJson(postcmt.data());
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${postcmt.user_id}').get();
-      // Afficher la liste
-
-
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      postcmt.user=userList.first;
-      //postComment.add(pm);
-      //listConstpostsComment.add(pm);
-
-
-    }
-    //notifyListeners();
-    return listConstpostsComment;
-
-  }
 
   Future<List<PostComment>> getPostComments(Post p) async {
 

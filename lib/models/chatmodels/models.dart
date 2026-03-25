@@ -19,14 +19,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-enum MessageType {
-  image,
-  text,
-
-  /// Only supported on android and ios
-  voice,
-  custom
-}
+// enum MessageType {
+//   image,
+//   text,
+//
+//   /// Only supported on android and ios
+//   voice,
+//   custom
+// }
 
 /// Events, Wheter the user is still typing a message or has
 /// typed the message

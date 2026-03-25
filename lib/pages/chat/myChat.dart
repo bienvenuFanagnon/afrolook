@@ -20,6 +20,7 @@ import 'package:provider/provider.dart';
 import '../../constant/constColors.dart';
 import '../../constant/sizeText.dart';
 import '../../constant/textCustom.dart';
+import '../../models/enums.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../user/detailsOtherUser.dart';

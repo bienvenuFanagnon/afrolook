@@ -17,6 +17,15 @@ import 'package:afrotok/pages/chat/myChat.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
+import 'package:afrotok/pages/dating/buy_coins_page.dart';
+import 'package:afrotok/pages/dating/coin_transactions_page.dart';
+import 'package:afrotok/pages/dating/creator_profile_page.dart';
+import 'package:afrotok/pages/dating/creator_subscription_page.dart';
+import 'package:afrotok/pages/dating/dating_connections_page.dart';
+import 'package:afrotok/pages/dating/dating_conversations_page.dart';
+import 'package:afrotok/pages/dating/dating_entry_page.dart';
+import 'package:afrotok/pages/dating/dating_profile_setup_page.dart';
+import 'package:afrotok/pages/dating/dating_profiles_list_page.dart';
 import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterProduit.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
@@ -35,12 +44,9 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideoListe.dart';
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoOriginal.dart';
 
-import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
-import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/splashVideo.dart';
 
-import 'package:afrotok/pages/story/storieForm.dart';
 import 'package:afrotok/pages/user/amis/addListAmis.dart';
 import 'package:afrotok/pages/user/amis/ami.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
@@ -62,6 +68,9 @@ import 'package:afrotok/providers/crypto_admin_provider.dart';
 import 'package:afrotok/providers/crypto_initializer.dart';
 import 'package:afrotok/providers/crypto_market_provider.dart';
 import 'package:afrotok/providers/crypto_portfolio_controller.dart';
+import 'package:afrotok/providers/dating/coin_provider.dart';
+import 'package:afrotok/providers/dating/creator_provider.dart';
+import 'package:afrotok/providers/dating/dating_provider.dart';
 import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
@@ -401,7 +410,24 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(
           create: (context) => RecentPostsProvider(),
           child: HomeConstPostPage(type: TabBarType.LOOKS.name,),
-        )
+        ),
+
+        // NOUVEAUX PROVIDERS
+        ChangeNotifierProxyProvider<UserAuthProvider, DatingProvider>(
+          create: (context) => DatingProvider(authProvider: context.read<UserAuthProvider>()),
+          update: (context, authProvider, previous) =>
+              DatingProvider(authProvider: authProvider),
+        ),
+        ChangeNotifierProxyProvider<UserAuthProvider, CreatorProvider>(
+          create: (context) => CreatorProvider(authProvider: context.read<UserAuthProvider>()),
+          update: (context, authProvider, previous) =>
+              CreatorProvider(authProvider: authProvider),
+        ),
+        ChangeNotifierProxyProvider<UserAuthProvider, CoinProvider>(
+          create: (context) => CoinProvider(authProvider: context.read<UserAuthProvider>()),
+          update: (context, authProvider, previous) =>
+              CoinProvider(authProvider: authProvider),
+        ),
       ],
       child: MaterialApp(
           navigatorKey: navigatorKey,
@@ -448,8 +474,6 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: Amis(), type: PageTransitionType.fade);
               case '/add_list_amis':
                 return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
-              case '/stories_form':
-                return PageTransition(child: StoriesForm(), type: PageTransitionType.fade);
               case '/add_produit':
                 return PageTransition(child: AddProduit(), type: PageTransitionType.fade);
               case '/create_live':
@@ -485,6 +509,34 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: Chargement(), type: PageTransitionType.fade);
               case '/login':
                 return PageTransition(child: LoginPageUser(), type: PageTransitionType.fade);
+
+
+            // NOUVELLES ROUTES
+              case '/dating':
+                return PageTransition(child: DatingSwipePage(), type: PageTransitionType.fade);
+              case '/dating/list':
+                return PageTransition(child: DatingProfilesListPage(), type: PageTransitionType.fade);
+              case '/dating/profile-setup':
+                return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
+              case '/creator/profile':
+                final args = settings.arguments as Map<String, dynamic>;
+                return PageTransition(child: CreatorProfilePage(creatorId: args['creatorId']), type: PageTransitionType.fade);
+              case '/dating/connections':
+                return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
+              case '/dating/conversations':
+                return PageTransition(child: DatingConversationsPage(), type: PageTransitionType.fade);
+
+              case '/creator/subscription':
+                final args = settings.arguments as Map<String, dynamic>;
+                return PageTransition(child: CreatorSubscriptionPage(
+                  creatorId: args['creatorId'],
+                  creatorName: args['creatorName'],
+                ), type: PageTransitionType.fade);
+              case '/coins/buy':
+                return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
+              case '/coins/transactions':
+                return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
+
               default:
                 return PageTransition(
                     child: const SplahsChargement(postId: '', postType: ''),
@@ -496,3 +548,4 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+

@@ -7,6 +7,7 @@ import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
@@ -971,7 +972,9 @@ class _DetailsPostState extends State<DetailsPost>
   @override
   void initState() {
     super.initState();
-
+    if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
+    }
     _initSharedPreferences();
     _isAd = widget.post.isAdvertisement == true;
     if (_isAd && widget.post.advertisementId != null) {
