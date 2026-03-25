@@ -447,14 +447,14 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
                     // Profil créateur
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CreatorProfilePage(
-                              creatorId: widget.content.creatorId,
-                            ),
-                          ),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (_) => CreatorProfilePage(
+                        //       userId: widget.content.creatorId,
+                        //     ),
+                        //   ),
+                        // );
                       },
                       child: Row(
                         children: [

@@ -303,7 +303,14 @@ class _ChargementState extends State<SplahsChargement> {
     // }
     //   print('Deeplink: ${widget.postId}');
     // 5. VÉRIFIER LES DONNÉES PAYS
-    if (authProvider.loginUserData.countryData?["countryCode"] == null&&authProvider.loginUserData.countryData?["country"] == null) {
+    final countryCode =
+    authProvider.loginUserData.countryData?["countryCode"]?.toString();
+
+    final country =
+    authProvider.loginUserData.countryData?["country"];
+    // printVm("countryCode user:-${authProvider.loginUserData.countryData}-");
+
+    if ((countryCode == null || countryCode.isEmpty)) {
 
         Navigator.push(
           context,

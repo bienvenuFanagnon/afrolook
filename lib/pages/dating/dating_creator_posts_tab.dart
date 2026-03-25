@@ -1,4 +1,5 @@
 // lib/pages/dating/dating_creator_posts_tab.dart
+import 'package:afrotok/pages/dating/creator_register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,8 +7,9 @@ import '../../models/dating_data.dart';
 import '../../providers/authProvider.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_content_form_page.dart';
+import 'creator_other_profil.dart';
 import 'creator_profile_page.dart';
-
+import 'creator_subscription_page.dart'; // 🔥 Ajout de l'import
 
 class DatingCreatorPostsPage extends StatefulWidget {
   const DatingCreatorPostsPage({Key? key}) : super(key: key);
@@ -114,12 +116,22 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
     }
   }
 
-  void _navigateToCreatorProfile(String creatorId) {
-    print('📱 Navigation vers le profil créateur: $creatorId');
+  void _navigateToCreatorProfileByUserId(String userId) {
+    print('📱 Navigation vers le profil créateur userid: $userId');
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CreatorProfilePage(creatorId: creatorId),
+        builder: (_) => CreatorProfilePage(userId: userId),
+      ),
+    );
+  }
+
+  void _navigateToCreatorProfileByCreatorId(String creatorId) {
+    print('📱 Navigation vers le profil créateur : $creatorId');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreatorOtherProfilePage(creatorId: creatorId),
       ),
     );
   }
@@ -139,8 +151,63 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
 
   void _navigateToMyCreatorProfile() {
     if (_myCreatorProfile != null) {
-      _navigateToCreatorProfile(_myCreatorProfile!.userId);
+      _navigateToCreatorProfileByUserId(_myCreatorProfile!.userId);
     }
+  }
+
+  // ✅ Dialogue d'abonnement modifié pour le créateur
+  void _showSubscriptionRequiredDialog(String creatorId, String creatorName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.lock, color: primaryYellow),
+            const SizedBox(width: 8),
+            const Text(
+              'Abonnement requis',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          'Pour accéder aux contenus payants de $creatorName, vous devez vous abonner à son profil créateur.',
+          style: TextStyle(color: Colors.grey[300]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Plus tard', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CreatorSubscriptionPage(
+                    creatorId: creatorId,
+                    creatorName: creatorName,
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryYellow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            child: Text(
+              'S\'abonner',
+              style: TextStyle(color: primaryBlack, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -169,14 +236,12 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Bouton pour créer du contenu (si l'utilisateur est créateur)
           if (_isCreator && !_isLoadingCreatorProfile)
             IconButton(
               icon: Icon(Icons.add, color: primaryYellow, size: 28),
               onPressed: _navigateToCreateContent,
               tooltip: 'Créer un contenu',
             ),
-          // Bouton pour voir mon profil créateur
           if (_isCreator && !_isLoadingCreatorProfile)
             IconButton(
               icon: Icon(Icons.person, color: Colors.white, size: 24),
@@ -201,7 +266,6 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
       )
           : Column(
         children: [
-          // Bannière pour devenir créateur (si pas encore créateur)
           if (!_isCreator)
             Container(
               margin: const EdgeInsets.all(16),
@@ -254,7 +318,12 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/creator/register');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreatorRegisterPage(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -270,8 +339,6 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
                 ],
               ),
             ),
-
-          // TabBar pour contenus gratuits/payants
           Container(
             color: primaryBlack,
             child: TabBar(
@@ -461,7 +528,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
             final canAccess = !content.isPaid || _isSubscribed;
 
             return GestureDetector(
-              onTap: () {
+              onTap: () async {
                 print('📱 Ouverture du contenu: ${content.titre} (ID: ${content.id})');
                 if (canAccess) {
                   Navigator.push(
@@ -472,7 +539,15 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
                   );
                 } else {
                   print('🔒 Contenu payant verrouillé - abonnement requis');
-                  _showSubscriptionRequiredDialog();
+                  // Récupérer le nom du créateur
+                  final creatorDoc = await _firestore
+                      .collection('creator_profiles')
+                      .doc(content.creatorId)
+                      .get();
+                  final creatorName = creatorDoc.exists
+                      ? (creatorDoc.data()?['pseudo'] ?? 'ce créateur')
+                      : 'ce créateur';
+                  _showSubscriptionRequiredDialog(content.creatorId, creatorName);
                 }
               },
               child: Container(
@@ -626,7 +701,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
                           // Créateur
                           const SizedBox(height: 8),
                           GestureDetector(
-                            onTap: () => _navigateToCreatorProfile(content.creatorId),
+                            onTap: () => _navigateToCreatorProfileByCreatorId(content.creatorId),
                             child: Row(
                               children: [
                                 Container(
@@ -662,52 +737,6 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage>
           },
         );
       },
-    );
-  }
-
-  void _showSubscriptionRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-            Icon(Icons.lock, color: primaryYellow),
-            const SizedBox(width: 8),
-            const Text(
-              'Abonnement requis',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        content:  Text(
-          'Pour accéder aux contenus payants, vous devez vous abonner.',
-          style: TextStyle(color: Colors.grey[300]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Plus tard', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/dating/subscription');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryYellow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: Text(
-              'Voir les offres',
-              style: TextStyle(color: primaryBlack, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

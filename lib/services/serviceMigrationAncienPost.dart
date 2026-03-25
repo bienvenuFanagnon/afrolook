@@ -284,6 +284,33 @@ Future<void> migrateInitialDatingProfiles() async {
         final completionPercentage = _calculateCompletionPercentage(userData);
         print('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
 
+        // ✅ CALCUL DU SCORE DE POPULARITÉ
+        final userId = userData.id!;
+        print('📊 Calcul du score de popularité pour $userId...');
+
+        // Récupérer les compteurs
+        final likesCount = await FirebaseFirestore.instance
+            .collection('dating_likes')
+            .where('toUserId', isEqualTo: userId)
+            .count()
+            .get();
+
+        final coupsCount = await FirebaseFirestore.instance
+            .collection('dating_coup_de_coeurs')
+            .where('toUserId', isEqualTo: userId)
+            .count()
+            .get();
+
+        final connectionsCount = await FirebaseFirestore.instance
+            .collection('dating_connections')
+            .where('userId1', isEqualTo: userId)
+            .count()
+            .get();
+
+        // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
+        final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
+        print('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
+
         final now = DateTime.now().millisecondsSinceEpoch;
         print('⏰ Timestamp actuel: $now');
 
@@ -308,13 +335,14 @@ Future<void> migrateInitialDatingProfiles() async {
           'recherchePays': '',
           'isVerified': false,
           'isActive': true,
-          'isProfileComplete': completionPercentage >= 80,
+          'isProfileComplete': completionPercentage >= 100,
           'completionPercentage': completionPercentage,
           'createdByMigration': true,
           'likesCount': 0,
           'coupsDeCoeurCount': 0,
           'connexionsCount': 0,
           'visitorsCount': 0,
+          'popularityScore': popularityScore, // ✅ NOUVEAU CHAMP AJOUTÉ
           'createdAt': now,
           'updatedAt': now,
         };
@@ -325,7 +353,7 @@ Future<void> migrateInitialDatingProfiles() async {
             .doc(profileId)
             .set(datingProfile);
 
-        print('✅ Profil dating créé avec succès (ID: $profileId)');
+        print('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
         createdCount++;
 
       } catch (e) {

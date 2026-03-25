@@ -10,7 +10,12 @@ import 'package:chewie/chewie.dart';
 import '../../models/dating_data.dart';
 import '../../models/enums.dart';
 import '../../providers/authProvider.dart';
-import '../../providers/dating/creator_provider.dart';
+// lib/pages/creator/creator_content_form_page.dart
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 class CreatorContentFormPage extends StatefulWidget {
   final CreatorContent? existingContent;
@@ -32,19 +37,21 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
   bool _isLoading = false;
   bool _isPaid = false;
   MediaType _mediaType = MediaType.image;
-  File? _selectedMedia;
+
+  // Media selection (web vs mobile)
+  File? _selectedMediaFile;       // mobile
+  Uint8List? _selectedMediaBytes; // web
   String? _existingMediaUrl;
   String? _thumbnailUrl;
+
   bool _isVideoInitialized = false;
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
 
-  // Firebase
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
-  // Couleurs
   final Color primaryRed = const Color(0xFFE63946);
   final Color primaryYellow = const Color(0xFFFFD700);
   final Color primaryBlack = Colors.black;
@@ -104,87 +111,99 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
   }
 
   Future<void> _pickMedia() async {
-    final picker = ImagePicker();
-
-    if (_mediaType == MediaType.image) {
-      final XFile? pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-      if (pickedFile != null) {
-        setState(() {
-          _selectedMedia = File(pickedFile.path);
-          _existingMediaUrl = null;
-        });
-      }
-    } else {
-      final XFile? pickedFile = await picker.pickVideo(
-        source: ImageSource.gallery,
-      );
-      if (pickedFile != null) {
-        setState(() {
-          _selectedMedia = File(pickedFile.path);
-          _existingMediaUrl = null;
-          _isVideoInitialized = false;
-        });
-
-        // Initialiser le lecteur vidéo pour la preview
-        _videoController = VideoPlayerController.file(File(pickedFile.path));
-        await _videoController!.initialize();
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
-          autoPlay: false,
-          looping: false,
-          allowFullScreen: true,
-          allowMuting: true,
-          showControls: true,
+    try {
+      if (_mediaType == MediaType.image) {
+        final XFile? pickedFile = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
         );
-        setState(() => _isVideoInitialized = true);
+        if (pickedFile != null) {
+          if (kIsWeb) {
+            final bytes = await pickedFile.readAsBytes();
+            setState(() {
+              _selectedMediaBytes = bytes;
+              _selectedMediaFile = null;
+              _existingMediaUrl = null;
+              _isVideoInitialized = false;
+            });
+          } else {
+            setState(() {
+              _selectedMediaFile = File(pickedFile.path);
+              _selectedMediaBytes = null;
+              _existingMediaUrl = null;
+              _isVideoInitialized = false;
+            });
+          }
+        }
+      } else {
+        final XFile? pickedFile = await _picker.pickVideo(
+          source: ImageSource.gallery,
+        );
+        if (pickedFile != null) {
+          if (kIsWeb) {
+            final bytes = await pickedFile.readAsBytes();
+            setState(() {
+              _selectedMediaBytes = bytes;
+              _selectedMediaFile = null;
+              _existingMediaUrl = null;
+              _isVideoInitialized = false;
+            });
+            // Sur web, on ne peut pas prévisualiser la vidéo localement facilement.
+            // On peut uploader une miniature plus tard.
+          } else {
+            setState(() {
+              _selectedMediaFile = File(pickedFile.path);
+              _selectedMediaBytes = null;
+              _existingMediaUrl = null;
+              _isVideoInitialized = false;
+            });
+            // Prévisualisation vidéo mobile
+            _videoController = VideoPlayerController.file(_selectedMediaFile!);
+            await _videoController!.initialize();
+            _chewieController = ChewieController(
+              videoPlayerController: _videoController!,
+              autoPlay: false,
+              looping: false,
+              allowFullScreen: true,
+              allowMuting: true,
+              showControls: true,
+            );
+            setState(() => _isVideoInitialized = true);
+          }
+        }
       }
+    } catch (e) {
+      print('❌ Erreur sélection média: $e');
     }
   }
 
   Future<String?> _uploadMedia() async {
-    if (_selectedMedia == null && _existingMediaUrl != null) {
-      return _existingMediaUrl;
-    }
+    // Si déjà existant, on retourne l'URL existante
+    if (_existingMediaUrl != null) return _existingMediaUrl;
 
-    if (_selectedMedia == null) return null;
-
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final String filePath = 'creator_contents/${_mediaType == MediaType.image ? 'images' : 'videos'}/$fileName';
-      final Reference ref = _storage.ref().child(filePath);
-
-      print('📤 Upload du fichier vers: $filePath');
-
-      if (_mediaType == MediaType.image) {
-        await ref.putFile(_selectedMedia!);
-      } else {
-        await ref.putFile(_selectedMedia!);
-      }
-
-      final downloadUrl = await ref.getDownloadURL();
-      print('✅ Fichier uploadé: $downloadUrl');
-      return downloadUrl;
-    } catch (e) {
-      print('❌ Erreur upload: $e');
-      return null;
+    if (kIsWeb) {
+      if (_selectedMediaBytes == null) return null;
+      final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.${_mediaType == MediaType.image ? 'jpg' : 'mp4'}';
+      final path = 'creator_contents/${_mediaType == MediaType.image ? 'images' : 'videos'}/$fileName';
+      final ref = _storage.ref().child(path);
+      await ref.putData(_selectedMediaBytes!);
+      return await ref.getDownloadURL();
+    } else {
+      if (_selectedMediaFile == null) return null;
+      final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.${_mediaType == MediaType.image ? 'jpg' : 'mp4'}';
+      final path = 'creator_contents/${_mediaType == MediaType.image ? 'images' : 'videos'}/$fileName';
+      final ref = _storage.ref().child(path);
+      await ref.putFile(_selectedMediaFile!);
+      return await ref.getDownloadURL();
     }
   }
 
   Future<String?> _generateThumbnail() async {
-    if (_mediaType == MediaType.image && _selectedMedia != null) {
-      return null; // Pas besoin de thumbnail pour les images
-    }
-
-    if (_mediaType == MediaType.video && _selectedMedia != null) {
-      // Pour une vidéo, on pourrait générer une miniature
-      // Pour simplifier, on retourne null et on utilisera l'URL de la vidéo comme fallback
-      return null;
-    }
-
-    return _thumbnailUrl;
+    // Pour les images, pas de thumbnail
+    if (_mediaType == MediaType.image) return null;
+    // Pour les vidéos, on peut générer une miniature (optionnel)
+    // Simplification : on retourne l'URL de la vidéo comme fallback
+    return _existingMediaUrl;
   }
 
   Future<void> _saveContent() async {
@@ -192,17 +211,14 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
       _showError('Veuillez saisir un titre');
       return;
     }
-
     if (_descriptionController.text.trim().isEmpty) {
       _showError('Veuillez saisir une description');
       return;
     }
-
-    if (_selectedMedia == null && _existingMediaUrl == null) {
+    if ((_selectedMediaFile == null && _selectedMediaBytes == null) && _existingMediaUrl == null) {
       _showError('Veuillez sélectionner un média (image ou vidéo)');
       return;
     }
-
     if (_isPaid) {
       final price = int.tryParse(_priceController.text.trim());
       if (price == null || price <= 0) {
@@ -216,11 +232,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
     try {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final userId = authProvider.loginUserData.id;
-
-      if (userId == null) {
-        _showError('Utilisateur non connecté');
-        return;
-      }
+      if (userId == null) throw Exception('Utilisateur non connecté');
 
       // Récupérer le profil créateur
       final creatorSnapshot = await _firestore
@@ -278,7 +290,6 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
 
       print('✅ Contenu ${widget.existingContent == null ? 'créé' : 'mis à jour'}: ${content.titre}');
 
-      // Mettre à jour le compteur du créateur
       if (widget.existingContent == null) {
         final fieldToUpdate = _isPaid ? 'paidContentsCount' : 'freeContentsCount';
         await _firestore
@@ -304,7 +315,6 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-
         Navigator.pop(context, true);
       }
 
@@ -376,19 +386,12 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Type de média
             _buildMediaTypeSelector(),
             const SizedBox(height: 24),
-
-            // Aperçu du média
             _buildMediaPreview(),
             const SizedBox(height: 24),
-
-            // Bouton pour sélectionner le média
             _buildSelectMediaButton(),
             const SizedBox(height: 24),
-
-            // Titre
             TextFormField(
               controller: _titreController,
               style: const TextStyle(color: Colors.white),
@@ -405,8 +408,6 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Description
             TextFormField(
               controller: _descriptionController,
               style: const TextStyle(color: Colors.white),
@@ -424,17 +425,10 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Switch payant/gratuit
             _buildPaidSwitch(),
             const SizedBox(height: 16),
-
-            // Prix (si payant)
-            if (_isPaid)
-              _buildPriceField(),
+            if (_isPaid) _buildPriceField(),
             const SizedBox(height: 32),
-
-            // Avertissement
             _buildWarningMessage(),
           ],
         ),
@@ -541,62 +535,101 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
   }
 
   Widget _buildMediaPreview() {
-    if (_selectedMedia != null) {
-      if (_mediaType == MediaType.image) {
+    // Cas d'une image existante en ligne
+    if (_existingMediaUrl != null && _mediaType == MediaType.image) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.network(
+          _existingMediaUrl!,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: 200,
+              color: Colors.grey[800],
+              child: const Center(
+                child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Cas d'une vidéo existante en ligne
+    if (_existingMediaUrl != null && _mediaType == MediaType.video && _isVideoInitialized && _chewieController != null) {
+      return Container(
+        height: 200,
+        color: Colors.black,
+        child: Chewie(controller: _chewieController!),
+      );
+    }
+
+    // Cas d'une nouvelle image sélectionnée (web ou mobile)
+    if (_mediaType == MediaType.image) {
+      if (kIsWeb && _selectedMediaBytes != null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.memory(
+            _selectedMediaBytes!,
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+      } else if (!kIsWeb && _selectedMediaFile != null) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.file(
-            _selectedMedia!,
+            _selectedMediaFile!,
             height: 200,
             width: double.infinity,
             fit: BoxFit.cover,
           ),
-        );
-      } else if (_mediaType == MediaType.video && _isVideoInitialized && _chewieController != null) {
-        return Container(
-          height: 200,
-          color: Colors.black,
-          child: Chewie(controller: _chewieController!),
-        );
-      }
-    } else if (_existingMediaUrl != null) {
-      if (_mediaType == MediaType.image) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.network(
-            _existingMediaUrl!,
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 200,
-                color: Colors.grey[800],
-                child: const Center(
-                  child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                ),
-              );
-            },
-          ),
-        );
-      } else if (_mediaType == MediaType.video && !_isVideoInitialized) {
-        _initVideoPlayer(_existingMediaUrl!);
-        return Container(
-          height: 200,
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      } else if (_mediaType == MediaType.video && _isVideoInitialized && _chewieController != null) {
-        return Container(
-          height: 200,
-          color: Colors.black,
-          child: Chewie(controller: _chewieController!),
         );
       }
     }
 
+    // Cas d'une nouvelle vidéo sélectionnée (mobile seulement prévisualisable)
+    if (_mediaType == MediaType.video && !kIsWeb && _selectedMediaFile != null && _isVideoInitialized && _chewieController != null) {
+      return Container(
+        height: 200,
+        color: Colors.black,
+        child: Chewie(controller: _chewieController!),
+      );
+    }
+
+    // Cas d'une nouvelle vidéo sur web ou en cours de chargement
+    if (_mediaType == MediaType.video && (kIsWeb || (!kIsWeb && _selectedMediaFile == null))) {
+      return Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey[800]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.videocam, size: 50, color: Colors.grey[600]),
+            const SizedBox(height: 8),
+            Text(
+              'Vidéo sélectionnée',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            if (kIsWeb)
+              Text(
+                '(Prévisualisation non disponible sur le web)',
+                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Sinon, placeholder vide
     return Container(
       height: 200,
       width: double.infinity,
@@ -628,7 +661,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
       onPressed: _pickMedia,
       icon: Icon(Icons.add_photo_alternate, color: primaryBlack),
       label: Text(
-        _selectedMedia != null || _existingMediaUrl != null
+        (_selectedMediaFile != null || _selectedMediaBytes != null || _existingMediaUrl != null)
             ? 'Changer de média'
             : 'Sélectionner un ${_mediaType == MediaType.image ? 'image' : 'vidéo'}',
         style: TextStyle(color: primaryBlack, fontWeight: FontWeight.bold),

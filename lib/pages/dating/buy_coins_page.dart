@@ -1,6 +1,8 @@
 //BuyCoinsPage - Page d'achat de pièces
 
 // lib/pages/coins/buy_coins_page.dart
+import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
+import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/dating_data.dart';
@@ -47,7 +49,83 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     );
     _animationController.forward();
   }
+  void _showRechargeDialog(
+      BuildContext context,
+      double balance,
+      double required,
+      ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        backgroundColor: secondaryGrey,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.account_balance_wallet,
+                  size: 50, color: primaryYellow),
 
+              const SizedBox(height: 16),
+
+              const Text(
+                "Solde insuffisant",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                "Solde: ${balance.toStringAsFixed(0)} FCFA\n"
+                    "Requis: ${required.toStringAsFixed(0)} FCFA",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+
+                  // 👉 redirection vers page dépôt
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DepositScreen(),));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryYellow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  "Recharger maintenant",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Plus tard",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Future<void> _loadCoinPackages() async {
     print('📱 === Chargement des packs de pièces ===');
     final provider = Provider.of<CoinProvider>(context, listen: false);
@@ -480,170 +558,118 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
       ) {
     final isAffordable = currentBalance >= package.priceXof;
     final discount = package.coinsAmount >= 500 ? 10 : (package.coinsAmount >= 200 ? 5 : 0);
-    final valueInFCFA = (package.coinsAmount * 2.5).toInt();
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        color: secondaryGrey,
-        child: InkWell(
-          onTap: isAffordable && !provider.isLoading
-              ? () => _buyPackage(context, package, provider)
-              : null,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isAffordable ? primaryYellow.withOpacity(0.3) : Colors.red.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 12,
-                  right: 12,
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      color: secondaryGrey,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          if (isAffordable) {
+            _buyPackage(context, package, provider);
+          } else {
+            _showRechargeDialog(context, currentBalance, package.priceXof);
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              // 🔥 Badge
+              if (discount > 0)
+                Align(
+                  alignment: Alignment.topRight,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: discount > 0 ? Colors.green : Colors.transparent,
+                      color: Colors.green,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: discount > 0
-                        ? Text(
+                    child: Text(
                       '-$discount%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                        : const SizedBox.shrink(),
+                      style: const TextStyle(fontSize: 10, color: Colors.white),
+                    ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Icône
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [primaryYellow, Colors.amber.shade800],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
+
+              // 🔥 Contenu principal
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [primaryYellow, Colors.amber],
                         ),
-                        child: Text(
-                          '${package.coinsAmount}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 12),
-                      // Nombre de pièces
-                      Text(
+                      child: Text(
                         '${package.coinsAmount}',
                         style: const TextStyle(
-                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black,
                         ),
                       ),
-                      Text(
-                        'pièces',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Text(
+                      '${package.coinsAmount} pièces',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 12),
-                      // Prix
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: primaryRed.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${package.priceXof.toStringAsFixed(0)} FCFA',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: primaryYellow,
-                          ),
-                        ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      '${package.priceXof.toStringAsFixed(0)} FCFA',
+                      style: TextStyle(
+                        color: primaryYellow,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 8),
-                      // Économie
-                      if (discount > 0)
-                        Text(
-                          'Économisez ${((package.priceXof * discount / 100)).toStringAsFixed(0)} FCFA',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.green[400],
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      // Valeur réelle
-                      if (valueInFCFA > package.priceXof)
-                        Text(
-                          'Valeur: $valueInFCFA FCFA',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      // Bouton
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isAffordable && !provider.isLoading
-                              ? () => _buyPackage(context, package, provider)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isAffordable ? primaryYellow : Colors.grey[700],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                          child: provider.isLoading
-                              ? SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: primaryBlack,
-                            ),
-                          )
-                              : Text(
-                            isAffordable ? 'Acheter' : 'Solde insuffisant',
-                            style: TextStyle(
-                              color: isAffordable ? primaryBlack : Colors.grey[400],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🔥 Bouton
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (isAffordable) {
+                      _buyPackage(context, package, provider);
+                    } else {
+                      _showRechargeDialog(context, currentBalance, package.priceXof);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                    isAffordable ? primaryYellow : Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Text(
+                    isAffordable ? 'Acheter' : 'Recharger',
+                    style: TextStyle(
+                      color: isAffordable ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

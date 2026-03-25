@@ -2,22 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
-import '../../providers/dating/dating_provider.dart';
 import 'creator_content_detail_page.dart';
+import 'creator_profile_page.dart';
 import 'creator_subscription_page.dart';
 import 'dating_chat_page.dart';
-
-// lib/pages/dating/dating_profile_detail_page.dart
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dating_likes_list_page.dart';
+import 'dating_my_likes_page.dart';
 import 'dating_profile_setup_page.dart';
 import 'dating_subscription_page.dart';
+
+import 'dating_connections_page.dart';
+import 'dating_conversations_page.dart';
+import 'dating_likes_list_page.dart';
+import 'dating_notifications_page.dart';
+import 'dating_super_likes_list_page.dart';
 
 
 class DatingProfileDetailPage extends StatefulWidget {
@@ -34,6 +36,7 @@ class DatingProfileDetailPage extends StatefulWidget {
 
 class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     with SingleTickerProviderStateMixin {
+  // États
   bool _isLiked = false;
   bool _isCoupDeCoeur = false;
   bool _isBlocked = false;
@@ -45,14 +48,26 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   String? _currentSubscriptionPlan;
   int _remainingLikes = 0;
   int _remainingSuperLikes = 0;
+  bool _isCreator = false;
+  bool _isCheckingCreator = true;
+  int _unreadNotificationsCount = 0;
 
+  // Animation
   late TabController _tabController;
+  int _currentImageIndex = 0;
   final List<Tab> _tabs = const [
     Tab(text: 'Profil'),
     Tab(text: 'Posts'),
   ];
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  // Couleurs
+  final Color primaryRed = const Color(0xFFE63946);
+  final Color primaryYellow = const Color(0xFFFFD700);
+  final Color primaryBlack = Colors.black;
+  final Color secondaryGrey = const Color(0xFF2C2C2C);
+  final Color lightGrey = const Color(0xFFF5F5F5);
 
   @override
   void initState() {
@@ -62,8 +77,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     _loadSubscriptionStatus();
     _checkLikeStatus();
     _checkCoupDeCoeurStatus();
+    _checkIfUserIsCreator();
     _recordVisit();
     _loadVisitorsCount();
+    _loadUnreadNotificationsCount();
   }
 
   @override
@@ -93,6 +110,46 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     }
   }
 
+  Future<void> _loadUnreadNotificationsCount() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    try {
+      final snapshot = await firestore
+          .collection('Notifications')
+          .where('receiver_id', isEqualTo: currentUserId)
+          .where('type', isGreaterThanOrEqualTo: 'DATING_')
+          .where('is_open', isEqualTo: false)
+          .get();
+
+      setState(() {
+        _unreadNotificationsCount = snapshot.docs.length;
+      });
+    } catch (e) {
+      print('❌ Erreur chargement compteur notifications: $e');
+    }
+  }
+
+  Future<void> _checkIfUserIsCreator() async {
+    try {
+      final snapshot = await firestore
+          .collection('creator_profiles')
+          .where('userId', isEqualTo: widget.profile.userId)
+          .where('isCreatorActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      setState(() {
+        _isCreator = snapshot.docs.isNotEmpty;
+        _isCheckingCreator = false;
+      });
+    } catch (e) {
+      print('❌ Erreur vérification créateur: $e');
+      setState(() => _isCheckingCreator = false);
+    }
+  }
+
   Future<void> _loadSubscriptionStatus() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
@@ -103,7 +160,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     }
 
     try {
-      // Vérifier l'abonnement dating
       final subSnapshot = await firestore
           .collection('user_dating_subscriptions')
           .where('userId', isEqualTo: currentUserId)
@@ -112,18 +168,25 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .get();
 
       if (subSnapshot.docs.isNotEmpty) {
-        final subscription = UserDatingSubscription.fromJson(subSnapshot.docs.first.data());
+        final subscription = subSnapshot.docs.first;
+        _currentSubscriptionPlan = subscription['planCode'];
         final now = DateTime.now().millisecondsSinceEpoch;
-        if (subscription.endAt > now) {
-          _currentSubscriptionPlan = subscription.planCode;
-          print('📌 Abonnement dating actif: $_currentSubscriptionPlan');
-        }
-      }
+        final endAt = subscription['endAt'] as int;
 
-      // Charger les limites
-      final prefs = await SharedPreferences.getInstance();
-      _remainingLikes = prefs.getInt('dating_remaining_likes_$currentUserId') ?? 10;
-      _remainingSuperLikes = prefs.getInt('dating_remaining_super_likes_$currentUserId') ?? 1;
+        if (endAt > now) {
+          _remainingLikes = subscription['remainingLikes'] ?? _getDefaultLikes(_currentSubscriptionPlan!);
+          _remainingSuperLikes = subscription['remainingSuperLikes'] ?? _getDefaultSuperLikes(_currentSubscriptionPlan!);
+          print('📌 Abonnement actif: $_currentSubscriptionPlan');
+        } else {
+          _currentSubscriptionPlan = null;
+          _remainingLikes = _getDefaultLikes('gratuit');
+          _remainingSuperLikes = _getDefaultSuperLikes('gratuit');
+        }
+      } else {
+        _currentSubscriptionPlan = null;
+        _remainingLikes = _getDefaultLikes('gratuit');
+        _remainingSuperLikes = _getDefaultSuperLikes('gratuit');
+      }
 
       // Vérifier l'abonnement créateur
       final creatorSnapshot = await firestore
@@ -140,28 +203,126 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       });
     } catch (e) {
       print('❌ Erreur chargement abonnement: $e');
+      _remainingLikes = 5;
+      _remainingSuperLikes = 1;
       setState(() => _isCheckingSubscription = false);
     }
+  }
+
+  int _getDefaultLikes(String plan) {
+    switch (plan) {
+      case 'gold':
+        return -1;
+      case 'plus':
+        return 50;
+      default:
+        return 5;
+    }
+  }
+
+  int _getDefaultSuperLikes(String plan) {
+    switch (plan) {
+      case 'gold':
+        return 5;
+      case 'plus':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  Future<void> _updateRemainingLikes() async {
+    if (_currentSubscriptionPlan == null) return;
+
+    try {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final currentUserId = authProvider.loginUserData.id;
+
+      final snapshot = await firestore
+          .collection('user_dating_subscriptions')
+          .where('userId', isEqualTo: currentUserId)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        await snapshot.docs.first.reference.update({
+          'remainingLikes': _remainingLikes,
+          'remainingSuperLikes': _remainingSuperLikes,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur mise à jour likes: $e');
+    }
+  }
+
+  Future<void> _updatePopularityScore(String userId) async {
+    try {
+      final likesCount = await firestore
+          .collection('dating_likes')
+          .where('toUserId', isEqualTo: userId)
+          .count()
+          .get();
+      final coupsCount = await firestore
+          .collection('dating_coup_de_coeurs')
+          .where('toUserId', isEqualTo: userId)
+          .count()
+          .get();
+      final connectionsCount = await firestore
+          .collection('dating_connections')
+          .where('userId1', isEqualTo: userId)
+          .count()
+          .get();
+      final score = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
+      final profileSnapshot = await firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+      if (profileSnapshot.docs.isNotEmpty) {
+        await profileSnapshot.docs.first.reference.update({
+          'popularityScore': score,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur mise à jour score: $e');
+    }
+  }
+
+  Future<void> _addPointsToUser(String userId, int points, String reason) async {
+    await firestore.collection('Users').doc(userId).update({
+      'totalPoints': FieldValue.increment(points),
+    });
   }
 
   Future<void> _recordVisit() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
-
     if (currentUserId == null || currentUserId == widget.profile.userId) return;
 
     try {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final visitId = firestore.collection('dating_profile_visits').doc().id;
+      final today = DateTime.now().millisecondsSinceEpoch;
+      final dayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).millisecondsSinceEpoch;
 
-      await firestore.collection('dating_profile_visits').doc(visitId).set({
-        'id': visitId,
+      final existingVisit = await firestore
+          .collection('dating_profile_visits')
+          .where('visitorUserId', isEqualTo: currentUserId)
+          .where('visitedUserId', isEqualTo: widget.profile.userId)
+          .where('createdAt', isGreaterThanOrEqualTo: dayStart)
+          .limit(1)
+          .get();
+
+      if (existingVisit.docs.isNotEmpty) return;
+
+      await firestore.collection('dating_profile_visits').doc().set({
+        'id': firestore.collection('dating_profile_visits').doc().id,
         'visitorUserId': currentUserId,
         'visitedUserId': widget.profile.userId,
-        'createdAt': now,
+        'createdAt': today,
       });
 
-      // Incrémenter le compteur de visites
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
@@ -173,8 +334,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           });
         }
       });
-
-      print('✅ Visite enregistrée pour ${widget.profile.pseudo}');
     } catch (e) {
       print('❌ Erreur enregistrement visite: $e');
     }
@@ -187,7 +346,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: widget.profile.userId)
           .limit(1)
           .get();
-
       if (snapshot.docs.isNotEmpty) {
         setState(() {
           _visitorsCount = snapshot.docs.first.data()['visitorsCount'] ?? 0;
@@ -239,18 +397,15 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null) return;
 
-    // Vérifier la limite de likes
     if (_remainingLikes <= 0 && _currentSubscriptionPlan == null) {
-      _showUpgradeDialog('limite de likes');
+      _showUpgradeDialog('likes');
       return;
     }
 
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
-      final likeId = firestore.collection('dating_likes').doc().id;
-
-      await firestore.collection('dating_likes').doc(likeId).set({
-        'id': likeId,
+      await firestore.collection('dating_likes').doc().set({
+        'id': firestore.collection('dating_likes').doc().id,
         'fromUserId': currentUserId,
         'toUserId': widget.profile.userId,
         'createdAt': now,
@@ -260,40 +415,34 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _isLiked = true;
         if (_remainingLikes > 0) _remainingLikes--;
       });
+      await _updateRemainingLikes();
 
-      // Mettre à jour les limites
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('dating_remaining_likes_$currentUserId', _remainingLikes);
-
-      // Envoyer notification
       await _sendNotification(
         toUserId: widget.profile.userId,
         message: "❤️ @${authProvider.loginUserData.pseudo} vous a liké !",
         type: 'like',
       );
 
-      // Mettre à jour le compteur
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
           .get()
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
-          snapshot.docs.first.reference.update({
-            'likesCount': FieldValue.increment(1),
-          });
+          snapshot.docs.first.reference.update({'likesCount': FieldValue.increment(1)});
         }
       });
+
+      await _updatePopularityScore(widget.profile.userId);
+      await _addPointsToUser(currentUserId, 5, 'Like envoyé');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❤️ Vous avez liké ${widget.profile.pseudo} (+5 points)'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
         ),
       );
 
-      // Vérifier le match
       final mutualLike = await firestore
           .collection('dating_likes')
           .where('fromUserId', isEqualTo: widget.profile.userId)
@@ -304,12 +453,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       if (mutualLike.docs.isNotEmpty) {
         _showMatchDialog();
       }
-
     } catch (e) {
       print('❌ Erreur like: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du like'), backgroundColor: Colors.red),
-      );
     }
   }
 
@@ -319,7 +464,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     if (currentUserId == null) return;
 
     if (_remainingSuperLikes <= 0 && _currentSubscriptionPlan == null) {
-      _showUpgradeDialog('super like');
+      _showUpgradeDialog('Coup de cœur ❤️');
       return;
     }
 
@@ -335,41 +480,27 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('✨ Envoyer un super like'),
+        title: Text('✨ Envoyer un Coup de cœur ❤️'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.star, size: 50, color: Colors.amber),
             SizedBox(height: 16),
-            Text(
-              'Envoyer un super like à ${widget.profile.pseudo} ?',
-              textAlign: TextAlign.center,
-            ),
+            Text('Envoyer un Coup de cœur ❤️ à ${widget.profile.pseudo} ?'),
             SizedBox(height: 8),
             Text(
               _currentSubscriptionPlan == 'gold'
                   ? 'Gratuit avec votre abonnement Gold'
                   : 'Coût: $coupDeCoeurPrice pièces',
-              style: TextStyle(
-                color: Colors.amber,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.amber),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
             child: Text('Envoyer'),
           ),
         ],
@@ -388,9 +519,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         });
       }
 
-      final coupId = firestore.collection('dating_coup_de_coeurs').doc().id;
-      await firestore.collection('dating_coup_de_coeurs').doc(coupId).set({
-        'id': coupId,
+      await firestore.collection('dating_coup_de_coeurs').doc().set({
+        'id': firestore.collection('dating_coup_de_coeurs').doc().id,
         'fromUserId': currentUserId,
         'toUserId': widget.profile.userId,
         'createdAt': now,
@@ -400,42 +530,35 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _isCoupDeCoeur = true;
         if (_remainingSuperLikes > 0) _remainingSuperLikes--;
       });
-
-      // Mettre à jour les limites
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('dating_remaining_super_likes_$currentUserId', _remainingSuperLikes);
+      await _updateRemainingLikes();
 
       await _sendNotification(
         toUserId: widget.profile.userId,
-        message: "⭐ @${authProvider.loginUserData.pseudo} vous a envoyé un super like !",
+        message: "⭐ @${authProvider.loginUserData.pseudo} vous a envoyé un Coup de cœur ❤️ !",
         type: 'super_like',
       );
 
-      // Mettre à jour le compteur
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
           .get()
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
-          snapshot.docs.first.reference.update({
-            'coupsDeCoeurCount': FieldValue.increment(1),
-          });
+          snapshot.docs.first.reference.update({'coupsDeCoeurCount': FieldValue.increment(1)});
         }
       });
 
+      await _updatePopularityScore(widget.profile.userId);
+      await _addPointsToUser(currentUserId, 20, 'Coup de cœur ❤️ envoyé');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✨ Super like envoyé à ${widget.profile.pseudo} (+20 points)'),
+          content: Text('✨ Coup de cœur ❤️ envoyé à ${widget.profile.pseudo} (+20 points)'),
           backgroundColor: Colors.amber,
         ),
       );
-
     } catch (e) {
-      print('❌ Erreur super like: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du super like'), backgroundColor: Colors.red),
-      );
+      print('❌ Erreur Coup de cœur ❤️: $e');
     }
   }
 
@@ -443,14 +566,15 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     required String toUserId,
     required String message,
     required String type,
-  }) async {
+  })
+  async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final now = DateTime.now().microsecondsSinceEpoch;
 
     final notificationId = firestore.collection('Notifications').doc().id;
     await firestore.collection('Notifications').doc(notificationId).set({
       'id': notificationId,
-      'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Super like ! ⭐' : 'Nouveau like ❤️',
+      'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Coup de cœur ❤️ ! ⭐' : 'Nouveau like ❤️',
       'media_url': authProvider.loginUserData.imageUrl,
       'type': 'DATING_${type.toUpperCase()}',
       'description': message,
@@ -481,8 +605,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   }
 
   void _showMatchDialog() {
-    final isPremium = _currentSubscriptionPlan != null &&
-        (_currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold');
+    final isGold = _currentSubscriptionPlan == 'gold';
 
     showDialog(
       context: context,
@@ -497,9 +620,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.red.shade400, Colors.pink.shade400],
-                  ),
+                  gradient: LinearGradient(colors: [Colors.red.shade400, Colors.pink.shade400]),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.favorite, size: 60, color: Colors.white),
@@ -507,11 +628,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               SizedBox(height: 20),
               Text(
                 'C\'est un match ! 🎉',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red.shade700),
               ),
               SizedBox(height: 8),
               Text(
@@ -532,15 +649,13 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        if (isPremium) {
+                        if (isGold) {
                           _openChat();
                         } else {
-                          _showPremiumChatDialog();
+                          _showGoldRequiredDialog();
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: Text('Discuter en privé'),
                     ),
                   ),
@@ -553,15 +668,51 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     );
   }
 
+  void _showGoldRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('💬 Discuter en privé', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.diamond, size: 50, color: Colors.amber),
+            SizedBox(height: 16),
+            Text(
+              'La messagerie privée est réservée aux membres AfroLove Gold.',
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Passez à l\'abonnement Gold pour discuter avec vos matchs !',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSubscriptionPage()));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: Text('Voir les offres'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openChat() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
-
     if (currentUserId == null) return;
 
-    // Chercher ou créer la connexion
     final connection = await _getOrCreateConnection();
-    if (connection != null && mounted) {
+    if (connection != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -582,17 +733,13 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     if (currentUserId == null) return null;
 
     try {
-      // Chercher connexion existante
       final snapshot = await firestore
           .collection('dating_connections')
           .where('userId1', isEqualTo: currentUserId)
           .where('userId2', isEqualTo: widget.profile.userId)
           .limit(1)
           .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        return DatingConnection.fromJson(snapshot.docs.first.data());
-      }
+      if (snapshot.docs.isNotEmpty) return DatingConnection.fromJson(snapshot.docs.first.data());
 
       final snapshot2 = await firestore
           .collection('dating_connections')
@@ -600,12 +747,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId2', isEqualTo: currentUserId)
           .limit(1)
           .get();
+      if (snapshot2.docs.isNotEmpty) return DatingConnection.fromJson(snapshot2.docs.first.data());
 
-      if (snapshot2.docs.isNotEmpty) {
-        return DatingConnection.fromJson(snapshot2.docs.first.data());
-      }
-
-      // Créer nouvelle connexion
       final now = DateTime.now().millisecondsSinceEpoch;
       final connectionId = firestore.collection('dating_connections').doc().id;
       final connection = DatingConnection(
@@ -615,13 +758,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         createdAt: now,
         isActive: true,
       );
+      await firestore.collection('dating_connections').doc(connectionId).set(connection.toJson());
 
-      await firestore
-          .collection('dating_connections')
-          .doc(connectionId)
-          .set(connection.toJson());
-
-      // Créer la conversation
       final conversationId = firestore.collection('dating_conversations').doc().id;
       await firestore.collection('dating_conversations').doc(conversationId).set({
         'id': conversationId,
@@ -633,57 +771,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         'createdAt': now,
         'updatedAt': now,
       });
-
       return connection;
-
     } catch (e) {
       print('❌ Erreur création connexion: $e');
       return null;
     }
-  }
-
-  void _showPremiumChatDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('💬 Discuter en privé', style: TextStyle(color: Colors.red)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.lock, size: 50, color: Colors.amber),
-            SizedBox(height: 16),
-            Text(
-              'La messagerie privée est réservée aux membres AfroLove Plus et Gold.',
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Passez à l\'abonnement Premium pour discuter avec vos matchs !',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DatingSubscriptionPage()),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: Text('Voir les offres'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showUpgradeDialog(String feature) {
@@ -691,14 +783,14 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Limite atteinte', style: TextStyle(color: Colors.red)),
+        title: Text('Limite de $feature atteinte', style: TextStyle(color: Colors.red)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.star, size: 50, color: Colors.amber),
             SizedBox(height: 16),
             Text(
-              'Vous avez atteint votre $feature gratuits.',
+              'Vous avez atteint votre limite de $feature gratuits.',
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
@@ -710,17 +802,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DatingSubscriptionPage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSubscriptionPage()));
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
             child: Text('Voir les offres'),
@@ -742,14 +828,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             Icon(Icons.monetization_on, size: 50, color: Colors.red),
             SizedBox(height: 16),
             Text(
-              'Vous n\'avez pas assez de pièces pour envoyer un super like.',
+              'Vous n\'avez pas assez de pièces pour envoyer un Coup de cœur ❤️.',
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
-            Text(
-              '20 pièces requis',
-              style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-            ),
+            Text('20 pièces requis', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -767,143 +850,43 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     );
   }
 
-  Future<void> _handleReport() async {
-    final reportReason = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Signaler ${widget.profile.pseudo}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Pourquoi signalez-vous ce profil ?'),
-            SizedBox(height: 16),
-            ...['Comportement inapproprié', 'Faux profil', 'Spam', 'Contenu offensant', 'Autre']
-                .map((reason) => ListTile(
-              leading: Icon(Icons.flag, size: 20),
-              title: Text(reason),
-              onTap: () => Navigator.pop(context, reason),
-            ))
-                .toList(),
-          ],
-        ),
-      ),
-    );
-
-    if (reportReason == null) return;
-
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
-
-    try {
-      final reportId = firestore.collection('dating_reports').doc().id;
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      await firestore.collection('dating_reports').doc(reportId).set({
-        'id': reportId,
-        'reporterUserId': currentUserId,
-        'targetUserId': widget.profile.userId,
-        'reason': reportReason,
-        'description': '',
-        'createdAt': now,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signalement envoyé. Merci !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du signalement'), backgroundColor: Colors.red),
-      );
-    }
+  // Navigation
+  void _navigateToMyConversations() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingConversationsPage()));
   }
 
-  Future<void> _handleBlock() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Bloquer ${widget.profile.pseudo}'),
-        content: Text(
-          'Êtes-vous sûr de vouloir bloquer cet utilisateur ? '
-              'Vous ne pourrez plus voir son profil ni recevoir ses messages.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Bloquer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
-
-    try {
-      final blockId = firestore.collection('dating_blocks').doc().id;
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      await firestore.collection('dating_blocks').doc(blockId).set({
-        'id': blockId,
-        'blockerUserId': currentUserId,
-        'blockedUserId': widget.profile.userId,
-        'createdAt': now,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${widget.profile.pseudo} a été bloqué'), backgroundColor: Colors.red),
-      );
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du blocage'), backgroundColor: Colors.red),
-      );
-    }
+  void _navigateToMyMatches() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingConnectionsPage()));
   }
 
-  void _navigateToChatList() {
-    Navigator.pushNamed(context, '/dating/conversations');
-  }
-
-  void _navigateToMatches() {
-    Navigator.pushNamed(context, '/dating/connections');
-  }
-
-  void _navigateToLikes() {
-    final isPremium = _currentSubscriptionPlan != null &&
-        (_currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold');
-
-    if (!isPremium) {
-      _showUpgradeDialog('voir vos likes');
+  void _navigateToMyLikes() {
+    final isPlusOrGold = _currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold';
+    if (!isPlusOrGold) {
+      _showUpgradeDialog('likes'); // Upgrade vers Plus ou Gold
       return;
     }
-    Navigator.pushNamed(context, '/dating/likes-list');
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingLikesListPage()));
   }
 
-  void _navigateToNotifications() {
-    Navigator.pushNamed(context, '/dating/notifications');
+  void _navigateToMySuperLikes() {
+    final isPlusOrGold = _currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold';
+    if (!isPlusOrGold) {
+      _showUpgradeDialog('Coup de cœur ❤️');
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSuperLikesPage()));
+  }
+
+  void _navigateToMyNotifications() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingNotificationsPage()));
   }
 
   void _goToEditProfile() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DatingProfileSetupPage(profile: widget.profile),
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DatingProfileSetupPage(profile: widget.profile)));
+  }
+
+  void _goToCreatorProfile() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CreatorProfilePage(userId: widget.profile.userId)));
   }
 
   Future<void> _subscribeToCreator() async {
@@ -918,13 +901,183 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     );
   }
 
+  Future<void> _handleReport() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Signaler ${widget.profile.pseudo}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Pourquoi signalez-vous ce profil ?'),
+            SizedBox(height: 16),
+            ...['Comportement inapproprié', 'Faux profil', 'Spam', 'Contenu offensant', 'Autre']
+                .map((r) => ListTile(leading: Icon(Icons.flag, size: 20), title: Text(r), onTap: () => Navigator.pop(context, r))),
+          ],
+        ),
+      ),
+    );
+    if (reason == null) return;
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    await firestore.collection('dating_reports').doc().set({
+      'id': firestore.collection('dating_reports').doc().id,
+      'reporterUserId': currentUserId,
+      'targetUserId': widget.profile.userId,
+      'reason': reason,
+      'description': '',
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Signalement envoyé'), backgroundColor: Colors.green));
+  }
+
+  Future<void> _handleBlock() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Bloquer ${widget.profile.pseudo}'),
+        content: Text(
+          'Êtes-vous sûr de vouloir bloquer cet utilisateur ? Vous ne pourrez plus voir son profil ni recevoir ses messages.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text('Bloquer')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    await firestore.collection('dating_blocks').doc().set({
+      'id': firestore.collection('dating_blocks').doc().id,
+      'blockerUserId': currentUserId,
+      'blockedUserId': widget.profile.userId,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.profile.pseudo} a été bloqué'), backgroundColor: Colors.red));
+    Navigator.pop(context);
+  }
+
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color color,
+    int badgeCount = 0,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 22, color: color),
+              ),
+              if (badgeCount > 0)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      badgeCount > 99 ? '99+' : '$badgeCount',
+                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoCarousel() {
+    return GestureDetector(
+      onTap: () => _showFullScreenImage(widget.profile.photosUrls[_currentImageIndex]),
+      child: Stack(
+        children: [
+          PageView.builder(
+            itemCount: widget.profile.photosUrls.length,
+            onPageChanged: (index) => setState(() => _currentImageIndex = index),
+            itemBuilder: (context, index) => Image.network(
+              widget.profile.photosUrls[index],
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200, child: Icon(Icons.person, size: 100)),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+              child: Text(
+                '${_currentImageIndex + 1}/${widget.profile.photosUrls.length}',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, iconTheme: IconThemeData(color: Colors.white)),
+          body: Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(child: Image.network(imageUrl, fit: BoxFit.contain)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, size: 22, color: color),
+        SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<UserAuthProvider>(context);
     final currentUserId = authProvider.loginUserData.id;
     final isOwnProfile = currentUserId == widget.profile.userId;
-    final isPremium = _currentSubscriptionPlan != null &&
-        (_currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold');
+    final isGold = _currentSubscriptionPlan == 'gold';
+    final isPlusOrGold = _currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold';
+    final remainingLikesText = _remainingLikes == -1 ? '∞' : '$_remainingLikes';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -946,95 +1099,61 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert, color: Colors.white),
                   onSelected: (value) {
-                    switch (value) {
-                      case 'report':
-                        _handleReport();
-                        break;
-                      case 'block':
-                        _handleBlock();
-                        break;
-                    }
+                    if (value == 'report') _handleReport();
+                    if (value == 'block') _handleBlock();
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'report',
-                      child: Row(
-                        children: [
-                          Icon(Icons.flag, size: 20, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Signaler'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'block',
-                      child: Row(
-                        children: [
-                          Icon(Icons.block, size: 20, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Bloquer'),
-                        ],
-                      ),
-                    ),
+                    PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag, size: 20), SizedBox(width: 8), Text('Signaler')])),
+                    PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block, size: 20), SizedBox(width: 8), Text('Bloquer')])),
                   ],
                 ),
             ],
           ),
 
-          // Barre d'actions supérieure (messages, matchs, etc.)
-          SliverToBoxAdapter(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade200),
+          // Barre d'actions supérieure (Messages, Matchs, Mes likes, Coup de cœur ❤️s, Notif, Mon profil)
+          if (isOwnProfile)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(child: _buildActionChip(icon: Icons.chat_bubble_outline, label: 'Messages', onTap: _navigateToMyConversations, color: Colors.blue)),
+                        Expanded(child: _buildActionChip(icon: Icons.favorite_border, label: 'Matchs', onTap: _navigateToMyMatches, color: Colors.red)),
+                        Expanded(child: _buildActionChip(icon: Icons.favorite, label: 'Mes likes', onTap: _navigateToMyLikes, color: isPlusOrGold ? Colors.pink : Colors.grey)),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(child: _buildActionChip(icon: Icons.star, label: 'Coup de cœur ❤️', onTap: _navigateToMySuperLikes, color: isPlusOrGold ? Colors.amber : Colors.grey)),
+                        Expanded(child: _buildActionChip(icon: Icons.notifications_none, label: 'Notif', onTap: _navigateToMyNotifications, color: Colors.orange, badgeCount: _unreadNotificationsCount)),
+                        Expanded(child: _buildActionChip(icon: Icons.person, label: 'Mon profil', onTap: _goToEditProfile, color: Colors.green)),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildActionChip(
-                    icon: Icons.chat_bubble_outline,
-                    label: 'Messages',
-                    onTap: _navigateToChatList,
-                    color: Colors.blue,
-                  ),
-                  _buildActionChip(
-                    icon: Icons.favorite_border,
-                    label: 'Matchs',
-                    onTap: _navigateToMatches,
-                    color: Colors.red,
-                  ),
-                  _buildActionChip(
-                    icon: Icons.thumb_up_outlined,
-                    label: 'Likes',
-                    onTap: _navigateToLikes,
-                    color: isPremium ? Colors.pink : Colors.grey,
-                    isLocked: !isPremium,
-                  ),
-                  _buildActionChip(
-                    icon: Icons.notifications_none,
-                    label: 'Notif',
-                    onTap: _navigateToNotifications,
-                    color: Colors.orange,
-                  ),
-                ],
-              ),
             ),
-          ),
 
           // Infos profil
-          SliverToBoxAdapter(
-            child: _buildProfileInfo(isOwnProfile),
-          ),
+          SliverToBoxAdapter(child: _buildProfileInfo(isOwnProfile, isGold, isPlusOrGold)),
+
+          // Boutons d'action (Like, Super like, Discuter en privé)
+          if (!isOwnProfile)
+            SliverToBoxAdapter(child: _buildActionButtons(remainingLikesText, isGold)),
 
           // TabBar
-          SliverToBoxAdapter(
-            child: _buildTabBar(),
-          ),
+          SliverToBoxAdapter(child: _buildTabBar()),
 
-          // TabBarView
+          // Contenu (Profil / Posts)
           SliverFillRemaining(
             child: TabBarView(
               controller: _tabController,
@@ -1049,133 +1168,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     );
   }
 
-  Widget _buildActionChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required Color color,
-    bool isLocked = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isLocked ? Icons.lock : icon,
-              size: 22,
-              color: color,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: isLocked ? Colors.grey : Colors.grey.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhotoCarousel() {
-    return PageView.builder(
-      itemCount: widget.profile.photosUrls.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () => _showFullScreenImage(widget.profile.photosUrls[index]),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(
-                widget.profile.photosUrls[index],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: Icon(Icons.person, size: 100, color: Colors.grey.shade400),
-                  );
-                },
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.6),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 20,
-                right: 20,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.photo, size: 12, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        '${index + 1}/${widget.profile.photosUrls.length}',
-                        style: TextStyle(color: Colors.white, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showFullScreenImage(String imageUrl) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.white),
-          ),
-          body: Center(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: InteractiveViewer(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileInfo(bool isOwnProfile) {
-    final isPremium = _currentSubscriptionPlan != null &&
-        (_currentSubscriptionPlan == 'plus' || _currentSubscriptionPlan == 'gold');
-
+  Widget _buildProfileInfo(bool isOwnProfile, bool isGold, bool isPlusOrGold) {
     return Container(
       padding: EdgeInsets.only(top: 30),
       child: Column(
@@ -1186,228 +1179,229 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 5))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${widget.profile.pseudo}, ${widget.profile.age}',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    Expanded(child: Text('${widget.profile.pseudo}, ${widget.profile.age}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
                     if (widget.profile.isVerified)
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.verified, size: 14, color: Colors.blue),
-                            SizedBox(width: 4),
-                            Text('Vérifié', style: TextStyle(fontSize: 12, color: Colors.blue)),
-                          ],
-                        ),
+                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(20)),
+                        child: Row(children: [Icon(Icons.verified, size: 14, color: Colors.blue), SizedBox(width: 4), Text('Vérifié', style: TextStyle(fontSize: 12, color: Colors.blue))]),
                       ),
                   ],
                 ),
                 SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      '${widget.profile.ville}, ${widget.profile.pays}',
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
-                  ],
-                ),
-
-                // Dans DatingProfileDetailPage, ajouter dans _buildProfileInfo:
-
-// Après l'affichage de la ville/pays, ajouter:
-                if (widget.profile.countryCode != null || widget.profile.region != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.public, size: 14, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text(
-                          '${widget.profile.countryCode ?? ''}${widget.profile.region != null ? ' - ${widget.profile.region}' : ''}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
+                Row(children: [Icon(Icons.location_on, size: 14, color: Colors.grey), SizedBox(width: 4), Text('${widget.profile.ville}, ${widget.profile.pays}', style: TextStyle(fontSize: 13, color: Colors.grey))]),
                 if (widget.profile.profession?.isNotEmpty ?? false) ...[
                   SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.work, size: 14, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text(
-                        widget.profile.profession!,
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                  Row(children: [Icon(Icons.work, size: 14, color: Colors.grey), SizedBox(width: 4), Text(widget.profile.profession!, style: TextStyle(fontSize: 13, color: Colors.grey))]),
                 ],
                 SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStatItem(Icons.favorite, '${widget.profile.likesCount}', 'Likes', Colors.red),
-                    _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', 'Coups de cœur', Colors.amber),
-                    _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', 'Connexions', Colors.blue),
+                    _buildStatItem(Icons.star, '${widget.profile.coupsDeCoeurCount}', 'Coup de cœur ❤️', Colors.amber),
+                    _buildStatItem(Icons.people, '${widget.profile.connexionsCount}', 'Matchs', Colors.blue),
                     _buildStatItem(Icons.visibility, '${_visitorsCount}', 'Visites', Colors.green),
                   ],
                 ),
               ],
             ),
           ),
-          if (!isOwnProfile) _buildActionButtons(),
-          if (isOwnProfile) _buildOwnProfileActions(),
-          if (isPremium && _currentSubscriptionPlan != null)
+          if (!isOwnProfile && _isCreator && !_isCheckingCreator)
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: OutlinedButton.icon(
+                onPressed: _goToCreatorProfile,
+                icon: Icon(Icons.people, size: 18, color: primaryRed),
+                label: Text('Voir le profil créateur', style: TextStyle(color: primaryRed)),
+                style: OutlinedButton.styleFrom(side: BorderSide(color: primaryRed), padding: EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+              ),
+            ),
+          if (isGold)
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _currentSubscriptionPlan == 'gold'
-                    ? Colors.amber.shade100
-                    : Colors.red.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
+              decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(20)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _currentSubscriptionPlan == 'gold' ? Icons.diamond : Icons.star,
-                    size: 14,
-                    color: _currentSubscriptionPlan == 'gold' ? Colors.amber : Colors.red,
+                children: [Icon(Icons.diamond, size: 14, color: Colors.amber.shade800), SizedBox(width: 6), Text('Abonnement Gold actif', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.amber.shade800))],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(String remainingLikesText, bool isGold) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        children: [
+          _buildActionItem(
+            color: Colors.red,
+            activeColor: Colors.red.shade400,
+            isActive: _isLiked,
+            icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+            label: _isLiked ? 'Liké ❤️' : 'Liker',
+            subText: '$remainingLikesText restants',
+            onTap: _handleLike,
+          ),
+
+          SizedBox(width: 10),
+
+          _buildActionItem(
+            color: Colors.amber,
+            activeColor: Colors.amber.shade600,
+            isActive: _isCoupDeCoeur,
+            icon: _isCoupDeCoeur ? Icons.favorite : Icons.favorite_border,
+            label: _isCoupDeCoeur ? 'Envoyé ❤️' : 'Coup de cœur',
+            subText: '$_remainingSuperLikes restants',
+            onTap: _handleCoupDeCoeur,
+          ),
+
+          SizedBox(width: 10),
+
+          _buildChatButton(isGold),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem({
+    required Color color,
+    required Color activeColor,
+    required bool isActive,
+    required IconData icon,
+    required String label,
+    required String subText,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              height: 52,
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: isActive ? activeColor : color,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
                   ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: Colors.white), // ✅ blanc
                   SizedBox(width: 6),
-                  Text(
-                    'Abonnement ${_currentSubscriptionPlan == 'gold' ? 'Gold' : 'Plus'} actif',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _currentSubscriptionPlan == 'gold' ? Colors.amber.shade800 : Colors.red.shade800,
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white, // ✅ blanc
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            subText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade400, // léger gris pour contraste
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
-    return Column(
-      children: [
-        Icon(icon, size: 22, color: color),
-        SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
+  Widget _buildChatButton(bool isGold) {
+    return Expanded(
+      child: Column(
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _handleLike,
-              icon: Icon(_isLiked ? Icons.favorite : Icons.favorite_border, size: 20),
-              label: Text(_isLiked ? 'Liké' : 'Liker'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isLiked ? Colors.red.shade400 : Colors.red,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          GestureDetector(
+            onTap: () => isGold ? _openChat() : _showGoldRequiredDialog(),
+            child: Container(
+              height: 52,
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: isGold ? Colors.green : Colors.amber,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isGold ? Colors.green : Colors.amber).withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                   Icons.chat,
+                    size: 18,
+                    color: Colors.white, // ✅ blanc
+                  ),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                       'Discuter',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white, // ✅ blanc
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _handleCoupDeCoeur,
-              icon: Icon(_isCoupDeCoeur ? Icons.star : Icons.star_border, size: 20),
-              label: Text(_isCoupDeCoeur ? 'Coup de cœur' : 'Coup de cœur'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isCoupDeCoeur ? Colors.amber.shade600 : Colors.amber,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          SizedBox(height: 6),
+          if (!isGold)
+            Text(
+              'Abonnement requis',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade400,
               ),
             ),
-          ),
         ],
       ),
     );
   }
-
-  Widget _buildOwnProfileActions() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _goToEditProfile,
-              icon: Icon(Icons.edit, size: 20),
-              label: Text('Modifier profil'),
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => DatingSubscriptionPage()),
-                );
-              },
-              icon: Icon(Icons.star, size: 20),
-              label: Text('Premium'),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.amber),
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTabBar() {
     return Container(
       margin: EdgeInsets.only(top: 8),
       child: TabBar(
         controller: _tabController,
         tabs: _tabs,
-        labelColor: Colors.red,
+        labelColor: primaryRed,
         unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.red,
+        indicatorColor: primaryRed,
         indicatorSize: TabBarIndicatorSize.label,
         labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       ),
@@ -1422,43 +1416,27 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         children: [
           Text('À propos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text(
-            widget.profile.bio,
-            style: TextStyle(fontSize: 14, height: 1.5, color: Colors.grey.shade700),
-          ),
+          Text(widget.profile.bio, style: TextStyle(fontSize: 14, height: 1.5, color: Colors.grey.shade700)),
           SizedBox(height: 24),
-
           if (widget.profile.centresInteret.isNotEmpty) ...[
             Text('Centres d\'intérêt', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: widget.profile.centresInteret.map((interet) {
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    interet,
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
-                  ),
-                );
-              }).toList(),
+              children: widget.profile.centresInteret.map((interet) => Container(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20)),
+                child: Text(interet, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+              )).toList(),
             ),
             SizedBox(height: 24),
           ],
-
           Text('Recherche', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(16),
-            ),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
             child: Row(
               children: [
                 Icon(Icons.favorite, size: 20, color: Colors.red),
@@ -1470,7 +1448,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               ],
             ),
           ),
-          SizedBox(height: 24),
         ],
       ),
     );
@@ -1485,19 +1462,9 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          print('❌ Erreur chargement posts: ${snapshot.error}');
-          return Center(child: Text('Erreur: ${snapshot.error}'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        final contents = snapshot.data?.docs
-            .map((doc) => CreatorContent.fromJson(doc.data() as Map<String, dynamic>))
-            .toList() ?? [];
-
+        if (snapshot.hasError) return Center(child: Text('Erreur: ${snapshot.error}'));
+        if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
+        final contents = snapshot.data?.docs.map((doc) => CreatorContent.fromJson(doc.data() as Map<String, dynamic>)).toList() ?? [];
         if (contents.isEmpty) {
           return Center(
             child: Column(
@@ -1505,15 +1472,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               children: [
                 Icon(Icons.article_outlined, size: 80, color: Colors.grey.shade400),
                 SizedBox(height: 16),
-                Text(
-                  'Aucun post pour le moment',
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                ),
+                Text('Aucun post pour le moment', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
               ],
             ),
           );
         }
-
         return GridView.builder(
           padding: EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1526,16 +1489,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           itemBuilder: (context, index) {
             final content = contents[index];
             final canAccess = !content.isPaid || _isSubscribed || isOwnProfile;
-
             return GestureDetector(
               onTap: () {
                 if (canAccess) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CreatorContentDetailPage(content: content),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => CreatorContentDetailPage(content: content)));
                 } else {
                   _showSubscriptionRequiredDialog();
                 }
@@ -1544,13 +1501,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, offset: Offset(0, 2))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1561,32 +1512,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.network(
-                              content.thumbnailUrl ?? content.mediaUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade200,
-                                  child: Icon(Icons.image, size: 40, color: Colors.grey.shade400),
-                                );
-                              },
-                            ),
+                            Image.network(content.thumbnailUrl ?? content.mediaUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200, child: Icon(Icons.image, size: 40))),
                             if (content.isPaid && !canAccess)
                               Container(
                                 color: Colors.black54,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.lock, size: 30, color: Colors.white),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        'Abonnement requis',
-                                        style: TextStyle(color: Colors.white, fontSize: 10),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock, size: 30, color: Colors.white), SizedBox(height: 4), Text('Abonnement requis', style: TextStyle(color: Colors.white, fontSize: 10))])),
                               ),
                             if (content.isPaid && canAccess)
                               Positioned(
@@ -1594,21 +1524,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                                 right: 8,
                                 child: Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.lock_open, size: 10, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '${content.priceCoins} coins',
-                                        style: TextStyle(color: Colors.white, fontSize: 10),
-                                      ),
-                                    ],
-                                  ),
+                                  decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
+                                  child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.lock_open, size: 10, color: Colors.white), SizedBox(width: 4), Text('${content.priceCoins} coins', style: TextStyle(color: Colors.white, fontSize: 10))]),
                                 ),
                               ),
                           ],
@@ -1620,28 +1537,17 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            content.titre,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text(content.titre, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                           SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(Icons.favorite, size: 10, color: Colors.red),
                               SizedBox(width: 2),
-                              Text(
-                                '${content.likesCount + content.lovesCount}',
-                                style: TextStyle(fontSize: 10, color: Colors.grey),
-                              ),
+                              Text('${content.likesCount + content.lovesCount}', style: TextStyle(fontSize: 10, color: Colors.grey)),
                               SizedBox(width: 8),
                               Icon(Icons.visibility, size: 10, color: Colors.grey),
                               SizedBox(width: 2),
-                              Text(
-                                '${content.viewsCount}',
-                                style: TextStyle(fontSize: 10, color: Colors.grey),
-                              ),
+                              Text('${content.viewsCount}', style: TextStyle(fontSize: 10, color: Colors.grey)),
                             ],
                           ),
                         ],
@@ -1663,23 +1569,10 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Abonnement requis'),
-        content: Text(
-          'Pour accéder aux posts payants de ${widget.profile.pseudo}, '
-              'vous devez vous abonner à son contenu.',
-        ),
+        content: Text('Pour accéder aux posts payants de ${widget.profile.pseudo}, vous devez vous abonner à son contenu.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _subscribeToCreator();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('S\'abonner'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
+          ElevatedButton(onPressed: () { Navigator.pop(context); _subscribeToCreator(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: Text('S\'abonner')),
         ],
       ),
     );

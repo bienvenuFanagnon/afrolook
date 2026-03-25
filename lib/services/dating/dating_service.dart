@@ -12,70 +12,295 @@ class DatingService {
   final CoinService _coinService = CoinService();
 
   // Migration initiale des profils
-  Future<void> migrateInitialProfiles() async {
+  // Future<void> migrateInitialProfiles() async {
+  //   try {
+  //     // Récupérer tous les utilisateurs dont le genre est "femme"
+  //     final usersSnapshot = await _firestore
+  //         .collection('users')
+  //         .where('genre', isEqualTo: 'femme')
+  //         .get();
+  //
+  //     for (var userDoc in usersSnapshot.docs) {
+  //       final userData = UserData.fromJson(userDoc.data());
+  //
+  //       // Vérifier si un profil dating existe déjà
+  //       final existingProfile = await _firestore
+  //           .collection('dating_profiles')
+  //           .where('userId', isEqualTo: userData.id)
+  //           .limit(1)
+  //           .get();
+  //
+  //       if (existingProfile.docs.isEmpty) {
+  //         // Créer un profil dating minimal
+  //         final profileId = _firestore.collection('dating_profiles').doc().id;
+  //         final now = DateTime.now().millisecondsSinceEpoch;
+  //
+  //         final datingProfile = DatingProfile(
+  //           id: profileId,
+  //           userId: userData.id ?? '',
+  //           pseudo: userData.pseudo ?? '',
+  //           imageUrl: userData.imageUrl ?? '',
+  //           photosUrls: [userData.imageUrl ?? ''],
+  //           bio: userData.apropos ?? '',
+  //           age: _calculateAge(userData),
+  //           sexe: userData.genre ?? '',
+  //           ville: userData.adresse?.split(',')[0] ?? '',
+  //           pays: userData.userPays?.name ?? '',
+  //           profession: null,
+  //           centresInteret: [],
+  //           rechercheSexe: 'homme',
+  //           rechercheAgeMin: 18,
+  //           rechercheAgeMax: 50,
+  //           recherchePays: '',
+  //           isVerified: false,
+  //           isActive: true,
+  //           isProfileComplete: false,
+  //           completionPercentage: _calculateCompletionPercentage(userData),
+  //           createdByMigration: true,
+  //           likesCount: 0,
+  //           coupsDeCoeurCount: 0,
+  //           connexionsCount: 0,
+  //           visitorsCount: 0,
+  //           createdAt: now,
+  //           updatedAt: now,
+  //         );
+  //
+  //         await _firestore
+  //             .collection('dating_profiles')
+  //             .doc(profileId)
+  //             .set(datingProfile.toJson());
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Erreur lors de la migration: $e');
+  //   }
+  // }
+
+  // lib/services/dating/dating_service.dart
+
+  /// Met à jour le score de popularité d'un profil
+  Future<void> updatePopularityScore(String userId) async {
     try {
-      // Récupérer tous les utilisateurs dont le genre est "femme"
-      final usersSnapshot = await _firestore
-          .collection('users')
-          .where('genre', isEqualTo: 'femme')
+      print('📊 Mise à jour du score de popularité pour $userId');
+
+      // Récupérer tous les compteurs en parallèle pour optimiser
+      final futures = await Future.wait([
+        _getLikesCountForUser(userId),
+        _getCoupsDeCoeurCountForUser(userId),
+        _getConnectionsCountForUser(userId),
+      ]);
+
+      final likesCount = futures[0];
+      final coupsCount = futures[1];
+      final connectionsCount = futures[2];
+
+      // Formule du score:
+      // - 1 point par like
+      // - 2 points par coup de cœur
+      // - 3 points par connexion
+      final score = (likesCount * 1) + (coupsCount * 2) + (connectionsCount * 3);
+
+      print('📊 Nouveau score: $score (likes: $likesCount, coups: $coupsCount, connexions: $connectionsCount)');
+
+      // Mettre à jour dans Firestore
+      final profileSnapshot = await _firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
           .get();
 
-      for (var userDoc in usersSnapshot.docs) {
-        final userData = UserData.fromJson(userDoc.data());
-
-        // Vérifier si un profil dating existe déjà
-        final existingProfile = await _firestore
-            .collection('dating_profiles')
-            .where('userId', isEqualTo: userData.id)
-            .limit(1)
-            .get();
-
-        if (existingProfile.docs.isEmpty) {
-          // Créer un profil dating minimal
-          final profileId = _firestore.collection('dating_profiles').doc().id;
-          final now = DateTime.now().millisecondsSinceEpoch;
-
-          final datingProfile = DatingProfile(
-            id: profileId,
-            userId: userData.id ?? '',
-            pseudo: userData.pseudo ?? '',
-            imageUrl: userData.imageUrl ?? '',
-            photosUrls: [userData.imageUrl ?? ''],
-            bio: userData.apropos ?? '',
-            age: _calculateAge(userData),
-            sexe: userData.genre ?? '',
-            ville: userData.adresse?.split(',')[0] ?? '',
-            pays: userData.userPays?.name ?? '',
-            profession: null,
-            centresInteret: [],
-            rechercheSexe: 'homme',
-            rechercheAgeMin: 18,
-            rechercheAgeMax: 50,
-            recherchePays: '',
-            isVerified: false,
-            isActive: true,
-            isProfileComplete: false,
-            completionPercentage: _calculateCompletionPercentage(userData),
-            createdByMigration: true,
-            likesCount: 0,
-            coupsDeCoeurCount: 0,
-            connexionsCount: 0,
-            visitorsCount: 0,
-            createdAt: now,
-            updatedAt: now,
-          );
-
-          await _firestore
-              .collection('dating_profiles')
-              .doc(profileId)
-              .set(datingProfile.toJson());
-        }
+      if (profileSnapshot.docs.isNotEmpty) {
+        await profileSnapshot.docs.first.reference.update({
+          'popularityScore': score,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+        print('✅ Score mis à jour avec succès');
+      } else {
+        print('⚠️ Profil non trouvé pour $userId');
       }
+
     } catch (e) {
-      print('Erreur lors de la migration: $e');
+      print('❌ Erreur lors de la mise à jour du score: $e');
     }
   }
 
+  /// Récupère le nombre de likes reçus par un utilisateur
+  Future<int> _getLikesCountForUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('dating_likes')
+        .where('toUserId', isEqualTo: userId)
+        .count()
+        .get();
+    return snapshot.count!;
+  }
+
+  /// Récupère le nombre de coups de cœur reçus par un utilisateur
+  Future<int> _getCoupsDeCoeurCountForUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('dating_coup_de_coeurs')
+        .where('toUserId', isEqualTo: userId)
+        .count()
+        .get();
+    return snapshot.count!;
+  }
+
+  /// Récupère le nombre de connexions d'un utilisateur
+  Future<int> _getConnectionsCountForUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('dating_connections')
+        .where('userId1', isEqualTo: userId)
+        .count()
+        .get();
+    return snapshot.count!;
+  }
+
+  /// Met à jour le score après un like
+  Future<void> onUserLiked(String likedUserId) async {
+    print('❤️ Like reçu par $likedUserId - mise à jour du score');
+    await updatePopularityScore(likedUserId);
+  }
+
+  /// Met à jour le score après un coup de cœur
+  Future<void> onUserCoupDeCoeur(String targetUserId) async {
+    print('⭐ Coup de cœur reçu par $targetUserId - mise à jour du score');
+    await updatePopularityScore(targetUserId);
+  }
+
+  /// Met à jour le score après une connexion (match)
+  Future<void> onUserConnected(String userId1, String userId2) async {
+    print('💑 Nouvelle connexion entre $userId1 et $userId2 - mise à jour des scores');
+    await Future.wait([
+      updatePopularityScore(userId1),
+      updatePopularityScore(userId2),
+    ]);
+  }
+
+  /// Récupère les profils les plus populaires
+  Future<List<DatingProfile>> getMostPopularProfiles({
+    required String currentUserId,
+    int limit = 20,
+    String? sexeFilter,
+    int minAge = 18,
+    int maxAge = 99,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection('dating_profiles')
+          .where('isActive', isEqualTo: true)
+          .where('userId', isNotEqualTo: currentUserId)
+          .orderBy('popularityScore', descending: true)
+          .orderBy('createdAt', descending: true);
+
+      if (sexeFilter != null && sexeFilter != 'tous') {
+        query = query.where('sexe', isEqualTo: sexeFilter);
+      }
+
+      query = query.where('age', isGreaterThanOrEqualTo: minAge)
+          .where('age', isLessThanOrEqualTo: maxAge);
+
+      final snapshot = await query.limit(limit).get();
+
+      return snapshot.docs
+          .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+    } catch (e) {
+      print('❌ Erreur récupération profils populaires: $e');
+      return [];
+    }
+  }
+
+  /// Récupère les profils les moins populaires (pour le recyclage)
+  Future<List<DatingProfile>> getLeastPopularProfiles({
+    required String currentUserId,
+    int limit = 20,
+    String? sexeFilter,
+    int minAge = 18,
+    int maxAge = 99,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection('dating_profiles')
+          .where('isActive', isEqualTo: true)
+          .where('userId', isNotEqualTo: currentUserId)
+          .orderBy('popularityScore', descending: false)
+          .orderBy('createdAt', descending: true);
+
+      if (sexeFilter != null && sexeFilter != 'tous') {
+        query = query.where('sexe', isEqualTo: sexeFilter);
+      }
+
+      query = query.where('age', isGreaterThanOrEqualTo: minAge)
+          .where('age', isLessThanOrEqualTo: maxAge);
+
+      final snapshot = await query.limit(limit).get();
+
+      return snapshot.docs
+          .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+    } catch (e) {
+      print('❌ Erreur récupération profils moins populaires: $e');
+      return [];
+    }
+  }
+
+  /// Mélange les profils populaires et moins populaires
+  Future<List<DatingProfile>> getMixedProfiles({
+    required String currentUserId,
+    int limit = 30,
+    String? sexeFilter,
+    int minAge = 18,
+    int maxAge = 99,
+    double popularRatio = 0.6, // 60% populaires, 40% moins populaires
+  }) async {
+    print('🎯 Génération de profils mélangés (ratio populaires: ${(popularRatio * 100).toInt()}%)');
+
+    final popularCount = (limit * popularRatio).toInt();
+    final lessPopularCount = limit - popularCount;
+
+    final futures = await Future.wait([
+      getMostPopularProfiles(
+        currentUserId: currentUserId,
+        limit: popularCount,
+        sexeFilter: sexeFilter,
+        minAge: minAge,
+        maxAge: maxAge,
+      ),
+      getLeastPopularProfiles(
+        currentUserId: currentUserId,
+        limit: lessPopularCount,
+        sexeFilter: sexeFilter,
+        minAge: minAge,
+        maxAge: maxAge,
+      ),
+    ]);
+
+    List<DatingProfile> populars = futures[0];
+    List<DatingProfile> lessPopulars = futures[1];
+
+    // Mélanger chaque liste
+    populars.shuffle();
+    lessPopulars.shuffle();
+
+    // Alterner: 3 populaires, 2 moins populaires
+    List<DatingProfile> mixed = [];
+    int popularIndex = 0, lessIndex = 0;
+
+    while (popularIndex < populars.length || lessIndex < lessPopulars.length) {
+      // Ajouter 3 populaires
+      for (int i = 0; i < 3 && popularIndex < populars.length; i++) {
+        mixed.add(populars[popularIndex++]);
+      }
+      // Ajouter 2 moins populaires
+      for (int i = 0; i < 2 && lessIndex < lessPopulars.length; i++) {
+        mixed.add(lessPopulars[lessIndex++]);
+      }
+    }
+
+    print('📊 Mélange généré: ${mixed.length} profils');
+    return mixed;
+  }
   // Vérifier l'état du profil dating
   Future<DatingProfile?> checkDatingProfileStatus(String userId) async {
     try {

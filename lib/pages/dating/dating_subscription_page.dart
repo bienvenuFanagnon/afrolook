@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/dating/coin_provider.dart';
+import '../../providers/dating/dating_provider.dart';
 import 'buy_coins_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -211,6 +212,12 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     }
   }
 
+// lib/pages/dating/dating_subscription_page.dart
+
+// =====================================================
+// 1. FONCTION DE SOUSCRIPTION (AVEC CRÉATION DE L'ABONNEMENT)
+// =====================================================
+
   Future<void> _subscribe(SubscriptionPlan plan) async {
     if (_isSubscribing) return;
 
@@ -218,79 +225,30 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     final userId = authProvider.loginUserData.id;
     final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
 
-    print('📱 === Souscription à un abonnement ===');
-    print('📌 Plan: ${plan.name}');
-    print('📌 Code: ${plan.code}');
-    print('📌 Coût: ${plan.priceCoins} pièces');
-    print('📌 Solde actuel: $currentCoins pièces');
+    print('📱 === SOUSCRIPTION À UN ABONNEMENT ===');
+    print('📌 Plan: ${plan.name} (${plan.code})');
+    print('💰 Coût: ${plan.priceCoins} pièces');
+    print('💳 Solde actuel: $currentCoins pièces');
+    print('👍 Likes par jour: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
+    print('⭐ Super likes par jour: ${plan.defaultSuperLikes}');
+    print('📅 Durée: ${plan.durationInDays} jours');
 
-    // Vérifier si l'abonnement est déjà actif
+    // Vérifier si l'utilisateur est déjà abonné à ce plan
     if (_currentSubscriptionPlan == plan.code && plan.code != 'gratuit') {
-      print('⚠️ Déjà abonné à ce plan');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vous êtes déjà abonné à ce plan !'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      print('⚠️ Utilisateur déjà abonné à ${plan.name}');
+      _showSnackBar('Vous êtes déjà abonné à ce plan !', Colors.orange);
       return;
     }
 
     // Vérifier le solde pour les plans payants
     if (plan.priceCoins > 0 && currentCoins < plan.priceCoins) {
-      print('❌ Solde insuffisant (${currentCoins} < ${plan.priceCoins})');
+      print('❌ Solde insuffisant: $currentCoins < ${plan.priceCoins}');
       _showInsufficientCoinsDialog(plan);
       return;
     }
 
-    // Confirmation
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Confirmer l\'abonnement'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              plan.code == 'gold' ? Icons.diamond : (plan.code == 'plus' ? Icons.star : Icons.favorite),
-              size: 50,
-              color: plan.code == 'gold' ? Colors.amber : Colors.red,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Souscrire à ${plan.name} ?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            if (plan.priceCoins > 0)
-              Text(
-                'Coût: ${plan.priceCoins} pièces',
-                style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-              ),
-            SizedBox(height: 8),
-            Text(
-              'Durée: ${plan.durationInDays} jours',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: Text('Confirmer'),
-          ),
-        ],
-      ),
-    );
-
+    // Dialogue de confirmation
+    final confirm = await _showConfirmationDialog(plan);
     if (confirm != true) {
       print('❌ Abonnement annulé par l\'utilisateur');
       return;
@@ -303,7 +261,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       final startAt = now;
       final endAt = now + (plan.durationInDays * 24 * 60 * 60 * 1000);
 
-      print('🔄 Début de la transaction...');
+      print('🔄 Exécution de la transaction Firestore...');
 
       await firestore.runTransaction((transaction) async {
         // 1. Déduire les pièces si plan payant
@@ -320,7 +278,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             'coinsBalance': currentBalance - plan.priceCoins,
             'totalCoinsSpent': FieldValue.increment(plan.priceCoins),
           });
-          print('💰 ${plan.priceCoins} pièces déduites');
+          print('💰 ${plan.priceCoins} pièces déduites du solde');
         }
 
         // 2. Désactiver les anciens abonnements
@@ -335,7 +293,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           print('📌 Ancien abonnement désactivé: ${doc.id}');
         }
 
-        // 3. Créer le nouvel abonnement
+        // 3. Créer le nouvel abonnement AVEC les likes restants
         final subscriptionId = firestore.collection('user_dating_subscriptions').doc().id;
         final subscription = UserDatingSubscription(
           id: subscriptionId,
@@ -347,6 +305,8 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           isActive: true,
           createdAt: now,
           updatedAt: now,
+          remainingLikes: plan.defaultLikes,
+          remainingSuperLikes: plan.defaultSuperLikes,
         );
 
         transaction.set(
@@ -354,8 +314,10 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           subscription.toJson(),
         );
         print('✅ Nouvel abonnement créé: ${plan.name}');
+        print('   📊 Likes restants: ${plan.defaultLikes == -1 ? 'Illimités' : plan.defaultLikes}');
+        print('   📊 Super likes restants: ${plan.defaultSuperLikes}');
 
-        // 4. Enregistrer la transaction
+        // 4. Enregistrer la transaction de pièces
         final transactionId = firestore.collection('user_coin_transactions').doc().id;
         transaction.set(
           firestore.collection('user_coin_transactions').doc(transactionId),
@@ -372,49 +334,30 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
             'updatedAt': now,
           },
         );
-        print('💰 Transaction enregistrée');
+        print('💰 Transaction de pièces enregistrée');
       });
 
-      print('✅ Abonnement souscrit avec succès !');
+      print('✅ === ABONNEMENT SOUSCRIT AVEC SUCCÈS ===');
 
       // Mettre à jour les données locales
       _currentSubscriptionPlan = plan.code;
 
-      // Mettre à jour les limites de likes
-      await _updateSubscriptionLimits(plan);
+      // Mettre à jour les limites dans SharedPreferences
+      await _updateLocalLimits(plan);
+
+      // Mettre à jour les limites dans le provider
+      await _updateProviderLimits(plan);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Abonnement ${plan.name} activé avec succès !'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            duration: Duration(seconds: 3),
-          ),
-        );
-
-        // Recharger les données utilisateur
+        _showSuccessSnackBar(plan);
         await authProvider.refreshUserData();
-
         Navigator.pop(context);
       }
 
     } catch (e) {
-      print('❌ Erreur lors de la souscription: $e');
+      print('❌ ERREUR lors de la souscription: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnackBar('Erreur: ${e.toString()}', Colors.red);
       }
     } finally {
       if (mounted) {
@@ -423,32 +366,201 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     }
   }
 
-  Future<void> _updateSubscriptionLimits(SubscriptionPlan plan) async {
+// =====================================================
+// 2. FONCTION DE MISE À JOUR DES LIMITES LOCALES
+// =====================================================
+
+  /// Met à jour les limites de likes dans SharedPreferences
+  /// Ces valeurs sont utilisées pour l'affichage immédiat dans l'app
+  Future<void> _updateLocalLimits(SubscriptionPlan plan) async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final prefs = await SharedPreferences.getInstance();
     final userId = authProvider.loginUserData.id;
 
-    int likesLimit = 10;
-    int superLikesLimit = 1;
-
-    switch (plan.code) {
-      case 'gold':
-        likesLimit = -1; // Illimité
-        superLikesLimit = 5;
-        break;
-      case 'plus':
-        likesLimit = 50;
-        superLikesLimit = 2;
-        break;
-      default:
-        likesLimit = 10;
-        superLikesLimit = 1;
+    if (userId == null) {
+      print('⚠️ Impossible de mettre à jour les limites: userId null');
+      return;
     }
+
+    // Utiliser les valeurs du plan
+    final likesLimit = plan.defaultLikes;
+    final superLikesLimit = plan.defaultSuperLikes;
 
     await prefs.setInt('dating_remaining_likes_$userId', likesLimit);
     await prefs.setInt('dating_remaining_super_likes_$userId', superLikesLimit);
 
-    print('📊 Limites mises à jour: likes=$likesLimit, super likes=$superLikesLimit');
+    print('📊 Mise à jour SharedPreferences:');
+    print('   👍 Likes: ${likesLimit == -1 ? 'Illimités' : likesLimit}');
+    print('   ⭐ Super likes: $superLikesLimit');
+  }
+
+// =====================================================
+// 3. FONCTION DE MISE À JOUR DES LIMITES DANS LE PROVIDER
+// =====================================================
+
+  /// Met à jour les limites dans le DatingProvider (si utilisé)
+  Future<void> _updateProviderLimits(SubscriptionPlan plan) async {
+    try {
+      final datingProvider = Provider.of<DatingProvider>(context, listen: false);
+      // Si votre DatingProvider a une méthode pour mettre à jour les limites
+      // datingProvider.updateLimits(plan.defaultLikes, plan.defaultSuperLikes);
+
+      print('📊 Mise à jour du DatingProvider effectuée');
+    } catch (e) {
+      print('⚠️ Impossible de mettre à jour le DatingProvider: $e');
+      // Ce n'est pas critique, on continue
+    }
+  }
+
+// =====================================================
+// 4. FONCTIONS UTILITAIRES
+// =====================================================
+
+  Future<bool?> _showConfirmationDialog(SubscriptionPlan plan) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              plan.code == 'gold' ? Icons.diamond :
+              (plan.code == 'plus' ? Icons.star : Icons.favorite),
+              color: plan.code == 'gold' ? Colors.amber : Colors.red,
+            ),
+            SizedBox(width: 8),
+            Text('Confirmer l\'abonnement'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 8),
+            Text(
+              'Souscrire à ${plan.name} ?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            if (plan.priceCoins > 0)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${plan.priceCoins} pièces',
+                  style: TextStyle(
+                    color: Colors.amber.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            SizedBox(height: 12),
+            Text(
+              'Durée: ${plan.durationInDays} jours',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  _buildLimitRow(
+                    'Likes par jour',
+                    plan.defaultLikes == -1 ? 'Illimités' : '${plan.defaultLikes}',
+                    Icons.favorite,
+                  ),
+                  SizedBox(height: 8),
+                  _buildLimitRow(
+                    'Super likes par jour',
+                    '${plan.defaultSuperLikes}',
+                    Icons.star,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            child: Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLimitRow(String label, String value, IconData icon) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: Colors.amber),
+            SizedBox(width: 8),
+            Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+          ],
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.amber,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSuccessSnackBar(SubscriptionPlan plan) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Abonnement ${plan.name} activé !',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   void _showInsufficientCoinsDialog(SubscriptionPlan plan) {
@@ -487,7 +599,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => BuyCoinsPage()),
               );

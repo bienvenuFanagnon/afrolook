@@ -1,4 +1,5 @@
 // lib/pages/creator/creator_profile_page.dart
+import 'package:afrotok/pages/dating/dating_entry_page.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,11 +18,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 
 import '../../models/dating_data.dart';
-import '../../providers/authProvider.dart';
-import '../../providers/dating/dating_provider.dart';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 class DatingProfileSetupPage extends StatefulWidget {
   final DatingProfile? profile;
@@ -66,10 +68,12 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   bool _isLoadingLocation = false;
   bool _hasRequestedLocation = false;
 
-  // Images
-  List<XFile> _selectedImages = [];
+  // Images - Support Web et Mobile
+  List<Uint8List> _selectedImagesBytes = []; // Pour le web
+  List<XFile> _selectedImagesFiles = []; // Pour mobile
   List<String> _existingImages = [];
   bool _isUploading = false;
+  static const int _maxPhotos = 3; // Limite à 3 photos maximum
 
   // Animation
   late AnimationController _animationController;
@@ -80,7 +84,6 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   final Color primaryRed = const Color(0xFFE63946);
   final Color primaryYellow = const Color(0xFFFFD700);
   final Color primaryBlack = Colors.black;
-  final Color primaryWhite = Colors.white;
   final Color secondaryGrey = const Color(0xFF2C2C2C);
 
   @override
@@ -97,7 +100,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     _bioController = TextEditingController(text: widget.profile?.bio ?? '');
     _ageController = TextEditingController(text: widget.profile?.age.toString() ?? '');
     _professionController = TextEditingController(text: widget.profile?.profession ?? '');
-    _selectedSexe = widget.profile?.sexe ?? 'femme';
+    _selectedSexe = (widget.profile?.sexe ?? 'femme').toLowerCase();
     _selectedRechercheSexe = widget.profile?.rechercheSexe ?? 'homme';
     _rechercheAgeMin = widget.profile?.rechercheAgeMin ?? 18;
     _rechercheAgeMax = widget.profile?.rechercheAgeMax ?? 50;
@@ -171,11 +174,46 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Future<void> _pickImages() async {
-    final List<XFile> pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles.isNotEmpty) {
-      setState(() {
-        _selectedImages.addAll(pickedFiles);
-      });
+    // Vérifier la limite de photos
+    final currentTotal = _existingImages.length +
+        (_selectedImagesBytes.length + _selectedImagesFiles.length);
+
+    if (currentTotal >= _maxPhotos) {
+      _showError('Vous ne pouvez ajouter que $_maxPhotos photos maximum');
+      return;
+    }
+
+    try {
+      final List<XFile> pickedFiles = await _picker.pickMultiImage();
+
+      if (pickedFiles.isNotEmpty) {
+        final remainingSlots = _maxPhotos - currentTotal;
+        final filesToAdd = pickedFiles.take(remainingSlots).toList();
+
+        if (pickedFiles.length > remainingSlots) {
+          _showError('Limite de $_maxPhotos photos. Seules ${filesToAdd.length} seront ajoutées.');
+        }
+
+        if (kIsWeb) {
+          // Web: Convertir en Uint8List
+          for (var file in filesToAdd) {
+            final bytes = await file.readAsBytes();
+            setState(() {
+              _selectedImagesBytes.add(bytes);
+            });
+          }
+        } else {
+          // Mobile: Garder les XFile
+          setState(() {
+            _selectedImagesFiles.addAll(filesToAdd);
+          });
+        }
+
+        print('✅ ${filesToAdd.length} photos sélectionnées');
+      }
+    } catch (e) {
+      print('❌ Erreur sélection image: $e');
+      _showError('Erreur lors de la sélection des images');
     }
   }
 
@@ -184,56 +222,93 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     setState(() => _isUploading = true);
 
     try {
-      for (int i = 0; i < _selectedImages.length; i++) {
-        final file = _selectedImages[i];
-        final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_$i.jpg';
+      // Upload des images existantes (déjà en ligne, rien à faire)
+      uploadedUrls.addAll(_existingImages);
+
+      // Upload des nouvelles images
+      // Pour mobile (XFile)
+      for (int i = 0; i < _selectedImagesFiles.length; i++) {
+        final file = _selectedImagesFiles[i];
+        final fileName = 'dating_profile_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
         final ref = FirebaseStorage.instance
             .ref()
             .child('dating_profiles')
             .child(fileName);
 
-        await ref.putFile(File(file.path));
+        if (kIsWeb) {
+          // Web: utiliser les bytes
+          final bytes = await file.readAsBytes();
+          await ref.putData(bytes);
+        } else {
+          // Mobile: utiliser File
+          await ref.putFile(File(file.path));
+        }
+
         final url = await ref.getDownloadURL();
         uploadedUrls.add(url);
         print("✅ Image uploadée: $url");
       }
+
+      // Upload des images web (Uint8List)
+      for (int i = 0; i < _selectedImagesBytes.length; i++) {
+        final bytes = _selectedImagesBytes[i];
+        final fileName = 'dating_profile_${DateTime.now().millisecondsSinceEpoch}_web_$i.jpg';
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('dating_profiles')
+            .child(fileName);
+
+        await ref.putData(bytes);
+        final url = await ref.getDownloadURL();
+        uploadedUrls.add(url);
+        print("✅ Image web uploadée: $url");
+      }
+
     } catch (e) {
       print("❌ Erreur upload image: $e");
+      _showError('Erreur lors de l\'upload des images');
     }
 
     setState(() => _isUploading = false);
     return uploadedUrls;
   }
 
+  void _removeImage(int index, bool isExisting, {bool isBytes = false}) {
+    setState(() {
+      if (isExisting) {
+        _existingImages.removeAt(index);
+      } else if (isBytes && kIsWeb) {
+        _selectedImagesBytes.removeAt(index);
+      } else {
+        _selectedImagesFiles.removeAt(index);
+      }
+    });
+  }
+
+  int _getTotalImageCount() {
+    return _existingImages.length +
+        _selectedImagesFiles.length +
+        _selectedImagesBytes.length;
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedCountry.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner votre pays'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Veuillez sélectionner votre pays');
       return;
     }
 
-    if (_existingImages.isEmpty && _selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez ajouter au moins une photo'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (_getTotalImageCount() == 0) {
+      _showError('Veuillez ajouter au moins une photo');
       return;
     }
 
     setState(() => _isUploading = true);
 
     try {
-      // Upload des nouvelles images
-      final newImageUrls = await _uploadImages();
-      final allPhotosUrls = [..._existingImages, ...newImageUrls];
+      // Upload des images
+      final allPhotosUrls = await _uploadImages();
 
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final userId = authProvider.loginUserData.id;
@@ -274,7 +349,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         updatedAt: now,
         countryCode: _detectedCountryCode,
         region: _selectedRegion.isNotEmpty ? _selectedRegion : null,
-        city: _selectedCity.isNotEmpty ? _selectedCity : null,
+        city: _selectedCity.isNotEmpty ? _selectedCity : null, popularityScore: 0,
       );
 
       await _firestore
@@ -285,31 +360,37 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
       print("✅ Profil dating enregistré avec succès");
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEditing ? 'Profil mis à jour !' : 'Profil créé avec succès !',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-
-        Navigator.pushReplacementNamed(context, '/dating/swipe');
+        _showSuccess(isEditing ? 'Profil mis à jour !' : 'Profil créé avec succès !');
+        Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => DatingSwipePage(),));
       }
     } catch (e) {
       print("❌ Erreur sauvegarde profil: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Erreur: ${e.toString()}');
     } finally {
       setState(() => _isUploading = false);
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   void _toggleInteret(String interet) {
@@ -322,16 +403,6 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     });
   }
 
-  void _removeImage(int index, bool isExisting) {
-    setState(() {
-      if (isExisting) {
-        _existingImages.removeAt(index);
-      } else {
-        _selectedImages.removeAt(index);
-      }
-    });
-  }
-
   @override
   void dispose() {
     _pseudoController.dispose();
@@ -340,6 +411,61 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
     _professionController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Widget pour afficher une image (compatible web et mobile)
+  Widget _buildImagePreview(dynamic image, int index, bool isExisting) {
+    ImageProvider imageProvider;
+
+    if (isExisting) {
+      imageProvider = NetworkImage(image);
+    } else if (kIsWeb && image is Uint8List) {
+      imageProvider = MemoryImage(image);
+    } else if (!kIsWeb && image is XFile) {
+      imageProvider = FileImage(File(image.path));
+    } else {
+      imageProvider = const AssetImage('assets/placeholder.png');
+    }
+
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(
+              image: imageProvider,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 12,
+          child: GestureDetector(
+            onTap: () {
+              if (isExisting) {
+                _removeImage(index, true);
+              } else if (kIsWeb && image is Uint8List) {
+                _removeImage(index, false, isBytes: true);
+              } else {
+                _removeImage(index, false);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 12, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -359,31 +485,18 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
                       _buildHeader(),
                       const SizedBox(height: 24),
-
-                      // Photos
                       _buildPhotoSection(),
                       const SizedBox(height: 24),
-
-                      // Informations personnelles
                       _buildPersonalInfoSection(),
                       const SizedBox(height: 24),
-
-                      // Localisation
                       _buildLocationSection(),
                       const SizedBox(height: 24),
-
-                      // Centres d'intérêt
                       _buildInterestsSection(),
                       const SizedBox(height: 24),
-
-                      // Recherche
                       _buildSearchPreferencesSection(),
                       const SizedBox(height: 32),
-
-                      // Bouton d'enregistrement
                       _buildSaveButton(),
                       const SizedBox(height: 20),
                     ],
@@ -440,22 +553,42 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
   }
 
   Widget _buildPhotoSection() {
-    final allPhotos = [..._existingImages, ..._selectedImages.map((e) => e.path)];
+    final totalPhotos = _getTotalImageCount();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Photos',
-          style: TextStyle(
-            color: primaryYellow,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Photos',
+              style: TextStyle(
+                color: primaryYellow,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: primaryRed.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$totalPhotos/$_maxPhotos',
+                style: TextStyle(
+                  color: primaryYellow,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(
-          'Ajoute au moins une photo (maximum 6)',
+          'Ajoute jusqu\'à $_maxPhotos photos (au moins 1)',
           style: TextStyle(
             color: Colors.grey[500],
             fontSize: 12,
@@ -466,12 +599,30 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: allPhotos.length + 1,
+            itemCount: totalPhotos + (totalPhotos < _maxPhotos ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == allPhotos.length) {
+              if (index == totalPhotos) {
                 return _buildAddPhotoButton();
               }
-              return _buildPhotoCard(allPhotos[index], index);
+
+              // Afficher les images existantes
+              if (index < _existingImages.length) {
+                return _buildImagePreview(_existingImages[index], index, true);
+              }
+
+              // Afficher les nouvelles images web (Uint8List)
+              final webIndex = index - _existingImages.length;
+              if (kIsWeb && webIndex < _selectedImagesBytes.length) {
+                return _buildImagePreview(_selectedImagesBytes[webIndex], webIndex, false);
+              }
+
+              // Afficher les nouvelles images mobile (XFile)
+              final mobileIndex = index - _existingImages.length;
+              if (!kIsWeb && mobileIndex < _selectedImagesFiles.length) {
+                return _buildImagePreview(_selectedImagesFiles[mobileIndex], mobileIndex, false);
+              }
+
+              return const SizedBox.shrink();
             },
           ),
         ),
@@ -503,45 +654,6 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPhotoCard(String imagePath, int index) {
-    final isExisting = index < _existingImages.length;
-    final imageUrl = isExisting ? imagePath : imagePath;
-
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          margin: const EdgeInsets.only(right: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: isExisting
-                  ? NetworkImage(imageUrl)
-                  : FileImage(File(imageUrl)) as ImageProvider,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 12,
-          child: GestureDetector(
-            onTap: () => _removeImage(index, isExisting),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close, size: 12, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

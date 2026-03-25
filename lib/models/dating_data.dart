@@ -319,6 +319,8 @@ class CreatorCoinConversion {
 // lib/models/dating_profile.dart
 // lib/models/dating_data.dart - Ajouter les champs pays et région
 
+// lib/models/dating_data.dart
+
 class DatingProfile {
   final String id;
   final String userId;
@@ -353,6 +355,9 @@ class DatingProfile {
   final String? region;
   final String? city;
 
+  // ✅ NOUVEAU CHAMP: Score de popularité
+  final int popularityScore;
+
   DatingProfile({
     required this.id,
     required this.userId,
@@ -384,6 +389,7 @@ class DatingProfile {
     this.countryCode,
     this.region,
     this.city,
+    required this.popularityScore,
   });
 
   factory DatingProfile.fromJson(Map<String, dynamic> json) {
@@ -422,6 +428,7 @@ class DatingProfile {
       countryCode: json['countryCode']?.toString(),
       region: json['region']?.toString(),
       city: json['city']?.toString(),
+      popularityScore: json['popularityScore'] ?? 0,
     );
   }
 
@@ -457,6 +464,7 @@ class DatingProfile {
       'countryCode': countryCode,
       'region': region,
       'city': city,
+      'popularityScore': popularityScore,
     };
   }
 
@@ -491,6 +499,7 @@ class DatingProfile {
     String? countryCode,
     String? region,
     String? city,
+    int? popularityScore,
   }) {
     return DatingProfile(
       id: id ?? this.id,
@@ -523,6 +532,7 @@ class DatingProfile {
       countryCode: countryCode ?? this.countryCode,
       region: region ?? this.region,
       city: city ?? this.city,
+      popularityScore: popularityScore ?? this.popularityScore,
     );
   }
 }
@@ -1414,6 +1424,8 @@ class CreatorContentPurchase {
 }
 
 // lib/models/subscription_plan.dart
+// lib/models/dating_data.dart - Mettre à jour SubscriptionPlan
+
 class SubscriptionPlan {
   final String id;
   final String code;
@@ -1426,6 +1438,10 @@ class SubscriptionPlan {
   final int createdAt;
   final int updatedAt;
 
+  // Nouveaux champs pour les limites
+  final int defaultLikes;
+  final int defaultSuperLikes;
+
   SubscriptionPlan({
     required this.id,
     required this.code,
@@ -1437,6 +1453,8 @@ class SubscriptionPlan {
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
+    required this.defaultLikes,
+    required this.defaultSuperLikes,
   });
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
@@ -1453,6 +1471,8 @@ class SubscriptionPlan {
       isActive: json['isActive'] ?? true,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
+      defaultLikes: json['defaultLikes'] ?? 10,
+      defaultSuperLikes: json['defaultSuperLikes'] ?? 1,
     );
   }
 
@@ -1468,6 +1488,8 @@ class SubscriptionPlan {
       'isActive': isActive,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'defaultLikes': defaultLikes,
+      'defaultSuperLikes': defaultSuperLikes,
     };
   }
 
@@ -1482,6 +1504,8 @@ class SubscriptionPlan {
     bool? isActive,
     int? createdAt,
     int? updatedAt,
+    int? defaultLikes,
+    int? defaultSuperLikes,
   }) {
     return SubscriptionPlan(
       id: id ?? this.id,
@@ -1494,11 +1518,14 @@ class SubscriptionPlan {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      defaultLikes: defaultLikes ?? this.defaultLikes,
+      defaultSuperLikes: defaultSuperLikes ?? this.defaultSuperLikes,
     );
   }
 }
-
 // lib/models/user_dating_subscription.dart
+// lib/models/dating_data.dart - Mettre à jour UserDatingSubscription
+
 class UserDatingSubscription {
   final String id;
   final String userId;
@@ -1510,6 +1537,10 @@ class UserDatingSubscription {
   final int createdAt;
   final int updatedAt;
 
+  // Nouveaux champs pour les likes restants
+  final int remainingLikes;
+  final int remainingSuperLikes;
+
   UserDatingSubscription({
     required this.id,
     required this.userId,
@@ -1520,6 +1551,8 @@ class UserDatingSubscription {
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
+    required this.remainingLikes,
+    required this.remainingSuperLikes,
   });
 
   factory UserDatingSubscription.fromJson(Map<String, dynamic> json) {
@@ -1533,6 +1566,8 @@ class UserDatingSubscription {
       isActive: json['isActive'] ?? true,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
+      remainingLikes: json['remainingLikes'] ?? 10,
+      remainingSuperLikes: json['remainingSuperLikes'] ?? 1,
     );
   }
 
@@ -1547,6 +1582,8 @@ class UserDatingSubscription {
       'isActive': isActive,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'remainingLikes': remainingLikes,
+      'remainingSuperLikes': remainingSuperLikes,
     };
   }
 
@@ -1560,6 +1597,8 @@ class UserDatingSubscription {
     bool? isActive,
     int? createdAt,
     int? updatedAt,
+    int? remainingLikes,
+    int? remainingSuperLikes,
   }) {
     return UserDatingSubscription(
       id: id ?? this.id,
@@ -1571,10 +1610,11 @@ class UserDatingSubscription {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      remainingLikes: remainingLikes ?? this.remainingLikes,
+      remainingSuperLikes: remainingSuperLikes ?? this.remainingSuperLikes,
     );
   }
 }
-
 // lib/models/dating_block.dart
 class DatingBlock {
   final String id;

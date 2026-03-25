@@ -24,8 +24,11 @@ import 'package:afrotok/pages/dating/creator_subscription_page.dart';
 import 'package:afrotok/pages/dating/dating_connections_page.dart';
 import 'package:afrotok/pages/dating/dating_conversations_page.dart';
 import 'package:afrotok/pages/dating/dating_entry_page.dart';
+import 'package:afrotok/pages/dating/dating_likes_list_page.dart';
+import 'package:afrotok/pages/dating/dating_notifications_page.dart';
 import 'package:afrotok/pages/dating/dating_profile_setup_page.dart';
 import 'package:afrotok/pages/dating/dating_profiles_list_page.dart';
+import 'package:afrotok/pages/dating/dating_super_likes_list_page.dart';
 import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterProduit.dart';
 import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
@@ -520,7 +523,7 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
               case '/creator/profile':
                 final args = settings.arguments as Map<String, dynamic>;
-                return PageTransition(child: CreatorProfilePage(creatorId: args['creatorId']), type: PageTransitionType.fade);
+                return PageTransition(child: CreatorProfilePage(userId: args['userId']), type: PageTransitionType.fade);
               case '/dating/connections':
                 return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
               case '/dating/conversations':
@@ -536,7 +539,21 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
               case '/coins/transactions':
                 return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
-
+              case '/dating/likes-list':
+                return PageTransition(
+                  child: DatingLikesListPage(),
+                  type: PageTransitionType.fade,
+                );
+              case '/dating/super-likes':
+                return PageTransition(
+                  child: DatingSuperLikesPage(),
+                  type: PageTransitionType.fade,
+                );
+              case '/dating/notifications':
+                return PageTransition(
+                  child: DatingNotificationsPage(),
+                  type: PageTransitionType.fade,
+                );
               default:
                 return PageTransition(
                     child: const SplahsChargement(postId: '', postType: ''),

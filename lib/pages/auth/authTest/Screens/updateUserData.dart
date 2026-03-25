@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,101 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../providers/authProvider.dart';
+
+
+final Map<String, String> countryCodes = {
+  // Afrique
+  "Togo": "TG",
+  "Benin": "BJ",
+  "Burkina Faso": "BF",
+  "Cameroon": "CM",
+  "Ivory Coast": "CI",
+  "Algeria": "DZ",
+  "Angola": "AO",
+  "Botswana": "BW",
+  "Burundi": "BI",
+  "Cape Verde": "CV",
+  "Central African Republic": "CF",
+  "Chad": "TD",
+  "Comoros": "KM",
+  "Congo": "CG",
+  "Democratic Republic of the Congo": "CD",
+  "Djibouti": "DJ",
+  "Egypt": "EG",
+  "Equatorial Guinea": "GQ",
+  "Eritrea": "ER",
+  "Eswatini": "SZ",
+  "Ethiopia": "ET",
+  "Gabon": "GA",
+  "Gambia": "GM",
+  "Ghana": "GH",
+  "Guinea": "GN",
+  "Guinea-Bissau": "GW",
+  "Kenya": "KE",
+  "Lesotho": "LS",
+  "Liberia": "LR",
+  "Libya": "LY",
+  "Madagascar": "MG",
+  "Malawi": "MW",
+  "Mali": "ML",
+  "Mauritania": "MR",
+  "Mauritius": "MU",
+  "Morocco": "MA",
+  "Mozambique": "MZ",
+  "Namibia": "NA",
+  "Niger": "NE",
+  "Nigeria": "NG",
+  "Rwanda": "RW",
+  "Sao Tome and Principe": "ST",
+  "Senegal": "SN",
+  "Seychelles": "SC",
+  "Sierra Leone": "SL",
+  "Somalia": "SO",
+  "South Africa": "ZA",
+  "South Sudan": "SS",
+  "Sudan": "SD",
+  "Tanzania": "TZ",
+  "Tunisia": "TN",
+  "Uganda": "UG",
+  "Zambia": "ZM",
+  "Zimbabwe": "ZW",
+
+  // Europe
+  "France": "FR",
+  "Germany": "DE",
+  "Italy": "IT",
+  "Spain": "ES",
+  "Portugal": "PT",
+  "Netherlands": "NL",
+  "Belgium": "BE",
+  "Sweden": "SE",
+  "Switzerland": "CH",
+  "Norway": "NO",
+  "United Kingdom": "GB",
+
+  // Amérique
+  "United States": "US",
+  "Canada": "CA",
+  "Brazil": "BR",
+  "Argentina": "AR",
+  "Mexico": "MX",
+  "Chile": "CL",
+  "Colombia": "CO",
+  "Peru": "PE",
+  "Venezuela": "VE",
+  "Uruguay": "UY",
+
+  // Asie
+  "China": "CN",
+  "Japan": "JP",
+  "India": "IN",
+  "Thailand": "TH",
+  "Vietnam": "VN",
+  "Malaysia": "MY",
+  "Singapore": "SG",
+  "Philippines": "PH",
+  "Indonesia": "ID",
+};
 
 class UpdateUserData extends StatefulWidget {
   UpdateUserData({Key? key, required this.title}) : super(key: key);
@@ -34,6 +130,9 @@ class _UpdateUserDataState extends State<UpdateUserData> {
   final Color primaryRed = Color(0xFFE63946);
   final Color primaryYellow = Color(0xFFFFD700);
 
+  String getCountryCodeFromName(String country) {
+    return countryCodes[country] ?? "";
+  }
   Future<void> _getCountryCodeInBackground() async {
     // Ne pas exécuter sur le web car la géolocalisation ne fonctionne pas
     if (kIsWeb) {
@@ -133,11 +232,17 @@ class _UpdateUserDataState extends State<UpdateUserData> {
         "country": countryValue,
         "state": stateValue,
         "city": cityValue,
+        "countryCode": "",
       };
 
       // Sur mobile, on récupère le vrai code pays en arrière-plan
       if (!kIsWeb) {
         String? realCountryCode = await getCountryCode();
+        if(countryValue!=null){
+          String selectedCode = getCountryCodeFromName(countryValue);
+
+          detectedCountryCode = selectedCode;
+        }
 
         userData["countryCode"] = realCountryCode ?? detectedCountryCode ?? "";
         userData["realCountry"] = detectedCountryName ?? "";
@@ -151,13 +256,17 @@ class _UpdateUserDataState extends State<UpdateUserData> {
         print("Vrai code pays: ${realCountryCode ?? "Non détecté"}");
       } else {
         // Sur le web, on n'utilise que les informations choisies
-        userData["countryCode"] = "";
-        userData["realCountry"] = "";
 
+        String selectedCode = getCountryCodeFromName(countryValue);
+
+        userData["countryCode"] = selectedCode;
+        userData["realCountry"] = countryValue;
         print("=== Informations utilisateur (Web) ===");
         print("Pays choisi par l'utilisateur: $countryValue");
+        print("Pays choisi par l'utilisateur code: $selectedCode");
         print("Région choisie: $stateValue");
         print("Ville choisie: $cityValue");
+        print("userData: $userData");
         print("=== Note ===");
         print("Géolocalisation non disponible sur le web");
       }
@@ -174,8 +283,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           );
-          Navigator.pop(context);
-          await Navigator.push(
+          await Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => SplahsChargement(postId: '', postType: ''),
@@ -406,6 +514,7 @@ class _UpdateUserDataState extends State<UpdateUserData> {
 
                         onCountryChanged: (value) {
                           setState(() {
+                            printVm('Pays selectionner !: ${value}');
                             countryValue = value;
                           });
                         },

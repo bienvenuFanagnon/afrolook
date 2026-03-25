@@ -1,4 +1,3 @@
-
 // lib/pages/creator/creator_profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,18 +9,17 @@ import '../../services/dating/coin_service.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_subscription_page.dart';
 import 'creator_content_form_page.dart';
-import 'creator_register_page.dart';
 
-class CreatorProfilePage extends StatefulWidget {
-  final String userId; // Identifiant utilisateur (celui de la collection Users)
+class CreatorOtherProfilePage extends StatefulWidget {
+  final String creatorId;
 
-  const CreatorProfilePage({Key? key, required this.userId}) : super(key: key);
+  const CreatorOtherProfilePage({Key? key, required this.creatorId}) : super(key: key);
 
   @override
-  State<CreatorProfilePage> createState() => _CreatorProfilePageState();
+  State<CreatorOtherProfilePage> createState() => _CreatorOtherProfilePageState();
 }
 
-class _CreatorProfilePageState extends State<CreatorProfilePage> {
+class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
   bool _isLoading = true;
   bool _isSubscribed = false;
   CreatorProfile? _profile;
@@ -30,7 +28,6 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
   bool _isOwner = false;
   String? _currentUserId;
   bool _hasRecordedView = false;
-  String? _creatorId; // ID du document creator_profiles
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Color primaryRed = const Color(0xFFE63946);
@@ -43,41 +40,17 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     super.initState();
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _currentUserId = authProvider.loginUserData.id;
-    _isOwner = _currentUserId == widget.userId;
-    _loadCreatorId();
-  }
-
-  Future<void> _loadCreatorId() async {
-    // Chercher le profil créateur associé à cet userId
-    final snapshot = await _firestore
-        .collection('creator_profiles')
-        .where('userId', isEqualTo: widget.userId)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isEmpty) {
-      // Aucun profil créateur trouvé : afficher un message et proposer de devenir créateur
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _profile = null;
-        });
-      }
-      return;
-    }
-
-    _creatorId = snapshot.docs.first.id;
-    await _loadData();
+    _isOwner = _currentUserId == widget.creatorId;
+    _loadData();
   }
 
   Future<void> _loadData() async {
-    if (_creatorId == null) return;
     setState(() => _isLoading = true);
     try {
       // Profil créateur
       final profileDoc = await _firestore
           .collection('creator_profiles')
-          .doc(_creatorId)
+          .doc(widget.creatorId)
           .get();
       if (profileDoc.exists) {
         _profile = CreatorProfile.fromJson(profileDoc.data()!);
@@ -86,7 +59,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       // Contenus
       final contentsSnapshot = await _firestore
           .collection('creator_contents')
-          .where('creatorId', isEqualTo: _creatorId)
+          .where('creatorId', isEqualTo: widget.creatorId)
           .where('isPublished', isEqualTo: true)
           .orderBy('createdAt', descending: true)
           .get();
@@ -99,7 +72,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
         final subSnapshot = await _firestore
             .collection('creator_subscriptions')
             .where('userId', isEqualTo: _currentUserId)
-            .where('creatorId', isEqualTo: _creatorId)
+            .where('creatorId', isEqualTo: widget.creatorId)
             .where('isActive', isEqualTo: true)
             .limit(1)
             .get();
@@ -109,7 +82,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       // Wallet du créateur
       final walletSnapshot = await _firestore
           .collection('creator_coin_wallets')
-          .where('creatorId', isEqualTo: _creatorId)
+          .where('creatorId', isEqualTo: widget.creatorId)
           .limit(1)
           .get();
       if (walletSnapshot.docs.isNotEmpty) {
@@ -118,8 +91,8 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
         // Créer un wallet par défaut
         _wallet = CreatorCoinWallet(
           id: _firestore.collection('creator_coin_wallets').doc().id,
-          creatorId: _creatorId!,
-          userId: widget.userId,
+          creatorId: widget.creatorId,
+          userId: widget.creatorId,
           balanceCoins: 0,
           totalEarnedCoins: 0,
           totalConvertedCoins: 0,
@@ -143,8 +116,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
   }
 
   Future<void> _recordProfileView() async {
-    if (_creatorId == null) return;
-    if (_currentUserId == null || _currentUserId == widget.userId) return;
+    if (_currentUserId == null || _currentUserId == widget.creatorId) return;
     if (_hasRecordedView) return;
 
     try {
@@ -154,7 +126,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       final existingVisit = await _firestore
           .collection('creator_profile_visits')
           .where('visitorUserId', isEqualTo: _currentUserId)
-          .where('creatorId', isEqualTo: _creatorId)
+          .where('creatorId', isEqualTo: widget.creatorId)
           .where('viewedAt', isGreaterThanOrEqualTo: dayStart)
           .limit(1)
           .get();
@@ -167,14 +139,14 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
       // Enregistrer la visite
       await _firestore.collection('creator_profile_visits').add({
         'visitorUserId': _currentUserId,
-        'creatorId': _creatorId,
+        'creatorId': widget.creatorId,
         'viewedAt': today,
       });
 
       // Incrémenter totalViews du créateur
       await _firestore
           .collection('creator_profiles')
-          .doc(_creatorId)
+          .doc(widget.creatorId)
           .update({'totalViews': FieldValue.increment(1)});
 
       if (_profile != null) {
@@ -247,12 +219,12 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     try {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final coinService = CoinService(authProvider: authProvider);
-      final success = await coinService.convertCoinsToXof(creatorId: _creatorId!, amount: amount);
+      final success = await coinService.convertCoinsToXof(creatorId: widget.creatorId, amount: amount);
       if (success) {
         // Recharger le wallet
         final newWallet = await _firestore
             .collection('creator_coin_wallets')
-            .where('creatorId', isEqualTo: _creatorId)
+            .where('creatorId', isEqualTo: widget.creatorId)
             .limit(1)
             .get();
         if (newWallet.docs.isNotEmpty) {
@@ -276,10 +248,6 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => CreatorContentFormPage())).then((_) => _loadData());
   }
 
-  void _goToRegister() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => CreatorRegisterPage()));
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -299,32 +267,9 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
     }
 
     if (_profile == null) {
-      // Pas de profil créateur pour cet utilisateur
       return Scaffold(
         backgroundColor: primaryBlack,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.people_outline, size: 80, color: Colors.grey[600]),
-              SizedBox(height: 16),
-              Text(
-                'Cet utilisateur n\'est pas créateur',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              SizedBox(height: 24),
-              if (_isOwner)
-                ElevatedButton(
-                  onPressed: _goToRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryYellow,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: Text('Devenir créateur', style: TextStyle(color: primaryBlack)),
-                ),
-            ],
-          ),
-        ),
+        body: Center(child: Text('Profil créateur introuvable', style: TextStyle(color: Colors.white))),
       );
     }
 
@@ -400,7 +345,7 @@ class _CreatorProfilePageState extends State<CreatorProfilePage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => CreatorSubscriptionPage(
-                          creatorId: _creatorId!,
+                          creatorId: widget.creatorId,
                           creatorName: _profile!.pseudo,
                         ),
                       ),

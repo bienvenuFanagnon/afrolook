@@ -9,6 +9,7 @@ import '../../providers/authProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'buy_coins_page.dart';
 import 'dating_chat_page.dart';
+import 'dating_likes_list_page.dart';
 import 'dating_profile_detail_page.dart';
 
 
@@ -32,8 +33,16 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   List<DatingProfile> _profiles = [];
   List<DatingProfile> _history = [];
   int _currentIndex = 0;
-  int _likeCount = 0; // Compteur de likes pour le modal
-  int _likeCountThreshold = 3; // Afficher modal après 3 likes
+  int _likeCount = 0;
+  int _likeCountThreshold = 3;
+
+  // Cache pour les IDs likés et bloqués
+  Set<String> _likedUserIds = {};
+  Set<String> _blockedUserIds = {};
+  bool _initialLoadDone = false;
+
+  // Pour le mélange des profils
+  bool _useRecyclingMode = false;
 
   // Loading states
   bool _isLoading = true;
@@ -47,10 +56,11 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   int _remainingLikes = 0;
   int _remainingSuperLikes = 0;
   String? _subscriptionPlan;
+  String? _userSubscriptionDocId;
 
   // Filters
-  String _selectedGenderFilter = 'tous'; // 'tous', 'femme', 'homme'
-  String _selectedPopularityFilter = 'tous'; // 'tous', 'populaire', 'moins_populaire'
+  String _selectedGenderFilter = 'tous';
+  String _selectedPopularityFilter = 'tous';
   int _minAge = 18;
   int _maxAge = 99;
   bool _showFilters = false;
@@ -77,6 +87,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   static const int _batchSize = 10;
+  int _unreadNotificationsCount = 0;
 
   @override
   void initState() {
@@ -86,12 +97,32 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       _currentUserId = authProvider.loginUserData.id;
-      _loadRemainingLikes();
+      _listenUnreadNotifications();
       _loadUserSubscription();
       _loadCurrentUserProfile();
     });
   }
+  StreamSubscription? _notifSub;
 
+  void _listenUnreadNotifications() {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    _notifSub = FirebaseFirestore.instance
+        .collection('Notifications')
+        .where('receiver_id', isEqualTo: currentUserId)
+        .where('type', isGreaterThanOrEqualTo: 'DATING_')
+        .where('is_open', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        _unreadNotificationsCount = snapshot.docs.length;
+      });
+    }, onError: (e) {
+      print('❌ Erreur notifications temps réel: $e');
+    });
+  }
   @override
   void dispose() {
     _messageTimer?.cancel();
@@ -116,23 +147,12 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     });
   }
 
-  Future<void> _loadRemainingLikes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLikes = prefs.getInt('dating_remaining_likes_$_currentUserId');
-    if (savedLikes != null) {
-      setState(() => _remainingLikes = savedLikes);
-    }
-  }
-
-  Future<void> _saveRemainingLikes() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('dating_remaining_likes_$_currentUserId', _remainingLikes);
-  }
-
   Future<void> _loadUserSubscription() async {
     if (_currentUserId == null) return;
 
     try {
+      print('📱 Chargement abonnement utilisateur: $_currentUserId');
+
       final snapshot = await firestore
           .collection('user_dating_subscriptions')
           .where('userId', isEqualTo: _currentUserId)
@@ -142,29 +162,73 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
       if (snapshot.docs.isNotEmpty) {
         final subscription = snapshot.docs.first;
+        _userSubscriptionDocId = subscription.id;
         _subscriptionPlan = subscription['planCode'];
 
-        switch (_subscriptionPlan) {
-          case 'gold':
-            _remainingLikes = -1;
-            _remainingSuperLikes = 5;
-            break;
-          case 'plus':
-            _remainingLikes = 50;
-            _remainingSuperLikes = 2;
-            break;
-          default:
-            if (_remainingLikes <= 0) _remainingLikes = 10;
-            _remainingSuperLikes = 1;
+        _remainingLikes = subscription['remainingLikes'] ?? 10;
+        _remainingSuperLikes = subscription['remainingSuperLikes'] ?? 1;
+
+        print('📊 Abonnement: $_subscriptionPlan, Likes restants: $_remainingLikes, Super likes: $_remainingSuperLikes');
+
+        final endAt = subscription['endAt'] as int?;
+        if (endAt != null && endAt <= DateTime.now().millisecondsSinceEpoch) {
+          await firestore.collection('user_dating_subscriptions').doc(_userSubscriptionDocId).update({
+            'isActive': false,
+          });
+          _subscriptionPlan = null;
+          _remainingLikes = 10;
+          _remainingSuperLikes = 1;
+          print('⚠️ Abonnement expiré, passage en gratuit');
         }
       } else {
-        if (_remainingLikes <= 0) _remainingLikes = 10;
+        print('📊 Aucun abonnement, mode gratuit');
+        _remainingLikes = 10;
         _remainingSuperLikes = 1;
       }
-      _saveRemainingLikes();
       setState(() {});
     } catch (e) {
-      print('Erreur chargement abonnement: $e');
+      print('❌ Erreur chargement abonnement: $e');
+      _remainingLikes = 10;
+      _remainingSuperLikes = 1;
+    }
+  }
+
+  Future<void> _saveRemainingLikes() async {
+    if (_currentUserId == null) return;
+
+    try {
+      if (_userSubscriptionDocId != null) {
+        await firestore
+            .collection('user_dating_subscriptions')
+            .doc(_userSubscriptionDocId)
+            .update({
+          'remainingLikes': _remainingLikes,
+          'remainingSuperLikes': _remainingSuperLikes,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+        print('💾 Likes sauvegardés: $_remainingLikes likes, $_remainingSuperLikes super likes');
+      } else {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final newDocRef = firestore.collection('user_dating_subscriptions').doc();
+        _userSubscriptionDocId = newDocRef.id;
+
+        await newDocRef.set({
+          'id': newDocRef.id,
+          'userId': _currentUserId,
+          'planCode': 'gratuit',
+          'priceCoins': 0,
+          'startAt': now,
+          'endAt': now + (30 * 24 * 60 * 60 * 1000),
+          'isActive': true,
+          'remainingLikes': _remainingLikes,
+          'remainingSuperLikes': _remainingSuperLikes,
+          'createdAt': now,
+          'updatedAt': now,
+        });
+        print('💾 Nouveau document gratuit créé avec $_remainingLikes likes');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde likes: $e');
     }
   }
 
@@ -172,6 +236,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     if (_currentUserId == null) return;
 
     try {
+      print('📱 Chargement profil utilisateur: $_currentUserId');
       final snapshot = await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: _currentUserId)
@@ -179,6 +244,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .get();
 
       if (snapshot.docs.isEmpty) {
+        print('🚀 Redirection vers création de profil');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => DatingProfileSetupPage(profile: null)),
@@ -187,24 +253,149 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       }
 
       _currentUserProfile = DatingProfile.fromJson(snapshot.docs.first.data());
+      print('✅ Profil chargé: ${_currentUserProfile!.pseudo}');
 
-      if (!_currentUserProfile!.isProfileComplete) {
+      if (_currentUserProfile!.isProfileComplete&&_currentUserProfile!.completionPercentage==100) {
+
+
+        await _loadProfiles();
+
+      }else{
+        print('⚠️ Profil incomplet, redirection vers mise à jour');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => DatingProfileSetupPage(profile: _currentUserProfile)),
         );
-        return;
       }
 
-      await _loadProfiles();
     } catch (e) {
-      print('Erreur chargement profil: $e');
+      print('❌ Erreur chargement profil: $e');
+    }
+  }
+
+  Future<void> _loadLikedUserIds() async {
+    print('📥 Chargement des IDs likés...');
+    final snapshot = await firestore
+        .collection('dating_likes')
+        .where('fromUserId', isEqualTo: _currentUserId)
+        .get();
+    _likedUserIds = snapshot.docs.map((doc) => doc['toUserId'] as String).toSet();
+    print('📊 ${_likedUserIds.length} profils likés');
+  }
+
+  Future<void> _loadBlockedUserIds() async {
+    print('📥 Chargement des IDs bloqués...');
+    final snapshot = await firestore
+        .collection('dating_blocks')
+        .where('blockerUserId', isEqualTo: _currentUserId)
+        .get();
+    _blockedUserIds = snapshot.docs.map((doc) => doc['blockedUserId'] as String).toSet();
+    print('📊 ${_blockedUserIds.length} profils bloqués');
+  }
+  void _showNoProfilesAvailable() {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+
+      // Afficher un message à l'utilisateur
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Aucun profil disponible pour le moment. Revenez plus tard !',
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+
+  // Ajoute cette fonction dans votre classe _DatingSwipePageState
+  Future<void> _migratePopularityScore() async {
+    print('🔄 === MIGRATION DES SCORES DE POPULARITÉ ===');
+
+    try {
+      // Récupérer tous les profils
+      final snapshot = await firestore
+          .collection('dating_profiles')
+          .get();
+
+      print('📊 Nombre de profils à migrer: ${snapshot.docs.length}');
+
+      int updatedCount = 0;
+      int errorCount = 0;
+
+      for (var doc in snapshot.docs) {
+        try {
+          final userId = doc.data()['userId'] as String;
+
+          // Récupérer les compteurs
+          final likesCount = await firestore
+              .collection('dating_likes')
+              .where('toUserId', isEqualTo: userId)
+              .count()
+              .get();
+
+          final coupsCount = await firestore
+              .collection('dating_coup_de_coeurs')
+              .where('toUserId', isEqualTo: userId)
+              .count()
+              .get();
+
+          final connectionsCount = await firestore
+              .collection('dating_connections')
+              .where('userId1', isEqualTo: userId)
+              .count()
+              .get();
+
+          // Calculer le score
+          final score = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
+
+          // Mettre à jour le profil
+          await doc.reference.update({
+            'popularityScore': score,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          });
+
+          updatedCount++;
+          print('✅ ${doc.data()['pseudo']} (${doc.id}) - Score: $score (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
+
+        } catch (e) {
+          errorCount++;
+          print('❌ Erreur pour le profil ${doc.id}: $e');
+        }
+      }
+
+      print('✅ === MIGRATION TERMINÉE ===');
+      print('📊 Profils mis à jour: $updatedCount');
+      print('❌ Erreurs: $errorCount');
+
+    } catch (e) {
+      print('❌ Erreur lors de la migration: $e');
     }
   }
 
   Future<void> _loadProfiles({bool isLoadMore = false}) async {
     if (_currentUserId == null || _currentUserProfile == null) return;
     if (isLoadMore && (_isLoadingMore || !_hasMore)) return;
+
+    print('📱 _loadProfiles - isLoadMore: $isLoadMore');
+    print('📊 Profils actuels: ${_profiles.length}, Index: $_currentIndex');
+    print('🎯 Mode recyclage: $_useRecyclingMode');
 
     setState(() {
       if (isLoadMore) {
@@ -215,99 +406,402 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     });
 
     try {
-      final likedUserIds = await _getLikedUserIds();
-      final blockedUserIds = await _getBlockedUserIds();
+      if (!_initialLoadDone) {
+        await Future.wait([
+          _loadLikedUserIds(),
+          _loadBlockedUserIds(),
+        ]);
+        _initialLoadDone = true;
+        print('✅ Cache chargé: ${_likedUserIds.length} likes, ${_blockedUserIds.length} blocages');
+      }
 
+      // // 🔧 CORRECTION: D'abord, vérifier si des profils existent sans le champ popularityScore
+      // // Si oui, lancer la migration
+      // final checkSnapshot = await firestore
+      //     .collection('dating_profiles')
+      //     .limit(1)
+      //     .get();
+      //
+      // if (checkSnapshot.docs.isNotEmpty) {
+      //   final firstProfile = checkSnapshot.docs.first.data();
+      //   if (!firstProfile.containsKey('popularityScore')) {
+      //     print('⚠️ Des profils n\'ont pas le champ popularityScore, lancement de la migration...');
+      //     await _migratePopularityScore();
+      //   }
+      // }
+
+      // Construire la requête avec orderBy
       Query query = firestore
           .collection('dating_profiles')
-          .where('userId', isNotEqualTo: _currentUserId)
+          .where('isActive', isEqualTo: true);
+
+      // 🔧 CORRECTION: Utiliser orderBy seulement si on a des profils
+      // Sinon, on fait une requête sans orderBy
+      final countSnapshot = await firestore
+          .collection('dating_profiles')
           .where('isActive', isEqualTo: true)
-          .orderBy('createdAt', descending: true);
+          .count()
+          .get();
 
-      // Appliquer les filtres
-      if (_selectedGenderFilter != 'tous') {
-        query = query.where('sexe', isEqualTo: _selectedGenderFilter);
+      if (countSnapshot.count == 0) {
+        print('⚠️ Aucun profil actif trouvé');
+        setState(() => _isLoading = false);
+        _showNoProfilesAvailable();
+        return;
       }
 
-      if (_minAge > 18 || _maxAge < 99) {
-        query = query.where('age', isGreaterThanOrEqualTo: _minAge)
-            .where('age', isLessThanOrEqualTo: _maxAge);
+      print('📊 Total profils actifs: ${countSnapshot.count}');
+
+      // 🔀 DÉCIDER L'ORDRE ALÉATOIREMENT AU PREMIER CHARGEMENT
+      final bool startWithPopular = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+
+      // Appliquer l'ordre selon le mode
+      if (_useRecyclingMode) {
+        print('🔄 Mode recyclage - Chargement des moins populaires d\'abord');
+        query = query.orderBy('popularityScore', descending: false)
+            .orderBy('createdAt', descending: true);
+      } else if (startWithPopular && !isLoadMore) {
+        print('🌟 Mode aléatoire - Commencer par les plus populaires');
+        query = query.orderBy('popularityScore', descending: true)
+            .orderBy('createdAt', descending: true);
+      } else if (!isLoadMore) {
+        print('🔄 Mode aléatoire - Commencer par les moins populaires');
+        query = query.orderBy('popularityScore', descending: false)
+            .orderBy('createdAt', descending: true);
+      } else {
+        // Chargement supplémentaire : continuer dans le même ordre
+        if (_useRecyclingMode) {
+          query = query.orderBy('popularityScore', descending: false)
+              .orderBy('createdAt', descending: true);
+        } else {
+          query = query.orderBy('popularityScore', descending: true)
+              .orderBy('createdAt', descending: true);
+        }
       }
 
+      // Pagination
       if (isLoadMore && _lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
+        print('📄 Pagination après: ${_lastDocument!.id}');
       }
 
-      final batchSize = _batchSize * 2;
+      int batchSize = _batchSize * 2;
+      if (_profiles.isEmpty && !isLoadMore) {
+        batchSize = _batchSize * 3;
+      }
+
       final snapshot = await query.limit(batchSize).get();
+      print('📊 Profils bruts trouvés: ${snapshot.docs.length}');
 
       if (snapshot.docs.isEmpty) {
-        if (isLoadMore) setState(() => _hasMore = false);
+        print('⚠️ Aucun profil trouvé');
+        if (_profiles.isEmpty) {
+          setState(() => _isLoading = false);
+          _showNoProfilesAvailable();
+        } else {
+          _hasMore = false;
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
+      _lastDocument = snapshot.docs.last;
+      print('📌 _lastDocument mis à jour: ${_lastDocument!.id}');
+
+      List<DatingProfile> allProfiles = snapshot.docs
+          .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+      // Filtrer l'utilisateur courant, les likés et les bloqués
+      final beforeFilter = allProfiles.length;
+      allProfiles = allProfiles.where((p) =>
+      p.userId != _currentUserId &&
+          !_likedUserIds.contains(p.userId) &&
+          !_blockedUserIds.contains(p.userId)
+      ).toList();
+      print('📊 Après filtrage (likes/blocages): ${allProfiles.length} (${beforeFilter - allProfiles.length} supprimés)');
+
+      if (allProfiles.isEmpty) {
+        print('⚠️ Aucun nouveau profil après filtrage');
+        if (!isLoadMore && _profiles.isEmpty) {
+          print('🔄 Activation mode recyclage...');
+          _useRecyclingMode = true;
+          await _loadProfiles();
+        } else {
+          _hasMore = false;
+        }
         setState(() => _isLoading = false);
         return;
       }
 
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-      }
+      // 🔀 MÉLANGE INTELLIGENT: 5 populaires, 3 moyens, 2 moins populaires
+      final sortedByScore = List<DatingProfile>.from(allProfiles);
+      sortedByScore.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
 
-      List<DatingProfile> newProfiles = snapshot.docs
-          .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      // Séparer en 3 groupes pour plus de variété
+      final total = sortedByScore.length;
+      final highCount = (total * 0.4).toInt();     // 40% meilleurs scores
+      final midCount = (total * 0.3).toInt();      // 30% moyens
+      final lowCount = total - highCount - midCount; // 30% bas
 
-      newProfiles = newProfiles.where((p) =>
-      !likedUserIds.contains(p.userId) &&
-          !blockedUserIds.contains(p.userId) &&
-          p.userId != _currentUserId
-      ).toList();
+      List<DatingProfile> high = sortedByScore.take(highCount).toList();
+      List<DatingProfile> mid = sortedByScore.skip(highCount).take(midCount).toList();
+      List<DatingProfile> low = sortedByScore.skip(highCount + midCount).toList();
 
-      // Appliquer filtre de popularité
-      if (_selectedPopularityFilter != 'tous') {
-        if (_selectedPopularityFilter == 'populaire') {
-          newProfiles.sort((a, b) => b.likesCount.compareTo(a.likesCount));
-          newProfiles = newProfiles.take(newProfiles.length ~/ 2).toList();
-        } else if (_selectedPopularityFilter == 'moins_populaire') {
-          newProfiles.sort((a, b) => a.likesCount.compareTo(b.likesCount));
-          newProfiles = newProfiles.take(newProfiles.length ~/ 2).toList();
+      print('📊 Répartition: ${high.length} populaires, ${mid.length} moyens, ${low.length} moins populaires');
+
+      // Mélanger chaque groupe
+      high.shuffle();
+      mid.shuffle();
+      low.shuffle();
+
+      // 🔀 ALTERNANCE: 5 populaires, 3 moyens, 2 moins populaires
+      List<DatingProfile> mixedProfiles = [];
+      int highIndex = 0, midIndex = 0, lowIndex = 0;
+
+      while (highIndex < high.length || midIndex < mid.length || lowIndex < low.length) {
+        // Ajouter 5 populaires
+        for (int i = 0; i < 5 && highIndex < high.length; i++) {
+          mixedProfiles.add(high[highIndex++]);
+        }
+        // Ajouter 3 moyens
+        for (int i = 0; i < 3 && midIndex < mid.length; i++) {
+          mixedProfiles.add(mid[midIndex++]);
+        }
+        // Ajouter 2 moins populaires
+        for (int i = 0; i < 2 && lowIndex < low.length; i++) {
+          mixedProfiles.add(low[lowIndex++]);
         }
       }
 
-      // Équilibrage homme/femme
-      final isMale = _currentUserProfile!.sexe.toLowerCase() == 'homme';
-      List<DatingProfile> balancedProfiles = [];
-
-      if (isMale) {
-        final women = newProfiles.where((p) => p.sexe.toLowerCase() == 'femme').toList();
-        final men = newProfiles.where((p) => p.sexe.toLowerCase() == 'homme').toList();
-        int womenToTake = (newProfiles.length * 0.8).toInt();
-        int menToTake = newProfiles.length - womenToTake;
-        women.shuffle();
-        men.shuffle();
-        balancedProfiles.addAll(women.take(womenToTake));
-        balancedProfiles.addAll(men.take(menToTake));
-      } else {
-        final women = newProfiles.where((p) => p.sexe.toLowerCase() == 'femme').toList();
-        final men = newProfiles.where((p) => p.sexe.toLowerCase() == 'homme').toList();
-        int womenToTake = (newProfiles.length * 0.7).toInt();
-        int menToTake = newProfiles.length - womenToTake;
-        women.shuffle();
-        men.shuffle();
-        balancedProfiles.addAll(women.take(womenToTake));
-        balancedProfiles.addAll(men.take(menToTake));
-      }
-
-      balancedProfiles.shuffle();
+      print('📊 Mélange final: ${mixedProfiles.length} profils');
 
       if (isLoadMore) {
-        _profiles.addAll(balancedProfiles);
+        _profiles.addAll(mixedProfiles);
+        print('📦 Ajout de ${mixedProfiles.length} profils (total: ${_profiles.length})');
         setState(() => _isLoadingMore = false);
       } else {
-        _profiles = balancedProfiles;
+        _profiles = mixedProfiles;
+        _currentIndex = 0;
+        print('🎯 Premier chargement: ${_profiles.length} profils');
         setState(() => _isLoading = false);
+
+        // Préchargement
+        if (_profiles.length < _batchSize * 2) {
+          print('🔄 Démarrage du chargement en arrière-plan...');
+          _loadMoreProfiles();
+        }
       }
 
     } catch (e) {
-      print('Erreur chargement profils: $e');
+      print('❌ Erreur chargement profils: $e');
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    }
+  }
+  Future<void> _loadProfiles2({bool isLoadMore = false}) async {
+    if (_currentUserId == null || _currentUserProfile == null) return;
+    if (isLoadMore && (_isLoadingMore || !_hasMore)) return;
+
+    print('📱 _loadProfiles - isLoadMore: $isLoadMore');
+    print('📊 Profils actuels: ${_profiles.length}, Index: $_currentIndex');
+    print('🎯 Mode recyclage: $_useRecyclingMode');
+
+    setState(() {
+      if (isLoadMore) {
+        _isLoadingMore = true;
+      } else {
+        _isLoading = true;
+      }
+    });
+
+    try {
+      if (!_initialLoadDone) {
+        await Future.wait([
+          _loadLikedUserIds(),
+          _loadBlockedUserIds(),
+        ]);
+        _initialLoadDone = true;
+      }
+
+      final isMale = _currentUserProfile!.sexe.toLowerCase() == 'homme';
+      print('👤 Utilisateur: ${_currentUserProfile!.sexe} (isMale: $isMale)');
+
+      // Déterminer le filtre de genre à appliquer
+      String? genderFilter;
+      if (_selectedGenderFilter == 'tous') {
+        genderFilter = null;
+        print('📊 Filtre par défaut: basé sur le genre de l\'utilisateur');
+      } else {
+        genderFilter = _selectedGenderFilter;
+        print('🎯 Filtre personnalisé: $genderFilter');
+      }
+
+      // Construire la requête de base (sans filtre de genre)
+      Query query = firestore
+          .collection('dating_profiles')
+          .where('isActive', isEqualTo: true);
+
+      // Appliquer l'ordre selon le mode
+      if (_useRecyclingMode) {
+        print('🔄 Mode recyclage - Chargement des moins populaires');
+        query = query.orderBy('popularityScore', descending: false)
+            .orderBy('createdAt', descending: true);
+      } else {
+        print('🌟 Mode normal - Chargement des plus populaires');
+        query = query.orderBy('popularityScore', descending: true)
+            .orderBy('createdAt', descending: true);
+      }
+
+      // Pagination
+      if (isLoadMore && _lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+        print('📄 Pagination après: ${_lastDocument!.id}');
+      }
+
+      int batchSize = _batchSize * 3;
+      if (_profiles.isEmpty && !isLoadMore) {
+        batchSize = _batchSize * 4;
+      }
+
+      final snapshot = await query.limit(batchSize).get();
+      print('📊 Profils bruts trouvés: ${snapshot.docs.length}');
+
+      if (snapshot.docs.isEmpty) {
+        print('⚠️ Aucun profil trouvé');
+        if (_profiles.isEmpty) {
+          setState(() => _isLoading = false);
+          _showNoProfilesAvailable();
+        } else {
+          _hasMore = false;
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
+      _lastDocument = snapshot.docs.last;
+      print('📌 _lastDocument mis à jour: ${_lastDocument!.id}');
+
+      List<DatingProfile> allProfiles = snapshot.docs
+          .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+
+      // Filtrer l'utilisateur courant, les likés et les bloqués
+      final beforeFilter = allProfiles.length;
+      allProfiles = allProfiles.where((p) =>
+      p.userId != _currentUserId &&
+          !_likedUserIds.contains(p.userId) &&
+          !_blockedUserIds.contains(p.userId)
+      ).toList();
+      print('📊 Après filtrage (likes/blocages): ${allProfiles.length} (${beforeFilter - allProfiles.length} supprimés)');
+
+      if (allProfiles.isEmpty) {
+        print('⚠️ Aucun nouveau profil après filtrage');
+        if (!isLoadMore && _profiles.isEmpty) {
+          print('🔄 Activation mode recyclage...');
+          _useRecyclingMode = true;
+          await _loadProfiles();
+        } else {
+          _hasMore = false;
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Séparer par genre
+      final women = allProfiles.where((p) => p.sexe.toLowerCase() == 'femme').toList();
+      final men = allProfiles.where((p) => p.sexe.toLowerCase() == 'homme').toList();
+
+      print('👩 Femmes disponibles: ${women.length}');
+      print('👨 Hommes disponibles: ${men.length}');
+
+      // Trier chaque liste par popularité
+      women.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
+      men.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
+
+      // Déterminer les pourcentages selon le genre de l'utilisateur
+      List<DatingProfile> selectedProfiles = [];
+      int womenToTake, menToTake;
+
+      if (isMale) {
+        // Homme: 80% femmes, 20% hommes
+        womenToTake = (allProfiles.length * 0.8).toInt();
+        menToTake = allProfiles.length - womenToTake;
+        print('📊 Objectif (Homme): $womenToTake femmes, $menToTake hommes');
+      } else {
+        // Femme: 60% femmes, 40% hommes
+        womenToTake = (allProfiles.length * 0.6).toInt();
+        menToTake = allProfiles.length - womenToTake;
+        print('📊 Objectif (Femme): $womenToTake femmes, $menToTake homens');
+      }
+
+      // Ajuster si pas assez de profils d'un genre
+      if (women.length < womenToTake) {
+        womenToTake = women.length;
+        menToTake = allProfiles.length - womenToTake;
+        print('📊 Ajustement: pas assez de femmes, prend $womenToTake femmes, $menToTake hommes');
+      }
+      if (men.length < menToTake) {
+        menToTake = men.length;
+        womenToTake = allProfiles.length - menToTake;
+        print('📊 Ajustement: pas assez d\'hommes, prend $womenToTake femmes, $menToTake hommes');
+      }
+
+      // Prendre les meilleurs profils selon le score
+      selectedProfiles.addAll(women.take(womenToTake));
+      selectedProfiles.addAll(men.take(menToTake));
+
+      // Mélanger pour alterner les genres
+      selectedProfiles.shuffle();
+      print('📊 Profils sélectionnés: ${selectedProfiles.length}');
+
+      // Appliquer l'algorithme de mélange 3 populaires / 2 moins populaires
+      final sortedByScore = List<DatingProfile>.from(selectedProfiles);
+      sortedByScore.sort((a, b) => b.popularityScore.compareTo(a.popularityScore));
+
+      final popularCount = (sortedByScore.length * 0.6).toInt();
+      final lessPopularCount = sortedByScore.length - popularCount;
+
+      List<DatingProfile> popular = sortedByScore.take(popularCount).toList();
+      List<DatingProfile> lessPopular = sortedByScore.skip(popularCount).toList();
+
+      popular.shuffle();
+      lessPopular.shuffle();
+
+      List<DatingProfile> mixedProfiles = [];
+      int popularIndex = 0, lessIndex = 0;
+
+      while (popularIndex < popular.length || lessIndex < lessPopular.length) {
+        for (int i = 0; i < 3 && popularIndex < popular.length; i++) {
+          mixedProfiles.add(popular[popularIndex++]);
+        }
+        for (int i = 0; i < 2 && lessIndex < lessPopular.length; i++) {
+          mixedProfiles.add(lessPopular[lessIndex++]);
+        }
+      }
+
+      print('📊 Mélange final: ${mixedProfiles.length} profils');
+
+      if (isLoadMore) {
+        _profiles.addAll(mixedProfiles);
+        print('📦 Ajout de ${mixedProfiles.length} profils (total: ${_profiles.length})');
+        setState(() => _isLoadingMore = false);
+      } else {
+        _profiles = mixedProfiles;
+        _currentIndex = 0;
+        print('🎯 Premier chargement: ${_profiles.length} profils');
+        setState(() => _isLoading = false);
+
+        if (_profiles.length < _batchSize) {
+          print('🔄 Démarrage du chargement en arrière-plan...');
+          _loadMoreProfiles();
+        }
+      }
+
+    } catch (e) {
+      print('❌ Erreur chargement profils: $e');
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;
@@ -315,28 +809,81 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     }
   }
 
-  Future<List<String>> _getLikedUserIds() async {
-    final snapshot = await firestore
-        .collection('dating_likes')
-        .where('fromUserId', isEqualTo: _currentUserId)
-        .get();
-    return snapshot.docs.map((doc) => doc['toUserId'] as String).toList();
+  Future<void> _loadMoreProfiles() async {
+    if (!_hasMore || _isLoadingMore) {
+      print('⚠️ Chargement annulé: hasMore=$_hasMore, isLoadingMore=$_isLoadingMore');
+      return;
+    }
+    print('📦 Lancement du chargement de plus de profils...');
+    await _loadProfiles(isLoadMore: true);
   }
 
-  Future<List<String>> _getBlockedUserIds() async {
-    final snapshot = await firestore
-        .collection('dating_blocks')
-        .where('blockerUserId', isEqualTo: _currentUserId)
-        .get();
-    return snapshot.docs.map((doc) => doc['blockedUserId'] as String).toList();
+  Future<void> _resetAndReload() async {
+    print('🔄 === RÉINITIALISATION ET RECYCLAGE ===');
+
+    if (!_useRecyclingMode) {
+      _useRecyclingMode = true;
+      print('🔄 Activation du mode recyclage (moins populaires d\'abord)');
+    } else {
+      _useRecyclingMode = false;
+      print('🔄 Retour au mode normal');
+    }
+
+    _hasMore = true;
+    _lastDocument = null;
+    _profiles = [];
+    _currentIndex = 0;
+    await _loadProfiles();
+  }
+
+  Future<void> _updatePopularityScore(String userId) async {
+    try {
+      final likesCount = await firestore
+          .collection('dating_likes')
+          .where('toUserId', isEqualTo: userId)
+          .count()
+          .get();
+
+      final coupsCount = await firestore
+          .collection('dating_coup_de_coeurs')
+          .where('toUserId', isEqualTo: userId)
+          .count()
+          .get();
+
+      final connectionsCount = await firestore
+          .collection('dating_connections')
+          .where('userId1', isEqualTo: userId)
+          .count()
+          .get();
+
+      final score = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
+
+      print('📊 Mise à jour score pour $userId: $score points');
+
+      final profileSnapshot = await firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (profileSnapshot.docs.isNotEmpty) {
+        await profileSnapshot.docs.first.reference.update({
+          'popularityScore': score,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur mise à jour score: $e');
+    }
   }
 
   void _handleSwipeLeft() {
     if (_isLoadingMore || _isSwiping || _currentIndex >= _profiles.length) return;
 
     _isSwiping = true;
-    final profile = _profiles[_currentIndex];
+    print('👈 Swipe gauche - Profil: ${_profiles[_currentIndex].pseudo}');
 
+    final profile = _profiles[_currentIndex];
     _nextProfile();
     _recordSwipeAction(profile.userId, 'left').catchError((e) => print('Erreur: $e'));
 
@@ -348,7 +895,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   void _handleSwipeRight() {
     if (_isLoadingMore || _isSwiping || _currentIndex >= _profiles.length) return;
 
-    // Vérifier la limite de likes
     if (_remainingLikes != -1 && _remainingLikes <= 0) {
       _showUpgradeDialog();
       return;
@@ -356,18 +902,14 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
     _isSwiping = true;
     final profile = _profiles[_currentIndex];
+    print('👉 Swipe droit - Profil: ${profile.pseudo}');
 
-    // Incrémenter le compteur de likes
     _likeCount++;
-
-    // Sauvegarder le profil liké dans l'historique local
     _history.add(profile);
-
     _nextProfile();
     _processLike(profile);
     _checkAndLoadMore();
 
-    // Afficher le modal après 3 likes
     if (_likeCount >= _likeCountThreshold) {
       _likeCount = 0;
       _showLikedProfilesPremiumDialog();
@@ -388,6 +930,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
     _isSwiping = true;
     final profile = _profiles[_currentIndex];
+    print('⭐ Super like - Profil: ${profile.pseudo}');
 
     _nextProfile();
     _processSuperLike(profile);
@@ -413,12 +956,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       if (_remainingLikes != -1) {
         setState(() {
           _remainingLikes--;
-          _saveRemainingLikes();
         });
+        await _saveRemainingLikes();
       }
-
-      _updateUserPoints(_currentUserId!, 5, 'Like envoyé');
-      _recordSwipeAction(profile.userId, 'right');
 
       await firestore
           .collection('dating_profiles')
@@ -430,6 +970,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         }
       });
 
+      await _updatePopularityScore(profile.userId);
+
       final mutualLike = await firestore
           .collection('dating_likes')
           .where('fromUserId', isEqualTo: profile.userId)
@@ -438,8 +980,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .get();
 
       if (mutualLike.docs.isNotEmpty) {
-        await _updateUserPoints(_currentUserId!, 50, 'Match réalisé !');
-        await _updateUserPoints(profile.userId, 50, 'Match réalisé !');
         await _createConnection(profile.userId);
         await _sendNotification(
           toUserId: profile.userId,
@@ -457,7 +997,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       }
 
     } catch (e) {
-      print('Erreur like: $e');
+      print('❌ Erreur like: $e');
       _showSuccessMessage('Erreur lors du like', Colors.red);
     }
   }
@@ -490,8 +1030,10 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         'createdAt': now,
       });
 
-      setState(() => _remainingSuperLikes--);
-      _updateUserPoints(_currentUserId!, 20, 'Super like envoyé');
+      setState(() {
+        _remainingSuperLikes--;
+      });
+      await _saveRemainingLikes();
 
       await firestore
           .collection('dating_profiles')
@@ -503,6 +1045,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         }
       });
 
+      await _updatePopularityScore(profile.userId);
+
       await _sendNotification(
         toUserId: profile.userId,
         message: "⭐ @${_getCurrentUserPseudo()} vous a envoyé un super like !",
@@ -512,7 +1056,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       _showSuccessMessage('✨ Super like envoyé à ${profile.pseudo} (+20 points)', Colors.amber);
 
     } catch (e) {
-      print('Erreur super like: $e');
+      print('❌ Erreur super like: $e');
     }
   }
 
@@ -524,43 +1068,112 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       barrierDismissible: true,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        backgroundColor: Colors.white,
         child: Container(
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              // Icône animée
+              AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  gradient: LinearGradient(
+                    colors: isPremium
+                        ? [Colors.red.shade400, Colors.pink.shade400]
+                        : [Colors.grey.shade300, Colors.grey.shade400],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isPremium ? Colors.red.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Icon(
-                  Icons.favorite,
-                  size: 50,
-                  color: Colors.red,
+                  isPremium ? Icons.favorite : Icons.lock,
+                  size: 40,
+                  color: Colors.white,
                 ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 20),
+
+              // Titre
               Text(
-                '❤️ ${_history.length} profils likés !',
+                isPremium ? '❤️ ${_history.length} profils likés !' : '❤️ ${_history.length} profils likés',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
+                  color: isPremium ? Colors.red.shade700 : Colors.grey.shade700,
                 ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 12),
+
+              // Message
               Text(
                 isPremium
-                    ? 'Vous pouvez voir tous vos likes dans votre liste.'
-                    : 'Voir qui vous a liké et vos likes est réservé aux membres AfroLove Plus et Gold.',
+                    ? 'Découvrez tous les profils que vous avez likés'
+                    : 'Voir les profils que vous avez likés est réservé aux membres AfroLove Plus et Gold.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isPremium ? Colors.grey.shade600 : Colors.grey.shade500,
+                ),
               ),
-              SizedBox(height: 24),
-              if (!isPremium) ...[
-                ElevatedButton(
+              SizedBox(height: 20),
+
+              if (isPremium) ...[
+                // Bouton pour voir les likes
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Naviguer vers la page des likes
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DatingLikesListPage()),
+                    );
+                  },
+                  icon: Icon(Icons.visibility, size: 18, color: Colors.white),
+                  label: Text(
+                    'Voir mes ${_history.length} likes',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    minimumSize: Size(double.infinity, 48),
+                  ),
+                ),
+                SizedBox(height: 12),
+
+                // Bouton pour continuer à swiper
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    minimumSize: Size(double.infinity, 44),
+                  ),
+                  child: Text(
+                    'Continuer à swiper',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+              ] else ...[
+                // Bouton pour voir les offres
+                ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -568,35 +1181,48 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                       MaterialPageRoute(builder: (_) => DatingSubscriptionPage()),
                     );
                   },
+                  icon: Icon(Icons.star, size: 18, color: Colors.black),
+                  label: Text(
+                    'Débloquer Premium',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
-                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
+                    minimumSize: Size(double.infinity, 48),
                   ),
-                  child: Text('Voir les offres'),
                 ),
                 SizedBox(height: 12),
-              ],
-              OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+
+                // Bouton pour continuer
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    minimumSize: Size(double.infinity, 44),
+                  ),
+                  child: Text(
+                    'Continuer à swiper',
+                    style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
-                child: Text(isPremium ? 'Fermer' : 'Continuer à swiper'),
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
-
   void _showPremiumChatDialog(DatingProfile profile) {
-    final isPremium = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
+    // final isPremium = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
+    final isPremium = _subscriptionPlan != null && (_subscriptionPlan == 'gold');
 
     if (!isPremium) {
       showDialog(
@@ -610,12 +1236,12 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               Icon(Icons.lock, size: 50, color: Colors.amber),
               SizedBox(height: 16),
               Text(
-                'La messagerie privée est réservée aux membres AfroLove Plus et Gold.',
+                'La messagerie privée est réservée aux membres AfroLove Gold.',
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 8),
               Text(
-                'Passez à l\'abonnement Premium pour discuter avec vos matchs !',
+                'Passez à l\'abonnement Premium Gold pour discuter avec vos matchs !',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
@@ -643,7 +1269,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       return;
     }
 
-    // Accès au chat pour les premium
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -739,6 +1364,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   }
 
   void _showMatchDialog(DatingProfile profile) {
+    final isPremium = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -781,7 +1408,11 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        _showPremiumChatDialog(profile);
+                        if (isPremium) {
+                          _openChat(profile);
+                        } else {
+                          _showPremiumChatDialog(profile);
+                        }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: Text('Discuter en privé'),
@@ -796,22 +1427,66 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     );
   }
 
-  Future<void> _updateUserPoints(String userId, int points, String reason) async {
-    await firestore.collection('Users').doc(userId).update({
-      'totalPoints': FieldValue.increment(points),
-    });
+  void _openChat(DatingProfile profile) async {
+    final connection = await _getOrCreateConnection(profile.userId);
+    if (connection != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DatingChatPage(
+            connectionId: connection.id,
+            otherUserId: profile.userId,
+            otherUserName: profile.pseudo,
+            otherUserImage: profile.imageUrl,
+          ),
+        ),
+      );
+    }
   }
 
-  Future<void> _recordSwipeAction(String targetUserId, String direction) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final actionId = firestore.collection('dating_swipe_actions').doc().id;
-    await firestore.collection('dating_swipe_actions').doc(actionId).set({
-      'id': actionId,
-      'userId': _currentUserId,
-      'targetUserId': targetUserId,
-      'direction': direction,
-      'createdAt': now,
-    });
+  Future<DatingConnection?> _getOrCreateConnection(String otherUserId) async {
+    if (_currentUserId == null) return null;
+
+    try {
+      final snapshot = await firestore
+          .collection('dating_connections')
+          .where('userId1', isEqualTo: _currentUserId)
+          .where('userId2', isEqualTo: otherUserId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return DatingConnection.fromJson(snapshot.docs.first.data());
+      }
+
+      final snapshot2 = await firestore
+          .collection('dating_connections')
+          .where('userId1', isEqualTo: otherUserId)
+          .where('userId2', isEqualTo: _currentUserId)
+          .limit(1)
+          .get();
+
+      if (snapshot2.docs.isNotEmpty) {
+        return DatingConnection.fromJson(snapshot2.docs.first.data());
+      }
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final connectionId = firestore.collection('dating_connections').doc().id;
+      final connection = DatingConnection(
+        id: connectionId,
+        userId1: _currentUserId!,
+        userId2: otherUserId,
+        createdAt: now,
+        isActive: true,
+      );
+
+      await firestore.collection('dating_connections').doc(connectionId).set(connection.toJson());
+      return connection;
+
+    } catch (e) {
+      print('❌ Erreur création connexion: $e');
+      return null;
+    }
   }
 
   Future<void> _createConnection(String otherUserId) async {
@@ -825,6 +1500,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       'createdAt': now,
       'isActive': true,
     });
+
+    await _updatePopularityScore(_currentUserId!);
+    await _updatePopularityScore(otherUserId);
   }
 
   Future<void> _sendNotification({
@@ -871,13 +1549,25 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   Future<UserData?> _getCurrentUser() async {
     final doc = await firestore.collection('Users').doc(_currentUserId).get();
-    if (doc.exists) return UserData.fromJson(doc.data()!);
+    if (doc.exists) return UserData.fromJson(doc.data() as Map<String, dynamic>);
     return null;
   }
 
   String _getCurrentUserPseudo() {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     return authProvider.loginUserData.pseudo ?? 'Utilisateur';
+  }
+
+  Future<void> _recordSwipeAction(String targetUserId, String direction) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final actionId = firestore.collection('dating_swipe_actions').doc().id;
+    await firestore.collection('dating_swipe_actions').doc(actionId).set({
+      'id': actionId,
+      'userId': _currentUserId,
+      'targetUserId': targetUserId,
+      'direction': direction,
+      'createdAt': now,
+    });
   }
 
   void _showSuccessMessage(String message, Color color) {
@@ -905,19 +1595,26 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       _rotationAngle = 0.0;
       _opacity = 1.0;
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndLoadMore();
+    });
   }
 
   void _checkAndLoadMore() {
-    if (_profiles.length - _currentIndex <= 3 && _hasMore && !_isLoadingMore) {
-      _loadProfiles(isLoadMore: true);
+    final remainingProfiles = _profiles.length - _currentIndex;
+    if (remainingProfiles <= 5 && _hasMore && !_isLoadingMore) {
+      print('🔄 Chargement en arrière-plan déclenché (restants: $remainingProfiles)');
+      _loadMoreProfiles();
     }
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (_isLoadingMore || _isSwiping) return;
 
+    final newDragOffset = _dragOffset + details.delta;
     setState(() {
-      _dragOffset = details.delta;
+      _dragOffset = newDragOffset;
       _rotationAngle = _dragOffset.dx / 500;
       _opacity = 1.0 - (_dragOffset.dx.abs() / 500).clamp(0.0, 1.0);
     });
@@ -958,12 +1655,14 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   }
 
   void _goToMyProfile() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DatingProfileDetailPage(profile: _currentUserProfile!),
-      ),
-    );
+    if (_currentUserProfile != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DatingProfileDetailPage(profile: _currentUserProfile!),
+        ),
+      );
+    }
   }
 
   void _toggleFilters() {
@@ -981,52 +1680,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    if (_currentUserId == null || _isLoading) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Chargement des profils...'),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_profiles.isEmpty || _currentIndex >= _profiles.length) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
-              SizedBox(height: 16),
-              Text(
-                'Plus de profils à découvrir',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
-              ),
-              SizedBox(height: 8),
-              Text('Revenez plus tard pour de nouveaux profils', style: TextStyle(color: Colors.grey.shade500)),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  _hasMore = true;
-                  _loadProfiles();
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text('Actualiser'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final currentProfile = _profiles[_currentIndex];
     final hasSubscription = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
+    final showEmptyState = _profiles.isEmpty && !_isLoading;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1042,7 +1697,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         elevation: 0,
         centerTitle: false,
         actions: [
-          // Compteur de likes
           Container(
             margin: EdgeInsets.only(right: 8),
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1068,7 +1722,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ],
             ),
           ),
-          // Filtres
           GestureDetector(
             onTap: _toggleFilters,
             child: Container(
@@ -1087,7 +1740,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ),
             ),
           ),
-          // Créateurs
           GestureDetector(
             onTap: _goToCreatorsPage,
             child: Container(
@@ -1106,58 +1758,155 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ),
             ),
           ),
-          // Mon profil
           GestureDetector(
             onTap: _goToMyProfile,
-            child: Container(
-              margin: EdgeInsets.only(right: 16),
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.person, size: 16, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text('Moi', style: TextStyle(color: Colors.white, fontSize: 12)),
-                ],
-              ),
+            child: Stack(
+              children: [
+                Container(
+                  margin: EdgeInsets.only(right: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Moi',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+
+                /// 🔔 BADGE
+                if (_unreadNotificationsCount > 0)
+                  Positioned(
+                    right: 2,
+                    top: -5,
+                    child: Container(
+                      padding: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow, // ✅ fond jaune
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white, // petit contour propre
+                          width: 1.5,
+                        ),
+                      ),
+                      constraints: BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        _unreadNotificationsCount > 99
+                            ? '99+'
+                            : '$_unreadNotificationsCount',
+                        style: TextStyle(
+                          color: Colors.white, // ✅ texte blanc
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
+          )
         ],
       ),
       body: Stack(
         children: [
-          // Carte de profil suivante
-          if (_currentIndex + 1 < _profiles.length)
-            _buildProfileCard(_profiles[_currentIndex + 1], isNext: true),
-
-          // Carte principale avec animation
-          Transform.translate(
-            offset: _dragOffset,
-            child: Transform.rotate(
-              angle: _rotationAngle,
-              child: Opacity(
-                opacity: _opacity,
-                child: GestureDetector(
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: _onPanEnd,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DatingProfileDetailPage(profile: currentProfile),
-                      ),
-                    );
-                  },
-                  child: _buildProfileCard(currentProfile, isNext: false),
-                ),
+          if (_isLoading)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Chargement des profils...'),
+                ],
               ),
-            ),
-          ),
+            )
+          else if (showEmptyState)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
+                  SizedBox(height: 16),
+                  Text(
+                    'Chargement des profils...',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                  ),
+                  SizedBox(height: 8),
+                  Text('Veuillez patienter', style: TextStyle(color: Colors.grey.shade500)),
+                ],
+              ),
+            )
+          else if (_profiles.isEmpty || _currentIndex >= _profiles.length)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
+                    SizedBox(height: 16),
+                    Text(
+                      'Plus de profils pour le moment',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    ),
+                    SizedBox(height: 8),
+                    Text('Revenez plus tard', style: TextStyle(color: Colors.grey.shade500)),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          _hasMore = true;
+                          _lastDocument = null;
+                          _profiles = [];
+                          _currentIndex = 0;
+                        });
+                        await _loadProfiles();
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: Text('Actualiser'),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Stack(
+                children: [
+                  if (_currentIndex + 1 < _profiles.length)
+                    _buildProfileCard(_profiles[_currentIndex + 1], isNext: true),
+                  Transform.translate(
+                    offset: _dragOffset,
+                    child: Transform.rotate(
+                      angle: _rotationAngle,
+                      child: Opacity(
+                        opacity: _opacity,
+                        child: GestureDetector(
+                          onPanUpdate: _onPanUpdate,
+                          onPanEnd: _onPanEnd,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DatingProfileDetailPage(profile: _profiles[_currentIndex]),
+                              ),
+                            );
+                          },
+                          child: _buildProfileCard(_profiles[_currentIndex], isNext: false),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-          // Messages incitatifs
           Positioned(
             top: 12,
             left: 20,
@@ -1193,7 +1942,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
             ),
           ),
 
-          // Filtres panel
           if (_showFilters)
             Positioned(
               top: 60,
@@ -1275,7 +2023,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ),
             ),
 
-          // Indicateur de chargement
           if (_isLoadingMore)
             Positioned(
               bottom: 100,
@@ -1300,7 +2047,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               ),
             ),
 
-          // Indicateur de swipe
           if (_dragOffset.dx != 0)
             Positioned(
               top: 100,
@@ -1335,24 +2081,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildActionButton(
-              icon: Icons.close,
-              color: Colors.red,
-              onPressed: _handleSwipeLeft,
-              size: 28,
-            ),
-            _buildActionButton(
-              icon: Icons.star,
-              color: Colors.amber,
-              onPressed: _handleSuperLike,
-              size: 32,
-            ),
-            _buildActionButton(
-              icon: Icons.favorite,
-              color: Colors.green,
-              onPressed: _handleSwipeRight,
-              size: 28,
-            ),
+            _buildActionButton(icon: Icons.close, color: Colors.red, onPressed: _handleSwipeLeft, size: 28),
+            _buildActionButton(icon: Icons.star, color: Colors.amber, onPressed: _handleSuperLike, size: 32),
+            _buildActionButton(icon: Icons.favorite, color: Colors.green, onPressed: _handleSwipeRight, size: 28),
           ],
         ),
       ),
@@ -1361,6 +2092,11 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   Widget _buildProfileCard(DatingProfile profile, {required bool isNext}) {
     final hasSubscription = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
+
+    final randomIndex = (profile.userId.hashCode + _currentIndex) % profile.photosUrls.length;
+    final displayImageUrl = profile.photosUrls.isNotEmpty
+        ? profile.photosUrls[randomIndex]
+        : profile.imageUrl;
 
     return Container(
       margin: EdgeInsets.all(16),
@@ -1374,7 +2110,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           children: [
             Positioned.fill(
               child: Image.network(
-                profile.imageUrl,
+                displayImageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: Colors.grey.shade200,
@@ -1454,7 +2190,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                     }).toList(),
                   ),
                   SizedBox(height: 12),
-                  // Bouton Discuter en privé
                   GestureDetector(
                     onTap: () => _showPremiumChatDialog(profile),
                     child: Container(
