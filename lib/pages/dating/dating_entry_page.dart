@@ -1049,7 +1049,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     await firestore.collection('Notifications').doc(notificationId).set({
       'id': notificationId,
       'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Super like ! ⭐' : 'Nouveau like ❤️',
-      'media_url': currentUser?.imageUrl ?? '',
+      'media_url': _currentUserProfile?.imageUrl ?? '',
       'type': 'DATING_${type.toUpperCase()}',
       'description': message,
       'users_id_view': [],
@@ -1067,7 +1067,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       await authProvider.sendNotification(
         userIds: [toUser.oneIgnalUserid!],
-        smallImage: currentUser?.imageUrl ?? '',
+        smallImage: _currentUserProfile?.imageUrl ?? '',
         send_user_id: _currentUserId!,
         recever_user_id: toUserId,
         message: message,
@@ -1084,11 +1084,10 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     return doc.exists ? UserData.fromJson(doc.data() as Map<String, dynamic>) : null;
   }
 
-  String _getCurrentUserPseudo() {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    return authProvider.loginUserData.pseudo ?? 'Utilisateur';
-  }
 
+  String _getCurrentUserPseudo() {
+    return _currentUserProfile?.pseudo ?? 'Utilisateur';
+  }
   void _showSuccessMessage(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

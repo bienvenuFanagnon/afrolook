@@ -449,7 +449,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
       await _sendNotification(
         toUserId: widget.profile.userId,
-        message: "❤️ @${authProvider.loginUserData.pseudo} vous a liké !",
+        message: "❤️ @${widget.profile.pseudo} vous a liké !",
         type: 'like',
       );
 
@@ -647,7 +647,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       // Notification
       await _sendNotification(
         toUserId: widget.profile.userId,
-        message: "⭐ @${authProvider.loginUserData.pseudo} vous a envoyé un Coup de cœur ❤️ !",
+        message: "⭐ @${widget.profile.pseudo} vous a envoyé un Coup de cœur ❤️ !",
         type: 'super_like',
       );
 
@@ -710,7 +710,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     await firestore.collection('Notifications').doc(notificationId).set({
       'id': notificationId,
       'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Coup de cœur ❤️ ! ⭐' : 'Nouveau like ❤️',
-      'media_url': authProvider.loginUserData.imageUrl,
+      'media_url': widget.profile.imageUrl,
       'type': 'DATING_${type.toUpperCase()}',
       'description': 'Afrolove❤️: '+message,
       'users_id_view': [],
@@ -728,7 +728,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     if (toUser.oneIgnalUserid != null && toUser.oneIgnalUserid!.isNotEmpty) {
       await authProvider.sendNotification(
         userIds: [toUser.oneIgnalUserid!],
-        smallImage: authProvider.loginUserData.imageUrl ?? '',
+        smallImage: widget.profile.imageUrl ?? '',
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: toUserId,
         message: message,
