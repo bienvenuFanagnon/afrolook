@@ -214,14 +214,14 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
             final createdAt = superLike['createdAt'] as int;
             final date = DateTime.fromMillisecondsSinceEpoch(createdAt);
 
-            return FutureBuilder<UserData?>(
-              future: _getUserData(userId),
-              builder: (context, userSnapshot) {
-                if (!userSnapshot.hasData) {
+            return FutureBuilder<DatingProfile?>(
+              future: _getDatingProfile(userId),
+              builder: (context, profileSnapshot) {
+                if (!profileSnapshot.hasData) {
                   return SizedBox.shrink();
                 }
 
-                final user = userSnapshot.data!;
+                final profile = profileSnapshot.data!;
                 final isNew = createdAt > DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
 
                 return AnimatedContainer(
@@ -229,7 +229,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                   margin: EdgeInsets.only(bottom: 12),
                   child: GestureDetector(
                     onTap: () {
-                      _navigateToProfile(userId);
+                      _navigateToProfile(profile);
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -251,7 +251,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                         padding: EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            // Photo de profil avec effet étoile
+                            // Photo de profil avec effet étoile (depuis le dating profile)
                             Stack(
                               children: [
                                 Container(
@@ -281,7 +281,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(28),
                                       child: Image.network(
-                                        user.imageUrl ?? '',
+                                        profile.imageUrl,
                                         width: 56,
                                         height: 56,
                                         fit: BoxFit.cover,
@@ -326,7 +326,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    user.pseudo ?? 'Utilisateur',
+                                    profile.pseudo,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -343,7 +343,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                       ),
                                       SizedBox(width: 4),
                                       Text(
-                                        _calculateAge(user),
+                                        '${profile.age} ans',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
@@ -357,7 +357,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
                                       ),
                                       SizedBox(width: 4),
                                       Text(
-                                        user.userPays?.name ?? 'Pays',
+                                        profile.pays,
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
@@ -427,14 +427,6 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
     );
   }
 
-  String _calculateAge(UserData user) {
-    if (user.createdAt == null) return '?';
-    final birthDate = DateTime.fromMillisecondsSinceEpoch(user.createdAt!);
-    final now = DateTime.now();
-    final age = now.year - birthDate.year;
-    return '$age ans';
-  }
-
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -449,38 +441,29 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
     }
   }
 
-  Future<UserData?> _getUserData(String userId) async {
+  Future<DatingProfile?> _getDatingProfile(String userId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
+      final snapshot = await FirebaseFirestore.instance
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
           .get();
-
-      if (doc.exists) {
-        return UserData.fromJson(doc.data()!);
+      if (snapshot.docs.isNotEmpty) {
+        return DatingProfile.fromJson(snapshot.docs.first.data());
       }
       return null;
     } catch (e) {
+      print('❌ Erreur récupération dating profile: $e');
       return null;
     }
   }
 
-  void _navigateToProfile(String userId) {
-    FirebaseFirestore.instance
-        .collection('dating_profiles')
-        .where('userId', isEqualTo: userId)
-        .limit(1)
-        .get()
-        .then((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        final profile = DatingProfile.fromJson(snapshot.docs.first.data());
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DatingProfileDetailPage(profile: profile),
-          ),
-        );
-      }
-    });
+  void _navigateToProfile(DatingProfile profile) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DatingProfileDetailPage(profile: profile),
+      ),
+    );
   }
 }

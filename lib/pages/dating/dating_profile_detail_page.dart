@@ -113,15 +113,34 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   Future<void> _loadUnreadNotificationsCount() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
+    if (currentUserId == null) {
+      print('⚠️ _loadUnreadNotificationsCount: currentUserId is null');
+      return;
+    }
+
+    final datingTypes = [
+      'DATING_LIKE',
+      'DATING_MATCH',
+      'DATING_SUPER_LIKE',
+      'DATING_MESSAGE',
+      // Ajoutez ici tous les types dating que vous utilisez
+    ];
+
+    print('🔔 Chargement compteur notifications non lues pour $currentUserId');
+    print('📋 Types recherchés: $datingTypes');
 
     try {
       final snapshot = await firestore
           .collection('Notifications')
           .where('receiver_id', isEqualTo: currentUserId)
-          .where('type', isGreaterThanOrEqualTo: 'DATING_')
+          .where('type', whereIn: datingTypes)
           .where('is_open', isEqualTo: false)
           .get();
+
+      print('📊 ${snapshot.docs.length} notifications non lues trouvées');
+      for (var doc in snapshot.docs) {
+        print('   - ${doc.id} | type: ${doc['type']}');
+      }
 
       setState(() {
         _unreadNotificationsCount = snapshot.docs.length;
@@ -130,7 +149,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       print('❌ Erreur chargement compteur notifications: $e');
     }
   }
-
   Future<void> _checkIfUserIsCreator() async {
     try {
       final snapshot = await firestore
@@ -397,8 +415,20 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null) return;
 
+    // Vérifier les likes restants
     if (_remainingLikes <= 0 && _currentSubscriptionPlan == null) {
       _showUpgradeDialog('likes');
+      return;
+    }
+
+    // Vérifier la compatibilité des genres
+    final isCompatible = await _checkMatchCompatibility();
+    if (!isCompatible) return;
+
+    // Vérifier si un match existe déjà
+    final alreadyMatched = await _matchAlreadyExists();
+    if (alreadyMatched) {
+      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
       return;
     }
 
@@ -436,13 +466,9 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       await _updatePopularityScore(widget.profile.userId);
       await _addPointsToUser(currentUserId, 5, 'Like envoyé');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❤️ Vous avez liké ${widget.profile.pseudo} (+5 points)'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo} (+5 points)', Colors.green);
 
+      // Vérifier s'il y a un like mutuel (match)
       final mutualLike = await firestore
           .collection('dating_likes')
           .where('fromUserId', isEqualTo: widget.profile.userId)
@@ -457,43 +483,116 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       print('❌ Erreur like: $e');
     }
   }
+  Future<DatingProfile?> _getCurrentUserDatingProfile() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return null;
+    final snapshot = await firestore
+        .collection('dating_profiles')
+        .where('userId', isEqualTo: currentUserId)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isNotEmpty) {
+      return DatingProfile.fromJson(snapshot.docs.first.data());
+    }
+    return null;
+  }
 
+  Future<bool> _checkMatchCompatibility() async {
+    final currentProfile = await _getCurrentUserDatingProfile();
+    if (currentProfile == null) return false;
+
+    // Vérifier que le sexe du profil cible correspond à ce que recherche l'utilisateur courant
+    bool currentAcceptsTarget = currentProfile.rechercheSexe == 'tous' ||
+        currentProfile.rechercheSexe == widget.profile.sexe;
+
+    // Vérifier que le sexe de l'utilisateur courant correspond à ce que recherche le profil cible
+    bool targetAcceptsCurrent = widget.profile.rechercheSexe == 'tous' ||
+        widget.profile.rechercheSexe == currentProfile.sexe;
+
+    if (!currentAcceptsTarget) {
+      _showSnackBar('Vous ne recherchez pas ce genre de personnes.', Colors.orange);
+      return false;
+    }
+    if (!targetAcceptsCurrent) {
+      _showSnackBar('Cette personne ne recherche pas votre genre.', Colors.orange);
+      return false;
+    }
+    return true;
+  }
+
+  Future<bool> _matchAlreadyExists() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return false;
+
+    final snapshot = await firestore
+        .collection('dating_connections')
+        .where('userId1', isEqualTo: currentUserId)
+        .where('userId2', isEqualTo: widget.profile.userId)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isNotEmpty) return true;
+
+    final snapshot2 = await firestore
+        .collection('dating_connections')
+        .where('userId1', isEqualTo: widget.profile.userId)
+        .where('userId2', isEqualTo: currentUserId)
+        .limit(1)
+        .get();
+    return snapshot2.docs.isNotEmpty;
+  }
   Future<void> _handleCoupDeCoeur() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null) return;
 
-    if (_remainingSuperLikes <= 0 && _currentSubscriptionPlan == null) {
-      _showUpgradeDialog('Coup de cœur ❤️');
+    // Vérifier la compatibilité des genres
+    final isCompatible = await _checkMatchCompatibility();
+    if (!isCompatible) return;
+
+    // Vérifier si un match existe déjà
+    final alreadyMatched = await _matchAlreadyExists();
+    if (alreadyMatched) {
+      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
       return;
     }
 
-    final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
-    const coupDeCoeurPrice = 20;
+    const superLikePriceCoins = 20;
 
-    if (_currentSubscriptionPlan != 'gold' && currentCoins < coupDeCoeurPrice) {
+    // Si l'utilisateur a encore des super likes gratuits
+    if (_remainingSuperLikes > 0) {
+      // Envoyer gratuitement
+      await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: false);
+      return;
+    }
+
+    // Sinon, il n'a plus de super likes gratuits → proposition d'achat avec pièces
+    final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
+    if (currentCoins < superLikePriceCoins) {
       _showInsufficientCoinsDialog();
       return;
     }
 
+    // Demander confirmation d'achat
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('✨ Envoyer un Coup de cœur ❤️'),
+        title: Text('✨ Coup de cœur payant ✨'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.star, size: 50, color: Colors.amber),
             SizedBox(height: 16),
-            Text('Envoyer un Coup de cœur ❤️ à ${widget.profile.pseudo} ?'),
+            Text('Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.'),
             SizedBox(height: 8),
             Text(
-              _currentSubscriptionPlan == 'gold'
-                  ? 'Gratuit avec votre abonnement Gold'
-                  : 'Coût: $coupDeCoeurPrice pièces',
+              'Envoyer un coup de cœur coûte $superLikePriceCoins pièces.',
               style: TextStyle(color: Colors.amber),
             ),
+            SizedBox(height: 8),
+            Text('Votre solde : $currentCoins pièces', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -501,7 +600,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-            child: Text('Envoyer'),
+            child: Text('Acheter et envoyer'),
           ),
         ],
       ),
@@ -509,16 +608,31 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
     if (confirm != true) return;
 
+    // Envoyer avec paiement en pièces
+    await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: true, priceCoins: superLikePriceCoins);
+  }
+
+  /// Méthode auxiliaire pour envoyer le coup de cœur
+  Future<void> _sendCoupDeCoeur(String currentUserId, UserAuthProvider authProvider, {required bool useCoins, int priceCoins = 0}) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      if (_currentSubscriptionPlan != 'gold') {
+      if (useCoins) {
+        // Déduire les pièces
         await firestore.collection('Users').doc(currentUserId).update({
-          'coinsBalance': FieldValue.increment(-coupDeCoeurPrice),
-          'totalCoinsSpent': FieldValue.increment(coupDeCoeurPrice),
+          'coinsBalance': FieldValue.increment(-priceCoins),
+          'totalCoinsSpent': FieldValue.increment(priceCoins),
         });
+        // Ne pas modifier _remainingSuperLikes car c'est un achat exceptionnel
+      } else {
+        // Utiliser un super like gratuit
+        setState(() {
+          _remainingSuperLikes--;
+        });
+        await _updateRemainingLikes();
       }
 
+      // Créer le document dans dating_coup_de_coeurs
       await firestore.collection('dating_coup_de_coeurs').doc().set({
         'id': firestore.collection('dating_coup_de_coeurs').doc().id,
         'fromUserId': currentUserId,
@@ -528,16 +642,16 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
       setState(() {
         _isCoupDeCoeur = true;
-        if (_remainingSuperLikes > 0) _remainingSuperLikes--;
       });
-      await _updateRemainingLikes();
 
+      // Notification
       await _sendNotification(
         toUserId: widget.profile.userId,
         message: "⭐ @${authProvider.loginUserData.pseudo} vous a envoyé un Coup de cœur ❤️ !",
         type: 'super_like',
       );
 
+      // Mettre à jour le compteur de coups de cœur du profil cible
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
@@ -548,20 +662,41 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         }
       });
 
+      // Mettre à jour le score de popularité
       await _updatePopularityScore(widget.profile.userId);
-      await _addPointsToUser(currentUserId, 20, 'Coup de cœur ❤️ envoyé');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✨ Coup de cœur ❤️ envoyé à ${widget.profile.pseudo} (+20 points)'),
-          backgroundColor: Colors.amber,
-        ),
-      );
+      // Ajouter des points à l'utilisateur
+      await _addPointsToUser(currentUserId, 20, 'Coup de cœur envoyé');
+
+      _showSnackBar('✨ Coup de cœur envoyé à ${widget.profile.pseudo} (+20 points)', Colors.amber);
+
+      // Vérifier si un like mutuel (match) existe déjà
+      final mutualLike = await firestore
+          .collection('dating_likes')
+          .where('fromUserId', isEqualTo: widget.profile.userId)
+          .where('toUserId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+
+      if (mutualLike.docs.isNotEmpty) {
+        _showMatchDialog();
+      }
     } catch (e) {
-      print('❌ Erreur Coup de cœur ❤️: $e');
+      print('❌ Erreur envoi coup de cœur: $e');
+      _showSnackBar('Erreur lors de l\'envoi', Colors.red);
     }
   }
 
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
   Future<void> _sendNotification({
     required String toUserId,
     required String message,
@@ -577,11 +712,12 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       'titre': type == 'match' ? 'Nouveau match ! 🎉' : type == 'super_like' ? 'Coup de cœur ❤️ ! ⭐' : 'Nouveau like ❤️',
       'media_url': authProvider.loginUserData.imageUrl,
       'type': 'DATING_${type.toUpperCase()}',
-      'description': message,
+      'description': 'Afrolove❤️: '+message,
       'users_id_view': [],
       'user_id': authProvider.loginUserData.id,
       'receiver_id': toUserId,
       'createdAt': now,
+      'is_open': false,
       'updatedAt': now,
       'status': 'VALIDE',
     });
@@ -1250,7 +1386,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             isActive: _isLiked,
             icon: _isLiked ? Icons.favorite : Icons.favorite_border,
             label: _isLiked ? 'Liké ❤️' : 'Liker',
-            subText: '$remainingLikesText restants',
+            // subText: '$remainingLikesText restants',
+            subText: '- restants',
             onTap: _handleLike,
           ),
 
@@ -1262,7 +1399,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             isActive: _isCoupDeCoeur,
             icon: _isCoupDeCoeur ? Icons.favorite : Icons.favorite_border,
             label: _isCoupDeCoeur ? 'Envoyé ❤️' : 'Coup de cœur',
-            subText: '$_remainingSuperLikes restants',
+            // subText: '$_remainingSuperLikes restants',
+            subText: '- restants',
             onTap: _handleCoupDeCoeur,
           ),
 

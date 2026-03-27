@@ -171,6 +171,7 @@ class _CreatorSubscriptionPageState extends State<CreatorSubscriptionPage> {
                     ),
 
                   const SizedBox(height: 24),
+                  if(_isPaidSubscription)
                   ElevatedButton(
                     onPressed: _isSubscribing
                         ? null

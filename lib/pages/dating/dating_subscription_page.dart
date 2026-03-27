@@ -307,6 +307,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           updatedAt: now,
           remainingLikes: plan.defaultLikes,
           remainingSuperLikes: plan.defaultSuperLikes,
+          lastResetDate: now,
         );
 
         transaction.set(

@@ -19,6 +19,15 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
   String? _currentUserId;
   int _unreadCount = 0;
 
+  // Types de notifications de dating
+  final List<String> _datingTypes = [
+    'DATING_LIKE',
+    'DATING_MATCH',
+    'DATING_SUPER_LIKE',
+    'DATING_MESSAGE',
+    // Ajouter d'autres types si nécessaire
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -31,17 +40,18 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
     if (_currentUserId == null) return;
 
     try {
+      print('🔔 Chargement des notifications non lues pour $_currentUserId');
       final snapshot = await FirebaseFirestore.instance
           .collection('Notifications')
           .where('receiver_id', isEqualTo: _currentUserId)
-          .where('type', isGreaterThanOrEqualTo: 'DATING_')
+          .where('type', whereIn: _datingTypes)
           .where('is_open', isEqualTo: false)
           .get();
 
+      print('📊 ${snapshot.docs.length} notifications non lues trouvées');
       setState(() {
         _unreadCount = snapshot.docs.length;
       });
-      print('📊 Notifications non lues: $_unreadCount');
     } catch (e) {
       print('❌ Erreur chargement compteur notifications: $e');
     }
@@ -72,7 +82,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           children: [
             Row(
               children: [
-                Text(
+                const Text(
                   '🔔 Notifications',
                   style: TextStyle(
                     color: Colors.white,
@@ -82,15 +92,15 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                 ),
                 if (_unreadCount > 0)
                   Container(
-                    margin: EdgeInsets.only(left: 8),
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '$_unreadCount',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -99,7 +109,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                   ),
               ],
             ),
-            Text(
+            const Text(
               'Vos interactions récentes',
               style: TextStyle(
                 color: Colors.white70,
@@ -112,7 +122,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         backgroundColor: Colors.red.shade600,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -120,18 +130,18 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         stream: FirebaseFirestore.instance
             .collection('Notifications')
             .where('receiver_id', isEqualTo: _currentUserId)
-            .where('type', isGreaterThanOrEqualTo: 'DATING_')
-            .orderBy('created_at', descending: true)
+            .where('type', whereIn: _datingTypes)
+            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            printVm('Erreur: ${snapshot.error}');
+            print('Erreur: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.error_outline, size: 60, color: Colors.red),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text('Erreur: ${snapshot.error}'),
                 ],
               ),
@@ -139,7 +149,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -159,10 +169,10 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade100, Colors.pink.shade100],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFCDD2), Color(0xFFFCE4EC)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -174,22 +184,15 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                       color: Colors.red.shade400,
                     ),
                   ),
-                  SizedBox(height: 24),
-                  Text(
+                  const SizedBox(height: 24),
+                  const Text(
                     'Aucune notification',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
-                  SizedBox(height: 12),
-                  Text(
+                  const SizedBox(height: 12),
+                  const Text(
                     'Les notifications apparaîtront ici',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -197,7 +200,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           }
 
           return ListView.builder(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final notificationData = notifications[index].data();
@@ -245,8 +248,8 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                   _navigateToProfile(userId);
                 },
                 child: AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  margin: EdgeInsets.only(bottom: 12),
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
@@ -255,7 +258,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                         BoxShadow(
                           color: Colors.grey.withOpacity(0.1),
                           blurRadius: 8,
-                          offset: Offset(0, 2),
+                          offset: const Offset(0, 2),
                         ),
                       ],
                       border: Border.all(
@@ -264,10 +267,9 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                       ),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          // Icône de notification
                           Container(
                             width: 50,
                             height: 50,
@@ -275,14 +277,9 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                               color: bgColor,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              icon,
-                              size: 24,
-                              color: iconColor,
-                            ),
+                            child: Icon(icon, size: 24, color: iconColor),
                           ),
-                          SizedBox(width: 16),
-                          // Contenu
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +292,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                                     color: Colors.grey.shade800,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   description,
                                   style: TextStyle(
@@ -305,18 +302,17 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                SizedBox(height: 4),
-                                Text(
-                                  _formatDate(date),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: isNew ? Colors.red : Colors.grey.shade500,
-                                  ),
-                                ),
+                                // const SizedBox(height: 4),
+                                // Text(
+                                //   _formatDate(date),
+                                //   style: TextStyle(
+                                //     fontSize: 10,
+                                //     color: isNew ? Colors.red : Colors.grey.shade500,
+                                //   ),
+                                // ),
                               ],
                             ),
                           ),
-                          // Image de profil si disponible
                           if (mediaUrl != null && mediaUrl.isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(25),
@@ -341,10 +337,10 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
                             ),
                           if (!isOpen)
                             Container(
-                              margin: EdgeInsets.only(left: 8),
+                              margin: const EdgeInsets.only(left: 8),
                               width: 10,
                               height: 10,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: Colors.red,
                                 shape: BoxShape.circle,
                               ),
@@ -369,7 +365,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
 
     if (notifDate == today) {
       return "Aujourd'hui à ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
-    } else if (notifDate == today.subtract(Duration(days: 1))) {
+    } else if (notifDate == today.subtract(const Duration(days: 1))) {
       return "Hier à ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
     } else {
       return "${date.day}/${date.month}/${date.year}";

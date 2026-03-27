@@ -801,6 +801,8 @@ class DatingMessage {
   final String? text;
   final String? mediaUrl;
   final String? replyToMessageId;
+  final String? replyToMessageText;    // ✅ Nouveau champ
+  final String? replyToMessageType;    // ✅ Nouveau champ (stocke le type original)
   final bool isRead;
   final int createdAt;
   final int updatedAt;
@@ -814,6 +816,8 @@ class DatingMessage {
     this.text,
     this.mediaUrl,
     this.replyToMessageId,
+    this.replyToMessageText,
+    this.replyToMessageType,
     required this.isRead,
     required this.createdAt,
     required this.updatedAt,
@@ -829,6 +833,8 @@ class DatingMessage {
       text: json['text']?.toString(),
       mediaUrl: json['mediaUrl']?.toString(),
       replyToMessageId: json['replyToMessageId']?.toString(),
+      replyToMessageText: json['replyToMessageText']?.toString(),
+      replyToMessageType: json['replyToMessageType']?.toString(),
       isRead: json['isRead'] ?? false,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
@@ -845,6 +851,8 @@ class DatingMessage {
       'text': text,
       'mediaUrl': mediaUrl,
       'replyToMessageId': replyToMessageId,
+      'replyToMessageText': replyToMessageText,
+      'replyToMessageType': replyToMessageType,
       'isRead': isRead,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -860,6 +868,8 @@ class DatingMessage {
     String? text,
     String? mediaUrl,
     String? replyToMessageId,
+    String? replyToMessageText,
+    String? replyToMessageType,
     bool? isRead,
     int? createdAt,
     int? updatedAt,
@@ -873,13 +883,14 @@ class DatingMessage {
       text: text ?? this.text,
       mediaUrl: mediaUrl ?? this.mediaUrl,
       replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToMessageText: replyToMessageText ?? this.replyToMessageText,
+      replyToMessageType: replyToMessageType ?? this.replyToMessageType,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
-
 // lib/models/creator_profile.dart
 class CreatorProfile {
   final String id;
@@ -1536,10 +1547,9 @@ class UserDatingSubscription {
   final bool isActive;
   final int createdAt;
   final int updatedAt;
-
-  // Nouveaux champs pour les likes restants
-  final int remainingLikes;
-  final int remainingSuperLikes;
+  final int remainingLikes;      // ✅ Nouveau champ
+  final int remainingSuperLikes; // ✅ Nouveau champ
+  final int lastResetDate;       // ✅ Nouveau champ (timestamp du dernier reset)
 
   UserDatingSubscription({
     required this.id,
@@ -1553,6 +1563,7 @@ class UserDatingSubscription {
     required this.updatedAt,
     required this.remainingLikes,
     required this.remainingSuperLikes,
+    required this.lastResetDate,
   });
 
   factory UserDatingSubscription.fromJson(Map<String, dynamic> json) {
@@ -1566,8 +1577,9 @@ class UserDatingSubscription {
       isActive: json['isActive'] ?? true,
       createdAt: json['createdAt'] ?? 0,
       updatedAt: json['updatedAt'] ?? 0,
-      remainingLikes: json['remainingLikes'] ?? 10,
-      remainingSuperLikes: json['remainingSuperLikes'] ?? 1,
+      remainingLikes: json['remainingLikes'] ?? 0,
+      remainingSuperLikes: json['remainingSuperLikes'] ?? 0,
+      lastResetDate: json['lastResetDate'] ?? 0,
     );
   }
 
@@ -1584,6 +1596,7 @@ class UserDatingSubscription {
       'updatedAt': updatedAt,
       'remainingLikes': remainingLikes,
       'remainingSuperLikes': remainingSuperLikes,
+      'lastResetDate': lastResetDate,
     };
   }
 
@@ -1599,6 +1612,7 @@ class UserDatingSubscription {
     int? updatedAt,
     int? remainingLikes,
     int? remainingSuperLikes,
+    int? lastResetDate,
   }) {
     return UserDatingSubscription(
       id: id ?? this.id,
@@ -1612,9 +1626,11 @@ class UserDatingSubscription {
       updatedAt: updatedAt ?? this.updatedAt,
       remainingLikes: remainingLikes ?? this.remainingLikes,
       remainingSuperLikes: remainingSuperLikes ?? this.remainingSuperLikes,
+      lastResetDate: lastResetDate ?? this.lastResetDate,
     );
   }
 }
+
 // lib/models/dating_block.dart
 class DatingBlock {
   final String id;

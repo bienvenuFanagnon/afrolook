@@ -325,14 +325,14 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         photosUrls: allPhotosUrls,
         bio: _bioController.text.trim(),
         age: int.parse(_ageController.text),
-        sexe: _selectedSexe,
+        sexe: _selectedSexe.toLowerCase(),
         ville: _selectedCity,
         pays: _selectedCountry,
         profession: _professionController.text.trim().isEmpty
             ? null
             : _professionController.text.trim(),
         centresInteret: _centresInteret,
-        rechercheSexe: _selectedRechercheSexe,
+        rechercheSexe: _selectedRechercheSexe.toLowerCase(),
         rechercheAgeMin: _rechercheAgeMin,
         rechercheAgeMax: _rechercheAgeMax,
         recherchePays: _selectedCountry,

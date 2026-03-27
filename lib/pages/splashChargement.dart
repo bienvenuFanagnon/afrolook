@@ -89,6 +89,8 @@ class _ChargementState extends State<SplahsChargement> {
 //     if (!migrationDone) {
 //       print('🔄 Première connexion - Lancement de la migration des profils dating...');
 //       await migrateInitialDatingProfiles();
+//     await migrateInitialDatingProfilesForMen();
+//     await migrateDatingProfilesToLowercase();
 //       await prefs.setBool('dating_migration_done', true);
 //       print('✅ Migration marquée comme terminée');
 //     }

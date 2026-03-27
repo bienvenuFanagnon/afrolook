@@ -37,6 +37,7 @@ import 'package:workmanager/workmanager.dart';
 import '../../constant/custom_theme.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/contenuPayantProvider.dart';
+import '../../services/daily_modal_service.dart';
 import '../../services/postService/mixed_feed_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../LiveAgora/livesAgora.dart';
@@ -63,6 +64,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cryptoMarket/cryptoMarketpage.dart';
 import '../dating/dating_entry_page.dart';
+import '../dating/widgets/dating_top_modal.dart';
 import '../pronostics/pronostics_feed_page.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
@@ -126,6 +128,7 @@ class _MyHomePageState extends State<MyHomePage>
   List<Canal> canaux=[];
   Color _color =Colors.blue;
   TabController? _tabController;
+  int _unreadNotificationsCount = 0;
 
   // Liste des onglets avec texte et icônes
   final List<Tab> _tabs = [
@@ -185,8 +188,7 @@ class _MyHomePageState extends State<MyHomePage>
       return number.toString();
     }
   }
-  // 🔥 INITIALISATION DU SERVICE DE FEED
-// 🔥 INITIALISATION DU SERVICE DE FEED
+
   void _initializeFeedService() {
     // Utiliser le service préchargé ou en créer un nouveau
     if (widget.preloadedFeedService != null) {
@@ -277,6 +279,39 @@ class _MyHomePageState extends State<MyHomePage>
     return userfriendList.any((userfriendId) => userfriendId == userIdToCheck);
   }
 
+  void _listenUnreadNotifications() {
+    String _currentUserId = authProvider.loginUserData!.id!;
+    if (_currentUserId == null) {
+      print('⚠️ _listenUnreadNotifications: currentUserId is null');
+      return;
+    }
+
+    final datingTypes = [
+      'DATING_LIKE',
+      'DATING_MATCH',
+      'DATING_SUPER_LIKE',
+      'DATING_MESSAGE',
+    ];
+
+    print('🔔 Listening for unread dating notifications for user: $_currentUserId');
+    print('📋 Types recherchés: $datingTypes');
+
+    firestore
+        .collection('Notifications')
+        .where('receiver_id', isEqualTo: _currentUserId)
+        .where('type', whereIn: datingTypes)
+        .where('is_open', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      print('📬 Snapshot reçu: ${snapshot.docs.length} documents');
+      for (var doc in snapshot.docs) {
+        print('   - ${doc.id} | type: ${doc['type']} | is_open: ${doc['is_open']}');
+      }
+      if (mounted) setState(() => _unreadNotificationsCount = snapshot.docs.length);
+    }, onError: (e) {
+      print('❌ Erreur dans le stream des notifications: $e');
+    });
+  }
 
 
   void onClickMenu(PopUpMenuItemProvider item) {
@@ -463,9 +498,9 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
+                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
                     title: TextCustomerMenu(
-                      titre: "AfroMatch",
+                      titre: "AfroLove",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: Colors.white, // Texte blanc
                       fontWeight: FontWeight.w600,
@@ -1108,13 +1143,13 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
-
+    _listenUnreadNotifications();
     _initializeFeedService();
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
-    userProvider.getTopAfrolookeur().then((value) {
-      // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
-    },);
+    // userProvider.getTopAfrolookeur().then((value) {
+    //   // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
+    // },);
 
     _setUserOnline();
     _initializeLifecycleListener();
@@ -1138,7 +1173,9 @@ class _MyHomePageState extends State<MyHomePage>
             }
           await authProvider.checkAppVersionAndProceed(context, () {
             // AdvancedModalManager.showModalsWithSmartDelay(context);
-            showRemunerationAnnounceModal(context,authProvider.loginUserData.id!);
+            // showRemunerationAnnounceModal(context,authProvider.loginUserData.id!);
+
+            _showDailyModal();
 
           });
             // Appeler cette fonction quand tu veux afficher le modal
@@ -1172,55 +1209,24 @@ class _MyHomePageState extends State<MyHomePage>
     });
 
 
-    // hasShownDialogToday().then((value) async {
-    //   final SharedPreferences prefs = await SharedPreferences.getInstance();
-    //   authProvider.getAppData().then((value) {
-    //     // setState(() {});
-    //   });
-    //   categorieProduitProvider.getArticleBooster().then((value) {
-    //     articles = value;
-    //     // setState(() {});
-    //   });
-    //
-    //   postProvider.getAllUserServiceHome().then((value) {
-    //     userServices = value;
-    //     userServices.shuffle();
-    //     // setState(() {});
-    //   });
-    //   postProvider.getCanauxHome().then((value) {
-    //     canaux = value;
-    //     canaux.shuffle();
-    //     // setState(() {});
-    //   });
-    //
-    //   if (value && mounted) {
-    //
-    //   }
-    //   _checkAndShowDialog();
-    // });
-    //
-    // authProvider.getToken().then((token) async {
-    //   printVm("token: ${token}");
-    //   // postProvider.getPostsImages2(limitePosts).listen((data) {
-    //   //   if (!_streamController.isClosed) {
-    //   //     _streamController.add(data);
-    //   //   }
-    //   // });
-    //
-    //   if (token == null || token == '') {
-    //     printVm("token: existe pas");
-    //     Navigator.pushNamed(context, '/welcome');
-    //   }
-    // });
-
     WidgetsBinding.instance.addObserver(this);
 
-    // postProvider.getPostsVideos3(limitePosts).then((value) {
-    //   postProvider.listvideos=value;
-    //   printVm('listVideos *****************************: ${postProvider.listvideos.length}');
-    // },);
   }
 
+  Future<void> _showDailyModal() async {
+    const modalKeys = ['remuneration', 'top_dating'];
+    final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
+    if (modalToShow == null) return;
+
+    if (modalToShow == 'remuneration') {
+      // Appel de la fonction existante (passez l'userId si nécessaire)
+      showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
+    } else if (modalToShow == 'top_dating') {
+      showTopDatingAnnounceModal(context);
+    }
+    // Marquer le modal comme affiché aujourd'hui
+    await DailyModalService.markModalShownToday(modalToShow);
+  }
   @override
   void dispose() {
     _tabController?.dispose();
@@ -1483,27 +1489,46 @@ class _MyHomePageState extends State<MyHomePage>
           //   ),
           // ),
           SizedBox(width: 20),
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage())),
-            child: Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.red, width: 2),
-              ),
-              child: Icon(
-                AntDesign.linechart, // Icône crypto native Flutter
-                color: Colors.red,
-                size: 12,
-              ),
-            ),
+          // GestureDetector(
+          //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CryptoMarketPage())),
+          //   child: Container(
+          //     padding: EdgeInsets.all(8),
+          //     decoration: BoxDecoration(
+          //       color: Colors.red.withOpacity(0.15),
+          //       shape: BoxShape.circle,
+          //       border: Border.all(color: Colors.red, width: 2),
+          //     ),
+          //     child: Icon(
+          //       AntDesign.linechart, // Icône crypto native Flutter
+          //       color: Colors.red,
+          //       size: 12,
+          //     ),
+          //   ),
+          // ),
+    GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DatingSwipePage(),
           ),
+        );
+      },
+      child: badges.Badge(
+      showBadge: _unreadNotificationsCount > 0,
+      badgeStyle: badges.BadgeStyle(badgeColor: accentYellow),
+      badgeContent: Text(
+        _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+      style: TextStyle(fontSize: 10, color: Colors.red),
+      ),
+      child: Icon(Fontisto.tinder, color: Colors.red, size: iconSize),
+      ),
+    ),
           // GestureDetector(
           //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage())),
           //   child: Icon(Icons.settings_outlined, color: textColor, size: iconSize),
           // ),
-          SizedBox(width: 10),
+          SizedBox(width: 20),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: ''))),
             child: Icon(Icons.storefront, color: textColor, size: iconSize),

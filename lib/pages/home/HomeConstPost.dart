@@ -32,6 +32,7 @@ import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
+import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../listeUserLikepage.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/banner_ad_widget.dart';
@@ -2338,13 +2339,19 @@ printVm("_currentFilter data: ${_currentFilter}");
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
       }
-
-      // Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
-      if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
-        // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-
-        contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+// Top dating : après le premier post, puis tous les 5 posts
+      if (postIndex == 2) {
+        contentWidgets.add(TopDatingProfilesWidget());
+      } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
+        contentWidgets.add(TopDatingProfilesWidget());
       }
+      // AdMOb Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
+      // if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
+      //   // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+      //
+      //   contentWidgets.add(TopDatingProfilesWidget());
+      //   // contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+      // }
 
       // Garder vos sections spéciales existantes
       if (postIndex % 3 == 0) {

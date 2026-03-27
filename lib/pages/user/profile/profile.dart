@@ -20,6 +20,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
 import '../../admin/admin_email_screen.dart';
+import '../../admin/dating/admin_dating_profiles_page.dart';
 import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
@@ -532,9 +533,9 @@ class _UserProfilState extends State<UserProfil> {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdvertisementManagementPage()));
                             },
                           ),        _buildMenuButton(
-                            icon: Icons.add_card_outlined,
+                            icon: Icons.email,
                             label: "Emailing",
-                            color: Colors.deepPurple,
+                            color: Colors.blue,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminEmailScreen()));
                             },
@@ -545,6 +546,23 @@ class _UserProfilState extends State<UserProfil> {
                             color: Colors.green,
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => AdminPronosticsPage()));
+                            },
+                          ),
+
+                        ],
+                      ),
+                      SizedBox(height: 15),
+
+                    ],     if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildMenuButton(
+                            icon: Fontisto.tinder,
+                            label: "Afrolove",
+                            color: Colors.red,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => AdminDatingProfilesPage()));
                             },
                           ),
 

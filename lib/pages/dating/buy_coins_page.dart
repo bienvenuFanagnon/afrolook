@@ -252,8 +252,31 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
     }
 
     print('🔄 Exécution de l\'achat...');
-    final success = await provider.buyCoins(package);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: secondaryGrey,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: primaryYellow),
+            SizedBox(height: 16),
+            Text('Traitement en cours...', style: TextStyle(color: Colors.white)),
+            SizedBox(height: 8),
+            Text('Veuillez patienter', style: TextStyle(color: Colors.grey[400])),
+          ],
+        ),
+      ),
+    );
 
+    bool success = false;
+    try {
+      success = await provider.buyCoins(package);
+    } finally {
+      // Fermer le dialog de chargement
+      Navigator.pop(context); // ferme le dialog de chargement
+    }
     if (success && mounted) {
       print('✅ Achat réussi ! ${package.coinsAmount} pièces ajoutées');
 
@@ -262,8 +285,8 @@ class _BuyCoinsPageState extends State<BuyCoinsPage>
 
       _showSuccessDialog(package);
 
-      // Retourner à la page précédente après 2 secondes
-      Future.delayed(const Duration(seconds: 2), () {
+      // Retourner à la page précédente après 1 secondes
+      Future.delayed(const Duration(seconds: 1), () {
         if (mounted) Navigator.pop(context);
       });
     } else if (mounted) {

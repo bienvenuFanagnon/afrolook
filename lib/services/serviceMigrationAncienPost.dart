@@ -233,9 +233,202 @@ class MigrationAncienPostService {
   }
 }
 
+Future<void> migrateDatingProfilesToLowercase() async {
+  final firestore = FirebaseFirestore.instance;
+  print('🔍 Migration: Récupération de tous les profils dating...');
+  final snapshot = await firestore.collection('dating_profiles').get();
+  final totalDocs = snapshot.docs.length;
+  print('📊 ${totalDocs} profils trouvés.');
 
+  if (totalDocs == 0) {
+    print('✅ Aucun profil à migrer.');
+    return;
+  }
 
+  int updatedCount = 0;
+  int batchCount = 0;
+  const batchLimit = 500; // Firestore batch limit
 
+  // Process in batches of 500
+  for (int i = 0; i < totalDocs; i += batchLimit) {
+    final end = (i + batchLimit < totalDocs) ? i + batchLimit : totalDocs;
+    final batch = firestore.batch();
+    int batchUpdates = 0;
+
+    for (int j = i; j < end; j++) {
+      final doc = snapshot.docs[j];
+      final data = doc.data();
+      final sexe = data['sexe'] as String?;
+      final rechercheSexe = data['rechercheSexe'] as String?;
+      bool needUpdate = false;
+      Map<String, dynamic> updates = {};
+
+      if (sexe != null && sexe != sexe.toLowerCase()) {
+        updates['sexe'] = sexe.toLowerCase();
+        needUpdate = true;
+      }
+      if (rechercheSexe != null && rechercheSexe != rechercheSexe.toLowerCase()) {
+        updates['rechercheSexe'] = rechercheSexe.toLowerCase();
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        batch.update(doc.reference, updates);
+        batchUpdates++;
+        updatedCount++;
+      }
+    }
+
+    if (batchUpdates > 0) {
+      batchCount++;
+      print('📦 Envoi du lot $batchCount (${i+1} - $end) avec $batchUpdates mise(s) à jour...');
+      await batch.commit();
+      print('✅ Lot $batchCount envoyé.');
+    } else {
+      print('ℹ️ Aucune mise à jour dans le lot ${i+1}-$end.');
+    }
+  }
+
+  print('🎉 Migration terminée ! $updatedCount profils mis à jour.');
+}
+
+Future<void> migrateInitialDatingProfilesForMen() async {
+  try {
+    print('🚀 === DÉBUT DE LA MIGRATION DES PROFILS DATING (HOMMES) ===');
+    print('📅 Date de migration: ${DateTime.now()}');
+
+    // Récupérer tous les utilisateurs dont le genre est "Homme"
+    print('🔍 Recherche des utilisateurs avec genre = "Homme"...');
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .where('genre', isEqualTo: 'Homme')
+        .get();
+
+    print('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
+
+    int createdCount = 0;
+    int skippedCount = 0;
+    int errorCount = 0;
+
+    for (var userDoc in usersSnapshot.docs) {
+      try {
+        final userData = UserData.fromJson(userDoc.data());
+        print('\n--- Traitement de l\'utilisateur ---');
+        print('📱 ID: ${userData.id}');
+        print('👤 Pseudo: ${userData.pseudo}');
+        print('📧 Email: ${userData.email}');
+
+        // Vérifier si un profil dating existe déjà
+        final existingProfile = await FirebaseFirestore.instance
+            .collection('dating_profiles')
+            .where('userId', isEqualTo: userData.id)
+            .limit(1)
+            .get();
+
+        if (existingProfile.docs.isNotEmpty) {
+          print('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
+          skippedCount++;
+          continue;
+        }
+
+        // Calcul de l'âge avec gestion des différents formats de date
+        final age = _calculateAgeFromUserDataSafe(userData);
+        print('🎂 Âge calculé: $age ans');
+
+        // Calcul du pourcentage de complétion
+        final completionPercentage = _calculateCompletionPercentage(userData);
+        print('📊 Pourcentage de complétion: ${completionPercentage.toStringAsFixed(1)}%');
+
+        // ✅ CALCUL DU SCORE DE POPULARITÉ
+        final userId = userData.id!;
+        print('📊 Calcul du score de popularité pour $userId...');
+
+        // Récupérer les compteurs
+        final likesCount = await FirebaseFirestore.instance
+            .collection('dating_likes')
+            .where('toUserId', isEqualTo: userId)
+            .count()
+            .get();
+
+        final coupsCount = await FirebaseFirestore.instance
+            .collection('dating_coup_de_coeurs')
+            .where('toUserId', isEqualTo: userId)
+            .count()
+            .get();
+
+        final connectionsCount = await FirebaseFirestore.instance
+            .collection('dating_connections')
+            .where('userId1', isEqualTo: userId)
+            .count()
+            .get();
+
+        // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
+        final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
+        print('📊 Score calculé: $popularityScore (likes: ${likesCount.count}, coups: ${coupsCount.count}, connexions: ${connectionsCount.count})');
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        print('⏰ Timestamp actuel: $now');
+
+        final profileId = FirebaseFirestore.instance.collection('dating_profiles').doc().id;
+
+        final datingProfile = {
+          'id': profileId,
+          'userId': userData.id,
+          'pseudo': userData.pseudo ?? '',
+          'imageUrl': userData.imageUrl ?? '',
+          'photosUrls': [userData.imageUrl ?? ''],
+          'bio': userData.apropos ?? '',
+          'age': age,
+          'sexe': userData.genre!.toLowerCase() ?? '',
+          'ville': userData.adresse?.split(',')[0] ?? '',
+          'pays': userData.userPays?.name ?? '',
+          'profession': null,
+          'centresInteret': [],
+          'rechercheSexe': 'femme', // 👈 Adapté : hommes cherchant des femmes (à modifier selon votre logique)
+          'rechercheAgeMin': 18,
+          'rechercheAgeMax': 50,
+          'recherchePays': '',
+          'isVerified': false,
+          'isActive': true,
+          'isProfileComplete': completionPercentage >= 100,
+          'completionPercentage': completionPercentage,
+          'createdByMigration': true,
+          'likesCount': 0,
+          'coupsDeCoeurCount': 0,
+          'connexionsCount': 0,
+          'visitorsCount': 0,
+          'popularityScore': popularityScore,
+          'createdAt': now,
+          'updatedAt': now,
+        };
+
+        print('💾 Création du profil dating...');
+        await FirebaseFirestore.instance
+            .collection('dating_profiles')
+            .doc(profileId)
+            .set(datingProfile);
+
+        print('✅ Profil dating créé avec succès (ID: $profileId, Score: $popularityScore)');
+        createdCount++;
+
+      } catch (e) {
+        print('❌ Erreur lors du traitement de l\'utilisateur ${userDoc.id}: $e');
+        errorCount++;
+      }
+    }
+
+    print('\n📊 === RÉSUMÉ DE LA MIGRATION (HOMMES) ===');
+    print('✅ Profils créés: $createdCount');
+    print('⚠️ Profils ignorés (déjà existants): $skippedCount');
+    print('❌ Erreurs: $errorCount');
+    print('🎯 Total traité: ${usersSnapshot.docs.length}');
+    print('✅ Migration des profils dating des hommes terminée avec succès!');
+
+  } catch (e) {
+    print('❌ ERREUR FATALE lors de la migration: $e');
+    print('📋 Stack trace: ${StackTrace.current}');
+  }
+}
 // Ajoutez cette méthode dans votre UserAuthProvider existant
 Future<void> migrateInitialDatingProfiles() async {
   try {
@@ -324,7 +517,7 @@ Future<void> migrateInitialDatingProfiles() async {
           'photosUrls': [userData.imageUrl ?? ''],
           'bio': userData.apropos ?? '',
           'age': age,
-          'sexe': userData.genre ?? '',
+          'sexe': userData.genre!.toLowerCase() ?? '',
           'ville': userData.adresse?.split(',')[0] ?? '',
           'pays': userData.userPays?.name ?? '',
           'profession': null,

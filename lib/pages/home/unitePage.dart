@@ -3,13 +3,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/UserServices/ServiceWidget.dart';
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/component/showUserDetails.dart';
+
 import 'package:afrotok/pages/contenuPayant/contentDetails.dart';
 import 'package:afrotok/pages/contenuPayant/contentSerie.dart';
-import 'package:afrotok/pages/home/storyCustom/StoryCustom.dart';
-import 'package:afrotok/pages/story/afroStory/storie/storyFormChoise.dart';
-import 'package:afrotok/pages/userPosts/postWidgets/postHomeWidget.dart';
+
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';

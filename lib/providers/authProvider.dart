@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 154;
+  late int app_version_code = 156;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1442,18 +1442,28 @@ class UserAuthProvider extends ChangeNotifier {
       print("❌ Erreur lors de l’envoi de la notification : $e");
     }
   }
-
   Future<void> notifySubscribersOfInteraction({
-    required String actionUserId,      // L'utilisateur qui fait l'action
-    required String postOwnerId,       // Le propriétaire du post
-    required String postId,            // Le post concerné
-    required String actionType,        // like, comment, favorite, share
+    required String actionUserId,   // L'utilisateur qui fait l'action
+    required String postOwnerId,    // L'utilisateur propriétaire du post (si post de canal, c'est le créateur du post, mais on utilisera le canal)
+    required String postId,         // Le post concerné
+    required String actionType,     // like, comment, favorite, share
     String? postDescription,
     String? postImageUrl,
     String? postDataType,
   }) async {
     try {
-      // ✅ 1. Récupérer les infos de l'utilisateur qui fait l'action
+      // ✅ 1. Récupérer les infos du post pour savoir si c'est un post de canal
+      final postDoc = await FirebaseFirestore.instance
+          .collection('Posts')
+          .doc(postId)
+          .get();
+
+      if (!postDoc.exists) return;
+
+      final postData = postDoc.data()!;
+      final canalId = postData['canal_id'] as String?;
+
+      // ✅ 2. Récupérer les infos de l'utilisateur qui fait l'action
       final actionUserDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(actionUserId)
@@ -1465,26 +1475,50 @@ class UserAuthProvider extends ChangeNotifier {
       final actionUserPseudo = actionUserData['pseudo'] ?? 'Utilisateur';
       final actionUserImage = actionUserData['imageUrl'] ?? '';
 
-      // ✅ 2. Récupérer les infos du propriétaire du post
-      final postOwnerDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(postOwnerId)
-          .get();
-
-      if (!postOwnerDoc.exists) return;
-
-      final postOwnerData = postOwnerDoc.data()!;
-      final postOwnerPseudo = postOwnerData['pseudo'] ?? 'Utilisateur';
-
-      // ✅ 3. Récupérer les abonnés du propriétaire
+      // ✅ 3. Variables pour le propriétaire du contenu (canal ou utilisateur)
+      String ownerName = '';
+      String ownerId = '';
       List<String> subscriberIds = [];
-      if (postOwnerData['userAbonnesIds'] != null) {
-        subscriberIds = List<String>.from(postOwnerData['userAbonnesIds']);
+
+      if (canalId != null && canalId.isNotEmpty) {
+        // C'est un post de canal
+        final canalDoc = await FirebaseFirestore.instance
+            .collection('Canals')
+            .doc(canalId)
+            .get();
+
+        if (canalDoc.exists) {
+          final canalData = canalDoc.data()!;
+          ownerName = canalData['titre'] ?? 'Canal';
+          ownerId = canalId;
+
+          // Récupérer les abonnés du canal (subscribersId)
+          subscriberIds = List<String>.from(canalData['subscribersId'] ?? []);
+        } else {
+          // Le canal n'existe pas, on ne peut pas notifier
+          return;
+        }
+      } else {
+        // C'est un post d'utilisateur standard
+        final postOwnerDoc = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(postOwnerId)
+            .get();
+
+        if (!postOwnerDoc.exists) return;
+
+        final postOwnerData = postOwnerDoc.data()!;
+        ownerName = postOwnerData['pseudo'] ?? 'Utilisateur';
+        ownerId = postOwnerId;
+
+        // Récupérer les abonnés de l'utilisateur
+        subscriberIds = List<String>.from(postOwnerData['userAbonnesIds'] ?? []);
       }
 
+      // ✅ 4. Si aucun abonné, on sort
       if (subscriberIds.isEmpty) return;
 
-      // ✅ 4. Messages selon le type d'action
+      // ✅ 5. Messages selon le type d'action
       String actionMessage = "a aimé";
       String actionTitle = "Like ❤️";
 
@@ -1503,20 +1537,20 @@ class UserAuthProvider extends ChangeNotifier {
           break;
       }
 
-      // ✅ 5. Préparer la description du post
+      // ✅ 6. Préparer la description du post
       String finalDescription = postDescription ?? '';
       if (finalDescription.length > 100) {
         finalDescription = finalDescription.substring(0, 100) + '...';
       }
 
-      // ✅ 6. Image à utiliser
+      // ✅ 7. Image à utiliser
       String imageUrl = postImageUrl ?? actionUserImage;
 
-      // ✅ 7. Timestamp actuel
+      // ✅ 8. Timestamp actuel
       final currentTime = DateTime.now().microsecondsSinceEpoch;
       const twentyMinutes = 20 * 60 * 1000 * 1000; // 20 minutes en microsecondes
 
-      // ✅ 8. Traiter les abonnés par lots (Firestore 'in' limit: 30)
+      // ✅ 9. Traiter les abonnés par lots (Firestore 'in' limit: 30)
       for (int i = 0; i < subscriberIds.length; i += 30) {
         final end = i + 30 > subscriberIds.length ? subscriberIds.length : i + 30;
         final batchIds = subscriberIds.sublist(i, end);
@@ -1527,7 +1561,7 @@ class UserAuthProvider extends ChangeNotifier {
             .get();
 
         final List<String> oneSignalIds = [];
-        final List<String> oneSignalUserIds = []; // Pour stocker les IDs des users avec OneSignal
+        final List<String> oneSignalUserIds = [];
 
         for (var userDoc in usersBatch.docs) {
           final userData = userDoc.data();
@@ -1542,12 +1576,17 @@ class UserAuthProvider extends ChangeNotifier {
                 .doc()
                 .id;
 
+            // Construire le message : si c'est un canal, on mentionne le canal, sinon l'utilisateur
+            final description = canalId != null
+                ? "@$actionUserPseudo $actionMessage le post du canal $ownerName : \"$finalDescription\""
+                : "@$actionUserPseudo $actionMessage le post de @$ownerName : \"$finalDescription\"";
+
             final notification = {
               'id': notifId,
               'titre': actionTitle,
               'media_url': imageUrl,
               'type': actionType.toUpperCase(),
-              'description': "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo : \"$finalDescription\"",
+              'description': description,
               'users_id_view': [],
               'user_id': actionUserId,
               'receiver_id': userDoc.id,
@@ -1579,17 +1618,18 @@ class UserAuthProvider extends ChangeNotifier {
           }
         }
 
-        // ✅ Envoyer les push notifications avec votre fonction existante
+        // ✅ Envoyer les push notifications
         if (oneSignalIds.isNotEmpty) {
-          final pushMessage = "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo";
+          final pushMessage = canalId != null
+              ? "@$actionUserPseudo $actionMessage le post du canal $ownerName"
+              : "@$actionUserPseudo $actionMessage le post de @$ownerName";
 
-          // Utiliser votre sendNotification existante
           await sendNotification(
             appName: actionTitle,
             userIds: oneSignalIds,
             smallImage: imageUrl,
             send_user_id: actionUserId,
-            recever_user_id: '', // Pas de receveur unique car multiple
+            recever_user_id: '',
             message: pushMessage,
             type_notif: actionType.toUpperCase(),
             post_id: postId,
@@ -1598,14 +1638,176 @@ class UserAuthProvider extends ChangeNotifier {
           );
         }
 
-        // Petite pause entre les lots
         await Future.delayed(const Duration(milliseconds: 100));
       }
-
     } catch (e) {
       print('❌ Erreur notifySubscribersOfInteraction: $e');
     }
   }
+  // Future<void> notifySubscribersOfInteraction({
+  //   required String actionUserId,      // L'utilisateur qui fait l'action
+  //   required String postOwnerId,       // Le propriétaire du post
+  //   required String postId,            // Le post concerné
+  //   required String actionType,        // like, comment, favorite, share
+  //   String? postDescription,
+  //   String? postImageUrl,
+  //   String? postDataType,
+  // })
+  // async {
+  //   try {
+  //     // ✅ 1. Récupérer les infos de l'utilisateur qui fait l'action
+  //     final actionUserDoc = await FirebaseFirestore.instance
+  //         .collection('Users')
+  //         .doc(actionUserId)
+  //         .get();
+  //
+  //     if (!actionUserDoc.exists) return;
+  //
+  //     final actionUserData = actionUserDoc.data()!;
+  //     final actionUserPseudo = actionUserData['pseudo'] ?? 'Utilisateur';
+  //     final actionUserImage = actionUserData['imageUrl'] ?? '';
+  //
+  //     // ✅ 2. Récupérer les infos du propriétaire du post
+  //     final postOwnerDoc = await FirebaseFirestore.instance
+  //         .collection('Users')
+  //         .doc(postOwnerId)
+  //         .get();
+  //
+  //     if (!postOwnerDoc.exists) return;
+  //
+  //     final postOwnerData = postOwnerDoc.data()!;
+  //     final postOwnerPseudo = postOwnerData['pseudo'] ?? 'Utilisateur';
+  //
+  //     // ✅ 3. Récupérer les abonnés du propriétaire
+  //     List<String> subscriberIds = [];
+  //     if (postOwnerData['userAbonnesIds'] != null) {
+  //       subscriberIds = List<String>.from(postOwnerData['userAbonnesIds']);
+  //     }
+  //
+  //     if (subscriberIds.isEmpty) return;
+  //
+  //     // ✅ 4. Messages selon le type d'action
+  //     String actionMessage = "a aimé";
+  //     String actionTitle = "Like ❤️";
+  //
+  //     switch (actionType) {
+  //       case 'comment':
+  //         actionMessage = "a commenté";
+  //         actionTitle = "Commentaire 💬";
+  //         break;
+  //       case 'favorite':
+  //         actionMessage = "a ajouté en favoris";
+  //         actionTitle = "Favoris ⭐";
+  //         break;
+  //       case 'share':
+  //         actionMessage = "a partagé";
+  //         actionTitle = "Partage 🔄";
+  //         break;
+  //     }
+  //
+  //     // ✅ 5. Préparer la description du post
+  //     String finalDescription = postDescription ?? '';
+  //     if (finalDescription.length > 100) {
+  //       finalDescription = finalDescription.substring(0, 100) + '...';
+  //     }
+  //
+  //     // ✅ 6. Image à utiliser
+  //     String imageUrl = postImageUrl ?? actionUserImage;
+  //
+  //     // ✅ 7. Timestamp actuel
+  //     final currentTime = DateTime.now().microsecondsSinceEpoch;
+  //     const twentyMinutes = 20 * 60 * 1000 * 1000; // 20 minutes en microsecondes
+  //
+  //     // ✅ 8. Traiter les abonnés par lots (Firestore 'in' limit: 30)
+  //     for (int i = 0; i < subscriberIds.length; i += 30) {
+  //       final end = i + 30 > subscriberIds.length ? subscriberIds.length : i + 30;
+  //       final batchIds = subscriberIds.sublist(i, end);
+  //
+  //       final usersBatch = await FirebaseFirestore.instance
+  //           .collection('Users')
+  //           .where('id', whereIn: batchIds)
+  //           .get();
+  //
+  //       final List<String> oneSignalIds = [];
+  //       final List<String> oneSignalUserIds = []; // Pour stocker les IDs des users avec OneSignal
+  //
+  //       for (var userDoc in usersBatch.docs) {
+  //         final userData = userDoc.data();
+  //         final lastNotifTime = userData['lastNotificationTime'] ?? 0;
+  //
+  //         // ✅ Vérifier le délai de 20 minutes
+  //         if (currentTime - lastNotifTime >= twentyMinutes || lastNotifTime == 0) {
+  //
+  //           // ✅ Créer la notification Firebase
+  //           final notifId = FirebaseFirestore.instance
+  //               .collection('Notifications')
+  //               .doc()
+  //               .id;
+  //
+  //           final notification = {
+  //             'id': notifId,
+  //             'titre': actionTitle,
+  //             'media_url': imageUrl,
+  //             'type': actionType.toUpperCase(),
+  //             'description': "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo : \"$finalDescription\"",
+  //             'users_id_view': [],
+  //             'user_id': actionUserId,
+  //             'receiver_id': userDoc.id,
+  //             'post_id': postId,
+  //             'post_data_type': postDataType ?? 'IMAGE',
+  //             'createdAt': currentTime,
+  //             'updatedAt': currentTime,
+  //             'status': 'VALIDE',
+  //           };
+  //
+  //           // ✅ Sauvegarder la notification
+  //           await FirebaseFirestore.instance
+  //               .collection('Notifications')
+  //               .doc(notifId)
+  //               .set(notification);
+  //
+  //           // ✅ Mettre à jour le timestamp
+  //           await FirebaseFirestore.instance
+  //               .collection('Users')
+  //               .doc(userDoc.id)
+  //               .update({'lastNotificationTime': currentTime});
+  //
+  //           // ✅ Collecter pour la push notification
+  //           if (userData['oneIgnalUserid'] != null &&
+  //               (userData['oneIgnalUserid'] as String).length > 5) {
+  //             oneSignalIds.add(userData['oneIgnalUserid']);
+  //             oneSignalUserIds.add(userDoc.id);
+  //           }
+  //         }
+  //       }
+  //
+  //       // ✅ Envoyer les push notifications avec votre fonction existante
+  //       if (oneSignalIds.isNotEmpty) {
+  //         final pushMessage = "@$actionUserPseudo $actionMessage le post de @$postOwnerPseudo";
+  //
+  //         // Utiliser votre sendNotification existante
+  //         await sendNotification(
+  //           appName: actionTitle,
+  //           userIds: oneSignalIds,
+  //           smallImage: imageUrl,
+  //           send_user_id: actionUserId,
+  //           recever_user_id: '', // Pas de receveur unique car multiple
+  //           message: pushMessage,
+  //           type_notif: actionType.toUpperCase(),
+  //           post_id: postId,
+  //           post_type: postDataType ?? 'IMAGE',
+  //           chat_id: '',
+  //         );
+  //       }
+  //
+  //       // Petite pause entre les lots
+  //       await Future.delayed(const Duration(milliseconds: 100));
+  //     }
+  //
+  //   } catch (e) {
+  //     print('❌ Erreur notifySubscribersOfInteraction: $e');
+  //   }
+  // }
 // 🔹 Fonction helper pour traiter un utilisateur
   Future<_UserNotificationResult> _processUserNotification({
     required UserData user,

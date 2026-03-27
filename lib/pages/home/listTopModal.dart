@@ -20,6 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/models/model_data.dart';
 
+import '../dating/dating_entry_page.dart';
 import '../info.dart';
 import '../user/mes_gains_post_page.dart';
 class TopFiveModal {
@@ -3167,6 +3168,7 @@ if(userProvider.listAllUsers.isNotEmpty){
     print('🔄 Tous les modals ont été réinitialisés');
   }
 }
+
 
 
 // Widget helper pour les stats
