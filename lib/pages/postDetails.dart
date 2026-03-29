@@ -3,11 +3,13 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
+import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
@@ -122,6 +124,271 @@ class _DetailsPostState extends State<DetailsPost>
   final String _lastViewDatePrefix = 'last_view_date_';
   bool _isSharing = false;
 
+  // Support par publicité
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
+  bool _isSupporting = false;
+  bool? _hasSeenSupportModal;
+
+  Future<void> _loadSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    final key = 'has_seen_support_modal_$userId';
+    setState(() {
+      _hasSeenSupportModal = prefs.getBool(key) ?? false;
+    });
+  }
+
+  Future<void> _markSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    await prefs.setBool('has_seen_support_modal_$userId', true);
+    setState(() {
+      _hasSeenSupportModal = true;
+    });
+  }
+
+  Future<bool> _hasSupportedToday(String postId, String userId) async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+    final endOfDay = startOfDay + Duration(days: 1).inMilliseconds;
+
+    final query = await firestore
+        .collection('post_supports')
+        .where('postId', isEqualTo: postId)
+        .where('userId', isEqualTo: userId)
+        .where('supportedAt', isGreaterThanOrEqualTo: startOfDay)
+        .where('supportedAt', isLessThan: endOfDay)
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
+  }
+
+  Future<void> _recordSupport(String postId, String userId) async {
+    final support = PostSupport(
+      id: firestore.collection('post_supports').doc().id,
+      postId: postId,
+      userId: userId,
+      supportedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    await firestore.collection('post_supports').doc(support.id).set(support.toJson());
+  }
+
+
+  Future<void> _handleSupportAd() async {
+    // if (_isSupporting) return;
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == widget.post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    // Vérifier la limite quotidienne
+    final hasSupported = await _hasSupportedToday(widget.post.id!, currentUserId!);
+    if (hasSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (_hasSeenSupportModal == null) await _loadSupportModalSeen();
+    if (_hasSeenSupportModal == false) {
+      _showSupportModal();
+      return;
+    }
+    _startSupportAd();
+  }
+
+  void _startSupportAd() {
+    setState(() {
+      _isSupporting = true;
+      _showRewardedAd = true;
+    });
+    // Attendre que le widget soit monté
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_rewardedAdKey.currentState != null) {
+        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
+        if (ready) {
+          _rewardedAdKey.currentState!.showAd();
+        } else {
+          setState(() {
+            _isSupporting = false;
+            _showRewardedAd = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        setState(() {
+          _isSupporting = false;
+          _showRewardedAd = false;
+        });
+      }
+    });
+  }
+
+  void _showSupportModal() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _twitterCardBg,
+        title: Row(
+          children: [
+            Icon(Icons.volunteer_activism, color: _twitterYellow),
+            SizedBox(width: 8),
+            Text('Soutenir le créateur', style: TextStyle(color: _twitterTextPrimary)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'En regardant cette publicité, vous offrez 10 pièces au créateur de ce post.',
+              style: TextStyle(color: _twitterTextSecondary),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Cela l’encourage à produire plus de contenu et peut lui rapporter jusqu’à 100€ (environ 65 000 FCFA) par mois !',
+              style: TextStyle(color: _twitterTextPrimary),
+            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.monetization_on, color: _twitterYellow),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '💰 Les pièces récoltées peuvent être converties en argent réel.',
+                      style: TextStyle(color: _twitterTextPrimary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Plus tard', style: TextStyle(color: _twitterTextSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _markSupportModalSeen();
+              _startSupportAd();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _twitterYellow),
+            child: Text('Regarder la pub', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onSupportAdRewarded() async {
+    final currentUserId = authProvider.loginUserData.id;
+    final postId = widget.post.id!;
+    final creatorId = widget.post.user_id!;
+
+    // Incrémenter le compteur de pub sur le post
+    final postRef = firestore.collection('Posts').doc(postId);
+    await postRef.update({
+      'adSupportCount': FieldValue.increment(1),
+    });
+
+    // Créditer le créateur (10 pièces)
+    final creatorRef = firestore.collection('Users').doc(creatorId);
+    await creatorRef.update({
+      'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+    });
+
+    // Incrémenter le compteur du spectateur
+    final viewerRef = firestore.collection('Users').doc(currentUserId);
+    await viewerRef.update({
+      'totalAdViewsSupported': FieldValue.increment(1),
+    });
+
+    // Enregistrer le soutien (pour la limite quotidienne)
+    await _recordSupport(postId, currentUserId!);
+
+    // Envoyer une notification au créateur
+    await _sendSupportNotification(creatorId, currentUserId, postId);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🎉 Merci ! Le créateur a reçu 10 pièces.'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Mettre à jour l'état local
+    setState(() {
+      widget.post.adSupportCount = (widget.post.adSupportCount ?? 0) + 1;
+      _isSupporting = false;
+      _showRewardedAd = false;
+    });
+
+
+  }
+
+  Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    final supporter = authProvider.loginUserData;
+    final supporterName = supporter.pseudo ?? 'Un utilisateur';
+
+    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+10 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
+
+    final notificationId = firestore.collection('Notifications').doc().id;
+    final notification = NotificationData(
+      id: notificationId,
+      titre: "Soutien 💪 +10 pièces",
+      media_url: supporter.imageUrl ?? '',
+      type: NotificationType.SUPPORT.name,
+      description: description,
+      users_id_view: [],
+      user_id: supporterId,
+      receiver_id: creatorId,
+      post_id: postId,
+      post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+      updatedAt: now,
+      createdAt: now,
+      status: PostStatus.VALIDE.name,
+    );
+    await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+
+    final creatorDoc = await firestore.collection('Users').doc(creatorId).get();
+    final creatorToken = creatorDoc.data()?['oneIgnalUserid'] as String?;
+    if (creatorToken != null && creatorToken.isNotEmpty) {
+      await authProvider.sendNotification(
+        userIds: [creatorToken],
+        smallImage: supporter.imageUrl ?? '',
+        send_user_id: supporterId,
+        recever_user_id: creatorId,
+        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! +10 pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
+        post_id: postId,
+        post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+        chat_id: '',
+      );
+    }
+    printVm("💪 @$supporterName a soutenu votre post ! +10 pièces. Gagnez jusqu'à 100€/mois !");
+  }
 // 3. Ajouter la méthode de chargement :
   Future<void> _loadAdvertisement() async {
     if (widget.post.advertisementId == null) return;
@@ -975,6 +1242,7 @@ class _DetailsPostState extends State<DetailsPost>
     if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
     }
+    _loadSupportModalSeen();
     _initSharedPreferences();
     _isAd = widget.post.isAdvertisement == true;
     if (_isAd && widget.post.advertisementId != null) {
@@ -1008,7 +1276,66 @@ class _DetailsPostState extends State<DetailsPost>
     // Incrémenter les vues
     _incrementViews();
   }
+  Widget _buildSupportButton() {
+    final hasAccess = _hasAccessToContent();
+    final isOwner = authProvider.loginUserData.id == widget.post.user_id;
+    final count = widget.post.adSupportCount ?? 0;
 
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _twitterCardBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _twitterYellow.withOpacity(0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isSupporting)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _twitterYellow),
+                )
+              else
+                Icon(Icons.volunteer_activism, color: _twitterYellow, size: 18),
+              SizedBox(width: 6),
+              Text(
+                'Soutenir le créateur',
+                style: TextStyle(
+                  color: _twitterTextPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (count > 0) ...[
+                SizedBox(width: 6),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _twitterYellow.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      color: _twitterYellow,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   @override
   void dispose() {
     _animationController.dispose();
@@ -3200,30 +3527,32 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   child: Text(
                     _isExpanded ? "Voir moins" : "Voir plus",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: _twitterBlue,
                     ),
                   ),
                 ),
               ),
+              _buildSupportButton(),
               buildTotalInteractions(
                 totalCount: widget.post.totalInteractions ?? 0,
                 color: Colors.blue,
-                showLabel: true,
+                showLabel: false,
               ),
             ],
           ),
 
         if (!isLong)
           Row(
+            spacing: 5,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-
+              _buildSupportButton(),
               buildTotalInteractions(
                 totalCount: widget.post.totalInteractions ?? 0,
                 color: Colors.blue,
-                showLabel: true,
+                showLabel: false,
               ),
             ],
           ),
@@ -4870,6 +5199,22 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                             ],
                           ),
                         ),
+
+
+                      if (_showRewardedAd)
+                        RewardedAdWidget(
+                          key: _rewardedAdKey,
+                          onUserEarnedReward: (reward) async {
+                            await _onSupportAdRewarded();
+                          },
+                          onAdDismissed: () {
+                            setState(() {
+                              _showRewardedAd = false;
+                              _isSupporting = false;
+                            });
+                          },
+                          child: const SizedBox.shrink(),
+                        ),
                     ],
                   ),
                 );
@@ -4951,6 +5296,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
+
   }
 
   @override

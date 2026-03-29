@@ -1315,6 +1315,9 @@ class UserData {
   int? acceptedTermsAt;                 // Date d'acceptation des conditions
   int? acceptedCommunityRulesAt;        // Date d'acceptation des règles
 
+  int? totalAdViewsSupported = 0; // total des pubs de soutien regardées par l'utilisateur
+  int? totalCoinsEarnedFromAdSupport = 0; // total des pièces gagnées via les pubs de soutien (créateur)
+
   UserData({
     this.reference,
     this.pseudo,
@@ -1389,7 +1392,10 @@ class UserData {
     this.totalCoinsSpent = 0,
     this.totalCoinsEarned = 0,
     this.totalCoinsConverted = 0,
+
     this.creatorCoinsBalance = 0,
+    this.totalAdViewsSupported = 0,
+    this.totalCoinsEarnedFromAdSupport = 0,
     this.datingSubscription = false,
     this.isDatingProfileEnabled = false,
     this.isCreatorProfileEnabled = false,
@@ -1445,6 +1451,9 @@ class UserData {
     mesTiktokPubs = json['mesTiktokPubs'] ?? 0;
     partage = json['partage'] ?? 0;
     pointContribution = json['pointContribution'] ?? 0;
+
+    totalAdViewsSupported = json['totalAdViewsSupported'] ?? 0;
+    totalCoinsEarnedFromAdSupport = json['totalCoinsEarnedFromAdSupport'] ?? 0;
     userlikes = json['userlikes'] ?? 0;
     userjaimes = json['userjaimes'] ?? 0;
     likes = json['likes'] ?? 0;
@@ -1569,6 +1578,9 @@ class UserData {
     data['isCreatorProfileEnabled'] = isCreatorProfileEnabled;
     data['acceptedTermsAt'] = acceptedTermsAt;
     data['acceptedCommunityRulesAt'] = acceptedCommunityRulesAt;
+
+    data['totalAdViewsSupported'] = totalAdViewsSupported;
+    data['totalCoinsEarnedFromAdSupport'] = totalCoinsEarnedFromAdSupport;
     // Ajouter les autres champs déjà présents comme vu plus haut...
     return data;
   }
@@ -1652,6 +1664,9 @@ class Post {
 
   int? totalInteractions;  // Compteur de toutes les interactions (likes + commentaires + favoris + partages)
 
+  int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
+
+
   Post({
     this.id,
     this.comments,
@@ -1700,6 +1715,7 @@ class Post {
     this.usersVotesIds,
     this.users_favorite_id,
     this.favoritesCount = 0,
+    this.adSupportCount = 0,
     this.advertisementId,
     this.isAdvertisement = false,
   });
@@ -1753,6 +1769,7 @@ class Post {
 
     // Champs challenge
     votesChallenge = json['votes_challenge'] ?? 0;
+    adSupportCount = json['adSupportCount'] ?? 0;
     usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
 
     seenByUsersCount = json['seen_by_users_count'] ?? 0;
@@ -1867,6 +1884,7 @@ class Post {
 
     data['advertisementId'] = advertisementId;
     data['isAdvertisement'] = isAdvertisement;
+    data['adSupportCount'] = adSupportCount;
     return data;
   }
 
@@ -1888,7 +1906,35 @@ class Post {
     return engagementPerHour > 5.0;
   }
 }
+class PostSupport {
+  String? id;
+  String? postId;
+  String? userId;
+  int? supportedAt; // timestamp en millisecondes
 
+  PostSupport({
+    this.id,
+    this.postId,
+    this.userId,
+    this.supportedAt,
+  });
+
+  PostSupport.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    postId = json['postId'];
+    userId = json['userId'];
+    supportedAt = json['supportedAt'];
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'postId': postId,
+      'userId': userId,
+      'supportedAt': supportedAt,
+    };
+  }
+}
 class Advertisement {
   String? id;
   String? postId; // Référence au post original
@@ -4916,6 +4962,7 @@ enum NotificationType {
   MESSAGE,
   POST,
   NEWPOST,
+  SUPPORT,
   FAVORITE,
   PARRAINAGE,
   MARKETING,
@@ -4927,7 +4974,7 @@ enum NotificationType {
   CHALLENGE,
   CHRONIQUE,
   SERVICE,
-  USER, GAIN
+  USER, GAIN,
 }
 
 enum TypeEntreprise { personnel, partenaire }

@@ -3,8 +3,12 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+import 'package:afrotok/pages/pub/native_ad_widget.dart';
+import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -92,6 +96,11 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
   List<String> _viewedVideoPostIds = [];
   DocumentSnapshot? _lastDocument;
 
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
+  bool _isSupporting = false;
+  bool? _hasSeenSupportModal;
+
   // Variables pour stocker les données récupérées individuellement
   UserData? _currentUser;
   Canal? _currentCanal;
@@ -117,7 +126,261 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
     return widget.initialPost.type == 'CHALLENGEPARTICIPATION';
   }
 
+  Future<void> _loadSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    final key = 'has_seen_support_modal_$userId';
+    setState(() {
+      _hasSeenSupportModal = prefs.getBool(key) ?? false;
+    });
+  }
 
+  Future<void> _markSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    await prefs.setBool('has_seen_support_modal_$userId', true);
+    setState(() {
+      _hasSeenSupportModal = true;
+    });
+  }
+
+  Future<bool> _hasSupportedToday(String postId, String userId) async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+    final endOfDay = startOfDay + Duration(days: 1).inMilliseconds;
+
+    final query = await _firestore
+        .collection('post_supports')
+        .where('postId', isEqualTo: postId)
+        .where('userId', isEqualTo: userId)
+        .where('supportedAt', isGreaterThanOrEqualTo: startOfDay)
+        .where('supportedAt', isLessThan: endOfDay)
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
+  }
+
+  Future<void> _recordSupport(String postId, String userId) async {
+    final support = PostSupport(
+      id: _firestore.collection('post_supports').doc().id,
+      postId: postId,
+      userId: userId,
+      supportedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    await _firestore.collection('post_supports').doc(support.id).set(support.toJson());
+  }
+
+  Future<void> _handleSupportAd(Post post) async {
+    // if (_isSupporting) return;
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final hasSupported = await _hasSupportedToday(post.id!, currentUserId!);
+    if (hasSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (_hasSeenSupportModal == null) await _loadSupportModalSeen();
+    if (_hasSeenSupportModal == false) {
+      _showSupportModal(post);
+      return;
+    }
+    _startSupportAd(post);
+  }
+
+  void _startSupportAd(Post post) {
+    setState(() {
+      _isSupporting = true;
+      _showRewardedAd = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_rewardedAdKey.currentState != null) {
+        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
+        if (ready) {
+          _rewardedAdKey.currentState!.showAd();
+        } else {
+          setState(() {
+            _isSupporting = false;
+            _showRewardedAd = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        setState(() {
+          _isSupporting = false;
+          _showRewardedAd = false;
+        });
+      }
+    });
+  }
+
+  void _showSupportModal(Post post) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _twitterCardBg,
+        title: Row(
+          children: [
+            Icon(Icons.volunteer_activism, color: _twitterYellow),
+            SizedBox(width: 8),
+            Text('Soutenir le créateur', style: TextStyle(color: _twitterTextPrimary)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'En regardant cette publicité, vous offrez 10 pièces au créateur de ce post.',
+              style: TextStyle(color: _twitterTextSecondary),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Cela l’encourage à produire plus de contenu et peut lui rapporter jusqu’à 100€ (environ 65 000 FCFA) par mois !',
+              style: TextStyle(color: _twitterTextPrimary),
+            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.monetization_on, color: _twitterYellow),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '💰 Les pièces récoltées peuvent être converties en argent réel.',
+                      style: TextStyle(color: _twitterTextPrimary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Plus tard', style: TextStyle(color: _twitterTextSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _markSupportModalSeen();
+              _startSupportAd(post);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _twitterYellow),
+            child: Text('Regarder la pub', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onSupportAdRewarded(Post post) async {
+    final currentUserId = authProvider.loginUserData.id;
+    final postId = post.id!;
+    final creatorId = post.user_id!;
+
+    // Incrémenter le compteur de pub sur le post
+    final postRef = _firestore.collection('Posts').doc(postId);
+    await postRef.update({
+      'adSupportCount': FieldValue.increment(1),
+    });
+
+    // Créditer le créateur (10 pièces)
+    final creatorRef = _firestore.collection('Users').doc(creatorId);
+    await creatorRef.update({
+      'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+    });
+
+    // Incrémenter le compteur du spectateur
+    final viewerRef = _firestore.collection('Users').doc(currentUserId);
+    await viewerRef.update({
+      'totalAdViewsSupported': FieldValue.increment(1),
+    });
+
+    // Enregistrer le soutien
+    await _recordSupport(postId, currentUserId!);
+
+    // Envoyer une notification au créateur
+    await _sendSupportNotification(creatorId, currentUserId!, postId, post);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🎉 Merci ! Le créateur a reçu 10 pièces.'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Mettre à jour l'état local
+    setState(() {
+      post.adSupportCount = (post.adSupportCount ?? 0) + 1;
+      _isSupporting = false;
+      _showRewardedAd = false;
+    });
+
+
+  }
+
+  Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId, Post post) async {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    final supporter = authProvider.loginUserData;
+    final supporterName = supporter.pseudo ?? 'Un utilisateur';
+
+    final description = "@$supporterName a soutenu votre vidéo en regardant une publicité ! (+10 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
+
+    final notificationId = _firestore.collection('Notifications').doc().id;
+    final notification = NotificationData(
+      id: notificationId,
+      titre: "Soutien 💪 +10 pièces",
+      media_url: supporter.imageUrl ?? '',
+      type: NotificationType.SUPPORT.name,
+      description: description,
+      users_id_view: [],
+      user_id: supporterId,
+      receiver_id: creatorId,
+      post_id: postId,
+      post_data_type: PostDataType.VIDEO.name,
+      updatedAt: now,
+      createdAt: now,
+      status: PostStatus.VALIDE.name,
+    );
+    await _firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+
+    final creatorDoc = await _firestore.collection('Users').doc(creatorId).get();
+    final creatorToken = creatorDoc.data()?['oneIgnalUserid'] as String?;
+    if (creatorToken != null && creatorToken.isNotEmpty) {
+      await authProvider.sendNotification(
+        userIds: [creatorToken],
+        smallImage: supporter.imageUrl ?? '',
+        send_user_id: supporterId,
+        recever_user_id: creatorId,
+        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! +10 pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
+        post_id: postId,
+        post_type: PostDataType.VIDEO.name,
+        chat_id: '',
+      );
+    }
+  }
   // Vérifier si l'utilisateur a accès au contenu
   bool _hasAccessToContent(Post post) {
     final canal = post.canal ?? _currentCanal;
@@ -240,7 +503,7 @@ class _VideoTikTokPageDetailsState extends State<VideoTikTokPageDetails> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadPostRelations();
     _pageController = PageController();
-
+    _loadSupportModalSeen();
     // Initialiser les fonctionnalités de challenge
     if (_isLookChallenge && widget.initialPost.challenge_id != null) {
       _loadChallengeData();
@@ -1886,9 +2149,88 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   }
 
 // Modifiez également la méthode _buildUserInfo pour inclure les stats si nécessaire
+//   Widget _buildUserInfo(Post post) {
+//     final user = post.user;
+//     final canal = post.canal;
+//
+//     return Positioned(
+//       bottom: 120,
+//       left: 16,
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           if (canal != null) ...[
+//             GestureDetector(
+//               onTap: () {
+//                 if (canal != null) {
+//                   Navigator.push(
+//                     context,
+//                     MaterialPageRoute(
+//                       builder: (context) => CanalDetails(canal: canal),
+//                     ),
+//                   );
+//                 }
+//               },
+//               child: Text(
+//                 '#${canal. titre ?? ''}',
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                   fontSize: 16,
+//                 ),
+//               ),
+//             ),
+//             Text(
+//               '${canal.usersSuiviId?.length ?? 0} abonnés',
+//               style: TextStyle(color: Colors.white),
+//             ),
+//           ] else if (user != null) ...[
+//             GestureDetector(
+//               onTap: () {
+//                 if (user != null) {
+//                   showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+//                 }
+//               },
+//               child: Text(
+//                 '@${user.pseudo ?? ''}',
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                   fontSize: 16,
+//                 ),
+//               ),
+//             ),
+//             Text(
+//               '${user.userAbonnesIds?.length ?? 0} abonnés',
+//               style: TextStyle(color: Colors.white),
+//             ),
+//           ],
+//           SizedBox(height: 8),
+//
+//           // Statistiques rapides sous les infos utilisateur
+//           _buildQuickStats(post),
+//
+//           SizedBox(height: 8),
+//           if (post.description != null)
+//             Container(
+//               constraints: BoxConstraints(maxWidth: 250),
+//               child: Text(
+//                 post.description!,
+//                 style: TextStyle(color: Colors.white),
+//                 maxLines: 3,
+//                 overflow: TextOverflow.ellipsis,
+//               ),
+//             ),
+//         ],
+//       ),
+//     );
+//   }
   Widget _buildUserInfo(Post post) {
     final user = post.user;
     final canal = post.canal;
+    final hasAccess = _hasAccessToContent(post);
+    final isOwner = authProvider.loginUserData.id == post.user_id;
+    final count = post.adSupportCount ?? 0;
 
     return Positioned(
       bottom: 120,
@@ -1899,17 +2241,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           if (canal != null) ...[
             GestureDetector(
               onTap: () {
-                if (canal != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CanalDetails(canal: canal),
-                    ),
-                  );
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CanalDetails(canal: canal),
+                  ),
+                );
               },
               child: Text(
-                '#${canal. titre ?? ''}',
+                '#${canal.titre ?? ''}',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -1924,9 +2264,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ] else if (user != null) ...[
             GestureDetector(
               onTap: () {
-                if (user != null) {
-                  showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
-                }
+                showUserDetailsModalDialog(
+                  user,
+                  MediaQuery.of(context).size.width,
+                  MediaQuery.of(context).size.height,
+                  context,
+                );
               },
               child: Text(
                 '@${user.pseudo ?? ''}',
@@ -1942,20 +2285,73 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               style: TextStyle(color: Colors.white),
             ),
           ],
-          SizedBox(height: 8),
+          SizedBox(height: 4),
 
-          // Statistiques rapides sous les infos utilisateur
-          _buildQuickStats(post),
-
-          SizedBox(height: 8),
           if (post.description != null)
             Container(
               constraints: BoxConstraints(maxWidth: 250),
               child: Text(
                 post.description!,
                 style: TextStyle(color: Colors.white),
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+          // 🔥 NOUVEAU : Bouton Soutenir le créateur (juste après la description)
+          if (hasAccess && !isOwner)
+            Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: _isSupporting ? null : () => _handleSupportAd(post),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _afroDarkGrey.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _afroYellow.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isSupporting)
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: _afroYellow),
+                        )
+                      else
+                        Icon(Icons.volunteer_activism, color: _afroYellow, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Soutenir le créateur',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (count > 0) ...[
+                        SizedBox(width: 6),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _afroYellow.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              color: _afroYellow,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
         ],
@@ -2171,7 +2567,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   color: isLiked ? _afroRed : Colors.white,
                   size: 30,
                 ),
-                onPressed: hasAccess ? () => _handleLike(post) : null,
+                onPressed: () => _handleLike(post) ,
               ),
               Text(
                 _formatCount(post.loves ?? 0),
@@ -2299,8 +2695,9 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           'loves': FieldValue.increment(1),
           'users_love_id': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
         });
+        widget.initialPost.users_love_id!.add(authProvider.loginUserData.id!);
 
-        await postProvider.interactWithPostAndIncrementSolde(
+        postProvider.interactWithPostAndIncrementSolde(
             post.id!,
             authProvider.loginUserData.id!,
             "like",
@@ -2384,7 +2781,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             print("⏱️ Notification limitée pour @${userData?['pseudo']} - Dernière notification il y a $minutesPassed min");
             print("⏱️ Prochaine notification possible dans $minutesRemaining min");
           }
-          await authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+          setState(() {
+
+          });
+           authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
 
           authProvider. notifySubscribersOfInteraction(
             actionUserId: authProvider.loginUserData.id!,
@@ -2392,7 +2792,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             postId: widget.initialPost.id!,
             actionType: 'like',
             postDescription: widget.initialPost.description,
-            postImageUrl: widget.initialPost.images?.first,
+            postImageUrl: widget.initialPost.thumbnail!=null?widget.initialPost.thumbnail:'',
             postDataType: widget.initialPost.dataType,
           );
         }
@@ -3035,35 +3435,57 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _afroBlack,
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: _afroGreen))
-          : PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: _videoPosts.length + (_hasMoreVideos ? 1 : 0),
-        onPageChanged: (index) async {
-          if (index >= _videoPosts.length - 2 && _hasMoreVideos && !_isLoadingMore) {
-            await _loadMoreVideos();
-          }
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: _afroBlack,
+          body: _isLoading
+              ? Center(child: CircularProgressIndicator(color: _afroGreen))
+              : PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            itemCount: _videoPosts.length + (_hasMoreVideos ? 1 : 0),
+            onPageChanged: (index) async {
+              if (index >= _videoPosts.length - 2 && _hasMoreVideos && !_isLoadingMore) {
+                await _loadMoreVideos();
+              }
 
-          if (index < _videoPosts.length) {
-            setState(() => _currentPage = index);
-            _initializeVideo(_videoPosts[index]);
-          }
-        },
-        itemBuilder: (context, index) {
-          if (index >= _videoPosts.length) {
-            return Center(
-              child: CircularProgressIndicator(color: _afroGreen),
-            );
-          }
+              if (index < _videoPosts.length) {
+                setState(() => _currentPage = index);
+                _initializeVideo(_videoPosts[index]);
+              }
+            },
+            itemBuilder: (context, index) {
+              if (index >= _videoPosts.length) {
+                return Center(
+                  child: CircularProgressIndicator(color: _afroGreen),
+                );
+              }
 
-          final post = _videoPosts[index];
-          return _buildVideoPage(post);
-        },
-      ),
+              final post = _videoPosts[index];
+              return _buildVideoPage(post);
+            },
+          ),
+        ),
+
+        // 👉 PUB AU-DESSUS
+        if (_showRewardedAd)
+          RewardedAdWidget(
+            key: _rewardedAdKey,
+            onUserEarnedReward: (reward) async {
+              final currentPost = _videoPosts[_currentPage];
+              await _onSupportAdRewarded(currentPost);
+            },
+            onAdDismissed: () {
+              setState(() {
+                _showRewardedAd = false;
+                _isSupporting = false;
+              });
+            },
+            child: const SizedBox.shrink(),
+          ),
+      ],
     );
   }
+
 }

@@ -8,6 +8,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/chroniqueProvider.dart';
@@ -36,6 +37,8 @@ import '../../UserServices/ServiceWidget.dart';
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../canaux/listCanal.dart';
+import '../../pub/banner_ad_widget.dart';
+import '../../pub/native_ad_widget.dart';
 
 // 🔥 ENUM POUR LES FILTRES VIDÉO
 enum VideoFilter {
@@ -345,6 +348,31 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
   void _markVideoAsSeen(String videoId) {
     _mixedVideoService.markVideoAsSeen(videoId);
   }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        templateType: TemplateType.medium, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
 
   // 🔥 RAFRAÎCHISSEMENT
   Future<void> _refreshVideos() async {
@@ -377,7 +405,9 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
             _buildHeader(),
 
             // FILTRES
-            _buildFilterChips(),
+            // _buildFilterChips(),
+            // _buildAdBanner(key: 'ad_video'),
+
 
             // CONTENU PRINCIPAL
             Expanded(
@@ -416,7 +446,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
           ),
           SizedBox(width: 8),
           Text(
-            'AFROLOOK VIDEO',
+            'Afrolook vidéos',
             style: TextStyle(
               color: Colors.green,
               fontSize: 16,
@@ -615,7 +645,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                 ? _buildProductsSection()
                 : _buildChannelsSection(),
           ),
-
+          _buildAdBanner(key: 'ad_video'),
           // BOUTON SUIVANT
           Container(
             padding: EdgeInsets.all(16),

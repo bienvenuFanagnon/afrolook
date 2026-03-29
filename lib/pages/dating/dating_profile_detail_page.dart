@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../pub/rewarded_ad_widget.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_profile_page.dart';
 import 'creator_subscription_page.dart';
@@ -51,7 +52,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   bool _isCreator = false;
   bool _isCheckingCreator = true;
   int _unreadNotificationsCount = 0;
-
+// Dans _DatingProfileDetailPageState
+  bool _isProcessing = false;
   // Animation
   late TabController _tabController;
   int _currentImageIndex = 0;
@@ -68,6 +70,12 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   final Color primaryBlack = Colors.black;
   final Color secondaryGrey = const Color(0xFF2C2C2C);
   final Color lightGrey = const Color(0xFFF5F5F5);
+
+
+// Dans l'état de la page
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
+  String? _pendingRewardType; // 'likes' ou 'superlikes'
 
   @override
   void initState() {
@@ -89,6 +97,25 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     super.dispose();
   }
 
+  Future<void> _addBonusLikes(int amount) async {
+    setState(() {
+      if (_remainingLikes != -1) {
+        _remainingLikes += amount;
+      }
+    });
+    await _updateRemainingLikes(); // sauvegarde dans Firestore
+    _showSnackBar('+$amount likes offerts ! ❤️', Colors.green);
+  }
+
+  Future<void> _addBonusSuperLikes(int amount) async {
+    setState(() {
+      if (_remainingSuperLikes != -1) {
+        _remainingSuperLikes += amount;
+      }
+    });
+    await _updateRemainingLikes();
+    _showSnackBar('+$amount super likes offerts ! ⭐', Colors.amber);
+  }
   Future<void> _loadUserData() async {
     try {
       final doc = await firestore
@@ -309,11 +336,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     }
   }
 
-  Future<void> _addPointsToUser(String userId, int points, String reason) async {
-    await firestore.collection('Users').doc(userId).update({
-      'totalPoints': FieldValue.increment(points),
-    });
-  }
+
 
   Future<void> _recordVisit() async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -409,30 +432,37 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       print('❌ Erreur vérification coup de cœur: $e');
     }
   }
-
   Future<void> _handleLike() async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
-
-    // Vérifier les likes restants
-    if (_remainingLikes <= 0 && _currentSubscriptionPlan == null) {
-      _showUpgradeDialog('likes');
-      return;
-    }
-
-    // Vérifier la compatibilité des genres
-    final isCompatible = await _checkMatchCompatibility();
-    if (!isCompatible) return;
-
-    // Vérifier si un match existe déjà
-    final alreadyMatched = await _matchAlreadyExists();
-    if (alreadyMatched) {
-      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
-      return;
-    }
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
 
     try {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
+
+      // Vérifier les likes restants
+      if (_remainingLikes <= 0 && _remainingLikes != -1) {
+        setState(() => _isProcessing = false);
+        _showUpgradeDialog('likes');
+        return;
+      }
+
+      // Vérifier la compatibilité des genres
+      final isCompatible = await _checkMatchCompatibility();
+      if (!isCompatible) {
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      // Vérifier si un match existe déjà
+      final alreadyMatched = await _matchAlreadyExists();
+      if (alreadyMatched) {
+        setState(() => _isProcessing = false);
+        _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+        return;
+      }
+
       final now = DateTime.now().millisecondsSinceEpoch;
       await firestore.collection('dating_likes').doc().set({
         'id': firestore.collection('dating_likes').doc().id,
@@ -464,9 +494,83 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       });
 
       await _updatePopularityScore(widget.profile.userId);
-      await _addPointsToUser(currentUserId, 5, 'Like envoyé');
 
-      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo} (+5 points)', Colors.green);
+      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo}', Colors.green);
+
+      // Vérifier s'il y a un like mutuel (match)
+      final mutualLike = await firestore
+          .collection('dating_likes')
+          .where('fromUserId', isEqualTo: widget.profile.userId)
+          .where('toUserId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+
+      if (mutualLike.docs.isNotEmpty) {
+        _showMatchDialog();
+      }
+    } catch (e) {
+      print('❌ Erreur like: $e');
+      _showSnackBar('Erreur lors du like', Colors.red);
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+  Future<void> _handleLike2() async {
+    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == null) return;
+
+    // Vérifier les likes restants
+    if (_remainingLikes <= 0) {
+      _showUpgradeDialog('likes');
+      return;
+    }
+
+    // Vérifier la compatibilité des genres
+    final isCompatible = await _checkMatchCompatibility();
+    if (!isCompatible) return;
+
+    // Vérifier si un match existe déjà
+    final alreadyMatched = await _matchAlreadyExists();
+    if (alreadyMatched) {
+      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+      return;
+    }
+
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await firestore.collection('dating_likes').doc().set({
+        'id': firestore.collection('dating_likes').doc().id,
+        'fromUserId': currentUserId,
+        'toUserId': widget.profile.userId,
+        'createdAt': now,
+      });
+
+      setState(() {
+        _isLiked = true;
+        if (_remainingLikes > 0) _remainingLikes--;
+      });
+      await _updateRemainingLikes();
+
+       _sendNotification(
+        toUserId: widget.profile.userId,
+        message: "❤️ @${widget.profile.pseudo} vous a liké !",
+        type: 'like',
+      );
+
+      await firestore
+          .collection('dating_profiles')
+          .where('userId', isEqualTo: widget.profile.userId)
+          .get()
+          .then((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          snapshot.docs.first.reference.update({'likesCount': FieldValue.increment(1)});
+        }
+      });
+
+       _updatePopularityScore(widget.profile.userId);
+
+      _showSnackBar('❤️ Vous avez liké ${widget.profile.pseudo}', Colors.green);
 
       // Vérifier s'il y a un like mutuel (match)
       final mutualLike = await firestore
@@ -543,74 +647,159 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     return snapshot2.docs.isNotEmpty;
   }
   Future<void> _handleCoupDeCoeur() async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == null) return;
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
 
-    // Vérifier la compatibilité des genres
-    final isCompatible = await _checkMatchCompatibility();
-    if (!isCompatible) return;
+    try {
+      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
 
-    // Vérifier si un match existe déjà
-    final alreadyMatched = await _matchAlreadyExists();
-    if (alreadyMatched) {
-      _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
-      return;
-    }
+      // Vérifier la compatibilité des genres
+      final isCompatible = await _checkMatchCompatibility();
+      if (!isCompatible) {
+        setState(() => _isProcessing = false);
+        return;
+      }
 
-    const superLikePriceCoins = 20;
+      // Vérifier si un match existe déjà
+      final alreadyMatched = await _matchAlreadyExists();
+      if (alreadyMatched) {
+        setState(() => _isProcessing = false);
+        _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+        return;
+      }
 
-    // Si l'utilisateur a encore des super likes gratuits
-    if (_remainingSuperLikes > 0) {
-      // Envoyer gratuitement
-      await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: false);
-      return;
-    }
+      const superLikePriceCoins = 20;
 
-    // Sinon, il n'a plus de super likes gratuits → proposition d'achat avec pièces
-    final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
-    if (currentCoins < superLikePriceCoins) {
-      _showInsufficientCoinsDialog();
-      return;
-    }
-
-    // Demander confirmation d'achat
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('✨ Coup de cœur payant ✨'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.star, size: 50, color: Colors.amber),
-            SizedBox(height: 16),
-            Text('Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.'),
-            SizedBox(height: 8),
-            Text(
-              'Envoyer un coup de cœur coûte $superLikePriceCoins pièces.',
-              style: TextStyle(color: Colors.amber),
+      // Si l'utilisateur a encore des super likes gratuits
+      if (_remainingSuperLikes > 0) {
+        await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: false);
+      } else {
+        // Sinon, proposition d'achat ou pub récompensée
+        final isGold = _currentSubscriptionPlan == 'gold';
+        if (isGold) {
+          final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
+          if (currentCoins < superLikePriceCoins) {
+            _showInsufficientCoinsDialog();
+            setState(() => _isProcessing = false);
+            return;
+          }
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('✨ Coup de cœur payant ✨'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, size: 50, color: Colors.amber),
+                  const SizedBox(height: 16),
+                  const Text('Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.'),
+                  const SizedBox(height: 8),
+                  Text('Envoyer un coup de cœur coûte $superLikePriceCoins pièces.', style: const TextStyle(color: Colors.amber)),
+                  const SizedBox(height: 8),
+                  Text('Votre solde : $currentCoins pièces', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                  child: const Text('Acheter et envoyer'),
+                ),
+              ],
             ),
-            SizedBox(height: 8),
-            Text('Votre solde : $currentCoins pièces', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-            child: Text('Acheter et envoyer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    // Envoyer avec paiement en pièces
-    await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: true, priceCoins: superLikePriceCoins);
+          );
+          if (confirm != true) {
+            setState(() => _isProcessing = false);
+            return;
+          }
+          await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: true, priceCoins: superLikePriceCoins);
+        } else {
+          // Pour Gratuit et Plus : proposer la pub récompensée
+          setState(() => _isProcessing = false);
+          _showUpgradeDialog('superlikes');
+          return;
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur coup de cœur: $e');
+      _showSnackBar('Erreur lors de l\'envoi', Colors.red);
+    } finally {
+      if (mounted && _pendingRewardType == null) setState(() => _isProcessing = false);
+    }
   }
+  // Future<void> _handleCoupDeCoeur() async {
+  //   final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+  //   final currentUserId = authProvider.loginUserData.id;
+  //   if (currentUserId == null) return;
+  //
+  //   // Vérifier la compatibilité des genres
+  //   final isCompatible = await _checkMatchCompatibility();
+  //   if (!isCompatible) return;
+  //
+  //   // Vérifier si un match existe déjà
+  //   final alreadyMatched = await _matchAlreadyExists();
+  //   if (alreadyMatched) {
+  //     _showSnackBar('Vous êtes déjà en contact avec ${widget.profile.pseudo}', Colors.orange);
+  //     return;
+  //   }
+  //
+  //   const superLikePriceCoins = 20;
+  //
+  //   // Si l'utilisateur a encore des super likes gratuits
+  //   if (_remainingSuperLikes > 0) {
+  //     // Envoyer gratuitement
+  //     await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: false);
+  //     return;
+  //   }
+  //
+  //   // Sinon, il n'a plus de super likes gratuits → proposition d'achat avec pièces
+  //   final currentCoins = authProvider.loginUserData.coinsBalance ?? 0;
+  //   if (currentCoins < superLikePriceCoins) {
+  //     _showInsufficientCoinsDialog();
+  //     return;
+  //   }
+  //
+  //   // Demander confirmation d'achat
+  //   final confirm = await showDialog<bool>(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //       title: Text('✨ Coup de cœur payant ✨'),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Icon(Icons.star, size: 50, color: Colors.amber),
+  //           SizedBox(height: 16),
+  //           Text('Vous n\'avez plus de coups de cœur gratuits aujourd\'hui.'),
+  //           SizedBox(height: 8),
+  //           Text(
+  //             'Envoyer un coup de cœur coûte $superLikePriceCoins pièces.',
+  //             style: TextStyle(color: Colors.amber),
+  //           ),
+  //           SizedBox(height: 8),
+  //           Text('Votre solde : $currentCoins pièces', style: TextStyle(fontWeight: FontWeight.bold)),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler')),
+  //         ElevatedButton(
+  //           onPressed: () => Navigator.pop(context, true),
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+  //           child: Text('Acheter et envoyer'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  //
+  //   if (confirm != true) return;
+  //
+  //   // Envoyer avec paiement en pièces
+  //   await _sendCoupDeCoeur(currentUserId, authProvider, useCoins: true, priceCoins: superLikePriceCoins);
+  // }
 
   /// Méthode auxiliaire pour envoyer le coup de cœur
   Future<void> _sendCoupDeCoeur(String currentUserId, UserAuthProvider authProvider, {required bool useCoins, int priceCoins = 0}) async {
@@ -618,21 +807,17 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       final now = DateTime.now().millisecondsSinceEpoch;
 
       if (useCoins) {
-        // Déduire les pièces
         await firestore.collection('Users').doc(currentUserId).update({
           'coinsBalance': FieldValue.increment(-priceCoins),
           'totalCoinsSpent': FieldValue.increment(priceCoins),
         });
-        // Ne pas modifier _remainingSuperLikes car c'est un achat exceptionnel
       } else {
-        // Utiliser un super like gratuit
         setState(() {
           _remainingSuperLikes--;
         });
         await _updateRemainingLikes();
       }
 
-      // Créer le document dans dating_coup_de_coeurs
       await firestore.collection('dating_coup_de_coeurs').doc().set({
         'id': firestore.collection('dating_coup_de_coeurs').doc().id,
         'fromUserId': currentUserId,
@@ -644,14 +829,12 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _isCoupDeCoeur = true;
       });
 
-      // Notification
       await _sendNotification(
         toUserId: widget.profile.userId,
         message: "⭐ @${widget.profile.pseudo} vous a envoyé un Coup de cœur ❤️ !",
         type: 'super_like',
       );
 
-      // Mettre à jour le compteur de coups de cœur du profil cible
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
@@ -662,15 +845,11 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         }
       });
 
-      // Mettre à jour le score de popularité
       await _updatePopularityScore(widget.profile.userId);
 
-      // Ajouter des points à l'utilisateur
-      await _addPointsToUser(currentUserId, 20, 'Coup de cœur envoyé');
+      _showSnackBar('✨ Coup de cœur envoyé à ${widget.profile.pseudo}', Colors.amber);
 
-      _showSnackBar('✨ Coup de cœur envoyé à ${widget.profile.pseudo} (+20 points)', Colors.amber);
-
-      // Vérifier si un like mutuel (match) existe déjà
+      // Vérifier si un like mutuel existe
       final mutualLike = await firestore
           .collection('dating_likes')
           .where('fromUserId', isEqualTo: widget.profile.userId)
@@ -682,11 +861,9 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         _showMatchDialog();
       }
     } catch (e) {
-      print('❌ Erreur envoi coup de cœur: $e');
-      _showSnackBar('Erreur lors de l\'envoi', Colors.red);
+      rethrow;
     }
   }
-
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -914,38 +1091,97 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
     }
   }
 
-  void _showUpgradeDialog(String feature) {
+  void _showUpgradeDialog(String feature, {VoidCallback? onRewardComplete}) {
+    // feature = 'likes' ou 'superlikes'
+    final isLike = feature == 'likes';
+    final planGratuit = _currentSubscriptionPlan == 'gratuit';
+    final planPlus = _currentSubscriptionPlan == 'plus';
+    final isEligibleForAd = planGratuit || planPlus;
+
+    int bonusLikes = 0;
+    int bonusSuperLikes = 0;
+    if (isLike && isEligibleForAd) {
+      bonusLikes = planGratuit ? 5 : 10;
+    } else if (!isLike && isEligibleForAd) {
+      bonusSuperLikes = planGratuit ? 1 : 2;
+    }
+
+    final bonusText = isLike ? '+$bonusLikes likes' : '+$bonusSuperLikes super like(s)';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Limite de $feature atteinte', style: TextStyle(color: Colors.red)),
+        title: Text(
+          isLike ? 'Limite de likes atteinte' : 'Plus de super likes',
+          style: TextStyle(color: isLike ? Colors.red : Colors.amber),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.star, size: 50, color: Colors.amber),
-            SizedBox(height: 16),
+            Icon(isLike ? Icons.favorite : Icons.star, size: 50, color: isLike ? Colors.red : Colors.amber),
+            const SizedBox(height: 16),
             Text(
-              'Vous avez atteint votre limite de $feature gratuits.',
+              isLike
+                  ? 'Vous avez utilisé tous vos likes gratuits du jour.'
+                  : 'Vous n’avez plus de super likes gratuits aujourd’hui.',
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 8),
-            Text(
-              'Passez à AfroLove Plus ou Gold pour des fonctionnalités illimitées !',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber),
+              ),
+              child: Column(
+                children: [
+                  const Text('⚡ Solutions :', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  if (isEligibleForAd && (bonusLikes > 0 || bonusSuperLikes > 0))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        '🎁 Regardez une publicité pour obtenir $bonusText immédiatement !',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  const Text(
+                    '✨ Ou passez à AfroLove Gold pour des likes illimités et des super likes quotidiens.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Plus tard'),
+          ),
+          if (isEligibleForAd && (bonusLikes > 0 || bonusSuperLikes > 0))
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _pendingRewardType = feature;
+                setState(() => _showRewardedAd = true);
+                RewardedAdWidget.showAd(_rewardedAdKey);
+              },
+              icon: const Icon(Icons.play_circle_filled),
+              label: Text('REGARDER LA PUB ($bonusText)'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSubscriptionPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: Text('Voir les offres'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('VOIR LES OFFRES',style: TextStyle(color: Colors.white),),
           ),
         ],
       ),
@@ -1137,6 +1373,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                     ),
                   ),
                 ),
+
             ],
           ),
           SizedBox(height: 4),
@@ -1299,6 +1536,37 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
               ],
             ),
           ),
+
+          if (_showRewardedAd)
+            SliverToBoxAdapter(
+              child: RewardedAdWidget(
+                key: _rewardedAdKey,
+                onUserEarnedReward: (reward) async {
+                  if (_pendingRewardType == 'likes') {
+                    int bonus = (_currentSubscriptionPlan == 'gratuit') ? 5 : 10;
+                    await _addBonusLikes(bonus);
+                    // Relancer l'action de like après ajout
+                    _handleLike();
+                  } else if (_pendingRewardType == 'superlikes') {
+                    int bonus = (_currentSubscriptionPlan == 'gratuit') ? 1 : 2;
+                    await _addBonusSuperLikes(bonus);
+                    // Relancer l'action de super like après ajout
+                    _handleCoupDeCoeur();
+                  }
+                  setState(() {
+                    _showRewardedAd = false;
+                    _pendingRewardType = null;
+                  });
+                },
+                onAdDismissed: () {
+                  setState(() {
+                    _showRewardedAd = false;
+                    _pendingRewardType = null;
+                  });
+                },
+                child: const SizedBox.shrink(),
+              ),
+            ),
         ],
       ),
     );
@@ -1386,8 +1654,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             isActive: _isLiked,
             icon: _isLiked ? Icons.favorite : Icons.favorite_border,
             label: _isLiked ? 'Liké ❤️' : 'Liker',
-            // subText: '$remainingLikesText restants',
-            subText: '- restants',
+            subText: '$remainingLikesText restants',
+            // subText: '- restants',
             onTap: _handleLike,
           ),
 
@@ -1399,8 +1667,8 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             isActive: _isCoupDeCoeur,
             icon: _isCoupDeCoeur ? Icons.favorite : Icons.favorite_border,
             label: _isCoupDeCoeur ? 'Envoyé ❤️' : 'Coup de cœur',
-            // subText: '$_remainingSuperLikes restants',
-            subText: '- restants',
+            subText: '$_remainingSuperLikes restants',
+            // subText: '- restants',
             onTap: _handleCoupDeCoeur,
           ),
 
@@ -1411,7 +1679,6 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       ),
     );
   }
-
   Widget _buildActionItem({
     required Color color,
     required Color activeColor,
@@ -1425,7 +1692,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       child: Column(
         children: [
           GestureDetector(
-            onTap: onTap,
+            onTap: _isProcessing ? null : onTap,
             child: Container(
               height: 52,
               padding: EdgeInsets.symmetric(horizontal: 10),
@@ -1440,23 +1707,34 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 18, color: Colors.white), // ✅ blanc
-                  SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white, // ✅ blanc
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+              child: Center(
+                child: _isProcessing
+                    ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 18, color: Colors.white),
+                    SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1466,7 +1744,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
-              color: Colors.grey.shade400, // léger gris pour contraste
+              color: Colors.grey.shade400,
             ),
           ),
         ],

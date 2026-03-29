@@ -2337,11 +2337,14 @@ printVm("_currentFilter data: ${_currentFilter}");
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+        contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
+      //AJOUT DES BANNIÈRES ADMOB
       if (postIndex == 2) {
-        contentWidgets.add(TopDatingProfilesWidget());
+        // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+
+        // contentWidgets.add(TopDatingProfilesWidget());
       } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
         contentWidgets.add(TopDatingProfilesWidget());
       }
@@ -2359,6 +2362,8 @@ printVm("_currentFilter data: ${_currentFilter}");
           final articlesSection = _buildArticlesSection();
           if (articlesSection is! SizedBox) {
             contentWidgets.add(articlesSection);
+            contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+
           }
         } else if (postIndex % 6 == 0) {
           final canauxSection = _buildCanauxSection();
@@ -2492,18 +2497,18 @@ printVm("_currentFilter data: ${_currentFilter}");
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      // child: NativeAdWidget(
-      //   templateType: TemplateType.small, // ou TemplateType.small
-      //
-      //   onAdLoaded: () {
-      //     print('✅ Native Ad Afrolook chargée: $key');
-      //   },
-      // ),
-      child: BannerAdWidget(
+      child: NativeAdWidget(
+        templateType: TemplateType.small, // ou TemplateType.small
+
         onAdLoaded: () {
-          print('✅ Bannière Afrolook chargée: $key');
+          print('✅ Native Ad Afrolook chargée: $key');
         },
       ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
     );
   }
   Widget _buildAdAdvertisement({required String key}) {

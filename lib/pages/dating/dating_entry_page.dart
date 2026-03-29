@@ -6,9 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../pub/rewarded_ad_widget.dart';
 import 'buy_coins_page.dart';
 import 'dating_chat_page.dart';
 import 'dating_creator_posts_tab.dart';
+import 'dating_explore_page.dart';
 import 'dating_likes_list_page.dart';
 import 'dating_notifications_page.dart';
 import 'dating_profile_detail_page.dart';
@@ -29,7 +31,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   int _currentIndex = 0;
   int _likeCount = 0;
   int _likeCountThreshold = 3;
-
+// Ajouter dans les variables d'état
+  bool _isLoadingAd = false;  // Pour afficher le chargement
   // Pour le recyclage
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
@@ -75,7 +78,9 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   static const int _batchSize = 50; // Charger 50 profils par lot
-
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
+  String? _pendingRewardType; // 'likes' ou 'superlikes'
   @override
   void initState() {
     super.initState();
@@ -95,7 +100,41 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     _messageTimer?.cancel();
     super.dispose();
   }
+  bool _wasActive = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isActive = ModalRoute.of(context)?.isCurrent ?? false;
+    if (isActive && !_wasActive) {
+      _refreshData();
+    }
+    _wasActive = isActive;
+  }
+  Future<void> _addBonusLikes(int amount) async {
+    setState(() {
+      if (_remainingLikes != -1) {
+        _remainingLikes += amount;
+      }
+    });
+    await _saveRemainingLikes();
+    _showSuccessMessage('+$amount likes offerts ! ❤️', Colors.green);
+  }
+
+  Future<void> _addBonusSuperLikes(int amount) async {
+    setState(() {
+      if (_remainingSuperLikes != -1) {
+        _remainingSuperLikes += amount;
+      }
+    });
+    await _saveRemainingLikes();
+    _showSuccessMessage('+$amount super likes offerts ! ⭐', Colors.amber);
+  }
+  Future<void> _refreshData() async {
+    await _loadUserSubscription();
+    // Si vous voulez aussi recharger les profils (ex : après un achat), décommentez la ligne ci-dessous
+    // await _loadProfiles(reset: true);
+  }
   void _startMessageTimer() {
     _messageTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
       if (mounted) {
@@ -648,7 +687,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   void _handleSwipeRight() {
     if (_isSwiping || _currentIndex >= _profiles.length) return;
     if (_remainingLikes != -1 && _remainingLikes <= 0) {
-      _showUpgradeDialog();
+      _showUpgradeDialog(type: 'like');
       return;
     }
     _isSwiping = true;
@@ -668,7 +707,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   void _handleSuperLike() {
     if (_isSwiping || _currentIndex >= _profiles.length) return;
     if (_remainingSuperLikes <= 0) {
-      _showUpgradeDialog();
+      _showUpgradeDialog(type: 'superlike');
       return;
     }
     _isSwiping = true;
@@ -761,7 +800,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           message: "Afrolove❤️ @${_getCurrentUserPseudo()} vous a liké !",
           type: 'like',
         );
-        _showSuccessMessage('Vous avez liké ${profile.pseudo} (+5 points)', Colors.green);
+        _showSuccessMessage('Vous avez liké ${profile.pseudo}', Colors.green);
       }
     } catch (e) {
       print('❌ Erreur like: $e');
@@ -913,7 +952,6 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     await _sendSuperLike(profile, useCoins: true, priceCoins: superLikePrice);
   }
   Future<void> _sendSuperLike(DatingProfile profile, {required bool useCoins, int priceCoins = 0}) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -959,7 +997,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         type: 'super_like',
       );
 
-      _showSuccessMessage('✨ Super like envoyé à ${profile.pseudo} (+20 points)', Colors.amber);
+      _showSuccessMessage('✨ Super like envoyé à ${profile.pseudo}', Colors.amber);
     } catch (e) {
       print('❌ Erreur super like: $e');
       _showSuccessMessage('Erreur lors de l\'envoi', Colors.red);
@@ -1112,37 +1150,163 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     );
   }
 
-  void _showUpgradeDialog() {
+  void _showUpgradeDialog({required String type}) {
+    // type = 'like' ou 'superlike'
+    final isLike = type == 'like';
+    final planGratuit = _subscriptionPlan == 'gratuit';
+    final planPlus = _subscriptionPlan == 'plus';
+
+    int bonusLikes = 0;
+    int bonusSuperLikes = 0;
+    if (isLike) {
+      bonusLikes = planGratuit ? 5 : (planPlus ? 10 : 0);
+    } else {
+      bonusSuperLikes = planGratuit ? 1 : (planPlus ? 2 : 0);
+    }
+
+    final bonusText = isLike ? '+$bonusLikes likes' : '+$bonusSuperLikes super like(s)';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Limite de likes atteinte', style: TextStyle(color: Colors.red)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star, size: 50, color: Colors.amber),
-            const SizedBox(height: 16),
-            const Text('Vous avez atteint votre limite de likes gratuits.', textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            const Text('Passez à AfroLove Plus ou Gold pour des likes illimités !', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Plus tard')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSubscriptionPage()));
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: const Text('Voir les offres'),
-          ),
-        ],
+      barrierDismissible: false, // Empêche la fermeture pendant le chargement
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              isLike ? 'Limite de likes atteinte' : 'Plus de super likes',
+              style: TextStyle(color: isLike ? Colors.red : Colors.amber),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isLoadingAd)
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Chargement de la publicité...',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Icon(isLike ? Icons.favorite : Icons.star, size: 50, color: isLike ? Colors.red : Colors.amber),
+                  const SizedBox(height: 16),
+                  Text(
+                    isLike
+                        ? 'Vous avez utilisé tous vos likes gratuits du jour.'
+                        : 'Vous n’avez plus de super likes gratuits aujourd’hui.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('⚡ Solutions :', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        if (bonusLikes > 0 || bonusSuperLikes > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              '🎁 Regardez une publicité pour obtenir $bonusText immédiatement !',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        const Text(
+                          '✨ Ou passez à AfroLove Gold pour des likes illimités et des super likes quotidiens.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              if (!_isLoadingAd) ...[
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Plus tard'),
+                ),
+                if (bonusLikes > 0 || bonusSuperLikes > 0)
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      // Afficher le chargement
+                      setDialogState(() {
+                        _isLoadingAd = true;
+                      });
+
+                      // Attendre que le widget de pub soit monté et prêt
+                      await Future.delayed(Duration(milliseconds: 100));
+
+                      // Fermer le dialogue
+                      Navigator.pop(context);
+
+                      // Lancer la pub avec attente de chargement
+                      _pendingRewardType = isLike ? 'likes' : 'superlikes';
+                      setState(() {
+                        _showRewardedAd = true;
+                      });
+
+                      // Attendre que la pub soit prête
+                      bool isReady = false;
+                      int attempts = 0;
+                      while (!isReady && attempts < 30) {
+                        await Future.delayed(Duration(milliseconds: 100));
+                        if (_rewardedAdKey.currentState != null) {
+                          isReady = await _rewardedAdKey.currentState!.isAdReady();
+                        }
+                        attempts++;
+                      }
+
+                      if (isReady) {
+                        _rewardedAdKey.currentState!.showAd();
+                      } else {
+                        setState(() {
+                          _showRewardedAd = false;
+                          _isLoadingAd = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Publicité non disponible, réessayez'), backgroundColor: Colors.red),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.play_circle_filled),
+                    label: Text('REGARDER LA PUB ($bonusText)'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSubscriptionPage()));
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('VOIR LES OFFRES', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
-
   void _showInsufficientCoinsDialog() {
     showDialog(
       context: context,
@@ -1716,6 +1880,34 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                 ),
               ),
             ),
+
+
+          if (_showRewardedAd)
+            RewardedAdWidget(
+              key: _rewardedAdKey,
+              onUserEarnedReward: (reward) {
+                if (_pendingRewardType == 'likes') {
+                  int bonus = (_subscriptionPlan == 'gratuit') ? 5 : 10;
+                  _addBonusLikes(bonus);
+                } else if (_pendingRewardType == 'superlikes') {
+                  int bonus = (_subscriptionPlan == 'gratuit') ? 1 : 2;
+                  _addBonusSuperLikes(bonus);
+                }
+                setState(() {
+                  _showRewardedAd = false;
+                  _pendingRewardType = null;
+                  _isLoadingAd = false;
+                });
+              },
+              onAdDismissed: () {
+                setState(() {
+                  _showRewardedAd = false;
+                  _pendingRewardType = null;
+                  _isLoadingAd = false;
+                });
+              },
+              child: const SizedBox.shrink(),
+            ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -1763,6 +1955,17 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               label: 'Rencontres',
               isSelected: true,
               onTap: () {},
+            ),
+            _buildBottomNavItem(
+              icon: Icons.explore,
+              label: 'Explorer',
+              isSelected: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DatingExplorePage()),
+                );
+              },
             ),
             // _buildBottomNavItem(
             //   icon: Icons.people,

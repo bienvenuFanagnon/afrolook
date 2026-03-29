@@ -36,7 +36,9 @@ import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideoListe.dart';
+import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 // Couleurs style Twitter Dark Mode
@@ -113,7 +115,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Random random = Random();
   bool _isLoading = false;
   bool _isProcessingFollow = false;
-
+  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
+  bool _showRewardedAd = false;
+  bool _isSupporting = false;
+  bool? _hasSeenSupportModal; // null = pas encore chargé
   // Variables pour stocker les données récupérées individuellement
   UserData? _currentUser;
   Canal? _currentCanal;
@@ -135,6 +140,39 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   bool _isAudioPlaying = false;
   Duration _currentAudioPosition = Duration.zero;
   Duration _currentAudioDuration = Duration.zero;
+
+  // Dans _HomePostUsersWidgetState
+
+
+  // Vérifier si l'utilisateur a déjà soutenu ce post aujourd'hui
+  Future<bool> _hasSupportedToday(String postId, String userId) async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+    final endOfDay = startOfDay + Duration(days: 1).inMilliseconds;
+
+    final query = await firestore
+        .collection('post_supports')
+        .where('postId', isEqualTo: postId)
+        .where('userId', isEqualTo: userId)
+        .where('supportedAt', isGreaterThanOrEqualTo: startOfDay)
+        .where('supportedAt', isLessThan: endOfDay)
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
+  }
+
+// Enregistrer le soutien
+  Future<void> _recordSupport(String postId, String userId) async {
+    final support = PostSupport(
+      id: firestore.collection('post_supports').doc().id,
+      postId: postId,
+      userId: userId,
+      supportedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    await firestore.collection('post_supports').doc(support.id).set(support.toJson());
+  }
+
   Future<void> recordUniquePostView() async {
 
      String userId = authProvider.loginUserData.id!;
@@ -332,8 +370,270 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     _generateVideoThumbnail();
 
     _checkIfFavorite();
+    _loadSupportModalSeen();
   }
 
+  Future<void> _loadSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    final key = 'has_seen_support_modal_$userId';
+    setState(() {
+      _hasSeenSupportModal = prefs.getBool(key) ?? false;
+    });
+  }
+
+  Future<void> _markSupportModalSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = authProvider.loginUserData.id;
+    await prefs.setBool('has_seen_support_modal_$userId', true);
+    setState(() {
+      _hasSeenSupportModal = true;
+    });
+  }
+
+  void _showSupportModal() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _afroCardBg,
+        title: Row(
+          children: [
+            Icon(Icons.volunteer_activism, color: _afroYellow),
+            SizedBox(width: 8),
+            Text('Soutenir le créateur', style: TextStyle(color: _afroTextPrimary)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'En regardant cette publicité, vous offrez 10 pièces au créateur de ce post.',
+              style: TextStyle(color: _afroTextSecondary),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Cela l’encourage à produire plus de contenu et peut lui rapporter jusqu’à 100€ (environ 65 000 FCFA) par mois !',
+              style: TextStyle(color: _afroTextPrimary),
+            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _afroGreen.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.monetization_on, color: _afroYellow),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '💰 Les pièces récoltées peuvent être converties en argent réel.',
+                      style: TextStyle(color: _afroTextPrimary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Plus tard', style: TextStyle(color: _afroTextSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _markSupportModalSeen();
+              _startSupportAd();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _afroYellow),
+            child: Text('Regarder la pub', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleSupportAd() async {
+    // if (_isSupporting) return;
+    final currentUserId = authProvider.loginUserData.id;
+    if (currentUserId == widget.post.user_id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    // Vérifier la limite quotidienne
+    final hasSupported = await _hasSupportedToday(widget.post.id!, currentUserId!);
+    if (hasSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vous avez déjà soutenu ce post aujourd\'hui. Revenez demain !'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (_hasSeenSupportModal == null) await _loadSupportModalSeen();
+    if (_hasSeenSupportModal == false) {
+      _showSupportModal();
+      return;
+    }
+    _startSupportAd();
+  }
+  void _startSupportAd() {
+    setState(() {
+      _isSupporting = true;
+      _showRewardedAd = true;
+    });
+    // Attendre que le widget soit monté puis lancer la pub
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_rewardedAdKey.currentState != null) {
+        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
+        if (ready) {
+          _rewardedAdKey.currentState!.showAd();
+        } else {
+          setState(() {
+            _isSupporting = false;
+            _showRewardedAd = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        setState(() {
+          _isSupporting = false;
+          _showRewardedAd = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _onSupportAdRewarded() async {
+    final currentUserId = authProvider.loginUserData.id;
+    final postId = widget.post.id!;
+    final creatorId = widget.post.user_id!;
+
+    // Incrémenter le compteur de pub sur le post
+    final postRef = firestore.collection('Posts').doc(postId);
+    await postRef.update({
+      'adSupportCount': FieldValue.increment(1),
+    });
+
+    // Créditer le créateur (10 pièces)
+    final creatorRef = firestore.collection('Users').doc(creatorId);
+    await creatorRef.update({
+      'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+    });
+
+    // Incrémenter le compteur du spectateur
+    final viewerRef = firestore.collection('Users').doc(currentUserId);
+    await viewerRef.update({
+      'totalAdViewsSupported': FieldValue.increment(1),
+    });
+
+    // Enregistrer le soutien (pour la limite quotidienne)
+    await _recordSupport(postId, currentUserId!);
+
+    // ✅ ENVOYER LA NOTIFICATION AU CRÉATEUR
+    await _sendSupportNotification(creatorId, currentUserId!, postId);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🎉 Merci ! Le créateur a reçu 10 pièces et a été notifié.'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Mettre à jour l'état local
+    setState(() {
+      widget.post.adSupportCount = (widget.post.adSupportCount ?? 0) + 1;
+      _isSupporting = false;
+      _showRewardedAd = false;
+    });
+
+  }
+  Widget _buildSupportButton(bool hasAccess) {
+    final isOwner = authProvider.loginUserData.id == widget.post.user_id;
+
+    return Container(
+      constraints: BoxConstraints(minWidth: 60),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: hasAccess
+              ? _afroYellow.withOpacity(0.5)
+              : _afroTextSecondary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isSupporting)
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: _afroYellow,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.volunteer_activism,
+                    size: 14,
+                    color: hasAccess
+                        ? _afroYellow
+                        : _afroTextSecondary.withOpacity(0.3),
+                  ),
+                SizedBox(width: 4),
+                Text(
+                  'Regarder une pub pour le soutenir',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: hasAccess
+                        ? _afroYellow
+                        : _afroTextSecondary.withOpacity(0.3),
+                  ),
+                ),
+                if ((widget.post.adSupportCount ?? 0) > 0) ...[
+                  SizedBox(width: 4),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _afroYellow.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _formatCount(widget.post.adSupportCount ?? 0),
+                      style: TextStyle(fontSize: 10, color: _afroYellow),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   @override
   void dispose() {
     for (var player in _activePlayers.values) {
@@ -584,6 +884,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 ],
               ),
             ),
+
         ],
       ),
     );
@@ -912,6 +1213,22 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 // Actions du post
                 SizedBox(height: 12),
                 _buildPostActions(hasAccess),
+
+
+                if (_showRewardedAd)
+                  RewardedAdWidget(
+                    key: _rewardedAdKey,
+                    onUserEarnedReward: (reward) async {
+                      await _onSupportAdRewarded();
+                    },
+                    onAdDismissed: () {
+                      setState(() {
+                        _showRewardedAd = false;
+                        _isSupporting = false;
+                      });
+                    },
+                    child: SizedBox.shrink(),
+                  ),
               ],
             ),
           ),
@@ -919,7 +1236,49 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
+  Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    final supporter = authProvider.loginUserData;
+    final supporterName = supporter.pseudo ?? 'Un utilisateur';
 
+    // Message incitatif avec le potentiel de gain
+    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+10 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
+
+    // 1. Créer la notification dans Firestore
+    final notificationId = firestore.collection('Notifications').doc().id;
+    final notification = NotificationData(
+      id: notificationId,
+      titre: "Soutien 💪 +10 pièces",
+      media_url: supporter.imageUrl ?? '',
+      type: NotificationType.SUPPORT.name,
+      description: description,
+      users_id_view: [],
+      user_id: supporterId,
+      receiver_id: creatorId,
+      post_id: postId,
+      post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+      updatedAt: now,
+      createdAt: now,
+      status: PostStatus.VALIDE.name,
+    );
+    await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+
+    // 2. Récupérer le token OneSignal du créateur
+    final creatorDoc = await firestore.collection('Users').doc(creatorId).get();
+    final creatorToken = creatorDoc.data()?['oneIgnalUserid'] as String?;
+    if (creatorToken != null && creatorToken.isNotEmpty) {
+      await authProvider.sendNotification(
+        userIds: [creatorToken],
+        smallImage: supporter.imageUrl ?? '',
+        send_user_id: supporterId,
+        recever_user_id: creatorId,
+        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! +10 pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
+        post_id: postId,
+        post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+        chat_id: '',
+      );
+    }
+  }
   Widget _buildSkeletonLoader() {
     return Container(
       color: _afroDarkBg,
@@ -1372,6 +1731,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             },
           ),
         ),
+        SizedBox(height: 5,),
         if (isLong)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1387,17 +1747,20 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   child: Text(
                     _isExpanded ? "Voir moins" : "Voir plus",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: _afroBlue,
                     ),
                   ),
                 ),
               ),
+              _buildSupportButton(true),
+              SizedBox(width: 3,),
+
               buildTotalInteractions(
                 totalCount: widget.post.totalInteractions ?? 0,
                 color: _afroBlue,
-                showLabel: true,
+                showLabel: false,
               ),
             ],
           ),
@@ -1405,11 +1768,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              _buildSupportButton(true),
+              SizedBox(width: 3,),
 
               buildTotalInteractions(
                 totalCount: widget.post.totalInteractions ?? 0,
                 color: _afroBlue,
-                showLabel: true,
+                showLabel: false,
               ),
             ],
           ),
