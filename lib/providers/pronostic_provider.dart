@@ -149,6 +149,7 @@ class PronosticProvider with ChangeNotifier {
     required double prixParticipation,
     required double cagnotte,
     int quotaMaxParScore = 10,
+    required DateTime dateDebutMatch,
   }) async {
     try {
       var now = DateTime.now();
@@ -167,6 +168,7 @@ class PronosticProvider with ChangeNotifier {
         participationsParScore: {},
         toutesParticipations: [],
         dateCreation: now,
+        dateDebutMatch: dateDebutMatch
       );
 
       DocumentReference docRef = await _firestore

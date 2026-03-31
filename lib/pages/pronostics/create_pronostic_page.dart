@@ -14,6 +14,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -61,8 +62,11 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
   // Options du pronostic
   String _typeAcces = 'GRATUIT'; // GRATUIT ou PAYANT
   double _prixParticipation = 500.0; // Prix par défaut
-  double _cagnotte = 10000.0; // Cagnotte par défaut
+  double _cagnotte = 1000.0; // Cagnotte par défaut
   int _quotaMaxParScore = 10; // Quota par défaut
+
+  // Date du match
+  DateTime _matchDate = DateTime.now().add(const Duration(days: 1)); // Par défaut demain
 
   // Couleurs
   final Color _primaryColor = const Color(0xFFE21221); // Rouge
@@ -326,6 +330,101 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
               ),
               prefixIcon: Icon(Iconsax.link, color: _primaryColor),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NOUVEAU : Widget pour choisir la date du match
+  Widget _buildMatchDatePicker() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Iconsax.calendar, color: _primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Date et heure du match',
+                style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            onTap: () async {
+              final pickedDate = await showDatePicker(
+                context: context,
+                initialDate: _matchDate,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.dark(
+                        primary: _primaryColor,
+                        onPrimary: Colors.white,
+                        surface: _cardColor,
+                        onSurface: _textColor,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (pickedDate != null) {
+                final pickedTime = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(_matchDate),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.dark(
+                          primary: _primaryColor,
+                          onPrimary: Colors.white,
+                          surface: _cardColor,
+                          onSurface: _textColor,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (pickedTime != null) {
+                  setState(() {
+                    _matchDate = DateTime(
+                      pickedDate.year,
+                      pickedDate.month,
+                      pickedDate.day,
+                      pickedTime.hour,
+                      pickedTime.minute,
+                    );
+                  });
+                }
+              }
+            },
+            leading: const Icon(Iconsax.clock, color: Colors.white),
+            title: Text(
+              'Début du match',
+              style: TextStyle(color: _textColor),
+            ),
+            subtitle: Text(
+              DateFormat('dd/MM/yyyy à HH:mm').format(_matchDate),
+              style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Les participations seront closes à cette date.',
+            style: TextStyle(color: _hintColor, fontSize: 12),
           ),
         ],
       ),
@@ -667,6 +766,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 
           _buildRecapRow('Équipe A', _equipeANomController.text.isEmpty ? 'Non définie' : _equipeANomController.text),
           _buildRecapRow('Équipe B', _equipeBNomController.text.isEmpty ? 'Non définie' : _equipeBNomController.text),
+          _buildRecapRow('Date du match', DateFormat('dd/MM/yyyy HH:mm').format(_matchDate)),
           _buildRecapRow('Type', _typeAcces),
           if (_typeAcces == 'PAYANT')
             _buildRecapRow('Prix', '${_prixParticipation.toStringAsFixed(0)} FCFA'),
@@ -716,6 +816,12 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
       return;
     }
     _cagnotte = cagnotteValue;
+
+    // Vérifier que la date du match est dans le futur
+    if (_matchDate.isBefore(DateTime.now())) {
+      _showSnackBar('La date du match doit être dans le futur', isError: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -782,7 +888,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
             : _equipeBUrlController.text,
       );
 
-      // 4. Créer le Pronostic
+      // 4. Créer le Pronostic avec la date du match
       await _pronosticProvider.createPronostic(
         postId: postId,
         createurId: _authProvider.loginUserData.id!,
@@ -792,16 +898,16 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
         prixParticipation: _typeAcces == 'PAYANT' ? _prixParticipation : 0,
         cagnotte: _cagnotte,
         quotaMaxParScore: _quotaMaxParScore,
+        dateDebutMatch: _matchDate, // <-- nouveau paramètre
       );
 
       // 5. Notifications
       String message = "🔮 Nouveau pronostic en ligne sur AfroLook ! ⚽\n"
           "${_equipeANomController.text} vs ${_equipeBNomController.text}\n"
-          // "💰 Donnez vite votre pronostic pour remporter ${_cagnotte.toStringAsFixed(0)} FCFA !";
           "💰 Donnez vite votre pronostic et tentez de remporter plus de 45 000 FCFA !";
 
       if (widget.canal != null) {
-         _authProvider.sendPushNotificationToUsers(
+        _authProvider.sendPushNotificationToUsers(
           sender: _authProvider.loginUserData,
           message: message,
           typeNotif: NotificationType.POST.name,
@@ -813,8 +919,9 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
           channelTitle: widget.canal!.titre,
           canal: widget.canal,
         );
-      } else {
-         _authProvider.sendPushNotificationToUsers(
+      }
+      else {
+        _authProvider.sendPushNotificationToUsers(
           sender: _authProvider.loginUserData,
           message: message,
           typeNotif: NotificationType.POST.name,
@@ -914,6 +1021,10 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
               _buildEquipesSection(),
               const SizedBox(height: 16),
 
+              // Date du match (NOUVEAU)
+              _buildMatchDatePicker(),
+              const SizedBox(height: 16),
+
               // Options
               _buildOptionsSection(),
               const SizedBox(height: 16),
@@ -952,6 +1063,8 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
     );
   }
 }
+
+
 
 // // pages/pronostics/create_pronostic_page.dart
 //
@@ -1005,6 +1118,9 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //   final _equipeBNomController = TextEditingController();
 //   final _equipeBUrlController = TextEditingController();
 //
+//   // Contrôleur pour la cagnotte
+//   final TextEditingController _cagnotteController = TextEditingController();
+//
 //   // États
 //   bool _isLoading = false;
 //   Uint8List? _selectedImage;
@@ -1032,6 +1148,9 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //     _userProvider = Provider.of<UserProvider>(context, listen: false);
 //     _pronosticProvider = Provider.of<PronosticProvider>(context, listen: false);
 //     _notificationService = MassNotificationService();
+//
+//     // Initialiser le contrôleur de cagnotte
+//     _cagnotteController.text = _cagnotte.toStringAsFixed(0);
 //   }
 //
 //   @override
@@ -1041,6 +1160,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //     _equipeAUrlController.dispose();
 //     _equipeBNomController.dispose();
 //     _equipeBUrlController.dispose();
+//     _cagnotteController.dispose();
 //     super.dispose();
 //   }
 //
@@ -1369,44 +1489,76 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //
 //           const SizedBox(height: 16),
 //
-//           // Cagnotte
+//           // Cagnotte (saisie manuelle)
 //           Text('Cagnotte totale (FCFA)', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
 //           const SizedBox(height: 8),
-//           Container(
-//             decoration: BoxDecoration(
-//               color: _backgroundColor,
-//               borderRadius: BorderRadius.circular(12),
-//             ),
-//             child: Row(
-//               children: [
-//                 Expanded(
-//                   child: Slider(
-//                     value: _cagnotte,
-//                     min: 1000,
-//                     max: 1000000,
-//                     divisions: 100,
-//                     activeColor: _secondaryColor,
-//                     inactiveColor: Colors.grey[700],
-//                     onChanged: (value) {
-//                       setState(() {
-//                         _cagnotte = value;
-//                       });
-//                     },
+//           Row(
+//             children: [
+//               Expanded(
+//                 child: TextFormField(
+//                   controller: _cagnotteController,
+//                   style: TextStyle(color: _textColor, fontSize: 16),
+//                   keyboardType: TextInputType.number,
+//                   decoration: InputDecoration(
+//                     hintText: '0 - 50 000',
+//                     hintStyle: TextStyle(color: _hintColor),
+//                     filled: true,
+//                     fillColor: _backgroundColor,
+//                     border: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(12),
+//                       borderSide: BorderSide.none,
+//                     ),
+//                     prefixIcon: Icon(Iconsax.money, color: _secondaryColor),
 //                   ),
+//                   onChanged: (value) {
+//                     setState(() {
+//                       _cagnotte = double.tryParse(value) ?? 0;
+//                       if (_cagnotte > 50000) {
+//                         _cagnotte = 50000;
+//                         _cagnotteController.text = '50000';
+//                       } else if (_cagnotte < 0) {
+//                         _cagnotte = 0;
+//                         _cagnotteController.text = '0';
+//                       }
+//                     });
+//                   },
+//                   validator: (value) {
+//                     if (value == null || value.isEmpty) {
+//                       return 'Veuillez saisir la cagnotte';
+//                     }
+//                     final cagnotte = double.tryParse(value);
+//                     if (cagnotte == null) {
+//                       return 'Veuillez saisir un nombre valide';
+//                     }
+//                     if (cagnotte < 0) {
+//                       return 'La cagnotte ne peut pas être négative';
+//                     }
+//                     if (cagnotte > 50000) {
+//                       return 'Maximum 50 000 FCFA';
+//                     }
+//                     return null;
+//                   },
 //                 ),
-//                 Container(
-//                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//                   decoration: BoxDecoration(
-//                     color: _secondaryColor.withOpacity(0.2),
-//                     borderRadius: BorderRadius.circular(8),
-//                   ),
-//                   child: Text(
-//                     '${_cagnotte.toStringAsFixed(0)} FCFA',
-//                     style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold),
-//                   ),
+//               ),
+//               const SizedBox(width: 12),
+//               Container(
+//                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//                 decoration: BoxDecoration(
+//                   color: _secondaryColor.withOpacity(0.2),
+//                   borderRadius: BorderRadius.circular(12),
+//                   border: Border.all(color: _secondaryColor),
 //                 ),
-//               ],
-//             ),
+//                 child: Text(
+//                   'FCFA',
+//                   style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold),
+//                 ),
+//               ),
+//             ],
+//           ),
+//           const SizedBox(height: 8),
+//           Text(
+//             'Montant à partager entre les gagnants (max 50 000 FCFA)',
+//             style: TextStyle(color: _hintColor, fontSize: 12, fontStyle: FontStyle.italic),
 //           ),
 //
 //           const SizedBox(height: 16),
@@ -1625,6 +1777,14 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //       return;
 //     }
 //
+//     // Validation supplémentaire de la cagnotte
+//     final cagnotteValue = double.tryParse(_cagnotteController.text) ?? 0;
+//     if (cagnotteValue < 0 || cagnotteValue > 50000) {
+//       _showSnackBar('La cagnotte doit être entre 0 et 50 000 FCFA', isError: true);
+//       return;
+//     }
+//     _cagnotte = cagnotteValue;
+//
 //     setState(() => _isLoading = true);
 //
 //     try {
@@ -1632,7 +1792,6 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //       showDialog(
 //         context: context,
 //         barrierDismissible: false,
-//         // builder: (context) => const LoadingWidget(message: 'Publication en cours...'),
 //         builder: (context) => const LoadingWidget(),
 //       );
 //
@@ -1651,7 +1810,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //         ..id = postId
 //         ..user_id = _authProvider.loginUserData.id
 //         ..description = _descriptionController.text
-//         ..type = 'PRONOSTIC' // Type spécifique pour identifier
+//         ..type = 'PRONOSTIC'
 //         ..typeTabbar = 'PRONOSTIC'
 //         ..dataType = PostDataType.IMAGE.name
 //         ..images = [imageUrl]
@@ -1704,10 +1863,16 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //       );
 //
 //       // 5. Notifications
+//       String message = "🔮 Nouveau pronostic en ligne sur AfroLook ! ⚽\n"
+//           "${_equipeANomController.text} vs ${_equipeBNomController.text}\n"
+//           // "💰 Donnez vite votre pronostic pour remporter ${_cagnotte.toStringAsFixed(0)} FCFA !";
+//           "💰 Donnez vite votre pronostic et tentez de remporter plus de 45 000 FCFA !";
+//
 //       if (widget.canal != null) {
-//         await _authProvider.sendPushNotificationToUsers(
+//          _authProvider.sendPushNotificationToUsers(
 //           sender: _authProvider.loginUserData,
-//           message: "🔮 Nouveau pronostic en ligne sur AfroLook ! ⚽\n${_equipeANomController.text} vs ${_equipeBNomController.text}\n💰 Donnez vite votre pronostic pour remporter plus de 50 000 FCFA !",          typeNotif: NotificationType.POST.name,
+//           message: message,
+//           typeNotif: NotificationType.POST.name,
 //           postId: postId,
 //           postType: 'PRONOSTIC',
 //           chatId: '',
@@ -1717,9 +1882,10 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //           canal: widget.canal,
 //         );
 //       } else {
-//         await _authProvider.sendPushNotificationToUsers(
+//          _authProvider.sendPushNotificationToUsers(
 //           sender: _authProvider.loginUserData,
-//           message: "🔮 Nouveau pronostic en ligne sur AfroLook ! ⚽\n${_equipeANomController.text} vs ${_equipeBNomController.text}\n💰 Donnez vite votre pronostic pour remporter plus de 50 000 FCFA !",          typeNotif: NotificationType.POST.name,
+//           message: message,
+//           typeNotif: NotificationType.POST.name,
 //           postId: postId,
 //           postType: 'PRONOSTIC',
 //           chatId: '',
@@ -1828,7 +1994,7 @@ class _CreatePronosticPageState extends State<CreatePronosticPage> {
 //               _buildRecapSection(),
 //               const SizedBox(height: 30),
 //
-//               // Bouton de publication (optionnel, déjà dans l'app bar)
+//               // Bouton de publication
 //               SizedBox(
 //                 width: double.infinity,
 //                 height: 55,

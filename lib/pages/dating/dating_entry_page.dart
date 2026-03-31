@@ -7,6 +7,7 @@ import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../pub/rewarded_ad_widget.dart';
+import '../pub/rewarded_interstitial_ad_widget.dart';
 import 'buy_coins_page.dart';
 import 'dating_chat_page.dart';
 import 'dating_creator_posts_tab.dart';
@@ -81,6 +82,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
   bool _showRewardedAd = false;
   String? _pendingRewardType; // 'likes' ou 'superlikes'
+
+  final GlobalKey<InterstitialAdWidgetState> _adKey = GlobalKey();
   @override
   void initState() {
     super.initState();
@@ -111,6 +114,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     }
     _wasActive = isActive;
   }
+
   Future<void> _addBonusLikes(int amount) async {
     setState(() {
       if (_remainingLikes != -1) {
@@ -675,11 +679,37 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndLoadMore());
   }
+  int _swipeCounter = 0; // Compteur pour suivre le nombre de swipes
+  void _checkAndShowSwipeAd() {
+    // 1. Définir le seuil selon le plan d'abonnement
+    int nbrpost = 5; // Par défaut pour le mode gratuit
+    bool isFreeUser = (_subscriptionPlan == 'gratuit' || _subscriptionPlan == null);
+    bool isPlusUser = (_subscriptionPlan == 'plus');
 
-  // ---------- Actions de swipe ----------
+    if (isFreeUser) {
+      nbrpost = 5; // Pub tous les 5 swipes pour les gratuits
+    } else if (isPlusUser) {
+      nbrpost = 12; // Pub tous les 12 swipes pour le plan Plus
+    } else {
+      // Si l'utilisateur est Gold, on arrête tout ici (pas de pub)
+      return;
+    }
+
+    // 2. Incrémenter le compteur à chaque swipe
+    _swipeCounter++;
+
+    // 3. Vérifier si le seuil est atteint
+    if (_swipeCounter >= nbrpost) {
+      print('📢 [AD] Seuil de $nbrpost swipes atteint pour le plan $_subscriptionPlan');
+
+      _adKey.currentState?.showAd();
+      _swipeCounter = 0;
+    }
+  }  // ---------- Actions de swipe ----------
   void _handleSwipeLeft() {
     if (_isSwiping || _currentIndex >= _profiles.length) return;
     _isSwiping = true;
+    _checkAndShowSwipeAd();
     _nextProfile();
     Future.delayed(const Duration(milliseconds: 300), () => _isSwiping = false);
   }
@@ -694,6 +724,8 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
     final profile = _profiles[_currentIndex];
     _likeCount++;
     _history.add(profile);
+    _checkAndShowSwipeAd();
+
     _nextProfile();
     _processLike(profile);
     _checkAndLoadMore();
@@ -1400,17 +1432,21 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   void _openChat(DatingProfile profile) async {
     final connection = await _getOrCreateConnection(profile.userId);
     if (connection != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DatingChatPage(
-            connectionId: connection.id,
-            otherUserId: profile.userId,
-            otherUserName: profile.pseudo,
-            otherUserImage: profile.imageUrl,
-          ),
-        ),
-      );
+
+      if (_subscriptionPlan == 'gratuit') {
+        _adKey.currentState?.showAd(); // On lance la pub pour les gratuits
+      }
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (_) => DatingChatPage(
+      //       connectionId: connection.id,
+      //       otherUserId: profile.userId,
+      //       otherUserName: profile.pseudo,
+      //       otherUserImage: profile.imageUrl,
+      //     ),
+      //   ),
+      // );
     }
   }
 
@@ -1599,8 +1635,62 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   void _goToNotifications() {
     Navigator.push(context, MaterialPageRoute(builder: (_) => DatingNotificationsPage()));
   }
+  void _showGoldIncentiveMessage() {
+    // On nettoie les anciens messages pour éviter les superpositions
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-  @override
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8), // Durée étendue à 8 secondes
+        backgroundColor: Colors.black.withOpacity(0.95),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: const BorderSide(color: Colors.amber, width: 1),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        content: Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: Colors.amber, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Afrolove Gold ✨",
+                    style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  Text(
+                    "Vous ne profitez pas encore des avantages Gold. Passez au plan Gold pour supprimer les publicités !",
+                    style: TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            // Bouton pour fermer manuellement le message
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: "VOIR L'OFFRE",
+          textColor: Colors.amber,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DatingSubscriptionPage()),
+            );
+          },
+        ),
+      ),
+    );
+  }  @override
   Widget build(BuildContext context) {
     final hasSubscription = _subscriptionPlan != null && (_subscriptionPlan == 'plus' || _subscriptionPlan == 'gold');
     final showEmptyState = _profiles.isEmpty && !_isLoading;
@@ -1908,6 +1998,21 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
               },
               child: const SizedBox.shrink(),
             ),
+
+          InterstitialAdWidget(
+            key: _adKey,
+            onAdDismissed: () {
+              // Action après la pub (ex: retour à l'accueil)
+              // _nextProfile();
+
+              if((_subscriptionPlan != 'gold')){
+                _showGoldIncentiveMessage();
+              }
+
+
+            },
+          ),
+          // Le widget AD invisible
         ],
       ),
       bottomNavigationBar: Container(

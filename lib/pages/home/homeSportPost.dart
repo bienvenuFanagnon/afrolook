@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../services/utils/abonnement_utils.dart';
 import '../UserServices/ServiceWidget.dart';
 
 import '../admin/AfrolookPub/advertisementCarouselWidget.dart';
@@ -35,6 +36,8 @@ import '../listeUserLikepage.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/banner_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
+import '../pub/rewarded_interstitial_ad_widget.dart';
+import '../user/userAbonnementPage.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../../providers/mixed_feed_service_provider.dart';
@@ -137,6 +140,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   final Map<String, Timer> _visibilityTimers = {};
   final Map<String, bool> _postsViewedInSession = {};
 
+  Timer? _stayTimer;
+  bool _isPageVisible = true;
+  bool _isSupportDialogShowing = false;
+  String? _lastPopupDateKey = 'last_support_ad_popup_date';
+
   // Animation
   late AnimationController _starController;
   late AnimationController _unlikeController;
@@ -159,6 +167,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
+  final GlobalKey<InterstitialAdWidgetState> _interstitialAdKey = GlobalKey();
 
   // 🔥 NOUVELLE MÉTHODE
   Future<void> _initSharedPreferences() async {
@@ -190,6 +199,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _setupScrollController();
     _setupLifecycleObservers();
     _initializeData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startStayTimer();
+    });
   }
 // Ajoutez cette méthode pour les titres sportifs dynamiques
   String _getSportTitle() {
@@ -269,6 +281,225 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (_isPageVisible != isCurrent) {
+      _isPageVisible = isCurrent;
+      if (_isPageVisible) {
+        _startStayTimer();
+      } else {
+        _stopStayTimer();
+      }
+    }
+  }
+  Future<bool> _shouldStartTimer() async {
+    if (_isUserPremium()) {
+      print('⏱️ [Timer] Utilisateur premium → timer non démarré');
+      return false;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastPopupDateStr = prefs.getString(_lastPopupDateKey!);
+    if (lastPopupDateStr != null) {
+      final lastDate = DateTime.parse(lastPopupDateStr);
+      final diffDays = DateTime.now().difference(lastDate).inDays;
+      print('⏱️ [Timer] Dernière popup: $lastPopupDateStr, différence jours: $diffDays');
+      if (diffDays < 2) {
+        print('⏱️ [Timer] Délai de 2 jours non écoulé → timer non démarré');
+        return false;
+      }
+    }
+
+    print('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
+    return true;
+  }
+  void _startStayTimer() async {
+    print('⏱️ [Timer] Démarrage demandé...');
+
+    bool shouldStart = await _shouldStartTimer();
+    if (!shouldStart) return;
+
+    _stopStayTimer();
+    _stayTimer = Timer(const Duration(seconds: 5), () {
+      print('⏱️ [Timer] Timer déclenché après 5 secondes');
+      _checkAndShowSupportPopup();
+    });
+    print('⏱️ [Timer] Timer démarré (10s)');
+  }
+  void _stopStayTimer() {
+    if (_stayTimer != null && _stayTimer!.isActive) {
+      _stayTimer!.cancel();
+      print('⏱️ [Timer] Timer annulé');
+    }
+  }
+
+  bool _isUserPremium() {
+    final user = authProvider.loginUserData;
+    if (user == null) {
+      print('🔍 [Premium] Utilisateur null');
+      return false;
+    }
+    final isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
+    print('🔍 [Premium] Abonnement utilisateur: ${user.abonnement} => isPremium = $isPremium');
+    return isPremium;
+  }
+
+  Future<void> _checkAndShowSupportPopup() async {
+    print('🔔 [Popup] Vérification des conditions...');
+    if (!_isPageVisible) {
+      print('🔔 [Popup] Page non visible → annulé');
+      return;
+    }
+    if (_isSupportDialogShowing) {
+      print('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
+      return;
+    }
+    if (_isUserPremium()) {
+      print('🔔 [Popup] Utilisateur premium → pas de popup');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastPopupDateStr = prefs.getString(_lastPopupDateKey!);
+    print('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
+
+    if (lastPopupDateStr != null) {
+      final lastDate = DateTime.parse(lastPopupDateStr);
+      final diffDays = DateTime.now().difference(lastDate).inDays;
+      print('🔔 [Popup] Différence en jours: $diffDays');
+      if (diffDays < 2) {
+        print('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
+        return;
+      }
+    }
+
+    // Enregistrer la date actuelle
+    final nowStr = DateTime.now().toIso8601String();
+    await prefs.setString(_lastPopupDateKey!, nowStr);
+    print('🔔 [Popup] Date enregistrée: $nowStr');
+
+    print('🔔 [Popup] Affichage du popup...');
+    _showSupportDialog();
+  }
+  void _showSupportDialog() {
+    _isSupportDialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: darkBackground,
+        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        title: Row(
+          children: [
+            Icon(Icons.volunteer_activism, color: primaryGreen, size: 24),
+            const SizedBox(width: 8),
+            const Text('Soutenez Afrolook !', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chers membres, Afrolook grandit grâce à vous ! 🌍\n\n'
+                  'Chaque publicité que vous regardez nous rapporte un petit revenu. Cela nous permet de :\n'
+                  '• Améliorer l\'application et ajouter de nouvelles fonctionnalités\n'
+                  '• Maintenir des serveurs stables pour une expérience fluide\n'
+                  '• Continuer à vous offrir du contenu de qualité gratuitement\n'
+                  '• Rémunérer les créateurs de contenu que vous aimez !\n\n'
+                  'Ce n\'est pas obligatoire, mais votre soutien est précieux. Merci d\'avance ! 🙏',
+              style: TextStyle(color: textColor, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: lightBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: accentYellow),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.workspace_premium, color: accentYellow, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Devenez Premium',
+                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        Text(
+                          '200 F/mois 😊 • Plus aucune publicité',
+                          style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        const Text(
+                          'Soutenez directement les créateurs de contenu !',
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _isSupportDialogShowing = false;
+            },
+            child: const Text('Fermer', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _isSupportDialogShowing = false;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) =>  AbonnementScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentYellow,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text('S\'abonner', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _isSupportDialogShowing = false;
+              _showInterstitialAd();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text('Regarder la pub', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+  void _showInterstitialAd() {
+    _interstitialAdKey.currentState?.showAd();
+    // Optional: show a thank‑you snackbar after ad dismisses
+    // We'll do that inside the widget's callback in the build method.
   }
 
   void _setupScrollController() {
@@ -1402,29 +1633,30 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildAdBanner({required String key}) {
-    // return SizedBox.shrink();
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: NativeAdWidget(
-        templateType: TemplateType.small, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
-      //   },
-      // ),
-    );
+    return SizedBox.shrink();
+    // return Container(
+    //   key: ValueKey(key),
+    //   margin: EdgeInsets.symmetric(vertical: 16),
+    //   decoration: BoxDecoration(
+    //     color: Colors.grey[100],
+    //     borderRadius: BorderRadius.circular(12),
+    //     border: Border.all(color: Colors.grey[300]!),
+    //   ),
+    //   child: NativeAdWidget(
+    //     key: ValueKey(key),
+    //     templateType: TemplateType.small, // ou TemplateType.small
+    //
+    //     onAdLoaded: () {
+    //       print('✅ Native Ad Afrolook chargée: $key');
+    //     },
+    //   ),
+    //
+    //   // child: BannerAdWidget(
+    //   //   onAdLoaded: () {
+    //   //     print('✅ Bannière Afrolook chargée: $key');
+    //   //   },
+    //   // ),
+    // );
   }
 
   // Méthode pour les posts MIXED (mélange intelligent)
@@ -3167,6 +3399,23 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               Expanded(
                 child: _buildContent(),
               ),
+              InterstitialAdWidget(
+                key: _interstitialAdKey,
+                onAdDismissed: () {
+                  // Show a thank‑you message after the ad is dismissed
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Merci d\'avoir regardé la publicité ! Votre soutien est précieux.',
+                        style: TextStyle(color: Colors.green),
+                      ),
+                      backgroundColor: darkBackground,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+
             ],
           ),
         ),

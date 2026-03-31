@@ -34,7 +34,7 @@ class AdService {
   // VOS IDs DE PRODUCTION (à remplacer par les vôtres)
   static const String _prodBannerId = 'ca-app-pub-4937249920200692/7937737015';
   static const String _prodNativeAdId = 'ca-app-pub-4937249920200692/6034871678';
-  static const String _prodInterstitialId = 'ca-app-pub-4937249920200692/XXXXXXXXXX'; // À créer
+  static const String _prodInterstitialId = 'ca-app-pub-4937249920200692/8828573827'; // À créer
   static const String _prodRewardedId = 'ca-app-pub-4937249920200692/8962511249'; // À créer
 
   // Getters publics
