@@ -360,7 +360,7 @@ class _DetailsPostState extends State<DetailsPost>
       id: notificationId,
       titre: "Soutien 💪 +10 pièces",
       media_url: supporter.imageUrl ?? '',
-      type: NotificationType.SUPPORT.name,
+      type: NotificationType.POST.name,
       description: description,
       users_id_view: [],
       user_id: supporterId,
