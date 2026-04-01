@@ -106,6 +106,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // String _currentFilter = 'ALL'; // 'ALL', 'COUNTRY', 'MIXED', 'CUSTOM'
   bool _isFirstLoad = true;
 
+
   // Données supplémentaires - chargement séparé
   List<ArticleData> _articles = [];
   bool _isLoadingArticles = false;
@@ -2563,12 +2564,12 @@ printVm("_currentFilter data: ${_currentFilter}");
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+        contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
       //AJOUT DES BANNIÈRES ADMOB
       if (postIndex == 2) {
-        // contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
+        // contentWidgets.add(_buildAdBanner(key: 'ad_$postIndex'));
 
         // contentWidgets.add(TopDatingProfilesWidget());
       } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
@@ -2724,7 +2725,8 @@ printVm("_currentFilter data: ${_currentFilter}");
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small, // ou TemplateType.small
+        key: ValueKey(key),
+        templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');

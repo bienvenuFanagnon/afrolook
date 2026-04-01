@@ -1633,30 +1633,30 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Widget _buildAdBanner({required String key}) {
-    return SizedBox.shrink();
-    // return Container(
-    //   key: ValueKey(key),
-    //   margin: EdgeInsets.symmetric(vertical: 16),
-    //   decoration: BoxDecoration(
-    //     color: Colors.grey[100],
-    //     borderRadius: BorderRadius.circular(12),
-    //     border: Border.all(color: Colors.grey[300]!),
-    //   ),
-    //   child: NativeAdWidget(
-    //     key: ValueKey(key),
-    //     templateType: TemplateType.small, // ou TemplateType.small
-    //
-    //     onAdLoaded: () {
-    //       print('✅ Native Ad Afrolook chargée: $key');
-    //     },
-    //   ),
+    // return SizedBox.shrink();
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
     //
     //   // child: BannerAdWidget(
     //   //   onAdLoaded: () {
     //   //     print('✅ Bannière Afrolook chargée: $key');
     //   //   },
     //   // ),
-    // );
+    );
   }
 
   // Méthode pour les posts MIXED (mélange intelligent)
@@ -2580,7 +2580,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           final articlesSection = _buildArticlesSection();
           if (articlesSection is! SizedBox) {
             contentWidgets.add(articlesSection);
-            contentWidgets.add(_buildAdBanner(key: 'ad_${postIndex}'));
+            contentWidgets.add(_buildAdBanner(key: 'ad_list_post_sport${postIndex}'));
 
           }
         } else if (postIndex % 6 == 0) {

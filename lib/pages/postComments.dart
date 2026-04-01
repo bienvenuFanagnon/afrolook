@@ -527,14 +527,11 @@ class _PostCommentsState extends State<PostComments> {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.arrow_forward_ios, size: 16),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (context) => DetailsPost(post: widget.post),
-              ));
-            },
-          ),
+          TextButton(onPressed: () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (context) => DetailsPost(post: widget.post),
+            ));
+          }, child: Text('Voir le post',style: TextStyle(color: Colors.blue),))
         ],
       ),
     );
@@ -1407,104 +1404,6 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
-  Future<void> _sendComment2() async {
-    if (_textController.text.trim().isEmpty) return;
-
-    setState(() => _isLoading = true);
-    final textComment = _textController.text.trim();
-    _textController.clear();
-    _focusNode.unfocus();
-
-    try {
-      bool success = false;
-      String receiverId = '';
-      String action = '';
-
-      if (replying) {
-        final response = ResponsePostComment(
-          user_id: authProvider.loginUserData.id,
-          user_logo_url: authProvider.loginUserData.imageUrl,
-          user_pseudo: authProvider.loginUserData.pseudo,
-          post_comment_id: commentSelectedToReply.id,
-          user_reply_pseudo: replyUser_pseudo,
-          message: textComment,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
-
-        commentSelectedToReply.responseComments ??= [];
-        commentSelectedToReply.responseComments!.add(response);
-
-        success = await postProvider.updateComment(commentSelectedToReply);
-        receiverId = replyUser_id;
-        action = "répondu à votre commentaire";
-      }
-      else {
-        final comment = PostComment(
-          user_id: authProvider.loginUserData.id,
-          user: authProvider.loginUserData,
-          post_id: widget.post.id,
-          users_like_id: [],
-          responseComments: [],
-          message: textComment,
-          loves: 0,
-          likes: 0,
-          comments: 0,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-        );
-
-        success = await postProvider.newComment(comment);
-        if(widget.post.user!=null){
-          receiverId = widget.post.user!.id!;
-
-        }
-        action = "commenté votre publication";
-      }
-
-      if (success) {
-        await FirebaseFirestore.instance
-            .collection("Posts")
-            .doc(widget.post.id)
-            .update({
-          "comments": FieldValue.increment(1),
-        });
-        await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
-
-        authProvider. notifySubscribersOfInteraction(
-          actionUserId: authProvider.loginUserData.id!,
-          postOwnerId: widget.post.user_id!,
-          postId: widget.post.id!,
-          actionType: 'comment',
-          postDescription: widget.post.description,
-          postImageUrl: widget.post.images?.first,
-          postDataType: widget.post.dataType,
-        );
-        if(widget.post.user!=null){
-          // Envoyer notification au propriétaire du commentaire/post
-          await _sendCommentNotification(receiverId, action, textComment);
-
-
-        }
-        // Envoyer notifications pour les mentions
-        await _sendMentionNotifications(textComment);
-      }
-
-      setState(() {
-        replying = false;
-        replyingTo = "";
-      });
-
-      if (success) {
-        // Recharger les commentaires depuis le début
-        await _loadInitialComments();
-      }
-
-    } catch (e) {
-      setState(() => _isLoading = false);
-      print('Erreur envoi commentaire: $e');
-    }
-  }
   Future<void> _sendComment() async {
     if (_textController.text.trim().isEmpty) return;
 
@@ -1573,12 +1472,20 @@ class _PostCommentsState extends State<PostComments> {
       }
 
       if (success) {
-        // await FirebaseFirestore.instance
-        //     .collection("Posts")
-        //     .doc(widget.post.id)
-        //     .update({
-        //   "comments": FieldValue.increment(1),
-        // });
+        authProvider. notifySubscribersOfInteraction(
+          actionUserId: authProvider.loginUserData.id!,
+          postOwnerId: widget.post.user_id!,
+          postId: widget.post.id!,
+          actionType: 'comment',
+          commentaireMessage: '${textComment}',
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.type != PostDataType.IMAGE.name
+              ? (widget.post.user?.imageUrl ?? '')
+              : (widget.post.images != null && widget.post.images!.isNotEmpty
+              ? widget.post.images!.first
+              : ''),
+          postDataType: widget.post.dataType,
+        );
         FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
 if(widget.post.user!=null){
   // Envoyer notification au propriétaire du commentaire/post

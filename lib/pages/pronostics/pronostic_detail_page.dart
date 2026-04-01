@@ -11,6 +11,7 @@ import 'package:afrotok/services/pronostic_payment_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/model_data.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../pub/interstitial_ad_widget.dart';
+import '../pub/native_ad_widget.dart';
 import '../pub/rewarded_interstitial_ad_widget.dart';
 import '../userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';
 
@@ -431,16 +433,10 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         if (!isPremium && !_adShown) {
           _adShown = true;
           _interstitialAdKey.currentState?.showAd();
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('✅ Merci d\'avoir regardé la publicité !'), backgroundColor: Colors.green),
-            );
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) Navigator.pop(context);
-            });
-          }
+          // Ne rien faire de plus – la page restera ouverte,
+          // la pub s'affichera, et le callback la fermera.
         } else {
+          // Utilisateur premium ou déjà montré
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('✅ Pronostic enregistré !'), backgroundColor: Colors.green),
@@ -1082,6 +1078,33 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
   // ---------------------------------------------------------------------------
   // Build principal
   // ---------------------------------------------------------------------------
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      //
+      //   // child: BannerAdWidget(
+      //   //   onAdLoaded: () {
+      //   //     print('✅ Bannière Afrolook chargée: $key');
+      //   //   },
+      //   // ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1177,10 +1200,13 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
                               padding: const EdgeInsets.all(16),
                               child: Column(
                                 children: [
+                                  _buildAdBanner(key: 'ad_native_pronos'),
+                                  const SizedBox(height: 8),
+
                                   _buildTeamsCard(currentPronostic),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
                                   _buildStatusCard(currentPronostic),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
                                   if (currentPost != null) _buildDescription(currentPost),
                                   if (currentPost != null) _buildStatsRow(currentPost),
                                   const Divider(color: Colors.grey, height: 32),
@@ -1191,18 +1217,18 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
                                   if (_aDejaParticipe(currentPronostic, userId) && _estGagnant(currentPronostic, userId) && currentPronostic.gainParGagnant != null)
                                     _buildGainCard(currentPronostic.gainParGagnant!),
 
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
 
                                   if (currentPronostic.estOuvert && !_aDejaParticipe(currentPronostic, userId))
                                     _buildParticipationForm(currentPronostic)
                                   else if (!currentPronostic.estOuvert && !_aDejaParticipe(currentPronostic, userId))
                                     _buildClosedMessage(currentPronostic),
 
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
                                   _buildStatsCard(currentPronostic),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
                                   _buildParticipantsList(currentPronostic),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 10),
                                 ],
                               ),
                             ),
@@ -1218,10 +1244,17 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
           InterstitialAdWidget(
             key: _interstitialAdKey,
             onAdDismissed: () {
-              if (mounted) Navigator.pop(context);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ Merci d\'avoir regardé la publicité !'), backgroundColor: Colors.green),
+                );
+                // Fermer la page après un court délai pour laisser voir le snackbar
+                Future.delayed(const Duration(seconds: 1), () {
+                  if (mounted) Navigator.pop(context);
+                });
+              }
             },
-          ),
-        ],
+          ),        ],
       ),
     );
   }
