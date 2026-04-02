@@ -2759,7 +2759,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.medium, // ou TemplateType.small
+        templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');
