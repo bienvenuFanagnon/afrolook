@@ -404,8 +404,8 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
               // Publicités
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: widget.height* 0.58,
-                  maxHeight: widget.height* 0.58,
+                  minHeight: widget.height* 0.53,
+                  maxHeight: widget.height* 0.53,
                 ),
                 child: PageView.builder(
                   itemCount: _activeAds.length,
@@ -424,7 +424,7 @@ class _AdvertisementCarouselWidgetState extends State<AdvertisementCarouselWidge
                       child: AdvertisementPostWidget(
                         post: Post.fromJson(adData['post']),
                         ad:Advertisement.fromJson(adData['ad']),
-                        width: widget.height* 0.59,
+                        width: widget.height* 0.54,
                         isPreview: true,
                         onAdClicked: _handleAdClicked,
                         onAdViewed: _handleAdViewed,

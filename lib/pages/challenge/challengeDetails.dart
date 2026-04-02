@@ -13,7 +13,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 import '../pub/native_ad_widget.dart';
 import 'newChallenge.dart';
 import 'dart:typed_data';
@@ -32,7 +32,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 import 'newChallenge.dart';
 import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -50,7 +50,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 import 'newChallenge.dart';
 import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -1701,7 +1701,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoTikTokPageDetails(initialPost: post),
+                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
                   ),
                 );
               } else {
@@ -2387,7 +2387,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
       onTap: () {
         if (post.dataType == 'VIDEO') {
           Navigator.push(context,
-              MaterialPageRoute(builder: (_) => VideoTikTokPageDetails(initialPost: post)));
+              MaterialPageRoute(builder: (_) => VideoYoutubePageDetails(initialPost: post)));
         } else {
           Navigator.push(
               context, MaterialPageRoute(builder: (_) => DetailsPost(post: post)));

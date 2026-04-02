@@ -35,7 +35,7 @@ import '../../canaux/detailsCanal.dart';
 import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
-import '../../postDetailsVideoListe.dart';
+import '../../postDetailsVideo.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1757,9 +1757,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               _buildSupportButton(true),
               SizedBox(width: 3,),
 
-              buildTotalInteractions(
-                totalCount: widget.post.totalInteractions ?? 0,
-                color: _afroBlue,
+              buildTotalVues(
+                totalCount: widget.post.vues ?? 0,
+                color: Colors.yellow,
                 showLabel: false,
               ),
             ],
@@ -1771,9 +1771,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               _buildSupportButton(true),
               SizedBox(width: 3,),
 
-              buildTotalInteractions(
-                totalCount: widget.post.totalInteractions ?? 0,
-                color: _afroBlue,
+              buildTotalVues(
+                totalCount: widget.post.vues ?? 0,
+                color: Colors.yellow,
                 showLabel: false,
               ),
             ],
@@ -2210,7 +2210,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+                    builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
                   ),
                 );
               }else {
@@ -2426,9 +2426,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
           // Vues
           _buildActionButton(
-            icon: FontAwesome.eye,
-            count: widget.post.vues ?? 0,
-            color: _afroGreen,
+            icon:  Icons.bar_chart,
+            count: widget.post.totalInteractions ?? 0,
+            color: Colors.blue,
             onPressed: hasAccess ? () {
               _handleRepost();
               recordUniquePostView();

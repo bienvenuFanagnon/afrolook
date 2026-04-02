@@ -17,7 +17,7 @@ import '../pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import '../pages/component/consoleWidget.dart';
 import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/postDetails.dart';
-import '../pages/postDetailsVideoListe.dart';
+import '../pages/postDetailsVideo.dart';
 import '../pages/pronostics/pronostic_detail_page.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
@@ -541,7 +541,7 @@ class AppLinkService {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => VideoTikTokPageDetails(initialPost: posts.first,isIn: true,)
+                      builder: (context) => VideoYoutubePageDetails(initialPost: posts.first,isIn: true,)
                   )
               );
             }else{

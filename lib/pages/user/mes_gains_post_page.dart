@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/model_data.dart';
 import '../../services/remuneration_service.dart';
 import '../postDetails.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 
 // ============================================
 // PAGE PRINCIPALE DES GAINS
@@ -682,7 +682,7 @@ class _MesGainsPageState extends State<MesGainsPage> with SingleTickerProviderSt
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => VideoTikTokPageDetails(initialPost: post),
+                builder: (context) => VideoYoutubePageDetails(initialPost: post),
               ),
             );
 

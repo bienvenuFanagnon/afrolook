@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
-import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
@@ -23,7 +23,7 @@ import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
-import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
@@ -514,7 +514,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
     return Stack(
       children: [
         // VIDÉO PRINCIPALE
-        VideoTikTokPageDetails(
+        VideoYoutubePageDetails(
           initialPost: post,
           // isCurrentPage: isCurrentPage,
         ),

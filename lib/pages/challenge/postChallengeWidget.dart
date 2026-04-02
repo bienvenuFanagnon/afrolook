@@ -25,7 +25,7 @@ import '../canaux/detailsCanal.dart';
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
 
 
@@ -840,7 +840,7 @@ class _LookChallengePostWidgetState extends State<LookChallengePostWidget>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+                      builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
                     ),
                   );
                 },

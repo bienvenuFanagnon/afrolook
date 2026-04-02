@@ -35,6 +35,7 @@ import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../listeUserLikepage.dart';
+import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/banner_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
@@ -44,6 +45,8 @@ import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
+
+import '../userPosts/youTube_video_card.dart';
 
 
 // Constantes de couleur
@@ -56,8 +59,11 @@ const Color accentYellow = Color(0xFFFFD700);
 class HomeConstPostPage extends StatefulWidget {
   final String type;
   final String? sortType;
+  final bool isVideoPage; // Nouvelle variable avec défaut false
 
-  HomeConstPostPage({super.key, required this.type, this.sortType});
+
+  HomeConstPostPage({super.key, required this.type, this.sortType,    this.isVideoPage = false, // valeur par défaut
+  });
 
   @override
   State<HomeConstPostPage> createState() => _HomeConstPostPageState();
@@ -72,6 +78,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   late UserProvider userProvider;
   late PostProvider postProvider;
   late MixedFeedServiceProvider mixedFeedProvider;
+   String HAS_SEEN_VIDEO_PAGE_KEY = 'has_seen_video_quality_page';
 
   // Contrôleurs
   final ScrollController _scrollController = ScrollController();
@@ -151,6 +158,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   void initState() {
     super.initState();
     _initSharedPreferences();
+    checkAndRedirectToVideoPage(context);
     // Initialisation des providers
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     authProviderShop = Provider.of<UserShopAuthProvider>(context, listen: false);
@@ -1235,6 +1243,11 @@ printVm("_currentFilter data: ${_currentFilter}");
           query = query.where("country", isEqualTo: countryCode);
         }
       }
+
+      // 🔥 AJOUT : filtre vidéo si nécessaire
+      if (widget.isVideoPage) {
+        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
+      }
 // 🔹 Filtrer uniquement les posts non publicitaires
 //       query = query.where("isAdvertisement", isEqualTo: false);
       query = query.orderBy("created_at", descending: true);
@@ -1351,7 +1364,9 @@ printVm("_currentFilter data: ${_currentFilter}");
       Query query = _firestore.collection('Posts')
           // .where("isAdvertisement", isEqualTo: false) // jamais récupérer les pubs
           .orderBy("created_at", descending: true);
-
+      if (widget.isVideoPage) {
+        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
+      }
       if (!isInitialLoad && _lastAllDocument != null) {
         query = query.startAfterDocument(_lastAllDocument!);
       }
@@ -1446,7 +1461,9 @@ printVm("_currentFilter data: ${_currentFilter}");
       Query query = _firestore.collection('Posts')
           .orderBy("created_at", descending: true);
           // .where("isAdvertisement", isEqualTo: false); // jamais récupérer les pubs
-
+      if (widget.isVideoPage) {
+        query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
+      }
       if (!isInitialLoad && _lastOtherDocument != null) {
         query = query.startAfterDocument(_lastOtherDocument!);
       }
@@ -1927,6 +1944,24 @@ printVm("_currentFilter data: ${_currentFilter}");
   // WIDGETS PRINCIPAUX
   // ===========================================================================
 
+// Clé pour stocker dans SharedPreferences
+
+// Fonction pour vérifier et rediriger
+  Future<void> checkAndRedirectToVideoPage(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hasSeen = prefs.getBool(HAS_SEEN_VIDEO_PAGE_KEY) ?? false;
+
+    if (!hasSeen) {
+      // Marquer comme vu immédiatement
+      await prefs.setBool(HAS_SEEN_VIDEO_PAGE_KEY, true);
+
+      // Rediriger vers la page des vidéos
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeConstPostPage(isVideoPage: true, type: '',)),
+      );
+    }
+  }
   Widget _buildPostWidget(Post post, double width, double height) {
     return VisibilityDetector(
       key: Key('post-${post.id}'),
@@ -1934,31 +1969,29 @@ printVm("_currentFilter data: ${_currentFilter}");
         _handleVisibilityChanged(post, info);
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: darkBackground.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+
         child: Stack(
           children: [
             // Badge de disponibilité
-            Positioned(
-              top: 8,
-              left: 8,
-              child: _buildAvailabilityBadge(post),
-            ),
+
 
             // Contenu du post
-            post.type == PostType.PRONOSTIC.name?SizedBox.shrink():  post.type == PostType.CHALLENGEPARTICIPATION.name
-
+            post.type == PostType.PRONOSTIC.name
+                ? SizedBox.shrink()
+                : post.type == PostType.CHALLENGEPARTICIPATION.name
                 ? LookChallengePostWidget(post: post, height: height, width: width)
+                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+                ? YouTubeVideoCard(
+              post: post,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                  ),
+                );
+              },
+            )
                 : HomePostUsersWidget(
               post: post,
               color: _getRandomColor(),
@@ -3262,28 +3295,32 @@ printVm("_currentFilter data: ${_currentFilter}");
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: darkBackground,
+
         appBar: AppBar(
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: widget.isVideoPage,
+          iconTheme: IconThemeData(color: Colors.amber),
           backgroundColor: Colors.black,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Découvrir',
+                widget.isVideoPage ? 'Afrolook vidéos' : 'Découvrir',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.white,
+                  color: widget.isVideoPage ? primaryGreen : Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 2),
-              Text(
-                _getFilterDescription(),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[400],
+              if (!widget.isVideoPage)
+                SizedBox(height: 2),
+              if (!widget.isVideoPage)
+                Text(
+                  _getFilterDescription(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[400],
+                  ),
                 ),
-              ),
             ],
           ),
           elevation: 0,

@@ -44,8 +44,9 @@ import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/socialVideos/thread/afrolookVideoOriginal.dart';
+import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
 
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/splashVideo.dart';
@@ -127,7 +128,7 @@ Future<void> main() async {
 
 
     // Mode TEST (true) / PRODUCTION (false)
-    AdService.setMode(false); // À changer avant publication
+    AdService.setMode(true); // À changer avant publication
   }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {
@@ -277,7 +278,7 @@ class _MyAppState extends State<MyApp> {
           await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
             if (posts.isNotEmpty) {
               if(posts.first.dataType == PostDataType.VIDEO.name){
-                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
+                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoYoutubePageDetails(initialPost: posts.first),));
               }else{
                 navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
               }
@@ -451,8 +452,9 @@ class _MyAppState extends State<MyApp> {
               case '/home':
                 return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
               case '/videos':
-                return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
+                // return PageTransition(child: VideoTikTokPage(), type: PageTransitionType.fade);
                 // return PageTransition(child: AfroVideoThreads(), type: PageTransitionType.fade);
+                return PageTransition(child: HomeConstPostPage(type: '',isVideoPage: true,), type: PageTransitionType.fade);
               case '/home_profile_user':
                 return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
               case '/profile_entreprise':

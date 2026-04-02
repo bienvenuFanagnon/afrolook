@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:afrotok/pages/challenge/challengeDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -461,7 +461,7 @@ class _UserChallengesPageState extends State<UserChallengesPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => VideoTikTokPageDetails(initialPost: post),
+                builder: (context) => VideoYoutubePageDetails(initialPost: post),
               ),
             );
           } else {

@@ -8,7 +8,7 @@ import '../../providers/authProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../postDetails.dart';
-import '../postDetailsVideoListe.dart';
+import '../postDetailsVideo.dart';
 
 // Couleurs du thème
 const _afroDarkBg = Color(0xFF000000);
@@ -130,7 +130,7 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+          builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
         ),
       );
     } else {

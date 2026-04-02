@@ -2,7 +2,24 @@
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/postDetailsVideoListe.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+
+import '../../../providers/authProvider.dart';
+import '../../canaux/detailsCanal.dart';
+import '../../component/showUserDetails.dart';
+
+// widgets/advertisement_post_widget.dart
+import 'dart:async';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -134,7 +151,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     if (difference.inDays < 1) {
       if (difference.inHours < 1) {
         if (difference.inMinutes < 1) {
-          return "il y a quelques secondes";
+          return "à l'instant";
         } else {
           return "il y a ${difference.inMinutes} min";
         }
@@ -177,7 +194,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VideoTikTokPageDetails(initialPost: widget.post),
+          builder: (context) => VideoYoutubePageDetails(initialPost: widget.post),
         ),
       );
     } else {
@@ -216,19 +233,15 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     try {
       _hasRecordedView = true;
 
-      // Statistiques quotidiennes
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final adRef = _firestore.collection('Advertisements').doc(widget.ad.id);
 
-      // Mise à jour atomique
       await _firestore.runTransaction((transaction) async {
         final adDoc = await transaction.get(adRef);
         if (!adDoc.exists) return;
 
         final currentAd = Advertisement.fromJson(adDoc.data()!);
-
-        // Vérifier si l'utilisateur a déjà vu
         final hasSeen = currentAd.viewersIds?.contains(currentUserId) ?? false;
 
         final updates = {
@@ -241,7 +254,6 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
           updates['viewersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
 
-        // Mettre à jour les stats quotidiennes
         if (currentAd.dailyStats == null) {
           updates['dailyStats'] = {today: 1};
         } else {
@@ -251,14 +263,12 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
         transaction.update(adRef, updates);
       });
 
-      // Mettre à jour localement
       setState(() {
         widget.ad.views = (widget.ad.views ?? 0) + 1;
       });
 
       widget.onAdViewed?.call(widget.post, widget.ad);
       print('✅ Vue enregistrée pour la pub: ${widget.ad.id}');
-
     } catch (e) {
       print('❌ Erreur lors de l\'enregistrement de la vue: $e');
       _hasRecordedView = false;
@@ -282,8 +292,6 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
         if (!adDoc.exists) return;
 
         final currentAd = Advertisement.fromJson(adDoc.data()!);
-
-        // Vérifier si l'utilisateur a déjà cliqué
         final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
 
         final updates = {
@@ -296,7 +304,6 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
           updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
         }
 
-        // Mettre à jour les stats quotidiennes
         if (currentAd.dailyStats == null) {
           updates['dailyStats'] = {today: {}};
         } else {
@@ -306,7 +313,6 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
         transaction.update(adRef, updates);
       });
 
-      // Mettre à jour localement
       setState(() {
         widget.ad.clicks = (widget.ad.clicks ?? 0) + 1;
       });
@@ -316,21 +322,19 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
 
       print('✅ Clic enregistré pour la pub: ${widget.ad.id}');
 
-      // Ouvrir le lien après avoir enregistré le clic
       if (widget.ad.actionUrl != null && widget.ad.actionUrl!.isNotEmpty) {
         final url = Uri.parse(widget.ad.actionUrl!);
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       }
-
     } catch (e) {
       print('❌ Erreur lors de l\'enregistrement du clic: $e');
     }
   }
 
   // ===========================================================================
-  // WIDGETS DE MÉDIAS
+  // WIDGETS DE MÉDIAS (version compacte)
   // ===========================================================================
 
   Widget _buildImageGrid(double height, int imageCount) {
@@ -351,15 +355,13 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     return GestureDetector(
       onTap: _navigateToDetails,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
           imageUrl: imageUrl,
           fit: BoxFit.cover,
           width: double.infinity,
           height: height,
-          placeholder: (context, url) => Container(
-            color: _hintColor.withOpacity(0.1),
-          ),
+          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
           errorWidget: (context, url, error) => Container(
             color: _hintColor.withOpacity(0.1),
             child: Icon(Icons.broken_image, color: _hintColor),
@@ -376,19 +378,14 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
         children: [
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(right: 2),
+              padding: EdgeInsets.only(right: 1),
               child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
                 child: CachedNetworkImage(
                   imageUrl: images[0],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                  ),
+                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
                     color: _hintColor.withOpacity(0.1),
                     child: Icon(Icons.broken_image, color: _hintColor),
@@ -399,19 +396,14 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(left: 2),
+              padding: EdgeInsets.only(left: 1),
               child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
+                borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
                 child: CachedNetworkImage(
                   imageUrl: images[1],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                  ),
+                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
                     color: _hintColor.withOpacity(0.1),
                     child: Icon(Icons.broken_image, color: _hintColor),
@@ -434,19 +426,14 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
           Expanded(
             flex: 2,
             child: Padding(
-              padding: EdgeInsets.only(right: 2),
+              padding: EdgeInsets.only(right: 1),
               child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
                 child: CachedNetworkImage(
                   imageUrl: images[0],
                   fit: BoxFit.cover,
                   height: height,
-                  placeholder: (context, url) => Container(
-                    color: _hintColor.withOpacity(0.1),
-                  ),
+                  placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                   errorWidget: (context, url, error) => Container(
                     color: _hintColor.withOpacity(0.1),
                     child: Icon(Icons.broken_image, color: _hintColor),
@@ -459,23 +446,19 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
             flex: 1,
             child: Container(
               height: height,
-              padding: EdgeInsets.only(left: 2),
+              padding: EdgeInsets.only(left: 1),
               child: Column(
                 children: [
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: 2),
+                      padding: EdgeInsets.only(bottom: 1),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(16),
-                        ),
+                        borderRadius: BorderRadius.only(topRight: Radius.circular(12)),
                         child: CachedNetworkImage(
                           imageUrl: images[1],
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          placeholder: (context, url) => Container(
-                            color: _hintColor.withOpacity(0.1),
-                          ),
+                          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                           errorWidget: (context, url, error) => Container(
                             color: _hintColor.withOpacity(0.1),
                             child: Icon(Icons.broken_image, color: _hintColor),
@@ -486,18 +469,14 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(top: 2),
+                      padding: EdgeInsets.only(top: 1),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          bottomRight: Radius.circular(16),
-                        ),
+                        borderRadius: BorderRadius.only(bottomRight: Radius.circular(12)),
                         child: CachedNetworkImage(
                           imageUrl: images[2],
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          placeholder: (context, url) => Container(
-                            color: _hintColor.withOpacity(0.1),
-                          ),
+                          placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                           errorWidget: (context, url, error) => Container(
                             color: _hintColor.withOpacity(0.1),
                             child: Icon(Icons.broken_image, color: _hintColor),
@@ -526,8 +505,8 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
           physics: NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 2,
-            mainAxisSpacing: 2,
+            crossAxisSpacing: 1,
+            mainAxisSpacing: 1,
           ),
           itemCount: displayedImages.length,
           itemBuilder: (context, index) {
@@ -535,16 +514,16 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
             if (displayedImages.length == 4) {
               switch (index) {
                 case 0:
-                  borderRadius = BorderRadius.only(topLeft: Radius.circular(16));
+                  borderRadius = BorderRadius.only(topLeft: Radius.circular(12));
                   break;
                 case 1:
-                  borderRadius = BorderRadius.only(topRight: Radius.circular(16));
+                  borderRadius = BorderRadius.only(topRight: Radius.circular(12));
                   break;
                 case 2:
-                  borderRadius = BorderRadius.only(bottomLeft: Radius.circular(16));
+                  borderRadius = BorderRadius.only(bottomLeft: Radius.circular(12));
                   break;
                 case 3:
-                  borderRadius = BorderRadius.only(bottomRight: Radius.circular(16));
+                  borderRadius = BorderRadius.only(bottomRight: Radius.circular(12));
                   break;
                 default:
                   borderRadius = BorderRadius.circular(0);
@@ -564,9 +543,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
-                    placeholder: (context, url) => Container(
-                      color: _hintColor.withOpacity(0.1),
-                    ),
+                    placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
                     errorWidget: (context, url, error) => Container(
                       color: _hintColor.withOpacity(0.1),
                       child: Icon(Icons.broken_image, color: _hintColor),
@@ -580,11 +557,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
                       child: Center(
                         child: Text(
                           '+${images.length - 4}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -600,9 +573,8 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
   Widget _buildVideoContent(double height) {
     return Stack(
       children: [
-        // Thumbnail vidéo
         ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: GestureDetector(
             onTap: _navigateToDetails,
             child: (widget.post.images != null && widget.post.images!.isNotEmpty)
@@ -611,60 +583,39 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
               fit: BoxFit.cover,
               width: double.infinity,
               height: height,
-              placeholder: (context, url) => Container(
-                color: _hintColor.withOpacity(0.1),
-              ),
+              placeholder: (context, url) => Container(color: _hintColor.withOpacity(0.1)),
               errorWidget: (context, url, error) => Container(
                 color: _hintColor.withOpacity(0.1),
-                child: Icon(Icons.videocam, color: _hintColor, size: 40),
+                child: Icon(Icons.videocam, color: _hintColor, size: 30),
               ),
             )
                 : Container(
               color: _hintColor.withOpacity(0.1),
-              child: Center(
-                child: Icon(Icons.videocam, color: _hintColor, size: 40),
-              ),
+              child: Center(child: Icon(Icons.videocam, color: _hintColor, size: 30)),
             ),
           ),
         ),
-
-        // Overlay play
         Positioned.fill(
           child: Center(
             child: Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.play_arrow, color: Colors.white, size: 30),
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), shape: BoxShape.circle),
+              child: Icon(Icons.play_arrow, color: Colors.white, size: 24),
             ),
           ),
         ),
-
-        // Badge vidéo
         Positioned(
-          top: 8,
-          left: 8,
+          top: 6,
+          left: 6,
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(8),
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(6)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.videocam, color: _secondaryColor, size: 12),
-                SizedBox(width: 4),
-                Text(
-                  'VIDÉO',
-                  style: TextStyle(
-                    color: _secondaryColor,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Icon(Icons.videocam, color: _secondaryColor, size: 10),
+                SizedBox(width: 2),
+                Text('VIDÉO', style: TextStyle(color: _secondaryColor, fontSize: 8, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -674,122 +625,94 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
   }
 
   String _truncateDescription(String text) {
-    final words = text.split(' ');
-    if (words.length <= 50) return text;
-    return words.take(50).join(' ') + '...';
+    // On garde 2 lignes max, on coupe si trop long
+    const int maxLines = 2;
+    const int approxCharsPerLine = 40;
+    int maxLength = maxLines * approxCharsPerLine;
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
   }
 
   double _calculatePostHeight() {
     double totalHeight = 0;
 
-    // Badge PUBLICITÉ (40px)
+    // Badge PUBLICITÉ (28px au lieu de 40)
+    totalHeight += 28;
+
+    // Padding interne (8 au lieu de 12)
+    totalHeight += 16;
+
+    // En-tête (avatar + texte) (40px au lieu de 50)
     totalHeight += 40;
 
-    // Padding (24px)
-    totalHeight += 24;
+    // Espacements réduits
+    totalHeight += 6; // entre header et description
+    totalHeight += 8; // entre description et médias
+    totalHeight += 10; // entre médias et stats
+    totalHeight += 8; // entre stats et bouton
 
-    // En-tête (avatar + texte) (50px)
-    totalHeight += 50;
+    // Description (2 lignes ~ 40px)
+    totalHeight += 40;
 
-    // Espacements (SizedBox) (12+12+12+16+12 = 64px)
-    totalHeight += 64;
+    // Médias (hauteur réduite à 0.5 * width)
+    totalHeight += widget.width * 0.5;
 
-    // Description
-    if (widget.post.description != null && widget.post.description!.isNotEmpty) {
-      int lines = (widget.post.description!.length / 40).ceil();
-      if (lines > 3) lines = 3;
-      totalHeight += lines * 20.0;
-    }
+    // Statistiques (20px au lieu de 30)
+    totalHeight += 20;
 
-    // Médias
-    if (widget.post.images != null && widget.post.images!.isNotEmpty && !_isVideoPost(widget.post)) {
-      totalHeight += widget.width * 0.6; // Hauteur des images
-    } else if (_isVideoPost(widget.post)) {
-      totalHeight += widget.width * 0.6; // Hauteur vidéo
-    }
-
-    // Statistiques (30px)
-    totalHeight += 30;
-
-    // Bouton d'action (50px)
-    totalHeight += 50;
-
-    // Indicateur de fin (30px)
-    if (widget.ad.endDate != null) {
-      totalHeight += 30;
-    }
+    // Bouton d'action (36px au lieu de 50)
+    totalHeight += 36;
 
     return totalHeight;
   }
 
   // ===========================================================================
-  // BUILD PRINCIPAL
+  // BUILD PRINCIPAL (COMPACT)
   // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
     final double mediaHeight = widget.height ?? _calculatePostHeight();
-    final double imageHeight = widget.width * 0.5;
+    final double imageHeight = widget.width * 0.5; // plus compact
 
     return VisibilityDetector(
       key: Key('ad-post-${widget.post.id}'),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // marge verticale réduite
         decoration: BoxDecoration(
           color: _cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _secondaryColor, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: _secondaryColor.withOpacity(0.2),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _secondaryColor, width: 1.5), // bordure plus fine
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Badge PUBLICITÉ
+            // Badge PUBLICITÉ (plus compact)
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: _secondaryColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(14),
-                  bottomRight: Radius.circular(16),
-                ),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.campaign, color: Colors.black, size: 16),
+                  Icon(Icons.campaign, color: Colors.black, size: 14),
                   SizedBox(width: 4),
                   Text(
-                    'PUBLICITÉ',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+                    'PUB',
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                   if (widget.ad.renewalCount! > 0) ...[
                     SizedBox(width: 4),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
                       child: Text(
                         'x${widget.ad.renewalCount}',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(color: Colors.black, fontSize: 7, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -798,158 +721,87 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
             ),
 
             Padding(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(8), // padding interne réduit
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // // En-tête avec utilisateur
-                  // _buildHeader(),
+                  // En-tête (avatar, nom, temps)
+                  _buildHeaderCompact(),
 
-                  // SizedBox(height: 12),
+                  SizedBox(height: 6),
 
-                  // DESCRIPTION EN HAUT
+                  // DESCRIPTION (2 lignes max, texte légèrement réduit)
                   if (widget.post.description != null && widget.post.description!.isNotEmpty)
-                    Container(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        '${widget.post.description!}',
-                        style: TextStyle(
-                          color: _textColor,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Text(
+                      _truncateDescription(widget.post.description!),
+                      style: TextStyle(color: _textColor, fontSize: 13, height: 1.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
 
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
 
                   // MÉDIAS
                   (widget.post.images != null && widget.post.images!.isNotEmpty && !_isVideoPost(widget.post))
-                      ? Container(
-                    height: imageHeight,
-                    child: _buildImageGrid(imageHeight, widget.post.images!.length),
-                  )
+                      ? Container(height: imageHeight, child: _buildImageGrid(imageHeight, widget.post.images!.length))
                       : _isVideoPost(widget.post)
-                      ? Container(
-                    height: imageHeight,
-                    child: _buildVideoContent(imageHeight),
-                  )
+                      ? Container(height: imageHeight, child: _buildVideoContent(imageHeight))
                       : SizedBox.shrink(),
 
-                  SizedBox(height: 16),
+                  SizedBox(height: 10),
 
-                  // STATISTIQUES (VUES ET PERFORMANCE)
+                  // STATISTIQUES (plus compactes)
                   Row(
                     children: [
-                      // Vues
                       Row(
                         children: [
-                          Icon(Icons.remove_red_eye, color: _hintColor, size: 16),
-                          SizedBox(width: 4),
-                          Text(
-                            '${_formatCount(widget.ad.views ?? 0)} vues',
-                            style: TextStyle(
-                              color: _hintColor,
-                              fontSize: 12,
-                            ),
-                          ),
+                          Icon(Icons.remove_red_eye, color: _hintColor, size: 14),
+                          SizedBox(width: 3),
+                          Text('${_formatCount(widget.ad.views ?? 0)} vues',
+                              style: TextStyle(color: _hintColor, fontSize: 11)),
                         ],
                       ),
-                      SizedBox(width: 16),
-
-                      // Taux de clic (CTR)
+                      SizedBox(width: 12),
                       if ((widget.ad.views ?? 0) > 0)
                         Row(
                           children: [
-                            Icon(Icons.ads_click, color: _primaryColor, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              '${widget.ad.ctr.toStringAsFixed(1)}% CTR',
-                              style: TextStyle(
-                                color: _primaryColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            Icon(Icons.ads_click, color: _primaryColor, size: 14),
+                            SizedBox(width: 3),
+                            Text('${widget.ad.ctr.toStringAsFixed(1)}% CTR',
+                                style: TextStyle(color: _primaryColor, fontSize: 11, fontWeight: FontWeight.w500)),
                           ],
                         ),
-
-                      Spacer(),
-
-                      // // Badge durée
-                      // Container(
-                      //   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      //   decoration: BoxDecoration(
-                      //     color: _primaryColor.withOpacity(0.2),
-                      //     borderRadius: BorderRadius.circular(12),
-                      //   ),
-                      //   child: Text(
-                      //     '${widget.ad.durationDays} jours',
-                      //     style: TextStyle(
-                      //       color: _primaryColor,
-                      //       fontSize: 11,
-                      //       fontWeight: FontWeight.bold,
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
 
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
 
-                  // BOUTON D'ACTION EN BAS
+                  // BOUTON D'ACTION (plus compact)
                   InkWell(
                     onTap: _handleActionButtonClick,
                     child: Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [_primaryColor, Color(0xFFFF5252)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _primaryColor.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                        gradient: LinearGradient(colors: [_primaryColor, Color(0xFFFF5252)]),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            widget.ad.getActionIcon(),
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          SizedBox(width: 8),
+                          Icon(widget.ad.getActionIcon(), color: Colors.white, size: 16),
+                          SizedBox(width: 6),
                           Text(
                             widget.ad.getActionButtonText().toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                           ),
                           SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                          Icon(Icons.arrow_forward, color: Colors.white, size: 14),
                         ],
                       ),
                     ),
                   ),
-
-
                 ],
               ),
             ),
@@ -959,16 +811,12 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     );
   }
 
-  Widget _buildHeader() {
+  // En-tête compact (avatar plus petit, police réduite)
+  Widget _buildHeaderCompact() {
     return GestureDetector(
       onTap: () {
         if (currentCanal != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CanalDetails(canal: currentCanal!),
-            ),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: currentCanal!)));
         } else if (currentUser != null) {
           showUserDetailsModalDialog(
             currentUser!,
@@ -980,56 +828,40 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
       },
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
-            radius: 20,
+            radius: 16, // plus petit
             backgroundColor: _primaryColor,
             backgroundImage: _getProfileImage(),
             child: _getProfileImage() == null
-                ? Icon(
-              currentCanal != null ? Icons.group : Icons.person,
-              color: Colors.white,
-              size: 18,
-            )
+                ? Icon(currentCanal != null ? Icons.group : Icons.person, color: Colors.white, size: 16)
                 : null,
           ),
-          SizedBox(width: 12),
-
-          // Informations
+          SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _getDisplayName(),
-                  style: TextStyle(
-                    color: _textColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 SizedBox(height: 2),
                 Text(
                   formaterDateTime(widget.post.createdAt),
-                  style: TextStyle(
-                    color: _hintColor,
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: _hintColor, fontSize: 9),
                 ),
               ],
             ),
           ),
-
-          // Badge statut pub
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: widget.ad.isActive
                   ? Colors.green.withOpacity(0.2)
                   : widget.ad.isPending
                   ? Colors.orange.withOpacity(0.2)
                   : Colors.grey.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: widget.ad.isActive
                     ? Colors.green
@@ -1039,18 +871,14 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
               ),
             ),
             child: Text(
-              widget.ad.isActive
-                  ? 'Active'
-                  : widget.ad.isPending
-                  ? 'En attente'
-                  : 'Expirée',
+              widget.ad.isActive ? 'Active' : (widget.ad.isPending ? 'Attente' : 'Expirée'),
               style: TextStyle(
                 color: widget.ad.isActive
                     ? Colors.green
                     : widget.ad.isPending
                     ? Colors.orange
                     : Colors.grey,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
               ),
             ),
