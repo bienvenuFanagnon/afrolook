@@ -198,6 +198,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         // 10 vidéos les plus populaires
           selectedPosts = await _fetchVideosByOrder('popularity', descending: true, limit: 10);
           break;
+          case 3:
+        // 10 vidéos les plus populaires
+          selectedPosts = await _fetchVideosByOrder('popularity', descending: false, limit: 10);
+          break;
         case 1:
         // 10 vidéos les plus récentes
           selectedPosts = await _fetchVideosByOrder('createdAt', descending: true, limit: 10);
@@ -805,6 +809,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       _buildStatItem(Icons.remove_red_eye, _currentPost.vues ?? 0, 'Vues'),
       _buildStatItem(Icons.favorite, _currentPost.loves ?? 0, 'J\'aime'),
       _buildStatItem(Icons.chat_bubble, _currentPost.comments ?? 0, 'Commentaires'),
+      _buildStatItem(Icons.bar_chart, _currentPost.totalInteractions ?? 0, 'Interactions'),
       _buildStatItem(_isFavorite ? Icons.bookmark : Icons.bookmark_border, _currentPost.favoritesCount ?? 0, 'Favoris'),
     ]);
   }

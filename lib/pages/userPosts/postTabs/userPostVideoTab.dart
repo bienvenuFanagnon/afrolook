@@ -67,7 +67,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
   bool _hasAcceptedVideoConditions = false;
   // Variables pour les restrictions
   int _maxCharacters = 300;
-  int _maxVideoSizeMB = 20; // 20 Mo pour gratuit, 80 Mo pour premium
+  int _maxVideoSizeMB = 100; // 20 Mo pour gratuit, 80 Mo pour premium
+  // int _maxVideoSizeMB = 20; // 20 Mo pour gratuit, 80 Mo pour premium
   int _cooldownMinutes = 60;
 
   // Variables pour la sélection des pays
@@ -102,7 +103,11 @@ class _UserPubVideoState extends State<UserPubVideo> {
   final Color _hintColor = Colors.grey[400]!;
   final Color _successColor = Color(0xFF4CAF50);
   late MassNotificationService _notificationService;
-
+// Variables pour les restrictions de format
+  double _minAspectRatio = 1.33;  // Minimum 4:3 (1.33)
+  double _maxAspectRatio = 1.78;  // Maximum 16:9 (1.78)
+  bool _isValidAspectRatio = true;
+  String _aspectRatioError = '';
   // ✅ Ajoutez la clé pour la pub récompensée
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
   bool _showRewardedAd = false;
@@ -126,6 +131,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
     _selectAllCountries = false;
     _selectedCountries.clear();
   }
+
+  // Ajoute cette méthode après _getVideoSize()
+
   Future<void> _checkVideoQualityModalStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final hasSeenModal = prefs.getBool('has_seen_video_quality_modal') ?? false;
@@ -570,15 +578,16 @@ class _UserPubVideoState extends State<UserPubVideo> {
     if (isPremium) {
       // Abonnement Premium
       _maxCharacters = 3000;
-      _maxVideoSizeMB = 80; // 80 Mo pour premium
+      _maxVideoSizeMB = 200; // 80 Mo pour premium
       _cooldownMinutes = 0; // Pas de cooldown pour les premium
       print('🌟 Mode Premium: 3000 caractères, 80 Mo, pas de cooldown');
     } else {
       // Abonnement Gratuit
       _maxCharacters = 300;
-      _maxVideoSizeMB = 20; // 20 Mo pour gratuit
+      _maxVideoSizeMB = 100; // 20 Mo pour gratuit
+      // _maxVideoSizeMB = 20; // 20 Mo pour gratuit
       _cooldownMinutes = 60; // 60 minutes de cooldown
-      print('🔒 Mode Gratuit: 300 caractères, 20 Mo, cooldown 60min');
+      print('🔒 Mode Gratuit: 300 caractères, 100 Mo, cooldown 60min');
     }
   }
 
@@ -1649,10 +1658,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       sizeText = 'Taille max: 200 Mo (Admin)';
       color = Colors.green;
     } else if (isPremium) {
-      sizeText = 'Taille max: 80 Mo (Premium)';
+      sizeText = 'Taille max: 100 Mo (Premium)';
       color = Color(0xFFFDB813);
     } else {
-      sizeText = 'Taille max: 20 Mo (Gratuit)';
+      sizeText = 'Taille max: 100 Mo (Gratuit)';
       color = Colors.grey;
     }
 
@@ -1692,10 +1701,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
       infoText = 'Mode Admin : Tous pays • 200 Mo • Pas de restrictions';
       infoColor = Colors.green;
     } else if (isPremium) {
-      infoText = 'Mode Premium : Tous pays • 80 Mo • Pas d\'attente';
+      infoText = 'Mode Premium : Tous pays • 100 Mo • Pas d\'attente';
       infoColor = Color(0xFFFDB813);
     } else {
-      infoText = 'Mode Gratuit : Max 2 pays • 20 Mo • Attente 60min';
+      infoText = 'Mode Gratuit : Max 2 pays • 100 Mo • Attente 60min';
       infoColor = Colors.grey;
     }
 
@@ -1820,7 +1829,8 @@ class _UserPubVideoState extends State<UserPubVideo> {
     if (title == null) {
       if (reason == 'size') {
         title = 'Vidéo trop grande';
-        message = 'L\'abonnement gratuit est limité à 20 Mo.\nPassez à Afrolook Premium pour publier des vidéos jusqu\'à 80 Mo.';
+        // message = 'L\'abonnement gratuit est limité à 20 Mo.\nPassez à Afrolook Premium pour publier des vidéos jusqu\'à 80 Mo.';
+        message = 'L\'abonnement gratuit est limité à 100 Mo.\nPassez à Afrolook Premium pour publier des vidéos jusqu\'à 200 Mo.';
         actionText = 'VOIR L\'ABONNEMENT';
       } else {
         title = 'Limite de caractères atteinte';
@@ -1943,24 +1953,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
       if (video == null) return;
 
       // Vérifier la taille de la vidéo
-      int size;
-      if (kIsWeb) {
-        final bytes = await video.readAsBytes();
-        size = bytes.length;
-        setState(() {
-          _videoBytes = bytes;
-          _videoFileName = video.name;
-          _videoFile = video;
-        });
-      } else {
-        size = await video.length();
-        setState(() {
-          _videoFile = video;
-          _videoBytes = null;
-          _videoFileName = Path.basename(video.path);
-        });
-      }
-
+      int size = await video.length();
       final sizeInMB = size / (1024 * 1024);
       final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
       final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
@@ -1968,88 +1961,192 @@ class _UserPubVideoState extends State<UserPubVideo> {
       // Vérification de la taille
       if (!isAdmin && !isPremium && sizeInMB > _maxVideoSizeMB) {
         _showPremiumModal(reason: 'size');
-        setState(() {
-          _videoBytes = null;
-          _videoFile = null;
-        });
         return;
       }
 
-      // Sur le web, on ne peut pas lire directement le fichier sélectionné
-      // On va créer un objet URL à partir des bytes
-      if (kIsWeb) {
-        // Créer un URL blob à partir des bytes
-        final blob = Uri.dataFromBytes(_videoBytes!, mimeType: 'video/mp4').toString();
-
-        // Initialiser le controller avec l'URL blob
-        _controller = VideoPlayerController.networkUrl(
-          Uri.parse(blob),
-          videoPlayerOptions: VideoPlayerOptions(
-            mixWithOthers: true,
-          ),
-        );
-      } else {
-        // Pour mobile
-        _controller = VideoPlayerController.file(File(video.path));
-      }
-
+      // Initialiser le contrôleur vidéo
+      _controller = VideoPlayerController.file(File(video.path));
 
       // Attendre l'initialisation
       await _controller!.initialize();
-// Générer une miniature locale pour l’aperçu
-      if (kIsWeb) {
-        final bytes = await video.readAsBytes();
-        setState(() {
-          _videoBytes = bytes;
-          _videoFileName = video.name;
-          _videoFile = video;
-        });
-        // Sur web, pas de génération locale de miniature
-      } else {
-        setState(() {
-          _videoFile = video;
-          _videoBytes = null;
-          _videoFileName = Path.basename(video.path);
-        });
-        _controller = VideoPlayerController.file(File(video.path));
-        await _controller!.initialize();
-        await _controller!.setLooping(true);
-        await _controller!.play();
 
-        // Génération miniature locale (mobile uniquement)
-        final tempDir = await getTemporaryDirectory();
-        final thumbnailPath = await VideoThumbnail.thumbnailFile(
-          video: video.path,
-          thumbnailPath: tempDir.path,
-          imageFormat: ImageFormat.JPEG,
-          maxWidth: 200,
-          quality: 50,
-          timeMs: 1000,
+      // ✅ VÉRIFICATION DU FORMAT (16:9 ou 4:3)
+      final videoWidth = _controller!.value.size.width;
+      final videoHeight = _controller!.value.size.height;
+      final aspectRatio = videoWidth / videoHeight;
+
+      // Format paysage minimum (4:3 = 1.33, 16:9 = 1.78)
+      const double minAspectRatio = 1.33;
+
+      print("📐 Dimensions vidéo: ${videoWidth}x${videoHeight}");
+      print("📐 Ratio: ${aspectRatio.toStringAsFixed(2)}");
+
+      // Vérifier si c'est du format portrait
+      if (aspectRatio < 1.0) {
+        _controller!.pause();
+        _controller = null;
+
+        _showFormatErrorDialog(
+          title: 'Format portrait non accepté',
+          message: 'Les vidéos en format portrait (téléphone vertical) ne sont pas acceptées.',
+          aspectRatio: aspectRatio,
         );
-        setState(() {
-          _localThumbnailPath = thumbnailPath;
-        });
+        return;
       }
-      // Configurer le lecteur
+
+      // Vérifier si le format est assez large
+      if (aspectRatio < minAspectRatio) {
+        _controller!.pause();
+        _controller = null;
+
+        _showFormatErrorDialog(
+          title: 'Format paysage requis',
+          message: 'Veuillez utiliser le format paysage (16:9 ou 4:3).',
+          aspectRatio: aspectRatio,
+        );
+        return;
+      }
+
+      // ✅ VIDÉO VALIDE - Continuer avec le traitement normal
+
+      setState(() {
+        _videoFile = video;
+        _videoFileName = Path.basename(video.path);
+      });
+
       await _controller!.setLooping(true);
-      await _controller!.setVolume(kIsWeb ? 0.0 : 1.0);
       await _controller!.play();
+
+      // Génération miniature locale
+      final tempDir = await getTemporaryDirectory();
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: video.path,
+        thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 200,
+        quality: 50,
+        timeMs: 1000,
+      );
+
+      setState(() {
+        _localThumbnailPath = thumbnailPath;
+      });
 
       setState(() {}); // Mettre à jour l'UI
 
     } catch (e) {
       print("Erreur lors de la sélection de la vidéo: $e");
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       'Erreur lors de la sélection de la vidéo',
-      //       style: TextStyle(color: Colors.red),
-      //     ),
-      //   ),
-      // );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
+  void _showFormatErrorDialog({
+    required String title,
+    required String message,
+    required double aspectRatio,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.aspect_ratio, color: Colors.red, size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Format détecté: ${aspectRatio.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Formats acceptés:',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '✓ 16:9 (1.78) - Format YouTube\n'
+                        '✓ 4:3 (1.33) - Format classique',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '💡 Tournez votre téléphone en mode paysage',
+                    style: TextStyle(
+                      color: Colors.yellow[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'COMPRENDRE',
+              style: TextStyle(color: _primaryColor),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Optionnel: ouvrir un tutoriel ou guide
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('RÉESSAYER'),
+          ),
+        ],
+      ),
+    );
+  }
   Future<String?> _uploadThumbnail(File thumbnailFile) async {
     try {
       final fileName = 'thumbnails/thumb_${authProvider.loginUserData.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -2323,7 +2420,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
 
           String errorMessage;
           if (!isAdmin && !isPremium) {
-            errorMessage = 'La vidéo est trop grande (plus de 20 Mo). Passez à Premium pour 80 Mo.';
+            errorMessage = 'La vidéo est trop grande (plus de 100 Mo). Passez à Premium pour 200 Mo.';
           } else if (isPremium) {
             errorMessage = 'La vidéo dépasse la limite de 80 Mo pour les abonnés Premium';
           } else {
@@ -2343,22 +2440,22 @@ class _UserPubVideoState extends State<UserPubVideo> {
         }
 
         // Vérification de la durée (5 minutes max pour tous)
-        if (videoDuration.inSeconds > 60 * 5) {
-          Navigator.pop(context); // Fermer le dialog
-          setState(() {
-            onTap = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'La durée de la vidéo dépasse 5 min !',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          );
-          return;
-        }
+        // if (videoDuration.inSeconds > 60 * 5) {
+        //   Navigator.pop(context); // Fermer le dialog
+        //   setState(() {
+        //     onTap = false;
+        //   });
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     SnackBar(
+        //       content: Text(
+        //         'La durée de la vidéo dépasse 5 min !',
+        //         textAlign: TextAlign.center,
+        //         style: TextStyle(color: Colors.red),
+        //       ),
+        //     ),
+        //   );
+        //   return;
+        // }
 
         String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
 
@@ -3195,10 +3292,10 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           ),
                         ),
                         SizedBox(height: 20),
-
-                        // Information sur la durée
+                        // Widget d'information sur le format requis
                         Container(
                           padding: EdgeInsets.all(12),
+                          margin: EdgeInsets.only(top: 12),
                           decoration: BoxDecoration(
                             color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -3206,21 +3303,62 @@ class _UserPubVideoState extends State<UserPubVideo> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.timer, color: Colors.blue, size: 16),
-                              SizedBox(width: 8),
+                              Icon(Icons.aspect_ratio, color: Colors.blue, size: 20),
+                              SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  'Durée maximale: 5 minutes pour tous les utilisateurs',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Format vidéo requis',
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      '• Format paysage uniquement (16:9 ou 4:3)\n'
+                                          '• Vidéos portrait (format téléphone) non acceptées\n'
+                                          '• Rotation automatique de votre téléphone recommandée',
+                                      style: TextStyle(
+                                        color: Colors.blue[300],
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        //
+                        // // Information sur la durée
+                        // Container(
+                        //   padding: EdgeInsets.all(12),
+                        //   decoration: BoxDecoration(
+                        //     color: Colors.blue.withOpacity(0.1),
+                        //     borderRadius: BorderRadius.circular(12),
+                        //     border: Border.all(color: Colors.blue),
+                        //   ),
+                        //   child: Row(
+                        //     children: [
+                        //       Icon(Icons.timer, color: Colors.blue, size: 16),
+                        //       SizedBox(width: 8),
+                        //       Expanded(
+                        //         child: Text(
+                        //           'Durée maximale: 5 minutes pour tous les utilisateurs',
+                        //           style: TextStyle(
+                        //             color: Colors.blue,
+                        //             fontSize: 12,
+                        //             fontWeight: FontWeight.w500,
+                        //           ),
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
 
                         SizedBox(height: 20),
 

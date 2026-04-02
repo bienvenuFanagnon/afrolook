@@ -1480,7 +1480,9 @@ class _PostCommentsState extends State<PostComments> {
           commentaireMessage: '${textComment}',
           postDescription: widget.post.description,
           postImageUrl: widget.post.type != PostDataType.IMAGE.name
-              ? (widget.post.user?.imageUrl ?? '')
+              ? (widget.post.thumbnail != null && widget.post.thumbnail!.isNotEmpty
+              ? widget.post.thumbnail!
+              : (widget.post.user?.imageUrl ?? ''))
               : (widget.post.images != null && widget.post.images!.isNotEmpty
               ? widget.post.images!.first
               : ''),

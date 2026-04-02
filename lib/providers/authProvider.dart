@@ -1623,7 +1623,7 @@ if(actionType == 'comment'){
 
         // Envoyer les push notifications (en arrière‑plan)
         if (oneSignalIds.isNotEmpty) {
-          final pushMessage = "@$actionUserPseudo $actionMessage sur le post de $ownerName";
+          final pushMessage = "@$actionUserPseudo $actionMessage le post de $ownerName";
 
           unawaited(sendNotification(
             appName: actionTitle,
