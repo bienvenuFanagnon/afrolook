@@ -1,7 +1,6 @@
-import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -9,15 +8,9 @@ import 'package:shimmer/shimmer.dart';
 import '../../../constant/constColors.dart';
 import '../../../constant/logo.dart';
 import '../../../constant/sizeText.dart';
-import '../../../constant/textCustom.dart';
-import '../../providers/authProvider.dart';
-import '../../providers/postProvider.dart';
-import '../../providers/userProvider.dart';
-import '../auth/authTest/constants.dart';
+import '../../../providers/authProvider.dart';
 import '../component/showUserDetails.dart';
-import '../home/listTopModal.dart';
 import '../pub/native_ad_widget.dart';
-import '../user/detailsOtherUser.dart';
 
 class UserClassement extends StatefulWidget {
   const UserClassement({super.key});
@@ -27,40 +20,63 @@ class UserClassement extends StatefulWidget {
 }
 
 class _UserClassementState extends State<UserClassement> {
-  late UserAuthProvider authProvider =
-  Provider.of<UserAuthProvider>(context, listen: false);
-  late UserProvider userProvider =
-  Provider.of<UserProvider>(context, listen: false);
-  late PostProvider postProvider =
-  Provider.of<PostProvider>(context, listen: false);
-
+  late UserAuthProvider authProvider;
+  List<UserData> _topUsers = [];
   bool _isLoading = true;
+  String? _errorMessage;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    _fetchTopUsers();
   }
 
-  Future<void> _loadData() async {
-    // Simuler un temps de chargement pour voir l'effet shimmer
-    await Future.delayed(Duration(seconds: 1));
+  /// Récupère les 10 utilisateurs les plus populaires depuis Firebase
+  Future<void> _fetchTopUsers() async {
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      // Requête Firestore: trier par popularité décroissant et limiter à 10
+      QuerySnapshot userSnapshot = await _firestore
+          .collection('Users')
+          .orderBy('totalPoints', descending: true)
+          .limit(10)
+          .get();
+
+      final List<UserData> fetchedUsers = [];
+
+      for (var doc in userSnapshot.docs) {
+        final userData = doc.data() as Map<String, dynamic>;
+
+        // Construction de l'objet UserData
+        final user = UserData.fromJson(userData);
+
+        fetchedUsers.add(user);
+      }
+
+      setState(() {
+        _topUsers = fetchedUsers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Erreur lors de la récupération du classement: $e');
+      setState(() {
+        _errorMessage = 'Impossible de charger le classement';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-
-    // Trier les utilisateurs par popularité (du plus élevé au plus bas)
-    List<UserData> sortedUsers = List.from(userProvider.listAllUsers);
-    sortedUsers.sort((a, b) => (b.popularite ?? 0).compareTo(a.popularite ?? 0));
-
-    // Prendre les 10 premiers
-    List<UserData> topUsers = sortedUsers.take(10).toList();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -84,62 +100,38 @@ class _UserClassementState extends State<UserClassement> {
         ],
         iconTheme: IconThemeData(color: Colors.yellow[700]),
       ),
-      body: _isLoading
-          ? _buildShimmerLoading()
-          : SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
+      body: _buildBody(height, width),
+    );
+  }
+
+  Widget _buildBody(double height, double width) {
+    if (_isLoading) {
+      return _buildShimmerLoading();
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorWidget();
+    }
+
+    if (_topUsers.isEmpty) {
+      return _buildEmptyWidget();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchTopUsers,
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             // En-tête avec informations
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green[800]?.withOpacity(0.3),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Classement par popularité",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[400],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Période 1 Décembre 2024 - ...",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.yellow[700],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    "Les stars sont classées selon leur activité: publications, likes et commentaires",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildHeader(),
 
             SizedBox(height: 16),
 
             // Liste des top 10 avec pub en premier élément
             ListView.builder(
-              itemCount: topUsers.length + 1, // +1 pour la pub
+              itemCount: _topUsers.length + 1, // +1 pour la pub
               shrinkWrap: true,
               padding: EdgeInsets.only(top: 8, bottom: 20),
               physics: NeverScrollableScrollPhysics(),
@@ -157,10 +149,15 @@ class _UserClassementState extends State<UserClassement> {
 
                 return GestureDetector(
                   onTap: () {
-                    showUserDetailsModalDialog(topUsers[userIndex], width, height, context);
+                    showUserDetailsModalDialog(
+                      _topUsers[userIndex],
+                      width,
+                      height,
+                      context,
+                    );
                   },
                   child: TopFiveUserItem(
-                    user: topUsers[userIndex],
+                    user: _topUsers[userIndex],
                     rank: userIndex + 1,
                   ),
                 );
@@ -172,11 +169,108 @@ class _UserClassementState extends State<UserClassement> {
     );
   }
 
-// ✅ Version avec shimmer loading incluant la pub
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green[800]?.withOpacity(0.3),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Classement par popularité",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[400],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Mis à jour en temps réel",
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.yellow[700],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            "Les stars sont classées selon leur activité: publications, likes et commentaires",
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[500],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.red[400],
+          ),
+          SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _fetchTopUsers,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green[700],
+            ),
+            child: Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: Colors.grey[600],
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Aucun utilisateur trouvé',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildShimmerLoading() {
     return ListView.builder(
       itemCount: 11, // +1 pour la pub
-      shrinkWrap: true,
       padding: EdgeInsets.only(top: 16),
       itemBuilder: (context, index) {
         // Premier élément (index 0) = placeholder de pub
@@ -249,7 +343,6 @@ class _UserClassementState extends State<UserClassement> {
     );
   }
 
-// ✅ Ajoutez cette fonction dans votre classe
   Widget _buildAdBanner({required String key}) {
     return Container(
       key: ValueKey(key),
@@ -269,29 +362,52 @@ class _UserClassementState extends State<UserClassement> {
   }
 }
 
-class _UserRankItem extends StatelessWidget {
+// Widget pour afficher un utilisateur du top 10
+class TopFiveUserItem extends StatefulWidget {
   final UserData user;
   final int rank;
-  final bool isTop3;
 
-  const _UserRankItem({
+  const TopFiveUserItem({
+    super.key,
     required this.user,
     required this.rank,
-    required this.isTop3,
   });
+
+  @override
+  State<TopFiveUserItem> createState() => _TopFiveUserItemState();
+}
+
+class _TopFiveUserItemState extends State<TopFiveUserItem> {
+  late UserAuthProvider authProvider;
+  @override
+  void initState() {
+    // TODO: implement initState
+    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     // Définir les couleurs en fonction du rang
     Color rankColor;
-    if (rank == 1) {
+    if (widget.rank == 1) {
       rankColor = Colors.yellow[700]!;
-    } else if (rank == 2) {
+    } else if (widget.rank == 2) {
       rankColor = Colors.grey[400]!;
-    } else if (rank == 3) {
+    } else if (widget.rank == 3) {
       rankColor = Colors.orange[800]!;
     } else {
       rankColor = Colors.green[600]!;
+    }
+
+    // Trophée pour le top 3
+    IconData? rankIcon;
+    if (widget.rank == 1) {
+      rankIcon = Icons.emoji_events;
+    } else if (widget.rank == 2) {
+      rankIcon = Icons.emoji_events;
+    } else if (widget.rank == 3) {
+      rankIcon = Icons.emoji_events;
     }
 
     return Container(
@@ -312,19 +428,28 @@ class _UserRankItem extends StatelessWidget {
         children: [
           // Numéro de classement
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: rankColor,
+              gradient: widget.rank <= 3
+                  ? LinearGradient(
+                colors: [rankColor, rankColor.withOpacity(0.7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : null,
+              color: widget.rank > 3 ? rankColor : null,
               shape: BoxShape.circle,
             ),
-            child: Text(
-              "$rank",
+            child: rankIcon != null && widget.rank <= 3
+                ? Icon(rankIcon, color: Colors.white, size: 24)
+                : Text(
+              "${widget.rank}",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: widget.rank <= 3 ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -335,11 +460,16 @@ class _UserRankItem extends StatelessWidget {
           Stack(
             children: [
               CircleAvatar(
-                backgroundImage: NetworkImage(user.imageUrl ?? ''),
+                backgroundImage: widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty
+                    ? NetworkImage(widget.user.imageUrl!)
+                    : null,
                 radius: 24,
                 backgroundColor: Colors.grey[800],
+                child: widget.user.imageUrl == null || widget.user.imageUrl!.isEmpty
+                    ? Icon(Icons.person, size: 28, color: Colors.grey[600])
+                    : null,
               ),
-              if (user.isVerify ?? false)
+              if (widget.user.isVerify ?? false)
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -367,7 +497,7 @@ class _UserRankItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "@${user.pseudo}",
+                  "@${widget.user.pseudo}",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -381,7 +511,7 @@ class _UserRankItem extends StatelessWidget {
                     Icon(Icons.people, size: 12, color: Colors.green[600]),
                     SizedBox(width: 4),
                     Text(
-                      "${user.userAbonnesIds!.length ?? 0} abonnés",
+                      "${widget.user.userAbonnesIds?.length ?? 0} abonnés",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[400],
@@ -389,36 +519,41 @@ class _UserRankItem extends StatelessWidget {
                     ),
                     SizedBox(width: 12),
                     Icon(Icons.star, size: 12, color: Colors.yellow[700]),
-                    // SizedBox(width: 4),
-                    // Text(
-                    //   "${(user.popularite ?? 0 * 100).toStringAsFixed(1)}%",
-                    //   style: TextStyle(
-                    //     fontSize: 12,
-                    //     color: Colors.yellow[700],
-                    //   ),
-                    // ),
+                    SizedBox(width: 4),
+                    Text(
+                      "${((widget.user.totalPoints/authProvider.appDefaultData.appTotalPoints ?? 0) * 100).toStringAsFixed(0)}%",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.yellow[700],
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
 
-          // // Points
-          // Container(
-          //   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          //   decoration: BoxDecoration(
-          //     color: Colors.green[900]?.withOpacity(0.5),
-          //     borderRadius: BorderRadius.circular(12),
-          //   ),
-          //   child: Text(
-          //     "${user.pointContribution ?? 0} pts",
-          //     style: TextStyle(
-          //       fontSize: 12,
-          //       fontWeight: FontWeight.bold,
-          //       color: Colors.green[400],
-          //     ),
-          //   ),
-          // ),
+          // Badge de contribution pour le top 3
+          if (widget.rank <= 3)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.amber, Colors.orange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "${widget.user.totalPoints ?? 0} pts",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
         ],
       ),
     );
