@@ -2598,6 +2598,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+        contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
       //AJOUT DES BANNIÈRES ADMOB
@@ -2622,13 +2623,15 @@ printVm("_currentFilter data: ${_currentFilter}");
           final articlesSection = _buildArticlesSection();
           if (articlesSection is! SizedBox) {
             contentWidgets.add(articlesSection);
-            contentWidgets.add(_buildAdBanner(key: 'ad_after_first'));
 
           }
         } else if (postIndex % 6 == 0) {
           final canauxSection = _buildCanauxSection();
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
+            contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+            contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
+
           }
         }
       }
@@ -2770,6 +2773,32 @@ printVm("_currentFilter data: ${_currentFilter}");
           print('✅ Bannière Afrolook chargée: $key');
         },
       ),
+    );
+  }
+  Widget _buildAdNative({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
     );
   }
   Widget _buildAdAdvertisement({required String key}) {

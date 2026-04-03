@@ -1326,6 +1326,17 @@ class UserAuthProvider extends ChangeNotifier {
       print('❌ Erreur: $e');
     }
   }
+  Future<void> incrementCreatorCoins(String creatorId) async {
+    try {
+      final creatorRef = _firestore.collection('Users').doc(creatorId);
+      await creatorRef.update({
+        'totalCoinsEarnedFromAdSupport': FieldValue.increment(2),
+      });
+      print('✅ +10 pièces pour créateur: $creatorId');
+    } catch (e) {
+      print('❌ Erreur: $e');
+    }
+  }
   Future<void> sendPushNotificationToUsers2({
     required UserData sender,
     required String message,

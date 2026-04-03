@@ -5,9 +5,12 @@ import 'dart:typed_data';
 
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -556,6 +559,62 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
 
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      // child: NativeAdWidget(
+      //   key: ValueKey(key),
+      //   templateType: TemplateType.small, // ou TemplateType.small
+      //
+      //   onAdLoaded: () {
+      //     print('✅ Native Ad Afrolook chargée: $key');
+      //   },
+      // ),
+      child: BannerAdWidget(
+        onAdLoaded: () {
+
+          print('✅ Bannière Afrolook chargée: $key');
+          authProvider.incrementCreatorCoins(widget.initialPost.user_id!);
+        },
+      ),
+    );
+  }
+  Widget _buildAdNative({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
+
+
   void _sharePost() async {
     setState(() => _isSharing = true);
     try {
@@ -685,18 +744,57 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Widget _buildSuggestedVideos() {
     if (_isLoadingSuggestions) return Center(child: CircularProgressIndicator(color: _afroGreen));
     if (_suggestedVideos.isEmpty) return SizedBox.shrink();
+
+    // Variable pour savoir si la pub a déjà été affichée
+    bool _adDisplayed = false;
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('Suggestions', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-      ListView.separated(
+      ListView.builder(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
-        itemCount: _suggestedVideos.length,
-        separatorBuilder: (_, __) => Divider(color: Colors.grey[800]),
-        itemBuilder: (context, index) => _buildSuggestionCard(_suggestedVideos[index]),
-      ),
+        itemCount: _suggestedVideos.length + (_adDisplayed ? 0 : 1), // +1 seulement si pub pas encore affichée
+        itemBuilder: (context, index) {
+          // Vérifier si on doit afficher la pub à la 4ème position (index 3)
+          if (!_adDisplayed && index == 3 && _suggestedVideos.length >= 3) {
+            _adDisplayed = true;
+            return Column(
+              children: [
+                Divider(color: Colors.grey[800]),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    children: [
+                      _buildAdBanner(key: 'ad_details_post_unique'),
+                      _buildAdNative(key: 'ad_native_post_unique')
+                    ],
+                  ),
+                ),
+                Divider(color: Colors.grey[800]),
+              ],
+            );
+          }
+
+          // Ajuster l'index pour les vidéos (si pub affichée, on décale)
+          final videoIndex = _adDisplayed && index > 3 ? index - 1 : index;
+
+          // Vérifier qu'on n'est pas hors limites
+          if (videoIndex >= _suggestedVideos.length) {
+            return SizedBox.shrink();
+          }
+
+          // Afficher la vidéo suggérée
+          return Column(
+            children: [
+              _buildSuggestionCard(_suggestedVideos[videoIndex]),
+              if (index != _suggestedVideos.length + (_adDisplayed ? 0 : 1) - 1)
+                Divider(color: Colors.grey[800]),
+            ],
+          );
+        },
+      )
     ]);
   }
-
   Widget _buildSuggestionCard(Post post) {
     final bool isGenerating = _generatingThumbnails.contains(post.id);
     final String thumbnailUrl = post.thumbnail ?? '';
@@ -989,6 +1087,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 _buildSupportButton(),
                 _buildChallengeSection(),
                 Divider(color: Colors.grey[800]),
+                _buildAdBanner(key: 'ad_details_post'),
+
                 _buildSuggestedVideos(),
                 SizedBox(height: 20),
               ])),
@@ -1000,6 +1100,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
 }
+
 
 
 

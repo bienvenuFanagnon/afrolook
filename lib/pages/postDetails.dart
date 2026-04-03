@@ -9,6 +9,8 @@ import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
+import 'package:afrotok/pages/pub/banner_ad_widget.dart';
+import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
@@ -30,6 +32,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -81,7 +84,9 @@ class _DetailsPostState extends State<DetailsPost>
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
   bool _isExpanded = false;
-
+// Suggestions
+  List<Post> _suggestedPosts = [];
+  bool _isLoadingSuggestions = false;
   // Variables pour le vote
   bool _hasVoted = false;
   bool _isVoting = false;
@@ -148,6 +153,294 @@ class _DetailsPostState extends State<DetailsPost>
     });
   }
 
+
+// Méthode principale pour charger les suggestions
+  Future<void> _loadSuggestedPosts() async {
+    if (_isLoadingSuggestions) return;
+    setState(() => _isLoadingSuggestions = true);
+    try {
+      // Choix aléatoire de la stratégie (0, 1, 2)
+      int strategy = Random().nextInt(3);
+      List<Post> selectedPosts = [];
+
+      switch (strategy) {
+        case 0:
+        // 10 posts IMAGE les plus populaires
+          selectedPosts = await _fetchImagesByOrder('popularity', descending: true, limit: 10);
+          break;
+        case 1:
+        // 10 posts IMAGE les plus récentes
+          selectedPosts = await _fetchImagesByOrder('createdAt', descending: true, limit: 10);
+          break;
+        case 2:
+        // Mixte : 6 populaires + 6 récentes, mélange, prend 10
+          List<Post> popular = await _fetchImagesByOrder('popularity', descending: true, limit: 6);
+          List<Post> recent = await _fetchImagesByOrder('createdAt', descending: true, limit: 6);
+          Set<String> ids = {};
+          List<Post> mixed = [];
+          for (var p in [...popular, ...recent]) {
+            if (p.id != widget.post.id && !ids.contains(p.id)) {
+              ids.add(p.id!);
+              mixed.add(p);
+            }
+          }
+          mixed.shuffle();
+          selectedPosts = mixed.take(10).toList();
+          break;
+      }
+
+      // Retirer le post actuel (si jamais elle s'est glissée)
+      selectedPosts.removeWhere((p) => p.id == widget.post.id);
+
+      // Compléter si moins de 10 (avec des populaires par exemple)
+      if (selectedPosts.length < 10) {
+        List<Post> complement = await _fetchImagesByOrder('popularity', descending: true, limit: 15);
+        for (var p in complement) {
+          if (p.id != widget.post.id && !selectedPosts.any((s) => s.id == p.id)) {
+            selectedPosts.add(p);
+            if (selectedPosts.length >= 10) break;
+          }
+        }
+      }
+
+      setState(() => _suggestedPosts = selectedPosts);
+
+    } catch (e) {
+      print('Erreur chargement suggestions images: $e');
+    } finally {
+      setState(() => _isLoadingSuggestions = false);
+    }
+  }
+
+// Méthode utilitaire pour récupérer des images selon un ordre
+  Future<List<Post>> _fetchImagesByOrder(String field, {required bool descending, required int limit}) async {
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('Posts')
+          .where('dataType', isEqualTo: PostDataType.IMAGE.name)
+          .orderBy(field, descending: descending)
+          .limit(limit);
+
+      final snapshot = await query.get();
+      List<Post> posts = [];
+
+      for (var doc in snapshot.docs) {
+        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+        post.id = doc.id;
+
+        // Charger les données utilisateur si nécessaire
+        if (post.user_id != null && post.user == null) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(post.user_id)
+              .get();
+          if (userDoc.exists) {
+            post.user = UserData.fromJson(userDoc.data()!);
+          }
+        }
+
+        posts.add(post);
+      }
+      return posts;
+    } catch (e) {
+      print('Erreur fetch $field: $e');
+      return [];
+    }
+  }
+
+// Navigation vers un post suggéré
+  void _onSuggestedPostSelected(Post newPost) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailsPost(post: newPost),
+      ),
+    );
+  }
+  Widget _buildAdNative({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
+
+  Widget _buildSuggestedPosts() {
+    if (_isLoadingSuggestions) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Colors.yellow),
+        ),
+      );
+    }
+
+    if (_suggestedPosts.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            'Suggestions',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: _suggestedPosts.length + 1, // +1 pour la pub unique
+          itemBuilder: (context, index) {
+            // Afficher la pub à l'index 3 (4ème position)
+            if (index == 3) {
+              return Column(
+                children: [
+                  Divider(color: Colors.grey[800]),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: _buildAdBanner(key: 'ad_suggestion_unique'),
+                  ),
+                  Divider(color: Colors.grey[800]),
+                ],
+              );
+            }
+
+            // Calculer l'index réel du post
+            final int postIndex = index > 3 ? index - 1 : index;
+
+            // Vérifier qu'on n'est pas hors limites
+            if (postIndex >= _suggestedPosts.length) {
+              return SizedBox.shrink();
+            }
+
+            final post = _suggestedPosts[postIndex];
+            final bool isLastItem = index == _suggestedPosts.length;
+
+            return Column(
+              children: [
+                InkWell(
+                  onTap: () => _onSuggestedPostSelected(post),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        // Miniature
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey[800],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: post.images != null && post.images!.isNotEmpty
+                                ? CachedNetworkImage(
+                              imageUrl: post.images!.first,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.yellow,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.image,
+                                color: Colors.grey,
+                                size: 40,
+                              ),
+                            )
+                                : Icon(Icons.image, color: Colors.grey, size: 40),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+
+                        // Informations
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                post.description ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '@${post.user?.pseudo ?? ''}',
+                                style: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.favorite, size: 12, color: Colors.red),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '${post.loves ?? 0}',
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Icon(Icons.comment, size: 12, color: Colors.blue),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '${post.comments ?? 0}',
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (!isLastItem) Divider(color: Colors.grey[800]),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
   Future<bool> _hasSupportedToday(String postId, String userId) async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
@@ -346,6 +639,34 @@ class _DetailsPostState extends State<DetailsPost>
     });
 
 
+  }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      // child: NativeAdWidget(
+      //   key: ValueKey(key),
+      //   templateType: TemplateType.small, // ou TemplateType.small
+      //
+      //   onAdLoaded: () {
+      //     print('✅ Native Ad Afrolook chargée: $key');
+      //   },
+      // ),
+      child: BannerAdWidget(
+        onAdLoaded: () {
+
+          print('✅ Bannière Afrolook chargée: $key');
+          authProvider.incrementCreatorCoins(widget.post.user_id!);
+        },
+      ),
+    );
   }
 
   Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
@@ -1275,6 +1596,8 @@ class _DetailsPostState extends State<DetailsPost>
 
     // Incrémenter les vues
     _incrementViews();
+    _loadSuggestedPosts(); // AJOUTER CETTE LIGNE
+
   }
   Widget _buildSupportButton() {
     final hasAccess = _hasAccessToContent();
@@ -5134,7 +5457,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       _buildStatsRow(updatedPost),
                       Divider(color: Colors.grey[700]),
                       _buildActionButtons(updatedPost),
-
+                      _buildAdBanner(key: 'ad_details_post'),
                       // Section des cadeaux récents
                       if (updatedPost.users_cadeau_id != null &&
                           updatedPost.users_cadeau_id!.isNotEmpty &&
@@ -5200,6 +5523,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           ),
                         ),
 
+                      _buildSuggestedPosts(), // AJOUTER CETTE LIGNE
 
                       if (_showRewardedAd)
                         RewardedAdWidget(
