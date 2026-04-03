@@ -2757,19 +2757,19 @@ printVm("_currentFilter data: ${_currentFilter}");
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
-        key: ValueKey(key),
-        templateType: TemplateType.small, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
+      // child: NativeAdWidget(
+      //   key: ValueKey(key),
+      //   templateType: TemplateType.small, // ou TemplateType.small
+      //
       //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
+      //     print('✅ Native Ad Afrolook chargée: $key');
       //   },
       // ),
+      child: BannerAdWidget(
+        onAdLoaded: () {
+          print('✅ Bannière Afrolook chargée: $key');
+        },
+      ),
     );
   }
   Widget _buildAdAdvertisement({required String key}) {
