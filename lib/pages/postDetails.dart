@@ -738,181 +738,95 @@ class _DetailsPostState extends State<DetailsPost>
 // 4. Ajouter ce widget dans la partie supérieure de la page (après l'en-tête) :
 
   Widget _buildAdvertisementHeader() {
-    if (!_isAd || _advertisement == null) return SizedBox.shrink();
+    if (!_isAd || _advertisement == null) return const SizedBox.shrink();
 
     final ad = _advertisement!;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(5),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Color(0xFFFFD600).withOpacity(0.1),
+        color: const Color(0xFFFFD600).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFFFD600), width: 1),
+        border: Border.all(color: const Color(0xFFFFD600), width: 1),
       ),
-      child: Column(
+      child: Row(
+        // mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFD600),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.campaign, color: Colors.black, size: 14),
-                    SizedBox(width: 4),
-                    Text(
-                      'PUBLICITÉ',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Ce post est une publicité',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (authProvider.loginUserData.role != UserRole.ADM.name)
-            Column(
+          // Badge SPONSORISÉ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD600),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+
               children: [
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            color: Colors.grey, size: 12),
-                        SizedBox(width: 4),
-                        Text(
-                          'Durée: ${ad.durationDays} jours',
-                          style: TextStyle(color: Colors.grey, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: ad.isActive
-                            ? Colors.green.withOpacity(0.2)
-                            : Colors.orange.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        ad.isActive ? 'Active' : 'En attente',
-                        style: TextStyle(
-                          color: ad.isActive ? Colors.green : Colors.orange,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (ad.endDate != null)
-                  Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.timer, color: Colors.grey, size: 12),
-                        SizedBox(width: 4),
-                        Text(
-                          'Fin: ${DateFormat('dd/MM/yyyy').format(DateTime.fromMicrosecondsSinceEpoch(ad.endDate!))}',
-                          style: TextStyle(color: Colors.grey, fontSize: 11),
-                        ),
-                      ],
-                    ),
+                const Icon(Icons.verified, color: Colors.black, size: 14),
+                const SizedBox(width: 4),
+                const Text(
+                  'SPONSORISÉ',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
               ],
             ),
-        ],
-      ),
-    );
-  }
-
-// 5. Ajouter ce widget pour le bouton d'action dans la publicité :
-
-  Widget _buildAdvertisementActionButton() {
-    if (!_isAd || _advertisement == null) return SizedBox.shrink();
-
-    final ad = _advertisement!;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: InkWell(
-        onTap: () async {
-          if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-            final url = Uri.parse(ad.actionUrl!);
-            if (await canLaunchUrl(url)) {
-              await launchUrl(url, mode: LaunchMode.externalApplication);
-            }
-          }
-          _recordAdClick(_advertisement!, widget.post);
-        },
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFE21221), Color(0xFFFF5252)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFFE21221).withOpacity(0.3),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                ad.actionType == 'download'
-                    ? Icons.download
-                    : ad.actionType == 'visit'
+          // Bouton d'action (compact)
+          InkWell(
+            onTap: () async {
+              if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
+                final url = Uri.parse(ad.actionUrl!);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              }
+              _recordAdClick(ad, widget.post);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE21221), Color(0xFFFF5252)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    ad.actionType == 'download'
+                        ? Icons.download
+                        : ad.actionType == 'visit'
                         ? Icons.language
                         : Icons.info,
-                color: Colors.white,
-                size: 20,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    ad.getActionButtonText().toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_forward, color: Colors.white, size: 10),
+                ],
               ),
-              SizedBox(width: 8),
-              Text(
-                ad.getActionButtonText().toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(width: 4),
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 18,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -3808,10 +3722,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
 
   Widget _buildTextContent(String text, {bool isLocked = false}) {
     final words = text.split(' ');
-    final isLong = words.length > 100;
+    final isLong = words.length > 20;
     final displayedText = _isExpanded || !isLong || isLocked
         ? text
-        : words.take(100).join(' ') + '...';
+        : words.take(20).join(' ') + '...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5443,7 +5357,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       SizedBox(height: 5),
 
                       _buildAdvertisementHeader(),
-                      _buildAdvertisementActionButton(),
                       _buildPostContent(updatedPost),
 
                       if (_isLookChallenge)

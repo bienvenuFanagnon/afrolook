@@ -1665,6 +1665,7 @@ class Post {
   int? totalInteractions;  // Compteur de toutes les interactions (likes + commentaires + favoris + partages)
 
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
+  bool? isPortrait; // true = portrait, false = paysage (ou null si non défini)
 
 
   Post({
@@ -1718,6 +1719,8 @@ class Post {
     this.adSupportCount = 0,
     this.advertisementId,
     this.isAdvertisement = false,
+  // Dans le constructeur
+  this.isPortrait,
   });
 
   int compareTo(Post other) {
@@ -1816,6 +1819,10 @@ class Post {
     advertisementId = json['advertisementId'];
     isAdvertisement = json['isAdvertisement'] ?? false;
     totalInteractions= json['totalInteractions'] ?? 0;
+    // Dans fromJson
+    isPortrait = json['isPortrait']??true;
+
+
 
   }
 
@@ -1885,6 +1892,8 @@ class Post {
     data['advertisementId'] = advertisementId;
     data['isAdvertisement'] = isAdvertisement;
     data['adSupportCount'] = adSupportCount;
+    // Dans toJson
+    data['isPortrait'] = isPortrait;
     return data;
   }
 

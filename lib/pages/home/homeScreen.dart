@@ -392,37 +392,52 @@ class _MyHomePageState extends State<MyHomePage>
                             ),
                             SizedBox(height: 2),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Row(
                                   children: [
-                                    SizedBox(
-                                      child: TextCustomerUserTitle(
-                                        titre: "@${authProvider.loginUserData.pseudo}",
-                                        fontSize: SizeText.homeProfileTextSize,
-                                        couleur: Colors.white, // Texte blanc
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          child: TextCustomerUserTitle(
+                                            titre: "@${authProvider.loginUserData.pseudo}",
+                                            fontSize: SizeText.homeProfileTextSize,
+                                            couleur: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextCustomerUserTitle(
+                                          titre: "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
+                                          fontSize: SizeText.homeProfileTextSize,
+                                          couleur: Colors.white,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ],
                                     ),
-                                    TextCustomerUserTitle(
-                                      titre: "${formatNumber(authProvider.loginUserData.userAbonnesIds!.length!)} abonné(s)",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: Colors.white, // Texte blanc
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    TextCustomerUserTitle(
-                                      titre: "${formatNumber(authProvider.loginUserData!.userlikes!)} like(s)",
-                                      fontSize: SizeText.homeProfileTextSize,
-                                      couleur: Colors.green,
-                                      fontWeight: FontWeight.w700,
+                                    SizedBox(width: 5),
+                                    AbonnementUtils.getUserBadge(
+                                      abonnement: authProvider.loginUserData!.abonnement,
+                                      isVerified: authProvider.loginUserData!.isVerify!,
                                     ),
                                   ],
                                 ),
-                                SizedBox(width: 5),
-                                AbonnementUtils.getUserBadge(abonnement: authProvider.loginUserData!.abonnement,isVerified: authProvider.loginUserData!.isVerify!)
+
+                                /// ✅ Bouton à droite
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushReplacementNamed(context, '/home_profile_user');
+                                  },
+                                  child: Text(
+                                    "Voir mon profil",
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ],
-                            ),
-                          ],
+                            )                          ],
                         ),
                         Align(
                           alignment: Alignment.centerRight,
@@ -457,78 +472,11 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pop(context); // Fermer le menu
-                      Navigator.push(context, MaterialPageRoute(
+                      Navigator.pushReplacement(context, MaterialPageRoute(
                         builder: (context) => AddListAmis(), // Page de recherche
                       ));
                     },
                   ),
-                  if(authProvider.loginUserData.role == UserRole.ADM.name)
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "Marketing",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => MarketingAffiliationPage(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "TOP 10 Afrolooks Stars",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => UserClassement(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "AfroLove",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => DatingSwipePage(),
-                      ));
-                    },
-                  ),
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: Colors.red), // Icône jaune
-                    title: TextCustomerMenu(
-                      titre: "Pronostics & Betting",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () async {
-
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => PronosticsFeedPage(),
-                      ));
-                    },
-                  ),
-
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
                     leading: Image.asset(
@@ -544,9 +492,76 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pushNamed(context, '/home_profile_user');
+                      Navigator.pushReplacementNamed(context, '/home_profile_user');
                     },
                   ),
+
+                  if(authProvider.loginUserData.role == UserRole.ADM.name)
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.connect_without_contact, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Marketing",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.pushReplacement(context, MaterialPageRoute(
+                        builder: (context) => MarketingAffiliationPage(),
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Entypo.trophy, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "TOP 10 Afrolooks Stars",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.pushReplacement(context, MaterialPageRoute(
+                        builder: (context) => UserClassement(),
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Fontisto.tinder, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "AfroLove",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.pushReplacement(context, MaterialPageRoute(
+                        builder: (context) => DatingSwipePage(),
+                      ));
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(MaterialIcons.sports_soccer, size: 30, color: Colors.red), // Icône jaune
+                    title: TextCustomerMenu(
+                      titre: "Pronostics & Betting",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () async {
+
+                      Navigator.pushReplacement(context, MaterialPageRoute(
+                        builder: (context) => PronosticsFeedPage(),
+                      ));
+                    },
+                  ),
+
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
@@ -563,7 +578,7 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pushNamed(context, '/amis');
+                      Navigator.pushReplacementNamed(context, '/amis');
                     },
                   ),
 
@@ -645,7 +660,7 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      Navigator.push(context, MaterialPageRoute(
+                      Navigator.pushReplacement(context, MaterialPageRoute(
                         builder: (context) => FavoritePostsPage(),
                       ));
                     },
@@ -655,7 +670,7 @@ class _MyHomePageState extends State<MyHomePage>
                     leading: AnimateIcon(
                       key: UniqueKey(),
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
+                        Navigator.pushReplacement(context, MaterialPageRoute(
                           builder: (context) => UserServiceListPage(),
                         ));
                       },
@@ -906,7 +921,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             SizedBox(height: 5),
             Text(
-              'Version: 1.2.65 sbd.1.ph.12 (${authProvider.appDefaultData.app_version_code!})',
+              'Version: 1.2.65 sbd.2.ph.1 (${authProvider.appDefaultData.app_version_code!})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white, // Texte blanc

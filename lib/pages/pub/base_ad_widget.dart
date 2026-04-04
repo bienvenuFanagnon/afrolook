@@ -64,57 +64,6 @@ abstract class BaseAdWidgetState<T extends BaseAdWidget> extends State<T> {
     return buildAdWidget();
   }
 
-  Widget _buildLoadingWidget() {
-    return Container(
-      height: 50,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Chargement...',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget() {
-    // En mode test, afficher un message discret
-    if (AdService.currentMode == 'TEST') {
-      return Container(
-        height: 50,
-        width: double.infinity,
-        color: Colors.transparent,
-        child: Center(
-          child: Text(
-            '🎯 [TEST] ${AdService.bannerAdId}',
-            style: TextStyle(color: Colors.orange, fontSize: 10),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
-    // En production, ne rien afficher
-    return const SizedBox.shrink();
-  }
 
   // Méthodes pour les classes filles
   void setLoading(bool loading) => setState(() => _isLoading = loading);

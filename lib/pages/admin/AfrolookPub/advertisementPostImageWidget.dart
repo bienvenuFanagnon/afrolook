@@ -15,24 +15,7 @@ import '../../../providers/authProvider.dart';
 import '../../canaux/detailsCanal.dart';
 import '../../component/showUserDetails.dart';
 
-// widgets/advertisement_post_widget.dart
-import 'dart:async';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/pages/postDetailsVideo.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:visibility_detector/visibility_detector.dart';
-
-import '../../../providers/authProvider.dart';
-import '../../canaux/detailsCanal.dart';
-import '../../component/showUserDetails.dart';
-
-class AdvertisementPostWidget extends StatefulWidget {
+class AdvertisementPostImageWidget extends StatefulWidget {
   final Post post;
   final Advertisement ad;
   final double? height;
@@ -41,7 +24,7 @@ class AdvertisementPostWidget extends StatefulWidget {
   final Function(Post, Advertisement)? onAdClicked;
   final Function(Post, Advertisement)? onAdViewed;
 
-  const AdvertisementPostWidget({
+  const AdvertisementPostImageWidget({
     Key? key,
     required this.post,
     required this.ad,
@@ -53,10 +36,10 @@ class AdvertisementPostWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AdvertisementPostWidget> createState() => _AdvertisementPostWidgetState();
+  State<AdvertisementPostImageWidget> createState() => _AdvertisementPostImageWidgetState();
 }
 
-class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
+class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWidget> {
   late UserAuthProvider authProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -625,7 +608,6 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
   }
 
   String _truncateDescription(String text) {
-    // On garde 2 lignes max, on coupe si trop long
     const int maxLines = 2;
     const int approxCharsPerLine = 40;
     int maxLength = maxLines * approxCharsPerLine;
@@ -636,13 +618,13 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
   double _calculatePostHeight() {
     double totalHeight = 0;
 
-    // Badge PUBLICITÉ (28px au lieu de 40)
+    // Badge SPONSORISÉ (28px)
     totalHeight += 28;
 
-    // Padding interne (8 au lieu de 12)
+    // Padding interne
     totalHeight += 16;
 
-    // En-tête (avatar + texte) (40px au lieu de 50)
+    // En-tête
     totalHeight += 40;
 
     // Espacements réduits
@@ -657,10 +639,10 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     // Médias (hauteur réduite à 0.5 * width)
     totalHeight += widget.width * 0.5;
 
-    // Statistiques (20px au lieu de 30)
+    // Statistiques (20px)
     totalHeight += 20;
 
-    // Bouton d'action (36px au lieu de 50)
+    // Bouton d'action (36px)
     totalHeight += 36;
 
     return totalHeight;
@@ -673,23 +655,23 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
   @override
   Widget build(BuildContext context) {
     final double mediaHeight = widget.height ?? _calculatePostHeight();
-    final double imageHeight = widget.width * 0.5; // plus compact
+    final double imageHeight = widget.width * 0.5;
 
     return VisibilityDetector(
       key: Key('ad-post-${widget.post.id}'),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // marge verticale réduite
+        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: _cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _secondaryColor, width: 1.5), // bordure plus fine
+          border: Border.all(color: _secondaryColor, width: 1.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Badge PUBLICITÉ (plus compact)
+            // Badge SPONSORISÉ (modifié)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -699,10 +681,10 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.campaign, color: Colors.black, size: 14),
+                  Icon(Icons.verified, color: Colors.black, size: 14), // icône vérifiée
                   SizedBox(width: 4),
                   Text(
-                    'PUB',
+                    'SPONSORISÉ', // au lieu de "PUB"
                     style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                   if (widget.ad.renewalCount! > 0) ...[
@@ -721,17 +703,13 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
             ),
 
             Padding(
-              padding: EdgeInsets.all(8), // padding interne réduit
+              padding: EdgeInsets.all(8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // En-tête (avatar, nom, temps)
                   _buildHeaderCompact(),
-
                   SizedBox(height: 6),
-
-                  // DESCRIPTION (2 lignes max, texte légèrement réduit)
                   if (widget.post.description != null && widget.post.description!.isNotEmpty)
                     Text(
                       _truncateDescription(widget.post.description!),
@@ -739,19 +717,13 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                   SizedBox(height: 8),
-
-                  // MÉDIAS
                   (widget.post.images != null && widget.post.images!.isNotEmpty && !_isVideoPost(widget.post))
                       ? Container(height: imageHeight, child: _buildImageGrid(imageHeight, widget.post.images!.length))
                       : _isVideoPost(widget.post)
                       ? Container(height: imageHeight, child: _buildVideoContent(imageHeight))
                       : SizedBox.shrink(),
-
                   SizedBox(height: 10),
-
-                  // STATISTIQUES (plus compactes)
                   Row(
                     children: [
                       Row(
@@ -774,10 +746,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
                         ),
                     ],
                   ),
-
                   SizedBox(height: 8),
-
-                  // BOUTON D'ACTION (plus compact)
                   InkWell(
                     onTap: _handleActionButtonClick,
                     child: Container(
@@ -811,7 +780,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
     );
   }
 
-  // En-tête compact (avatar plus petit, police réduite)
+  // En-tête compact
   Widget _buildHeaderCompact() {
     return GestureDetector(
       onTap: () {
@@ -829,7 +798,7 @@ class _AdvertisementPostWidgetState extends State<AdvertisementPostWidget> {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 16, // plus petit
+            radius: 16,
             backgroundColor: _primaryColor,
             backgroundImage: _getProfileImage(),
             child: _getProfileImage() == null

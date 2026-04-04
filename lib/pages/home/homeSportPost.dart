@@ -1627,7 +1627,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     return  AdvertisementCarouselWidget(
       height: height,
       width: width,
-      autoPlayDuration: Duration(seconds: 5),
+      // autoPlayDuration: Duration(seconds: 5),
       showIndicators: true,
     );
   }

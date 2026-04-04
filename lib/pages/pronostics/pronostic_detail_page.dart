@@ -19,7 +19,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/model_data.dart';
 import '../../services/utils/abonnement_utils.dart';
-import '../pub/interstitial_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
 import '../pub/rewarded_interstitial_ad_widget.dart';
 import '../userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';

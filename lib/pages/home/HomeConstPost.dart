@@ -158,7 +158,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   void initState() {
     super.initState();
     _initSharedPreferences();
-    checkAndRedirectToVideoPage(context);
+    // checkAndRedirectToVideoPage(context);
     // Initialisation des providers
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     authProviderShop = Provider.of<UserShopAuthProvider>(context, listen: false);
@@ -2808,7 +2808,7 @@ printVm("_currentFilter data: ${_currentFilter}");
     return  AdvertisementCarouselWidget(
       height: height,
       width: width,
-      autoPlayDuration: Duration(seconds: 5),
+      // autoPlayDuration: Duration(seconds: 5),
       showIndicators: true,
     );
   }
