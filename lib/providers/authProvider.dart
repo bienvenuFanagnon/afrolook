@@ -1330,7 +1330,7 @@ class UserAuthProvider extends ChangeNotifier {
     try {
       final creatorRef = _firestore.collection('Users').doc(creatorId);
       await creatorRef.update({
-        'totalCoinsEarnedFromAdSupport': FieldValue.increment(2),
+        'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
       });
       print('✅ +10 pièces pour créateur: $creatorId');
     } catch (e) {

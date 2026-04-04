@@ -21,8 +21,7 @@ class AbonnementService {
   })
   async {
     try {
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) throw Exception('Utilisateur non connecté');
+      if (user == null) throw Exception('Utilisateur non connecté');
 
       // Vérifier si un abonnement premium est déjà actif
       if (user.abonnement?.estPremium == true) {
@@ -52,7 +51,7 @@ class AbonnementService {
       late UserAuthProvider authProvider =
       Provider.of<UserAuthProvider>(context, listen: false);
       // Mettre à jour l'utilisateur dans Firestore
-      await _firestore.collection('Users').doc(userId).update({
+      await _firestore.collection('Users').doc(user.id).update({
         'votre_solde_principal': nouveauSolde,
         'abonnement': nouvelAbonnement.toJson(),
         // 'updatedAt': DateTime.now().millisecondsSinceEpoch,
@@ -62,7 +61,7 @@ class AbonnementService {
       });
       // Enregistrer la transaction
       await _enregistrerTransaction(
-        userId: userId,
+        userId: user.id!,
         montant: prixTotal,
         dureeMois: dureeMois,
       );

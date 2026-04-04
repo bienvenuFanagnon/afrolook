@@ -610,7 +610,7 @@ class _DetailsPostState extends State<DetailsPost>
     // Créditer le créateur (10 pièces)
     final creatorRef = firestore.collection('Users').doc(creatorId);
     await creatorRef.update({
-      'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+      'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
     });
 
     // Incrémenter le compteur du spectateur

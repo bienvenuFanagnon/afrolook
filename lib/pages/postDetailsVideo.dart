@@ -604,6 +604,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');
+          authProvider.incrementCreatorCoins(widget.initialPost.user_id!);
+
         },
       ),
       // child: BannerAdWidget(
@@ -1052,14 +1054,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Future<void> _onSupportAdRewarded() async {
     final userId = authProvider.loginUserData.id!;
     await _firestore.collection('Posts').doc(_currentPost.id).update({'adSupportCount': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(_currentPost.user_id).update({'totalCoinsEarnedFromAdSupport': FieldValue.increment(10)});
+    await _firestore.collection('Users').doc(_currentPost.user_id).update({'totalCoinsEarnedFromAdSupport': FieldValue.increment(1)});
     await _firestore.collection('post_supports').add({'postId': _currentPost.id, 'userId': userId, 'supportedAt': DateTime.now().millisecondsSinceEpoch});
     setState(() {
       _currentPost.adSupportCount = (_currentPost.adSupportCount ?? 0) + 1;
       _isSupporting = false;
       _showRewardedAd = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Le créateur a reçu 10 pièces.'), backgroundColor: Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Le créateur a reçu 1 pièce.'), backgroundColor: Colors.green));
   }
 
   @override
@@ -1416,7 +1418,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 //     // Créditer le créateur (10 pièces)
 //     final creatorRef = _firestore.collection('Users').doc(creatorId);
 //     await creatorRef.update({
-//       'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+//       'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
 //     });
 //
 //     // Incrémenter le compteur du spectateur

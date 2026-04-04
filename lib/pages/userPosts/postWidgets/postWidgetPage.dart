@@ -531,7 +531,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     // Créditer le créateur (10 pièces)
     final creatorRef = firestore.collection('Users').doc(creatorId);
     await creatorRef.update({
-      'totalCoinsEarnedFromAdSupport': FieldValue.increment(10),
+      'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
     });
 
     // Incrémenter le compteur du spectateur
@@ -1242,7 +1242,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final supporterName = supporter.pseudo ?? 'Un utilisateur';
 
     // Message incitatif avec le potentiel de gain
-    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+10 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
+    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+1 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
 
     // 1. Créer la notification dans Firestore
     final notificationId = firestore.collection('Notifications').doc().id;
