@@ -426,7 +426,9 @@ class _MyHomePageState extends State<MyHomePage>
                                 /// ✅ Bouton à droite
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pushReplacementNamed(context, '/home_profile_user');
+                                    Navigator.pop(context);
+
+                                    Navigator.pushNamed(context, '/home_profile_user');
                                   },
                                   child: Text(
                                     "Voir mon profil",
@@ -472,7 +474,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.pop(context); // Fermer le menu
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => AddListAmis(), // Page de recherche
                       ));
                     },
@@ -492,7 +495,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pushReplacementNamed(context, '/home_profile_user');
+                      Navigator.pop(context);
+
+                      Navigator.pushNamed(context, '/home_profile_user');
                     },
                   ),
 
@@ -507,8 +512,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
 
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => MarketingAffiliationPage(),
                       ));
                     },
@@ -523,8 +529,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
 
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => UserClassement(),
                       ));
                     },
@@ -539,8 +546,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
 
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => DatingSwipePage(),
                       ));
                     },
@@ -555,8 +563,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
 
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => PronosticsFeedPage(),
                       ));
                     },
@@ -578,7 +587,9 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
-                      Navigator.pushReplacementNamed(context, '/amis');
+                      Navigator.pop(context);
+
+                      Navigator.pushNamed(context, '/amis');
                     },
                   ),
 
@@ -660,7 +671,7 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
-                      Navigator.pushReplacement(context, MaterialPageRoute(
+                      Navigator.push(context, MaterialPageRoute(
                         builder: (context) => FavoritePostsPage(),
                       ));
                     },
@@ -670,7 +681,9 @@ class _MyHomePageState extends State<MyHomePage>
                     leading: AnimateIcon(
                       key: UniqueKey(),
                       onTap: () {
-                        Navigator.pushReplacement(context, MaterialPageRoute(
+                        Navigator.pop(context);
+
+                        Navigator.push(context, MaterialPageRoute(
                           builder: (context) => UserServiceListPage(),
                         ));
                       },
@@ -709,6 +722,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
+
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => HomeAfroshopPage(title: ''),
                       ));
@@ -740,6 +755,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () {
+                      Navigator.pop(context);
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => CryptoMarketPage()),
@@ -757,6 +774,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
+
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => UserLivesPage(),
                       ));
@@ -772,6 +791,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
+
                       Navigator.push(context, MaterialPageRoute(
                         builder: (context) => UserChallengesPage(),
                       ));
@@ -792,6 +813,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
+
                       Navigator.pushNamed(context, '/app_info');
 
                     },
@@ -888,6 +911,8 @@ class _MyHomePageState extends State<MyHomePage>
                       fontWeight: FontWeight.w600,
                     ),
                     onTap: () async {
+                      Navigator.pop(context);
+
                       Navigator.pushNamed(context, '/contact');
 
                     },
@@ -921,7 +946,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             SizedBox(height: 5),
             Text(
-              'Version: 1.2.65 sbd.2.ph.1 (${authProvider.appDefaultData.app_version_code!})',
+              'Version: 1.2.65 sbd.1.ph.12 (${authProvider.appDefaultData.app_version_code!})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white, // Texte blanc
@@ -1767,6 +1792,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             GestureDetector(
               onTap: () {
+
                 Navigator.pushNamed(context, '/list_live');
               },
               child: StreamBuilder<int>(

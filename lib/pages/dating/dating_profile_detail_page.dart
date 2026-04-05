@@ -1,11 +1,14 @@
 // lib/pages/dating/dating_profile_detail_page.dart
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dating_data.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../pub/banner_ad_widget.dart';
+import '../pub/native_ad_widget.dart';
 import '../pub/rewarded_ad_widget.dart';
 import 'creator_content_detail_page.dart';
 import 'creator_profile_page.dart';
@@ -918,7 +921,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
   }
 
   void _showMatchDialog() {
-    final isGold = _currentSubscriptionPlan == 'gold';
+    final isPlusOrGold = _currentSubscriptionPlan == 'plus'||_currentSubscriptionPlan == 'gold';
 
     showDialog(
       context: context,
@@ -962,11 +965,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        if (isGold) {
-                          _openChat();
-                        } else {
-                          _showGoldRequiredDialog();
-                        }
+                        _openChat();
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: Text('Discuter en privé'),
@@ -978,6 +977,33 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           ),
         ),
       ),
+    );
+  }
+  Widget _buildAdBanner({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        templateType: TemplateType.small, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
     );
   }
 
@@ -1522,6 +1548,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           // Boutons d'action (Like, Super like, Discuter en privé)
           if (!isOwnProfile)
             SliverToBoxAdapter(child: _buildActionButtons(remainingLikesText, isGold)),
+          SliverToBoxAdapter(child: _buildAdBanner(key: 'ad_dating_profil')),
 
           // TabBar
           SliverToBoxAdapter(child: _buildTabBar()),
@@ -1645,7 +1672,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
 
   Widget _buildActionButtons(String remainingLikesText, bool isGold) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
         children: [
           _buildActionItem(

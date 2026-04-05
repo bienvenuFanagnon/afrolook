@@ -24,6 +24,57 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
     'Paiement via Service Client'
   ];
 
+  // ========== VALIDATION DES HORAIRES DE RETRAIT ==========
+  bool _isRetraitAllowed() {
+    final now = DateTime.now();
+    final weekday = now.weekday; // 1 = lundi, 7 = dimanche
+    final hour = now.hour;
+    final minute = now.minute;
+
+    // Dimanche : pas de retrait
+    if (weekday == 7) {
+      return false;
+    }
+
+    // Samedi : 8h à 14h
+    if (weekday == 6) {
+      if (hour < 8 || (hour == 14 && minute > 0) || hour > 14) {
+        return false;
+      }
+      return true;
+    }
+
+    // Lundi à vendredi : 8h à 17h
+    if (hour < 8 || (hour == 17 && minute > 0) || hour > 17) {
+      return false;
+    }
+    return true;
+  }
+
+  // Widget informatif sur les horaires
+  Widget _buildHorairesInfo() {
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blueGrey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.access_time, color: Colors.yellow[700], size: 16),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Retraits possibles : lun-ven 8h-17h, sam 8h-14h (fermé dimanche)',
+              style: TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<UserAuthProvider>();
@@ -44,7 +95,7 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            // Carte solde
+            // Carte solde avec horaires
             _buildSoldeCard(userData!),
             SizedBox(height: 20),
 
@@ -123,6 +174,7 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
               fontSize: 12,
             ),
           ),
+          _buildHorairesInfo(),
         ],
       ),
     );
@@ -604,8 +656,133 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
       ),
     );
   }
+// Nouvelle méthode pour afficher le modal des horaires
+  void _showHorairesModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.yellow[700]!, width: 2),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.access_time, color: Colors.yellow[700], size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Horaires de retrait',
+              style: TextStyle(
+                color: Colors.yellow[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '📅 Lundi au Vendredi',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '⏰ 8h00 - 17h00',
+              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '📅 Samedi',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '⏰ 8h00 - 14h00',
+              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '📅 Dimanche',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '🚫 Fermé (aucun retrait)',
+              style: TextStyle(color: Colors.red[400], fontSize: 14),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blueGrey[800],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.yellow[700], size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Les demandes hors de ces créneaux ne seront pas acceptées.',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Fermer',
+              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.yellow[700],
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'J\'ai compris',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _submitRetrait(UserAuthProvider authProvider) async {
+    // Vérification des horaires de retrait
+    if (!_isRetraitAllowed()) {
+      _showHorairesModal();  // ← appel du modal au lieu du SnackBar
+
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     if (!_hasAcceptedConditions) {

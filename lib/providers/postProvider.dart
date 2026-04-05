@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/user/userService.dart';
@@ -53,6 +54,146 @@ class PostProvider extends ChangeNotifier {
   String? get selectedCategory => _selectedCategory;
   String? get selectedCountry => _selectedCountry;
   String? get selectedCity => _selectedCity;
+
+
+  // Nouvelles variables pour les suggestions
+  List<Post> _suggestedPosts = [];
+  bool _isLoadingSuggestions = false;
+  bool _suggestionsLoaded = false; // pour éviter plusieurs chargements
+
+  // Getters
+  List<Post> get suggestedPosts => _suggestedPosts;
+  bool get isLoadingSuggestions => _isLoadingSuggestions;
+  static bool _globalSuggestionsLoaded = false; // partagé entre instances
+
+  // Constructeur – lance le chargement non bloquant
+  PostProvider() {
+    _initSuggestions();
+  }
+
+
+  void _initSuggestions() {
+    if (!_globalSuggestionsLoaded) {
+      Future.microtask(() => _loadSuggestedPosts());
+    }
+  }
+
+  // Méthode principale de chargement (modifiée pour gérer IMAGE et VIDEO)
+  Future<void> _loadSuggestedPosts() async {
+    if (_isLoadingSuggestions || _suggestionsLoaded) return;
+
+    _isLoadingSuggestions = true;
+    notifyListeners();
+
+    try {
+      final random = Random();
+      int strategy = random.nextInt(3);
+
+      Set<String> ids = {};
+      List<Post> results = [];
+
+      // Helper pour vérifier la validité d'un post (sans exclure de post spécifique)
+      bool isValid(Post p) {
+        if (p.id == null) return false;
+        if (ids.contains(p.id)) return false;
+        // Optionnel : exclure les publicités ou posts non disponibles
+        // if (p.isAdvertisement == true) return false;
+        return true;
+      }
+
+      // Helper pour fetch avec les deux types de médias
+      Future<List<Post>> fetch(String field, bool desc, int limit) async {
+        final snap = await FirebaseFirestore.instance
+            .collection('Posts')
+            .where('dataType', whereIn: [
+          PostDataType.IMAGE.name,
+          PostDataType.VIDEO.name,
+        ])
+            .orderBy(field, descending: desc)
+            .limit(limit)
+            .get();
+
+        return snap.docs.map((doc) {
+          final p = Post.fromJson(doc.data());
+          p.id = doc.id;
+          return p;
+        }).toList();
+      }
+
+      // Helper pour du random avec les deux types
+      Future<List<Post>> fetchRandom(int limit) async {
+        final snap = await FirebaseFirestore.instance
+            .collection('Posts')
+            .where('dataType', whereIn: [
+          PostDataType.IMAGE.name,
+          PostDataType.VIDEO.name,
+        ])
+            .limit(50)
+            .get();
+
+        List<Post> posts = snap.docs.map((doc) {
+          final p = Post.fromJson(doc.data());
+          p.id = doc.id;
+          return p;
+        }).toList();
+
+        posts.shuffle();
+        return posts.take(limit).toList();
+      }
+
+      // 1. Récents (15 derniers)
+      final recent = await fetch('created_at', true, 15);
+      recent.shuffle();
+      for (var p in recent) {
+        if (isValid(p)) {
+          ids.add(p.id!);
+          results.add(p);
+          if (results.length >= 5) break;
+        }
+      }
+      // 2. Stratégie secondaire
+      List<Post> secondary = [];
+      if (strategy == 0) {
+        secondary = await fetch('popularity', true, 20); // populaire
+      } else if (strategy == 1) {
+        secondary = await fetch('popularity', false, 20); // faible popularité
+      } else {
+        secondary = await fetchRandom(30); // aléatoire
+      }
+      secondary.shuffle();
+      for (var p in secondary) {
+        if (isValid(p)) {
+          ids.add(p.id!);
+          results.add(p);
+          if (results.length >= 10) break;
+        }
+      }
+
+      // 3. Fallback si pas assez
+      if (results.length < 10) {
+        final fallback = await fetch('created_at', true, 30);
+        for (var p in fallback) {
+          if (isValid(p)) {
+            ids.add(p.id!);
+            results.add(p);
+            if (results.length >= 10) break;
+          }
+        }
+      }
+
+      // results.shuffle();
+      _suggestedPosts = results;
+      _suggestionsLoaded = true;
+
+    } catch (e) {
+      print('Erreur chargement suggestions (images/vidéos) : $e');
+    } finally {
+      _isLoadingSuggestions = false;
+      notifyListeners();
+    }
+  }
+
+
   Future<List<UserServiceData>> getUserServices({
     bool loadMore = false,
     int limit = 6,

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
+import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
@@ -122,20 +123,20 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     // ✅ Vérification correcte : portrait ET pas déjà sur la page adaptée
 
       // Attendre que le premier frame soit terminé pour éviter l'erreur de contexte
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   if (widget.initialPost.isPortrait == true) {
-      //     Navigator.pushReplacement(
-      //       context,
-      //       MaterialPageRoute(
-      //         builder: (context) => PostDetailsVideoFormatTel(
-      //           initialPost: widget.initialPost,
-      //           isIn: true, // important pour éviter une nouvelle redirection
-      //         ),
-      //       ),
-      //     );
-      //
-      //   }
-      // });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.initialPost.isPortrait == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailsVideoFormatTel(
+                initialPost: widget.initialPost,
+                isIn: true, // important pour éviter une nouvelle redirection
+              ),
+            ),
+          );
+
+        }
+      });
 
     _loadSupportModalSeen();
     _loadPostRelations();
@@ -144,7 +145,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       _loadChallengeData();
     }
     _checkIfUserHasVoted();
-    _loadSuggestedVideos();
     _initializeVideo();
     _incrementViews();
     _isAd = _currentPost.isAdvertisement == true;
@@ -281,109 +281,32 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
   // ==================== SUGGESTIONS ====================
-  Future<void> _loadSuggestedVideos() async {
-    if (_isLoadingSuggestions) return;
-    setState(() => _isLoadingSuggestions = true);
-    try {
-      // Choix aléatoire de la stratégie (0, 1, 2)
-      int strategy = Random().nextInt(3);
-      List<Post> selectedPosts = [];
-
-      switch (strategy) {
-        case 0:
-        // 10 vidéos les plus populaires
-          selectedPosts = await _fetchVideosByOrder('popularity', descending: true, limit: 10);
-          break;
-          case 3:
-        // 10 vidéos les plus populaires
-          selectedPosts = await _fetchVideosByOrder('popularity', descending: false, limit: 10);
-          break;
-        case 1:
-        // 10 vidéos les plus récentes
-          selectedPosts = await _fetchVideosByOrder('createdAt', descending: true, limit: 10);
-          break;
-        case 2:
-        // Mixte : 6 populaires + 6 récentes, mélange, prend 10
-          List<Post> popular = await _fetchVideosByOrder('popularity', descending: true, limit: 6);
-          List<Post> recent = await _fetchVideosByOrder('createdAt', descending: true, limit: 6);
-          Set<String> ids = {};
-          List<Post> mixed = [];
-          for (var p in [...popular, ...recent]) {
-            if (p.id != _currentPost.id && !ids.contains(p.id)) {
-              ids.add(p.id!);
-              mixed.add(p);
-            }
-          }
-          mixed.shuffle();
-          selectedPosts = mixed.take(10).toList();
-          break;
-      }
-
-      // Retirer la vidéo actuelle (si jamais elle s'est glissée)
-      selectedPosts.removeWhere((p) => p.id == _currentPost.id);
-
-      // Compléter si moins de 10 (avec des populaires par exemple)
-      if (selectedPosts.length < 10) {
-        List<Post> complement = await _fetchVideosByOrder('popularity', descending: true, limit: 15);
-        for (var p in complement) {
-          if (p.id != _currentPost.id && !selectedPosts.any((s) => s.id == p.id)) {
-            selectedPosts.add(p);
-            if (selectedPosts.length >= 10) break;
-          }
-        }
-      }
-
-      setState(() => _suggestedVideos = selectedPosts);
-
-      // Générer les miniatures manquantes
-      for (var post in selectedPosts) {
-        if (post.thumbnail == null || post.thumbnail!.isEmpty) {
-          _ensureThumbnailForPost(post);
-        }
-      }
-    } catch (e) {
-      print('Erreur chargement suggestions: $e');
-    } finally {
-      setState(() => _isLoadingSuggestions = false);
-    }
+// Nouvelle méthode pour obtenir les suggestions filtrées (exclut le post courant)
+  List<Post> getFilteredSuggestions() {
+    final allSuggestions = postProvider.suggestedPosts;
+    // Exclure le post actuel
+    return allSuggestions.where((p) => p.id != widget.initialPost.id).toList();
   }
 
-// Méthode utilitaire pour récupérer des vidéos selon un ordre
-  Future<List<Post>> _fetchVideosByOrder(String field, {required bool descending, required int limit}) async {
-    try {
-      Query query = _firestore.collection('Posts')
-          .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-          .orderBy(field, descending: descending)
-          .limit(limit);
-      final snapshot = await query.get();
-      List<Post> posts = [];
-      for (var doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
-        posts.add(post);
-      }
-      return posts;
-    } catch (e) {
-      print('Erreur fetch $field: $e');
-      return [];
+
+// Navigation vers un post suggéré
+  void _onSuggestedPostSelected(Post newPost) {
+    if(newPost.dataType==PostDataType.VIDEO.name){
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoYoutubePageDetails(initialPost: newPost,isIn: true,),
+        ),
+      );
+    }else{
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DetailsPost(post: newPost),
+        ),
+      );
     }
-  }
-  void _onSuggestedVideoSelected(Post newPost) async {
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => VideoYoutubePageDetails(initialPost: newPost),))
-;    // Remplacer la vidéo courante
-    // setState(() {
-    //   _currentPost = newPost;
-    //   _isVideoInitialized = false;
-    //   _isLoading = false;
-    // });
-    // await _loadPostRelations();
-    // await _checkIfFavorite();
-    // await _checkIfUserHasVoted();
-    // if (_isLookChallenge && _currentPost.challenge_id != null) {
-    //   await _loadChallengeData();
-    // }
-    // await _initializeVideo();
-    // await _loadSuggestedVideos();
+
   }
 
   // ==================== AUTRES MÉTHODES (inchangées) ====================
@@ -937,7 +860,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final String thumbnailUrl = post.thumbnail ?? '';
 
     return InkWell(
-      onTap: () => _onSuggestedVideoSelected(post),
+      onTap: () => _onSuggestedPostSelected(post),
       child: Container(padding: EdgeInsets.symmetric(vertical: 8), child: Row(children: [
         Container(
           width: 120,
