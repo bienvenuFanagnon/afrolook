@@ -1,6 +1,6 @@
 // lib/pages/dating/dating_profile_detail_page.dart
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -992,7 +992,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.small, // ou TemplateType.small
+        // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');
@@ -1568,7 +1568,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
             SliverToBoxAdapter(
               child: RewardedAdWidget(
                 key: _rewardedAdKey,
-                onUserEarnedReward: (reward) async {
+                onUserEarnedReward: (amount, name)  async {
                   if (_pendingRewardType == 'likes') {
                     int bonus = (_currentSubscriptionPlan == 'gratuit') ? 5 : 10;
                     await _addBonusLikes(bonus);

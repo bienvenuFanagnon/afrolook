@@ -1819,7 +1819,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
-                  onUserEarnedReward: (reward) {
+                  onUserEarnedReward: (amount, name) {
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';

@@ -19,7 +19,8 @@ abstract class BaseAdWidgetState<T extends BaseAdWidget> extends State<T> {
   }
 
   void _initializeAd() {
-    if (!AdService.adsSupported && !widget.forceShow) {
+    if (!widget.forceShow) {
+    // if (!AdService.adsSupported && !widget.forceShow) {
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -45,7 +46,7 @@ abstract class BaseAdWidgetState<T extends BaseAdWidget> extends State<T> {
   @override
   Widget build(BuildContext context) {
     // Si pas supporté et pas forcé, ne rien afficher
-    if (!AdService.adsSupported && !widget.forceShow) {
+    if ( !widget.forceShow) {
       return const SizedBox.shrink();
     }
 

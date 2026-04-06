@@ -99,10 +99,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
@@ -117,9 +118,8 @@ Future<void> main() async {
 
   // Initialiser AdMob seulement sur mobile
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    await MobileAds.instance.initialize();
-
-    // Configurer votre appareil comme appareil de test
+    // await MobileAds.instance.initialize();
+    await AdService.init();    // Configurer votre appareil comme appareil de test
     // Remplacer par l'ID obtenu dans les logs
     // await MobileAds.instance.updateRequestConfiguration(
     //   RequestConfiguration(

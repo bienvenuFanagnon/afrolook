@@ -33,7 +33,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -383,7 +383,7 @@ class _DetailsPostState extends State<DetailsPost>
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.small, // ou TemplateType.small
+        // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');
@@ -464,18 +464,20 @@ class _DetailsPostState extends State<DetailsPost>
     // Attendre que le widget soit monté
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_rewardedAdKey.currentState != null) {
-        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
-        if (ready) {
-          _rewardedAdKey.currentState!.showAd();
-        } else {
-          setState(() {
-            _isSupporting = false;
-            _showRewardedAd = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
-          );
-        }
+        _rewardedAdKey.currentState!.showAd();
+
+        // bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
+        // if (ready) {
+        //   _rewardedAdKey.currentState!.showAd();
+        // } else {
+        //   setState(() {
+        //     _isSupporting = false;
+        //     _showRewardedAd = false;
+        //   });
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
+        //   );
+        // }
       } else {
         setState(() {
           _isSupporting = false;
@@ -802,25 +804,25 @@ class _DetailsPostState extends State<DetailsPost>
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.transparent),
       ),
-      // child: NativeAdWidget(
-      //   key: ValueKey(key),
-      //   templateType: TemplateType.small, // ou TemplateType.small
-      //
-      //   onAdLoaded: () {
-      //     print('✅ Native Ad Afrolook chargée: $key');
-      //   },
-      // ),
-      child: BannerAdWidget(
-        onAdLoaded: () {
+      child: NativeAdWidget(
+        key: ValueKey(key),
+        // templateType: TemplateType.medium, // ou TemplateType.small
 
-          print('✅ Bannière Afrolook chargée: $key');
-          authProvider.incrementCreatorCoins(widget.post.user_id!);
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
         },
       ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //     authProvider.incrementCreatorCoins(widget.post.user_id!);
+      //   },
+      // ),
     );
   }
 
@@ -5597,7 +5599,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       if (_showRewardedAd)
                         RewardedAdWidget(
                           key: _rewardedAdKey,
-                          onUserEarnedReward: (reward) async {
+                          onUserEarnedReward: (amount, name) async {
                             await _onSupportAdRewarded();
                           },
                           onAdDismissed: () {

@@ -13,7 +13,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
@@ -2756,13 +2756,13 @@ printVm("_currentFilter data: ${_currentFilter}");
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.transparent),
       ),
       // child: NativeAdWidget(
       //   key: ValueKey(key),
-      //   templateType: TemplateType.small, // ou TemplateType.small
+      //   // templateType: TemplateType.small, // ou TemplateType.small
       //
       //   onAdLoaded: () {
       //     print('✅ Native Ad Afrolook chargée: $key');
@@ -2782,13 +2782,13 @@ printVm("_currentFilter data: ${_currentFilter}");
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.transparent),
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.small, // ou TemplateType.small
+        // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');

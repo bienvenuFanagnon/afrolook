@@ -8,7 +8,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../providers/chroniqueProvider.dart';
@@ -359,7 +359,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.medium, // ou TemplateType.small
+        // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');

@@ -3,7 +3,7 @@
 import 'package:afrotok/pages/Marketing/pageExplicationMarketing.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
@@ -84,7 +84,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         border: Border.all(color: Colors.grey[800]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small,
+        // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans invitations: $key');
         },

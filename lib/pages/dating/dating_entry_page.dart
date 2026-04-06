@@ -1300,25 +1300,27 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
                       // Attendre que la pub soit prête
                       bool isReady = false;
                       int attempts = 0;
-                      while (!isReady && attempts < 30) {
-                        await Future.delayed(Duration(milliseconds: 100));
-                        if (_rewardedAdKey.currentState != null) {
-                          isReady = await _rewardedAdKey.currentState!.isAdReady();
-                        }
-                        attempts++;
-                      }
+                      _rewardedAdKey.currentState!.showAd();
 
-                      if (isReady) {
-                        _rewardedAdKey.currentState!.showAd();
-                      } else {
-                        setState(() {
-                          _showRewardedAd = false;
-                          _isLoadingAd = false;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Publicité non disponible, réessayez'), backgroundColor: Colors.red),
-                        );
-                      }
+                      // while ( attempts < 30) {
+                      //   await Future.delayed(Duration(milliseconds: 100));
+                      //   if (_rewardedAdKey.currentState != null) {
+                      //     isReady = await _rewardedAdKey.currentState!.;
+                      //   }
+                      //   attempts++;
+                      // }
+
+                      // if (isReady) {
+                      //   _rewardedAdKey.currentState!.showAd();
+                      // } else {
+                      //   setState(() {
+                      //     _showRewardedAd = false;
+                      //     _isLoadingAd = false;
+                      //   });
+                      //   ScaffoldMessenger.of(context).showSnackBar(
+                      //     const SnackBar(content: Text('Publicité non disponible, réessayez'), backgroundColor: Colors.red),
+                      //   );
+                      // }
                     },
                     icon: const Icon(Icons.play_circle_filled),
                     label: Text('REGARDER LA PUB ($bonusText)'),
@@ -1975,20 +1977,20 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           if (_showRewardedAd)
             RewardedAdWidget(
               key: _rewardedAdKey,
-              onUserEarnedReward: (reward) {
-                if (_pendingRewardType == 'likes') {
-                  int bonus = (_subscriptionPlan == 'gratuit') ? 5 : 10;
-                  _addBonusLikes(bonus);
-                } else if (_pendingRewardType == 'superlikes') {
-                  int bonus = (_subscriptionPlan == 'gratuit') ? 1 : 2;
-                  _addBonusSuperLikes(bonus);
-                }
-                setState(() {
-                  _showRewardedAd = false;
-                  _pendingRewardType = null;
-                  _isLoadingAd = false;
-                });
-              },
+          onUserEarnedReward: (amount, name) {
+            if (_pendingRewardType == 'likes') {
+              int bonus = (_subscriptionPlan == 'gratuit') ? 5 : 10;
+              _addBonusLikes(bonus);
+            } else if (_pendingRewardType == 'superlikes') {
+              int bonus = (_subscriptionPlan == 'gratuit') ? 1 : 2;
+              _addBonusSuperLikes(bonus);
+            }
+            setState(() {
+              _showRewardedAd = false;
+              _pendingRewardType = null;
+              _isLoadingAd = false;
+            });
+          },
               onAdDismissed: () {
                 setState(() {
                   _showRewardedAd = false;

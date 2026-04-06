@@ -6,7 +6,7 @@ import 'package:afrotok/services/api.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -752,7 +752,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: NativeAdWidget(
-          templateType: TemplateType.small,
+          // templateType: TemplateType.small,
           onAdLoaded: () {
             print('✅ Native Ad chargée dans invitations: $key');
           },

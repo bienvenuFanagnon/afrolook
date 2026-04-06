@@ -10,7 +10,7 @@ import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -286,7 +286,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> {
       ),
       // child: NativeAdWidget(
       //   key: ValueKey(key),
-      //   templateType: TemplateType.small, // ou TemplateType.small
+      //   // templateType: TemplateType.small, // ou TemplateType.small
       //
       //   onAdLoaded: () {
       //     print('✅ Native Ad Afrolook chargée: $key');
@@ -1410,16 +1410,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_rewardedAdKey.currentState != null) {
-        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
-        if (ready) {
-          _rewardedAdKey.currentState!.showAd();
-        } else {
-          setState(() {
-            _isSupporting = false;
-            _showRewardedAd = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red));
-        }
+        _rewardedAdKey.currentState!.showAd();
+
+        // bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
+        // if (ready) {
+        //   _rewardedAdKey.currentState!.showAd();
+        // } else {
+        //   setState(() {
+        //     _isSupporting = false;
+        //     _showRewardedAd = false;
+        //   });
+        //   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red));
+        // }
       } else {
         setState(() {
           _isSupporting = false;
@@ -1998,10 +2000,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> {
         if (_showRewardedAd)
           RewardedAdWidget(
             key: _rewardedAdKey,
-            onUserEarnedReward: (reward) async {
-              final currentPost = _videoPosts[_currentPage];
-              await _onSupportAdRewarded(currentPost);
-            },
+        onUserEarnedReward: (amount, name) async {
+          final currentPost = _videoPosts[_currentPage];
+          await _onSupportAdRewarded(currentPost);
+        },
             onAdDismissed: () {
               setState(() {
                 _showRewardedAd = false;

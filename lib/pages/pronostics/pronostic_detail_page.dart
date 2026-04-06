@@ -11,7 +11,7 @@ import 'package:afrotok/services/pronostic_payment_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -1089,7 +1089,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.small, // ou TemplateType.small
+        // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');

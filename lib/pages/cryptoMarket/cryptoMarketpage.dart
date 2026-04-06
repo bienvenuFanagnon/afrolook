@@ -1,7 +1,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/cryptoMarket/portefolioPage.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'dart:math';
 import '../../models/crypto_model.dart';
@@ -769,7 +769,7 @@ String timetrade = '24H';
         border: Border.all(color: Colors.grey[800]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small,
+        // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans top10: $key');
         },

@@ -5,7 +5,7 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -116,7 +116,7 @@ class _ChallengesListPageState extends State<ChallengesListPage> {
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small, // ou TemplateType.small
+        // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');

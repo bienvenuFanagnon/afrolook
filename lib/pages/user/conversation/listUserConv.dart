@@ -980,7 +980,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
@@ -1550,7 +1550,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         border: Border.all(color: Colors.grey[800]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small,
+        // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans conversations: $key');
         },

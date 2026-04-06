@@ -1,6 +1,6 @@
 // lib/pages/dating/dating_explore_page.dart
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dating_data.dart';
@@ -289,13 +289,13 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       key: ValueKey(key),
       margin: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.transparent!),
       ),
       child: NativeAdWidget(
         key: ValueKey(key),
-        templateType: TemplateType.small,
+        // templateType: TemplateType.medium,
         onAdLoaded: () {
           print('✅ Native Ad Afrolook chargée: $key');
         },

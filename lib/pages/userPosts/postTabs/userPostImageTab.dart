@@ -992,20 +992,30 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
-                  onUserEarnedReward: (reward) {
+                  onUserEarnedReward: (double amount, String name) {
+                    print('RewardedAdWidget - amount : $amount -- name: $name');
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)),
-                        backgroundColor: _cardColor,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+
                   },
+                  // onUserEarnedReward: (reward) {
+                  //   setState(() {
+                  //     _canPost = true;
+                  //     _timeRemaining = '';
+                  //     _showRewardedAd = false;
+                  //   });
+                  //   ScaffoldMessenger.of(context).showSnackBar(
+                  //     SnackBar(
+                  //       content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)),
+                  //       backgroundColor: _cardColor,
+                  //       behavior: SnackBarBehavior.floating,
+                  //     ),
+                  //   );
+                  // },
                   onAdDismissed: () => setState(() => _showRewardedAd = false),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),

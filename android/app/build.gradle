@@ -126,9 +126,10 @@ apply plugin: 'com.google.gms.google-services'
 dependencies {
     // Import the Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
-    implementation 'com.google.ads.mediation:unity:4.10.0.0' // version à vérifier sur AdMob
-    // ✅ AJOUT IMPORTANT : SDK Unity Ads
-    implementation 'com.unity3d.ads:unity-ads:4.10.0'
+//    implementation 'com.google.ads.mediation:unity:4.10.0.0' // version à vérifier sur AdMob
+//    // ✅ AJOUT IMPORTANT : SDK Unity Ads
+//    implementation 'com.unity3d.ads:unity-ads:4.10.0'
+    implementation("androidx.multidex:multidex:2.0.1")
 
     // TODO: Add the dependencies for Firebase products you want to use
     // When using the BoM, don't specify versions in Firebase dependencies

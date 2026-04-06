@@ -1,7 +1,7 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -353,7 +353,7 @@ class _UserClassementState extends State<UserClassement> {
         border: Border.all(color: Colors.grey[800]!),
       ),
       child: NativeAdWidget(
-        templateType: TemplateType.small,
+        // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans top10: $key');
         },

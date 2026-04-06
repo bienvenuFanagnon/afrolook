@@ -1517,14 +1517,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.7"
-  google_mobile_ads:
-    dependency: "direct main"
-    description:
-      name: google_mobile_ads
-      sha256: a4f59019f2c32769fb6c60ed8aa321e9c21a36297e2c4f23452b3e779a3e7a26
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   graphs:
     dependency: transitive
     description:
@@ -2634,6 +2626,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  stack_appodeal_flutter:
+    dependency: "direct main"
+    description:
+      name: stack_appodeal_flutter
+      sha256: "9e34304133aa9b269075ee9dbd2325f170c45879a32ccd791063985545c644d7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.12.0"
   stack_trace:
     dependency: transitive
     description:

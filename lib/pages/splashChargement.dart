@@ -1,3 +1,5 @@
+import 'package:afrotok/pages/auth/authTest/Screens/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +28,7 @@ import '../services/linkService.dart';
 
 import '../services/postService/mixed_feed_service.dart';
 import '../services/serviceMigrationAncienPost.dart';
+import 'auth/authTest/Screens/Login/loginPageUser.dart';
 import 'component/consoleWidget.dart';
 
 import 'dart:async';
@@ -62,6 +65,11 @@ class _ChargementState extends State<SplahsChargement> {
   bool _hasError = false;
   String _loadingText = "Initialisation...";
 
+  late StreamSubscription<User?> _authSubscription;
+  bool _isFirebaseAuthenticated = false;
+  Completer<void>? _authCompleter;
+
+
 
   @override
   void initState() {
@@ -74,10 +82,30 @@ class _ChargementState extends State<SplahsChargement> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
     contentProvider = Provider.of<ContentProvider>(context, listen: false);
-
+    _authCompleter = Completer<void>();
+    _listenToFirebaseAuth();  // ← écoute les changements d’auth
     _startInitFlow();
   }
 
+
+  void _listenToFirebaseAuth() {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user != null) {
+        print('✅ Firebase authentifié : ${user.uid}');
+        _isFirebaseAuthenticated = true;
+        if (!_authCompleter!.isCompleted) {
+          _authCompleter!.complete();
+        }
+      } else {
+        print('⚠️ Firebase non authentifié');
+        _isFirebaseAuthenticated = false;
+        // Si on était déjà en train de charger, on redirige immédiatement
+        if (_authCompleter != null && !_authCompleter!.isCompleted) {
+          _authCompleter!.completeError('Non authentifié');
+        }
+      }
+    });
+  }
   Future<void> _startInitFlow() async {
     setState(() {
       isFinished = false;
@@ -169,71 +197,62 @@ class _ChargementState extends State<SplahsChargement> {
   // 🔥 AUTHENTIFICATION ET PRÉPARATION DES POSTS
   Future<void> _initAuthAndPosts() async {
     try {
-      if (mounted) {
-        setState(() => _loadingText = "Chargement des données...");
+      if (mounted) setState(() => _loadingText = "Vérification de l'authentification...");
+
+      // ---------- ÉTAPE 1 : Attendre que Firebase ait un utilisateur ----------
+      try {
+        await _authCompleter!.future.timeout(const Duration(seconds: 5));
+      } catch (e) {
+        // Pas d'utilisateur Firebase après 5 secondes → on force la redirection vers login
+        _redirectToLoginAndClearStack();
+        return;
       }
 
-      // 1. CHARGER LES DONNÉES DE L'APP
+      // ---------- ÉTAPE 2 : Récupérer les données de l'app (votre code existant) ----------
+      if (mounted) setState(() => _loadingText = "Chargement des données...");
       await authProvider.getAppData();
 
-      // 2. VÉRIFIER SI PREMIÈRE UTILISATION
       final isFirst = await authProvider.getIsFirst();
       if (isFirst == null || isFirst == false) {
         authProvider.storeIsFirst(true);
-        if (mounted) {
-          Navigator.pushNamed(context, '/introduction');
-        }
+        if (mounted) Navigator.pushNamed(context, '/introduction');
         return;
       }
 
-      // 3. VÉRIFIER LE TOKEN
       final token = await authProvider.getToken();
       if (token == null || token.isEmpty) {
-        if (mounted) {
-          Navigator.pushNamed(context, '/introduction');
-        }
+        _redirectToLoginAndClearStack();
         return;
       }
 
-      // 4. CONNEXION UTILISATEUR
-      setState(() => _loadingText = "Connexion...");
+      if (mounted) setState(() => _loadingText = "Connexion...");
       final success = await authProvider.getLoginUser(token);
 
       if (!success) {
-        if (mounted) {
-          Navigator.pushNamed(context, '/introduction');
-        }
+        _redirectToLoginAndClearStack();
         return;
       }
 
       setState(() => _isAuthCompleted = true);
 
-
-
-      // // 6. 🔥 CHARGER LES 2 POSTS IMMÉDIATS
-      // await _loadImmediatePosts();
-
-      // 7. 🔥 PRÉPARER LES IDs EN BACKGROUND (sans attendre)
+      // ---------- ÉTAPE 3 : Suite normale (préparation des posts, navigation) ----------
       _preparePostsInBackground();
-
-      // 8. NAVIGUER VERS MY HOMEPAGE
       _navigateToDestination();
 
     } catch (e) {
-      print('❌ Erreur lors de l\'initialisation: $e');
-      setState(() {
-        _hasError = true;
-        _loadingText = "Erreur de chargement";
-      });
-
-      // Fallback: aller à l'introduction en cas d'erreur
-      if (mounted) {
-        await Future.delayed(Duration(seconds: 2));
-        Navigator.pushNamed(context, '/introduction');
-      }
+      print('❌ Erreur initialisation: $e');
+      _redirectToLoginAndClearStack();
     }
   }
 
+  /// Redirige vers l'écran de connexion et vide toute la pile
+  void _redirectToLoginAndClearStack() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) =>  LoginPageUser()), // à adapter selon votre nom d'écran
+          (route) => false,
+    );
+  }
   // 🔥 NOUVELLE MÉTHODE : CHARGER LES POSTS IMMÉDIATS
   Future<void> _loadImmediatePosts() async {
     try {

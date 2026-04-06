@@ -496,18 +496,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     // Attendre que le widget soit monté puis lancer la pub
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_rewardedAdKey.currentState != null) {
-        bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
-        if (ready) {
-          _rewardedAdKey.currentState!.showAd();
-        } else {
-          setState(() {
-            _isSupporting = false;
-            _showRewardedAd = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
-          );
-        }
+        _rewardedAdKey.currentState!.showAd();
+
       } else {
         setState(() {
           _isSupporting = false;
@@ -1218,7 +1208,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 if (_showRewardedAd)
                   RewardedAdWidget(
                     key: _rewardedAdKey,
-                    onUserEarnedReward: (reward) async {
+                    onUserEarnedReward:(amount, name) async {
                       await _onSupportAdRewarded();
                     },
                     onAdDismissed: () {

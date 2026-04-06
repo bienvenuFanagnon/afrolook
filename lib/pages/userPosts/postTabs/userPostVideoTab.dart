@@ -728,15 +728,19 @@ class _UserPubVideoState extends State<UserPubVideo> {
                 SizedBox(height: 12),
                 RewardedAdWidget(
                   key: _rewardedAdKey,
-                  onUserEarnedReward: (reward) {
+
+
+                  onAdDismissed: () => setState(() => _showRewardedAd = false),
+                  onUserEarnedReward: (double amount, String name) {
+                    print('RewardedAdWidget - amount : $amount -- name: $name');
                     setState(() {
                       _canPost = true;
                       _timeRemaining = '';
                       _showRewardedAd = false;
                     });
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Vous pouvez poster maintenant !', style: TextStyle(color: Colors.green)), backgroundColor: _cardColor, behavior: SnackBarBehavior.floating));
+
                   },
-                  onAdDismissed: () => setState(() => _showRewardedAd = false),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
