@@ -107,7 +107,74 @@ class UserAuthProvider extends ChangeNotifier {
   static void setRefreshDuration(Duration duration) {
     postRefreshDuration = duration;
   }
+  Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
+    final String previousState = user.state ?? ''; // Sauvegarde de l'ancien state
 
+    try {
+      // Mise à jour optimisée dans Firebase
+      final updateData = <String, dynamic>{
+        'state': state,
+        'isConnected': isConnected,
+        // 'last_time_active': FieldValue.serverTimestamp()
+      };
+
+      await firestore.collection('Users').doc(user.id).update(updateData);
+
+      // Mise à jour locale uniquement après succès
+      user.state = state;
+      notifyListeners();
+
+      printVm('State utilisateur mis à jour avec succès: $state');
+      return true;
+
+    } catch (e, stackTrace) {
+      printVm('Échec mise à jour state: $e');
+      printVm('Stack trace: $stackTrace');
+
+      // Garder l'ancien state en cas d'erreur
+      user.state = previousState;
+      notifyListeners();
+
+      return false;
+    }
+  }
+
+  Future<void> logout(BuildContext context) async {
+    try {
+      // 1️⃣ Déconnexion Firebase (OBLIGATOIRE)
+      await FirebaseAuth.instance.signOut();
+
+      print("✅ Firebase déconnecté");
+
+      // 2️⃣ Mettre l'utilisateur offline (backend / Firestore)
+      if (loginUserData != null) {
+        loginUserData!.isConnected = false;
+
+        await changeStateUser(
+          user: loginUserData,
+          state: UserState.OFFLINE.name,
+          isConnected: false,
+        );
+      }
+
+      // 3️⃣ Supprimer token local (Laravel ou autre)
+      await storeToken('');
+
+      // 4️⃣ Nettoyer données locales (optionnel mais recommandé)
+      // await authProvider.clearAll();
+
+      // 5️⃣ Redirection propre (reset stack)
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          "/login",
+              (route) => false,
+        );
+      }
+
+    } catch (e) {
+      print("❌ Erreur lors de la déconnexion: $e");
+    }
+  }
   /// Fonction principale
    Future<void> checkAndRefreshPostDates(String postId) async {
     try {

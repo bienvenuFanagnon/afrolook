@@ -264,6 +264,8 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
   }
 // Ajoutez cette fonction dans votre classe _LiveListPageState
   Widget _buildAdBanner({required String key}) {
+    print('Native Ad en chargement dans LivePage: $key');
+
     return Container(
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),

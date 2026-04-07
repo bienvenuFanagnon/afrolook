@@ -970,18 +970,9 @@ class _MyHomePageState extends State<MyHomePage>
                         couleur: Colors.yellow, // Texte jaune
                         fontWeight: FontWeight.w600,
                       ),
-                      onTap: () {
-                        authProvider.loginUserData!.isConnected = false;
-                        userProvider.changeState(
-                            user: authProvider.loginUserData,
-                            state: UserState.OFFLINE.name
-                        );
-                        authProvider.storeToken('').then(
-                              (value) {
-                            Navigator.pop(context);
-                            Navigator.pushReplacementNamed(context, "/login");
-                          },
-                        );
+                      onTap: () async {
+                        await authProvider.logout(context);
+
                       },
                     ),
                   ],

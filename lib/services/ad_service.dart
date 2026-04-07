@@ -3,11 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
-import 'dart:io' show Platform;
 
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 
 class AdService {
   // Singleton

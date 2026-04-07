@@ -83,50 +83,103 @@ class _ChargementState extends State<SplahsChargement> {
     chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
     contentProvider = Provider.of<ContentProvider>(context, listen: false);
     _authCompleter = Completer<void>();
-    _listenToFirebaseAuth();  // ← écoute les changements d’auth
+    // _listenToFirebaseAuth();  // ← écoute les changements d’auth
     _startInitFlow();
   }
 
-
-  void _listenToFirebaseAuth() {
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      if (user != null) {
-        print('✅ Firebase authentifié : ${user.uid}');
-        _isFirebaseAuthenticated = true;
-        if (!_authCompleter!.isCompleted) {
-          _authCompleter!.complete();
-        }
-      } else {
-        print('⚠️ Firebase non authentifié');
-        _isFirebaseAuthenticated = false;
-        // Si on était déjà en train de charger, on redirige immédiatement
-        if (_authCompleter != null && !_authCompleter!.isCompleted) {
-          _authCompleter!.completeError('Non authentifié');
-        }
-      }
-    });
-  }
-  Future<void> _startInitFlow() async {
+  void _startInitFlow() async {
     setState(() {
       isFinished = false;
-      _loadingText = "Vérification de la vidéo...";
+      _loadingText = "Initialisation...";
     });
-// Appeler la migration après la première connexion
-//     final prefs = await SharedPreferences.getInstance();
-//     final migrationDone = prefs.getBool('dating_migration_done') ?? false;
-//     if (!migrationDone) {
-//       print('🔄 Première connexion - Lancement de la migration des profils dating...');
-//       await migrateInitialDatingProfiles();
-//     await migrateInitialDatingProfilesForMen();
-//     await migrateDatingProfilesToLowercase();
-//       await prefs.setBool('dating_migration_done', true);
-//       print('✅ Migration marquée comme terminée');
-//     }
+
+    // 1️⃣ Vérifier si c'est la première ouverture (PRIORITÉ)
+    final isFirst = await authProvider.getIsFirst();
+
+    if (isFirst == null || isFirst == false) {
+      await authProvider.storeIsFirst(true);
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/introduction');
+      }
+      return;
+    }
+
+    // 2️⃣ Vérifier si on doit jouer la vidéo
     await _checkIfShouldPlayVideo();
 
-    // 🔥 LANCER L'AUTHENTIFICATION ET PRÉPARATION DES POSTS
-    _initAuthAndPosts();
+    // 3️⃣ Vérifier Firebase Auth
+    FirebaseAuth.instance.authStateChanges().first.then((user) async {
+
+      // ❌ Pas connecté → LOGIN
+      if (user == null) {
+        print('⚠️ Firebase non authentifié');
+        _redirectToLoginAndClearStack();
+        return;
+      }
+
+      print('✅ Firebase authentifié : ${user.uid}');
+
+      // 4️⃣ Charger données app
+      setState(() => _loadingText = "Chargement des données...");
+      await authProvider.getAppData();
+
+
+      // 6️⃣ Login backend
+      setState(() => _loadingText = "Connexion...");
+      final success = await authProvider.getLoginUser(user.uid);
+
+      if (!success) {
+        _redirectToLoginAndClearStack();
+        return;
+      }
+
+      // 7️⃣ Fin
+      setState(() => _isAuthCompleted = true);
+
+      _preparePostsInBackground();
+      _navigateToDestination();
+    });
   }
+//   void _listenToFirebaseAuth() {
+//     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+//       if (user != null) {
+//         print('✅ Firebase authentifié : ${user.uid}');
+//         _isFirebaseAuthenticated = true;
+//         if (!_authCompleter!.isCompleted) {
+//           _authCompleter!.complete();
+//         }
+//       } else {
+//         print('⚠️ Firebase non authentifié');
+//         _isFirebaseAuthenticated = false;
+//         // Si on était déjà en train de charger, on redirige immédiatement
+//         if (_authCompleter != null && !_authCompleter!.isCompleted) {
+//           _authCompleter!.completeError('Non authentifié');
+//         }
+//       }
+//     });
+//   }
+//   Future<void> _startInitFlow() async {
+//     setState(() {
+//       isFinished = false;
+//       _loadingText = "Vérification de la vidéo...";
+//     });
+// // Appeler la migration après la première connexion
+// //     final prefs = await SharedPreferences.getInstance();
+// //     final migrationDone = prefs.getBool('dating_migration_done') ?? false;
+// //     if (!migrationDone) {
+// //       print('🔄 Première connexion - Lancement de la migration des profils dating...');
+// //       await migrateInitialDatingProfiles();
+// //     await migrateInitialDatingProfilesForMen();
+// //     await migrateDatingProfilesToLowercase();
+// //       await prefs.setBool('dating_migration_done', true);
+// //       print('✅ Migration marquée comme terminée');
+// //     }
+//     await _checkIfShouldPlayVideo();
+//
+//     // 🔥 LANCER L'AUTHENTIFICATION ET PRÉPARATION DES POSTS
+//     _initAuthAndPosts();
+//   }
 
   Future<void> _checkIfShouldPlayVideo() async {
     try {
@@ -201,7 +254,8 @@ class _ChargementState extends State<SplahsChargement> {
 
       // ---------- ÉTAPE 1 : Attendre que Firebase ait un utilisateur ----------
       try {
-        await _authCompleter!.future.timeout(const Duration(seconds: 5));
+        await _authCompleter!.future;
+        // await _authCompleter!.future.timeout(const Duration(seconds: 5));
       } catch (e) {
         // Pas d'utilisateur Firebase après 5 secondes → on force la redirection vers login
         _redirectToLoginAndClearStack();
