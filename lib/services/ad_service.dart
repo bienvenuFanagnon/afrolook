@@ -17,7 +17,7 @@ class AdService {
       ? "b03ae4750807969d5c5527055739a6237c9c90795a05d492"
       : "b03ae4750807969d5c5527055739a6237c9c90795a05d492";    // Clé iOS Afrolook
 
-  static bool _useTestAds = true; // Mettre à false pour la production
+  static bool _useTestAds = false; // Mettre à false pour la production
 
   // Getters pour le statut
   static bool get isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
@@ -52,19 +52,44 @@ class AdService {
     ];
     // Appodeal.setCustomFilter("consent_zone", true);
     // 3. Lancement de l'initialisation
-    await Appodeal.initialize(
+
+
+    Appodeal.initialize(
       appKey: _appKey,
       adTypes: adTypes,
       onInitializationFinished: (errors) {
         if (errors == null || errors.isEmpty) {
-          print("✅ [ADSERVICE] Initialisation terminée avec succès");
+          print("✅ [ADSERVICE] Initialisation réussie");
         } else {
+          print("⚠️ [ADSERVICE] Nombre d'erreurs: ${errors.length}");
           for (var error in errors) {
-            print("⚠️ [ADSERVICE] Erreur initialisation: $error");
+            // 1. Affiche le nom de l'erreur (ex: SdkConfigurationError)
+            // print("❌ Type: ${error.name}");
+
+            // 2. Affiche la description détaillée fournie par le SDK
+            print("📝 [ADSERVICE] Description: ${error.description}");
+
+            // 3. Tente de voir le message natif complet
+            print("🔍 [ADSERVICE] Détails complets: ${error.toString()}");
           }
         }
       },
     );
+    // await Appodeal.initialize(
+    //   appKey: _appKey,
+    //   adTypes: adTypes,
+    //   onInitializationFinished: (errors) {
+    //     if (errors == null || errors.isEmpty) {
+    //       print("✅ [ADSERVICE] Initialisation terminée avec succès");
+    //     } else {
+    //       for (var error in errors) {
+    //         print("⚠️ [ADSERVICE] Erreur de hashCode: ${error.hashCode}");
+    //         print("⚠️ [ADSERVICE] Message: ${error.description}");
+    //         print("⚠️ [ADSERVICE] Erreur initialisation: ${error.description}");
+    //       }
+    //     }
+    //   },
+    // );
   }
 
   /// ✅ CHANGER LE MODE (TEST/PROD)
@@ -84,6 +109,8 @@ class AdService {
     }
   }
 }
+
+
 // class AdService {
 //   // Singleton
 //   static final AdService _instance = AdService._internal();

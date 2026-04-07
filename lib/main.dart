@@ -119,6 +119,8 @@ Future<void> main() async {
   // Initialiser AdMob seulement sur mobile
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     // await MobileAds.instance.initialize();
+    AdService.setMode(false); // À changer en false avant publication
+
     await AdService.init();    // Configurer votre appareil comme appareil de test
     // Remplacer par l'ID obtenu dans les logs
     // await MobileAds.instance.updateRequestConfiguration(
@@ -128,7 +130,6 @@ Future<void> main() async {
 
 
     // Mode TEST (true) / PRODUCTION (false)
-    AdService.setMode(false); // À changer avant publication
   }
   // EMPECHE LE CRASH : On essaie de charger les caméras, mais on n'arrête pas l'app si ça échoue
   try {

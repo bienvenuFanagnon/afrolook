@@ -109,36 +109,45 @@ class _ChargementState extends State<SplahsChargement> {
     await _checkIfShouldPlayVideo();
 
     // 3️⃣ Vérifier Firebase Auth
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('⚠️ Firebase aut non authentifié');
+      _redirectToLoginAndClearStack();
+      return;
+    }
+
+
+    print('✅ Firebase aut authentifié : ${user.uid}');
+
+    // 4️⃣ Charger données app
+    setState(() => _loadingText = "Chargement des données...");
+    await authProvider.getAppData();
+
+
+    // 6️⃣ Login backend
+    setState(() => _loadingText = "Connexion...");
+    final success = await authProvider.getLoginUser(user.uid);
+
+    if (!success) {
+      _redirectToLoginAndClearStack();
+      return;
+    }
+
+    // 7️⃣ Fin
+    setState(() => _isAuthCompleted = true);
+
+    _preparePostsInBackground();
+    _navigateToDestination();
     FirebaseAuth.instance.authStateChanges().first.then((user) async {
 
       // ❌ Pas connecté → LOGIN
       if (user == null) {
-        print('⚠️ Firebase non authentifié');
-        _redirectToLoginAndClearStack();
-        return;
+        print('⚠️ Firebase auth non authentifié authStateChanges');
       }
 
-      print('✅ Firebase authentifié : ${user.uid}');
 
-      // 4️⃣ Charger données app
-      setState(() => _loadingText = "Chargement des données...");
-      await authProvider.getAppData();
-
-
-      // 6️⃣ Login backend
-      setState(() => _loadingText = "Connexion...");
-      final success = await authProvider.getLoginUser(user.uid);
-
-      if (!success) {
-        _redirectToLoginAndClearStack();
-        return;
-      }
-
-      // 7️⃣ Fin
-      setState(() => _isAuthCompleted = true);
-
-      _preparePostsInBackground();
-      _navigateToDestination();
     });
   }
 //   void _listenToFirebaseAuth() {

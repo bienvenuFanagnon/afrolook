@@ -60,6 +60,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:requestLegacyExternalStorage="true"
+        tools:replace="android:label"
         tools:ignore="ExtraText">
         <activity
             android:name=".MainActivity"
@@ -200,9 +201,9 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-4937249920200692~5171972878"/>
-        <meta-data
-            android:name="com.unity3d.ads.APPLICATION_ID"
-            android:value="6081379"/>
+<!--        <meta-data-->
+<!--            android:name="com.unity3d.ads.APPLICATION_ID"-->
+<!--            android:value="6081379"/>-->
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
