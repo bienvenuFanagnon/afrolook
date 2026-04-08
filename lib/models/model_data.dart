@@ -1818,7 +1818,16 @@ class Post {
     // Dans toJson()
     advertisementId = json['advertisementId'];
     isAdvertisement = json['isAdvertisement'] ?? false;
-    totalInteractions= json['totalInteractions'] ?? 0;
+    // totalInteractions= json['totalInteractions'] ?? 0;
+
+    int vuesValue = json['vues'] ?? 0;
+    int interactions = json['totalInteractions'] ?? 0;
+
+    if (interactions == 0) {
+      totalInteractions = vuesValue;
+    } else {
+      totalInteractions = interactions;
+    }
     // Dans fromJson
     isPortrait = json['isPortrait']??true;
 

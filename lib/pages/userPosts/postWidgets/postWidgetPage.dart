@@ -409,7 +409,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'En regardant cette publicité, vous offrez 10 pièces au créateur de ce post.',
+              'En regardant cette publicité, vous offrez des pièces au créateur de ce post.',
               style: TextStyle(color: _afroTextSecondary),
             ),
             SizedBox(height: 12),
@@ -538,7 +538,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('🎉 Merci ! Le créateur a reçu 10 pièces et a été notifié.'),
+        content: Text('🎉 Merci ! Le créateur a reçu des pièces et a été notifié.'),
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
@@ -1238,7 +1238,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final notificationId = firestore.collection('Notifications').doc().id;
     final notification = NotificationData(
       id: notificationId,
-      titre: "Soutien 💪 +10 pièces",
+      titre: "Soutien 💪 + pièces",
       media_url: supporter.imageUrl ?? '',
       type: NotificationType.POST.name,
       description: description,
@@ -1262,7 +1262,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         smallImage: supporter.imageUrl ?? '',
         send_user_id: supporterId,
         recever_user_id: creatorId,
-        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! +10 pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
+        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! + pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
         post_id: postId,
         post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
         chat_id: '',
@@ -1745,13 +1745,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 ),
               ),
               _buildSupportButton(true),
-              SizedBox(width: 3,),
-
-              buildTotalVues(
-                totalCount: widget.post.vues ?? 0,
-                color: Colors.yellow,
-                showLabel: false,
-              ),
+              // SizedBox(width: 3,),
+              //
+              // buildTotalVues(
+              //   totalCount: widget.post.vues ?? 0,
+              //   color: Colors.yellow,
+              //   showLabel: false,
+              // ),
             ],
           ),
         if (!isLong)
@@ -1759,13 +1759,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               _buildSupportButton(true),
-              SizedBox(width: 3,),
-
-              buildTotalVues(
-                totalCount: widget.post.vues ?? 0,
-                color: Colors.yellow,
-                showLabel: false,
-              ),
+              // SizedBox(width: 3,),
+              //
+              // buildTotalVues(
+              //   totalCount: widget.post.vues ?? 0,
+              //   color: Colors.yellow,
+              //   showLabel: false,
+              // ),
             ],
           ),
       ],

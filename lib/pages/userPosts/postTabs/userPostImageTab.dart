@@ -721,7 +721,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
 
     // Seuls les admins et premiums peuvent créer des pubs
-    if (!isAdmin && !isPremium) {
+    // if (!isAdmin && !isPremium) {
+    if (!isAdmin) {
       return Container(
         padding: EdgeInsets.all(16),
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

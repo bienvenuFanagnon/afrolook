@@ -1,7 +1,3 @@
-//BuyCoinsPage - Page d'achat de pièces
-
-// lib/pages/coins/buy_coins_page.dart
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

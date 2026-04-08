@@ -1,63 +1,22 @@
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/canaux/newCanal.dart';
-import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
-import 'package:afrotok/pages/user/profile/postsMonetisation.dart';
-import 'package:afrotok/pages/user/profile/profileTabsBar/tabBar.dart';
-import 'package:afrotok/pages/user/monetisation.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
-
-import '../../../constant/buttons.dart';
-import '../../../constant/constColors.dart';
-
 import '../../../constant/logo.dart';
-import '../../../constant/sizeText.dart';
-import '../../../constant/textCustom.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../admin/AfrolookPub/afrolookAdminPubPage.dart';
 import '../../admin/admin_email_screen.dart';
 import '../../admin/dating/admin_dating_profiles_page.dart';
-import '../../canaux/listCanal.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../challenge/challengeDashbord.dart';
 import '../../pronostics/admin_pronostics_page.dart';
-import '../../tiktokProjet/userTiktokVide.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
 import '../remuneration_home_page.dart';
 import '../userAbonnementPage.dart';
 import 'adminprofil.dart';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/canaux/newCanal.dart';
-import 'package:afrotok/pages/tiktokProjet/tiktokPages.dart';
-import 'package:afrotok/pages/user/profile/postsMonetisation.dart';
-import 'package:afrotok/pages/user/profile/profileTabsBar/tabBar.dart';
-import 'package:afrotok/pages/user/monetisation.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:provider/provider.dart';
-
-import '../../../constant/buttons.dart';
-import '../../../constant/constColors.dart';
-import '../../../constant/logo.dart';
-import '../../../constant/sizeText.dart';
-import '../../../constant/textCustom.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/postProvider.dart';
-import '../../../providers/userProvider.dart';
-import '../../canaux/listCanal.dart';
-import '../../canaux/listCanauxByUser.dart';
-import '../../challenge/challengeDashbord.dart';
-import '../../tiktokProjet/userTiktokVide.dart';
-import '../../userPosts/favorites_posts.dart';
-import '../userAbonnementPage.dart';
-import 'adminprofil.dart';
-
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
 

@@ -1,59 +1,18 @@
 import 'package:afrotok/pages/admin/new_category.dart';
 import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
-import 'package:afrotok/pages/entreprise/produit/component.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../constant/buttons.dart';
-import '../../../constant/constColors.dart';
 import '../../../constant/custom_theme.dart';
-import '../../../constant/iconGradient.dart';
-import '../../../constant/listItemsCarousel.dart';
 import '../../../constant/logo.dart';
-import '../../../constant/sizeText.dart';
-import '../../../constant/textCustom.dart';
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
-import '../produit/entrepriseProduit.dart';
-import '../pubs/pub.dart';
-import 'package:afrotok/pages/admin/new_category.dart';
-import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../../constant/constColors.dart';
-import '../../../constant/logo.dart';
-import '../../../constant/sizeText.dart';
-import '../../../models/model_data.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
 import '../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../providers/postProvider.dart';
 
-import 'package:afrotok/pages/admin/new_category.dart';
-import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
-import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../../constant/constColors.dart';
-import '../../../constant/logo.dart';
-import '../../../models/model_data.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import '../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../providers/postProvider.dart';
 
 class EntrepriseProfil extends StatefulWidget {
   final String? userId;
@@ -582,18 +541,6 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                     });
                   },
                 ),
-
-              _buildActionButton(
-                icon: Icons.monetization_on,
-                label: "Publicash",
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => DepotPage()),
-                  );
-                },
-              ),
 
               _buildActionButton(
                 icon: Icons.chat,

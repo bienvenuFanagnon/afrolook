@@ -91,7 +91,7 @@ class _DetailsPostState extends State<DetailsPost>
   int _selectedGiftIndex = 0;
   int _selectedRepostPrice = 25;
   bool _isExpanded = false;
-// Suggestions
+
   // Suggestions
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
@@ -310,25 +310,14 @@ class _DetailsPostState extends State<DetailsPost>
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(color: Colors.white, fontSize: 14),
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                '@${post.user?.pseudo ?? ''}',
-                                style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                              ),
-                              SizedBox(height: 4),
+
+                              SizedBox(height: 2),
                               Row(
                                 children: [
-                                  Icon(Icons.favorite, size: 12, color: Colors.red),
+                                  Icon(Icons.bar_chart, size: 12, color: Colors.blue),
                                   SizedBox(width: 4),
                                   Text(
-                                    '${post.loves ?? 0}',
-                                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Icon(Icons.comment, size: 12, color: Colors.blue),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '${post.comments ?? 0}',
+                                    '${post.totalInteractions ?? 0}',
                                     style: TextStyle(color: Colors.grey[400], fontSize: 11),
                                   ),
                                 ],
@@ -505,7 +494,7 @@ class _DetailsPostState extends State<DetailsPost>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'En regardant cette publicité, vous offrez 10 pièces au créateur de ce post.',
+              'En regardant cette publicité, vous offrez pièces au créateur de ce post.',
               style: TextStyle(color: _twitterTextSecondary),
             ),
             SizedBox(height: 12),
@@ -565,7 +554,7 @@ class _DetailsPostState extends State<DetailsPost>
       'adSupportCount': FieldValue.increment(1),
     });
 
-    // Créditer le créateur (10 pièces)
+    // Créditer le créateur (pièces)
     final creatorRef = firestore.collection('Users').doc(creatorId);
     await creatorRef.update({
       'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
@@ -584,7 +573,7 @@ class _DetailsPostState extends State<DetailsPost>
     await _sendSupportNotification(creatorId, currentUserId, postId);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('🎉 Merci ! Le créateur a reçu 10 pièces.'),
+        content: Text('🎉 Merci ! Le créateur a reçu des pièces.'),
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
@@ -813,6 +802,7 @@ class _DetailsPostState extends State<DetailsPost>
         // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {
+          authProvider.incrementCreatorCoins(postId: widget.post.id!, creatorId: widget.post.user_id!, currentUserId:authProvider.loginUserData.id!);
           print('✅ Native Ad Afrolook chargée: $key');
         },
       ),
@@ -820,8 +810,9 @@ class _DetailsPostState extends State<DetailsPost>
       //   onAdLoaded: () {
       //
       //     print('✅ Bannière Afrolook chargée: $key');
-      //     authProvider.incrementCreatorCoins(widget.post.user_id!);
-      //   },
+
+
+    //   },
       // ),
     );
   }
@@ -831,12 +822,12 @@ class _DetailsPostState extends State<DetailsPost>
     final supporter = authProvider.loginUserData;
     final supporterName = supporter.pseudo ?? 'Un utilisateur';
 
-    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+10 pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
+    final description = "@$supporterName a soutenu votre post en regardant une publicité ! (+ pièces) 💰 Chaque soutien vous rapproche des 100€ (≈65 000 FCFA) par mois. Continuez à créer, on vous soutient !";
 
     final notificationId = firestore.collection('Notifications').doc().id;
     final notification = NotificationData(
       id: notificationId,
-      titre: "Soutien 💪 +10 pièces",
+      titre: "Soutien 💪 + pièces",
       media_url: supporter.imageUrl ?? '',
       type: NotificationType.POST.name,
       description: description,
@@ -859,13 +850,13 @@ class _DetailsPostState extends State<DetailsPost>
         smallImage: supporter.imageUrl ?? '',
         send_user_id: supporterId,
         recever_user_id: creatorId,
-        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! +10 pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
+        message: "💪 @$supporterName vous a soutenu en regardant une vidéo ! + pièces 🎉 Continuez avec du contenu de qualité pour obtenir plus de soutiens !",        type_notif: NotificationType.SUPPORT.name,
         post_id: postId,
         post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
         chat_id: '',
       );
     }
-    printVm("💪 @$supporterName a soutenu votre post ! +10 pièces. Gagnez jusqu'à 100€/mois !");
+    printVm("💪 @$supporterName a soutenu votre post ! + pièces. Gagnez jusqu'à 100€/mois !");
   }
 // 3. Ajouter la méthode de chargement :
   Future<void> _loadAdvertisement() async {

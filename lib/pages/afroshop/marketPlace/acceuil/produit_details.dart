@@ -24,78 +24,18 @@ import 'package:insta_image_viewer/insta_image_viewer.dart';
 
 import '../../../../constant/constColors.dart';
 import '../../../../constant/custom_theme.dart';
-import '../../../../constant/sizeText.dart';
-import '../../../../constant/textCustom.dart';
+
 import '../../../../models/model_data.dart';
-import '../../../../providers/afroshop/authAfroshopProvider.dart';
 import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../providers/postProvider.dart';
-import '../../../component/consoleWidget.dart';
-import '../../../entreprise/produit/component.dart';
 import '../../../entreprise/profile/ProfileEntreprise.dart';
 import '../../../user/conponent.dart';
 
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:like_button/like_button.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:insta_image_viewer/insta_image_viewer.dart';
 
-import '../../../../constant/constColors.dart';
-import '../../../../constant/custom_theme.dart';
-import '../../../../models/model_data.dart';
-import '../../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../../providers/authProvider.dart';
-import '../../../../providers/postProvider.dart';
-
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:like_button/like_button.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:flutter/services.dart'; // Pour Clipboard
 
-import '../../../../constant/constColors.dart';
-import '../../../../constant/custom_theme.dart';
-import '../../../../models/model_data.dart';
-import '../../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../../providers/authProvider.dart';
-import '../../../../providers/postProvider.dart';
-import '../../../user/conponent.dart'; // Pour countryFlag
 
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:like_button/like_button.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:insta_image_viewer/insta_image_viewer.dart';
-import 'package:flutter/services.dart'; // Pour Clipboard
-
-import '../../../../constant/constColors.dart';
-import '../../../../constant/custom_theme.dart';
-import '../../../../models/model_data.dart';
-import '../../../../providers/afroshop/categorie_produits_provider.dart';
-import '../../../../providers/authProvider.dart';
-import '../../../../providers/postProvider.dart';
-import '../../../user/conponent.dart'; // Pour countryFlag
 
 class ProduitDetail extends StatefulWidget {
   final String productId;

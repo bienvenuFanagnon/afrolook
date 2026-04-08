@@ -11,46 +11,11 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/userProvider.dart';
 import 'package:afrotok/models/model_data.dart';
 import '../component/showImage.dart';
-import '../home/slive/utils.dart';
 import '../paiement/newDepot.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'canal_manage_admins.dart';
-import 'listCanalfollowers.dart';
 
 
-import 'dart:async';
-import 'dart:math';
-import 'package:afrotok/pages/canaux/canalPostNew.dart';
-import 'package:afrotok/pages/canaux/editCanal.dart';
-import 'package:afrotok/providers/postProvider.dart';
-import 'package:auto_animated/auto_animated.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import 'package:afrotok/models/model_data.dart';
-import '../component/showImage.dart';
-import '../home/slive/utils.dart';
-import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'listCanalfollowers.dart';
-
-
-import 'dart:async';
-import 'package:afrotok/pages/canaux/canalPostNew.dart';
-import 'package:afrotok/pages/canaux/editCanal.dart';
-import 'package:afrotok/providers/postProvider.dart';
-import 'package:auto_animated/auto_animated.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/authProvider.dart';
-import '../../../providers/userProvider.dart';
-import 'package:afrotok/models/model_data.dart';
-import '../component/showImage.dart';
-import '../home/slive/utils.dart';
-import '../userPosts/postWidgets/postWidgetPage.dart';
-import 'listCanalfollowers.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;

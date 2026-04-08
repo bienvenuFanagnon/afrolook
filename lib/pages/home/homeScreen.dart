@@ -482,11 +482,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/1.png',
-                      height: 20,
-                      width: 20,
-                      color: Colors.yellow, // Icône jaune
+                    leading: Icon(Icons.supervised_user_circle,size: 20,                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "Profile",
@@ -574,10 +570,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Image.asset(
-                      'assets/menu/3.png',
-                      height: 20,
-                      width: 20,
+                    leading: Icon(Icons.group,size: 20,
                       color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
@@ -800,13 +793,9 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.info, color: Colors.red),
-                    leading: Image.asset(
-                      'assets/menu/7.png',
-                      height: 20,
-                      width: 20,
+                    leading: Icon(Icons.info,size: 20,
                       color: Colors.yellow, // Icône jaune
-                    ),
-                    title: TextCustomerMenu(
+                    ),                    title: TextCustomerMenu(
                       titre: "Actus & Infos AfroLook",
                       fontSize: SizeText.homeProfileTextSize,
                       couleur: Colors.white, // Texte blanc

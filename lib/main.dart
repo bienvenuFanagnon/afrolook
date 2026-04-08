@@ -29,24 +29,19 @@ import 'package:afrotok/pages/dating/dating_notifications_page.dart';
 import 'package:afrotok/pages/dating/dating_profile_setup_page.dart';
 import 'package:afrotok/pages/dating/dating_profiles_list_page.dart';
 import 'package:afrotok/pages/dating/dating_super_likes_list_page.dart';
-import 'package:afrotok/pages/entreprise/conversation/entrepriseConversation.dart';
-import 'package:afrotok/pages/entreprise/produit/ajouterProduit.dart';
-import 'package:afrotok/pages/entreprise/produit/ajouterUnPub.dart';
+
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
 import 'package:afrotok/pages/home/HomeConstPost.dart';
-import 'package:afrotok/pages/home/homeLooks.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
 
 import 'package:afrotok/pages/info.dart';
 import 'package:afrotok/pages/infoGagnePoint.dart';
 import 'package:afrotok/pages/intro/introduction.dart';
 import 'package:afrotok/pages/mes_notifications.dart';
-import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
-import 'package:afrotok/pages/socialVideos/thread/afrolookVideoOriginal.dart';
-import 'package:afrotok/pages/socialVideos/thread/afrolookVideoThread.dart';
+
 
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/pages/splashVideo.dart';
@@ -54,22 +49,17 @@ import 'package:afrotok/pages/splashVideo.dart';
 import 'package:afrotok/pages/user/amis/addListAmis.dart';
 import 'package:afrotok/pages/user/amis/ami.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
-import 'package:afrotok/pages/user/conversation/listEntrepriseConv.dart';
-import 'package:afrotok/pages/user/conversation/listUserConv.dart';
 import 'package:afrotok/pages/user/profile/profile.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/page/profile_page.dart';
 import 'package:afrotok/pages/user/profile/userProfileDetails.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
-import 'package:afrotok/pages/userPosts/postPhotoEditor.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
-// import 'package:afrotok/providers/challenge_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/crypto_admin_provider.dart';
-import 'package:afrotok/providers/crypto_initializer.dart';
 import 'package:afrotok/providers/crypto_market_provider.dart';
 import 'package:afrotok/providers/crypto_portfolio_controller.dart';
 import 'package:afrotok/providers/dating/coin_provider.dart';
@@ -81,19 +71,13 @@ import 'package:afrotok/providers/profilLikeProvider.dart';
 import 'package:afrotok/providers/pronostic_provider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
-import 'package:afrotok/services/LocalNotifications.dart';
 import 'package:afrotok/services/ad_service.dart';
 import 'package:afrotok/services/linkService.dart';
-import 'package:afrotok/services/postPrepareService.dart';
-import 'package:afrotok/services/postService/cachvideoService.dart';
-import 'package:afrotok/services/serviceMigrationAncienPost.dart';
+
 import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:deeplynks/deeplynks.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
@@ -103,8 +87,6 @@ import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
-import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
-import 'package:upgrader/upgrader.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
 import 'models/chatmodels/message.dart';
@@ -462,8 +444,6 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: EntrepriseProfil(), type: PageTransitionType.fade);
               case '/new_entreprise':
                 return PageTransition(child: NewEntreprise(), type: PageTransitionType.fade);
-              case '/list_users_chat':
-                return PageTransition(child: ListUserChatsOptimized(), type: PageTransitionType.fade);
               case '/bon_a_savoir':
                 return PageTransition(child: BonASavoir(), type: PageTransitionType.fade);
               case '/introduction':
@@ -480,8 +460,7 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: Amis(), type: PageTransitionType.fade);
               case '/add_list_amis':
                 return PageTransition(child: AddListAmis(), type: PageTransitionType.fade);
-              case '/add_produit':
-                return PageTransition(child: AddProduit(), type: PageTransitionType.fade);
+
               case '/create_live':
                 return PageTransition(child: CreateLivePage(), type: PageTransitionType.fade);
               case '/list_live':
@@ -494,10 +473,7 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: GagnerPointInfo(), type: PageTransitionType.fade);
               case '/new_annonce':
                 return PageTransition(child: NewAppAnnonce(), type: PageTransitionType.fade);
-              case '/list_conversation_entreprise_user':
-                return PageTransition(child: ListUsersEntrepriseChats(), type: PageTransitionType.fade);
-              case '/list_conversation_user_entreprise':
-                return PageTransition(child: ListEntrepriseUserChats(), type: PageTransitionType.fade);
+
               case '/profil_detail_user2':
                 return PageTransition(child: UserProfileDetails(), type: PageTransitionType.fade);
               case '/profil_detail_user':

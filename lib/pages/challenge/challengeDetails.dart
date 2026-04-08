@@ -1,7 +1,6 @@
 // challenge_detail_page.dart (version complète refaite)
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:flutter/material.dart';
@@ -20,41 +19,7 @@ import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
-import 'package:afrotok/pages/paiement/newDepot.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'dart:async';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import '../postDetailsVideo.dart';
-import 'newChallenge.dart';
-import 'dart:typed_data';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:afrotok/pages/entreprise/depot/depotPublicash.dart';
-import 'package:afrotok/pages/paiement/newDepot.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'dart:async';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
-import '../postDetailsVideo.dart';
-import 'newChallenge.dart';
-import 'dart:typed_data';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class ChallengeDetailPage extends StatefulWidget {
   final String challengeId;

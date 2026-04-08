@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 170;
+  late int app_version_code = 172;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -1393,15 +1393,41 @@ class UserAuthProvider extends ChangeNotifier {
       print('❌ Erreur: $e');
     }
   }
-  Future<void> incrementCreatorCoins(String creatorId) async {
+  Future<void> incrementCreatorCoins({
+    required String postId,
+    required String creatorId,
+    required String currentUserId,
+  }) async {
     try {
+      final postRef = _firestore.collection('Posts').doc(postId);
       final creatorRef = _firestore.collection('Users').doc(creatorId);
-      await creatorRef.update({
+      final viewerRef = _firestore.collection('Users').doc(currentUserId);
+
+      // Mise à jour atomique possible avec batch
+      final batch = _firestore.batch();
+
+      // 1️⃣ Incrémenter le compteur de soutien du post
+      batch.update(postRef, {
+        'adSupportCount': FieldValue.increment(1),
+      });
+
+      // 2️⃣ Créditer le créateur
+      batch.update(creatorRef, {
         'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
       });
-      print('✅ +10 pièces pour créateur: $creatorId');
-    } catch (e) {
-      print('❌ Erreur: $e');
+
+      // 3️⃣ Incrémenter le compteur du spectateur
+      batch.update(viewerRef, {
+        'totalAdViewsSupported': FieldValue.increment(1),
+      });
+
+      // Exécuter toutes les mises à jour ensemble
+      await batch.commit();
+
+      print('✅ Post $postId: +1 adSupport, Créateur $creatorId: +1 coin, Spectateur $currentUserId: +1 vue');
+    } catch (e, stack) {
+      print('❌ Erreur lors de l’incrémentation des coins/compteurs: $e');
+      print(stack);
     }
   }
   Future<void> sendPushNotificationToUsers2({

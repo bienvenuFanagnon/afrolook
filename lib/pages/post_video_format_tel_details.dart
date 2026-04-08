@@ -296,7 +296,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> {
         onAdLoaded: () {
 
           print('✅ Bannière Afrolook chargée: $key');
-          authProvider.incrementCreatorCoins(widget.initialPost.user_id!);
+          authProvider.incrementCreatorCoins(postId: widget.initialPost.id!, creatorId: widget.initialPost.user_id!, currentUserId:authProvider.loginUserData.id!);
         },
       ),
     );
