@@ -16,6 +16,7 @@ import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
 import '../remuneration_home_page.dart';
 import '../userAbonnementPage.dart';
+import '../userPubs/user_my_advertisements_page.dart';
 import 'adminprofil.dart';
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
@@ -442,6 +443,23 @@ class _UserProfilState extends State<UserProfil> {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser()));
                           },
                         ),
+                      ],
+                    ),
+
+                    SizedBox(height: 15),
+                    // Ligne 3
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildMenuButton(
+                          icon: Icons.public,
+                          label: "Publicité",
+                          color: Colors.blue,
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => UserMyAdvertisementsPage()));
+                          },
+                        ),
+
                       ],
                     ),
 

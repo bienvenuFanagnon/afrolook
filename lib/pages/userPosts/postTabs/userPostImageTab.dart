@@ -21,6 +21,7 @@ import '../../../services/postService/massNotificationService.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../user/userAbonnementPage.dart';
+import '../../user/userPubs/user_my_advertisements_page.dart';
 
 class UserPostLookImageTab extends StatefulWidget {
   final Canal? canal;
@@ -592,6 +593,55 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     );
   }
 
+  Widget _buildAfrolookAdsPromoButton() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _secondaryColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.phone_android, color: _secondaryColor, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Faites la promotion de votre contenu !',
+                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Vous pouvez créer des publicités pour vos événements, produits ou services. '
+                'Atteignez plus de 100 000 utilisateurs en Afrique, ciblez des pays spécifiques '
+                'et suivez vos statistiques en temps réel.',
+            style: TextStyle(color: _hintColor, fontSize: 13),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UserMyAdvertisementsPage()),
+              );
+            },
+            icon: Icon(Icons.add_circle),
+            label: Text('VOIR MES PUBLICITÉS'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _buildCountrySelectionCard() {
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
@@ -710,240 +760,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // NOUVEAU: Widget pour la publicité
-  Widget _buildAdvertisementCard() {
-    final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-    final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
-
-    // Seuls les admins et premiums peuvent créer des pubs
-    // if (!isAdmin && !isPremium) {
-    if (!isAdmin) {
-      return Container(
-        padding: EdgeInsets.all(16),
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: _cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _secondaryColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Iconsax.dollar_circle, color: _secondaryColor),
-                SizedBox(width: 10),
-                Text('Publicité', style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                Spacer(),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: _secondaryColor, borderRadius: BorderRadius.circular(12)),
-                  child: Text('PREMIUM', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.grey[900]!, borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  Icon(Icons.lock, color: _hintColor, size: 20),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Fonctionnalité réservée', style: TextStyle(color: _hintColor, fontWeight: FontWeight.bold)),
-                        Text('Passez à Premium pour créer des publicités avec boutons d\'action', style: TextStyle(color: _hintColor, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen())),
-                    child: Text('VOIR', style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _isAdvertisement ? _secondaryColor : Colors.transparent, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Iconsax.dollar_circle, color: _secondaryColor),
-              SizedBox(width: 10),
-              Text('Publicité', style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-              Spacer(),
-              Switch(
-                value: _isAdvertisement,
-                onChanged: (value) {
-                  setState(() {
-                    _isAdvertisement = value;
-                    if (!value) {
-                      _selectedActionType = null;
-                      _selectedDurationDays = null;
-                      _actionUrlController.clear();
-                    }
-                  });
-                },
-                activeColor: _secondaryColor,
-                activeTrackColor: _secondaryColor.withOpacity(0.3),
-              ),
-            ],
-          ),
-          if (_isAdvertisement) ...[
-            SizedBox(height: 16),
-            // Type d'action
-            Text('Type d\'action', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[700]!),
-              ),
-              child: Row(
-                children: _actionTypes.entries.map((entry) {
-                  final isSelected = _selectedActionType == entry.key;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedActionType = entry.key),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? _secondaryColor : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(entry.value['icon'], color: isSelected ? Colors.black : _hintColor, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              entry.value['label'],
-                              style: TextStyle(
-                                color: isSelected ? Colors.black : _hintColor,
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Lien d'action
-            Text('Lien du bouton', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[700]!),
-              ),
-              child: TextFormField(
-                controller: _actionUrlController,
-                style: TextStyle(color: _textColor),
-                decoration: InputDecoration(
-                  hintText: _selectedActionType != null ? _actionTypes[_selectedActionType]!['hint'] : 'https://...',
-                  hintStyle: TextStyle(color: _hintColor, fontSize: 14),
-                  prefixIcon: Icon(Icons.link, color: _primaryColor, size: 20),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                validator: (value) {
-                  if (_isAdvertisement && (value == null || value.isEmpty)) {
-                    return 'Le lien est requis';
-                  }
-                  if (_isAdvertisement && value != null && value.isNotEmpty && !value.startsWith('http')) {
-                    return 'Le lien doit commencer par http:// ou https://';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            SizedBox(height: 16),
-            // Durée
-            Text('Durée de la publicité', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[700]!),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: _selectedDurationDays,
-                  hint: Text('Choisir la durée', style: TextStyle(color: _hintColor)),
-                  dropdownColor: _cardColor,
-                  style: TextStyle(color: _textColor),
-                  isExpanded: true,
-                  icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
-                  items: _durationOptions.map((days) {
-                    String label;
-                    if (days < 30) {
-                      label = '$days jours';
-                    } else if (days == 30) {
-                      label = '1 mois';
-                    } else if (days == 90) {
-                      label = '3 mois';
-                    } else if (days == 180) {
-                      label = '6 mois';
-                    } else if (days == 365) {
-                      label = '12 mois';
-                    } else {
-                      label = '$days jours';
-                    }
-                    return DropdownMenuItem(
-                      value: days,
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, size: 16, color: _secondaryColor),
-                          SizedBox(width: 8),
-                          Text(label),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedDurationDays = value),
-                ),
-              ),
-            ),
-            if (_selectedDurationDays != null)
-              Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'La publicité sera active pendant ${_selectedDurationDays} jours',
-                  style: TextStyle(color: _hintColor, fontSize: 12, fontStyle: FontStyle.italic),
-                ),
-              ),
-          ],
         ],
       ),
     );
@@ -1713,7 +1529,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 _buildPostTypeSelector(),
                 _buildCountrySelectionCard(),
                 // NOUVEAU: Section publicité
-                _buildAdvertisementCard(),
+                _buildAfrolookAdsPromoButton(),
                 Container(
                   margin: EdgeInsets.all(16),
                   padding: EdgeInsets.all(20),

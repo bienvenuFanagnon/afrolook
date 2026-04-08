@@ -935,7 +935,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             SizedBox(height: 5),
             Text(
-              'Version: 1.2.65 sbd.1.ph.12 (${authProvider.appDefaultData.app_version_code!})',
+              'Version: 1.2.73 sbd.1.ph.1 (${authProvider.appDefaultData.app_version_code!})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white, // Texte blanc

@@ -1979,6 +1979,9 @@ class Advertisement {
   List<String>? viewersIds; // IDs des utilisateurs qui ont vu
   List<String>? clickersIds; // IDs des utilisateurs qui ont cliqué
 
+  int? pricePaid; // Prix payé par l'utilisateur (en FCFA)
+
+
   Advertisement({
     this.id,
     this.postId,
@@ -2002,6 +2005,8 @@ class Advertisement {
     this.dailyStats,
     this.viewersIds,
     this.clickersIds,
+    this.pricePaid,
+
   });
 
   Map<String, dynamic> toJson() {
@@ -2028,6 +2033,8 @@ class Advertisement {
       'dailyStats': dailyStats,
       'viewersIds': viewersIds,
       'clickersIds': clickersIds,
+      'pricePaid': pricePaid,
+
     };
   }
 
@@ -2065,16 +2072,28 @@ class Advertisement {
       clickersIds: json['clickersIds'] != null
           ? List<String>.from(json['clickersIds'])
           : [],
+      pricePaid: json['pricePaid'],
+
     );
   }
-
+  // Helper pour obtenir le prix selon la durée (en jours)
+  static int getPriceForDurationDays(int days) {
+    switch (days) {
+      case 14:  return 2500;
+      case 30:  return 4500;
+      case 90:  return 10000;
+      case 180: return 18000;
+      case 365: return 30000;
+      default:  return 0;
+    }
+  }
   // Méthodes utilitaires
-  bool get isActive => status == 'active' && endDate != null && endDate! > DateTime.now().millisecondsSinceEpoch;
   bool get isPending => status == 'pending';
-  bool get isExpired => status == 'expired' || (endDate != null && endDate! <= DateTime.now().millisecondsSinceEpoch);
+  bool get isActive => status == 'active' && endDate != null && endDate! > DateTime.now().microsecondsSinceEpoch;
+  bool get isExpired => status == 'expired' || (endDate != null && endDate! <= DateTime.now().microsecondsSinceEpoch);
 
   int get remainingDays => endDate != null
-      ? ((endDate! - DateTime.now().millisecondsSinceEpoch) / (24 * 60 * 60 * 1000000)).ceil()
+      ? ((endDate! - DateTime.now().microsecondsSinceEpoch) / (24 * 60 * 60 * 1000000)).ceil()
       : 0;
 
   double get ctr => views != null && views! > 0

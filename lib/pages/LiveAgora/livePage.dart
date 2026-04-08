@@ -1897,7 +1897,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               children: [
                 Icon(Icons.videocam_off, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('En attente du stream...', style: TextStyle(color: Colors.white)),
+                Text('Live en pause...', style: TextStyle(color: Colors.white)),
               ],
             ),
           ),
