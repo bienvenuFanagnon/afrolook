@@ -3921,11 +3921,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ),
               ),
               _buildSupportButton(),
-              buildTotalInteractions(
-                totalCount: widget.post.totalInteractions ?? 0,
-                color: Colors.blue,
-                showLabel: false,
-              ),
+              // buildTotalInteractions(
+              //   totalCount: widget.post.totalInteractions ?? 0,
+              //   color: Colors.blue,
+              //   showLabel: false,
+              // ),
             ],
           ),
 
@@ -3935,11 +3935,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               _buildSupportButton(),
-              buildTotalInteractions(
-                totalCount: widget.post.totalInteractions ?? 0,
-                color: Colors.blue,
-                showLabel: false,
-              ),
+              // buildTotalInteractions(
+              //   totalCount: widget.post.totalInteractions ?? 0,
+              //   color: Colors.blue,
+              //   showLabel: false,
+              // ),
             ],
           ),
       ],
@@ -4877,10 +4877,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 color: _twitterGreen,
               ),
               _buildChallengeStatItem(
-                icon: Icons.visibility,
-                value: '${post.vues ?? 0}',
-                label: 'Vues',
-                color: _twitterBlue,
+                icon: Icons.bar_chart,
+                value: '${post.totalInteractions ?? 0}',
+                label: 'Interactions',
+                color: Colors.blue,
               ),
               _buildChallengeStatItem(
                 icon: Icons.favorite,
@@ -5081,9 +5081,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _buildStatItem(
-          icon: Icons.remove_red_eye,
-          count: post.vues ?? 0,
-          label: 'Vues',
+          icon: Icons.bar_chart,
+          count: post!.isAdvertisement!
+              ? _advertisement!.views!
+              : post.totalInteractions ?? 0,
+          label: 'Interactions',
         ),
         GestureDetector(
           onTap: hasAccess ? _handleLike : null,
@@ -5218,111 +5220,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     );
   }
 
-  Widget _buildActionButtons2(Post post) {
-    final hasAccess = _hasAccessToContent();
-
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 15),
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // Bouton Like
-          ScaleTransition(
-            scale: _scaleAnimation,
-            child: IconButton(
-              icon: Icon(
-                isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                        ? Colors.red
-                        : Colors.white),
-                size: 30,
-              ),
-              onPressed: hasAccess ? _handleLike : null,
-            ),
-          ),
-
-          // Bouton Commentaire
-          IconButton(
-            icon: Icon(Icons.chat_bubble_outline,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.white,
-                size: 30),
-            onPressed: hasAccess
-                ? () async {
-                    await firestore
-                        .collection('Posts')
-                        .doc(widget.post.id)
-                        .update({
-                      'popularity': FieldValue.increment(1),
-                    });
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PostComments(post: widget.post),
-                      ),
-                    );
-                  }
-                : null,
-          ),
-
-          // Bouton Cadeau
-          IconButton(
-            icon: Icon(Icons.card_giftcard,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.yellow,
-                size: 30),
-            onPressed: hasAccess ? _showGiftDialog : null,
-          ),
-
-          // Bouton Republier
-          IconButton(
-            icon: Icon(Icons.repeat,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.green,
-                size: 30),
-            onPressed: hasAccess ? _showRepostDialog : null,
-          ),
-
-          // Bouton Partager
-          IconButton(
-            icon: Icon(Icons.share,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.white,
-                size: 30),
-            onPressed: hasAccess
-                ? () async {
-                    final AppLinkService _appLinkService = AppLinkService();
-                    _appLinkService.shareContent(
-                      type: AppLinkType.post,
-                      id: widget.post.id!,
-                      message: " ${widget.post.description}",
-                      mediaUrl: widget.post.images!.isNotEmpty
-                          ? "${widget.post.images!}"
-                          : "",
-                    );
-                    await FirebaseFirestore.instance
-                        .collection('Posts')
-                        .doc(widget.post.id!)
-                        .update({
-                      'partage': FieldValue.increment(1),
-                    });
-                    authProvider.checkAndRefreshPostDates(widget.post.id!);
-                  }
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildActionButtons(Post post) {
     final hasAccess = _hasAccessToContent();

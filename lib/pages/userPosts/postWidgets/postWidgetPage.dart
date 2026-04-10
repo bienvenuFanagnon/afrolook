@@ -304,7 +304,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         setState(() {
           _isAudioPlaying = true;
         });
-      } else {
+      } else
+      {
         // Arrêter le précédent
         if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
           await _activePlayers[_currentlyPlayingAudioId]!.stop();
@@ -328,9 +329,47 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _isAudioPlaying = true;
         });
       }
+      _incrementViews();
+      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+
     } catch (e) {
       print('Erreur lecture audio: $e');
       _showAudioError();
+    }
+  }
+  Future<void> _incrementViews() async {
+    try {
+      if (authProvider.loginUserData == null ||
+          widget.post == null ||
+          widget.post.id == null) return;
+
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
+
+      widget.post.users_vue_id ??= [];
+
+      // 🔥 Vérifier si l'utilisateur a déjà vu le post
+      if (widget.post.users_vue_id!.contains(currentUserId)) {
+        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        return;
+      }
+
+      // ✅ Mise à jour locale
+      setState(() {
+        widget.post.vues = (widget.post.vues ?? 0) + 1;
+        widget.post.users_vue_id!.add(currentUserId);
+      });
+
+      // ✅ Mise à jour Firestore
+      await firestore.collection('Posts').doc(widget.post.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+        'popularity': FieldValue.increment(2),
+      });
+
+      print('✅ Vue unique enregistrée pour ${widget.post.id}');
+    } catch (e) {
+      print("Erreur incrémentation vues: $e");
     }
   }
 

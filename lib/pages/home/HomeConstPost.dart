@@ -2597,7 +2597,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
-        contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+        // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
         contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
@@ -2629,7 +2629,9 @@ printVm("_currentFilter data: ${_currentFilter}");
           final canauxSection = _buildCanauxSection();
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
-            contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+            // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
+            contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
+
             contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
 
           }

@@ -59,6 +59,47 @@ class UserAuthProvider extends ChangeNotifier {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
+
+  // Dans UserAuthProvider, ajouter:
+
+  List<Map<String, dynamic>> _advertisements = [];
+  List<Map<String, dynamic>> get advertisements => _advertisements;
+
+  Future<void> loadAdvertisements() async {
+    try {
+      final now = DateTime.now().microsecondsSinceEpoch;
+      final adsSnapshot = await _firestore
+          .collection('Advertisements')
+          .where('status', isEqualTo: 'active')
+          .where('endDate', isGreaterThan: now)
+          .get();
+
+      if (adsSnapshot.docs.isEmpty) {
+        _advertisements = [];
+        notifyListeners();
+        return;
+      }
+
+      List<Map<String, dynamic>> tempAds = [];
+      for (var adDoc in adsSnapshot.docs) {
+        final ad = Advertisement.fromJson(adDoc.data());
+        if (ad.postId == null) continue;
+        final postDoc = await _firestore.collection('Posts').doc(ad.postId).get();
+        if (postDoc.exists) {
+          final post = Post.fromJson(postDoc.data()!);
+          post.advertisementId = ad.id;
+          post.isAdvertisement = true;
+          tempAds.add({'ad': ad.toJson(), 'post': post.toJson()});
+        }
+      }
+      tempAds.shuffle();
+      _advertisements = tempAds;
+      notifyListeners();
+    } catch (e) {
+      print('Erreur chargement pubs: $e');
+    }
+  }
+
   /// Rafraîchit les données de l'utilisateur connecté depuis Firestore
   Future<void> refreshUserData() async {
     try {

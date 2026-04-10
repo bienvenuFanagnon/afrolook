@@ -57,9 +57,12 @@ class AdService {
     Appodeal.initialize(
       appKey: _appKey,
       adTypes: adTypes,
-      onInitializationFinished: (errors) {
+      onInitializationFinished: (errors) async {
         if (errors == null || errors.isEmpty) {
           print("✅ [ADSERVICE] Initialisation réussie");
+          // ✅ Cache APRÈS init
+          await Appodeal.cache(AppodealAdType.NativeAd);
+          await Appodeal.cache(AppodealAdType.Banner);
         } else {
           print("⚠️ [ADSERVICE] Nombre d'erreurs: ${errors.length}");
           for (var error in errors) {
