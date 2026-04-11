@@ -49,6 +49,7 @@ import 'package:afrotok/pages/splashVideo.dart';
 import 'package:afrotok/pages/user/amis/addListAmis.dart';
 import 'package:afrotok/pages/user/amis/ami.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
+import 'package:afrotok/pages/user/conversation/listUserConv.dart';
 import 'package:afrotok/pages/user/profile/profile.dart';
 import 'package:afrotok/pages/user/profile/profileDetail/page/profile_page.dart';
 import 'package:afrotok/pages/user/profile/userProfileDetails.dart';
@@ -450,6 +451,8 @@ class _MyAppState extends State<MyApp> {
                 return PageTransition(child: IntroductionPage(), type: PageTransitionType.fade);
               case '/basic_chat':
                 return PageTransition(child: const WelcomeScreen(), type: PageTransitionType.fade);
+                case '/list_users_chat':
+                return PageTransition(child: const ListUserChatsOptimized(), type: PageTransitionType.fade);
               case '/mes_notifications':
                 return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
               case '/user_posts_form':

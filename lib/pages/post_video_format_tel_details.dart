@@ -70,7 +70,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   int _currentPage = 0;
   bool _isLoadingFeed = true;
   bool _isLoadingMore = false;
-  final int _batchSize = 5;
+  final int _batchSize = 10;
   final int _preloadThreshold = 2;
   DocumentSnapshot? _lastDocument;
 
@@ -977,7 +977,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           Column(children: [IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
           Column(children: [IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33), onPressed: () => _showCommentsModal(post)), Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white))]),
           if (post.type != PostType.CHALLENGEPARTICIPATION.name) Column(children: [IconButton(icon: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30), onPressed: () => _showGiftDialog(post)), Text('${post.users_cadeau_id?.length ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [IconButton(icon: const Icon(Icons.remove_red_eye, color: Colors.white, size: 35), onPressed: () {}), Text('${post.vues ?? 0}', style: const TextStyle(color: Colors.white))]),
+          // Column(children: [IconButton(icon: const Icon(Icons.remove_red_eye, color: Colors.white, size: 35), onPressed: () {}), Text('${post.vues ?? 0}', style: const TextStyle(color: Colors.white))]),
           Column(children: [IconButton(icon: const Icon(Icons.bar_chart, color: Colors.blue, size: 35), onPressed: () {}), Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white))]),
           Column(children: [_isSharing ? const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.share, color: Colors.white, size: 30), onPressed: _sharePost), Text('${post.partage ?? 0}', style: const TextStyle(color: Colors.white))]),
           IconButton(icon: const Icon(Icons.more_vert, color: Colors.white, size: 30), onPressed: () => _showPostMenu(post)),
