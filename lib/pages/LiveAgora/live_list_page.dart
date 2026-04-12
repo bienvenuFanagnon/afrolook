@@ -274,7 +274,9 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
+        key: ValueKey("ad_v2"),
+        useBanner: false,
         // // templateType: TemplateType.small, // Utilisez small pour les lives
         onAdLoaded: () {
           print('✅ Native Ad chargée dans LivePage: $key');

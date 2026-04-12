@@ -1538,7 +1538,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans conversations: $key');

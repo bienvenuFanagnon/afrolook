@@ -80,7 +80,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   Widget build(BuildContext context) {
     // Pas de pub pour les premium ou pendant la vérification
-    if (_isPremium || _isCheckingPremium) return const SizedBox.shrink();
+    if (_isPremium) return const SizedBox.shrink();
 
     // ✅ N'affiche la bannière que si elle est chargée
     if (!_isAdLoaded) return const SizedBox.shrink();

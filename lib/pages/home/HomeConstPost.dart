@@ -1962,7 +1962,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       );
     }
   }
-  Widget _buildPostWidget(Post post, double width, double height) {
+  Widget _buildPostWidget(Post post, double width, double height,int index) {
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {
@@ -1993,6 +1993,7 @@ printVm("_currentFilter data: ${_currentFilter}");
               },
             )
                 : HomePostUsersWidget(
+              index: index,
               post: post,
               color: _getRandomColor(),
               height: height * 0.6,
@@ -2572,7 +2573,9 @@ printVm("_currentFilter data: ${_currentFilter}");
     final profilesSection = _buildProfilesSection();
     if (profilesSection is! SizedBox) {
       contentWidgets.add(profilesSection);
-      contentWidgets.add(SizedBox(height: 16));
+      contentWidgets.add(_buildAdMrec(key: 'ad_native_user'));
+
+      contentWidgets.add(SizedBox(height: 8));
     }
 
     // 4. Posts avec bannières
@@ -2587,7 +2590,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       contentWidgets.add(
         GestureDetector(
           onTap: () => _navigateToPostDetails(post),
-          child: _buildPostWidget(post, width, height),
+          child: _buildPostWidget(post, width, height,i),
         ),
       );
 
@@ -2598,7 +2601,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
         // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
-        contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
+        // contentWidgets.add(_buildAdMrec(key: 'ad_native_post$postIndex'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
       //AJOUT DES BANNIÈRES ADMOB
@@ -2632,7 +2635,7 @@ printVm("_currentFilter data: ${_currentFilter}");
             // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
             contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
 
-            contentWidgets.add(_buildAdNative(key: 'ad_native_post$postIndex'));
+            // contentWidgets.add(_buildAdMrec(key: 'ad_native_post$postIndex'));
 
           }
         }
@@ -2777,7 +2780,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       ),
     );
   }
-  Widget _buildAdNative({required String key}) {
+  Widget _buildAdMrec({required String key}) {
     // return SizedBox.shrink();
 
     return Container(
@@ -2788,7 +2791,7 @@ printVm("_currentFilter data: ${_currentFilter}");
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.medium, // ou TemplateType.small
 

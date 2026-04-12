@@ -1021,7 +1021,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)), const Text('Afrolook', style: TextStyle(color: _afroGreen, fontSize: 24, fontWeight: FontWeight.bold))]),
-                BannerAdWidget(onAdLoaded: () => authProvider.incrementCreatorCoins(postId: post.id!, creatorId: post.user_id!, currentUserId: authProvider.loginUserData.id!)),
               ],
             ),
           ),
@@ -1080,7 +1079,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           bottom: 0,
           left: 0,
           right: 0,
-          child: const NativeAdWidget(showLessAdsButton: true),
+          child: const MrecAdWidget(showLessAdsButton: true),
         ),
         if (_showRewardedAd)
           RewardedAdWidget(

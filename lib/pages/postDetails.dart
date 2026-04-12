@@ -207,19 +207,6 @@ class _DetailsPostState extends State<DetailsPost>
           physics: NeverScrollableScrollPhysics(),
           itemCount: suggestions.length + 1, // +1 pour la pub
           itemBuilder: (context, index) {
-            if (index == 3) {
-              return Column(
-                children: [
-                  Divider(color: Colors.grey[800]),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: _buildAdBanner(key: 'ad_suggestion_unique'),
-                  ),
-                  Divider(color: Colors.grey[800]),
-                ],
-              );
-            }
-
             final int postIndex = index > 3 ? index - 1 : index;
             if (postIndex >= suggestions.length) return SizedBox.shrink();
 
@@ -356,34 +343,6 @@ class _DetailsPostState extends State<DetailsPost>
       );
     }
 
-  }
-
-
-  Widget _buildAdNative({required String key}) {
-    // return SizedBox.shrink();
-
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: NativeAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.small, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
-      //   },
-      // ),
-    );
   }
 
   Future<bool> _hasSupportedToday(String postId, String userId) async {
@@ -681,7 +640,7 @@ class _DetailsPostState extends State<DetailsPost>
                         Column(
                           children: [
                             if (i == 3) // 4ème élément (index 3)
-                              _buildAdBanner(key: 'ad_suggestion_modal'),
+                              // _buildAdMrec(key: 'ad_suggestion_modal'),
                             _buildSuggestionItem(suggestions[i]),
                             if (i != suggestions.length - 1) SizedBox(height: 12),
                           ],
@@ -786,7 +745,7 @@ class _DetailsPostState extends State<DetailsPost>
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
     return count.toString();
   }
-  Widget _buildAdBanner({required String key}) {
+  Widget _buildAdMrec({required String key}) {
     // return SizedBox.shrink();
 
     return Container(
@@ -797,7 +756,7 @@ class _DetailsPostState extends State<DetailsPost>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.medium, // ou TemplateType.small
 
@@ -5416,7 +5375,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       _buildStatsRow(updatedPost),
                       Divider(color: Colors.grey[700]),
                       _buildActionButtons(updatedPost),
-                      _buildAdBanner(key: 'ad_details_post'),
+                      _buildAdMrec(key: 'ad_details_post'),
                       // Section des cadeaux récents
                       if (updatedPost.users_cadeau_id != null &&
                           updatedPost.users_cadeau_id!.isNotEmpty &&

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 import 'package:provider/provider.dart';
@@ -6,56 +7,52 @@ import '../../../providers/authProvider.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../user/userAbonnementPage.dart';
 
-class NativeAdWidget extends StatefulWidget {
+class MrecAdWidget extends StatefulWidget {
   final double? height;
   final double? width;
   final void Function()? onAdLoaded;
   final bool showLessAdsButton;
+  final bool useBanner; // true = BANNER, false = MEDIUM_RECTANGLE
 
-  const NativeAdWidget({
+  const MrecAdWidget({
     Key? key,
     this.height,
     this.width,
     this.onAdLoaded,
     this.showLessAdsButton = true,
+    this.useBanner = true, // par défaut : BANNUER
   }) : super(key: key);
 
   @override
-  _NativeAdWidgetState createState() => _NativeAdWidgetState();
+  _MrecAdWidgetState createState() => _MrecAdWidgetState();
 }
 
-class _NativeAdWidgetState extends State<NativeAdWidget> {
-  bool _adIsLoaded = false;   // Renommé pour plus de clarté
+class _MrecAdWidgetState extends State<MrecAdWidget> {
+  bool _adIsLoaded = false;
   bool _isPremium = false;
   bool _isCheckingPremium = true;
   bool _checkedAd = false;
+
+  // Type d'annonce en fonction du paramètre
+  AppodealAdType get _adType =>  AppodealAdType.MREC;
+
+  // Taille du widget AppodealBanner
+  AppodealBannerSize get _bannerSize =>
+      widget.useBanner ? AppodealBannerSize.BANNER : AppodealBannerSize.MEDIUM_RECTANGLE;
+
   @override
   void initState() {
     super.initState();
     _checkPremiumStatus();
     _setupAdCallbacks();
 
-    // Charger la pub
-    Future.delayed(Duration(seconds: 1), () async {
-      bool isLoaded = await Appodeal.isLoaded(AppodealAdType.Banner);
+  }
 
-      if (mounted) {
-        setState(() {
-          _adIsLoaded = isLoaded;
-          _checkedAd = true;
-        });
-      }
-
-      if (isLoaded) {
-        Appodeal.show(AppodealAdType.Banner);
-      }
-    });  }
-
-  // ✅ UTILISATION DE setBannerCallbacks (car votre Native utilise AppodealBanner)
+  // Callbacks adaptés selon le type
   void _setupAdCallbacks() {
-    Appodeal.setBannerCallbacks(
-      onBannerLoaded: (isPrecache) {
-        print('✅ [NativeAdWidget] Banner loaded (isPrecache: $isPrecache)');
+    Appodeal.setMrecCallbacks(
+      onMrecLoaded: (isPrecache) {
+        print('✅ [MRECWidget] MREC loaded (isPrecache: $isPrecache)');
         if (mounted) {
           setState(() {
             _adIsLoaded = true;
@@ -63,33 +60,48 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
           widget.onAdLoaded?.call();
         }
       },
-      onBannerFailedToLoad: () {
-        print('❌ [NativeAdWidget] Banner failed to load');
-        if (mounted) setState(() => _adIsLoaded = false);
+      onMrecFailedToLoad: () {
+        print('❌ [MRECWidget] MREC failed to load');
+        // if (mounted) setState(() => _adIsLoaded = false);
       },
-      onBannerShown: () => print('📢 [NativeAdWidget] Banner shown'),
-      onBannerClicked: () => print('🖱️ [NativeAdWidget] Banner clicked'),
-      onBannerExpired: () => print('⏰ [NativeAdWidget] Banner expired'),
+      onMrecShown: () => print('📢 [MRECWidget] MREC shown'),
+      onMrecClicked: () => print('🖱️ [MRECWidget] MREC clicked'),
+      onMrecExpired: () => print('⏰ [MRECWidget] MREC expired'),
     );
+
   }
 
   Future<void> _checkPremiumStatus() async {
+
+      if (!mounted) return;
+      // Vérifier si une bannière est déjà chargée (selon le type)
+      // Vérifier si une bannière est déjà chargée (selon le type)
+      bool isLoaded = await Appodeal.isLoaded(_adType) ?? false;
+      print('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
+      setState(() {
+        _isCheckingPremium = false;
+        _adIsLoaded = isLoaded;
+      });
+  }
+
+
+  Future<void> _checkPremiumStatusOld() async {
     try {
       if (!mounted) return;
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final user = authProvider.loginUserData;
       if (user != null) {
         _isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-        print('👤 [NativeAdWidget] Premium status: $_isPremium (abonnement: ${user.abonnement!.type!})');
+        print('👤 [MRECWidget] Premium status: $_isPremium (abonnement: ${user.abonnement!.type!})');
       }
     } catch (e) {
-      print('⚠️ [NativeAdWidget] Error checking premium: $e');
+      print('⚠️ [MRECWidget] Error checking premium: $e');
       _isPremium = false;
     } finally {
       if (mounted) {
-        // Vérifier si une bannière est déjà chargée
-        bool isLoaded = await Appodeal.isLoaded(AppodealAdType.Banner) ?? false;
-        print('🔍 [NativeAdWidget] Appodeal.isLoaded(Banner) = $isLoaded');
+        // Vérifier si une bannière est déjà chargée (selon le type)
+        bool isLoaded = await Appodeal.isLoaded(_adType) ?? false;
+        print('🔍 [MRECWidget] Appodeal.isLoaded(${_adType}) = $isLoaded');
         setState(() {
           _isCheckingPremium = false;
           _adIsLoaded = isLoaded;
@@ -97,37 +109,37 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       }
     }
   }
-  @override
+
   @override
   Widget build(BuildContext context) {
-    print('🔍 [NativeAdWidget] _isCheckingPremium = $_isCheckingPremium');
-    print('🔍 [NativeAdWidget] _isPremium = $_isPremium');
-    print('🔍 [NativeAdWidget] _checkedAd = $_checkedAd');
-    print('🔍 [NativeAdWidget] _adIsLoaded = $_adIsLoaded');
+    // print('🔍 [MRECWidget] _isCheckingPremium = $_isCheckingPremium');
+    // print('🔍 [MRECWidget] _isPremium = $_isPremium');
+    print('🔍 [MRECWidget] _checkedAd = $_checkedAd');
+    print('🔍 [MRECWidget] _adIsLoaded = $_adIsLoaded');
 
-
-    if (_isPremium || _isCheckingPremium) {
-      return const SizedBox.shrink();
-    }
-    if (!_checkedAd) {
-      return const SizedBox.shrink(); // évite clignotement
-    }
+    // if (_isPremium) {
+    //   return const SizedBox.shrink();
+    // }
+    // if (!_checkedAd) {
+    //   return const SizedBox.shrink(); // évite clignotement
+    // }
     // ✅ PAS DE PUB → PAS D’ESPACE
     if (!_adIsLoaded) {
       return const SizedBox.shrink();
     }
+    if (kIsWeb) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (widget.showLessAdsButton) _buildLessAdsButton(),
-
+        // if (widget.showLessAdsButton) _buildLessAdsButton(),
         Container(
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          // constraints: BoxConstraints(minHeight: 50), // Force une hauteur mini pour la bannière
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: AppodealBanner(
-              adSize: AppodealBannerSize.BANNER,
+              adSize: _bannerSize,
             ),
           ),
         ),
@@ -135,7 +147,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     );
   }
 
-  // --- Tes méthodes UI (Modale, Boutons) restent identiques ---
+  // --- Tes méthodes UI (Modale, Boutons) restent strictement identiques ---
 
   Widget _buildLessAdsButton() {
     return Container(
@@ -437,6 +449,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       },
     );
   }
+
   Widget _buildPremiumAdvantage({
     required IconData icon,
     required String title,

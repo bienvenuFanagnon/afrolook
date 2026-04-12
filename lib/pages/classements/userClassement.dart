@@ -352,7 +352,7 @@ class _UserClassementState extends State<UserClassement> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans top10: $key');

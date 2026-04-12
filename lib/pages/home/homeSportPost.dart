@@ -1669,7 +1669,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.medium, // ou TemplateType.small
 

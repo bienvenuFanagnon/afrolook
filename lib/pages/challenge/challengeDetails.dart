@@ -1486,7 +1486,7 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         // templateType: TemplateType.small, // ou TemplateType.small
 
         onAdLoaded: () {

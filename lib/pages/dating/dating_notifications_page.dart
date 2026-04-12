@@ -76,7 +76,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.small,
         onAdLoaded: () {

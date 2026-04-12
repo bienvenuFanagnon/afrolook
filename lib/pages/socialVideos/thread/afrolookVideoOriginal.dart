@@ -358,7 +358,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         // templateType: TemplateType.medium, // ou TemplateType.small
 
         onAdLoaded: () {

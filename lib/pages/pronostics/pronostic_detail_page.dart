@@ -1087,7 +1087,7 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.small, // ou TemplateType.small
 

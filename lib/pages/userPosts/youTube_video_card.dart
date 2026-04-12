@@ -12,12 +12,14 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
+import '../pub/native_ad_widget.dart';
 
 class YouTubeVideoCard extends StatefulWidget {
   final Post post;
+  late int index;
   final VoidCallback onTap;
 
-  const YouTubeVideoCard({Key? key, required this.post, required this.onTap}) : super(key: key);
+   YouTubeVideoCard({Key? key, required this.post, required this.onTap,this.index=0}) : super(key: key);
 
   @override
   State<YouTubeVideoCard> createState() => _YouTubeVideoCardState();
@@ -34,6 +36,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard> {
   bool _isLoadingUser = false;
   bool _isProcessingFollow = false;
   String? _thumbnailUrl;
+
+  bool get _shouldShowAd {
+    // Affiche la pub pour les indices 2, 5, 8, 11... (1-indexé)
+    // Exemple : index 0 -> 1er post -> pas de pub
+    //          index 2 -> 3ème post -> pub
+    return (widget.index + 1) % 2 == 0;
+  }
   @override
   void initState() {
     super.initState();
@@ -370,6 +379,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard> {
                       _buildStat(Icons.favorite, widget.post.loves ?? 0),
                     ],
                   ),
+                  if (_shouldShowAd) ...[
+                    const SizedBox(height: 12),
+                    MrecAdWidget(  // ou AdaptiveAdWidget(useBanner: false)
+                      onAdLoaded: () {
+                        print('✅ Pub MREC affichée après le post ${widget.index}');
+                      },
+                      showLessAdsButton: false, // désactive le bouton "moins de pub" si tu veux
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
                 ],
               ),
             ),

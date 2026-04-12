@@ -48,7 +48,7 @@ class AdService {
       AppodealAdType.Banner,
       AppodealAdType.Interstitial,
       AppodealAdType.RewardedVideo,
-      AppodealAdType.NativeAd, // Important pour Afrolook
+      AppodealAdType.MREC, // Important pour Afrolook
     ];
     // Appodeal.setCustomFilter("consent_zone", true);
     // 3. Lancement de l'initialisation
@@ -61,8 +61,8 @@ class AdService {
         if (errors == null || errors.isEmpty) {
           print("✅ [ADSERVICE] Initialisation réussie");
           // ✅ Cache APRÈS init
-          await Appodeal.cache(AppodealAdType.NativeAd);
-          await Appodeal.cache(AppodealAdType.Banner);
+          await Appodeal.cache(AppodealAdType.MREC);
+          // await Appodeal.cache(AppodealAdType.Banner);
         } else {
           print("⚠️ [ADSERVICE] Nombre d'erreurs: ${errors.length}");
           for (var error in errors) {
@@ -108,7 +108,7 @@ class AdService {
       Appodeal.setTesting(true); // Assure-toi d'être en mode test
 // Dans les versions 3.x, le diagnostic est souvent lié à l'initialisation verbose
 // Pour forcer l'affichage des outils de debug Appodeal :
-      Appodeal.show(AppodealAdType.Interstitial);
+      Appodeal.show(AppodealAdType.MREC);
     }
   }
 }

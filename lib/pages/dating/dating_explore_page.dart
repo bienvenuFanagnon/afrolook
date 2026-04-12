@@ -293,7 +293,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.medium,
         onAdLoaded: () {

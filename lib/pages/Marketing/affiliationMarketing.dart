@@ -83,7 +83,7 @@ class _MarketingAffiliationPageState extends State<MarketingAffiliationPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[800]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         // templateType: TemplateType.small,
         onAdLoaded: () {
           print('✅ Native Ad chargée dans invitations: $key');

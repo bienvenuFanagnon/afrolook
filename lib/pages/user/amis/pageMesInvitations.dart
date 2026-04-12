@@ -751,7 +751,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: NativeAdWidget(
+        child: MrecAdWidget(
           // templateType: TemplateType.small,
           onAdLoaded: () {
             print('✅ Native Ad chargée dans invitations: $key');

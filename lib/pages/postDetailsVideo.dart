@@ -652,7 +652,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.medium, // ou TemplateType.small
 
@@ -682,7 +682,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: NativeAdWidget(
+      child: MrecAdWidget(
         key: ValueKey(key),
         // templateType: TemplateType.small, // ou TemplateType.small
 

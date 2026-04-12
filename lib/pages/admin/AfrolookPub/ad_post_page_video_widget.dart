@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -422,6 +423,10 @@ class _AdPostWidgetState extends State<AdPostWidget> {
                   _buildDescription(),
                   const SizedBox(height: 12),
                   _buildActionButton(),
+                  MrecAdWidget(
+                    onAdLoaded: () {
+
+                  },)
                 ],
               ),
             ),
@@ -429,7 +434,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
 
           // Badge SPONSORISÉ
           Positioned(
-            top: 10,
+            top: 50,
             right: 10,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

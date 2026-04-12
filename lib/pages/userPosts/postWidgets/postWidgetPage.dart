@@ -36,6 +36,7 @@ import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
 import '../../postDetails.dart';
 import '../../postDetailsVideo.dart';
+import '../../pub/native_ad_widget.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,6 +70,7 @@ class HomePostUsersWidget extends StatefulWidget {
   late Color? color;
   final double height;
   final double width;
+   late int index;
   final bool isDegrade;
   bool isPreview;
   final Function(Post, VisibilityInfo)? onVisibilityChanged;
@@ -94,6 +96,7 @@ class HomePostUsersWidget extends StatefulWidget {
     this.onShared,
     this.onLoved,
     this.onViewed,
+    this.index=0,
   }) : super(key: key);
 
   @override
@@ -128,7 +131,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   // Variables pour la thumbnail vidéo
   String? _videoThumbnailPath;
   bool _isGeneratingThumbnail = false;
-
+  bool get _shouldShowAd {
+    // Affiche la pub pour les indices 2, 5, 8, 11... (1-indexé)
+    // Exemple : index 0 -> 1er post -> pas de pub
+    //          index 2 -> 3ème post -> pub
+    return (widget.index + 1) % 2 == 0;
+  }
   // CONFIGURATION - Paiement pour abonnés existants
   final bool _requirePaymentForExistingSubscribers = false;
 // ========== GESTION AUDIO ==========
@@ -400,6 +408,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   void initState() {
     super.initState();
+    print("index du post: ${widget.index}");
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -1242,7 +1251,17 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 // Actions du post
                 SizedBox(height: 12),
                 _buildPostActions(hasAccess),
-
+                // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
+                if (_shouldShowAd) ...[
+                  const SizedBox(height: 12),
+                  MrecAdWidget(  // ou AdaptiveAdWidget(useBanner: false)
+                    onAdLoaded: () {
+                      print('✅ Pub MREC affichée après le post ${widget.index}');
+                    },
+                    showLessAdsButton: false, // désactive le bouton "moins de pub" si tu veux
+                  ),
+                  const SizedBox(height: 8),
+                ],
 
                 if (_showRewardedAd)
                   RewardedAdWidget(
