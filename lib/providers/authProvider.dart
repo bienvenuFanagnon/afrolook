@@ -42,7 +42,7 @@ class UserAuthProvider extends ChangeNotifier {
   late String? transfertGeneratePayToken = '';
   late String? cinetSiteId = '5870078';
   // late String? userId = "";
-  late int app_version_code = 172;
+  late int app_version_code = 177;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -558,7 +558,10 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
-
+  Future<void> updateUserBalance(double newBalance) async {
+    loginUserData.votre_solde_principal = newBalance;
+    notifyListeners();
+  }
   Future<bool> deductFromBalance(BuildContext context, double amount) async {
     _userData = loginUserData;
     if (_userData == null || _userData!.votre_solde_principal! < amount) {

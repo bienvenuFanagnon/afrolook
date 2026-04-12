@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/pages/canaux/listCanal.dart';
+import 'package:afrotok/pages/challengeMonth/challenge_month_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
@@ -49,6 +50,7 @@ import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../challenge/listChallengePost.dart';
 
 import '../challenge/userlistchallenge.dart';
+import '../challengeMonth/challenge_announce_modal.dart';
 import '../chronique/chroniquehome.dart';
 import '../component/showUserDetails.dart';
 import '../../constant/textCustom.dart';
@@ -482,7 +484,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   ListTile(
                     trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.supervised_user_circle,size: 20,                      color: Colors.yellow, // Icône jaune
+                    leading: Icon(Icons.supervised_user_circle,size: 30,                      color: Colors.yellow, // Icône jaune
                     ),
                     title: TextCustomerMenu(
                       titre: "Profile",
@@ -494,6 +496,42 @@ class _MyHomePageState extends State<MyHomePage>
                       Navigator.pop(context);
 
                       Navigator.pushNamed(context, '/home_profile_user');
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.emoji_events, color: Colors.yellow,size: 30,), // Trophée jaune
+                    title: TextCustomerMenu(
+                      titre: "Meilleurs Posts du mois",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context); // Ferme le menu
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChallengeMonthPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
+                    leading: Icon(Icons.group,size: 30,
+                      color: Colors.yellow, // Icône jaune
+                    ),
+                    title: TextCustomerMenu(
+                      titre: "Amis",
+                      fontSize: SizeText.homeProfileTextSize,
+                      couleur: Colors.white, // Texte blanc
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+
+                      Navigator.pushNamed(context, '/amis');
                     },
                   ),
 
@@ -568,23 +606,6 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
 
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: Colors.green),
-                    leading: Icon(Icons.group,size: 20,
-                      color: Colors.yellow, // Icône jaune
-                    ),
-                    title: TextCustomerMenu(
-                      titre: "Amis",
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: Colors.white, // Texte blanc
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-
-                      Navigator.pushNamed(context, '/amis');
-                    },
-                  ),
 
                   // ListTile(
                   //   trailing: TextCustomerMenu(
@@ -935,7 +956,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             SizedBox(height: 5),
             Text(
-              'Version: 1.2.75 sbd.10.ph.1 (${authProvider.appDefaultData.app_version_code!})',
+              'Version: 1.2.76 sbd.11.ph.1 (${authProvider.appDefaultData.app_version_code!})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white, // Texte blanc
@@ -1236,19 +1257,20 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Future<void> _showDailyModal() async {
-    const modalKeys = ['remuneration', 'top_dating'];
+    const modalKeys = ['remuneration', 'top_dating', 'challenge_month'];
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 
     if (modalToShow == 'remuneration') {
-      // Appel de la fonction existante (passez l'userId si nécessaire)
       showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
     } else if (modalToShow == 'top_dating') {
       showTopDatingAnnounceModal(context);
+    } else if (modalToShow == 'challenge_month') {
+      showChallengeMonthAnnounceModal(context);
     }
-    // Marquer le modal comme affiché aujourd'hui
     await DailyModalService.markModalShownToday(modalToShow);
   }
+
   @override
   void dispose() {
     _tabController?.dispose();

@@ -73,6 +73,7 @@ import 'package:afrotok/providers/pronostic_provider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:afrotok/services/ad_service.dart';
+import 'package:afrotok/services/challengeMonh/challenge_month_service.dart';
 import 'package:afrotok/services/linkService.dart';
 
 import 'package:afrotok/services/workManagerService.dart';
@@ -133,6 +134,10 @@ Future<void> main() async {
   //   appleProvider: AppleProvider.debug,
   // );
 
+
+  // Date debut challenge
+  // final service = ChallengeMonthService();
+  // await service.setChallengeStartDate(DateTime(2026, 4, 1));
   // Le reste de ton code...
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
