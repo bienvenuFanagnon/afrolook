@@ -1472,6 +1472,8 @@ class _PostCommentsState extends State<PostComments> {
       }
 
       if (success) {
+        authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+
         authProvider. notifySubscribersOfInteraction(
           actionUserId: authProvider.loginUserData.id!,
           postOwnerId: widget.post.user_id!,

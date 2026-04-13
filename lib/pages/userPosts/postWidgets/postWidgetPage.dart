@@ -338,7 +338,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         });
       }
       _incrementViews();
-      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
     } catch (e) {
       print('Erreur lecture audio: $e');
@@ -361,6 +360,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         print('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
+      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
       // ✅ Mise à jour locale
       setState(() {
@@ -2464,7 +2464,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             color: _afroTextSecondary,
             onPressed: hasAccess ? () {
               _showCommentsModal(widget.post);
-              authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
               recordUniquePostView();
               // 🔥 APPEL DU CALLBACK
@@ -3100,7 +3099,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         ),
       );
     }
-    authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+    // authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
     authProvider. notifySubscribersOfInteraction(
       actionUserId: authProvider.loginUserData.id!,

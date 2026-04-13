@@ -34,7 +34,7 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
   bool _checkedAd = false;
 
   // Type d'annonce en fonction du paramètre
-  AppodealAdType get _adType =>  AppodealAdType.MREC;
+  AppodealAdType get _adType =>  AppodealAdType.Banner;
 
   // Taille du widget AppodealBanner
   AppodealBannerSize get _bannerSize =>
@@ -50,25 +50,43 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
 
   // Callbacks adaptés selon le type
   void _setupAdCallbacks() {
-    Appodeal.setMrecCallbacks(
-      onMrecLoaded: (isPrecache) {
-        print('✅ [MRECWidget] MREC loaded (isPrecache: $isPrecache)');
-        if (mounted) {
-          setState(() {
-            _adIsLoaded = true;
-          });
-          widget.onAdLoaded?.call();
-        }
-      },
-      onMrecFailedToLoad: () {
-        print('❌ [MRECWidget] MREC failed to load');
-        // if (mounted) setState(() => _adIsLoaded = false);
-      },
-      onMrecShown: () => print('📢 [MRECWidget] MREC shown'),
-      onMrecClicked: () => print('🖱️ [MRECWidget] MREC clicked'),
-      onMrecExpired: () => print('⏰ [MRECWidget] MREC expired'),
-    );
-
+    if (widget.useBanner) {
+      // Callbacks pour le format BANNER
+      Appodeal.setBannerCallbacks(
+        onBannerLoaded: (isPrecache) {
+          print('✅ [BANNER] Loaded (isPrecache: $isPrecache)');
+          if (mounted) {
+            setState(() => _adIsLoaded = true);
+            widget.onAdLoaded?.call();
+          }
+        },
+        onBannerFailedToLoad: () {
+          print('❌ [BANNER] Failed to load');
+          if (mounted) setState(() => _adIsLoaded = false);
+        },
+        onBannerShown: () => print('📢 [BANNER] Shown'),
+        onBannerClicked: () => print('🖱️ [BANNER] Clicked'),
+        onBannerExpired: () => print('⏰ [BANNER] Expired'),
+      );
+    } else {
+      // Callbacks pour le format MREC
+      Appodeal.setMrecCallbacks(
+        onMrecLoaded: (isPrecache) {
+          print('✅ [MREC] Loaded (isPrecache: $isPrecache)');
+          if (mounted) {
+            setState(() => _adIsLoaded = true);
+            widget.onAdLoaded?.call();
+          }
+        },
+        onMrecFailedToLoad: () {
+          print('❌ [MREC] Failed to load');
+          if (mounted) setState(() => _adIsLoaded = false);
+        },
+        onMrecShown: () => print('📢 [MREC] Shown'),
+        onMrecClicked: () => print('🖱️ [MREC] Clicked'),
+        onMrecExpired: () => print('⏰ [MREC] Expired'),
+      );
+    }
   }
 
   Future<void> _checkPremiumStatus() async {

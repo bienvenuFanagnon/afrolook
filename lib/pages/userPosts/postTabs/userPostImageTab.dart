@@ -631,7 +631,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               );
             },
             icon: Icon(Icons.add_circle),
-            label: Text('VOIR MES PUBLICITÉS'),
+            label: Text('CRÉER UNE PUBLICITÉ'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,

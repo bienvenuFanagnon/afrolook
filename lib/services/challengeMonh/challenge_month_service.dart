@@ -94,7 +94,8 @@ class ChallengeMonthService {
     required String winnerUserId,
     required double prizeAmount,
     required String adminId,
-  }) async {
+  }) async
+  {
     final id = '${month.year}-${month.month.toString().padLeft(2, '0')}';
     final now = DateTime.now().microsecondsSinceEpoch;
 
@@ -141,7 +142,8 @@ class ChallengeMonthService {
     required UserData currentUser,
     required UserAuthProvider authProvider,
     required DateTime month,
-  }) async {
+  }) async
+  {
     // Vérifier que l'utilisateur est bien le propriétaire
     if (winnerPost.user_id != currentUser.id) {
       throw Exception('Vous n\'êtes pas le propriétaire de ce post');
@@ -173,7 +175,7 @@ class ChallengeMonthService {
       final transactionId = _firestore.collection('TransactionSoldes').doc().id;
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       final transactionData = {
-        'id': transactionId,
+        'id;': transactionId,
         'user_id': currentUser.id,
         'type': 'GAIN',
         'statut': 'VALIDER',
@@ -218,4 +220,51 @@ class ChallengeMonthService {
   bool _isSameMonth(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month;
   }
-}
+
+
+
+// Vérifie si un mois est terminé (mois < mois courant, ou même mois mais dépassé)
+  bool isMonthOver(DateTime month) {
+    final now = DateTime.now();
+    if (month.year < now.year) return true;
+    if (month.year > now.year) return false;
+    // même année
+    if (month.month < now.month) return true;
+    if (month.month > now.month) return false;
+    // même mois : terminé seulement si on est au moins le 1er du mois suivant
+    final firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
+    return now.isAfter(firstDayNextMonth) || now.isAtSameMomentAs(firstDayNextMonth);
+  }
+
+// Liste des mois (depuis la date de début) sans validation
+  Future<List<DateTime>> getMonthsWithoutValidation() async {
+    final startDate = await getChallengeStartDate();
+    final now = DateTime.now();
+    final List<DateTime> months = [];
+    DateTime current = DateTime(startDate.year, startDate.month, 1);
+    while (current.isBefore(DateTime(now.year, now.month, 1))) {
+      final validation = await getValidationForMonth(current);
+      if (validation == null) {
+        months.add(current);
+      }
+      current = DateTime(current.year, current.month + 1, 1);
+    }
+    return months;
+  }
+
+// Annuler un gagnant pour un mois donné (pas seulement le courant)
+  Future<void> cancelWinnerForMonth(DateTime month, String reason, String adminId) async {
+    final id = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+    final doc = await _firestore.collection('ChallengeValidations').doc(id).get();
+    if (!doc.exists) throw Exception('Aucune validation trouvée pour ce mois');
+    final validation = ChallengeValidation.fromJson(doc.data()!);
+    if (validation.status != 'validated') throw Exception('Ce mois n\'est pas validé');
+
+    await _firestore.collection('ChallengeValidations').doc(id).update({
+      'status': 'cancelled',
+      'cancellationReason': reason,
+      'adminId': adminId,
+    });
+  }
+
+  }

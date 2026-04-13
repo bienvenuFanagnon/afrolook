@@ -1580,7 +1580,6 @@ class _DetailsPostState extends State<DetailsPost>
 
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
-    authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
     _startSuggestionModalTimer();
     if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
@@ -1927,6 +1926,7 @@ class _DetailsPostState extends State<DetailsPost>
         print('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
+      authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
       // ✅ Mise à jour locale
       setState(() {
@@ -5010,7 +5010,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           ),
         );
       }
-      await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
+      // await authProvider. incrementPostTotalInteractions(postId: widget.post.id!);
 
       authProvider. notifySubscribersOfInteraction(
         actionUserId: authProvider.loginUserData.id!,
@@ -5047,13 +5047,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           label: 'Interactions',
         ),
         GestureDetector(
-          onTap: hasAccess ? _handleLike : null,
+          onTap: _handleLike,
           child: _buildStatItem(
             icon: Icons.favorite,
             count: post.loves ?? 0,
             label: 'Likes',
             isLiked: isIn(post.users_love_id!, authProvider.loginUserData.id!),
-            isLocked: !hasAccess,
+            isLocked: false,
           ),
         ),
         GestureDetector(
@@ -5254,15 +5254,15 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             onPressed: hasAccess ? _showGiftDialog : null,
           ),
 
-          // Bouton Republier
-          IconButton(
-            icon: Icon(Icons.repeat,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : Colors.green,
-                size: 30),
-            onPressed: hasAccess ? _showRepostDialog : null,
-          ),
+          // // Bouton Republier
+          // IconButton(
+          //   icon: Icon(Icons.repeat,
+          //       color: !hasAccess
+          //           ? _twitterTextSecondary.withOpacity(0.3)
+          //           : Colors.green,
+          //       size: 30),
+          //   onPressed: hasAccess ? _showRepostDialog : null,
+          // ),
 
           // Bouton Partager
           _isSharing

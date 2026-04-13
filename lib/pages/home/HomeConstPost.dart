@@ -3047,10 +3047,11 @@ printVm("_currentFilter data: ${_currentFilter}");
             post.users_vue_id!.add(currentUserId);
             post.hasBeenSeenByCurrentUser = true;
           });
+          // ✅ 2. GESTION DE L'INTERACTION (par session)
+          await _checkAndIncrementInteraction(post);
         }
 
-        // ✅ Même si la vue n'est pas comptée, on vérifie l'interaction par session
-        await _checkAndIncrementInteraction(post);
+
         return;
       }
     }
@@ -3086,12 +3087,13 @@ printVm("_currentFilter data: ${_currentFilter}");
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
         authProvider.loginUserData.viewedPostIds!.add(post.id!);
+        // ✅ 2. GESTION DE L'INTERACTION (par session)
+        await _checkAndIncrementInteraction(post);
       }
 
       print('✅ Vue comptée pour post ${post.id} par $currentUserId');
 
-      // ✅ 2. GESTION DE L'INTERACTION (par session)
-      await _checkAndIncrementInteraction(post);
+
 
     } catch (e) {
       print('Error recording post view: $e');

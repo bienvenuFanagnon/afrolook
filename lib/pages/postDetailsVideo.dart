@@ -346,6 +346,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         print('⏭️ Vue déjà enregistrée pour cet utilisateur');
         return;
       }
+      authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+
       setState(() {
         widget.initialPost.vues = (widget.initialPost.vues ?? 0) + 1;
         widget.initialPost.users_vue_id!.add(currentUserId);

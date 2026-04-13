@@ -110,6 +110,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     authProvider.incrementPostTotalInteractions(postId: widget.initialPost.id!);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _pageController = PageController();
+    _incrementViews();
     _loadSupportModalSeen();
     if (_isLookChallenge && widget.initialPost.challenge_id != null) {
       _loadChallengeData();
@@ -119,6 +120,34 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
     });
+  }
+  Future<void> _incrementViews() async {
+    try {
+      if (authProvider.loginUserData == null ||
+          widget.initialPost == null ||
+          widget.initialPost.id == null) return;
+      final currentUserId = authProvider.loginUserData.id;
+      if (currentUserId == null) return;
+      widget.initialPost.users_vue_id ??= [];
+      if (widget.initialPost.users_vue_id!.contains(currentUserId)) {
+        print('⏭️ Vue déjà enregistrée pour cet utilisateur');
+        return;
+      }
+      authProvider. incrementPostTotalInteractions(postId: widget.initialPost.id!);
+
+      setState(() {
+        widget.initialPost.vues = (widget.initialPost.vues ?? 0) + 1;
+        widget.initialPost.users_vue_id!.add(currentUserId);
+      });
+      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+        'vues': FieldValue.increment(1),
+        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
+        'popularity': FieldValue.increment(2),
+      });
+      print('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
+    } catch (e) {
+      print("Erreur incrémentation vues: $e");
+    }
   }
 
   Future<void> _initSharedPreferences() async {
