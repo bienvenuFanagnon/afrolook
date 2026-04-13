@@ -66,6 +66,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cryptoMarket/cryptoMarketpage.dart';
 import '../dating/dating_entry_page.dart';
+import '../dating/dating_notifications_page.dart';
 import '../dating/widgets/dating_top_modal.dart';
 import '../pronostics/pronostics_feed_page.dart';
 import '../user/amis/addListAmis.dart';
@@ -1550,11 +1551,17 @@ class _MyHomePageState extends State<MyHomePage>
           //   ),
           // ),
     GestureDetector(
-      onTap: () {
+      onTap: () async {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => const DatingSwipePage(),
+          ),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DatingNotificationsPage(),
           ),
         );
       },
