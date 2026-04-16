@@ -12,6 +12,7 @@ import 'dart:typed_data';
 
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/userProvider.dart';
+import '../pub/native_ad_widget.dart';
 import 'contentDetails.dart';
 import 'contentDetailsEbook.dart';
 import 'contentForm.dart';
@@ -250,6 +251,32 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       return content.isVideo ? 'Vidéo' : 'Ebook';
     }
   }
+  Widget _buildAdMrec({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent),
+      ),
+      child: MrecAdWidget(
+        key: ValueKey(key),
+        // templateType: TemplateType.medium, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,6 +317,8 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       body: Column(
         children: [
           // Barre d'onglets style YouTube
+          _buildAdMrec(key: 'ad_native_content_bord'),
+
           Container(
             color: Colors.black,
             height: 50,

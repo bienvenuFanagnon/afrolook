@@ -14,6 +14,7 @@ import '../../providers/userProvider.dart';
 import '../../providers/authProvider.dart';
 
 import '../../services/linkService.dart';
+import '../pub/native_ad_widget.dart';
 
 class ContentDetailScreen extends StatefulWidget {
   final ContentPaie content;
@@ -48,6 +49,32 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
     _likeAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 1500),
+    );
+  }
+  Widget _buildAdMrec({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent),
+      ),
+      child: MrecAdWidget(
+        key: ValueKey(key),
+        // templateType: TemplateType.medium, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
     );
   }
 
@@ -909,7 +936,9 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                     children: [
                       // Affichage des informations selon le type de contenu
                       widget.content.isSeries ? _buildSeriesInfo() : _buildSimpleContentInfo(),
-                      SizedBox(height: 10),
+                      SizedBox(height: 5),
+                      _buildAdMrec(key: 'ad_native_content_details'),
+                      SizedBox(height: 5),
 
                       // --- Ici on affiche le widget ContentOwnerInfo ---
                       ContentOwnerInfo(ownerId: widget.content.ownerId),

@@ -14,6 +14,7 @@ import '../../models/model_data.dart';
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/authProvider.dart';
 import '../../services/linkService.dart';
+import '../pub/native_ad_widget.dart';
 import 'contentDetails.dart';
 import 'ebookPadReader.dart';
 import 'dart:io';
@@ -73,6 +74,33 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
     // Initialiser la communication entre isolates pour le téléchargement
     _initializeDownloader();
   }
+  Widget _buildAdMrec({required String key}) {
+    // return SizedBox.shrink();
+
+    return Container(
+      key: ValueKey(key),
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent),
+      ),
+      child: MrecAdWidget(
+        key: ValueKey(key),
+        // templateType: TemplateType.medium, // ou TemplateType.small
+
+        onAdLoaded: () {
+          print('✅ Native Ad Afrolook chargée: $key');
+        },
+      ),
+      // child: BannerAdWidget(
+      //   onAdLoaded: () {
+      //     print('✅ Bannière Afrolook chargée: $key');
+      //   },
+      // ),
+    );
+  }
+
 // NOUVEAU: Méthode pour vérifier les réactions de l'utilisateur
   void _checkUserReaction() async {
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -1507,7 +1535,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       widget.content.isSeries ? _buildSeriesInfo() : _buildSimpleContentInfo(),
-                      SizedBox(height: 10),
+                      SizedBox(height: 5),
+                      _buildAdMrec(key: 'ad_native_content_details'),
+                      SizedBox(height: 5),
 
                       // Informations du propriétaire
                       ContentOwnerInfo(ownerId: widget.content.ownerId),
