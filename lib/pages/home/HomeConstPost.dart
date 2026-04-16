@@ -4,6 +4,7 @@ import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/challenge/postChallengeWidget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
+import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -33,6 +34,7 @@ import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
+import '../contenuPayant/recent_vip_content_widget.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../listeUserLikepage.dart';
 import '../postDetailsVideo.dart';
@@ -74,6 +76,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // Providers
   late UserAuthProvider authProvider;
   late UserShopAuthProvider authProviderShop;
+  late ContentProvider contentProvider;
   late CategorieProduitProvider categorieProduitProvider;
   late UserProvider userProvider;
   late PostProvider postProvider;
@@ -163,6 +166,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     authProviderShop = Provider.of<UserShopAuthProvider>(context, listen: false);
     categorieProduitProvider = Provider.of<CategorieProduitProvider>(context, listen: false);
+    contentProvider = Provider.of<ContentProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     mixedFeedProvider = Provider.of<MixedFeedServiceProvider>(context, listen: false);
@@ -2600,18 +2604,22 @@ printVm("_currentFilter data: ${_currentFilter}");
       // Après le PREMIER post (postIndex == 1)
       if (postIndex == 2) {
         contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
+        contentWidgets.add(TopDatingProfilesWidget());
+        contentWidgets.add(RecentVIPContentWidget(),);
+
+
         // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
         // contentWidgets.add(_buildAdMrec(key: 'ad_native_post$postIndex'));
       }
 // Top dating : après le premier post, puis tous les 5 posts
       //AJOUT DES BANNIÈRES ADMOB
-      if (postIndex == 2) {
-        // contentWidgets.add(_buildAdBanner(key: 'ad_$postIndex'));
-
-        // contentWidgets.add(TopDatingProfilesWidget());
-      } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
-        contentWidgets.add(TopDatingProfilesWidget());
-      }
+      // if (postIndex == 2) {
+      //   // contentWidgets.add(_buildAdBanner(key: 'ad_$postIndex'));
+      //
+      //   // contentWidgets.add(TopDatingProfilesWidget());
+      // } else if (postIndex > 1 && (postIndex - 1) % 5 == 0) {
+      //   contentWidgets.add(TopDatingProfilesWidget());
+      // }
       // AdMOb Ensuite, tous les 3 posts (après le 4ème, 7ème, 10ème...)
       // if (postIndex > 1 && (postIndex - 1) % 3 == 0) {
       //   // contentWidgets.add(_buildAdAdvertisement(key: 'ad_after_first'));
@@ -2632,6 +2640,7 @@ printVm("_currentFilter data: ${_currentFilter}");
           final canauxSection = _buildCanauxSection();
           if (canauxSection is! SizedBox) {
             contentWidgets.add(canauxSection);
+            contentWidgets.add(RecentVIPContentWidget(),);
             // contentWidgets.add(_buildAdBanner(key: 'ad_list_post$postIndex'));
             contentWidgets.add(_buildAdAdvertisement(key: 'ad_vert$postIndex'));
 

@@ -71,6 +71,7 @@ import '../dating/widgets/dating_top_modal.dart';
 import '../pronostics/pronostics_feed_page.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/pageMesInvitations.dart';
+import '../user/inviteAmis.dart';
 import '../userPosts/favorites_posts.dart';
 import '../widgetGlobal.dart';
 import 'HomePostType.dart';
@@ -1262,7 +1263,10 @@ class _MyHomePageState extends State<MyHomePage>
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 
-    if (modalToShow == 'remuneration') {
+    if (modalToShow == 'invite_amis') {
+// Afficher le modal
+      showInviteFriendsModal(context, authProvider.loginUserData);
+    }  if (modalToShow == 'remuneration') {
       showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
     } else if (modalToShow == 'top_dating') {
       showTopDatingAnnounceModal(context);

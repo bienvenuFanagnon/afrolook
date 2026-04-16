@@ -1,4 +1,5 @@
 // lib/pages/challenge/challenge_post_card.dart
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -37,6 +38,8 @@ class _ChallengePostCardState extends State<ChallengePostCard> {
   }
 
   Future<void> _loadCreatorData() async {
+     printVm('Poste  challenge user: ${widget.post.user_id}');
+     printVm('Poste  challenge canal: ${widget.post.canal_id}');
     if (widget.post.user != null) {
       _user = widget.post.user;
       return;

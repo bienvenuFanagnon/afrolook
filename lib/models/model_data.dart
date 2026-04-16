@@ -1136,9 +1136,10 @@ class UserData {
 
     password = json['password']?.toString() ?? '';
     role = json['role']?.toString() ?? '';
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
-
+    // createdAt = json['createdAt'];
+    // updatedAt = json['updatedAt'];
+    createdAt = parseTimestamp(json['createdAt']);
+    updatedAt = parseTimestamp(json['updatedAt']);
     userGlobalTags = (json['userGlobalTags'] as List<dynamic>?)
         ?.map((e) => int.tryParse(e.toString()) ?? 0)
         .toList() ?? [];
@@ -1245,6 +1246,17 @@ class UserData {
     data['totalCoinsEarnedFromAdSupport'] = totalCoinsEarnedFromAdSupport;
     // Ajouter les autres champs déjà présents comme vu plus haut...
     return data;
+  }
+  int? parseTimestamp(dynamic value) {
+    if (value == null) return null;
+
+    if (value is int) return value;
+
+    if (value is Timestamp) {
+      return value.microsecondsSinceEpoch;
+    }
+
+    return null;
   }
 }
 class Post {

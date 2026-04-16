@@ -25,6 +25,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/dating_data.dart';
 import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
 import '../services/user/userService.dart';
@@ -65,6 +66,46 @@ class UserAuthProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _advertisements = [];
   List<Map<String, dynamic>> get advertisements => _advertisements;
 
+
+  // ----------------------------------------------------------------------
+// Gestion des profils de rencontre (AfroLove)
+// ----------------------------------------------------------------------
+  List<DatingProfile> _topDatingProfiles = [];
+  bool _isLoadingDatingProfiles = false;
+
+  List<DatingProfile> get topDatingProfiles => _topDatingProfiles;
+  bool get isLoadingDatingProfiles => _isLoadingDatingProfiles;
+
+  /// Charge les 3 meilleurs profils (mélangés parmi les 5 plus populaires)
+  Future<void> loadTopDatingProfiles({int limit = 3}) async {
+    if (_isLoadingDatingProfiles) return;
+    _isLoadingDatingProfiles = true;
+    notifyListeners();
+
+    try {
+      // Récupère 5 profils actifs triés par popularité
+      final query = await FirebaseFirestore.instance
+          .collection('dating_profiles')
+          .where('isActive', isEqualTo: true)
+          .orderBy('popularityScore', descending: true)
+          .limit(5)
+          .get();
+
+      final profiles = query.docs
+          .map((doc) => DatingProfile.fromJson(doc.data()))
+          .toList();
+
+      // Mélanger et prendre les 'limit' premiers
+      profiles.shuffle();
+      _topDatingProfiles = profiles.take(limit).toList();
+    } catch (e) {
+      print('❌ Erreur chargement profils dating: $e');
+      _topDatingProfiles = [];
+    } finally {
+      _isLoadingDatingProfiles = false;
+      notifyListeners();
+    }
+  }
   Future<void> loadAdvertisements() async {
     try {
       final now = DateTime.now().microsecondsSinceEpoch;

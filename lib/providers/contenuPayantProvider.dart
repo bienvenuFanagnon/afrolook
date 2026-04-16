@@ -216,7 +216,26 @@ class ContentProvider with ChangeNotifier {
   List<ContentPaie> get allContentPaies => _allContentPaies;
 
   // Ajoutez ces méthodes dans votre ContentProvider class
+// Dans ContentProvider
 
+  Future<List<ContentPaie>> getRecentContentPaies({int limit = 5}) async {
+    try {
+      final snapshot = await _firestore
+          .collection('ContentPaies')
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+
+      final List<ContentPaie> recent = snapshot.docs
+          .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
+          .toList();
+
+      return recent;
+    } catch (e) {
+      print('Erreur chargement récents contenus : $e');
+      return [];
+    }
+  }
 // 1. Fonctions pour gérer les partages
   Future<void> incrementShares(String contentId, {bool isEpisode = false}) async {
     try {

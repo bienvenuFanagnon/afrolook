@@ -288,10 +288,11 @@ class _PostCommentsState extends State<PostComments> {
       if (isLiked) {
         comment.users_like_id?.remove(userId);
         comment.likes = (comment.likes ?? 1) - 1;
+        setState(() {});
       } else {
         comment.users_like_id?.add(userId);
         comment.likes = (comment.likes ?? 0) + 1;
-
+        setState(() {});
         // Envoyer notification au propriétaire du commentaire
         if (comment.user!.id != userId) {
           await _sendLikeNotification(comment.user!.id!, comment);
@@ -299,8 +300,6 @@ class _PostCommentsState extends State<PostComments> {
       }
 
       await postProvider.updateComment(comment);
-      setState(() {});
-
     } catch (e) {
       print('Erreur like commentaire: $e');
     }
@@ -315,10 +314,11 @@ class _PostCommentsState extends State<PostComments> {
       if (isLiked) {
         reply.users_like_id?.remove(userId);
         reply.likes = (reply.likes ?? 1) - 1;
+        setState(() {});
       } else {
         reply.users_like_id?.add(userId);
         reply.likes = (reply.likes ?? 0) + 1;
-
+        setState(() {});
         // Envoyer notification au propriétaire de la réponse
         if (reply.user_id != userId) {
           await _sendLikeNotification(reply.user_id!, parentComment, isReply: true, reply: reply);
@@ -326,7 +326,7 @@ class _PostCommentsState extends State<PostComments> {
       }
 
       await postProvider.updateComment(parentComment);
-      setState(() {});
+
 
     } catch (e) {
       print('Erreur like réponse: $e');
@@ -584,317 +584,6 @@ class _PostCommentsState extends State<PostComments> {
     );
   }
 
-  Widget _buildCommentContent2(PostComment pcm) {
-    final isLiked = pcm.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
-    final likeCount = pcm.likes ?? 0;
-
-    return Container(
-      padding: EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  double w = MediaQuery.of(context).size.width;
-                  double h = MediaQuery.of(context).size.height;
-                  showUserDetailsModalDialog(pcm.user!!, w, h, context);
-                },
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundImage: NetworkImage(pcm.user!.imageUrl ?? ''),
-                  backgroundColor: Colors.grey.shade300,
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "@${pcm.user!.pseudo!}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        SizedBox(width: 6),
-
-                          AbonnementUtils.getUserBadge(abonnement: pcm.user!.abonnement,isVerified: pcm.user!.isVerify!),
-                        Spacer(),
-                        Text(
-                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
-                    _buildMentionText(pcm.message!),
-                    if ((pcm.message ?? '').length > 100)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _commentExpanded[pcm.message!] = !(_commentExpanded[pcm.message!] ?? false);
-                          });
-                        },
-                        child: Text(
-                          _commentExpanded[pcm.message!] ?? false ? 'Voir moins' : 'Voir plus',
-                          style: TextStyle(
-                            color: Colors.blue.shade600,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              // Bouton Like
-              GestureDetector(
-                onTap: () => _likeComment(pcm),
-                child: Row(
-                  children: [
-                    Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.grey.shade600,
-                      size: 16,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      formatNumber(likeCount),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 16),
-              // Bouton Répondre
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    commentSelectedToReply = pcm;
-                    replyUser_id = pcm.user!.id!;
-                    replyUser_pseudo = pcm.user!.pseudo!;
-                    replyingTo = "@${pcm.user!.pseudo}";
-                    replying = true;
-                  });
-                  _focusNode.requestFocus();
-                },
-                child: Row(
-                  children: [
-                    Icon(Icons.reply, size: 16, color: Colors.grey.shade600),
-                    SizedBox(width: 4),
-                    Text(
-                      'Répondre',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Spacer(),
-              // Menu options
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 16),
-                itemBuilder: (context) => [
-                  if (pcm.user!.id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red, size: 16),
-                          SizedBox(width: 8),
-                          Text('Supprimer'),
-                        ],
-                      ),
-                    ),
-                ],
-                onSelected: (value) async {
-                  if (value == 'delete') {
-                    await _deleteComment(pcm);
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-  Widget _buildReplyContent2(PostComment pcm, ResponsePostComment rpc) {
-    final isLiked = rpc.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
-    final likeCount = rpc.likes ?? 0;
-
-    return Container(
-      margin: EdgeInsets.only(left: 40, top: 4),
-      padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  if (rpc.user != null) {
-                    double w = MediaQuery.of(context).size.width;
-                    double h = MediaQuery.of(context).size.height;
-                    showUserDetailsModalDialog(rpc.user!, w, h, context);
-                  }
-                },
-                child: CircleAvatar(
-                  radius: 14,
-                  backgroundImage: NetworkImage(rpc.user_logo_url ?? ''),
-                  backgroundColor: Colors.grey.shade300,
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "@${rpc.user_pseudo}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty)
-                          Row(
-                            children: [
-                              Icon(Icons.reply, size: 12, color: Colors.grey),
-                              SizedBox(width: 2),
-                              Text(
-                                "@${rpc.user_reply_pseudo}",
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        Spacer(),
-                        Text(
-                          formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
-                    _buildMentionText(rpc.message!),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6),
-          Row(
-            children: [
-              // Bouton Like
-              GestureDetector(
-                onTap: () => _likeReply(pcm, rpc),
-                child: Row(
-                  children: [
-                    Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.grey.shade600,
-                      size: 14,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      formatNumber(likeCount),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 12),
-              // Bouton Répondre
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    commentSelectedToReply = pcm;
-                    replyUser_id = rpc.user_id!;
-                    replyUser_pseudo = rpc.user_pseudo!;
-                    replyingTo = "@${rpc.user_pseudo}";
-                    replying = true;
-                  });
-                  _focusNode.requestFocus();
-                },
-                child: Row(
-                  children: [
-                    Icon(Icons.reply, size: 14, color: Colors.grey.shade600),
-                    SizedBox(width: 4),
-                    Text(
-                      'Répondre',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Spacer(),
-              // Menu options
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 14),
-                itemBuilder: (context) => [
-                  if (rpc.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red, size: 14),
-                          SizedBox(width: 8),
-                          Text('Supprimer'),
-                        ],
-                      ),
-                    ),
-                ],
-                onSelected: (value) async {
-                  if (value == 'delete') {
-                    await _deleteResponse(pcm, rpc);
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
   Widget _buildCommentContent(PostComment pcm) {
     final isLiked = pcm.users_like_id?.contains(authProvider.loginUserData.id!) ?? false;
     final likeCount = pcm.likes ?? 0;
@@ -1207,14 +896,14 @@ class _PostCommentsState extends State<PostComments> {
                     Icon(
                       isLiked ? Icons.favorite : Icons.favorite_border,
                       color: isLiked ? Colors.red : Colors.grey.shade600,
-                      size: 14,
+                      size: 18,
                     ),
                     SizedBox(width: 4),
                     Text(
                       formatNumber(likeCount),
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                   ],
