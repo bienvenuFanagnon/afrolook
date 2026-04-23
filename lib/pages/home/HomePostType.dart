@@ -193,8 +193,36 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       duration: Duration(milliseconds: 500),
     );
   }
-
   void _initializeData() async {
+    // 1. Détecter le pays de l'utilisateur
+    _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
+    print('Pays utilisateur détecté: ${_selectedCountryCode}');
+
+    // 🔥 MODIFICATION: Pour EVENEMENT, forcer le mode COUNTRY (pas de mix)
+    if (widget.type == TabBarType.EVENEMENT.name) {
+      _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
+      print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
+    } else {
+      _currentFilter = 'MIXED';     // Comportement normal pour les autres types
+    }
+
+    _isFirstLoad = true;
+    _useBackgroundLoading = true;
+    _backgroundPostsLoaded = 0;
+
+    // 3. Réinitialiser et charger les posts initiaux
+    _resetPagination();
+    await _loadInitialPosts();
+
+    // 4. Démarrer le chargement background
+    _startBackgroundLoading();
+
+    // 5. Charger les autres données EN PARALLÈLE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAllAdditionalDataInParallel();
+    });
+  }
+  void _initializeData2() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     print('Pays utilisateur détecté: ${_selectedCountryCode}');

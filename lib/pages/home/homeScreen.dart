@@ -1614,6 +1614,7 @@ class _MyHomePageState extends State<MyHomePage>
               tabs: [
                 Tab(text: '🏠 Accueil'),
                 Tab(text: '⚽ Sport'),
+                Tab(text: '📅 Événements'),
                 Tab(text: '🪙 Zone VIP'),
 
                 // Tab(text: '🕒 Looks'),
@@ -1647,6 +1648,7 @@ class _MyHomePageState extends State<MyHomePage>
           // SportPage(type: TabBarType.SPORT.name),
           // HomeConstPostTypePage(type: TabBarType.SPORT.name),
           // HomeSportPostPage(type: TabBarType.SPORT.name),
+          HomeConstPostTypePage(type: TabBarType.EVENEMENT.name,sortType: 'recent',),
 
           DashboardContentScreen(),
           ChallengesListPage(),

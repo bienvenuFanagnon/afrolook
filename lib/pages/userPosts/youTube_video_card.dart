@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
+import '../component/consoleWidget.dart';
 import '../pub/native_ad_widget.dart';
 
 class YouTubeVideoCard extends StatefulWidget {
@@ -43,6 +44,55 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard> {
     //          index 2 -> 3ème post -> pub
     return (widget.index + 1) % 2 == 0;
   }
+  Widget _buildEventBadge(Post post) {
+
+
+    if (post.typeTabbar != 'EVENEMENT' || post.eventDate == null) return SizedBox.shrink();
+    printVm("eventDate : ${post.eventDate!}");
+    final eventDateTime = DateTime.fromMillisecondsSinceEpoch(post.eventDate!);
+    final now = DateTime.now();
+    final difference = eventDateTime.difference(now).inDays;
+
+    String badgeText = '';
+    Color badgeColor = Color(0xFFE21221);
+
+    if (difference < 0) {
+      badgeText = '📅 PASSÉ';
+      badgeColor = Colors.grey;
+    } else if (difference == 0) {
+      badgeText = '🔴 AUJOURD\'HUI';
+      badgeColor = Colors.red;
+    } else if (difference == 1) {
+      badgeText = '⭐ DEMAIN';
+      badgeColor = Colors.orange;
+    } else if (difference <= 7) {
+      badgeText = '📅 DANS $difference JOURS';
+      badgeColor = Color(0xFFE21221);
+    } else {
+      badgeText = '📅 À VENIR';
+      badgeColor = Colors.blue;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+        ],
+      ),
+      child: Text(
+        badgeText,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -371,12 +421,19 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard> {
                   const SizedBox(height: 8),
                   // Statistiques : vues, commentaires, interactions
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStat(Icons.bar_chart, widget.post.totalInteractions ?? 0),
-                      const SizedBox(width: 16),
-                      _buildStat(Icons.comment, widget.post.comments ?? 0),
-                      const SizedBox(width: 16),
-                      _buildStat(Icons.favorite, widget.post.loves ?? 0),
+                      Row(
+                        children: [
+                          _buildStat(Icons.bar_chart, widget.post.totalInteractions ?? 0),
+                          const SizedBox(width: 16),
+                          _buildStat(Icons.comment, widget.post.comments ?? 0),
+                          const SizedBox(width: 16),
+                          _buildStat(Icons.favorite, widget.post.loves ?? 0),
+                        ],
+                      ),
+                      _buildEventBadge(widget.post),
+
                     ],
                   ),
                   if (_shouldShowAd) ...[

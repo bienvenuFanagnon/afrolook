@@ -24,6 +24,7 @@ import '../../../models/model_data.dart';
 
 import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
+import '../../component/consoleWidget.dart';
 import '../../home/homeWidget.dart';
 import '../../paiement/newDepot.dart';
 import '../../postComments.dart';
@@ -150,6 +151,54 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Duration _currentAudioDuration = Duration.zero;
 
   // Dans _HomePostUsersWidgetState
+  Widget _buildEventBadge(Post post) {
+
+
+    if (post.typeTabbar != 'EVENEMENT' || post.eventDate == null) return SizedBox.shrink();
+    printVm("eventDate : ${post.eventDate!}");
+    final eventDateTime = DateTime.fromMillisecondsSinceEpoch(post.eventDate!);
+    final now = DateTime.now();
+    final difference = eventDateTime.difference(now).inDays;
+
+    String badgeText = '';
+    Color badgeColor = Color(0xFFE21221);
+
+    if (difference < 0) {
+      badgeText = '📅 PASSÉ';
+      badgeColor = Colors.grey;
+    } else if (difference == 0) {
+      badgeText = '🔴 AUJOURD\'HUI';
+      badgeColor = Colors.red;
+    } else if (difference == 1) {
+      badgeText = '⭐ DEMAIN';
+      badgeColor = Colors.orange;
+    } else if (difference <= 7) {
+      badgeText = '📅 DANS $difference JOURS';
+      badgeColor = Color(0xFFE21221);
+    } else {
+      badgeText = '📅 À VENIR';
+      badgeColor = Colors.blue;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+        ],
+      ),
+      child: Text(
+        badgeText,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
 
   // Vérifier si l'utilisateur a déjà soutenu ce post aujourd'hui
@@ -1826,6 +1875,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               // ),
             ],
           ),
+        _buildEventBadge(widget.post)
       ],
     );
   }

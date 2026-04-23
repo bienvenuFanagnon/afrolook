@@ -57,7 +57,7 @@ const Color darkBackground = Color(0xFF121212);
 const Color lightBackground = Color(0xFF1E1E1E);
 const Color textColor = Colors.white;
 const Color accentYellow = Color(0xFFFFD700);
-
+final Color _primaryColor = Color(0xFFE21221); // Rouge
 class HomeConstPostPage extends StatefulWidget {
   final String type;
   final String? sortType;
@@ -431,8 +431,37 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       duration: Duration(milliseconds: 500),
     );
   }
-
   void _initializeData() async {
+    // 1. Détecter le pays de l'utilisateur
+    _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
+    print('Pays utilisateur détecté: ${_selectedCountryCode}');
+
+    // 🔥 MODIFICATION: Pour EVENEMENT, forcer le mode COUNTRY (pas de mix)
+    if (widget.type == TabBarType.EVENEMENT.name) {
+      _currentFilter = 'COUNTRY';  // Forcer le pays de l'utilisateur seulement
+      print('🎯 Mode EVENEMENT activé - Filtre: COUNTRY (${_selectedCountryCode})');
+    } else {
+      _currentFilter = 'MIXED';     // Comportement normal pour les autres types
+    }
+
+    _isFirstLoad = true;
+    _useBackgroundLoading = true;
+    _backgroundPostsLoaded = 0;
+
+    // 3. Réinitialiser et charger les posts initiaux
+    _resetPagination();
+    await _loadInitialPosts();
+
+    // 4. Démarrer le chargement background
+    _startBackgroundLoading();
+
+    // 5. Charger les autres données EN PARALLÈLE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAllAdditionalDataInParallel();
+    });
+  }
+
+  void _initializeData2() async {
     // 1. Détecter le pays de l'utilisateur
     _selectedCountryCode = authProvider.loginUserData.countryData?['countryCode']?.toUpperCase();
     print('Pays utilisateur détecté: ${_selectedCountryCode}');
@@ -1051,21 +1080,19 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
   // CHARGEMENT DES POSTS
   // ===========================================================================
-
   Future<void> _loadInitialPosts() async {
     try {
-      if (authProvider.loginUserData.countryData?["countryCode"] == null&&authProvider.loginUserData.countryData?["country"] == null) {
-
+      if (authProvider.loginUserData.countryData?["countryCode"] == null &&
+          authProvider.loginUserData.countryData?["country"] == null) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => UpdateUserData(title: "Mise à jour d'adresse"),
           ),
         );
-
       }
 
-        setState(() {
+      setState(() {
         _isLoadingPosts = true;
         _hasErrorPosts = false;
       });
@@ -1073,9 +1100,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       Set<String> loadedIds = Set();
       List<Post> newPosts = [];
 
-      // Premier chargement: 3 posts seulement
       int limit = _initialLimit;
-printVm("_currentFilter data: ${_currentFilter}");
+      printVm("_currentFilter data: ${_currentFilter}");
+
       switch (_currentFilter) {
         case 'ALL':
           await _loadAllCountriesMixed(loadedIds, newPosts, limit);
@@ -1091,14 +1118,17 @@ printVm("_currentFilter data: ${_currentFilter}");
               limit: limit,
             );
 
-            // Compléter avec posts ALL si pas assez
-            if (newPosts.length < limit) {
-              await _loadAllCountriesPosts(
-                loadedIds,
-                newPosts,
-                isInitialLoad: true,
-                limit: limit - newPosts.length,
-              );
+            // 🔥 Pour EVENEMENT: ne pas compléter avec d'autres posts
+            if (widget.type != TabBarType.EVENEMENT.name) {
+              // Compléter avec posts ALL si pas assez (comportement normal)
+              if (newPosts.length < limit) {
+                await _loadAllCountriesPosts(
+                  loadedIds,
+                  newPosts,
+                  isInitialLoad: true,
+                  limit: limit - newPosts.length,
+                );
+              }
             }
           }
           break;
@@ -1122,7 +1152,6 @@ printVm("_currentFilter data: ${_currentFilter}");
           break;
       }
 
-      // Mettre à jour la liste des posts
       setState(() {
         _posts = newPosts;
         _loadedPostIds.addAll(loadedIds);
@@ -1143,6 +1172,7 @@ printVm("_currentFilter data: ${_currentFilter}");
       });
     }
   }
+
 
   // ===========================================================================
   // ALGORITHMES DE CHARGEMENT SPÉCIFIQUES
@@ -1223,6 +1253,144 @@ printVm("_currentFilter data: ${_currentFilter}");
   }
 
   Future<void> _loadCountrySpecificPosts(
+      Set<String> loadedIds,
+      List<Post> newPosts,
+      String countryCode, {
+        bool isInitialLoad = false,
+        int limit = 5,
+      }) async
+  {
+    if (limit <= 0) return;
+
+    try {
+      print('🎯 Chargement posts pays: $countryCode - limite: $limit');
+
+      Query query = _firestore.collection('Posts');
+
+      // 🔥 FILTRE ET TRI SPÉCIAL POUR ÉVÉNEMENTS
+      if (widget.type == TabBarType.EVENEMENT.name) {
+        query = query.where("typeTabbar", isEqualTo: "EVENEMENT");
+
+        // Récupérer plus d'événements pour le tri
+        query = query.orderBy("eventDate", descending: false); // Ordre croissant = dates proches d'abord
+      } else {
+        // Comportement normal
+        if (widget.isVideoPage) {
+          query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
+        }
+        query = query.orderBy("created_at", descending: true);
+      }
+
+      // Filtre pays
+      try {
+        query = query.where("available_countries", arrayContains: countryCode);
+      } catch (e) {
+        try {
+          query = query.where("availableCountries", arrayContains: countryCode);
+        } catch (e2) {
+          query = query.where("country", isEqualTo: countryCode);
+        }
+      }
+
+      if (!isInitialLoad && _lastCountryDocument != null && widget.type != TabBarType.EVENEMENT.name) {
+        query = query.startAfterDocument(_lastCountryDocument!);
+      }
+
+      query = query.limit(limit * 2);
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty && widget.type != TabBarType.EVENEMENT.name) {
+        _lastCountryDocument = snapshot.docs.last;
+      }
+
+      int added = 0;
+      List<Post> tempEvents = []; // Pour stocker temporairement les événements
+
+      for (var doc in snapshot.docs) {
+        if (added >= limit) break;
+
+        try {
+          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
+          post.id = doc.id;
+
+          if (post.isAdvertisement == true) continue;
+
+          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
+            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+            loadedIds.add(post.id!);
+            added++;
+
+            if (widget.type == TabBarType.EVENEMENT.name) {
+              // Pour les événements, on stocke temporairement
+              tempEvents.add(post);
+            } else {
+              // Comportement original
+              final now = DateTime.now().millisecondsSinceEpoch;
+              final postTime = post.createdAt ?? 0;
+              final differenceInHours = (now - postTime) ~/ (1000 * 60 * 60);
+
+              if (differenceInHours < 24) {
+                newPosts.insert(0, post);
+              } else {
+                newPosts.add(post);
+              }
+            }
+          }
+        } catch (e) {
+          print('Erreur parsing post: $e');
+        }
+      }
+
+      // 🔥 POUR ÉVÉNEMENTS : Tri spécial par date d'événement
+      if (widget.type == TabBarType.EVENEMENT.name) {
+        // Trier par eventDate (les plus proches d'abord)
+        tempEvents.sort((a, b) {
+          // Si pas de date, mettre à la fin
+          if (a.eventDate == null && b.eventDate == null) return 0;
+          if (a.eventDate == null) return 1;
+          if (b.eventDate == null) return -1;
+
+          return a.eventDate!.compareTo(b.eventDate!);
+        });
+
+        // Ajouter dans l'ordre trié
+        newPosts.addAll(tempEvents);
+
+        print('✅ ${tempEvents.length} événements triés par date (plus proches d\'abord)');
+      } else if (widget.type != TabBarType.EVENEMENT.name) {
+        // Mélange normal pour les autres types
+        final now = DateTime.now().millisecondsSinceEpoch;
+        List<Post> recentPosts = [];
+        List<Post> oldPosts = [];
+
+        for (var p in newPosts) {
+          final pTime = p.createdAt ?? 0;
+          final diffHours = (now - pTime) ~/ (1000 * 60 * 60);
+
+          if (diffHours < 24) {
+            recentPosts.add(p);
+          } else {
+            oldPosts.add(p);
+          }
+        }
+
+        recentPosts.shuffle();
+        oldPosts.shuffle();
+
+        newPosts
+          ..clear()
+          ..addAll(recentPosts)
+          ..addAll(oldPosts);
+      }
+
+      print('✅ $added posts du pays $countryCode ajoutés');
+
+    } catch (e) {
+      print('❌ Erreur chargement pays $countryCode: $e');
+    }
+  }
+  Future<void> _loadCountrySpecificPosts2(
       Set<String> loadedIds,
       List<Post> newPosts,
       String countryCode, {
@@ -1966,7 +2134,51 @@ printVm("_currentFilter data: ${_currentFilter}");
       );
     }
   }
-  Widget _buildPostWidget(Post post, double width, double height,int index) {
+  Widget _buildPostWidget(Post post, double width, double height, int index) {
+    return VisibilityDetector(
+      key: Key('post-${post.id}'),
+      onVisibilityChanged: (VisibilityInfo info) {
+        _handleVisibilityChanged(post, info);
+      },
+      child: Container(
+        child: Stack(
+          children: [
+            // Badge de disponibilité/pays (existant)
+            // _buildAvailabilityBadge(post),
+
+            // Contenu du post
+            post.type == PostType.PRONOSTIC.name
+                ? SizedBox.shrink()
+                : post.type == PostType.CHALLENGEPARTICIPATION.name
+                ? LookChallengePostWidget(post: post, height: height, width: width)
+                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+                ? YouTubeVideoCard(
+              post: post,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                  ),
+                );
+              },
+            )
+                : HomePostUsersWidget(
+              index: index,
+              post: post,
+              color: _getRandomColor(),
+              height: height * 0.6,
+              width: width,
+              isDegrade: true,
+            ),
+
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostWidget2(Post post, double width, double height,int index) {
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {

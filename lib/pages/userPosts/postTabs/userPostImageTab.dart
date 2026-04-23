@@ -124,6 +124,140 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     super.dispose();
   }
 
+  // Ajoutez ces variables dans la classe _UserPostLookImageTabState
+  DateTime? _selectedEventDate;
+  bool _isEventDatePast = false;
+
+// Ajoutez cette méthode pour vérifier si la date est passée
+  void _validateEventDate(DateTime? date) {
+    if (date != null && _selectedPostType == 'EVENEMENT') {
+      setState(() {
+        _isEventDatePast = date.isBefore(DateTime.now());
+      });
+    }
+  }
+
+// Ajoutez ce widget dans le build, après le sélecteur de type
+  Widget _buildEventDatePicker() {
+    if (_selectedPostType != 'EVENEMENT') return SizedBox.shrink();
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isEventDatePast ? Colors.red : _primaryColor,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.event, color: _primaryColor, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Date de l\'événement',
+                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              if (_isEventDatePast)
+                Container(
+                  margin: EdgeInsets.only(left: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'DATE PASSÉE',
+                    style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 12),
+          InkWell(
+            onTap: () async {
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedEventDate ?? DateTime.now().add(Duration(days: 7)),
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(Duration(days: 365)),
+                builder: (context, child) {
+                  return Theme(
+                    data: ThemeData.dark().copyWith(
+                      colorScheme: ColorScheme.dark(
+                        primary: _primaryColor,
+                        onPrimary: Colors.white,
+                        surface: _cardColor,
+                        onSurface: _textColor,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedEventDate = picked;
+                  _isEventDatePast = false;
+                });
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: _backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[700]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today, color: _primaryColor, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedEventDate != null
+                          ? '${_selectedEventDate!.day}/${_selectedEventDate!.month}/${_selectedEventDate!.year}'
+                          : 'Sélectionnez la date de l\'événement',
+                      style: TextStyle(
+                        color: _selectedEventDate != null ? _textColor : _hintColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_drop_down, color: _hintColor),
+                ],
+              ),
+            ),
+          ),
+          if (_selectedEventDate != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                '📅 ${_formatEventDate(_selectedEventDate!)}',
+                style: TextStyle(color: _primaryColor, fontSize: 12),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatEventDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = date.difference(now).inDays;
+
+    if (difference == 0) return "AUJOURD'HUI";
+    if (difference == 1) return "DEMAIN";
+    if (difference < 7) return "DANS $difference JOURS";
+    if (difference < 30) return "DANS ${(difference / 7).ceil()} SEMAINES";
+    return "LE ${date.day}/${date.month}/${date.year}";
+  }
+
   void _filterCountries() {
     final query = _countrySearchController.text.toLowerCase();
     setState(() {
@@ -1155,7 +1289,21 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         );
         return;
       }
-
+// Ajoutez cette validation après la vérification des pays
+      if (_selectedPostType == 'EVENEMENT') {
+        if (_selectedEventDate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Veuillez sélectionner la date de l\'événement', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          );
+          return;
+        }
+        if (_selectedEventDate!.isBefore(DateTime.now())) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('La date de l\'événement ne peut pas être dans le passé', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+          );
+          return;
+        }
+      }
       if (!isPremium && !isAdmin) {
         if (_selectedCountries.isEmpty || _selectedCountries.length > _maxCountriesForFree) {
           _showCountryLimitModal();
@@ -1229,13 +1377,15 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           ..loves = 0
           ..id = postId
           ..images = []
-          ..isAdvertisement = _isAdvertisement; // Nouveau champ
+          ..isAdvertisement = _isAdvertisement // Nouveau champ
+         ..eventDate = _selectedPostType == 'EVENEMENT' ? _selectedEventDate?.millisecondsSinceEpoch : null;
 
-        if (_selectAllCountries) {
-          post.availableCountries = ['ALL'];
-        } else {
-          post.availableCountries = _selectedCountries.map((c) => c.code).toList();
-        }
+        // if (_selectAllCountries) {
+        //   post.availableCountries = ['ALL'];
+        // } else {
+        //   post.availableCountries = _selectedCountries.map((c) => c.code).toList();
+        // }
+        post.availableCountries = _selectedCountries.map((c) => c.code).toList();
 
         if (widget.canal != null) {
           post.canal_id = widget.canal!.id;
@@ -1527,6 +1677,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                 SizedBox(height: 16),
                 if (!_canPost && _cooldownMinutes > 0) _buildCooldownAlert(),
                 _buildPostTypeSelector(),
+                _buildEventDatePicker(),
                 _buildCountrySelectionCard(),
                 // NOUVEAU: Section publicité
                 _buildAfrolookAdsPromoButton(),

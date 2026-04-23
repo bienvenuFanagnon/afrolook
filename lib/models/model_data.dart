@@ -1343,6 +1343,7 @@ class Post {
 
   String? challengeMonth; // Format "YYYY-MM" du challenge associé (ex: "2026-04")
 
+  int? eventDate;
 
   Post({
     this.id,
@@ -1393,6 +1394,7 @@ class Post {
     this.users_favorite_id,
     this.favoritesCount = 0,
     this.adSupportCount = 0,
+    this.eventDate,
     this.advertisementId,
     this.challengeMonth,
     this.isAdvertisement = false,
@@ -1453,6 +1455,8 @@ class Post {
     usersVotesIds = json['users_votes_ids'] == null ? [] : List<String>.from(json['users_votes_ids']);
 
     seenByUsersCount = json['seen_by_users_count'] ?? 0;
+    eventDate= json['eventDate'] as int?;
+
     if (json['seen_by_users_map'] != null) {
       seenByUsersMap = Map<String, bool>.from(json['seen_by_users_map']);
     } else {
@@ -1581,6 +1585,7 @@ class Post {
     data['adSupportCount'] = adSupportCount;
     // Dans toJson
     data['isPortrait'] = isPortrait;
+    if (eventDate != null)  data['eventDate'] = eventDate;
     return data;
   }
 
