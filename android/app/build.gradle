@@ -31,16 +31,9 @@ android {
     namespace "com.afrotok.afrotok"
     testNamespace = "com.afrotok.afrotok"
     compileSdkVersion 36
-    ndkVersion "27.0.12077973"
+    ndkVersion "28.0.13004108"
 
-    packagingOptions {
-        jniLibs {
-            excludes += [
-                    "lib/x86/**",
-                    "lib/x86_64/**"
-            ]
-        }
-    }
+
     bundle {
         abi {
             enableSplit = true
@@ -48,6 +41,7 @@ android {
         density {
             enableSplit = true
         }
+
         }
 
     compileOptions {
@@ -86,8 +80,9 @@ android {
 //        versionName = flutter.versionName
         externalNativeBuild {
             cmake {
-                // Force l'alignement des pages pour les bibliothèques natives
-                arguments "-DANDROID_ALIPG=ON"
+                // ✅ Force l'alignement ELF 16K
+                arguments "-DANDROID_ALIGNMENT=16"
+                cppFlags "-std=c++17"
             }
         }
 
@@ -98,13 +93,18 @@ android {
     }
     packagingOptions {
         jniLibs {
-            // ✅ Force l'alignement sur 16 Ko pour TOUTES les libs natives
+            // ✅ Désactive le legacy packaging pour l'alignement 16K
             useLegacyPackaging = false
         }
         pickFirst "lib/arm64-v8a/libaosl.so"
         pickFirst "lib/armeabi-v7a/libaosl.so"
-//        pickFirst "lib/x86/libaosl.so"
-//        pickFirst "lib/x86_64/libaosl.so"
+        // Supprimez le bloc jniLibs.excludes ou déplacez-le ici si nécessaire
+        excludes += [
+                "**/librive_text.so",  // ✅ Exclut explicitement
+                "**/librive.so",
+                "lib/x86/**",
+                "lib/x86_64/**"
+        ]
     }
     signingConfigs {
                release {
@@ -140,7 +140,7 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
 
 
-    implementation 'com.appodeal.ads:sdk:3.12.0.0'
+//    implementation 'com.appodeal.ads:sdk:3.12.0.0'
 
     implementation("androidx.multidex:multidex:2.0.1")
 
