@@ -852,6 +852,8 @@ class TransactionWidget extends StatelessWidget {
     final label = getTransactionLabel(transaction.type!);
 
     // Pour les transactions en pièces, on formate l'affichage
+    bool isCoinAchatTransaction = transaction.type == TypeTransaction.ACHAT_PIECES.name;
+
     bool isCoinTransaction = transaction.type == TypeTransaction.ACHAT_PIECES.name ||
         transaction.type == TypeTransaction.CADEAU_PIECES.name ||
         transaction.type == TypeTransaction.CADEAU_PIECES_RECU.name ||
@@ -859,8 +861,10 @@ class TransactionWidget extends StatelessWidget {
         transaction.type == TypeTransaction.GAIN_PIECES.name;
 
     String amountDisplay;
-    if (isCoinTransaction) {
+    if (isCoinAchatTransaction) {
       amountDisplay = "${prefix}${transaction.montant!.toStringAsFixed(2)} FCFA";
+    } else if (isCoinTransaction) {
+      amountDisplay = "${prefix}${transaction.montant!.toStringAsFixed(2)} 🪙";
     } else {
       amountDisplay = "${prefix}${transaction.montant!.toStringAsFixed(2)} FCFA";
     }

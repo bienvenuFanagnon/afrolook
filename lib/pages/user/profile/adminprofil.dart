@@ -108,7 +108,7 @@ class _AdminHubPageState extends State<AdminHubPage> {
           Icon(icon, color: Colors.grey[400], size: 12),
           SizedBox(height: 4),
           Text(
-            "${(value / 1000).toStringAsFixed(1)}K",
+            "${(value / 1000).toStringAsFixed(2)}K",
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -128,6 +128,31 @@ class _AdminHubPageState extends State<AdminHubPage> {
     );
   }
 
+  Widget _buildPiecesDetailRow({
+    required String label,
+    required double value,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[400],
+          ),
+        ),
+        Text(
+          "${value.ceil()} 🪙",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
   Widget _buildDetailRow({
     required String label,
     required double value,
@@ -447,9 +472,9 @@ class _AdminHubPageState extends State<AdminHubPage> {
               ),
               Container(width: 1, height: 20, color: Colors.grey[800]),
               _buildCompactStat(
-                label: "Commission",
-                value: appData.solde_commission_crypto ?? 0,
-                icon: Icons.currency_bitcoin,
+                label: "Gains pieces",
+                value: appData.solde_gain_pieces ?? 0,
+                icon: Icons.monetization_on,
               ),
             ],
           ),
@@ -476,17 +501,17 @@ class _AdminHubPageState extends State<AdminHubPage> {
                   value: appData.solde_affiliation ?? 0,
                 ),
                 SizedBox(height: 8),
-                _buildDetailRow(
-                  label: "Commission Crypto",
-                  value: appData.solde_commission_crypto ?? 0,
+                _buildPiecesDetailRow(
+                  label: "Gains pieces",
+                  value: appData.solde_gain_pieces ?? 0,
                 ),
                 SizedBox(height: 8),
                 _buildDetailRow(
                   label: "Total Général",
                   value: (appData.solde_principal ?? 0) +
                       (appData.solde_gain ?? 0) +
-                      (appData.solde_affiliation ?? 0) +
-                      (appData.solde_commission_crypto ?? 0),
+                      (appData.solde_affiliation ?? 0) +(0.4*
+                      (appData.solde_gain_pieces ?? 0)),
                 ),
               ],
             ),
