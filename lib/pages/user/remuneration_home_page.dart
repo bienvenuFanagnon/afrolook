@@ -109,7 +109,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
                         iconColor: Colors.black,
                         textColor: Colors.black,
                         onTap: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>  MonetisationPage(),

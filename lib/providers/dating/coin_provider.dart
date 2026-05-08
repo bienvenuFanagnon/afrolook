@@ -1,4 +1,4 @@
-// lib/providers/dating/coin_provider.dart
+// lib/providers/dating/coin_gift_provider.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/dating_data.dart';

@@ -44,6 +44,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/authProvider.dart';
+import '../providers/coin_gift_provider.dart';
 import '../services/linkService.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/utils/abonnement_utils.dart';
@@ -53,6 +54,8 @@ import 'canaux/detailsCanal.dart';
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'coins/coin_gift_dialog.dart';
 
 const _twitterDarkBg = Color(0xFF000000);
 const _twitterCardBg = Color(0xFF16181C);
@@ -3244,8 +3247,47 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       setState(() => _isLoading = false);
     }
   }
-
   void _showGiftDialog() {
+    _handleGift();
+  }
+  void _handleGift() {
+    showDialog(
+      context: context,
+      builder: (context) => CoinGiftDialog(
+        receiverId: widget.post.user_id!,
+        receiverName: widget.post.user?.pseudo ?? 'Créateur',
+        receiverAvatar: widget.post.user?.imageUrl ?? '',
+        post: widget.post,
+        onGiftSuccess: () async {
+          // Mettre à jour l'affichage local du compteur de cadeaux
+          setState(() {
+            widget.post.users_cadeau_id ??= [];
+            if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+              widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+            }
+          });
+
+          // Rafraîchir le provider pour mettre à jour le solde
+          final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+          await coinProvider.refreshBalance(authProvider.loginUserData.id!);
+
+          // Afficher un snackbar de confirmation
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // 🔥 Appeler le callback parent si existant
+          // widget.onGiftSuccess?.call();
+        },
+      ),
+    );
+  }
+
+  void _showGiftDialog2() {
     showDialog(
       context: context,
       builder: (BuildContext context) {

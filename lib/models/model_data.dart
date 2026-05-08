@@ -434,14 +434,20 @@ class AppDefaultData {
 
   List<String>? allPostIds = [];
 
-  /// 📌 Total des points de l'application
+  /// Total des points de l'application
   int appTotalPoints = 0;
   double? solde_affiliation = 0.0;
   double? total_gains_affiliation = 0.0;
   int? nbr_affiliations_actives = 0;
 
-  /// 🏆 Date de début des challenges (timestamp en millisecondes)
+  /// Date de début des challenges (timestamp en millisecondes)
   int? challengeStartDate;
+
+  // Taux de conversion (FCFA → pièces)
+  int coinsPerFcfa = 25 ~/ 10; // = 2.5, mais on travaille en int
+  int fcfaPerCoin = 10;        // 10 FCFA pour 25 pièces => 0.4 FCFA par pièce
+  // Pour l'arrondi, on utilisera des méthodes dédiées.
+  double? solde_gain_pieces = 0.0;  // Solde de pièces gagnées par l'application (commission sur les cadeaux)
 
   AppDefaultData();
 
@@ -487,6 +493,7 @@ class AppDefaultData {
     nbr_affiliations_actives = json['nbr_affiliations_actives'] ?? 0;
 
     challengeStartDate = json['challengeStartDate'];
+    solde_gain_pieces = (json['solde_gain_pieces'] as num?)?.toDouble() ?? 0.0;
   }
 
   Map<String, dynamic> toJson() {
@@ -520,136 +527,10 @@ class AppDefaultData {
       "one_signal_api_key": one_signal_api_key,
       "users_id": users_id,
       "challengeStartDate": challengeStartDate,
+      // 'solde_gain_pieces': solde_gain_pieces,
     };
   }
 }
-
-// class AppDefaultData {
-//   String? id;
-//   String? app_link;
-//   String? geminiapiKey;
-//   List<String>? users_id = [];
-//   int? nbr_abonnes = 0;
-//   int? app_version_code = 0;
-//   int? app_version_code_officiel = 0;
-//   int? nbr_likes = 0;
-//   bool? googleVerification = false;
-//   int? nbr_comments = 0;
-//   String? ia_instruction = "";
-//   late String app_logo = "";
-//   late String one_signal_api_key = "";
-//   late String one_signal_app_id = "";
-//   late String one_signal_app_url = "";
-//
-//   double? tarifPubliCash = 2.5;
-//   double? tarifImage = 0.5;
-//   double? tarifPubliCash_to_xof = 250.0;
-//   double? tarifVideo = 1.0;
-//   double? tarifjour = 0.5;
-//
-//   double? solde_principal = 0.0;
-//   double? solde_gain = 0.0;
-//   double? solde_commission_crypto = 0.0;
-//
-//   int? nbr_loves = 0;
-//
-//   int? default_point_new_user = 5;
-//   int? default_point_new_like = 1;
-//   int? default_point_new_love = 1;
-//
-//   List<String>? allPostIds = [];
-//
-//   /// 📌 Nouveau champ total des points de l'application
-//   int appTotalPoints = 0;
-//   double? solde_affiliation = 0.0;
-//   double? total_gains_affiliation = 0.0;
-//   int? nbr_affiliations_actives = 0;
-//   AppDefaultData();
-//
-//   AppDefaultData.fromJson(Map<String, dynamic> json) {
-//     id = json['id'];
-//     nbr_comments = json['nbr_comments'];
-//     nbr_likes = json['nbr_likes'];
-//     app_link = json['app_link'];
-//     geminiapiKey = json['geminiapiKey'];
-//     ia_instruction = json['ia_instruction'];
-//     app_version_code_officiel = json['app_version_code_officiel'];
-//     solde_principal = (json['solde_principal'] as num?)?.toDouble() ?? 0.0;
-//     solde_gain = (json['solde_gain'] as num?)?.toDouble() ?? 0.0;
-//     solde_commission_crypto = (json['solde_commission_crypto'] as num?)?.toDouble() ?? 0.0;
-//     app_version_code = json['app_version_code'];
-//     googleVerification = json['googleVerification'];
-//     nbr_loves = json['nbr_loves'];
-//     nbr_abonnes = json['nbr_abonnes'];
-//
-//     tarifPubliCash = (json['tarifPubliCash'] as num?)?.toDouble() ?? 0.0;
-//     tarifImage = (json['tarifImage'] as num?)?.toDouble() ?? 0.0;
-//     tarifVideo = (json['tarifVideo'] as num?)?.toDouble() ?? 0.0;
-//     tarifjour = (json['tarifjour'] as num?)?.toDouble() ?? 0.0;
-//     tarifPubliCash_to_xof = (json['tarifPubliCash_to_xof'] as num?)?.toDouble() ?? 0.0;
-//
-//     default_point_new_user = json['default_point_new_user'];
-//     default_point_new_like = json['default_point_new_like'];
-//     default_point_new_love = json['default_point_new_love'];
-//
-//     app_logo = json['app_logo'];
-//     one_signal_api_key = json['one_signal_api_key'];
-//     one_signal_app_id = json['one_signal_app_id'];
-//     one_signal_app_url = json['one_signal_app_url'];
-//
-//     users_id = (json['users_id'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-//
-//     allPostIds = (json['allPostIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-//
-//     appTotalPoints = json['appTotalPoints'] ?? 0;
-//
-//     solde_affiliation = (json['solde_affiliation'] as num?)?.toDouble() ?? 0.0;
-//     total_gains_affiliation = (json['total_gains_affiliation'] as num?)?.toDouble() ?? 0.0;
-//     nbr_affiliations_actives = json['nbr_affiliations_actives'] ?? 0;
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       "id": id,
-//       "nbr_comments": nbr_comments,
-//       "allPostIds": allPostIds,
-//       "nbr_likes": nbr_likes,
-//       "nbr_abonnes": nbr_abonnes,
-//       "app_version_code": app_version_code,
-//       "app_version_code_officiel": app_version_code_officiel,
-//       "ia_instruction": ia_instruction,
-//       "geminiapiKey": geminiapiKey,
-//       "tarifPubliCash": tarifPubliCash,
-//       "tarifImage": tarifImage,
-//       "tarifVideo": tarifVideo,
-//       "tarifjour": tarifjour,
-//       "tarifPubliCash_to_xof": tarifPubliCash_to_xof,
-//       "googleVerification": googleVerification,
-//       "app_link": app_link,
-//       "solde_principal": solde_principal,
-//       "solde_gain": solde_gain,
-//       "solde_commission_crypto": solde_commission_crypto,
-//       "nbr_loves": nbr_loves,
-//       "default_point_new_user": default_point_new_user,
-//       "default_point_new_like": default_point_new_like,
-//       "default_point_new_love": default_point_new_love,
-//       "app_logo": app_logo,
-//       "one_signal_api_url": one_signal_app_url,
-//       "one_signal_app_id": one_signal_app_id,
-//       "one_signal_api_key": one_signal_api_key,
-//       "users_id": users_id,
-//       // "appTotalPoints": appTotalPoints,
-//
-//       // "solde_affiliation": solde_affiliation,
-//       // "total_gains_affiliation": total_gains_affiliation,
-//       // "nbr_affiliations_actives": nbr_affiliations_actives,
-//     };
-//   }
-// }
-
-
-
-// models/afrolook_abonnement.dart
 class AfrolookAbonnement {
   String? id;
   String type; // 'gratuit' ou 'premium'
@@ -962,13 +843,13 @@ class UserData {
 
   EmailNotificationSettings? emailNotifications;
 
-  // Nouveaux champs pour les pièces et modules
-  int? coinsBalance = 0;               // Solde actuel de pièces
-  int? totalCoinsPurchased = 0;        // Total des pièces achetées
-  int? totalCoinsSpent = 0;            // Total des pièces dépensées
-  int? totalCoinsEarned = 0;           // Total des pièces gagnées
-  int? totalCoinsConverted = 0;        // Total des pièces converties en FCFA
-  int? creatorCoinsBalance = 0;        // Solde des pièces pour créateur
+  // Nouveaux champs pour les pièces et modules pour le module de dating
+  int? coinsBalance = 0;               // Solde actuel de pièces dating
+  int? totalCoinsPurchased = 0;        // Total des pièces achetées dating
+  int? totalCoinsSpent = 0;            // Total des pièces dépensées dating
+  int? totalCoinsEarned = 0;           // Total des pièces gagnées dating
+  int? totalCoinsConverted = 0;        // Total des pièces converties en FCFA dating
+  int? creatorCoinsBalance = 0;        // Solde des pièces pour créateur dating
 
   // Abonnements et préférences
   bool? datingSubscription = false;     // Abonnement dating actif
@@ -979,6 +860,14 @@ class UserData {
 
   int? totalAdViewsSupported = 0; // total des pubs de soutien regardées par l'utilisateur
   int? totalCoinsEarnedFromAdSupport = 0; // total des pièces gagnées via les pubs de soutien (créateur)
+
+
+  // Afrolook pièces cadeaux
+// Dans UserData, ajouter ces champs (après les champs dating)
+  int? giftCoinsBalance;          // Solde actuel de pièces cadeaux
+  int? totalGiftCoinsPurchased;   // Total des pièces achetées
+  int? totalGiftCoinsSpent;       // Total des pièces dépensées (cadeaux envoyés)
+  int? totalGiftCoinsConverted;   // Total des pièces converties en FCFA
 
   UserData({
     this.reference,
@@ -1064,6 +953,13 @@ class UserData {
     this.acceptedTermsAt,
     this.acceptedCommunityRulesAt,
     this.userGlobalTags,
+
+    //
+
+    this.giftCoinsBalance = 0,
+    this.totalGiftCoinsPurchased = 0,
+    this.totalGiftCoinsSpent = 0,
+    this.totalGiftCoinsConverted = 0,
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
@@ -1209,6 +1105,12 @@ class UserData {
     isCreatorProfileEnabled = json['isCreatorProfileEnabled'] ?? false;
     acceptedTermsAt = json['acceptedTermsAt'];
     acceptedCommunityRulesAt = json['acceptedCommunityRulesAt'];
+
+    //afrolook pieces
+    giftCoinsBalance = json['giftCoinsBalance'] ?? 0;
+    totalGiftCoinsPurchased = json['totalGiftCoinsPurchased'] ?? 0;
+    totalGiftCoinsSpent = json['totalGiftCoinsSpent'] ?? 0;
+    totalGiftCoinsConverted = json['totalGiftCoinsConverted'] ?? 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -1244,6 +1146,13 @@ class UserData {
 
     data['totalAdViewsSupported'] = totalAdViewsSupported;
     data['totalCoinsEarnedFromAdSupport'] = totalCoinsEarnedFromAdSupport;
+
+    //Afrolook pieces
+    // data['giftCoinsBalance'] = giftCoinsBalance;
+    // data['totalGiftCoinsPurchased'] = totalGiftCoinsPurchased;
+    // data['totalGiftCoinsSpent'] = totalGiftCoinsSpent;
+    // data['totalGiftCoinsConverted'] = totalGiftCoinsConverted;
+
     // Ajouter les autres champs déjà présents comme vu plus haut...
     return data;
   }
@@ -2902,7 +2811,7 @@ enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 
 enum TypeTransaction{
-  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE
+  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE, CONVERSION_PIECES, ACHAT_PIECES, CADEAU_PIECES, CADEAU_PIECES_RECU, GAIN_PIECES
 }
 enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 

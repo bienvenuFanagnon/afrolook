@@ -24,10 +24,13 @@ import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import '../providers/coin_gift_provider.dart';
 import 'UserServices/deviceService.dart';
 import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
 import 'canaux/detailsCanal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'coins/coin_gift_dialog.dart';
 
 
 const _afroBlack = Color(0xFF000000);
@@ -606,8 +609,46 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       ),
     );
   }
-
   void _showGiftDialog(Post post) {
+    _handleGift(post);
+  }
+  void _handleGift(Post post) {
+    showDialog(
+      context: context,
+      builder: (context) => CoinGiftDialog(
+        receiverId: post.user_id!,
+        receiverName: post.user?.pseudo ?? 'Créateur',
+        receiverAvatar: post.user?.imageUrl ?? '',
+        post: post,
+        onGiftSuccess: () async {
+          // Mettre à jour l'affichage local du compteur de cadeaux
+          setState(() {
+            post.users_cadeau_id ??= [];
+            if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+              post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+            }
+          });
+
+          // Rafraîchir le provider pour mettre à jour le solde
+          final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+          await coinProvider.refreshBalance(authProvider.loginUserData.id!);
+
+          // Afficher un snackbar de confirmation
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // 🔥 Appeler le callback parent si existant
+          // widget.onGiftSuccess?.call();
+        },
+      ),
+    );
+  }
+  void _showGiftDialog2(Post post) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -713,21 +754,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     await _firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
   }
 
-  void _sharePost() async {
+  void _sharePost(Post post) async {
     setState(() => _isSharing = true);
     try {
-      final shareUrl = widget.initialPost.dataType == PostDataType.VIDEO.name
-          ? (widget.initialPost.thumbnail ?? '')
-          : (widget.initialPost.images?.isNotEmpty == true ? widget.initialPost.images!.first : '');
+      final shareUrl = post.dataType == PostDataType.VIDEO.name
+          ? (post.thumbnail ?? '')
+          : (post.images?.isNotEmpty == true ? post.images!.first : '');
       final linkService = AppLinkService();
-      await linkService.shareContent(type: AppLinkType.post, id: widget.initialPost.id!, message: widget.initialPost.description ?? '', mediaUrl: shareUrl);
-      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
+      await linkService.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
+      await _firestore.collection('Posts').doc(post.id).update({
         'partage': FieldValue.increment(1),
         'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
       });
       setState(() {
-        widget.initialPost.partage = (widget.initialPost.partage ?? 0) + 1;
-        widget.initialPost.users_partage_id!.add(authProvider.loginUserData.id!);
+        post.partage = (widget.initialPost.partage ?? 0) + 1;
+        post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Partagé !'), backgroundColor: Colors.green));
     } catch (e) { print('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
@@ -1008,7 +1049,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           if (post.type != PostType.CHALLENGEPARTICIPATION.name) Column(children: [IconButton(icon: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30), onPressed: () => _showGiftDialog(post)), Text('${post.users_cadeau_id?.length ?? 0}', style: const TextStyle(color: Colors.white))]),
           // Column(children: [IconButton(icon: const Icon(Icons.remove_red_eye, color: Colors.white, size: 35), onPressed: () {}), Text('${post.vues ?? 0}', style: const TextStyle(color: Colors.white))]),
           Column(children: [IconButton(icon: const Icon(Icons.bar_chart, color: Colors.blue, size: 35), onPressed: () {}), Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [_isSharing ? const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.share, color: Colors.white, size: 30), onPressed: _sharePost), Text('${post.partage ?? 0}', style: const TextStyle(color: Colors.white))]),
+          Column(children: [_isSharing ? const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.share, color: Colors.white, size: 30), onPressed: () {
+            _sharePost(post);
+          },), Text('${post.partage ?? 0}', style: const TextStyle(color: Colors.white))]),
           IconButton(icon: const Icon(Icons.more_vert, color: Colors.white, size: 30), onPressed: () => _showPostMenu(post)),
         ],
       ),

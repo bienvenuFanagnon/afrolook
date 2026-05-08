@@ -59,6 +59,7 @@ import 'package:afrotok/providers/afroshop/authAfroshopProvider.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
+import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/providers/crypto_admin_provider.dart';
 import 'package:afrotok/providers/crypto_market_provider.dart';
@@ -393,7 +394,14 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => PronosticProvider()),
-        // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+// Dans main.dart, modifier l'initialisation de CoinGiftUserProvider
+        ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
+          create: (context) => CoinGiftUserProvider(
+            authProvider: context.read<UserAuthProvider>(),
+          ),
+          update: (context, authProvider, previous) =>
+              CoinGiftUserProvider(authProvider: authProvider),
+        ),        // ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, ContentProvider>(
           create: (context) => ContentProvider(authProvider: context.read<UserAuthProvider>()),
           update: (context, authProvider, previous) => ContentProvider(authProvider: authProvider),

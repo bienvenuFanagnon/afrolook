@@ -31,7 +31,9 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path_provider/path_provider.dart';
+import '../providers/coin_gift_provider.dart';
 import 'canaux/detailsCanal.dart';
+import 'coins/coin_gift_dialog.dart';
 import 'home/homeWidget.dart';
 
 // Couleurs Afrolook
@@ -703,14 +705,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
 
-  void _sharePost() async {
+  void _sharePost(Post post) async {
     setState(() => _isSharing = true);
     try {
-      final shareUrl = _currentPost.thumbnail ?? _currentPost.images?.first ?? '';
+      final shareUrl = post.thumbnail ?? post.images?.first ?? '';
       final appLink = AppLinkService();
-      await appLink.shareContent(type: AppLinkType.post, id: _currentPost.id!, message: _currentPost.description ?? '', mediaUrl: shareUrl);
-      await _firestore.collection('Posts').doc(_currentPost.id).update({'partage': FieldValue.increment(1), 'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id!])});
-      setState(() => _currentPost.partage = (_currentPost.partage ?? 0) + 1);
+      await appLink.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
+      await _firestore.collection('Posts').doc(post.id).update({'partage': FieldValue.increment(1), 'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id!])});
+      setState(() => post.partage = (post.partage ?? 0) + 1);
       addPointsForAction(UserAction.partagePost);
     } catch (e) {
       print('Erreur partage: $e');
@@ -719,7 +721,46 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
-  void _showGiftDialog() {
+  void _showGiftDialog(Post post) {
+    _handleGift(post);
+  }
+  void _handleGift(Post post) {
+    showDialog(
+      context: context,
+      builder: (context) => CoinGiftDialog(
+        receiverId: post.user_id!,
+        receiverName: post.user?.pseudo ?? 'Créateur',
+        receiverAvatar: post.user?.imageUrl ?? '',
+        post: post,
+        onGiftSuccess: () async {
+          // Mettre à jour l'affichage local du compteur de cadeaux
+          setState(() {
+            post.users_cadeau_id ??= [];
+            if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
+              post.users_cadeau_id!.add(authProvider.loginUserData.id!);
+            }
+          });
+
+          // Rafraîchir le provider pour mettre à jour le solde
+          final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+          await coinProvider.refreshBalance(authProvider.loginUserData.id!);
+
+          // Afficher un snackbar de confirmation
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎁 Cadeau envoyé avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // 🔥 Appeler le callback parent si existant
+          // widget.onGiftSuccess?.call();
+        },
+      ),
+    );
+  }
+  void _showGiftDialog2() {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setStateDialog) {
@@ -1103,8 +1144,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 28), onPressed: hasAccess ? _handleLike : null),
       IconButton(icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28), onPressed: hasAccess ? _showCommentsModal : null),
       IconButton(icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 28), onPressed: hasAccess ? _toggleFavorite : null),
-      IconButton(icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 28), onPressed: hasAccess ? _showGiftDialog : null),
-      _isSharing ? SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: Icon(Icons.share, color: Colors.white, size: 28), onPressed: hasAccess ? _sharePost : null),
+      IconButton(icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 28), onPressed: () {
+        if(hasAccess){
+          _showGiftDialog(_currentPost);
+        }
+      },),
+      _isSharing ? SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: Icon(Icons.share, color: Colors.white, size: 28), onPressed: () {
+        if(hasAccess){
+          _sharePost(_currentPost);
+        }
+      },),
     ]);
   }
 
