@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/postProvider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
+import '../coins/post_gifts_list.dart';
 import '../component/consoleWidget.dart';
 import '../pub/native_ad_widget.dart';
 
@@ -426,15 +427,22 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard> {
                       Row(
                         children: [
                           _buildStat(Icons.bar_chart, widget.post.totalInteractions ?? 0),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 8),
                           _buildStat(Icons.comment, widget.post.comments ?? 0),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 8),
                           _buildStat(Icons.favorite, widget.post.loves ?? 0),
+                          const SizedBox(width: 8),
+                          _buildStat(Icons.card_giftcard, widget.post.totalGiftCoinsSentOnThisPost ?? 0),
                         ],
                       ),
                       _buildEventBadge(widget.post),
 
                     ],
+                  ),
+                  PostGiftsList(
+                    postId: widget.post.id!,
+                    compactLevel: CompactLevel.light,
+                    maxDisplayItems: 10,
                   ),
                   if (_shouldShowAd) ...[
                     const SizedBox(height: 12),
