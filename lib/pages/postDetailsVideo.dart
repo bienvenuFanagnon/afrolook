@@ -1557,6 +1557,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 PostGiftsList(
                   postId: widget. initialPost.id!,
                   compactLevel: CompactLevel.light,
+                  maxDisplayItems: 10,
                 ),
                 _buildChallengeSection(),
                 Divider(color: Colors.grey[800]),

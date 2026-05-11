@@ -1307,6 +1307,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 PostGiftsList(
                   postId: widget.post.id!,
                   compactLevel: CompactLevel.light,
+                  maxDisplayItems: 10,
                 ),
                 // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
                 if (_shouldShowAd) ...[

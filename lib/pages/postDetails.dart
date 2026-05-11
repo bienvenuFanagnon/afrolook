@@ -5655,6 +5655,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       PostGiftsList(
                         postId: widget. post.id!,
                         compactLevel: CompactLevel.light,
+                        maxDisplayItems: 10,
                       ),
 
                       // Section des cadeaux récents
