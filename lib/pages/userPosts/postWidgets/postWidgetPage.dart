@@ -26,6 +26,8 @@ import '../../../providers/coin_gift_provider.dart';
 import '../../../services/linkService.dart';
 import '../../../services/utils/abonnement_utils.dart';
 import '../../coins/coin_gift_dialog.dart';
+import '../../coins/coin_recharge_screen.dart';
+import '../../coins/post_gifts_list.dart';
 import '../../component/consoleWidget.dart';
 import '../../home/homeWidget.dart';
 import '../../paiement/newDepot.dart';
@@ -1302,6 +1304,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 // Actions du post
                 SizedBox(height: 12),
                 _buildPostActions(hasAccess),
+                PostGiftsList(
+                  postId: widget.post.id!,
+                  compactLevel: CompactLevel.light,
+                ),
                 // 🆕 AFFICHAGE DE LA PUB APRÈS LE POST SI CONDITION REMPLIE
                 if (_shouldShowAd) ...[
                   const SizedBox(height: 12),
@@ -2554,7 +2560,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           // Cadeau
           _buildActionButton(
             icon: FontAwesome.gift,
-            count: widget.post.users_cadeau_id?.length ?? 0,
+            count: widget.post.totalGiftCoinsSentOnThisPost ?? 0,
             color: _afroYellow,
             onPressed: hasAccess ? () {
               recordUniquePostView();
@@ -2595,7 +2601,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         onTap: hasAccess && !_isProcessingFavorite ? _toggleFavorite : null,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
+          child: Column(
             children: [
               if (_isProcessingFavorite)
                 SizedBox(
@@ -2647,7 +2653,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         onTap: onPressed,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
+          child: Column(
             children: [
               if (isLoading)
                 SizedBox(
@@ -2925,8 +2931,205 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       print("Erreur like: $e");
     }
   }
-
   Future<void> _handleLike() async {
+    try {
+      // Vérifier si l'utilisateur a déjà liké
+      if (isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+        return;
+      }
+
+      // 🔥 Vérifier d'abord si l'utilisateur a assez de pièces pour le like
+      final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+      final hasEnoughCoins = (coinProvider.giftCoinsBalance >= 2);
+
+      if (!hasEnoughCoins) {
+        _showInsufficientCoinsForLikeDialog();
+        return;
+      }
+
+      // 🔥 Envoyer le like avec les pièces
+      final success = await coinProvider.sendLikeWithCoins(
+        senderId: authProvider.loginUserData.id!,
+        receiverId: widget.post.user_id!,
+        post: widget.post,
+        context: context,
+      );
+
+      if (!success) {
+        _showInsufficientCoinsForLikeDialog();
+        return;
+      }
+
+      // Mettre à jour l'UI
+      setState(() {
+        widget.post.loves = (widget.post.loves ?? 0) + 1;
+        widget.post.users_love_id ??= [];
+        widget.post.users_love_id!.add(authProvider.loginUserData.id!);
+      });
+
+      // Ajouter des points pour l'action (système existant)
+      addPointsForAction(UserAction.like);
+      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
+      // Envoyer les notifications (comme avant)
+      await _sendLikeNotifications();
+
+      // 🔥 APPEL DU CALLBACK LOVE
+      widget.onLoved?.call();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❤️ Like envoyé ! Le créateur a reçu 1 pièce.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print("Erreur like: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+// Nouveau dialog pour solde de pièces insuffisant pour le like
+  void _showInsufficientCoinsForLikeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          '💡 Soutenez le créateur !',
+          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Text('🪙', style: TextStyle(fontSize: 20)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+// Extraire la logique des notifications dans une méthode séparée
+  Future<void> _sendLikeNotifications() async {
+    final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
+    final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+
+    if (userDoc.exists) {
+      final userData = userDoc.data();
+      final lastNotificationTime = userData?['lastNotificationTime'] ?? 0;
+      const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
+      final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
+
+      if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
+        // Notification Firebase
+        final notificationId = firestore.collection('Notifications').doc().id;
+        final notification = NotificationData(
+          id: notificationId,
+          titre: "Like ❤️ + 1 pièce",
+          media_url: authProvider.loginUserData.imageUrl,
+          type: NotificationType.POST.name,
+          description: "@${authProvider.loginUserData.pseudo!} a aimé votre post et vous a offert 1 pièce !",
+          users_id_view: [],
+          user_id: authProvider.loginUserData.id!,
+          receiver_id: widget.post.user_id!,
+          post_id: widget.post.id!,
+          post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+          updatedAt: currentTimeMicroseconds,
+          createdAt: currentTimeMicroseconds,
+          status: PostStatus.VALIDE.name,
+        );
+        await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
+
+        // Push notification
+        if (currentUser != null && currentUser!.oneIgnalUserid != null) {
+          await authProvider.sendNotification(
+            userIds: [currentUser!.oneIgnalUserid!],
+            smallImage: authProvider.loginUserData.imageUrl!,
+            send_user_id: authProvider.loginUserData.id!,
+            recever_user_id: widget.post.user_id!,
+            message: "📢 @${authProvider.loginUserData.pseudo!} a aimé votre look et vous a offert 1 pièce !",
+            type_notif: NotificationType.POST.name,
+            post_id: widget.post.id!,
+            post_type: PostDataType.IMAGE.name,
+            chat_id: '',
+          );
+        }
+
+        await firestore.collection('Users').doc(widget.post.user_id!).update({
+          'lastNotificationTime': currentTimeMicroseconds
+        });
+      }
+    }
+
+    authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+    authProvider.notifySubscribersOfInteraction(
+      actionUserId: authProvider.loginUserData.id!,
+      postOwnerId: widget.post.user_id!,
+      postId: widget.post.id!,
+      actionType: 'like',
+      postDescription: widget.post.description,
+      postImageUrl: widget.post.images?.first,
+      postDataType: widget.post.dataType,
+    );
+  }
+  Future<void> _handleLike3() async {
     try {
       if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
         setState(() {

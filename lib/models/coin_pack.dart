@@ -68,3 +68,70 @@ class CoinPack {
     CoinPack(coins: 250000, priceFcfa: 100000, icon: '💎', label: 'Trésor'),
   ];
 }
+
+// models/post_gift.dart
+class PostGift {
+  String? id;
+  String? postId;
+  String? senderId;
+  String? receiverId;
+  String? giftIcon;      // Emoji du cadeau (🌟, ❤️, 💎, etc.)
+  String? giftLabel;     // Label du cadeau (Petit cœur, Diamant, etc.)
+  int? coinsAmount;      // Nombre de pièces du cadeau
+  int? quantity;         // Quantité de ce type de cadeau (pour agrégation)
+  int? createdAt;
+
+  // Pour l'affichage agrégé
+  int? totalCount;       // Nombre total d'envois de ce type
+  int? totalCoins;       // Total des pièces pour ce type
+
+  PostGift({
+    this.id,
+    this.postId,
+    this.senderId,
+    this.receiverId,
+    this.giftIcon,
+    this.giftLabel,
+    this.coinsAmount,
+    this.quantity = 1,
+    this.createdAt,
+    this.totalCount,
+    this.totalCoins,
+  });
+
+  PostGift.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    postId = json['postId'];
+    senderId = json['senderId'];
+    receiverId = json['receiverId'];
+    giftIcon = json['giftIcon'];
+    giftLabel = json['giftLabel'];
+    coinsAmount = json['coinsAmount'];
+    quantity = json['quantity'] ?? 1;
+    createdAt = json['createdAt'];
+    totalCount = json['totalCount'];
+    totalCoins = json['totalCoins'];
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'postId': postId,
+      'senderId': senderId,
+      'giftIcon': giftIcon,
+      'giftLabel': giftLabel,
+      'coinsAmount': coinsAmount,
+      'quantity': quantity,
+      'createdAt': createdAt,
+    };
+  }
+
+  // Constructeur pour l'agrégation
+  PostGift.aggregated({
+    this.giftIcon,
+    this.giftLabel,
+    this.coinsAmount,
+    this.totalCount,
+    this.totalCoins,
+  });
+}

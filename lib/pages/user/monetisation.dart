@@ -764,6 +764,8 @@ class TransactionWidget extends StatelessWidget {
         return "Cadeau envoyé";
       case "CADEAU_PIECES_RECU":
         return "Cadeau reçu";
+      case "LIKE_PIECES":
+        return "Like envoyé";
       default:
         return type;
     }
@@ -790,6 +792,8 @@ class TransactionWidget extends StatelessWidget {
         return Icons.card_giftcard;
       case "CADEAU_PIECES_RECU":
         return Icons.card_giftcard;
+      case "LIKE_PIECES":
+        return Icons.favorite;  // 🔥 Icône cœur pour les likes
       default:
         return Icons.help_outline;
     }
@@ -808,6 +812,7 @@ class TransactionWidget extends StatelessWidget {
       case "DEPENSE":
       case "ACHAT_PIECES":
       case "CADEAU_PIECES":
+      case "LIKE_PIECES":  // 🔥 Like = rouge (dépense)
         return const Color(0xFFFF3B30);
       case "CONVERSION_PIECES":
         return const Color(0xFFFFD700);
@@ -829,6 +834,7 @@ class TransactionWidget extends StatelessWidget {
       case "DEPENSE":
       case "ACHAT_PIECES":
       case "CADEAU_PIECES":
+      case "LIKE_PIECES":  // 🔥 Like = dépense, donc préfixe "-"
         return "- ";
       case "CONVERSION_PIECES":
         return "→ ";
@@ -852,12 +858,13 @@ class TransactionWidget extends StatelessWidget {
     final label = getTransactionLabel(transaction.type!);
 
     // Pour les transactions en pièces, on formate l'affichage
-    bool isCoinAchatTransaction = transaction.type == TypeTransaction.ACHAT_PIECES.name;
+    bool isCoinAchatTransaction = transaction.type == TypeTransaction.ACHAT_PIECES.name||
+        transaction.type == TypeTransaction.CONVERSION_PIECES.name ;
 
     bool isCoinTransaction = transaction.type == TypeTransaction.ACHAT_PIECES.name ||
         transaction.type == TypeTransaction.CADEAU_PIECES.name ||
         transaction.type == TypeTransaction.CADEAU_PIECES_RECU.name ||
-        transaction.type == TypeTransaction.CONVERSION_PIECES.name ||
+        transaction.type == TypeTransaction.LIKE_PIECES.name ||
         transaction.type == TypeTransaction.GAIN_PIECES.name;
 
     String amountDisplay;

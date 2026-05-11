@@ -34,6 +34,8 @@ import 'package:path_provider/path_provider.dart';
 import '../providers/coin_gift_provider.dart';
 import 'canaux/detailsCanal.dart';
 import 'coins/coin_gift_dialog.dart';
+import 'coins/coin_recharge_screen.dart';
+import 'coins/post_gifts_list.dart';
 import 'home/homeWidget.dart';
 
 // Couleurs Afrolook
@@ -592,8 +594,92 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       setState(() => _isProcessingFavorite = false);
     }
   }
-
   Future<void> _handleLike() async {
+    try {
+      final userId = authProvider.loginUserData.id!;
+
+      // Vérifier si déjà liké
+      if (_currentPost.users_love_id!.contains(userId)) return;
+
+      // 🔥 VÉRIFICATION DU SOLDE DE PIÈCES (2 pièces minimum)
+      final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+      final hasEnoughCoins = coinProvider.giftCoinsBalance >= 2;
+
+      if (!hasEnoughCoins) {
+        _showInsufficientCoinsForLikeDialog();
+        return;
+      }
+
+      // 🔥 ENVOI DU LIKE AVEC PIÈCES
+      final success = await coinProvider.sendLikeWithCoins(
+        senderId: userId,
+        receiverId: _currentPost.user_id!,
+        post: _currentPost,
+        context: context,
+      );
+
+      if (!success) {
+        _showInsufficientCoinsForLikeDialog();
+        return;
+      }
+
+      // Mise à jour Firestore (complémentaire car sendLikeWithCoins gère déjà loves et users_love_id)
+      await _firestore.collection('Posts').doc(_currentPost.id).update({
+        'popularity': FieldValue.increment(3),
+      });
+
+      // Mise à jour locale
+      setState(() {
+        _currentPost.loves = (_currentPost.loves ?? 0) + 1;
+        _currentPost.users_love_id!.add(userId);
+      });
+
+      // Ajout des points
+      addPointsForAction(UserAction.like);
+      addPointsForOtherUserAction(_currentPost.user_id!, UserAction.autre);
+
+      // Gestion des notifications
+      final nowMicro = DateTime.now().microsecondsSinceEpoch;
+      final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
+      final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
+
+      if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
+        await authProvider.sendNotification(
+          userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
+          smallImage: authProvider.loginUserData.imageUrl!,
+          send_user_id: userId,
+          recever_user_id: _currentPost.user_id!,
+          message: "📢 @${authProvider.loginUserData.pseudo} a aimé votre vidéo et vous a offert 1 pièce !",
+          type_notif: NotificationType.POST.name,
+          post_id: _currentPost.id!,
+          post_type: PostDataType.VIDEO.name,
+          chat_id: '',
+        );
+
+        await _firestore.collection('Users').doc(_currentPost.user_id).update({
+          'lastNotificationTime': nowMicro
+        });
+      }
+
+      // Feedback utilisateur
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print("❌ Erreur like: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  Future<void> _handleLike3() async {
     final userId = authProvider.loginUserData.id!;
     if (_currentPost.users_love_id!.contains(userId)) return;
     await _firestore.collection('Posts').doc(_currentPost.id).update({
@@ -623,7 +709,75 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       await _firestore.collection('Users').doc(_currentPost.user_id).update({'lastNotificationTime': nowMicro});
     }
   }
-
+  void _showInsufficientCoinsForLikeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          '💡 Soutenez le créateur !',
+          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chaque like que vous envoyez offre 1 pièce au créateur du post !',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Text('🪙', style: TextStyle(fontSize: 20)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Le like coûte 2 pièces :\n• Pour soutenir le créateur',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Rechargez votre compte pour continuer à soutenir vos créateurs préférés !',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CoinRechargeScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
   void _showCommentsModal() {
     showModalBottomSheet(
       context: context,
@@ -1115,8 +1269,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   Widget _buildStatsRow() {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
       _buildStatItem(Icons.remove_red_eye, _currentPost.vues ?? 0, 'Vues'),
-      _buildStatItem(Icons.favorite, _currentPost.loves ?? 0, 'J\'aime'),
+      _buildStatItem(Icons.favorite_border, _currentPost.loves ?? 0, 'J\'aime'),
       _buildStatItem(Icons.chat_bubble, _currentPost.comments ?? 0, 'Commentaires'),
+      _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeaux'),
       _buildStatItem(Icons.bar_chart, _currentPost.totalInteractions ?? 0, 'Interactions'),
       _buildStatItem(_isFavorite ? Icons.bookmark : Icons.bookmark_border, _currentPost.favoritesCount ?? 0, 'Favoris'),
     ]);
@@ -1399,6 +1554,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 _buildActionButtons(),
                 SizedBox(height: 8),
                 _buildSupportButton(),
+                PostGiftsList(
+                  postId: widget. initialPost.id!,
+                  compactLevel: CompactLevel.light,
+                ),
                 _buildChallengeSection(),
                 Divider(color: Colors.grey[800]),
                 _buildAdBanner(key: 'ad_details_post'),

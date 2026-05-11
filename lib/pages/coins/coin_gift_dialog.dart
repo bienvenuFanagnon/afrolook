@@ -355,8 +355,9 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     );
   }
 
+// widgets/coin_gift_dialog.dart - Modifier _sendGift
+
   Future<void> _sendGift(CoinPack pack) async {
-    // Si le solde est insuffisant, rediriger vers la page d'achat
     if (_currentBalance < pack.coins) {
       _showInsufficientBalanceDialog();
       return;
@@ -370,6 +371,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       coinsAmount: pack.coins,
       post: widget.post!,
       context: context,
+      giftPack: pack,  // 🔥 Passer le pack sélectionné
       onSuccess: () {
         _updateBalance();
         if (widget.isLive && widget.liveId != null) {
@@ -390,7 +392,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       _showInsufficientBalanceDialog();
     }
   }
-
   void _showInsufficientBalanceDialog() {
     showDialog(
       context: context,
@@ -427,8 +428,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
   }
 
   void _showSuccessAnimation(CoinPack pack) {
-    final navigator = Navigator.of(context);
-
+    // Afficher le dialog
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -438,7 +438,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 16),
         child: Stack(
           children: [
-            // Contenu principal
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -459,7 +458,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Animation de l'icône (optionnelle)
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.5, end: 1.0),
                     duration: const Duration(milliseconds: 500),
@@ -517,41 +515,30 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 ],
               ),
             ),
-            // Bouton de fermeture (croix)
             Positioned(
               top: 8,
               right: 8,
               child: GestureDetector(
-                onTap: () {
-                  if (mounted && navigator.canPop()) {
-                    navigator.pop();
-                  }
-                },
+                onTap: () => Navigator.of(ctx).pop(),
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.4),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
                 ),
               ),
             ),
           ],
         ),
       ),
-    ).then((_) {
-      // Callback après fermeture (si nécessaire)
-    });
+    );
 
-    // Fermeture automatique après 3 secondes
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && navigator.canPop()) {
-        navigator.pop();
+    // 🔥 Fermeture automatique après 1 seconde
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
     });
   }

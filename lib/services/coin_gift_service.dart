@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
+import '../models/coin_pack.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 
@@ -125,7 +126,101 @@ class CoinGiftService {
       return 'utilisateur';
     }
   }
+  /// Envoyer un like avec pièces (1 pièce pour le créateur, 1 pièce pour l'application)
+  /// Si l'utilisateur n'a pas assez de pièces, retourne false avec un message
+// services/coin_gift_service.dart
 
+  /// Envoyer un like avec pièces (1 pièce pour le créateur, 1 pièce pour l'application)
+  /// Si l'utilisateur n'a pas assez de pièces, retourne false avec un message
+  static Future<bool> sendLikeWithCoins({
+    required String senderId,
+    required String receiverId,
+    required FirebaseFirestore firestore,
+    required UserAuthProvider authProvider,
+    required Post post,
+    required BuildContext context,
+  }) async {
+    const int coinsToDebit = 2;      // 2 pièces par like
+    const int creatorCoins = 1;      // 1 pièce pour le créateur
+    const int appCoins = 1;          // 1 pièce pour l'application
+
+    final senderRef = firestore.collection('Users').doc(senderId);
+    final receiverRef = firestore.collection('Users').doc(receiverId);
+    final postRef = firestore.collection('Posts').doc(post.id);
+    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+
+    // Vérifier le solde de l'utilisateur
+    final senderDoc = await senderRef.get();
+    if (!senderDoc.exists) {
+      throw Exception('Utilisateur introuvable');
+    }
+
+    final currentCoins = (senderDoc.data()?['giftCoinsBalance'] ?? 0) as int;
+
+    // Si solde insuffisant, retourner false avec un message
+    if (currentCoins < coinsToDebit) {
+      return false;
+    }
+
+    // 🔥 CORRECTION : Ajouter 'return' devant firestore.runTransaction
+    return await firestore.runTransaction((tx) async {
+      // 1. Débiter l'utilisateur (2 pièces)
+      tx.update(senderRef, {
+        'giftCoinsBalance': FieldValue.increment(-coinsToDebit),
+        'totalGiftCoinsSpent': FieldValue.increment(coinsToDebit),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // 2. Créditer le créateur (1 pièce)
+      tx.update(receiverRef, {
+        'giftCoinsBalance': FieldValue.increment(creatorCoins),
+        'totalCoinsEarnedFromLikes': FieldValue.increment(creatorCoins),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // 3. Créditer l'application (1 pièce)
+      tx.update(appDataRef, {
+        'solde_gain_pieces': FieldValue.increment(appCoins),
+      });
+
+      // 4. Mettre à jour le post (incrémenter les likes)
+      tx.update(postRef, {
+        'loves': FieldValue.increment(1),
+        'users_love_id': FieldValue.arrayUnion([senderId]),
+        'popularity': FieldValue.increment(1),
+        'totalGiftCoinsSentOnThisPost': FieldValue.increment(creatorCoins),
+
+        'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
+      });
+
+      // 5. Transaction pour l'utilisateur (dépense)
+      final userTransaction = TransactionSolde()
+        ..id = firestore.collection('TransactionSoldes').doc().id
+        ..user_id = senderId
+        ..type = TypeTransaction.LIKE_PIECES.name
+        ..statut = StatutTransaction.VALIDER.name
+        ..description = "Like sur le post de @${post.user?.pseudo ?? 'créateur'} (2 pièces)"
+        ..montant = coinsToDebit.toDouble()
+        ..methode_paiement = "pieces"
+        ..createdAt = DateTime.now().millisecondsSinceEpoch;
+      tx.set(firestore.collection('TransactionSoldes').doc(userTransaction.id), userTransaction.toJson());
+
+      // 6. Transaction pour le créateur (gain)
+      final creatorTransaction = TransactionSolde()
+        ..id = firestore.collection('TransactionSoldes').doc().id
+        ..user_id = receiverId
+        ..type = TypeTransaction.GAIN_PIECES.name
+        ..statut = StatutTransaction.VALIDER.name
+        ..description = "1 pièce reçue pour le like de @${authProvider.loginUserData.pseudo}"
+        ..montant = creatorCoins.toDouble()
+        ..methode_paiement = "like"
+        ..createdAt = DateTime.now().millisecondsSinceEpoch;
+      tx.set(firestore.collection('TransactionSoldes').doc(creatorTransaction.id), creatorTransaction.toJson());
+
+      // 🔥 Retourner true pour indiquer le succès
+      return true;
+    });
+  }
   // static Future<void> purchaseCoins({
   //   required String userId,
   //   required int coinsAmount,
@@ -269,7 +364,7 @@ class CoinGiftService {
   }
 
   /// Envoi d’un cadeau en pièces avec toutes les fonctionnalités
-  static Future<void> sendGift({
+  static Future<void> sendGift2({
     required String senderId,
     required String receiverId,
     required int coinsAmount,
@@ -278,7 +373,8 @@ class CoinGiftService {
     required Post post,
     required BuildContext context, // Ajout du context pour les notifications
     VoidCallback? onSuccess,
-  }) async {
+  })
+  async {
     final senderRef = firestore.collection('Users').doc(senderId);
     final receiverRef = firestore.collection('Users').doc(receiverId);
     final postRef = firestore.collection('Posts').doc(post.id);
@@ -374,6 +470,7 @@ class CoinGiftService {
       tx.update(postRef, {
         'users_cadeau_id': FieldValue.arrayUnion([senderId]),
         'popularity': FieldValue.increment(5),
+        'giftCount': FieldValue.increment(1),  // 🔥 Incrémente le compteur d'envois
         'totalGiftCoinsSentOnThisPost': FieldValue.increment(coinsAmount),
       });
 
@@ -422,6 +519,173 @@ class CoinGiftService {
       final authProv = Provider.of<UserAuthProvider>(context, listen: false);
 
     }
+
+    onSuccess?.call();
+  }
+
+  // services/coin_gift_service.dart - Ajouter cette méthode et modifier sendGift
+
+  /// Envoi d’un cadeau en pièces avec toutes les fonctionnalités
+  static Future<void> sendGift({
+    required String senderId,
+    required String receiverId,
+    required int coinsAmount,
+    required FirebaseFirestore firestore,
+    required UserAuthProvider authProvider,
+    required Post post,
+    required BuildContext context,
+    required CoinPack giftPack,  // 🔥 NOUVEAU : le pack de cadeau sélectionné
+    VoidCallback? onSuccess,
+  }) async {
+    final senderRef = firestore.collection('Users').doc(senderId);
+    final receiverRef = firestore.collection('Users').doc(receiverId);
+    final postRef = firestore.collection('Posts').doc(post.id);
+    final appDataRef = firestore.collection('AppData').doc(authProvider.appDefaultData.id);
+    final giftsRef = firestore.collection('PostGifts');  // 🔥 Nouvelle collection
+
+    // Récupérer les données du destinataire pour la notification
+    final receiverDoc = await receiverRef.get();
+    final receiverData = receiverDoc.data();
+    final receiverOneSignalId = receiverData?['oneIgnalUserid'] ?? '';
+    final receiverName = receiverData?['pseudo'] ?? 'créateur';
+
+    // Récupérer les codes parrainage
+    final senderDoc = await senderRef.get();
+    final senderData = senderDoc.data();
+    final senderCodeParrain = senderData?['code_parrain'];
+    final receiverCodeParrain = receiverData?['code_parrain'];
+
+    final int receiverCoins = (coinsAmount * 0.7).floor(); // 70% pour le créateur
+    int appCoins = coinsAmount - receiverCoins;            // 30% pour l’application
+    int commissionSenderSponsor = 0;
+    int commissionReceiverSponsor = 0;
+
+    // Gestion des commissions de parrainage (2.5% chacun)
+    if (receiverCodeParrain != null && receiverCodeParrain.isNotEmpty) {
+      if (senderCodeParrain != null && senderCodeParrain.isNotEmpty) {
+        commissionReceiverSponsor = (coinsAmount * 0.025).ceil();
+        commissionSenderSponsor = (coinsAmount * 0.025).ceil();
+        appCoins = coinsAmount - receiverCoins - commissionReceiverSponsor - commissionSenderSponsor;
+      } else {
+        commissionReceiverSponsor = (coinsAmount * 0.025).ceil();
+        appCoins = coinsAmount - receiverCoins - commissionReceiverSponsor;
+      }
+    } else if (senderCodeParrain != null && senderCodeParrain.isNotEmpty) {
+      commissionSenderSponsor = (coinsAmount * 0.025).ceil();
+      appCoins = coinsAmount - receiverCoins - commissionSenderSponsor;
+    }
+
+    return firestore.runTransaction((tx) async {
+      final senderSnap = await tx.get(senderRef);
+      final receiverSnap = await tx.get(receiverRef);
+
+      if (!senderSnap.exists || !receiverSnap.exists) {
+        throw Exception('Utilisateur introuvable');
+      }
+
+      final senderCoins = (senderSnap.data()?['giftCoinsBalance'] ?? 0) as int;
+      if (senderCoins < coinsAmount) {
+        throw Exception('Pièces insuffisantes');
+      }
+
+      // 1. Débiter l’expéditeur
+      tx.update(senderRef, {
+        'giftCoinsBalance': FieldValue.increment(-coinsAmount),
+        'totalGiftCoinsSpent': FieldValue.increment(coinsAmount),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // 2. Créditer le destinataire (créateur)
+      tx.update(receiverRef, {
+        'giftCoinsBalance': FieldValue.increment(receiverCoins),
+        'totalCoinsEarnedFromGifts': FieldValue.increment(receiverCoins),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // 3. Gérer les commissions de parrainage
+      if (commissionReceiverSponsor > 0) {
+        await _addSponsorCommission(
+          codeParrainage: receiverCodeParrain!,
+          coinsAmount: coinsAmount,
+          firestore: firestore,
+          authProvider: authProvider,
+        );
+      }
+
+      if (commissionSenderSponsor > 0) {
+        await _addSponsorCommission(
+          codeParrainage: senderCodeParrain!,
+          coinsAmount: coinsAmount,
+          firestore: firestore,
+          authProvider: authProvider,
+        );
+      }
+
+      // 4. Créditer l’application (solde_gain_pieces)
+      tx.update(appDataRef, {
+        'solde_gain_pieces': FieldValue.increment(appCoins),
+      });
+
+      // 5. Mettre à jour le post
+      tx.update(postRef, {
+        'users_cadeau_id': FieldValue.arrayUnion([senderId]),
+        'popularity': FieldValue.increment(5),
+        'giftCount': FieldValue.increment(1),
+        'totalGiftCoinsSentOnThisPost': FieldValue.increment(coinsAmount),
+      });
+
+      // 🔥 6. Enregistrer le cadeau dans la collection PostGifts
+      final giftId = firestore.collection('PostGifts').doc().id;
+      final postGift = PostGift(
+        id: giftId,
+        postId: post.id,
+        senderId: senderId,
+        receiverId: receiverId,
+        giftIcon: giftPack.icon,
+        giftLabel: giftPack.label,
+        coinsAmount: coinsAmount,
+        quantity: 1,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      tx.set(firestore.collection('PostGifts').doc(giftId), postGift.toJson());
+
+      // 7. Transaction pour l’expéditeur
+      final txSender = TransactionSolde()
+        ..id = firestore.collection('TransactionSoldes').doc().id
+        ..user_id = senderId
+        ..type = TypeTransaction.CADEAU_PIECES.name
+        ..statut = StatutTransaction.VALIDER.name
+        ..description = "Envoi de ${giftPack.icon} $coinsAmount pièces à @$receiverName"
+        ..montant = coinsAmount.toDouble()
+        ..methode_paiement = "pieces"
+        ..createdAt = DateTime.now().millisecondsSinceEpoch;
+
+      // 8. Transaction pour le destinataire
+      final txReceiver = TransactionSolde()
+        ..id = firestore.collection('TransactionSoldes').doc().id
+        ..user_id = receiverId
+        ..type = TypeTransaction.CADEAU_PIECES_RECU.name
+        ..statut = StatutTransaction.VALIDER.name
+        ..description = "Réception de ${giftPack.icon} $receiverCoins pièces de @${authProvider.loginUserData.pseudo}"
+        ..montant = receiverCoins.toDouble()
+        ..methode_paiement = "pieces"
+        ..createdAt = DateTime.now().millisecondsSinceEpoch;
+
+      tx.set(firestore.collection('TransactionSoldes').doc(txSender.id), txSender.toJson());
+      tx.set(firestore.collection('TransactionSoldes').doc(txReceiver.id), txReceiver.toJson());
+    });
+
+    // 9. Envoyer les notifications
+    await _sendGiftNotification(
+      receiverId: receiverId,
+      receiverOneSignalId: receiverOneSignalId,
+      senderName: authProvider.loginUserData.pseudo ?? 'Un utilisateur',
+      coinsAmount: coinsAmount,
+      postId: post.id!,
+      postDataType: post.dataType ?? PostDataType.IMAGE.name,
+      authProvider: authProvider,
+      context: context,
+    );
 
     onSuccess?.call();
   }

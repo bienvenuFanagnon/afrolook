@@ -1251,6 +1251,9 @@ class Post {
   bool? isPortrait;
 
   String? challengeMonth; // Format "YYYY-MM" du challenge associé (ex: "2026-04")
+  int? giftCount;                  // 🔥 NOUVEAU : compteur de cadeaux
+  int? totalGiftCoinsSentOnThisPost;
+  int? totalCoinsFromLikes;
 
   int? eventDate;
 
@@ -1265,6 +1268,7 @@ class Post {
     this.nombreCollaborateur = 0,
     this.popularity = 0,
     this.publiCashTotal = 0,
+    this.giftCount = 0,
     this.nombreImage = 0,
     this.nombrePersonneParJour = 0,
     this.totalInteractions = 0,
@@ -1303,6 +1307,8 @@ class Post {
     this.users_favorite_id,
     this.favoritesCount = 0,
     this.adSupportCount = 0,
+    this.totalGiftCoinsSentOnThisPost = 0,
+    this.totalCoinsFromLikes = 0,
     this.eventDate,
     this.advertisementId,
     this.challengeMonth,
@@ -1404,6 +1410,9 @@ class Post {
     }
     users_favorite_id = json['users_favorite_id'] == null ? [] : List<String>.from(json['users_favorite_id']);
     favoritesCount = json['favorites_count'] ?? 0;
+    totalGiftCoinsSentOnThisPost = json['totalGiftCoinsSentOnThisPost'] ?? 0;
+    totalCoinsFromLikes = json['totalCoinsFromLikes'] ?? 0;
+    giftCount = json['giftCount'] ?? 0;
 
     // Dans toJson()
     advertisementId = json['advertisementId'];
@@ -1412,6 +1421,7 @@ class Post {
 
     int vuesValue = json['vues'] ?? 0;
     int interactions = json['totalInteractions'] ?? 0;
+
 
     if (interactions == 0) {
       totalInteractions = vuesValue;
@@ -1446,6 +1456,7 @@ class Post {
     data['dataType'] = dataType;
     data['categorie'] = categorie ?? 'LOOK';
     data['urlLink'] = urlLink;
+    data['giftCount'] = giftCount;
     data['images'] = images;
     data['isPostLink'] = isPostLink;
     data['users_like_id'] = users_like_id;
@@ -2811,7 +2822,7 @@ enum UserCmdStatus { ENCOURS, ANNULER, VALIDER }
 
 
 enum TypeTransaction{
-  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE, CONVERSION_PIECES, ACHAT_PIECES, CADEAU_PIECES, CADEAU_PIECES_RECU, GAIN_PIECES
+  DEPOTADMIN,RETRAITADMIN,DEPOT,RETRAIT,GAIN,DEPENSE, CONVERSION_PIECES, ACHAT_PIECES, CADEAU_PIECES, CADEAU_PIECES_RECU, GAIN_PIECES, LIKE_PIECES
 }
 enum StatutTransaction { ENCOURS, ANNULER, VALIDER }
 
