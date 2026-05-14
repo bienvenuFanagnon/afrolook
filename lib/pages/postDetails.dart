@@ -1631,7 +1631,8 @@ class _DetailsPostState extends State<DetailsPost>
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       child: GestureDetector(
-        onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+        // onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+        onTap:  _handleGift,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(

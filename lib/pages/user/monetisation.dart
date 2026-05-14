@@ -8,6 +8,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/coin_gift_provider.dart';
 import '../../models/model_data.dart';
 import '../../services/coin_gift_service.dart';
+import '../coins/coin_recharge_screen.dart';
 import '../paiement/depotPageTranaction.dart';
 import '../paiement/newDepot.dart';
 import 'UserRetrait/userRetraitListe.dart';
@@ -241,7 +242,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.4),
@@ -261,7 +264,10 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   color: const Color(0xFFFFD700).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text('🪙', style: TextStyle(fontSize: 20)),
+                child: const Text(
+                  '🪙',
+                  style: TextStyle(fontSize: 20),
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -273,9 +279,43 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   letterSpacing: 1.2,
                 ),
               ),
+              const Spacer(),
+
+              // Bouton Recharger
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CoinRechargeScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD700),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text(
+                  "Recharger",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             ],
           ),
+
           const SizedBox(height: 16),
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -290,16 +330,17 @@ class _MonetisationPageState extends State<MonetisationPage> {
               const SizedBox(width: 8),
               const Text(
                 "pièces",
-                style: TextStyle(color: Colors.white54, fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
-
         ],
       ),
     );
   }
-
   Widget _buildConversionSection(UserData user, int giftCoinsBalance) {
     return Container(
       padding: const EdgeInsets.all(16),

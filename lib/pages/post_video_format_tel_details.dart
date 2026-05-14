@@ -32,6 +32,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
+import 'coins/post_gifts_list.dart';
 
 
 const _afroBlack = Color(0xFF000000);
@@ -1141,7 +1142,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           if (!isOwner) Padding(
             padding: const EdgeInsets.only(top: 12),
             child: GestureDetector(
-              onTap: _isSupporting ? null : () => _handleSupportAd(post),
+              // onTap: _isSupporting ? null : () => _handleSupportAd(post),
+              onTap:() => _handleGift(post),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: _afroDarkGrey.withOpacity(0.8), borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
@@ -1152,6 +1154,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 ]),
               ),
             ),
+          ),
+          PostGiftsList(
+            postId:  post.id!,
+            compactLevel: CompactLevel.light,
+            maxDisplayItems: 10,
           ),
         ],
       ),

@@ -92,8 +92,139 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       ),
     );
   }
+// widgets/coin_gift_dialog.dart - Version corrigée du header
 
   Widget _buildHeader() {
+    // Déterminer l'avatar à afficher
+    String avatarUrl = widget.receiverAvatar;
+    String displayName = widget.receiverName;
+    bool isCanal = widget.receiverName.startsWith('#') ||
+        (widget.post?.canal_id != null && widget.post?.canal_id?.isNotEmpty == true);
+
+    // Si c'est un post de canal, on peut aussi récupérer l'avatar du canal depuis le post
+    if (widget.post?.canal != null && widget.post!.canal!.urlImage != null) {
+      avatarUrl = widget.post!.canal!.urlImage!;
+      displayName = '#${widget.post!.canal!.titre}';
+      isCanal = true;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          // Avatar avec cercle doré
+          Container(
+            width: 55,
+            height: 55,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: ClipOval(
+              child: avatarUrl.isNotEmpty
+                  ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[800],
+                    child: Icon(
+                      isCanal ? Icons.group : Icons.person,
+                      size: 30,
+                      color: Colors.white70,
+                    ),
+                  );
+                },
+              )
+                  : Container(
+                color: Colors.grey[800],
+                child: Icon(
+                  isCanal ? Icons.group : Icons.person,
+                  size: 30,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Informations du destinataire
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Envoyer un cadeau à',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    // Icône canal ou utilisateur
+                    Icon(
+                      isCanal ? Icons.group : Icons.person,
+                      size: 14,
+                      color: const Color(0xFFFFD700),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Badge vérifié (si canal vérifié)
+                    if (isCanal && widget.post?.canal?.isVerify == true)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(Icons.verified, color: Colors.blue, size: 14),
+                      ),
+                  ],
+                ),
+                // Sous-texte pour les canaux (nombre d'abonnés)
+                if (isCanal && widget.post?.canal != null)
+                  Text(
+                    '${widget.post?.canal?.usersSuiviId?.length ?? 0} abonné(s)',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 10,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Bouton de fermeture
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white70,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildHeader2() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(

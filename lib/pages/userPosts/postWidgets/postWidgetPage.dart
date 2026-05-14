@@ -671,7 +671,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+          // onTap: hasAccess && !_isSupporting && !isOwner ? _handleSupportAd : null,
+          onTap: _handleGift,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
@@ -696,7 +697,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 SizedBox(width: 4),
                 Text(
-                  'Regarder une pub pour le soutenir',
+                  'Soutenir le créateur',
                   style: TextStyle(
                     fontSize: 12,
                     color: hasAccess

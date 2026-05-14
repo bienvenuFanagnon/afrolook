@@ -23,7 +23,9 @@ import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/utils/abonnement_utils.dart';
-import 'dart:ui' as ui; // Add this line
+import 'dart:ui' as ui;
+
+import 'coins/post_gifts_list.dart'; // Add this line
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -483,55 +485,67 @@ class _PostCommentsState extends State<PostComments> {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Row(
+      child: Column(
+        spacing: 2,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () {
-              double w = MediaQuery.of(context).size.width;
-              double h = MediaQuery.of(context).size.height;
-              if(!isCanal)
-                showUserDetailsModalDialog( post.user!, w, h, context);
-            },
-            child: Stack(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: NetworkImage(
-                    isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
-                  ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  double w = MediaQuery.of(context).size.width;
+                  double h = MediaQuery.of(context).size.height;
+                  if(!isCanal)
+                    showUserDetailsModalDialog( post.user!, w, h, context);
+                },
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: NetworkImage(
+                        isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
+                      ),
+                    ),
+                    if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Icon(Icons.verified, color: Colors.blue, size: 14),
+                      ),
+                  ],
                 ),
-                if ((isCanal ? post.canal!.isVerify : post.user!.isVerify) ?? false)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Icon(Icons.verified, color: Colors.blue, size: 14),
-                  ),
-              ],
-            ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!)),
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(onPressed: () {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => DetailsPost(post: widget.post),
+                ));
+              }, child: Text('Voir le post',style: TextStyle(color: Colors.blue),))
+            ],
           ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!)),
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-                ),
-              ],
-            ),
+          PostGiftsList(
+            postId: widget.post.id!,
+            compactLevel: CompactLevel.light,
+            maxDisplayItems: 10,
           ),
-          TextButton(onPressed: () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (context) => DetailsPost(post: widget.post),
-            ));
-          }, child: Text('Voir le post',style: TextStyle(color: Colors.blue),))
         ],
       ),
     );

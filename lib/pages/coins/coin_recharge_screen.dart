@@ -637,28 +637,29 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               SizedBox(
                 width: 100,
                 child: ElevatedButton(
-                  onPressed: (_isLoading || !isAffordable || !canPurchase) ? null : () => _processPurchase(pack, coinProvider, user),
+                  onPressed: _isLoading
+                      ? null
+                      : () => _processPurchase(pack, coinProvider, user),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isAffordable && canPurchase
-                        ? (pack.isPopular ? const Color(0xFFFFD700) : Colors.green)
-                        : Colors.grey,
-                    foregroundColor: isAffordable && canPurchase ? Colors.black : Colors.white70,
+                    backgroundColor: pack.isPopular
+                        ? const Color(0xFFFFD700)
+                        : Colors.green,
+                    foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
                   child: Text(
-                    !canPurchase ? 'Destinataire ?' : (isAffordable ? 'Acheter' : 'Solde faible'),
-                    style: TextStyle(
+                     'Acheter',
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: isAffordable && canPurchase ? Colors.black : Colors.white70,
+                      color: Colors.black,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+              ),              const SizedBox(height: 12),
             ],
           ),
           if (pack.isPopular && pack.popularLabel != null)

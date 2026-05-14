@@ -1363,13 +1363,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
-  Widget _buildSupportButton() {
+  Widget _buildSupportButton(Post post) {
     final isOwner = authProvider.loginUserData.id == _currentPost.user_id;
     if (isOwner) return SizedBox.shrink();
     final hasAccess = !_isLockedContent();
     if (!hasAccess) return SizedBox.shrink();
     return GestureDetector(
-      onTap: _isSupporting ? null : _handleSupportAd,
+      // onTap: _isSupporting ? null : _handleSupportAd,
+      onTap:  () {
+        _handleGift(post);
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(color: _afroDarkGrey, borderRadius: BorderRadius.circular(20), border: Border.all(color: _afroYellow.withOpacity(0.5))),
@@ -1553,9 +1556,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 SizedBox(height: 12),
                 _buildActionButtons(),
                 SizedBox(height: 8),
-                _buildSupportButton(),
+                _buildSupportButton(_currentPost),
                 PostGiftsList(
-                  postId: widget. initialPost.id!,
+                  postId: _currentPost.id!,
                   compactLevel: CompactLevel.light,
                   maxDisplayItems: 10,
                 ),
