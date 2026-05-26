@@ -118,7 +118,8 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChroniqueDetailPage(
-                  userChroniques: [chronique],
+                  // userChroniques: [chronique],
+                  initialChroniqueId: chronique.id!,
                 ),
               ),
             );

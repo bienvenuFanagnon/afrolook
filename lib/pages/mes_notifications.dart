@@ -20,6 +20,7 @@ import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import 'UserServices/detailsUserService.dart';
 import 'afroshop/marketPlace/acceuil/produit_details.dart';
+import 'chronique/chroniquedetails.dart';
 import 'component/showUserDetails.dart';
 
 
@@ -404,6 +405,22 @@ class _MesNotificationState extends State<MesNotification> {
           Navigator.push(context, MaterialPageRoute(
             builder: (context) => MesInvitationsPage(context: context),
           )).then((_) {
+            setState(() {
+              _isHandlingNotification = false;
+            });
+          });
+          break;
+      // 🔥 NOUVEAU CAS POUR CHRONIQUES
+        case 'CHRONIQUE':
+          _hideLoadingOverlay();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChroniqueDetailPage(
+                initialChroniqueId: notification.post_id!,
+              ),
+            ),
+          ).then((_) {
             setState(() {
               _isHandlingNotification = false;
             });

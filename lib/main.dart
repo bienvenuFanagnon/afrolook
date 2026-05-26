@@ -14,6 +14,8 @@ import 'package:afrotok/pages/auth/authTest/Screens/Welcome/welcome_screen.dart'
 import 'package:afrotok/pages/bonASavoir.dart';
 import 'package:afrotok/pages/chargement.dart';
 import 'package:afrotok/pages/chat/myChat.dart';
+import 'package:afrotok/pages/chronique/chroniquedetails.dart';
+import 'package:afrotok/pages/chronique/chroniquehome.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
@@ -225,102 +227,178 @@ class _MyAppState extends State<MyApp> {
       OneSignal.Notifications.addClickListener((event) async {
         print("notif additionalData: ${event.notification.additionalData}");
 
-        if (event.notification.additionalData!['type_notif'] == NotificationType.MESSAGE.name) {
-          Chat usersChat = Chat();
-          List<Chat> listChats = [];
+        // Petit délai pour laisser l'app s'initialiser
+        await Future.delayed(const Duration(milliseconds: 300));
 
-          CollectionReference chatCollect = await FirebaseFirestore.instance.collection('Chats');
-          QuerySnapshot querySnapshotChat = await chatCollect.where("id", isEqualTo: event.notification.additionalData!['chat_id']).get();
-          List<Chat> chats = querySnapshotChat.docs.map((doc) =>
-              Chat.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        final additionalData = event.notification.additionalData;
+        if (additionalData == null) return;
 
-          CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-          QuerySnapshot querySnapshotUser = await friendCollect.where("id", isEqualTo: event.notification.additionalData!["send_user_id"]).get();
-          List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-              UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
+        final typeNotif = additionalData['type_notif'] as String?;
+        final postType = additionalData['post_type'] as String? ?? '';
+        final postId = additionalData['post_id'] as String?;
+        final chatId = additionalData['chat_id'] as String?;
+        final sendUserId = additionalData['send_user_id'] as String?;
 
-          if (chats.isNotEmpty) {
-            usersChat = chats.first;
-            if (userList.isNotEmpty) {
-              usersChat.chatFriend = userList.first;
-              usersChat.receiver = userList.first;
-            }
+        // ==================== CHRONIQUES ====================
+        if (postType == 'CHRONIQUE' ||
+            typeNotif == 'CHRONIQUE' ||
+            typeNotif == 'LIKE' && postType == 'CHRONIQUE' ||
+            typeNotif == 'COMMENT' && postType == 'CHRONIQUE' ||
+            typeNotif == 'COMMENT_LIKE') {
 
-            CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-            QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id", isEqualTo: event.notification.additionalData!['chat_id']).get();
-            List<Message> messages = querySnapshotMessage.docs.map((doc) =>
-                Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-            usersChat.messages = messages;
-
-            navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MyChat(title: 'mon chat', chat: usersChat,),));
+          if (postId != null && postId.isNotEmpty) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => ChroniqueDetailPage(
+                  initialChroniqueId: postId,
+                ),
+              ),
+            );
+          } else {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => const ChroniqueHomePage()),
+            );
           }
+          return;
         }
-        else if (event.notification.additionalData!['type_notif'] == NotificationType.INVITATION.name) {
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
-        }
-        else if (event.notification.additionalData!['type_notif'] == NotificationType.ARTICLE.name) {
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
-        }
-        else if (event.notification.additionalData!['type_notif'] == NotificationType.ACCEPTINVITATION.name) {
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => Amis(),));
-        }
-        else if (event.notification.additionalData!['type_notif'] == NotificationType.POST.name) {
-          await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-            if (posts.isNotEmpty) {
-              if(posts.first.dataType == PostDataType.VIDEO.name){
-                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoYoutubePageDetails(initialPost: posts.first),));
-              }else{
-                navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-              }
+
+        // ==================== MESSAGE ====================
+        if (typeNotif == NotificationType.MESSAGE.name) {
+          try {
+            if (chatId == null || sendUserId == null) return;
+
+            final chatDoc = await FirebaseFirestore.instance
+                .collection('Chats')
+                .doc(chatId)
+                .get();
+
+            if (!chatDoc.exists) return;
+
+            final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
+
+            final userDoc = await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(sendUserId)
+                .get();
+
+            if (userDoc.exists) {
+              chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+              chat.receiver = chat.chatFriend;
             }
-          },);
-          // switch (event.notification.additionalData!['post_type']) {
-          //   case "IMAGE":
-          //     await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-          //       if (posts.isNotEmpty) {
-          //         if(posts.first.dataType ==PostDataType.VIDEO.name){
-          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
-          //         }else{
-          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-          //         }
-          //       }
-          //     },);
-          //     break;
-          //   case 'COMMENT':
-          //     getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-          //       if (posts.isNotEmpty) {
-          //         navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => PostComments(post: posts.first),));
-          //       }
-          //     },);
-          //     break;
-          //   default:
-          //     await getPostsImagesById(event.notification.additionalData!['post_id']!).then((posts) {
-          //       if (posts.isNotEmpty) {
-          //         if(posts.first.dataType ==PostDataType.VIDEO.name){
-          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => VideoTikTokPageDetails(initialPost: posts.first),));
-          //         }else{
-          //           navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => DetailsPost(post: posts.first),));
-          //         }
-          //       }
-          //     },);
-          //     break;
-          // }
+
+            final messagesSnapshot = await FirebaseFirestore.instance
+                .collection('Messages')
+                .where('chat_id', isEqualTo: chatId)
+                .orderBy('createdAt', descending: true)
+                .limit(50)
+                .get();
+
+            chat.messages = messagesSnapshot.docs
+                .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
+                .toList();
+
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => MyChat(title: 'mon chat', chat: chat),
+              ),
+            );
+          } catch (e) {
+            print("Erreur message: $e");
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+            );
+          }
+          return;
         }
-        else if (event.notification.additionalData!['type_notif'] == NotificationType.PARRAINAGE.name) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage(),));
+
+        // ==================== INVITATION ====================
+        if (typeNotif == NotificationType.INVITATION.name) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => MesInvitationsPage(context: navigatorKey.currentContext!),
+            ),
+          );
+          return;
         }
-        else {
-          navigatorKey.currentState!.pushNamed('/home');
-          navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesNotification(),));
+
+        // ==================== ARTICLE ====================
+        if (typeNotif == NotificationType.ARTICLE.name) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (context) => MesNotification()),
+          );
+          return;
         }
+
+        // ==================== ACCEPTATION INVITATION ====================
+        if (typeNotif == NotificationType.ACCEPTINVITATION.name) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (context) => Amis()),
+          );
+          return;
+        }
+
+        // ==================== POST (VIDEO / IMAGE) ====================
+        if (typeNotif == NotificationType.POST.name) {
+          if (postId != null && postId.isNotEmpty) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => SplahsChargement(
+                  postId: postId,
+                  postType: postType,
+                ),
+              ),
+            );
+          } else {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+            );
+          }
+          return;
+        }
+
+        // ==================== PARRAINAGE ====================
+        if (typeNotif == NotificationType.PARRAINAGE.name) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (context) => MonetisationPage()),
+          );
+          return;
+        }
+
+        // ==================== FAVORI ====================
+        if (typeNotif == NotificationType.FAVORITE.name) {
+          if (postId != null && postId.isNotEmpty) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => SplahsChargement(
+                  postId: postId,
+                  postType: postType,
+                ),
+              ),
+            );
+          } else {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+            );
+          }
+          return;
+        }
+
+        // ==================== DEFAULT ====================
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+        );
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => MesNotification()),
+        );
       });
     } catch (e) {
       printVm("erreur notification:  $e");
-      navigatorKey.currentState!.pushNamed('/home');
-      navigatorKey.currentState!.push(MaterialPageRoute(builder: (context) => MesInvitationsPage(context: context),));
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => MyHomePage(title: "")),
+            (route) => false,
+      );
     }
   }
-
   Future<void> initDeepLinks() async {
     printVm("Lien deeplink cliqiable");
     _linkSubscription = AppLinks().uriLinkStream.listen((Uri? uri) {

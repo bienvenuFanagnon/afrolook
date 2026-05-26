@@ -291,14 +291,14 @@ class _UnifiedHomePageState extends State<UnifiedHomePage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChroniqueDetailPage(
-              userChroniques: userChroniques,
-            ),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => ChroniqueDetailPage(
+        //       userChroniques: userChroniques,
+        //     ),
+        //   ),
+        // );
       },
       child: Container(
         width: 140,

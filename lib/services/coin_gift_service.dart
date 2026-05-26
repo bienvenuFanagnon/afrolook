@@ -193,72 +193,9 @@ class CoinGiftService {
         'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
       });
 
-      // // 5. Transaction pour l'utilisateur (dépense)
-      // final userTransaction = TransactionSolde()
-      //   ..id = firestore.collection('TransactionSoldes').doc().id
-      //   ..user_id = senderId
-      //   ..type = TypeTransaction.LIKE_PIECES.name
-      //   ..statut = StatutTransaction.VALIDER.name
-      //   ..description = "Like sur le post de @${post.user?.pseudo ?? 'créateur'} (2 pièces)"
-      //   ..montant = coinsToDebit.toDouble()
-      //   ..methode_paiement = "pieces"
-      //   ..createdAt = DateTime.now().millisecondsSinceEpoch;
-      // tx.set(firestore.collection('TransactionSoldes').doc(userTransaction.id), userTransaction.toJson());
-      //
-      // // 6. Transaction pour le créateur (gain)
-      // final creatorTransaction = TransactionSolde()
-      //   ..id = firestore.collection('TransactionSoldes').doc().id
-      //   ..user_id = receiverId
-      //   ..type = TypeTransaction.GAIN_PIECES.name
-      //   ..statut = StatutTransaction.VALIDER.name
-      //   ..description = "1 pièce reçue pour le like de @${authProvider.loginUserData.pseudo}"
-      //   ..montant = creatorCoins.toDouble()
-      //   ..methode_paiement = "like"
-      //   ..createdAt = DateTime.now().millisecondsSinceEpoch;
-      // tx.set(firestore.collection('TransactionSoldes').doc(creatorTransaction.id), creatorTransaction.toJson());
-
-      // 🔥 Retourner true pour indiquer le succès
       return true;
     });
   }
-  // static Future<void> purchaseCoins({
-  //   required String userId,
-  //   required int coinsAmount,
-  //   required double fcfaCost,
-  //   required FirebaseFirestore firestore,
-  //   required UserAuthProvider authProvider,
-  // })
-  // async {
-  //   final userRef = firestore.collection('Users').doc(userId);
-  //   return firestore.runTransaction((tx) async {
-  //     final userSnap = await tx.get(userRef);
-  //     if (!userSnap.exists) throw Exception('Utilisateur introuvable');
-  //     final currentPrincipal = (userSnap.data()?['votre_solde_principal'] ?? 0.0) as double;
-  //     if (currentPrincipal < fcfaCost) {
-  //       throw Exception('Solde FCFA insuffisant');
-  //     }
-  //
-  //     tx.update(userRef, {
-  //       'votre_solde_principal': FieldValue.increment(-fcfaCost),
-  //       'giftCoinsBalance': FieldValue.increment(coinsAmount),
-  //       'totalGiftCoinsPurchased': FieldValue.increment(coinsAmount),
-  //       'updatedAt': DateTime.now().millisecondsSinceEpoch,
-  //     });
-  //
-  //     final transaction = TransactionSolde()
-  //       ..id = firestore.collection('TransactionSoldes').doc().id
-  //       ..user_id = userId
-  //       ..type = TypeTransaction.ACHAT_PIECES.name
-  //       ..statut = StatutTransaction.VALIDER.name
-  //       ..description = "Achat de $coinsAmount pièces"
-  //       ..montant = fcfaCost
-  //       ..methode_paiement = "solde_principal"
-  //       ..createdAt = DateTime.now().millisecondsSinceEpoch
-  //       ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-  //
-  //     tx.set(firestore.collection('TransactionSoldes').doc(transaction.id), transaction.toJson());
-  //   });
-  // }
 
   /// Ajouter une commission de parrainage en PIÈCES (2.5% du montant en pièces)
   static Future<void> _addSponsorCommission({

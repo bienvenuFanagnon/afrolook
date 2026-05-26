@@ -2178,49 +2178,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  Widget _buildPostWidget2(Post post, double width, double height,int index) {
-    return VisibilityDetector(
-      key: Key('post-${post.id}'),
-      onVisibilityChanged: (VisibilityInfo info) {
-        _handleVisibilityChanged(post, info);
-      },
-      child: Container(
-
-        child: Stack(
-          children: [
-            // Badge de disponibilité
-
-
-            // Contenu du post
-            post.type == PostType.PRONOSTIC.name
-                ? SizedBox.shrink()
-                : post.type == PostType.CHALLENGEPARTICIPATION.name
-                ? LookChallengePostWidget(post: post, height: height, width: width)
-                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
-                ? YouTubeVideoCard(
-              post: post,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
-                  ),
-                );
-              },
-            )
-                : HomePostUsersWidget(
-              index: index,
-              post: post,
-              color: _getRandomColor(),
-              height: height * 0.6,
-              width: width,
-              isDegrade: true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAvailabilityBadge(Post post) {
     String badgeText = '';
