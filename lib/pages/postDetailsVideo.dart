@@ -599,7 +599,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       final userId = authProvider.loginUserData.id!;
 
       // Vérifier si déjà liké
-      if (_currentPost.users_love_id!.contains(userId)) return;
+      // if (_currentPost.users_love_id!.contains(userId)) return;
 
       // 🔥 VÉRIFICATION DU SOLDE DE PIÈCES (2 pièces minimum)
       final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
@@ -634,79 +634,52 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         _currentPost.users_love_id!.add(userId);
       });
 
-      // Ajout des points
-      addPointsForAction(UserAction.like);
-      addPointsForOtherUserAction(_currentPost.user_id!, UserAction.autre);
+      if (!_currentPost.users_love_id!.contains(userId)){
+        // Ajout des points
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(_currentPost.user_id!, UserAction.autre);
 
-      // Gestion des notifications
-      final nowMicro = DateTime.now().microsecondsSinceEpoch;
-      final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
-      final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
+        // Gestion des notifications
+        final nowMicro = DateTime.now().microsecondsSinceEpoch;
+        final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
+        final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
 
-      if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
-        await authProvider.sendNotification(
-          userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
-          smallImage: authProvider.loginUserData.imageUrl!,
-          send_user_id: userId,
-          recever_user_id: _currentPost.user_id!,
-          message: "📢 @${authProvider.loginUserData.pseudo} a aimé votre vidéo et vous a offert 1 pièce !",
-          type_notif: NotificationType.POST.name,
-          post_id: _currentPost.id!,
-          post_type: PostDataType.VIDEO.name,
-          chat_id: '',
-        );
+        if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
+          await authProvider.sendNotification(
+            userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
+            smallImage: authProvider.loginUserData.imageUrl!,
+            send_user_id: userId,
+            recever_user_id: _currentPost.user_id!,
+            message: "📢 @${authProvider.loginUserData.pseudo} a aimé votre vidéo et vous a offert 1 pièce !",
+            type_notif: NotificationType.POST.name,
+            post_id: _currentPost.id!,
+            post_type: PostDataType.VIDEO.name,
+            chat_id: '',
+          );
 
-        await _firestore.collection('Users').doc(_currentPost.user_id).update({
-          'lastNotificationTime': nowMicro
-        });
+          await _firestore.collection('Users').doc(_currentPost.user_id).update({
+            'lastNotificationTime': nowMicro
+          });
+        }
       }
 
+
       // Feedback utilisateur
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //     content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
+      //     backgroundColor: Colors.green,
+      //     duration: Duration(seconds: 2),
+      //   ),
+      // );
     } catch (e) {
       print("❌ Erreur like: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-  Future<void> _handleLike3() async {
-    final userId = authProvider.loginUserData.id!;
-    if (_currentPost.users_love_id!.contains(userId)) return;
-    await _firestore.collection('Posts').doc(_currentPost.id).update({
-      'loves': FieldValue.increment(1),
-      'users_love_id': FieldValue.arrayUnion([userId]),
-    });
-    setState(() {
-      _currentPost.loves = (_currentPost.loves ?? 0) + 1;
-      _currentPost.users_love_id!.add(userId);
-    });
-    addPointsForAction(UserAction.like);
-    final nowMicro = DateTime.now().microsecondsSinceEpoch;
-    final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
-    final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
-    if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
-      await authProvider.sendNotification(
-        userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: userId,
-        recever_user_id: _currentPost.user_id!,
-        message: "📢 @${authProvider.loginUserData.pseudo} a aimé votre vidéo",
-        type_notif: NotificationType.POST.name,
-        post_id: _currentPost.id!,
-        post_type: PostDataType.VIDEO.name,
-        chat_id: '',
-      );
-      await _firestore.collection('Users').doc(_currentPost.user_id).update({'lastNotificationTime': nowMicro});
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Erreur: $e'),
+      //     backgroundColor: Colors.red,
+      //   ),
+      // );
     }
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -1296,7 +1269,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     final isLiked = _currentPost.users_love_id?.contains(authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent();
     return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 28), onPressed: hasAccess ? _handleLike : null),
+      IconButton(icon: Icon( Icons.favorite_border, color: _afroRed, size: 28), onPressed: hasAccess ? _handleLike : null),
+      // IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 28), onPressed: hasAccess ? _handleLike : null),
       IconButton(icon: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28), onPressed: hasAccess ? _showCommentsModal : null),
       IconButton(icon: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: _isFavorite ? _afroYellow : Colors.white, size: 28), onPressed: hasAccess ? _toggleFavorite : null),
       IconButton(icon: Icon(Icons.card_giftcard, color: _afroYellow, size: 28), onPressed: () {

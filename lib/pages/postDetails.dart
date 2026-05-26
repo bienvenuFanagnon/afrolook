@@ -2988,11 +2988,11 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         widget.post.users_love_id = [];
       }
 
-      // Vérifier si l'utilisateur a déjà liké
-      if (usersLoveId != null && usersLoveId.contains(userId)) {
-        print("❌ Like: déjà liké");
-        return;
-      }
+      // // Vérifier si l'utilisateur a déjà liké
+      // if (usersLoveId != null && usersLoveId.contains(userId)) {
+      //   print("❌ Like: déjà liké");
+      //   return;
+      // }
 
       // 🔥 VÉRIFICATION DU SOLDE DE PIÈCES (2 pièces minimum)
       final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
@@ -3023,106 +3023,111 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
         widget.post.users_love_id!.add(userId);
       });
 
-      // Mise à jour Firestore (déjà faite dans sendLikeWithCoins, mais on garde pour la popularité)
-      await firestore.collection('Posts').doc(postId).update({
-        'popularity': FieldValue.increment(3),
-      });
 
-      FeedInteractionService.onPostLoved(widget.post, userId);
+      if (!usersLoveId!.contains(userId)) {
+        // Mise à jour Firestore (déjà faite dans sendLikeWithCoins, mais on garde pour la popularité)
+        await firestore.collection('Posts').doc(postId).update({
+          'popularity': FieldValue.increment(3),
+        });
+        FeedInteractionService.onPostLoved(widget.post, userId);
 
-      final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
-      final targetUser = widget.post.user;
+        final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
+        final targetUser = widget.post.user;
 
-      // Récupérer le propriétaire du post
-      final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
-      if (userDoc.exists) {
-        final userData = userDoc.data();
-        final lastNotificationTime = (userData?['lastNotificationTime'] ?? 0) as int;
-        const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
-        final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
+        // Récupérer le propriétaire du post
+        final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final lastNotificationTime = (userData?['lastNotificationTime'] ?? 0) as int;
+          const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
+          final timeSinceLastNotification = currentTimeMicroseconds - lastNotificationTime;
 
-        if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
-          // Création notification
-          final notificationId = firestore.collection('Notifications').doc().id;
-          final notification = NotificationData(
-            id: notificationId,
-            titre: "Like ❤️ + 1 pièce",
-            media_url: authProvider.loginUserData.imageUrl ?? '',
-            type: NotificationType.POST.name,
-            description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
-            users_id_view: [],
-            user_id: userId,
-            receiver_id: widget.post.user_id!,
-            post_id: postId,
-            post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
-            updatedAt: currentTimeMicroseconds,
-            createdAt: currentTimeMicroseconds,
-            status: PostStatus.VALIDE.name,
-          );
-          await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
-
-          // Push notification
-          if (targetUser != null && targetUser.oneIgnalUserid != null && targetUser.oneIgnalUserid!.isNotEmpty) {
-            await authProvider.sendNotification(
-              userIds: [targetUser.oneIgnalUserid!],
-              smallImage: authProvider.loginUserData.imageUrl ?? '',
-              send_user_id: userId,
-              recever_user_id: widget.post.user_id!,
-              message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
-              type_notif: NotificationType.POST.name,
+          if (timeSinceLastNotification >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
+            // Création notification
+            final notificationId = firestore.collection('Notifications').doc().id;
+            final notification = NotificationData(
+              id: notificationId,
+              titre: "Like ❤️ + 1 pièce",
+              media_url: authProvider.loginUserData.imageUrl ?? '',
+              type: NotificationType.POST.name,
+              description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
+              users_id_view: [],
+              user_id: userId,
+              receiver_id: widget.post.user_id!,
               post_id: postId,
-              post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
-              chat_id: '',
+              post_data_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+              updatedAt: currentTimeMicroseconds,
+              createdAt: currentTimeMicroseconds,
+              status: PostStatus.VALIDE.name,
             );
-          }
+            await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
 
-          // Mise à jour du timestamp
-          await firestore.collection('Users').doc(widget.post.user_id!).update({
-            'lastNotificationTime': currentTimeMicroseconds
-          });
-        } else {
-          final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
-          print("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
+            // Push notification
+            if (targetUser != null && targetUser.oneIgnalUserid != null && targetUser.oneIgnalUserid!.isNotEmpty) {
+              await authProvider.sendNotification(
+                userIds: [targetUser.oneIgnalUserid!],
+                smallImage: authProvider.loginUserData.imageUrl ?? '',
+                send_user_id: userId,
+                recever_user_id: widget.post.user_id!,
+                message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
+                type_notif: NotificationType.POST.name,
+                post_id: postId,
+                post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
+                chat_id: '',
+              );
+            }
+
+            // Mise à jour du timestamp
+            await firestore.collection('Users').doc(widget.post.user_id!).update({
+              'lastNotificationTime': currentTimeMicroseconds
+            });
+          } else {
+            final minutesPassed = (timeSinceLastNotification / (60 * 1000 * 1000)).toStringAsFixed(1);
+            print("⏱️ Notification limitée pour @${targetUser?.pseudo ?? 'inconnu'} - Dernière notification il y a $minutesPassed minutes");
+          }
         }
+
+        // Incrémenter les interactions totales
+        await authProvider.incrementPostTotalInteractions(postId: postId);
+
+        // Notifier les abonnés
+        await authProvider.notifySubscribersOfInteraction(
+          actionUserId: userId,
+          postOwnerId: widget.post.user_id!,
+          postId: postId,
+          actionType: 'like',
+          postDescription: widget.post.description,
+          postImageUrl: widget.post.images?.first,
+          postDataType: widget.post.dataType,
+        );
+
+        // Ajout des points
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+
       }
 
-      // Incrémenter les interactions totales
-      await authProvider.incrementPostTotalInteractions(postId: postId);
 
-      // Notifier les abonnés
-      await authProvider.notifySubscribersOfInteraction(
-        actionUserId: userId,
-        postOwnerId: widget.post.user_id!,
-        postId: postId,
-        actionType: 'like',
-        postDescription: widget.post.description,
-        postImageUrl: widget.post.images?.first,
-        postDataType: widget.post.dataType,
-      );
-
-      // Ajout des points
-      addPointsForAction(UserAction.like);
-      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
       _animationController.forward().then((_) {
         _animationController.reverse();
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //     content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
+      //     backgroundColor: Colors.green,
+      //     duration: Duration(seconds: 2),
+      //   ),
+      // );
     } catch (e) {
-      print("❌ Erreur like: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // print("❌ Erreur like: $e");
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Erreur: $e'),
+      //     backgroundColor: Colors.red,
+      //   ),
+      // );
     }
   }
   void _showInsufficientCoinsForLikeDialog() {
@@ -5470,16 +5475,22 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             scale: _scaleAnimation,
             child: IconButton(
               icon: Icon(
-                isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                color: !hasAccess
-                    ? _twitterTextSecondary.withOpacity(0.3)
-                    : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
-                        ? Colors.red
-                        : Colors.white),
+                Icons.favorite_border,
+                color: Colors.red,
                 size: 30,
               ),
+
+              // icon: Icon(
+              //   isIn(post.users_love_id!, authProvider.loginUserData.id!)
+              //       ? Icons.favorite
+              //       : Icons.favorite_border,
+              //   color: !hasAccess
+              //       ? _twitterTextSecondary.withOpacity(0.3)
+              //       : (isIn(post.users_love_id!, authProvider.loginUserData.id!)
+              //           ? Colors.red
+              //           : Colors.white),
+              //   size: 30,
+              // ),
               onPressed: hasAccess ? _handleLike : null,
             ),
           ),

@@ -2546,7 +2546,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
           // Like
           _buildActionButton(
-            icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+            // icon: isLiked ? FontAwesome.heart : FontAwesome.heart_o,
+            icon:  FontAwesome.heart_o,
             count: widget.post.loves ?? 0,
             color: isLiked ? _afroRed : _afroTextSecondary,
             onPressed: hasAccess ? () {
@@ -2936,9 +2937,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Future<void> _handleLike() async {
     try {
       // Vérifier si l'utilisateur a déjà liké
-      if (isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
-        return;
-      }
+      // if (isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+      //   return;
+      // }
 
       // 🔥 Vérifier d'abord si l'utilisateur a assez de pièces pour le like
       final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
@@ -2969,31 +2970,35 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         widget.post.users_love_id!.add(authProvider.loginUserData.id!);
       });
 
-      // Ajouter des points pour l'action (système existant)
-      addPointsForAction(UserAction.like);
-      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
+      if (!isIn(widget.post.users_love_id!, authProvider.loginUserData.id!)) {
+        // Ajouter des points pour l'action (système existant)
+        addPointsForAction(UserAction.like);
+        addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
 
-      // Envoyer les notifications (comme avant)
-      await _sendLikeNotifications();
+        // Envoyer les notifications (comme avant)
+        await _sendLikeNotifications();
 
-      // 🔥 APPEL DU CALLBACK LOVE
-      widget.onLoved?.call();
+        // 🔥 APPEL DU CALLBACK LOVE
+        widget.onLoved?.call();
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Like envoyé ! Le créateur a reçu 1 pièce.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+
+      //
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //     content: Text('❤️ Like envoyé ! Le créateur a reçu 1 pièce.'),
+      //     backgroundColor: Colors.green,
+      //     duration: Duration(seconds: 2),
+      //   ),
+      // );
     } catch (e) {
       print("Erreur like: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Erreur: $e'),
+      //     backgroundColor: Colors.red,
+      //   ),
+      // );
     }
   }
 

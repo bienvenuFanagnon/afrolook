@@ -559,8 +559,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final isLiked = post.users_love_id?.contains(userId) ?? false;
-    if (isLiked) return;
+    // final isLiked = post.users_love_id?.contains(userId) ?? false;
+    // if (isLiked) return;
 
     // 🔥 VÉRIFICATION DU SOLDE DE PIÈCES (2 pièces minimum)
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
@@ -591,29 +591,33 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         post.users_love_id = [...?post.users_love_id, userId];
       });
 
-      // Interactions supplémentaires (si nécessaire)
-      postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
-      authProvider.incrementPostTotalInteractions(postId: post.id!);
+      final isLiked = post.users_love_id?.contains(userId) ?? false;
+      if (!isLiked) {
+        // Interactions supplémentaires (si nécessaire)
+        postProvider.interactWithPostAndIncrementSolde(post.id!, userId, "like", post.user_id!);
+        authProvider.incrementPostTotalInteractions(postId: post.id!);
 
-      // Envoi de la notification
-      _sendLikeNotification(post);
+        // Envoi de la notification
+        _sendLikeNotification(post);
+      }
+
 
       // Feedback utilisateur
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //     content: Text('❤️ Like envoyé ! 1 pièce offerte au créateur.'),
+      //     backgroundColor: Colors.green,
+      //     duration: Duration(seconds: 2),
+      //   ),
+      // );
     } catch (e) {
-      print('Erreur like: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // print('Erreur like: $e');
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Erreur: $e'),
+      //     backgroundColor: Colors.red,
+      //   ),
+      // );
     }
   }
 
@@ -1183,7 +1187,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
           const SizedBox(height: 20),
           if (_isLookChallenge) Column(children: [IconButton(icon: Icon(_hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined, color: _hasVoted ? _afroGreen : Colors.white, size: 35), onPressed: _voteForLook), Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white))]),
-          Column(children: [IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
+          Column(children: [IconButton(icon: Icon( Icons.favorite_border, color: _afroRed, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
+          // Column(children: [IconButton(icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? _afroRed : Colors.white, size: 30), onPressed: () => _handleLike(post)), Text('${post.loves ?? 0}', style: const TextStyle(color: Colors.white))]),
           Column(children: [IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 33), onPressed: () => _showCommentsModal(post)), Text('${post.comments ?? 0}', style: const TextStyle(color: Colors.white))]),
           if (post.type != PostType.CHALLENGEPARTICIPATION.name) Column(children: [IconButton(icon: const Icon(Icons.card_giftcard, color: _afroYellow, size: 30), onPressed: () => _showGiftDialog(post)), Text('${post.totalGiftCoinsSentOnThisPost ?? 0}', style: const TextStyle(color: Colors.white))]),
           // Column(children: [IconButton(icon: const Icon(Icons.remove_red_eye, color: Colors.white, size: 35), onPressed: () {}), Text('${post.vues ?? 0}', style: const TextStyle(color: Colors.white))]),

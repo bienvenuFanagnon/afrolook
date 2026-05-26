@@ -193,29 +193,29 @@ class CoinGiftService {
         'totalCoinsFromLikes': FieldValue.increment(creatorCoins),
       });
 
-      // 5. Transaction pour l'utilisateur (dépense)
-      final userTransaction = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = senderId
-        ..type = TypeTransaction.LIKE_PIECES.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = "Like sur le post de @${post.user?.pseudo ?? 'créateur'} (2 pièces)"
-        ..montant = coinsToDebit.toDouble()
-        ..methode_paiement = "pieces"
-        ..createdAt = DateTime.now().millisecondsSinceEpoch;
-      tx.set(firestore.collection('TransactionSoldes').doc(userTransaction.id), userTransaction.toJson());
-
-      // 6. Transaction pour le créateur (gain)
-      final creatorTransaction = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = receiverId
-        ..type = TypeTransaction.GAIN_PIECES.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = "1 pièce reçue pour le like de @${authProvider.loginUserData.pseudo}"
-        ..montant = creatorCoins.toDouble()
-        ..methode_paiement = "like"
-        ..createdAt = DateTime.now().millisecondsSinceEpoch;
-      tx.set(firestore.collection('TransactionSoldes').doc(creatorTransaction.id), creatorTransaction.toJson());
+      // // 5. Transaction pour l'utilisateur (dépense)
+      // final userTransaction = TransactionSolde()
+      //   ..id = firestore.collection('TransactionSoldes').doc().id
+      //   ..user_id = senderId
+      //   ..type = TypeTransaction.LIKE_PIECES.name
+      //   ..statut = StatutTransaction.VALIDER.name
+      //   ..description = "Like sur le post de @${post.user?.pseudo ?? 'créateur'} (2 pièces)"
+      //   ..montant = coinsToDebit.toDouble()
+      //   ..methode_paiement = "pieces"
+      //   ..createdAt = DateTime.now().millisecondsSinceEpoch;
+      // tx.set(firestore.collection('TransactionSoldes').doc(userTransaction.id), userTransaction.toJson());
+      //
+      // // 6. Transaction pour le créateur (gain)
+      // final creatorTransaction = TransactionSolde()
+      //   ..id = firestore.collection('TransactionSoldes').doc().id
+      //   ..user_id = receiverId
+      //   ..type = TypeTransaction.GAIN_PIECES.name
+      //   ..statut = StatutTransaction.VALIDER.name
+      //   ..description = "1 pièce reçue pour le like de @${authProvider.loginUserData.pseudo}"
+      //   ..montant = creatorCoins.toDouble()
+      //   ..methode_paiement = "like"
+      //   ..createdAt = DateTime.now().millisecondsSinceEpoch;
+      // tx.set(firestore.collection('TransactionSoldes').doc(creatorTransaction.id), creatorTransaction.toJson());
 
       // 🔥 Retourner true pour indiquer le succès
       return true;
