@@ -550,7 +550,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu> with Single
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
+          childAspectRatio: 0.71,
         ),
         itemCount: videos.length,
         itemBuilder: (context, index) {

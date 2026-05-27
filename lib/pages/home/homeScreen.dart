@@ -135,16 +135,6 @@ class _MyHomePageState extends State<MyHomePage>
   int _unreadNotificationsCount = 0;
 
   // Liste des onglets avec texte et icônes
-  final List<Tab> _tabs = [
-    Tab(text: 'Accueil'),
-    Tab(text: 'Vidéos'),
-    Tab(text: 'Looks'),
-    // Tab(text: 'TikTok'),
-    Tab(text: 'Actualités'),
-    Tab(text: 'Actualités'),
-    Tab(text: 'Sports'),
-    // Tab(text: 'Offres'),
-  ];
   DocumentSnapshot? lastDocument;
   bool isLoading = false;
   void _changeColor() {
@@ -1251,6 +1241,17 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
+      if (_tabController!.index == 3) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                DashboardContentScreen(),
+          ),
+        ).then((_) {
+          _tabController!.animateTo(0);
+        });
+      }
     });
 
 
@@ -1649,8 +1650,7 @@ class _MyHomePageState extends State<MyHomePage>
           // HomeConstPostTypePage(type: TabBarType.SPORT.name),
           // HomeSportPostPage(type: TabBarType.SPORT.name),
           HomeConstPostTypePage(type: TabBarType.EVENEMENT.name,sortType: 'recent',),
-
-          DashboardContentScreen(),
+          SizedBox.shrink(), // Widget invisible pour l'onglet Sport
           ChallengesListPage(),
           ChroniqueHomePage(),
           LooksPage(type: TabBarType.LOOKS.name,sortType: 'popular',),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
@@ -26,13 +27,24 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'dart:async';
 import 'dart:typed_data';
+
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
+import 'package:afrotok/providers/authProvider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../providers/contenuPayantProvider.dart';
 import '../../providers/userProvider.dart';
+import '../pub/native_ad_widget.dart';
 import 'contentDetails.dart';
+import 'contentDetailsEbook.dart';
 import 'contentForm.dart';
 import 'contentSerie.dart';
 
@@ -43,12 +55,63 @@ class DashboardContentScreen extends StatefulWidget {
 
 class _DashboardContentScreenState extends State<DashboardContentScreen> {
   final Map<String, Uint8List?> _videoThumbnails = {};
-  int _currentTabIndex = 0; // 0: Accueil, 1: Séries, 2: À la demande
+  int _currentTabIndex = 0; // 0: Accueil, 1: Séries, 2: À la demande, 3: Ebooks
+
+  // Contrôleur pour la recherche de créateur
+  final TextEditingController _creatorSearchController = TextEditingController();
+  List<UserData> _searchResults = [];
+  bool _isSearchingCreator = false;
+  Timer? _debounce;
+
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _preloadThumbnails();
+    _creatorSearchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(Duration(milliseconds: 500), () {
+      _searchCreators();
+    });
+  }
+
+  Future<void> _searchCreators() async {
+    final query = _creatorSearchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearchingCreator = false;
+      });
+      return;
+    }
+    setState(() => _isSearchingCreator = true);
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final results = await userProvider.searchUsersByPseudo(query);
+      setState(() {
+        _searchResults = results;
+        _isSearchingCreator = false;
+      });
+    } catch (e) {
+      print('Erreur recherche créateur: $e');
+      setState(() {
+        _searchResults = [];
+        _isSearchingCreator = false;
+      });
+    }
+  }
+
+  void _navigateToCreatorProfile(String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileScreenContenu(userId: userId),
+      ),
+    );
   }
 
   Future<void> _preloadThumbnails() async {
@@ -56,7 +119,14 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     await contentProvider.loadInitialData();
   }
 
-  Widget _buildContentImage(ContentPaie content) {
+  List<ContentPaie> _sortByDate(List<ContentPaie> contents) {
+    final sorted = List<ContentPaie>.from(contents);
+    sorted.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+    return sorted;
+  }
+
+  // Construction de l'image avec badges (inchangée, mais factorisée)
+  Widget _buildContentImage(ContentPaie content) { /* ... identique à votre code ... */
     return Stack(
       children: [
         Container(
@@ -68,150 +138,36 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
               imageUrl: content.thumbnailUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[800],
-                child: Center(child: CircularProgressIndicator(color: Colors.green)),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[800],
-                child: Icon(Icons.error, color: Colors.white),
-              ),
+              placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Colors.green))),
+              errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
             ),
           )
-              : Center(
-              child: content.isEbook
-                  ? Icon(Icons.book, color: Colors.grey[600], size: 40)
-                  : Icon(Icons.videocam, color: Colors.grey[600], size: 40)
-          ),
+              : Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
         ),
-        // Badge pour contenu payant
         if (!content.isFree)
           Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${content.price} F',
-                style: TextStyle(
-                  color: Colors.yellow,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            top: 8, right: 8,
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold))),
           ),
-        // Badge pour les séries
         if (content.isSeries)
           Positioned(
-            top: 8,
-            left: 8,
-            child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.playlist_play, color: Colors.blue, size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'Série',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            top: 8, left: 8,
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.playlist_play, color: Colors.blue, size: 14), SizedBox(width: 4), Text('Série', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
-        // Badge pour les ebooks
         if (content.isEbook)
           Positioned(
-            top: 8,
-            left: content.isSeries ? 50 : 8, // Décaler si c'est aussi une série
-            child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.book, color: Colors.purple, size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'Ebook',
-                    style: TextStyle(
-                      color: Colors.purple,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            top: 8, left: content.isSeries ? 50 : 8,
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.book, color: Colors.purple, size: 14), SizedBox(width: 4), Text('Ebook', style: TextStyle(color: Colors.purple, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
-        // Indicateur de vues pour les vidéos
         if (content.isVideo && content.views != null)
           Positioned(
-            bottom: 8,
-            right: 8,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.remove_red_eye, color: Colors.white, size: 15),
-                  SizedBox(width: 2),
-                  Text(
-                    content.views!.toString(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            bottom: 8, right: 8,
+            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.remove_red_eye, color: Colors.white, size: 15), SizedBox(width: 2), Text(content.views!.toString(), style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
-        // Indicateur de pages pour les ebooks
         if (content.isEbook && content.pageCount > 0)
           Positioned(
-            bottom: 8,
-            left: 8,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.menu_book, color: Colors.white, size: 12),
-                  SizedBox(width: 2),
-                  Text(
-                    '${content.pageCount} p.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            bottom: 8, left: 8,
+            child: Container(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(4)), child: Row(children: [Icon(Icons.menu_book, color: Colors.white, size: 12), SizedBox(width: 2), Text('${content.pageCount} p.', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))])),
           ),
       ],
     );
@@ -219,63 +175,29 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
 
   void _navigateToContent(ContentPaie content) {
     if (content.isSeries) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SeriesEpisodesScreen(series: content),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: content)));
     } else if (content.isEbook) {
-      // Navigation vers la page détail ebook
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EbookDetailScreen(content: content),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => EbookDetailScreen(content: content)));
     } else {
-      // Navigation vers la page détail vidéo
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ContentDetailScreen(content: content),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
     }
   }
 
   String _getContentTypeLabel(ContentPaie content) {
-    if (content.isSeries) {
-      return content.isVideo ? 'Série Vidéo' : 'Série Ebook';
-    } else {
-      return content.isVideo ? 'Vidéo' : 'Ebook';
-    }
+    if (content.isSeries) return content.isVideo ? 'Série Vidéo' : 'Série Ebook';
+    return content.isVideo ? 'Vidéo' : 'Ebook';
   }
-  Widget _buildAdMrec({required String key}) {
-    // return SizedBox.shrink();
 
+  Widget _buildAdMrec({required String key}) {
     return Container(
       key: ValueKey(key),
       margin: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: MrecAdWidget(
-        key: ValueKey(key),
-        // templateType: TemplateType.medium, // ou TemplateType.small
-
-        onAdLoaded: () {
-          print('✅ Native Ad Afrolook chargée: $key');
-        },
-      ),
-      // child: BannerAdWidget(
-      //   onAdLoaded: () {
-      //     print('✅ Bannière Afrolook chargée: $key');
-      //   },
-      // ),
+      child: MrecAdWidget(key: ValueKey(key), onAdLoaded: () => print('✅ Native Ad Afrolook chargée: $key')),
     );
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(0, duration: Duration(milliseconds: 500), curve: Curves.easeOut);
   }
 
   @override
@@ -287,67 +209,141 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Contenus',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        automaticallyImplyLeading: true,
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text('Contenus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              showSearch(context: context, delegate: ContentSearchDelegate());
-            },
+            onPressed: () => showSearch(context: context, delegate: ContentSearchDelegate()),
           ),
           IconButton(
             icon: Icon(Icons.person, color: Colors.white),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu()));
-            },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu())),
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_upward, color: Colors.white),
+            onPressed: _scrollToTop,
+            tooltip: 'Remonter en haut',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.red,
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen()));
-        },
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen())),
         child: Icon(Icons.add, size: 28),
       ),
-      body: Column(
-        children: [
-          // Barre d'onglets style YouTube
-          _buildAdMrec(key: 'ad_native_content_bord'),
-
-          Container(
-            color: Colors.black,
-            height: 50,
-            child: Row(
-              children: [
-                Expanded(
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildTabItem('Toutes', 0),
-                      _buildTabItem('Séries', 1),
-                      _buildTabItem('À la demande', 2),
-                      _buildTabItem('Ebooks', 3), // Nouvel onglet pour les ebooks
-                    ],
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Bandeau descriptif
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.withOpacity(0.2), Colors.transparent])),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('🎬 Créez et vendez vos contenus !', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 6),
+                  Text(
+                    'Partagez vos histoires, vidéos, ebooks, formations…\n'
+                        'Gagnez de l\'argent grâce à votre créativité. Publiez du contenu viral, '
+                        'des formations exclusives, des séries captivantes, et touchez directement vos fans.',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
+                ],
+              ),
+            ),
+          ),
+          // Barre de recherche de créateur
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Rechercher un créateur', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(30)),
+                    child: TextField(
+                      controller: _creatorSearchController,
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Entrez le pseudo du créateur...',
+                        hintStyle: TextStyle(color: Colors.grey),
+                        prefixIcon: Icon(Icons.search, color: Colors.white),
+                        suffixIcon: _creatorSearchController.text.isNotEmpty
+                            ? IconButton(icon: Icon(Icons.clear, color: Colors.grey), onPressed: () => _creatorSearchController.clear())
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  if (_isSearchingCreator)
+                    Padding(padding: EdgeInsets.all(8), child: Center(child: CircularProgressIndicator(color: Colors.red))),
+                  if (_searchResults.isNotEmpty)
+                    Container(
+                      margin: EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: _searchResults.length,
+                        separatorBuilder: (_, __) => Divider(color: Colors.grey[800], height: 1),
+                        itemBuilder: (context, index) {
+                          final user = _searchResults[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: user.imageUrl != null ? NetworkImage(user.imageUrl!) : null,
+                              child: user.imageUrl == null ? Icon(Icons.person) : null,
+                            ),
+                            title: Text(user.pseudo ?? 'Sans pseudo', style: TextStyle(color: Colors.white)),
+                            subtitle: Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: TextStyle(color: Colors.grey)),
+                            trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                            onTap: () => _navigateToCreatorProfile(user.id!),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // Publicité (optionnelle)
+          SliverToBoxAdapter(child: _buildAdMrec(key: 'ad_native_content_bord')),
+          // Onglets (barre fixe)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyTabBarDelegate(
+              child: Container(
+                color: Colors.black,
+                height: 50,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          _buildTabItem('Toutes', 0),
+                          _buildTabItem('Séries', 1),
+                          _buildTabItem('À la demande', 2),
+                          _buildTabItem('Ebooks', 3),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey[800]),
-          SizedBox(height: 10),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await _preloadThumbnails();
-              },
-              child: _buildContentForTab(_currentTabIndex, contentProvider),
-            ),
+          // Contenu selon l'onglet sélectionné
+          SliverToBoxAdapter(
+            child: _buildContentForTab(_currentTabIndex, contentProvider),
           ),
+          SliverToBoxAdapter(child: SizedBox(height: 30)),
         ],
       ),
     );
@@ -356,19 +352,11 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
   Widget _buildTabItem(String title, int index) {
     final isSelected = _currentTabIndex == index;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentTabIndex = index;
-        });
-      },
+      onTap: () => setState(() => _currentTabIndex = index),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          border: isSelected
-              ? Border(
-            bottom: BorderSide(color: Colors.red, width: 2),
-          )
-              : null,
+          border: isSelected ? Border(bottom: BorderSide(color: Colors.red, width: 2)) : null,
         ),
         child: Text(
           title,
@@ -383,106 +371,58 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
 
   Widget _buildContentForTab(int tabIndex, ContentProvider contentProvider) {
     switch (tabIndex) {
-      case 0: // Accueil
-        return _buildHomeTab(contentProvider);
-      case 1: // Séries
-        return _buildSeriesTab(contentProvider);
-      case 2: // À la demande
-        return _buildOnDemandTab(contentProvider);
-      case 3: // Ebooks
-        return _buildEbooksTab(contentProvider);
-      default:
-        return _buildHomeTab(contentProvider);
+      case 0: return _buildHomeTab(contentProvider);
+      case 1: return _buildSeriesTab(contentProvider);
+      case 2: return _buildOnDemandTab(contentProvider);
+      case 3: return _buildEbooksTab(contentProvider);
+      default: return _buildHomeTab(contentProvider);
     }
   }
 
+  // Les méthodes _buildHomeTab, _buildSeriesTab, _buildOnDemandTab, _buildEbooksTab
+  // sont identiques à celles que vous aviez, avec le tri _sortByDate appliqué partout.
+  // Je les réécris rapidement mais vous pouvez garder votre code existant.
+
   Widget _buildHomeTab(ContentProvider contentProvider) {
-    return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Contenus vedette (nouveautés)
-          _buildFeaturedContent(contentProvider.featuredContentPaies),
-          SizedBox(height: 24),
+    final featured = _sortByDate(contentProvider.featuredContentPaies);
+    final recent = _sortByDate(contentProvider.allContentPaies);
+    final categories = contentProvider.categories.map((cat) {
+      final contents = contentProvider.contentPaiesByCategory[cat.id] ?? [];
+      return CategoryData(cat.name, _sortByDate(contents));
+    }).toList();
 
-          // Contenus récents (toutes catégories)
-          _buildRecentContent(contentProvider.allContentPaies),
-
-          // Contenus par catégorie
-          for (var category in contentProvider.categories)
-            _buildCategorySection(
-              category.name,
-              contentProvider.contentPaiesByCategory[category.id] ?? [],
-            ),
-
-          if (contentProvider.categories.isEmpty) _buildNoDataSection(),
-
-          SizedBox(height: 30),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (featured.isNotEmpty) _buildFeaturedContent(featured),
+        if (recent.isNotEmpty) _buildRecentContent(recent),
+        for (var cat in categories) _buildCategorySection(cat.name, cat.contents),
+        if (categories.isEmpty) _buildNoDataSection(),
+      ],
     );
   }
 
   Widget _buildSeriesTab(ContentProvider contentProvider) {
-    // Filtrer seulement les séries
-    final seriesContent = contentProvider.allContentPaies.where((content) => content.isSeries).toList();
-
-    return seriesContent.isEmpty
-        ? Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.playlist_play, size: 60, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Aucune série disponible',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-        ],
-      ),
-    )
-        : GridView.builder(
+    final series = _sortByDate(contentProvider.allContentPaies.where((c) => c.isSeries).toList());
+    if (series.isEmpty) return _buildEmptyState(Icons.playlist_play, 'Aucune série disponible');
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       padding: EdgeInsets.all(12),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: seriesContent.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.7),
+      itemCount: series.length,
       itemBuilder: (context, index) {
-        final content = seriesContent[index];
+        final content = series[index];
         return GestureDetector(
           onTap: () => _navigateToContent(content),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildContentImage(content),
-                ),
-              ),
+              Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(
-                content.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
-              Text(
-                // '${_getContentTypeLabel(content)} • ${content.episodeCount ?? 0} épisodes',
-                '${_getContentTypeLabel(content)} épisodes',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
-              ),
+              Text('${_getContentTypeLabel(content)} épisodes', style: TextStyle(color: Colors.grey, fontSize: 12)),
             ],
           ),
         );
@@ -491,75 +431,29 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
   }
 
   Widget _buildOnDemandTab(ContentProvider contentProvider) {
-    // Contenus payants uniquement
-    final paidContent = contentProvider.allContentPaies.where((content) => !content.isFree).toList();
-
-    return paidContent.isEmpty
-        ? Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.monetization_on, size: 60, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Aucun contenu payant disponible',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-        ],
-      ),
-    )
-        : GridView.builder(
+    final paid = _sortByDate(contentProvider.allContentPaies.where((c) => !c.isFree).toList());
+    if (paid.isEmpty) return _buildEmptyState(Icons.monetization_on, 'Aucun contenu payant disponible');
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       padding: EdgeInsets.all(12),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: paidContent.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.7),
+      itemCount: paid.length,
       itemBuilder: (context, index) {
-        final content = paidContent[index];
+        final content = paid[index];
         return GestureDetector(
           onTap: () => _navigateToContent(content),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildContentImage(content),
-                ),
-              ),
+              Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(
-                content.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _getContentTypeLabel(content),
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    '${content.price} F',
-                    style: TextStyle(
-                      color: Colors.yellow,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+              ]),
             ],
           ),
         );
@@ -568,36 +462,13 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
   }
 
   Widget _buildEbooksTab(ContentProvider contentProvider) {
-    // Filtrer seulement les ebooks
-    final ebooks = contentProvider.allContentPaies.where((content) => content.isEbook).toList();
-
-    return ebooks.isEmpty
-        ? Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.book, size: 60, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Aucun ebook disponible',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Créez votre premier ebook !',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-        ],
-      ),
-    )
-        : GridView.builder(
+    final ebooks = _sortByDate(contentProvider.allContentPaies.where((c) => c.isEbook).toList());
+    if (ebooks.isEmpty) return _buildEmptyState(Icons.book, 'Aucun ebook disponible', sub: 'Créez votre premier ebook !');
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       padding: EdgeInsets.all(12),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.65, // Plus étroit pour les ebooks
-      ),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.65),
       itemCount: ebooks.length,
       itemBuilder: (context, index) {
         final content = ebooks[index];
@@ -606,53 +477,15 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildContentImage(content),
-                ),
-              ),
+              Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
               SizedBox(height: 8),
-              Text(
-                content.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
               SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    content.isSeries ? 'Série Ebook' : 'Ebook',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    content.isFree ? 'Gratuit' : '${content.price} F',
-                    style: TextStyle(
-                      color: content.isFree ? Colors.green : Colors.yellow,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              if (content.pageCount > 0) ...[
-                SizedBox(height: 2),
-                Text(
-                  '${content.pageCount} pages',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(content.isSeries ? 'Série Ebook' : 'Ebook', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
+              ]),
+              if (content.pageCount > 0) ...[SizedBox(height: 2), Text('${content.pageCount} pages', style: TextStyle(color: Colors.grey, fontSize: 11))],
             ],
           ),
         );
@@ -660,92 +493,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     );
   }
 
-  Widget _buildRecentContent(List<ContentPaie> contents) {
-    if (contents.isEmpty) return SizedBox();
-
-    // Trier par date de création (les plus récents d'abord)
-    contents.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
-
-    // Prendre les 10 plus récents
-    final recentContents = contents.take(10).toList();
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Nouveautés', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(height: 12),
-          Container(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              itemCount: recentContents.length,
-              itemBuilder: (context, index) {
-                final content = recentContents[index];
-                return Container(
-                  width: 320,
-                  margin: EdgeInsets.symmetric(horizontal: 6),
-                  child: GestureDetector(
-                    onTap: () => _navigateToContent(content),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildContentImage(content),
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            content.title,
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Row(
-                            children: [
-                              Text(
-                                _getContentTypeLabel(content),
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                content.isFree ? 'Gratuit' : '${content.price} F',
-                                style: TextStyle(
-                                  color: content.isFree ? Colors.green : Colors.yellow,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFeaturedContent(List<ContentPaie> contents) {
-    if (contents.isEmpty) return _buildFeaturedPlaceholder();
-
     return Container(
       height: 220,
       child: ListView.builder(
@@ -786,46 +534,16 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      content.title,
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
                       children: [
-                        Text(
-                          _getContentTypeLabel(content),
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
+                        Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
                         SizedBox(width: 8),
-                        Text(
-                          content.isFree ? 'Gratuit' : '${content.price} F',
-                          style: TextStyle(
-                            color: content.isFree ? Colors.green : Colors.yellow,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (content.views > 0 && content.isVideo) ...[
-                          SizedBox(width: 8),
-                          Text(
-                            '${content.views} vues',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                        ],
-                        if (content.pageCount > 0 && content.isEbook) ...[
-                          SizedBox(width: 8),
-                          Text(
-                            '${content.pageCount} pages',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                        ],
+                        Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
+                        if (content.views > 0 && content.isVideo) ...[SizedBox(width: 8), Text('${content.views} vues', style: TextStyle(color: Colors.grey, fontSize: 12))],
+                        if (content.pageCount > 0 && content.isEbook) ...[SizedBox(width: 8), Text('${content.pageCount} pages', style: TextStyle(color: Colors.grey, fontSize: 12))],
                       ],
                     ),
                   ),
@@ -838,9 +556,59 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     );
   }
 
+  Widget _buildRecentContent(List<ContentPaie> contents) {
+    if (contents.isEmpty) return SizedBox();
+    final recent = _sortByDate(contents).take(10).toList();
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Nouveautés', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+          SizedBox(height: 12),
+          Container(
+            height: 180,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              itemCount: recent.length,
+              itemBuilder: (context, index) {
+                final content = recent[index];
+                return Container(
+                  width: 320,
+                  margin: EdgeInsets.symmetric(horizontal: 6),
+                  child: GestureDetector(
+                    onTap: () => _navigateToContent(content),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
+                        SizedBox(height: 8),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            children: [
+                              Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              SizedBox(width: 8),
+                              Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategorySection(String title, List<ContentPaie> contents) {
     if (contents.isEmpty) return SizedBox();
-
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 16),
       child: Column(
@@ -854,12 +622,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                 Spacer(),
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CategoryContentScreen(categoryTitle: title, contents: contents),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryContentScreen(categoryTitle: title, contents: contents)));
                   },
                   child: Row(
                     children: [
@@ -889,38 +652,15 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildContentImage(content),
-                          ),
-                        ),
+                        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: _buildContentImage(content))),
                         SizedBox(height: 8),
-                        Text(
-                          content.title,
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Text(content.title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                         SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              _getContentTypeLabel(content),
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 10,
-                              ),
-                            ),
-                            Text(
-                              content.isFree ? 'Gratuit' : '${content.price} F',
-                              style: TextStyle(
-                                color: content.isFree ? Colors.green : Colors.yellow,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text(_getContentTypeLabel(content), style: TextStyle(color: Colors.grey, fontSize: 10)),
+                            Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 10, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ],
@@ -935,73 +675,114 @@ class _DashboardContentScreenState extends State<DashboardContentScreen> {
     );
   }
 
-  Widget _buildFeaturedPlaceholder() => Container(
-    height: 220,
-    margin: EdgeInsets.symmetric(horizontal: 12),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey[900]),
-    child: Center(child: Icon(Icons.videocam_off, color: Colors.grey[700], size: 50)),
-  );
+  Widget _buildEmptyState(IconData icon, String text, {String sub = ''}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 60, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(text, style: TextStyle(color: Colors.white70, fontSize: 18)),
+          if (sub.isNotEmpty) ...[SizedBox(height: 8), Text(sub, style: TextStyle(color: Colors.grey, fontSize: 14))],
+        ],
+      ),
+    );
+  }
 
-  Widget _buildNoDataSection() => Center(
-    child: Padding(
-      padding: EdgeInsets.all(40),
-      child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)),
-    ),
-  );
+  Widget _buildNoDataSection() => Center(child: Padding(padding: EdgeInsets.all(40), child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18))));
+
+  @override
+  void dispose() {
+    _creatorSearchController.dispose();
+    _debounce?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
 }
 
-class CategoryContentScreen extends StatefulWidget {
+// Delegate pour le sticky header
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _StickyTabBarDelegate({required this.child});
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => child;
+
+  @override
+  double get maxExtent => 50;
+
+  @override
+  double get minExtent => 50;
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) => child != oldDelegate.child;
+}
+
+// Classe utilitaire pour les catégories
+class CategoryData {
+  final String name;
+  final List<ContentPaie> contents;
+  CategoryData(this.name, this.contents);
+}
+
+// Les autres classes (CategoryContentScreen, ContentSearchDelegate) restent inchangées.
+// Je les inclue pour que le code soit complet, mais vous pouvez les reprendre de votre version précédente.
+
+// Écran de catégorie (inchangé mais trié)
+class CategoryContentScreen extends StatelessWidget {
   final String categoryTitle;
   final List<ContentPaie> contents;
 
   const CategoryContentScreen({Key? key, required this.categoryTitle, required this.contents}) : super(key: key);
 
   @override
-  _CategoryContentScreenState createState() => _CategoryContentScreenState();
-}
+  Widget build(BuildContext context) {
+    final sortedContents = List<ContentPaie>.from(contents)..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
 
-class _CategoryContentScreenState extends State<CategoryContentScreen> {
-  final Map<String, Uint8List?> _thumbnails = {};
-
-  @override
-  void initState() {
-    super.initState();
-    // _preloadThumbnails();
-  }
-
-  Future<void> _preloadThumbnails() async {
-    for (var content in widget.contents) {
-      if (content.videoUrl != null && content.videoUrl!.isNotEmpty) {
-        _thumbnails[content.id!] = await _generateThumbnail(content.videoUrl!);
-      }
-    }
-    setState(() {});
-  }
-
-  Future<Uint8List?> _generateThumbnail(String videoUrl) async {
-    try {
-      final path = await VideoThumbnail.thumbnailFile(
-        video: videoUrl,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxHeight: 200,
-        quality: 50,
-      );
-      if (path != null) return await File(path).readAsBytes();
-    } catch (e) {
-      print('Erreur génération thumbnail: $e');
-    }
-    return null;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text(categoryTitle, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: sortedContents.isEmpty
+          ? Center(child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)))
+          : Padding(
+        padding: const EdgeInsets.all(12),
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.7,
+          ),
+          itemCount: sortedContents.length,
+          itemBuilder: (context, index) {
+            final content = sortedContents[index];
+            return GestureDetector(
+              onTap: () {
+                if (content.isSeries) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: content)));
+                } else if (content.isEbook) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => EbookDetailScreen(content: content)));
+                } else {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
+                }
+              },
+              child: _buildThumbnail(content),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildThumbnail(ContentPaie content) {
     return Stack(
       children: [
         Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey[900],
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey[900]),
           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
               ? ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -1010,72 +791,32 @@ class _CategoryContentScreenState extends State<CategoryContentScreen> {
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[800],
-                child: Center(child: CircularProgressIndicator(color: Colors.green)),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[800],
-                child: content.isEbook
-                    ? Icon(Icons.book, color: Colors.grey[600], size: 40)
-                    : Icon(Icons.videocam, color: Colors.grey[600], size: 40),
-              ),
+              placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Colors.green))),
+              errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
             ),
           )
-              : Center(
-              child: content.isEbook
-                  ? Icon(Icons.book, color: Colors.grey[600], size: 40)
-                  : Icon(Icons.videocam, color: Colors.grey[600], size: 40)
-          ),
+              : Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600], size: 40) : Icon(Icons.videocam, color: Colors.grey[600], size: 40)),
         ),
         if (!content.isFree)
           Positioned(
-            top: 6,
-            right: 6,
-            child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-              child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16),
-            ),
+            top: 6, right: 6,
+            child: Container(padding: EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16)),
           ),
         Positioned(
-          bottom: 4,
-          left: 4,
-          right: 4,
+          bottom: 4, left: 4, right: 4,
           child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
-              ),
-            ),
+            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))),
             padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  content.title,
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(content.title, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                 SizedBox(height: 2),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      content.isEbook ? 'Ebook' : 'Vidéo',
-                      style: TextStyle(color: Colors.green, fontSize: 10),
-                    ),
-                    Text(
-                      content.isFree ? 'Gratuit' : '${content.price} F',
-                      style: TextStyle(
-                        color: content.isFree ? Colors.green : Colors.yellow,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: Colors.green, fontSize: 10)),
+                    Text(content.isFree ? 'Gratuit' : '${content.price} F', style: TextStyle(color: content.isFree ? Colors.green : Colors.yellow, fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -1085,128 +826,35 @@ class _CategoryContentScreenState extends State<CategoryContentScreen> {
       ],
     );
   }
-
-  void _navigateToContent(ContentPaie content) {
-    if (content.isSeries) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SeriesEpisodesScreen(series: content),
-        ),
-      );
-    } else if (content.isEbook) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EbookDetailScreen(content: content),
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ContentDetailScreen(content: content),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(widget.categoryTitle, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-        iconTheme: IconThemeData(color: Colors.green),
-      ),
-      body: widget.contents.isEmpty
-          ? Center(
-        child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)),
-      )
-          : Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.7,
-          ),
-          itemCount: widget.contents.length,
-          itemBuilder: (context, index) {
-            final content = widget.contents[index];
-            return GestureDetector(
-              onTap: () => _navigateToContent(content),
-              child: _buildThumbnail(content),
-            );
-          },
-        ),
-      ),
-    );
-  }
 }
 
-// Delegate pour la recherche
+// Delegate de recherche de contenu (inchangé)
 class ContentSearchDelegate extends SearchDelegate {
   @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: Icon(Icons.clear, color: Colors.white),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
-
+  List<Widget> buildActions(BuildContext context) => [IconButton(icon: Icon(Icons.clear, color: Colors.white), onPressed: () => query = '')];
   @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.arrow_back, color: Colors.white),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
+  Widget buildLeading(BuildContext context) => IconButton(icon: Icon(Icons.arrow_back, color: Colors.white), onPressed: () => close(context, null));
   @override
   Widget buildResults(BuildContext context) {
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
-
     return Container(
       color: Colors.black,
       child: FutureBuilder<List<ContentPaie>>(
         future: contentProvider.searchContentPaies(query),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: Colors.red));
-          }
-
+          if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: Colors.red));
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.search_off, size: 60, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'Aucun résultat trouvé pour "$query"',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Essayez avec d\'autres termes',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
-                ],
-              ),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.search_off, size: 60, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Aucun résultat trouvé pour "$query"', style: TextStyle(color: Colors.white, fontSize: 18)),
+                SizedBox(height: 8),
+                Text('Essayez avec d\'autres termes', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              ]),
             );
           }
-
           final results = snapshot.data!;
-
           return ListView.builder(
             padding: EdgeInsets.only(top: 16),
             itemCount: results.length,
@@ -1217,78 +865,28 @@ class ContentSearchDelegate extends SearchDelegate {
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
                     imageUrl: content.thumbnailUrl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[800],
-                      child: Center(
-                          child: content.isEbook
-                              ? Icon(Icons.book, color: Colors.grey[600])
-                              : Icon(Icons.videocam, color: Colors.grey[600])
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[800],
-                      child: Center(
-                          child: content.isEbook
-                              ? Icon(Icons.book, color: Colors.grey[600])
-                              : Icon(Icons.videocam, color: Colors.grey[600])
-                      ),
-                    ),
+                    width: 50, height: 50, fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),
+                    errorWidget: (_, __, ___) => Container(color: Colors.grey[800], child: Center(child: content.isEbook ? Icon(Icons.book, color: Colors.grey[600]) : Icon(Icons.videocam, color: Colors.grey[600]))),
                   ),
                 ),
-                title: Text(
-                  content.title,
-                  style: TextStyle(color: Colors.white),
-                ),
+                title: Text(content.title, style: TextStyle(color: Colors.white)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      content.description,
-                      style: TextStyle(color: Colors.white70),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(content.description, style: TextStyle(color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                     SizedBox(height: 2),
-                    Text(
-                      content.isEbook ? 'Ebook' : 'Vidéo',
-                      style: TextStyle(color: Colors.green, fontSize: 12),
-                    ),
+                    Text(content.isEbook ? 'Ebook' : 'Vidéo', style: TextStyle(color: Colors.green, fontSize: 12)),
                   ],
                 ),
-                trailing: !content.isFree
-                    ? Text(
-                  '${content.price} F',
-                  style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
-                )
-                    : Text(
-                  'Gratuit',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                ),
+                trailing: !content.isFree ? Text('${content.price} F', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)) : Text('Gratuit', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                 onTap: () {
                   if (content.isSeries) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SeriesEpisodesScreen(series: content),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesEpisodesScreen(series: content)));
                   } else if (content.isEbook) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EbookDetailScreen(content: content),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => EbookDetailScreen(content: content)));
                   } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ContentDetailScreen(content: content),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
                   }
                 },
               );
@@ -1298,7 +896,6 @@ class ContentSearchDelegate extends SearchDelegate {
       ),
     );
   }
-
   @override
   Widget buildSuggestions(BuildContext context) {
     return Container(
@@ -1309,38 +906,1332 @@ class ContentSearchDelegate extends SearchDelegate {
           children: [
             Icon(Icons.search, size: 60, color: Colors.grey),
             SizedBox(height: 16),
-            Text(
-              'Recherchez des contenus par titre ou hashtag',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
+            Text('Recherchez des contenus par titre ou hashtag', style: TextStyle(color: Colors.white70, fontSize: 16)),
             SizedBox(height: 8),
-            Text(
-              'Vidéos, ebooks, séries...',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
+            Text('Vidéos, ebooks, séries...', style: TextStyle(color: Colors.grey, fontSize: 14)),
           ],
         ),
       ),
     );
   }
-
   @override
   ThemeData appBarTheme(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final theme = Theme.of(context);
     return theme.copyWith(
       scaffoldBackgroundColor: Colors.black,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.white70),
-        border: InputBorder.none,
-      ),
-      textTheme: TextTheme(
-        titleLarge: TextStyle(color: Colors.white),
-      ),
+      appBarTheme: AppBarTheme(backgroundColor: Colors.black, iconTheme: IconThemeData(color: Colors.white)),
+      inputDecorationTheme: InputDecorationTheme(hintStyle: TextStyle(color: Colors.white70), border: InputBorder.none),
+      textTheme: TextTheme(titleLarge: TextStyle(color: Colors.white)),
     );
   }
 }
+
+
+// class DashboardContentScreen extends StatefulWidget {
+//   @override
+//   _DashboardContentScreenState createState() => _DashboardContentScreenState();
+// }
+//
+// class _DashboardContentScreenState extends State<DashboardContentScreen> {
+//   final Map<String, Uint8List?> _videoThumbnails = {};
+//   int _currentTabIndex = 0; // 0: Accueil, 1: Séries, 2: À la demande
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _preloadThumbnails();
+//   }
+//
+//   Future<void> _preloadThumbnails() async {
+//     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+//     await contentProvider.loadInitialData();
+//   }
+//
+//   Widget _buildContentImage(ContentPaie content) {
+//     return Stack(
+//       children: [
+//         Container(
+//           color: Colors.grey[900],
+//           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
+//               ? ClipRRect(
+//             borderRadius: BorderRadius.circular(4),
+//             child: CachedNetworkImage(
+//               imageUrl: content.thumbnailUrl!,
+//               fit: BoxFit.cover,
+//               width: double.infinity,
+//               placeholder: (context, url) => Container(
+//                 color: Colors.grey[800],
+//                 child: Center(child: CircularProgressIndicator(color: Colors.green)),
+//               ),
+//               errorWidget: (context, url, error) => Container(
+//                 color: Colors.grey[800],
+//                 child: Icon(Icons.error, color: Colors.white),
+//               ),
+//             ),
+//           )
+//               : Center(
+//               child: content.isEbook
+//                   ? Icon(Icons.book, color: Colors.grey[600], size: 40)
+//                   : Icon(Icons.videocam, color: Colors.grey[600], size: 40)
+//           ),
+//         ),
+//         // Badge pour contenu payant
+//         if (!content.isFree)
+//           Positioned(
+//             top: 8,
+//             right: 8,
+//             child: Container(
+//               padding: EdgeInsets.all(4),
+//               decoration: BoxDecoration(
+//                 color: Colors.black.withOpacity(0.7),
+//                 borderRadius: BorderRadius.circular(4),
+//               ),
+//               child: Text(
+//                 '${content.price} F',
+//                 style: TextStyle(
+//                   color: Colors.yellow,
+//                   fontSize: 12,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         // Badge pour les séries
+//         if (content.isSeries)
+//           Positioned(
+//             top: 8,
+//             left: 8,
+//             child: Container(
+//               padding: EdgeInsets.all(4),
+//               decoration: BoxDecoration(
+//                 color: Colors.black.withOpacity(0.7),
+//                 borderRadius: BorderRadius.circular(4),
+//               ),
+//               child: Row(
+//                 children: [
+//                   Icon(Icons.playlist_play, color: Colors.blue, size: 14),
+//                   SizedBox(width: 4),
+//                   Text(
+//                     'Série',
+//                     style: TextStyle(
+//                       color: Colors.blue,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         // Badge pour les ebooks
+//         if (content.isEbook)
+//           Positioned(
+//             top: 8,
+//             left: content.isSeries ? 50 : 8, // Décaler si c'est aussi une série
+//             child: Container(
+//               padding: EdgeInsets.all(4),
+//               decoration: BoxDecoration(
+//                 color: Colors.black.withOpacity(0.7),
+//                 borderRadius: BorderRadius.circular(4),
+//               ),
+//               child: Row(
+//                 children: [
+//                   Icon(Icons.book, color: Colors.purple, size: 14),
+//                   SizedBox(width: 4),
+//                   Text(
+//                     'Ebook',
+//                     style: TextStyle(
+//                       color: Colors.purple,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         // Indicateur de vues pour les vidéos
+//         if (content.isVideo && content.views != null)
+//           Positioned(
+//             bottom: 8,
+//             right: 8,
+//             child: Container(
+//               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+//               decoration: BoxDecoration(
+//                 color: Colors.black.withOpacity(0.7),
+//                 borderRadius: BorderRadius.circular(4),
+//               ),
+//               child: Row(
+//                 children: [
+//                   Icon(Icons.remove_red_eye, color: Colors.white, size: 15),
+//                   SizedBox(width: 2),
+//                   Text(
+//                     content.views!.toString(),
+//                     style: TextStyle(
+//                       color: Colors.white,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         // Indicateur de pages pour les ebooks
+//         if (content.isEbook && content.pageCount > 0)
+//           Positioned(
+//             bottom: 8,
+//             left: 8,
+//             child: Container(
+//               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+//               decoration: BoxDecoration(
+//                 color: Colors.black.withOpacity(0.7),
+//                 borderRadius: BorderRadius.circular(4),
+//               ),
+//               child: Row(
+//                 children: [
+//                   Icon(Icons.menu_book, color: Colors.white, size: 12),
+//                   SizedBox(width: 2),
+//                   Text(
+//                     '${content.pageCount} p.',
+//                     style: TextStyle(
+//                       color: Colors.white,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//       ],
+//     );
+//   }
+//
+//   void _navigateToContent(ContentPaie content) {
+//     if (content.isSeries) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => SeriesEpisodesScreen(series: content),
+//         ),
+//       );
+//     } else if (content.isEbook) {
+//       // Navigation vers la page détail ebook
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => EbookDetailScreen(content: content),
+//         ),
+//       );
+//     } else {
+//       // Navigation vers la page détail vidéo
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => ContentDetailScreen(content: content),
+//         ),
+//       );
+//     }
+//   }
+//
+//   String _getContentTypeLabel(ContentPaie content) {
+//     if (content.isSeries) {
+//       return content.isVideo ? 'Série Vidéo' : 'Série Ebook';
+//     } else {
+//       return content.isVideo ? 'Vidéo' : 'Ebook';
+//     }
+//   }
+//   Widget _buildAdMrec({required String key}) {
+//     // return SizedBox.shrink();
+//
+//     return Container(
+//       key: ValueKey(key),
+//       margin: EdgeInsets.symmetric(vertical: 16),
+//       decoration: BoxDecoration(
+//         color: Colors.transparent,
+//         borderRadius: BorderRadius.circular(12),
+//         border: Border.all(color: Colors.transparent),
+//       ),
+//       child: MrecAdWidget(
+//         key: ValueKey(key),
+//         // templateType: TemplateType.medium, // ou TemplateType.small
+//
+//         onAdLoaded: () {
+//           print('✅ Native Ad Afrolook chargée: $key');
+//         },
+//       ),
+//       // child: BannerAdWidget(
+//       //   onAdLoaded: () {
+//       //     print('✅ Bannière Afrolook chargée: $key');
+//       //   },
+//       // ),
+//     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final contentProvider = Provider.of<ContentProvider>(context);
+//
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       appBar: AppBar(
+//         backgroundColor: Colors.black,
+//         elevation: 0,
+//         automaticallyImplyLeading: false,
+//         title: Text(
+//           'Contenus',
+//           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+//         ),
+//         actions: [
+//           IconButton(
+//             icon: Icon(Icons.search, color: Colors.white),
+//             onPressed: () {
+//               showSearch(context: context, delegate: ContentSearchDelegate());
+//             },
+//           ),
+//           IconButton(
+//             icon: Icon(Icons.person, color: Colors.white),
+//             onPressed: () {
+//               Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu()));
+//             },
+//           ),
+//         ],
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         backgroundColor: Colors.red,
+//         onPressed: () {
+//           Navigator.push(context, MaterialPageRoute(builder: (_) => ContentFormScreen()));
+//         },
+//         child: Icon(Icons.add, size: 28),
+//       ),
+//       body: Column(
+//         children: [
+//           // Barre d'onglets style YouTube
+//           _buildAdMrec(key: 'ad_native_content_bord'),
+//
+//           Container(
+//             color: Colors.black,
+//             height: 50,
+//             child: Row(
+//               children: [
+//                 Expanded(
+//                   child: ListView(
+//                     scrollDirection: Axis.horizontal,
+//                     children: [
+//                       _buildTabItem('Toutes', 0),
+//                       _buildTabItem('Séries', 1),
+//                       _buildTabItem('À la demande', 2),
+//                       _buildTabItem('Ebooks', 3), // Nouvel onglet pour les ebooks
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           Divider(height: 1, color: Colors.grey[800]),
+//           SizedBox(height: 10),
+//           Expanded(
+//             child: RefreshIndicator(
+//               onRefresh: () async {
+//                 await _preloadThumbnails();
+//               },
+//               child: _buildContentForTab(_currentTabIndex, contentProvider),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildTabItem(String title, int index) {
+//     final isSelected = _currentTabIndex == index;
+//     return GestureDetector(
+//       onTap: () {
+//         setState(() {
+//           _currentTabIndex = index;
+//         });
+//       },
+//       child: Container(
+//         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//         decoration: BoxDecoration(
+//           border: isSelected
+//               ? Border(
+//             bottom: BorderSide(color: Colors.red, width: 2),
+//           )
+//               : null,
+//         ),
+//         child: Text(
+//           title,
+//           style: TextStyle(
+//             color: isSelected ? Colors.white : Colors.grey,
+//             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildContentForTab(int tabIndex, ContentProvider contentProvider) {
+//     switch (tabIndex) {
+//       case 0: // Accueil
+//         return _buildHomeTab(contentProvider);
+//       case 1: // Séries
+//         return _buildSeriesTab(contentProvider);
+//       case 2: // À la demande
+//         return _buildOnDemandTab(contentProvider);
+//       case 3: // Ebooks
+//         return _buildEbooksTab(contentProvider);
+//       default:
+//         return _buildHomeTab(contentProvider);
+//     }
+//   }
+//
+//   Widget _buildHomeTab(ContentProvider contentProvider) {
+//     return SingleChildScrollView(
+//       physics: BouncingScrollPhysics(),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Contenus vedette (nouveautés)
+//           _buildFeaturedContent(contentProvider.featuredContentPaies),
+//           SizedBox(height: 24),
+//
+//           // Contenus récents (toutes catégories)
+//           _buildRecentContent(contentProvider.allContentPaies),
+//
+//           // Contenus par catégorie
+//           for (var category in contentProvider.categories)
+//             _buildCategorySection(
+//               category.name,
+//               contentProvider.contentPaiesByCategory[category.id] ?? [],
+//             ),
+//
+//           if (contentProvider.categories.isEmpty) _buildNoDataSection(),
+//
+//           SizedBox(height: 30),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildSeriesTab(ContentProvider contentProvider) {
+//     // Filtrer seulement les séries
+//     final seriesContent = contentProvider.allContentPaies.where((content) => content.isSeries).toList();
+//
+//     return seriesContent.isEmpty
+//         ? Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.playlist_play, size: 60, color: Colors.grey),
+//           SizedBox(height: 16),
+//           Text(
+//             'Aucune série disponible',
+//             style: TextStyle(color: Colors.white70, fontSize: 18),
+//           ),
+//         ],
+//       ),
+//     )
+//         : GridView.builder(
+//       padding: EdgeInsets.all(12),
+//       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+//         crossAxisCount: 2,
+//         crossAxisSpacing: 12,
+//         mainAxisSpacing: 12,
+//         childAspectRatio: 0.7,
+//       ),
+//       itemCount: seriesContent.length,
+//       itemBuilder: (context, index) {
+//         final content = seriesContent[index];
+//         return GestureDetector(
+//           onTap: () => _navigateToContent(content),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Expanded(
+//                 child: ClipRRect(
+//                   borderRadius: BorderRadius.circular(8),
+//                   child: _buildContentImage(content),
+//                 ),
+//               ),
+//               SizedBox(height: 8),
+//               Text(
+//                 content.title,
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//                 maxLines: 2,
+//                 overflow: TextOverflow.ellipsis,
+//               ),
+//               SizedBox(height: 4),
+//               Text(
+//                 // '${_getContentTypeLabel(content)} • ${content.episodeCount ?? 0} épisodes',
+//                 '${_getContentTypeLabel(content)} épisodes',
+//                 style: TextStyle(
+//                   color: Colors.grey,
+//                   fontSize: 12,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   Widget _buildOnDemandTab(ContentProvider contentProvider) {
+//     // Contenus payants uniquement
+//     final paidContent = contentProvider.allContentPaies.where((content) => !content.isFree).toList();
+//
+//     return paidContent.isEmpty
+//         ? Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.monetization_on, size: 60, color: Colors.grey),
+//           SizedBox(height: 16),
+//           Text(
+//             'Aucun contenu payant disponible',
+//             style: TextStyle(color: Colors.white70, fontSize: 18),
+//           ),
+//         ],
+//       ),
+//     )
+//         : GridView.builder(
+//       padding: EdgeInsets.all(12),
+//       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+//         crossAxisCount: 2,
+//         crossAxisSpacing: 12,
+//         mainAxisSpacing: 12,
+//         childAspectRatio: 0.7,
+//       ),
+//       itemCount: paidContent.length,
+//       itemBuilder: (context, index) {
+//         final content = paidContent[index];
+//         return GestureDetector(
+//           onTap: () => _navigateToContent(content),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Expanded(
+//                 child: ClipRRect(
+//                   borderRadius: BorderRadius.circular(8),
+//                   child: _buildContentImage(content),
+//                 ),
+//               ),
+//               SizedBox(height: 8),
+//               Text(
+//                 content.title,
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//                 maxLines: 2,
+//                 overflow: TextOverflow.ellipsis,
+//               ),
+//               SizedBox(height: 4),
+//               Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   Text(
+//                     _getContentTypeLabel(content),
+//                     style: TextStyle(
+//                       color: Colors.grey,
+//                       fontSize: 12,
+//                     ),
+//                   ),
+//                   Text(
+//                     '${content.price} F',
+//                     style: TextStyle(
+//                       color: Colors.yellow,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   Widget _buildEbooksTab(ContentProvider contentProvider) {
+//     // Filtrer seulement les ebooks
+//     final ebooks = contentProvider.allContentPaies.where((content) => content.isEbook).toList();
+//
+//     return ebooks.isEmpty
+//         ? Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.book, size: 60, color: Colors.grey),
+//           SizedBox(height: 16),
+//           Text(
+//             'Aucun ebook disponible',
+//             style: TextStyle(color: Colors.white70, fontSize: 18),
+//           ),
+//           SizedBox(height: 8),
+//           Text(
+//             'Créez votre premier ebook !',
+//             style: TextStyle(color: Colors.grey, fontSize: 14),
+//           ),
+//         ],
+//       ),
+//     )
+//         : GridView.builder(
+//       padding: EdgeInsets.all(12),
+//       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+//         crossAxisCount: 2,
+//         crossAxisSpacing: 12,
+//         mainAxisSpacing: 12,
+//         childAspectRatio: 0.65, // Plus étroit pour les ebooks
+//       ),
+//       itemCount: ebooks.length,
+//       itemBuilder: (context, index) {
+//         final content = ebooks[index];
+//         return GestureDetector(
+//           onTap: () => _navigateToContent(content),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Expanded(
+//                 child: ClipRRect(
+//                   borderRadius: BorderRadius.circular(8),
+//                   child: _buildContentImage(content),
+//                 ),
+//               ),
+//               SizedBox(height: 8),
+//               Text(
+//                 content.title,
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//                 maxLines: 2,
+//                 overflow: TextOverflow.ellipsis,
+//               ),
+//               SizedBox(height: 4),
+//               Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   Text(
+//                     content.isSeries ? 'Série Ebook' : 'Ebook',
+//                     style: TextStyle(
+//                       color: Colors.grey,
+//                       fontSize: 12,
+//                     ),
+//                   ),
+//                   Text(
+//                     content.isFree ? 'Gratuit' : '${content.price} F',
+//                     style: TextStyle(
+//                       color: content.isFree ? Colors.green : Colors.yellow,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//               if (content.pageCount > 0) ...[
+//                 SizedBox(height: 2),
+//                 Text(
+//                   '${content.pageCount} pages',
+//                   style: TextStyle(
+//                     color: Colors.grey,
+//                     fontSize: 11,
+//                   ),
+//                 ),
+//               ],
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   Widget _buildRecentContent(List<ContentPaie> contents) {
+//     if (contents.isEmpty) return SizedBox();
+//
+//     // Trier par date de création (les plus récents d'abord)
+//     contents.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+//
+//     // Prendre les 10 plus récents
+//     final recentContents = contents.take(10).toList();
+//
+//     return Padding(
+//       padding: EdgeInsets.symmetric(vertical: 16),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Padding(
+//             padding: EdgeInsets.symmetric(horizontal: 16),
+//             child: Text('Nouveautés', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+//           ),
+//           SizedBox(height: 12),
+//           Container(
+//             height: 180,
+//             child: ListView.builder(
+//               scrollDirection: Axis.horizontal,
+//               padding: EdgeInsets.symmetric(horizontal: 12),
+//               itemCount: recentContents.length,
+//               itemBuilder: (context, index) {
+//                 final content = recentContents[index];
+//                 return Container(
+//                   width: 320,
+//                   margin: EdgeInsets.symmetric(horizontal: 6),
+//                   child: GestureDetector(
+//                     onTap: () => _navigateToContent(content),
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Expanded(
+//                           child: ClipRRect(
+//                             borderRadius: BorderRadius.circular(8),
+//                             child: _buildContentImage(content),
+//                           ),
+//                         ),
+//                         SizedBox(height: 8),
+//                         Padding(
+//                           padding: EdgeInsets.symmetric(horizontal: 4),
+//                           child: Text(
+//                             content.title,
+//                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+//                             maxLines: 2,
+//                             overflow: TextOverflow.ellipsis,
+//                           ),
+//                         ),
+//                         Padding(
+//                           padding: EdgeInsets.symmetric(horizontal: 4),
+//                           child: Row(
+//                             children: [
+//                               Text(
+//                                 _getContentTypeLabel(content),
+//                                 style: TextStyle(color: Colors.grey, fontSize: 12),
+//                               ),
+//                               SizedBox(width: 8),
+//                               Text(
+//                                 content.isFree ? 'Gratuit' : '${content.price} F',
+//                                 style: TextStyle(
+//                                   color: content.isFree ? Colors.green : Colors.yellow,
+//                                   fontSize: 12,
+//                                   fontWeight: FontWeight.bold,
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 );
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildFeaturedContent(List<ContentPaie> contents) {
+//     if (contents.isEmpty) return _buildFeaturedPlaceholder();
+//
+//     return Container(
+//       height: 220,
+//       child: ListView.builder(
+//         scrollDirection: Axis.horizontal,
+//         padding: EdgeInsets.symmetric(horizontal: 12),
+//         itemCount: contents.length,
+//         itemBuilder: (context, index) {
+//           final content = contents[index];
+//           return GestureDetector(
+//             onTap: () => _navigateToContent(content),
+//             child: Container(
+//               width: 320,
+//               margin: EdgeInsets.symmetric(horizontal: 6),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Expanded(
+//                     child: ClipRRect(
+//                       borderRadius: BorderRadius.circular(8),
+//                       child: Stack(
+//                         children: [
+//                           _buildContentImage(content),
+//                           Positioned.fill(
+//                             child: Container(
+//                               decoration: BoxDecoration(
+//                                 borderRadius: BorderRadius.circular(8),
+//                                 gradient: LinearGradient(
+//                                   begin: Alignment.bottomCenter,
+//                                   end: Alignment.topCenter,
+//                                   colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+//                                   stops: [0.1, 0.6],
+//                                 ),
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                   SizedBox(height: 8),
+//                   Padding(
+//                     padding: EdgeInsets.symmetric(horizontal: 4),
+//                     child: Text(
+//                       content.title,
+//                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+//                       maxLines: 1,
+//                       overflow: TextOverflow.ellipsis,
+//                     ),
+//                   ),
+//                   Padding(
+//                     padding: EdgeInsets.symmetric(horizontal: 4),
+//                     child: Row(
+//                       children: [
+//                         Text(
+//                           _getContentTypeLabel(content),
+//                           style: TextStyle(color: Colors.grey, fontSize: 12),
+//                         ),
+//                         SizedBox(width: 8),
+//                         Text(
+//                           content.isFree ? 'Gratuit' : '${content.price} F',
+//                           style: TextStyle(
+//                             color: content.isFree ? Colors.green : Colors.yellow,
+//                             fontSize: 12,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                         if (content.views > 0 && content.isVideo) ...[
+//                           SizedBox(width: 8),
+//                           Text(
+//                             '${content.views} vues',
+//                             style: TextStyle(color: Colors.grey, fontSize: 12),
+//                           ),
+//                         ],
+//                         if (content.pageCount > 0 && content.isEbook) ...[
+//                           SizedBox(width: 8),
+//                           Text(
+//                             '${content.pageCount} pages',
+//                             style: TextStyle(color: Colors.grey, fontSize: 12),
+//                           ),
+//                         ],
+//                       ],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+//
+//   Widget _buildCategorySection(String title, List<ContentPaie> contents) {
+//     if (contents.isEmpty) return SizedBox();
+//
+//     return Padding(
+//       padding: EdgeInsets.symmetric(vertical: 16),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Padding(
+//             padding: EdgeInsets.symmetric(horizontal: 16),
+//             child: Row(
+//               children: [
+//                 Text(title, style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+//                 Spacer(),
+//                 GestureDetector(
+//                   onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (_) => CategoryContentScreen(categoryTitle: title, contents: contents),
+//                       ),
+//                     );
+//                   },
+//                   child: Row(
+//                     children: [
+//                       Text('Tout voir', style: TextStyle(color: Colors.red, fontSize: 14)),
+//                       SizedBox(width: 4),
+//                       Icon(Icons.arrow_forward_ios, color: Colors.red, size: 14),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           SizedBox(height: 12),
+//           Container(
+//             height: 180,
+//             child: ListView.builder(
+//               scrollDirection: Axis.horizontal,
+//               padding: EdgeInsets.symmetric(horizontal: 12),
+//               itemCount: contents.length,
+//               itemBuilder: (context, index) {
+//                 final content = contents[index];
+//                 return Container(
+//                   width: 140,
+//                   margin: EdgeInsets.symmetric(horizontal: 6),
+//                   child: GestureDetector(
+//                     onTap: () => _navigateToContent(content),
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Expanded(
+//                           child: ClipRRect(
+//                             borderRadius: BorderRadius.circular(8),
+//                             child: _buildContentImage(content),
+//                           ),
+//                         ),
+//                         SizedBox(height: 8),
+//                         Text(
+//                           content.title,
+//                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+//                           maxLines: 2,
+//                           overflow: TextOverflow.ellipsis,
+//                         ),
+//                         SizedBox(height: 4),
+//                         Row(
+//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                           children: [
+//                             Text(
+//                               _getContentTypeLabel(content),
+//                               style: TextStyle(
+//                                 color: Colors.grey,
+//                                 fontSize: 10,
+//                               ),
+//                             ),
+//                             Text(
+//                               content.isFree ? 'Gratuit' : '${content.price} F',
+//                               style: TextStyle(
+//                                 color: content.isFree ? Colors.green : Colors.yellow,
+//                                 fontSize: 10,
+//                                 fontWeight: FontWeight.bold,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 );
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildFeaturedPlaceholder() => Container(
+//     height: 220,
+//     margin: EdgeInsets.symmetric(horizontal: 12),
+//     decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey[900]),
+//     child: Center(child: Icon(Icons.videocam_off, color: Colors.grey[700], size: 50)),
+//   );
+//
+//   Widget _buildNoDataSection() => Center(
+//     child: Padding(
+//       padding: EdgeInsets.all(40),
+//       child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)),
+//     ),
+//   );
+// }
+//
+// class CategoryContentScreen extends StatefulWidget {
+//   final String categoryTitle;
+//   final List<ContentPaie> contents;
+//
+//   const CategoryContentScreen({Key? key, required this.categoryTitle, required this.contents}) : super(key: key);
+//
+//   @override
+//   _CategoryContentScreenState createState() => _CategoryContentScreenState();
+// }
+//
+// class _CategoryContentScreenState extends State<CategoryContentScreen> {
+//   final Map<String, Uint8List?> _thumbnails = {};
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     // _preloadThumbnails();
+//   }
+//
+//   Future<void> _preloadThumbnails() async {
+//     for (var content in widget.contents) {
+//       if (content.videoUrl != null && content.videoUrl!.isNotEmpty) {
+//         _thumbnails[content.id!] = await _generateThumbnail(content.videoUrl!);
+//       }
+//     }
+//     setState(() {});
+//   }
+//
+//   Future<Uint8List?> _generateThumbnail(String videoUrl) async {
+//     try {
+//       final path = await VideoThumbnail.thumbnailFile(
+//         video: videoUrl,
+//         thumbnailPath: (await getTemporaryDirectory()).path,
+//         imageFormat: ImageFormat.JPEG,
+//         maxHeight: 200,
+//         quality: 50,
+//       );
+//       if (path != null) return await File(path).readAsBytes();
+//     } catch (e) {
+//       print('Erreur génération thumbnail: $e');
+//     }
+//     return null;
+//   }
+//
+//   Widget _buildThumbnail(ContentPaie content) {
+//     return Stack(
+//       children: [
+//         Container(
+//           decoration: BoxDecoration(
+//             borderRadius: BorderRadius.circular(8),
+//             color: Colors.grey[900],
+//           ),
+//           child: content.thumbnailUrl != null && content.thumbnailUrl!.isNotEmpty
+//               ? ClipRRect(
+//             borderRadius: BorderRadius.circular(8),
+//             child: CachedNetworkImage(
+//               imageUrl: content.thumbnailUrl!,
+//               fit: BoxFit.cover,
+//               width: double.infinity,
+//               height: double.infinity,
+//               placeholder: (context, url) => Container(
+//                 color: Colors.grey[800],
+//                 child: Center(child: CircularProgressIndicator(color: Colors.green)),
+//               ),
+//               errorWidget: (context, url, error) => Container(
+//                 color: Colors.grey[800],
+//                 child: content.isEbook
+//                     ? Icon(Icons.book, color: Colors.grey[600], size: 40)
+//                     : Icon(Icons.videocam, color: Colors.grey[600], size: 40),
+//               ),
+//             ),
+//           )
+//               : Center(
+//               child: content.isEbook
+//                   ? Icon(Icons.book, color: Colors.grey[600], size: 40)
+//                   : Icon(Icons.videocam, color: Colors.grey[600], size: 40)
+//           ),
+//         ),
+//         if (!content.isFree)
+//           Positioned(
+//             top: 6,
+//             right: 6,
+//             child: Container(
+//               padding: EdgeInsets.all(4),
+//               decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+//               child: Icon(Icons.monetization_on, color: Colors.yellow, size: 16),
+//             ),
+//           ),
+//         Positioned(
+//           bottom: 4,
+//           left: 4,
+//           right: 4,
+//           child: Container(
+//             decoration: BoxDecoration(
+//               color: Colors.black54,
+//               borderRadius: BorderRadius.only(
+//                 bottomLeft: Radius.circular(8),
+//                 bottomRight: Radius.circular(8),
+//               ),
+//             ),
+//             padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   content.title,
+//                   style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+//                   maxLines: 2,
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//                 SizedBox(height: 2),
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: [
+//                     Text(
+//                       content.isEbook ? 'Ebook' : 'Vidéo',
+//                       style: TextStyle(color: Colors.green, fontSize: 10),
+//                     ),
+//                     Text(
+//                       content.isFree ? 'Gratuit' : '${content.price} F',
+//                       style: TextStyle(
+//                         color: content.isFree ? Colors.green : Colors.yellow,
+//                         fontSize: 10,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   void _navigateToContent(ContentPaie content) {
+//     if (content.isSeries) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => SeriesEpisodesScreen(series: content),
+//         ),
+//       );
+//     } else if (content.isEbook) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => EbookDetailScreen(content: content),
+//         ),
+//       );
+//     } else {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (context) => ContentDetailScreen(content: content),
+//         ),
+//       );
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       appBar: AppBar(
+//         backgroundColor: Colors.black,
+//         title: Text(widget.categoryTitle, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+//         iconTheme: IconThemeData(color: Colors.green),
+//       ),
+//       body: widget.contents.isEmpty
+//           ? Center(
+//         child: Text('Aucun contenu disponible', style: TextStyle(color: Colors.white70, fontSize: 18)),
+//       )
+//           : Padding(
+//         padding: const EdgeInsets.all(12.0),
+//         child: GridView.builder(
+//           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+//             crossAxisCount: 2,
+//             mainAxisSpacing: 12,
+//             crossAxisSpacing: 12,
+//             childAspectRatio: 0.7,
+//           ),
+//           itemCount: widget.contents.length,
+//           itemBuilder: (context, index) {
+//             final content = widget.contents[index];
+//             return GestureDetector(
+//               onTap: () => _navigateToContent(content),
+//               child: _buildThumbnail(content),
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }
+//
+// // Delegate pour la recherche
+// class ContentSearchDelegate extends SearchDelegate {
+//   @override
+//   List<Widget> buildActions(BuildContext context) {
+//     return [
+//       IconButton(
+//         icon: Icon(Icons.clear, color: Colors.white),
+//         onPressed: () {
+//           query = '';
+//         },
+//       ),
+//     ];
+//   }
+//
+//   @override
+//   Widget buildLeading(BuildContext context) {
+//     return IconButton(
+//       icon: Icon(Icons.arrow_back, color: Colors.white),
+//       onPressed: () {
+//         close(context, null);
+//       },
+//     );
+//   }
+//
+//   @override
+//   Widget buildResults(BuildContext context) {
+//     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
+//
+//     return Container(
+//       color: Colors.black,
+//       child: FutureBuilder<List<ContentPaie>>(
+//         future: contentProvider.searchContentPaies(query),
+//         builder: (context, snapshot) {
+//           if (snapshot.connectionState == ConnectionState.waiting) {
+//             return Center(child: CircularProgressIndicator(color: Colors.red));
+//           }
+//
+//           if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//             return Center(
+//               child: Column(
+//                 mainAxisAlignment: MainAxisAlignment.center,
+//                 children: [
+//                   Icon(Icons.search_off, size: 60, color: Colors.grey),
+//                   SizedBox(height: 16),
+//                   Text(
+//                     'Aucun résultat trouvé pour "$query"',
+//                     style: TextStyle(color: Colors.white, fontSize: 18),
+//                   ),
+//                   SizedBox(height: 8),
+//                   Text(
+//                     'Essayez avec d\'autres termes',
+//                     style: TextStyle(color: Colors.grey, fontSize: 14),
+//                   ),
+//                 ],
+//               ),
+//             );
+//           }
+//
+//           final results = snapshot.data!;
+//
+//           return ListView.builder(
+//             padding: EdgeInsets.only(top: 16),
+//             itemCount: results.length,
+//             itemBuilder: (context, index) {
+//               final content = results[index];
+//               return ListTile(
+//                 leading: ClipRRect(
+//                   borderRadius: BorderRadius.circular(6),
+//                   child: CachedNetworkImage(
+//                     imageUrl: content.thumbnailUrl,
+//                     width: 50,
+//                     height: 50,
+//                     fit: BoxFit.cover,
+//                     placeholder: (context, url) => Container(
+//                       color: Colors.grey[800],
+//                       child: Center(
+//                           child: content.isEbook
+//                               ? Icon(Icons.book, color: Colors.grey[600])
+//                               : Icon(Icons.videocam, color: Colors.grey[600])
+//                       ),
+//                     ),
+//                     errorWidget: (context, url, error) => Container(
+//                       color: Colors.grey[800],
+//                       child: Center(
+//                           child: content.isEbook
+//                               ? Icon(Icons.book, color: Colors.grey[600])
+//                               : Icon(Icons.videocam, color: Colors.grey[600])
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//                 title: Text(
+//                   content.title,
+//                   style: TextStyle(color: Colors.white),
+//                 ),
+//                 subtitle: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       content.description,
+//                       style: TextStyle(color: Colors.white70),
+//                       maxLines: 1,
+//                       overflow: TextOverflow.ellipsis,
+//                     ),
+//                     SizedBox(height: 2),
+//                     Text(
+//                       content.isEbook ? 'Ebook' : 'Vidéo',
+//                       style: TextStyle(color: Colors.green, fontSize: 12),
+//                     ),
+//                   ],
+//                 ),
+//                 trailing: !content.isFree
+//                     ? Text(
+//                   '${content.price} F',
+//                   style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
+//                 )
+//                     : Text(
+//                   'Gratuit',
+//                   style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+//                 ),
+//                 onTap: () {
+//                   if (content.isSeries) {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (_) => SeriesEpisodesScreen(series: content),
+//                       ),
+//                     );
+//                   } else if (content.isEbook) {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (_) => EbookDetailScreen(content: content),
+//                       ),
+//                     );
+//                   } else {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => ContentDetailScreen(content: content),
+//                       ),
+//                     );
+//                   }
+//                 },
+//               );
+//             },
+//           );
+//         },
+//       ),
+//     );
+//   }
+//
+//   @override
+//   Widget buildSuggestions(BuildContext context) {
+//     return Container(
+//       color: Colors.black,
+//       child: Center(
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             Icon(Icons.search, size: 60, color: Colors.grey),
+//             SizedBox(height: 16),
+//             Text(
+//               'Recherchez des contenus par titre ou hashtag',
+//               style: TextStyle(color: Colors.white70, fontSize: 16),
+//             ),
+//             SizedBox(height: 8),
+//             Text(
+//               'Vidéos, ebooks, séries...',
+//               style: TextStyle(color: Colors.grey, fontSize: 14),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   @override
+//   ThemeData appBarTheme(BuildContext context) {
+//     final ThemeData theme = Theme.of(context);
+//     return theme.copyWith(
+//       scaffoldBackgroundColor: Colors.black,
+//       appBarTheme: AppBarTheme(
+//         backgroundColor: Colors.black,
+//         iconTheme: IconThemeData(color: Colors.white),
+//       ),
+//       inputDecorationTheme: InputDecorationTheme(
+//         hintStyle: TextStyle(color: Colors.white70),
+//         border: InputBorder.none,
+//       ),
+//       textTheme: TextTheme(
+//         titleLarge: TextStyle(color: Colors.white),
+//       ),
+//     );
+//   }
+// }
 

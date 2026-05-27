@@ -43,7 +43,24 @@ setMessageNonLu(int nbr){
   mes_msg_non_lu=nbr;
   notifyListeners();
 }
-
+// Ajouter cette méthode dans la classe UserProvider
+  Future<List<UserData>> searchUsersByPseudo(String query) async {
+    if (query.isEmpty) return [];
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('pseudo', isGreaterThanOrEqualTo: query)
+          .where('pseudo', isLessThanOrEqualTo: query + 'z')
+          .limit(10)
+          .get();
+      return snapshot.docs
+          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('Erreur recherche créateur: $e');
+      return [];
+    }
+  }
   Future<bool> updateUser(UserData user) async {
     try{
 

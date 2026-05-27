@@ -1241,11 +1241,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   Widget _buildStatsRow() {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-      _buildStatItem(Icons.remove_red_eye, _currentPost.vues ?? 0, 'Vues'),
+      // _buildStatItem(Icons.remove_red_eye, _currentPost.vues ?? 0, 'Vues'),
+      _buildStatItem(Icons.bar_chart, _currentPost.totalInteractions ?? 0, 'Interactions'),
+
       _buildStatItem(Icons.favorite_border, _currentPost.loves ?? 0, 'J\'aime'),
       _buildStatItem(Icons.chat_bubble, _currentPost.comments ?? 0, 'Commentaires'),
       _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeaux'),
-      _buildStatItem(Icons.bar_chart, _currentPost.totalInteractions ?? 0, 'Interactions'),
       _buildStatItem(_isFavorite ? Icons.bookmark : Icons.bookmark_border, _currentPost.favoritesCount ?? 0, 'Favoris'),
     ]);
   }

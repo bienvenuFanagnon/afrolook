@@ -38,10 +38,7 @@ class UserAuthProvider extends ChangeNotifier {
   late UserData registerUser = UserData();
   late String registerText = "";
   late String? token = '';
-  late String? cinetPayToken = '102325650865f879a7b10492.83921456';
-  late String? transfertApiPasswordToken = 'Bbienvenu@_4';
-  late String? transfertGeneratePayToken = '';
-  late String? cinetSiteId = '5870078';
+
   // late String? userId = "";
   late int app_version_code = 185;
   late String loginText = "";
@@ -2832,90 +2829,6 @@ if(actionType == 'comment'){
   }
 
 
-  // import 'dart:convert';
-  // import 'package:http/http.dart' as http;
-
-
-  Future<String?> generateToken() async {
-    final url = Uri.parse('https://client.cinetpay.com/v1/auth/login');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: {
-        'apikey': '${cinetPayToken}',  // Remplace par ta clé API
-        'password': '${transfertApiPasswordToken}',  // Remplace par ton mot de passe API
-        'lang': 'fr',  // ou 'en' pour anglais
-      },
-    );
-
-    if (response.statusCode == 200) {
-      // La requête a réussi, tu peux récupérer le token ici
-      var responseBody = json.decode(response.body);
-      print('Token généré : ${responseBody}');
-      transfertGeneratePayToken=responseBody['data']['token'];
-      return transfertGeneratePayToken;
-
-    } else {
-      print('Erreur: ${response.statusCode}');
-      print('Détails : ${response.body}');
-      return null;
-    }
-  }
-
-  Future<bool> ajouterContactCinetPay(
-      String token, String prefix, String phone, String name, String surname, String email)
-  async {
-    final url = Uri.parse('https://client.cinetpay.com/v1/transfer/contact');
-
-    final headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    };
-
-    final body = jsonEncode([
-      {
-        "prefix": prefix,
-        "phone": phone,
-        "name": name,
-        "surname": surname,
-        "email": email
-      }
-    ]);
-
-    print('Donnee envoyer ${jsonEncode(body)}');
-    print('Donnee token envoyer:  ${transfertGeneratePayToken}');
-
-
-    try {
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: {
-          'token': transfertGeneratePayToken,
-          'data': jsonEncode(body),
-          'lang': 'fr' // ou 'en' selon la langue souhaitée
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Si la requête est réussie
-        print('Numero ajouter : Code de statut ${response.statusCode}');
-
-        return true;
-      } else {
-        // Si la requête échoue
-        print('Erreur d enregistrement du numero: Code de statut ${response.statusCode}');
-        print('Erreur d enregistrement du numero: data ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      // Gestion des erreurs de la requête HTTP
-      print('Une erreur est survenue: $e');
-      return false;
-    }
-  }
   Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
     await getAppData().then((appdata) async {
       print("code app data *** : ${appDefaultData.app_version_code}");

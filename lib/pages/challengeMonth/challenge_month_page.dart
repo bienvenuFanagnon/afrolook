@@ -9,6 +9,28 @@ import '../../services/challengeMonh/challenge_month_service.dart';
 import '../pub/native_ad_widget.dart';
 import 'challenge_month_post_card.dart';
 
+// lib/pages/challenge/challenge_page.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../services/challengeMonh/challenge_month_service.dart';
+import '../pub/native_ad_widget.dart';
+import 'challenge_month_post_card.dart';
+
+// lib/pages/challenge/challenge_page.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../services/challengeMonh/challenge_month_service.dart';
+import '../pub/native_ad_widget.dart';
+import 'challenge_month_post_card.dart';
+
 class ChallengeMonthPage extends StatefulWidget {
   const ChallengeMonthPage({Key? key}) : super(key: key);
 
@@ -19,21 +41,44 @@ class ChallengeMonthPage extends StatefulWidget {
 class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ChallengeMonthService _challengeService = ChallengeMonthService();
+
+  // Variables pour la pagination des posts du mois courant
   List<Post> _currentMonthPosts = [];
   bool _loadingCurrent = true;
+  bool _hasMoreCurrent = true;
+  DocumentSnapshot? _lastDocumentCurrent;
+  bool _isLoadingMoreCurrent = false;
+  final int _batchSize = 5;
+
+  // Variables pour l'historique
   List<ChallengeValidation> _historyValidations = [];
   List<DateTime> _monthsWithoutValidation = [];
   bool _loadingHistory = true;
+
   UserAuthProvider? _authProvider;
   String? _currentUserId;
   bool _isAdmin = false;
   ChallengeValidation? _currentMonthValidation;
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _scrollController.addListener(_onScroll);
     _loadData();
+  }
+
+  void _onScroll() {
+    if (_tabController.index == 0) {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 &&
+          !_isLoadingMoreCurrent &&
+          _hasMoreCurrent &&
+          !_loadingCurrent) {
+        _loadMoreCurrentMonth();
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -49,20 +94,71 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
   }
 
   Future<void> _loadCurrentMonth() async {
-    setState(() => _loadingCurrent = true);
+    setState(() {
+      _loadingCurrent = true;
+      _currentMonthPosts.clear();
+      _hasMoreCurrent = true;
+      _lastDocumentCurrent = null;
+    });
+
     try {
       final now = DateTime.now();
-      final posts = await _challengeService.getTopPostsForMonth(now);
+      final posts = await _challengeService.getPostsForMonthBatch(
+        month: now,
+        lastDocument: null,
+        limit: _batchSize,
+      );
       final validation = await _challengeService.getValidationForMonth(now);
+
       setState(() {
         _currentMonthPosts = posts;
         _currentMonthValidation = validation;
+        _hasMoreCurrent = posts.length == _batchSize;
+        if (posts.isNotEmpty) {
+          _updateLastDocument(posts.last.id!);
+        }
+        _loadingCurrent = false;
       });
     } catch (e) {
       print('Erreur chargement mois courant: $e');
-    } finally {
       setState(() => _loadingCurrent = false);
     }
+  }
+
+  Future<void> _loadMoreCurrentMonth() async {
+    if (_isLoadingMoreCurrent || !_hasMoreCurrent || _lastDocumentCurrent == null) return;
+
+    setState(() => _isLoadingMoreCurrent = true);
+
+    try {
+      final now = DateTime.now();
+      final posts = await _challengeService.getPostsForMonthBatch(
+        month: now,
+        lastDocument: _lastDocumentCurrent,
+        limit: _batchSize,
+      );
+
+      if (posts.isNotEmpty) {
+        setState(() {
+          _currentMonthPosts.addAll(posts);
+          _hasMoreCurrent = posts.length == _batchSize;
+          if (posts.isNotEmpty) {
+            _updateLastDocument(posts.last.id!);
+          }
+        });
+      } else {
+        setState(() => _hasMoreCurrent = false);
+      }
+    } catch (e) {
+      print('Erreur chargement plus: $e');
+    } finally {
+      setState(() => _isLoadingMoreCurrent = false);
+    }
+  }
+
+  Future<void> _updateLastDocument(String postId) async {
+    final doc = await FirebaseFirestore.instance.collection('Posts').doc(postId).get();
+    _lastDocumentCurrent = doc;
   }
 
   Future<void> _loadHistory() async {
@@ -73,15 +169,14 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
       setState(() {
         _historyValidations = validations;
         _monthsWithoutValidation = monthsWithout;
+        _loadingHistory = false;
       });
     } catch (e) {
       print('Erreur chargement historique: $e');
-    } finally {
       setState(() => _loadingHistory = false);
     }
   }
 
-  // Valider un gagnant pour un mois donné (uniquement si mois terminé)
   Future<void> _validateWinnerForMonth(Post winnerPost, DateTime month) async {
     if (!_isAdmin) return;
     if (!_challengeService.isMonthOver(month)) {
@@ -146,7 +241,6 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
     }
   }
 
-  // Annuler un gagnant pour un mois donné (admin)
   Future<void> _cancelWinnerForMonth(DateTime month) async {
     if (!_isAdmin) return;
 
@@ -196,7 +290,6 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
     }
   }
 
-  // Encaissement par l'utilisateur gagnant
   Future<void> _payoutWinner(Post winnerPost, DateTime month) async {
     try {
       await _challengeService.payoutWinner(
@@ -205,7 +298,6 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
         authProvider: _authProvider!,
         month: month,
       );
-      // Récupérer le montant pour l'affichage
       final validation = await _challengeService.getValidationForMonth(month);
       final amount = validation?.prizeAmount ?? 0;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -219,6 +311,17 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur encaissement: $e'), backgroundColor: Colors.red));
     }
+  }
+
+  Future<Post?> _getPostById(String postId) async {
+    final doc = await FirebaseFirestore.instance.collection('Posts').doc(postId).get();
+    if (doc.exists) return Post.fromJson(doc.data()!);
+    return null;
+  }
+
+  String _monthName(int month) {
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return months[month - 1];
   }
 
   @override
@@ -255,7 +358,13 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
       return const Center(child: CircularProgressIndicator(color: Color(0xFFFFD600)));
     }
 
-    if (_currentMonthPosts.isEmpty) {
+    final isWinnerValidated = _currentMonthValidation != null && _currentMonthValidation!.status == 'validated';
+    final winnerPostId = _currentMonthValidation?.winnerPostId;
+    final prizeAmount = _currentMonthValidation?.prizeAmount ?? 5000;
+    final isPayoutCompleted = _currentMonthValidation?.payoutCompleted ?? false;
+    final bool isMonthFinished = _challengeService.isMonthOver(DateTime.now());
+
+    if (_currentMonthPosts.isEmpty && !_loadingCurrent) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -279,16 +388,11 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
       );
     }
 
-    final isWinnerValidated = _currentMonthValidation != null && _currentMonthValidation!.status == 'validated';
-    final winnerPostId = _currentMonthValidation?.winnerPostId;
-    final prizeAmount = _currentMonthValidation?.prizeAmount ?? 5000;
-    final isPayoutCompleted = _currentMonthValidation?.payoutCompleted ?? false;
-    final bool isMonthFinished = _challengeService.isMonthOver(DateTime.now());
-
     return RefreshIndicator(
       onRefresh: _loadCurrentMonth,
       color: const Color(0xFFFFD600),
       child: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
           // Carte info
@@ -319,20 +423,38 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
           ),
           const MrecAdWidget(useBanner: true, showLessAdsButton: false),
           const SizedBox(height: 8),
-          ...List.generate(_currentMonthPosts.length, (index) {
-            final post = _currentMonthPosts[index];
+
+          // 🔥 Liste des posts (déjà dans l'ordre du plus d'interactions au moins)
+          ..._currentMonthPosts.asMap().entries.map((entry) {
+            final index = entry.key;
+            final post = entry.value;
             final isWinner = isWinnerValidated && winnerPostId == post.id;
             final showPayoutButton = isWinner &&
                 post.user_id == _currentUserId &&
                 !isPayoutCompleted;
+
             return ChallengePostCard(
               post: post,
               rank: index + 1,
               isWinner: isWinner,
               onPayout: showPayoutButton ? () => _payoutWinner(post, DateTime.now()) : null,
             );
-          }),
-          // Section admin pour le mois courant
+          }).toList(),
+
+          // Indicateur de chargement
+          if (_isLoadingMoreCurrent)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD600))),
+            ),
+
+          if (!_hasMoreCurrent && _currentMonthPosts.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: Text('Fin du classement', style: TextStyle(color: Colors.grey))),
+            ),
+
+          // Section admin
           if (_isAdmin && _currentMonthPosts.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(12),
@@ -396,11 +518,11 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // Mois déjà validés
+          // Mois déjà validés (gagnants historiques)
           if (_historyValidations.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('🏅 Mois avec gagnant validé', style: TextStyle(color: Color(0xFFFFD600), fontWeight: FontWeight.bold)),
+              child: Text('🏆 GAGNANTS DES MOIS PRÉCÉDENTS', style: TextStyle(color: Color(0xFFFFD600), fontWeight: FontWeight.bold)),
             ),
             ..._historyValidations.map((validation) {
               return FutureBuilder<Post?>(
@@ -431,7 +553,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${_monthName(validation.month)} ${validation.year}',
+                                '🏆 ${_monthName(validation.month)} ${validation.year}',
                                 style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                               ),
                               Text(
@@ -485,17 +607,16 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
             }).toList(),
           ],
 
-          // Mois sans validation (admin uniquement, et uniquement si mois terminé)
+          // Mois sans validation (pour admin)
           if (_isAdmin && _monthsWithoutValidation.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              child: Text('⏳ Mois sans validation (en attente)', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              child: Text('⏳ MOIS EN ATTENTE DE VALIDATION', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
             ),
             ..._monthsWithoutValidation.map((month) {
-              // Ne proposer que les mois terminés (normalement tous le sont par définition de getMonthsWithoutValidation)
               if (!_challengeService.isMonthOver(month)) return const SizedBox.shrink();
               return FutureBuilder<List<Post>>(
-                future: _challengeService.getTopPostsForMonth(month),
+                future: _challengeService.getTopPostsForMonthAdmin(month),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const SizedBox.shrink();
                   final posts = snapshot.data!;
@@ -536,9 +657,9 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
                           child: Wrap(
                             spacing: 8,
                             children: posts.take(3).map((post) {
-                              final score = (post.totalInteractions ?? 0) + (post.loves ?? 0) + (post.favoritesCount ?? 0) + (post.uniqueViewsCount ?? 0);
+                              final score = post.totalInteractions ?? 0;
                               return Chip(
-                                label: Text('@${post.user?.pseudo ?? "?"} - $score pts'),
+                                label: Text('@${post.user?.pseudo ?? "?"} - $score interactions'),
                                 backgroundColor: Colors.grey[800],
                                 labelStyle: const TextStyle(color: Colors.white70, fontSize: 10),
                               );
@@ -573,7 +694,6 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
     );
   }
 
-  // Dialogue pour choisir le gagnant parmi les posts d'un mois
   Future<Post?> _showWinnerPicker(List<Post> posts, DateTime month) async {
     return showDialog<Post>(
       context: context,
@@ -587,14 +707,14 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
             itemCount: posts.length,
             itemBuilder: (context, index) {
               final post = posts[index];
-              final score = (post.totalInteractions ?? 0) + (post.loves ?? 0) + (post.favoritesCount ?? 0) + (post.uniqueViewsCount ?? 0);
+              final score = post.totalInteractions ?? 0;
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: const Color(0xFFFFD600),
                   child: Text('${index + 1}', style: const TextStyle(color: Colors.black)),
                 ),
                 title: Text('@${post.user?.pseudo ?? post.canal?.titre}', style: const TextStyle(color: Colors.white)),
-                subtitle: Text('Score: $score pts', style: const TextStyle(color: Colors.white70)),
+                subtitle: Text('Score: $score interactions', style: const TextStyle(color: Colors.white70)),
                 trailing: const Icon(Icons.emoji_events, color: Color(0xFFFFD600)),
                 onTap: () => Navigator.pop(context, post),
               );
@@ -608,14 +728,10 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
     );
   }
 
-  Future<Post?> _getPostById(String postId) async {
-    final doc = await FirebaseFirestore.instance.collection('Posts').doc(postId).get();
-    if (doc.exists) return Post.fromJson(doc.data()!);
-    return null;
-  }
-
-  String _monthName(int month) {
-    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-    return months[month - 1];
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 }
