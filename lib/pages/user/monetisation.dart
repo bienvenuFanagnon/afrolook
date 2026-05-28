@@ -10,6 +10,7 @@ import '../../models/model_data.dart';
 import '../../services/coin_gift_service.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../paiement/depotPageTranaction.dart';
+import '../paiement/feexpay/pendingTransactionsScreen.dart';
 import '../paiement/newDepot.dart';
 import 'UserRetrait/userRetraitListe.dart';
 import 'coin_conversion_page.dart';
@@ -162,9 +163,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
               color: Color(0xFF00CC66),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Divider(color: Colors.grey, height: 1),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -225,6 +226,30 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+
+          // Bouton pour accéder aux transactions en attente
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PendingTransactionsScreen()),
+              );
+            },
+            icon: const Icon(Icons.pending_actions, size: 18),
+            label: const Text(
+              "Transactions en attente",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF9500),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),
