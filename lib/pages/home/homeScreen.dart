@@ -1260,7 +1260,7 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Future<void> _showDailyModal() async {
-    const modalKeys = ['remuneration', 'top_dating', 'challenge_month'];
+    const modalKeys = ['remuneration', 'top_dating', 'challenge_month','invite_amis'];
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 

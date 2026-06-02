@@ -1,7 +1,7 @@
-// services/retrait_service.dart
+// services/retraitService.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/model_data.dart';
+import '../models/payment_config.dart';
 
 class RetraitService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -14,6 +14,7 @@ class RetraitService {
     required double montant,
     required String methodPaiement,
     required String numeroCompte,
+    required String countryCode,
     required UserData userData,
   }) async {
     try {
@@ -35,7 +36,8 @@ class RetraitService {
         montant: montant,
         methodPaiement: methodPaiement,
         numeroCompte: numeroCompte,
-        description: 'Retrait ${methodPaiement} - $numeroCompte',
+        countryCode: countryCode,
+        description: 'Retrait $methodPaiement - $numeroCompte ($countryCode)',
         numeroTransaction: _generateTransactionNumber(),
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
@@ -62,7 +64,7 @@ class RetraitService {
         transaction.set(retraitRef, transactionData.toJson());
       });
 
-      print('✅ Demande de retrait créée: $montant FCFA');
+      print('✅ Demande de retrait créée: $montant FCFA pour $countryCode');
       return true;
     } catch (e) {
       print('❌ Erreur demande retrait: $e');
@@ -100,7 +102,6 @@ class RetraitService {
     required String motif,
   }) async {
     try {
-      // Récupérer la transaction
       final retraitDoc = await _firestore
           .collection(_collectionRetraits)
           .doc(retraitId)
@@ -112,9 +113,7 @@ class RetraitService {
 
       final retrait = TransactionRetrait.fromJson(retraitDoc.data()!);
 
-      // Transaction pour rembourser l'utilisateur
       await _firestore.runTransaction((transaction) async {
-        // 1. Rembourser l'utilisateur
         final userRef = _firestore.collection(_collectionUsers).doc(retrait.userId);
         final userDoc = await transaction.get(userRef);
 
@@ -125,7 +124,6 @@ class RetraitService {
           'updated_at': DateTime.now().millisecondsSinceEpoch,
         });
 
-        // 2. Marquer comme annulé
         transaction.update(retraitDoc.reference, {
           'statut': 'ANNULE',
           'motif_annulation': motif,
@@ -158,10 +156,11 @@ class RetraitService {
         .toList());
   }
 
-  /// 👑 Récupérer tous les retraits (Admin)
-  static Stream<List<TransactionRetrait>> getAllRetraits() {
+  /// 🔍 Récupérer les retraits par email (Admin)
+  static Stream<List<TransactionRetrait>> searchRetraitsByEmail(String email) {
     return _firestore
         .collection(_collectionRetraits)
+        .where('user_email', isEqualTo: email)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -173,11 +172,10 @@ class RetraitService {
         .toList());
   }
 
-  /// 🔍 Rechercher les retraits par email (Admin)
-  static Stream<List<TransactionRetrait>> searchRetraitsByEmail(String email) {
+  /// 👑 Récupérer tous les retraits (Admin)
+  static Stream<List<TransactionRetrait>> getAllRetraits() {
     return _firestore
         .collection(_collectionRetraits)
-        .where('user_email', isEqualTo: email)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs

@@ -287,94 +287,208 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
     return retraits.where((retrait) => retrait.statut == _selectedFilter).toList();
   }
 
+// pages/retrait/admin_retrait_list_page.dart
+// Remplacez la méthode _buildRetraitCard par celle-ci :
+
   Widget _buildRetraitCard(TransactionRetrait retrait) {
     return Card(
       color: Colors.grey[900],
       margin: EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: EdgeInsets.all(16),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: retrait.statutColor.withOpacity(0.2),
-            shape: BoxShape.circle,
-            border: Border.all(color: retrait.statutColor),
-          ),
-          child: Icon(
-            _getStatusIcon(retrait.statut!),
-            color: retrait.statutColor,
-          ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: retrait.statutColor.withOpacity(0.3),
+          width: 1,
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${retrait.montant!.toStringAsFixed(2)} FCFA',
-              style: TextStyle(
-                color: Colors.yellow[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (retrait.numeroTransaction != null && retrait.numeroTransaction!.isNotEmpty)
-              Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'N°: ${retrait.numeroTransaction!}',
-                  style: TextStyle(
-                    color: Colors.green[400],
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '@${retrait.userPseudo ?? 'Utilisateur'}',
-              style: TextStyle(color: Colors.white),
-            ),
-            Text(
-              '${retrait.methodPaiement} - ${retrait.numeroCompte}',
-              style: TextStyle(color: Colors.grey[400], fontSize: 12),
-            ),
-            Text(
-              _formatDate(retrait.createdAt!),
-              style: TextStyle(color: Colors.grey[500], fontSize: 11),
-            ),
-          ],
-        ),
-        trailing: Container(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: retrait.statutColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: retrait.statutColor),
-          ),
-          child: Text(
-            retrait.statutText,
-            style: TextStyle(
-              color: retrait.statutColor,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+      ),
+      child: InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => AdminRetraitDetailPage(retrait: retrait),
             ),
-          );
+          ).then((_) => setState(() {}));
         },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Ligne 1: Montant + Statut
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Montant et numéro de transaction
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${retrait.montant!.toStringAsFixed(2)} FCFA',
+                          style: TextStyle(
+                            color: Colors.yellow[700],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (retrait.numeroTransaction != null && retrait.numeroTransaction!.isNotEmpty)
+                          Text(
+                            'N°: ${retrait.numeroTransaction!}',
+                            style: TextStyle(
+                              color: Colors.green[400],
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Badge statut
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: retrait.statutColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: retrait.statutColor),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getStatusIcon(retrait.statut!),
+                          color: retrait.statutColor,
+                          size: 14,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          retrait.statutText,
+                          style: TextStyle(
+                            color: retrait.statutColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+
+              // Ligne 2: Utilisateur
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.green[800]!.withOpacity(0.3),
+                    child: Icon(Icons.person, color: Colors.green, size: 16),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '@${retrait.userPseudo ?? 'Utilisateur'}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+
+              // Ligne 3: Méthode de paiement et numéro
+              Row(
+                children: [
+                  Icon(Icons.payment, color: Colors.blue[400], size: 14),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${retrait.methodPaiement} - ${retrait.numeroCompte}',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+
+              // Ligne 4: Email
+              if (retrait.userEmail != null && retrait.userEmail!.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.email, color: Colors.orange[400], size: 14),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        retrait.userEmail!,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+              // Ligne 5: Date
+              Row(
+                children: [
+                  Icon(Icons.access_time, color: Colors.purple[400], size: 14),
+                  SizedBox(width: 8),
+                  Text(
+                    _formatDate(retrait.createdAt!),
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Motif d'annulation si annulé
+              if (retrait.isAnnule && retrait.motifAnnulation != null && retrait.motifAnnulation!.isNotEmpty) ...[
+                SizedBox(height: 10),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber, color: Colors.red, size: 14),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          retrait.motifAnnulation!,
+                          style: TextStyle(
+                            color: Colors.red[300],
+                            fontSize: 11,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(

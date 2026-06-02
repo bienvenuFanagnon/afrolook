@@ -4,54 +4,69 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
+import '../../../models/payment_config.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/retraitService.dart';
 
-class UserRetraitPage extends StatefulWidget {
+class UserDemandeRetraitPage extends StatefulWidget {
   @override
-  _UserRetraitPageState createState() => _UserRetraitPageState();
+  _UserDemandeRetraitPageState createState() => _UserDemandeRetraitPageState();
 }
 
-class _UserRetraitPageState extends State<UserRetraitPage> {
+class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _montantController = TextEditingController();
-  String _selectedMethod = 'Paiement via Service Client';
   final TextEditingController _numeroController = TextEditingController();
+
+  PaymentConfig? _selectedCountry;
+  PaymentMethod? _selectedMethod;
+
   bool _isLoading = false;
   bool _hasAcceptedConditions = false;
 
-  final List<String> _paymentMethods = [
-    'Paiement via Service Client'
-  ];
+  // Liste des pays disponibles (depuis la configuration)
+  List<PaymentConfig> get _availableCountries => PaymentConfig.activeCountries;
+
+  @override
+  void initState() {
+    super.initState();
+    // Sélectionner le premier pays par défaut
+    if (_availableCountries.isNotEmpty) {
+      _selectedCountry = _availableCountries.first;
+    }
+  }
 
   // ========== VALIDATION DES HORAIRES DE RETRAIT ==========
   bool _isRetraitAllowed() {
     final now = DateTime.now();
-    final weekday = now.weekday; // 1 = lundi, 7 = dimanche
+    final weekday = now.weekday;
     final hour = now.hour;
     final minute = now.minute;
 
-    // Dimanche : pas de retrait
-    if (weekday == 7) {
-      return false;
-    }
-
-    // Samedi : 8h à 14h
+    if (weekday == 7) return false;
     if (weekday == 6) {
-      if (hour < 8 || (hour == 14 && minute > 0) || hour > 14) {
-        return false;
-      }
+      if (hour < 8 || (hour == 14 && minute > 0) || hour > 14) return false;
       return true;
     }
-
-    // Lundi à vendredi : 8h à 17h
-    if (hour < 8 || (hour == 17 && minute > 0) || hour > 17) {
-      return false;
-    }
+    if (hour < 8 || (hour == 17 && minute > 0) || hour > 17) return false;
     return true;
   }
 
-  // Widget informatif sur les horaires
+  // Validation du numéro selon le pays sélectionné
+  String? _validatePhoneNumber(String? value) {
+    if (_selectedCountry == null) return 'Sélectionnez un pays';
+    return _selectedCountry!.validatePhoneNumber(value);
+  }
+
+  // Mise à jour des méthodes de paiement quand le pays change
+  void _onCountryChanged(PaymentConfig? newCountry) {
+    setState(() {
+      _selectedCountry = newCountry;
+      _selectedMethod = null; // Réinitialiser la méthode
+      _numeroController.clear(); // Réinitialiser le numéro
+    });
+  }
+
   Widget _buildHorairesInfo() {
     return Container(
       margin: EdgeInsets.only(top: 8),
@@ -95,22 +110,23 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            // Carte solde avec horaires
             _buildSoldeCard(userData!),
             SizedBox(height: 20),
-
-            // Formulaire de retrait
             Expanded(
               child: SingleChildScrollView(
                 child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
+                      _buildCountrySelector(),
+                      SizedBox(height: 16),
                       _buildMontantField(),
                       SizedBox(height: 16),
-                      _buildMethodDropdown(),
-                      SizedBox(height: 16),
-                      _buildNumeroField(),
+                      if (_selectedCountry != null) ...[
+                        _buildMethodDropdown(),
+                        SizedBox(height: 16),
+                        _buildNumeroField(),
+                      ],
                       SizedBox(height: 16),
                       _buildConditionsCheckbox(),
                       SizedBox(height: 24),
@@ -151,28 +167,17 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
         children: [
           Text(
             'Solde Principal Disponible',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
           ),
           SizedBox(height: 8),
           Text(
             '${userData.votre_solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA',
-            style: TextStyle(
-              color: Colors.yellow[700],
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.yellow[700], fontSize: 28, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Text(
             'Solde minimum de retrait: 2 500 FCFA',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           _buildHorairesInfo(),
         ],
@@ -180,17 +185,73 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
     );
   }
 
+  Widget _buildCountrySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pays de retrait',
+          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.green),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCountry?.countryCode,
+              isExpanded: true,
+              dropdownColor: Colors.grey[900],
+              style: TextStyle(color: Colors.white, fontSize: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              items: _availableCountries.map((country) {
+                return DropdownMenuItem<String>(
+                  value: country.countryCode,
+                  child: Row(
+                    children: [
+                      Icon(Icons.flag, color: Colors.yellow[700], size: 20),
+                      SizedBox(width: 12),
+                      Text(country.countryName),
+                      SizedBox(width: 8),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '+${country.phoneCode}',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? countryCode) {
+                if (countryCode != null) {
+                  final newCountry = _availableCountries.firstWhere(
+                        (c) => c.countryCode == countryCode,
+                    orElse: () => _availableCountries.first,
+                  );
+                  _onCountryChanged(newCountry);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
   Widget _buildMontantField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Montant à retirer',
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
         ),
         SizedBox(height: 8),
         TextFormField(
@@ -200,31 +261,17 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
           decoration: InputDecoration(
             hintText: 'Entrez le montant en FCFA',
             hintStyle: TextStyle(color: Colors.grey[600]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.yellow),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
             prefixIcon: Icon(Icons.money, color: Colors.green),
             suffixText: 'FCFA',
             suffixStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez entrer un montant';
-            }
+            if (value == null || value.isEmpty) return 'Veuillez entrer un montant';
             final montant = double.tryParse(value);
-            if (montant == null || montant < 2500) {
-              return 'Le montant minimum est de 2 500 FCFA';
-            }
+            if (montant == null || montant < 2500) return 'Le montant minimum est de 2 500 FCFA';
             return null;
           },
         ),
@@ -238,52 +285,34 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
       children: [
         Text(
           'Méthode de retrait',
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
         ),
         SizedBox(height: 8),
-        DropdownButtonFormField<String>(
+        DropdownButtonFormField<PaymentMethod>(
           value: _selectedMethod,
+          hint: Text('Sélectionnez une méthode', style: TextStyle(color: Colors.grey[500])),
           dropdownColor: Colors.grey[900],
           style: TextStyle(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
-            hintText: 'Sélectionnez une méthode',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.yellow),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
             prefixIcon: Icon(Icons.payment, color: Colors.green),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           ),
-          items: _paymentMethods.map((method) {
+          items: _selectedCountry!.paymentMethods.map((method) {
             return DropdownMenuItem(
               value: method,
-              child: Text(method, style: TextStyle(color: Colors.white)),
+              child: Row(
+                children: [
+                  Icon(method.icon, color: Colors.yellow[700], size: 20),
+                  SizedBox(width: 12),
+                  Text(method.name),
+                ],
+              ),
             );
           }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedMethod = value!;
-            });
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez sélectionner une méthode';
-            }
-            return null;
-          },
+          onChanged: (value) => setState(() => _selectedMethod = value),
+          validator: (value) => value == null ? 'Veuillez sélectionner une méthode' : null,
         ),
       ],
     );
@@ -293,13 +322,25 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Votre numéro de compte',
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Text(
+              'Numéro de retrait',
+              style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            SizedBox(width: 8),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.yellow[700]!.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _selectedCountry!.countryName,
+                style: TextStyle(color: Colors.yellow[700], fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 8),
         TextFormField(
@@ -307,32 +348,30 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
           keyboardType: TextInputType.phone,
           style: TextStyle(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
-            hintText: 'Ex: +228 90 12 34 56',
+            hintText: '+${_selectedCountry!.phoneCode} XX XX XX XX',
             hintStyle: TextStyle(color: Colors.grey[600]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.yellow),
-            ),
+            helperText: 'Format: ${_selectedCountry!.phoneCode} suivi de ${_selectedCountry!.phoneLength} chiffres',
+            helperStyle: TextStyle(color: Colors.grey[500], fontSize: 11),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
             prefixIcon: Icon(Icons.phone_android, color: Colors.green),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            prefixText: '+',
+            prefixStyle: TextStyle(color: Colors.green, fontSize: 16),
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez entrer votre numéro';
+          onChanged: (value) {
+            // Auto-formatage
+            if (_selectedCountry != null) {
+              final formatted = _selectedCountry!.formatPhoneNumber(value);
+              if (formatted != value) {
+                _numeroController.value = TextEditingValue(
+                  text: formatted,
+                  selection: TextSelection.collapsed(offset: formatted.length),
+                );
+              }
             }
-            if (value.length < 8) {
-              return 'Numéro invalide';
-            }
-            return null;
           },
+          validator: (value) => _validatePhoneNumber(value),
         ),
       ],
     );
@@ -353,41 +392,20 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
             scale: 1.2,
             child: Checkbox(
               value: _hasAcceptedConditions,
-              onChanged: (value) {
-                setState(() {
-                  _hasAcceptedConditions = value ?? false;
-                });
-              },
+              onChanged: (value) => setState(() => _hasAcceptedConditions = value ?? false),
               activeColor: Colors.yellow[700],
               checkColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
             ),
           ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'J\'ai lu et j\'accepte les conditions',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('J\'ai lu et j\'accepte les conditions', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4),
                 GestureDetector(
                   onTap: _showConditionsDetails,
-                  child: Text(
-                    'Cliquez ici pour lire les instructions importantes',
-                    style: TextStyle(
-                      color: Colors.yellow[700],
-                      fontSize: 12,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
+                  child: Text('Cliquez ici pour lire les instructions importantes', style: TextStyle(color: Colors.yellow[700], fontSize: 12, decoration: TextDecoration.underline)),
                 ),
               ],
             ),
@@ -398,6 +416,12 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
   }
 
   Widget _buildSubmitButton(UserAuthProvider authProvider) {
+    final bool isFormValid = _selectedCountry != null &&
+        _selectedMethod != null &&
+        _hasAcceptedConditions &&
+        _montantController.text.isNotEmpty &&
+        _numeroController.text.isNotEmpty;
+
     return Column(
       children: [
         SizedBox(
@@ -406,48 +430,22 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : () => _submitRetrait(authProvider),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _hasAcceptedConditions ? Colors.yellow[700] : Colors.grey[600],
+              backgroundColor: isFormValid ? Colors.yellow[700] : Colors.grey[600],
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-              shadowColor: _hasAcceptedConditions ? Colors.yellow[700]!.withOpacity(0.5) : Colors.grey,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isLoading
-                ? SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                color: Colors.black,
-                strokeWidth: 2,
-              ),
-            )
-                : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.send, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'SOUMETTRE LA DEMANDE',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+                ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.send, size: 20),
+              SizedBox(width: 8),
+              Text('SOUMETTRE LA DEMANDE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ]),
           ),
         ),
         if (!_hasAcceptedConditions) ...[
           SizedBox(height: 8),
-          Text(
-            'Veuillez accepter les conditions pour continuer',
-            style: TextStyle(
-              color: Colors.orange,
-              fontSize: 12,
-            ),
-          ),
+          Text('Veuillez accepter les conditions pour continuer', style: TextStyle(color: Colors.orange, fontSize: 12)),
         ],
       ],
     );
@@ -464,50 +462,28 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.contact_support, color: Colors.yellow[700], size: 24),
-              SizedBox(width: 8),
-              Text(
-                'Procédure de Retrait',
-                style: TextStyle(
-                  color: Colors.yellow[700],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
+          Row(children: [
+            Icon(Icons.contact_support, color: Colors.yellow[700], size: 24),
+            SizedBox(width: 8),
+            Text('Procédure de Retrait', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold, fontSize: 16)),
+          ]),
           SizedBox(height: 12),
-          _buildStepItem('1', 'Soumettez votre demande de retrait'),
-          _buildStepItem('2', 'Notez votre numéro de transaction'),
-          _buildStepItem('3', 'Contactez notre service client'),
-          _buildStepItem('4', 'Fournissez votre numéro de transaction'),
-          _buildStepItem('5', 'Recevez votre paiement sous 24-48h'),
+          _buildStepItem('1', 'Sélectionnez votre pays'),
+          _buildStepItem('2', 'Choisissez votre méthode de paiement'),
+          _buildStepItem('3', 'Entrez votre numéro au format valide'),
+          _buildStepItem('4', 'Soumettez votre demande de retrait'),
+          _buildStepItem('5', 'Notez votre numéro de transaction'),
+          _buildStepItem('6', 'Contactez notre service client'),
+          _buildStepItem('7', 'Recevez votre paiement sous 24-48h'),
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning_amber, color: Colors.orange, size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Sans contact avec notre service, votre retrait ne sera pas traité',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green)),
+            child: Row(children: [
+              Icon(Icons.warning_amber, color: Colors.orange, size: 16),
+              SizedBox(width: 8),
+              Expanded(child: Text('Assurez-vous que votre numéro est correct. Les fonds seront envoyés sur ce numéro.', style: TextStyle(color: Colors.orange, fontSize: 12))),
+            ]),
           ),
         ],
       ),
@@ -523,31 +499,11 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
           Container(
             width: 24,
             height: 24,
-            decoration: BoxDecoration(
-              color: Colors.yellow[700],
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                step,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            decoration: BoxDecoration(color: Colors.yellow[700], shape: BoxShape.circle),
+            child: Center(child: Text(step, style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold))),
           ),
           SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.grey[300],
-                fontSize: 13,
-              ),
-            ),
-          ),
+          Expanded(child: Text(text, style: TextStyle(color: Colors.grey[300], fontSize: 13))),
         ],
       ),
     );
@@ -558,76 +514,38 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-            Icon(Icons.security, color: Colors.yellow[700]),
-            SizedBox(width: 8),
-            Text(
-              'Instructions Importantes',
-              style: TextStyle(
-                color: Colors.yellow[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        title: Row(children: [
+          Icon(Icons.security, color: Colors.yellow[700]),
+          SizedBox(width: 8),
+          Text('Instructions Importantes', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold)),
+        ]),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Pour finaliser votre retrait, vous devez :',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text('Pour finaliser votre retrait, vous devez :', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
               SizedBox(height: 12),
               _buildConditionItem('📞 Contacter notre service client dans les 24h suivant votre demande'),
               _buildConditionItem('🔢 Fournir le numéro de transaction généré'),
               _buildConditionItem('⏰ Le traitement prend généralement 24 à 48 heures'),
-              _buildConditionItem('💰 Vérifier que votre numéro de compte est correct'),
+              _buildConditionItem('💰 Vérifier que votre numéro de retrait est correct'),
+              _buildConditionItem('🌍 Vérifier que le pays et la méthode sont corrects'),
               _buildConditionItem('❌ Les demandes non finalisées sous 7 jours seront annulées automatiquement'),
               SizedBox(height: 16),
               Container(
                 padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red),
-                ),
-                child: Text(
-                  'Important : Votre retrait ne sera traité qu\'après contact avec notre service client.',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)),
+                child: Text('Important : Votre retrait ne sera traité qu\'après contact avec notre service client.', style: TextStyle(color: Colors.red, fontSize: 12)),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'FERMER',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('FERMER', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _hasAcceptedConditions = true;
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.yellow[700],
-              foregroundColor: Colors.black,
-            ),
+            onPressed: () { setState(() => _hasAcceptedConditions = true); Navigator.pop(context); },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black),
             child: Text('J\'AI COMPRIS'),
           ),
         ],
@@ -643,155 +561,68 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
         children: [
           Icon(Icons.check_circle, color: Colors.green, size: 16),
           SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.grey[300],
-                fontSize: 13,
-              ),
-            ),
-          ),
+          Expanded(child: Text(text, style: TextStyle(color: Colors.grey[300], fontSize: 13))),
         ],
       ),
     );
   }
-// Nouvelle méthode pour afficher le modal des horaires
+
   void _showHorairesModal() {
     showDialog(
       context: context,
-      barrierDismissible: true,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.yellow[700]!, width: 2),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.access_time, color: Colors.yellow[700], size: 28),
-            SizedBox(width: 12),
-            Text(
-              'Horaires de retrait',
-              style: TextStyle(
-                color: Colors.yellow[700],
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ],
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.yellow[700]!, width: 2)),
+        title: Row(children: [
+          Icon(Icons.access_time, color: Colors.yellow[700], size: 28),
+          SizedBox(width: 12),
+          Text('Horaires de retrait', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold)),
+        ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '📅 Lundi au Vendredi',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            Text('📅 Lundi au Vendredi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
-            Text(
-              '⏰ 8h00 - 17h00',
-              style: TextStyle(color: Colors.grey[300], fontSize: 14),
-            ),
+            Text('⏰ 8h00 - 17h00', style: TextStyle(color: Colors.grey[300])),
             SizedBox(height: 12),
-            Text(
-              '📅 Samedi',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            Text('📅 Samedi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
-            Text(
-              '⏰ 8h00 - 14h00',
-              style: TextStyle(color: Colors.grey[300], fontSize: 14),
-            ),
+            Text('⏰ 8h00 - 14h00', style: TextStyle(color: Colors.grey[300])),
             SizedBox(height: 12),
-            Text(
-              '📅 Dimanche',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            Text('📅 Dimanche', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
-            Text(
-              '🚫 Fermé (aucun retrait)',
-              style: TextStyle(color: Colors.red[400], fontSize: 14),
-            ),
+            Text('🚫 Fermé (aucun retrait)', style: TextStyle(color: Colors.red[400])),
             SizedBox(height: 16),
             Container(
               padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blueGrey[800],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info, color: Colors.yellow[700], size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Les demandes hors de ces créneaux ne seront pas acceptées.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: Colors.blueGrey[800], borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                Icon(Icons.info, color: Colors.yellow[700], size: 20),
+                SizedBox(width: 8),
+                Expanded(child: Text('Les demandes hors de ces créneaux ne seront pas acceptées.', style: TextStyle(color: Colors.white70))),
+              ]),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Fermer',
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.yellow[700],
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'J\'ai compris',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer', style: TextStyle(color: Colors.grey[400]))),
+          ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black), child: Text('J\'ai compris')),
         ],
       ),
     );
   }
 
   Future<void> _submitRetrait(UserAuthProvider authProvider) async {
-    // Vérification des horaires de retrait
     if (!_isRetraitAllowed()) {
-      _showHorairesModal();  // ← appel du modal au lieu du SnackBar
-
+      _showHorairesModal();
       return;
     }
 
     if (!_formKey.currentState!.validate()) return;
 
     if (!_hasAcceptedConditions) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Veuillez accepter les conditions de retrait'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions de retrait'), backgroundColor: Colors.orange));
       return;
     }
 
@@ -799,14 +630,12 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
     final userData = authProvider.loginUserData!;
 
     if (userData.votre_solde_principal! < montant) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Solde insuffisant pour effectuer ce retrait'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solde insuffisant pour effectuer ce retrait'), backgroundColor: Colors.red));
       return;
     }
+
+    // Formater le numéro avec l'indicatif
+    final formattedNumber = _selectedCountry!.formatPhoneNumber(_numeroController.text);
 
     setState(() => _isLoading = true);
 
@@ -814,35 +643,20 @@ class _UserRetraitPageState extends State<UserRetraitPage> {
       final success = await RetraitService.demanderRetrait(
         userId: userData.id!,
         montant: montant,
-        methodPaiement: _selectedMethod,
-        numeroCompte: _numeroController.text,
+        methodPaiement: _selectedMethod!.name,
+        numeroCompte: formattedNumber,
+        countryCode: _selectedCountry!.countryCode,
         userData: userData,
       );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Demande de retrait soumise avec succès !'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
-          ),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => UserRetraitListPage()),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Demande de retrait soumise avec succès !'), backgroundColor: Colors.green, duration: Duration(seconds: 4)));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserRetraitListPage()));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erreur: ${e.toString()}'), backgroundColor: Colors.red));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

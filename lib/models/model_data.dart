@@ -4455,6 +4455,7 @@ class TransactionRetrait {
   String? processedBy; // ID de l'admin qui a traité
   String? methodPaiement; // Orange Money, Wave, etc.
   String? numeroCompte; // Numéro de téléphone ou compte
+  String? countryCode; // Nouveau champ pour le pays
 
   TransactionRetrait({
     this.id,
@@ -4468,6 +4469,7 @@ class TransactionRetrait {
     this.description = 'Demande de retrait',
     this.motifAnnulation,
     this.numeroTransaction,
+    this.countryCode,
     this.createdAt,
     this.updatedAt,
     this.processedBy,
@@ -4492,6 +4494,8 @@ class TransactionRetrait {
     processedBy = json['processed_by'];
     methodPaiement = json['method_paiement'];
     numeroCompte = json['numero_compte'];
+    countryCode = json['country_code'];
+
   }
 
   Map<String, dynamic> toJson() {
@@ -4511,6 +4515,8 @@ class TransactionRetrait {
     data['processed_by'] = processedBy;
     data['method_paiement'] = methodPaiement;
     data['numero_compte'] = numeroCompte;
+    data['country_code'] = countryCode;
+
     return data;
   }
 

@@ -507,6 +507,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
   }
 
   // =================== ONGLET HISTORIQUE ===================
+
   Widget _buildHistoryTab() {
     if (_loadingHistory) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFFFD600)));
@@ -607,7 +608,7 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
             }).toList(),
           ],
 
-          // Mois sans validation (pour admin)
+          // 🔥 MOIS SANS VALIDATION - VERSION AVEC CARTES COMPLÈTES
           if (_isAdmin && _monthsWithoutValidation.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -618,7 +619,15 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
               return FutureBuilder<List<Post>>(
                 future: _challengeService.getTopPostsForMonthAdmin(month),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  if (!snapshot.hasData) {
+                    return Card(
+                      color: const Color(0xFF1A1A1A),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: const ListTile(
+                        title: Text('Chargement...', style: TextStyle(color: Colors.white70)),
+                      ),
+                    );
+                  }
                   final posts = snapshot.data!;
                   if (posts.isEmpty) {
                     return Card(
@@ -631,41 +640,67 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
                       ),
                     );
                   }
-                  return Card(
-                    color: const Color(0xFF1A1A1A),
-                    margin: const EdgeInsets.only(bottom: 12),
+
+                  // Afficher les posts en cartes complètes
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ListTile(
-                          title: Text('${_monthName(month.month)} ${month.year}', style: const TextStyle(color: Color(0xFFFFD600))),
-                          subtitle: const Text('Cliquez pour choisir le gagnant', style: TextStyle(color: Colors.grey)),
-                          trailing: ElevatedButton.icon(
-                            onPressed: () async {
-                              final winner = await _showWinnerPicker(posts, month);
-                              if (winner != null) {
-                                await _validateWinnerForMonth(winner, month);
-                              }
-                            },
-                            icon: const Icon(Icons.emoji_events, size: 18),
-                            label: const Text('Valider'),
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD600), foregroundColor: Colors.black),
+                        // En-tête du mois
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.access_time, color: Colors.orange, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_monthName(month.month)} ${month.year}',
+                                    style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  final winner = await _showWinnerPicker(posts, month);
+                                  if (winner != null) {
+                                    await _validateWinnerForMonth(winner, month);
+                                  }
+                                },
+                                icon: const Icon(Icons.emoji_events, size: 18),
+                                label: const Text('Valider le gagnant'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFD600),
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Wrap(
-                            spacing: 8,
-                            children: posts.take(3).map((post) {
-                              final score = post.totalInteractions ?? 0;
-                              return Chip(
-                                label: Text('@${post.user?.pseudo ?? "?"} - $score interactions'),
-                                backgroundColor: Colors.grey[800],
-                                labelStyle: const TextStyle(color: Colors.white70, fontSize: 10),
-                              );
-                            }).toList(),
-                          ),
-                        ),
+                        // Liste des posts du mois
+                        ...posts.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final post = entry.value;
+                          return ChallengePostCard(
+                            post: post,
+                            rank: index + 1,
+                            isWinner: false,
+                            onPayout: null,
+                          );
+                        }).toList(),
                       ],
                     ),
                   );
@@ -693,7 +728,33 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
       ),
     );
   }
+// Ajouter cette méthode dans la classe _ChallengeMonthPageState
+  Future<UserData?> _getUserForPost(Post post) async {
+    // Si l'utilisateur est déjà chargé
+    if (post.user != null) return post.user;
 
+    // Si c'est un canal, retourner null (ou gérer différemment)
+    if (post.canal_id != null && post.canal_id!.isNotEmpty) return null;
+
+    // Si pas d'user_id
+    if (post.user_id == null || post.user_id!.isEmpty) return null;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(post.user_id)
+          .get();
+
+      if (doc.exists) {
+        final user = UserData.fromJson(doc.data()!);
+        post.user = user; // Mettre en cache
+        return user;
+      }
+    } catch (e) {
+      print('Erreur chargement user: $e');
+    }
+    return null;
+  }
   Future<Post?> _showWinnerPicker(List<Post> posts, DateTime month) async {
     return showDialog<Post>(
       context: context,
