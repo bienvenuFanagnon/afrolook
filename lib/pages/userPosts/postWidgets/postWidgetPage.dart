@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -45,6 +46,8 @@ import '../../pub/native_ad_widget.dart';
 import '../../pub/rewarded_ad_widget.dart';
 import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../youTube_video_card.dart';
 
 
 // Couleurs style Twitter Dark Mode
@@ -154,6 +157,94 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Duration _currentAudioPosition = Duration.zero;
   Duration _currentAudioDuration = Duration.zero;
 
+
+  // Variables pour la visibilité audio
+  bool _isAudioVisible = false;
+  Timer? _audioVisibilityTimer;
+
+// Gestion de la visibilité audio (similaire à la vidéo)
+  void _handleAudioVisibilityChanged(VisibilityInfo info, String postId, String audioUrl) {
+    _audioVisibilityTimer?.cancel();
+
+    if (info.visibleFraction > 0.5) {
+      _audioVisibilityTimer = Timer(Duration(milliseconds: 500), () {
+        if (mounted && info.visibleFraction > 0.5) {
+          _onAudioBecameVisible(postId, audioUrl);
+        }
+      });
+    } else {
+      _onAudioBecameInvisible(postId);
+      _audioVisibilityTimer?.cancel();
+    }
+  }
+
+  void _onAudioBecameVisible(String postId, String audioUrl) {
+    _isAudioVisible = true;
+
+    // Vérifier si l'audio est déjà initialisé
+    _initAudioPlayer(postId);
+
+    if (_activePlayers.containsKey(postId)) {
+      final player = _activePlayers[postId]!;
+
+      // 🔥 Enregistrer cet audio dans le MediaPlaybackManager (arrête vidéo/autre audio)
+      MediaPlaybackManager.registerAudio(
+        postId,
+        player,
+            () => _stopAudio(postId),
+      );
+
+      // 🔥 Jouer l'audio automatiquement
+      _playAudio(postId, audioUrl);
+
+      // 🔥 Enregistrer l'interaction (vue unique)
+      _recordAudioInteraction();
+    }
+  }
+
+  void _onAudioBecameInvisible(String postId) {
+    _isAudioVisible = false;
+
+    if (_activePlayers.containsKey(postId) && _currentlyPlayingAudioId == postId) {
+      _pauseAudio();
+    }
+  }
+
+  void _pauseAudio() {
+    if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
+      _activePlayers[_currentlyPlayingAudioId]!.pause();
+      setState(() {
+        _isAudioPlaying = false;
+      });
+    }
+  }
+
+  void _stopAudio(String postId) {
+    if (_activePlayers.containsKey(postId)) {
+      _activePlayers[postId]!.stop();
+      if (_currentlyPlayingAudioId == postId) {
+        setState(() {
+          _isAudioPlaying = false;
+          _currentlyPlayingAudioId = null;
+          _currentAudioPosition = Duration.zero;
+        });
+      }
+    }
+  }
+
+// Enregistrer l'interaction audio (vue unique par jour)
+  Future<void> _recordAudioInteraction() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final key = 'audio_interaction_${widget.post.id}_${authProvider.loginUserData.id}';
+    final lastDate = prefs.getString(key);
+
+    if (lastDate == today) return;
+
+    await prefs.setString(key, today);
+    await authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
+    print('✅ Interaction audio enregistrée pour ${widget.post.id}');
+  }
   // Dans _HomePostUsersWidgetState
   Widget _buildEventBadge(Post post) {
 
@@ -348,9 +439,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 // Lire l'audio
   Future<void> _playAudio(String postId, String audioUrl) async {
     try {
-      // Initialiser le lecteur si nécessaire
       _initAudioPlayer(postId);
-
       final player = _activePlayers[postId]!;
 
       if (_currentlyPlayingAudioId == postId && _isAudioPlaying) {
@@ -365,8 +454,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         setState(() {
           _isAudioPlaying = true;
         });
-      } else
-      {
+      } else {
+        // 🔥 Enregistrer dans le manager (arrête vidéo/autre audio)
+        MediaPlaybackManager.registerAudio(
+          postId,
+          player,
+              () => _stopAudio(postId),
+        );
+
         // Arrêter le précédent
         if (_currentlyPlayingAudioId != null && _activePlayers.containsKey(_currentlyPlayingAudioId)) {
           await _activePlayers[_currentlyPlayingAudioId]!.stop();
@@ -379,7 +474,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _currentAudioDuration = Duration.zero;
         });
 
-        // Utiliser le fichier en cache s'il existe
         if (_cachedAudioFiles.containsKey(postId)) {
           await player.play(DeviceFileSource(_cachedAudioFiles[postId]!.path));
         } else {
@@ -390,6 +484,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
           _isAudioPlaying = true;
         });
       }
+
       _incrementViews();
 
     } catch (e) {
@@ -397,6 +492,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       _showAudioError();
     }
   }
+
   Future<void> _incrementViews() async {
     try {
       if (authProvider.loginUserData == null ||
@@ -728,10 +824,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    _audioVisibilityTimer?.cancel();
     for (var player in _activePlayers.values) {
       player.dispose();
     }
     _activePlayers.clear();
+    MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     super.dispose();
   }
 
@@ -742,7 +840,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final duration = _currentlyPlayingAudioId == postId ? _currentAudioDuration : Duration.zero;
     final position = _currentlyPlayingAudioId == postId ? _currentAudioPosition : Duration.zero;
 
-    // Image de couverture (si disponible)
     final coverImage = widget.post.images != null && widget.post.images!.isNotEmpty
         ? widget.post.images!.first
         : null;
@@ -752,232 +849,231 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       _precacheAudio(audioUrl, postId);
     });
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPost(post: widget.post),
-          ),
-        );
+    // 🔥 AJOUT DE VisibilityDetector POUR L'AUDIO
+    return VisibilityDetector(
+      key: Key('audio_${widget.post.id}'),
+      onVisibilityChanged: (info) {
+        _handleAudioVisibilityChanged(info, postId, audioUrl);
       },
-      child: Stack(
-        children: [
-          // Fond avec dégradé
-          Container(
-            width: double.infinity,
-            height: 140, // Hauteur fixe réduite (au lieu de h * 0.25)
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF2196F3).withOpacity(0.3), // Bleu audio
-                  Color(0xFF9C27B0).withOpacity(0.3), // Violet
-                ],
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailsPost(post: widget.post),
+            ),
+          );
+        },
+        child: Stack(
+          children: [
+            // Fond avec dégradé
+            Container(
+              width: double.infinity,
+              height: 140,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF2196F3).withOpacity(0.3),
+                    Color(0xFF9C27B0).withOpacity(0.3),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Overlay verrouillage
-          if (isLocked)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock, color: _afroYellow, size: 40),
-                      SizedBox(height: 8),
-                      Text(
-                        'Audio verrouillé',
-                        style: TextStyle(
-                          color: _afroYellow,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Abonnez-vous pour écouter',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
+            // Overlay verrouillage
+            if (isLocked)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-              ),
-            ),
-
-          // Contenu audio
-          if (!isLocked)
-            Padding(
-              padding: EdgeInsets.all(12), // Padding réduit
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Image de couverture (optionnelle)
-                  if (coverImage != null)
-                    Container(
-                      width: 80, // Image plus grande
-                      height: 80,
-                      margin: EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        image: DecorationImage(
-                          image: CachedNetworkImageProvider(coverImage),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-
-                  // Contrôles audio (prennent l'espace restant)
-                  Expanded(
+                  child: Center(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // En-tête compact
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF2196F3).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                Icons.audiotrack,
-                                color: Color(0xFF2196F3),
-                                size: 16,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Audio',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Spacer(),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _formatDuration(duration),
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 10),
-
-                        // Contrôles de lecture
-                        Row(
-                          children: [
-                            // Bouton Play/Pause (plus petit)
-                            GestureDetector(
-                              onTap: () => _playAudio(postId, audioUrl),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF2196F3),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(width: 12),
-
-                            // Barre de progression compacte
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Slider(
-                                    value: position.inSeconds.toDouble(),
-                                    min: 0,
-                                    max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
-                                    onChanged: (value) => _seekAudio(value, postId),
-                                    activeColor: Color(0xFF2196F3),
-                                    inactiveColor: Colors.grey[700],
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 4),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          _formatDuration(position),
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 9,
-                                          ),
-                                        ),
-                                        Text(
-                                          _formatDuration(duration),
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 9,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Vagues audio réduites
+                        Icon(Icons.lock, color: _afroYellow, size: 40),
                         SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(15, (index) {
-                            final barHeight = 3.0 + (index % 4) * 1.5;
-                            return Container(
-                              width: 2,
-                              height: barHeight,
-                              margin: EdgeInsets.symmetric(horizontal: 1),
-                              decoration: BoxDecoration(
-                                color: isCurrentlyPlaying && index % 2 == 0
-                                    ? Color(0xFF2196F3)
-                                    : Colors.grey[600],
-                                borderRadius: BorderRadius.circular(1),
-                              ),
-                            );
-                          }),
+                        Text(
+                          'Audio verrouillé',
+                          style: TextStyle(
+                            color: _afroYellow,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Abonnez-vous pour écouter',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
 
-        ],
+            // Contenu audio
+            if (!isLocked)
+              Padding(
+                padding: EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (coverImage != null)
+                      Container(
+                        width: 80,
+                        height: 80,
+                        margin: EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(coverImage),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF2196F3).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  Icons.audiotrack,
+                                  color: Color(0xFF2196F3),
+                                  size: 16,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Audio',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Spacer(),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _formatDuration(duration),
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 10),
+
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _playAudio(postId, audioUrl),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF2196F3),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(width: 12),
+
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Slider(
+                                      value: position.inSeconds.toDouble(),
+                                      min: 0,
+                                      max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0,
+                                      onChanged: (value) => _seekAudio(value, postId),
+                                      activeColor: Color(0xFF2196F3),
+                                      inactiveColor: Colors.grey[700],
+                                    ),
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 4),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatDuration(position),
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                          Text(
+                                            _formatDuration(duration),
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(15, (index) {
+                              final barHeight = 3.0 + (index % 4) * 1.5;
+                              return Container(
+                                width: 2,
+                                height: barHeight,
+                                margin: EdgeInsets.symmetric(horizontal: 1),
+                                decoration: BoxDecoration(
+                                  color: isCurrentlyPlaying && index % 2 == 0
+                                      ? Color(0xFF2196F3)
+                                      : Colors.grey[600],
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
