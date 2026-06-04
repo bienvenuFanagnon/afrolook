@@ -229,23 +229,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
   void _startStayTimer() async {
     print('⏱️ [Timer] Démarrage demandé...');
-    _showSupportDialog();
 
     bool shouldStart = await _shouldStartTimer();
     if (!shouldStart) return;
+    _checkAndShowSupportPopup();
 
-    _stopStayTimer();
-    _stayTimer = Timer(const Duration(seconds: 5), () {
-      print('⏱️ [Timer] Timer déclenché après 5 secondes');
-      _checkAndShowSupportPopup();
-    });
-    print('⏱️ [Timer] Timer démarré (10s)');
   }
   void _stopStayTimer() {
-    if (_stayTimer != null && _stayTimer!.isActive) {
-      _stayTimer!.cancel();
-      print('⏱️ [Timer] Timer annulé');
-    }
+    // if (_stayTimer != null && _stayTimer!.isActive) {
+    //   _stayTimer!.cancel();
+    //   print('⏱️ [Timer] Timer annulé');
+    // }
   }
 
   bool _isUserPremium() {
