@@ -2647,17 +2647,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             ),
           ),
           SizedBox(
-            height: height * 0.16,
+            height: height * 0.22,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _canaux.length,
               itemBuilder: (context, index) => Container(
-                margin: EdgeInsets.symmetric(horizontal: 8),
+                margin: EdgeInsets.symmetric(horizontal: 2),
                 width: width * 0.28,
                 child: channelWidget(
                   _canaux[index],
                   height * 0.25,
-                  width * 0.28,
+                  width * 0.3,
                   context,
                 ),
               ),

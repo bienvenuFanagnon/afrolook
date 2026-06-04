@@ -144,7 +144,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
   return GestureDetector(
     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: data))),
     child: Container(
-      width: width,
+      // width: width,
       height: height,
       margin: EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -170,8 +170,8 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
               children: [
                 // Image ronde avec bordure verte
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: width*0.8,
+                  height: width*0.8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: afroGreen, width: 2),

@@ -231,6 +231,8 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<void> addLike(String chroniqueId, String userId) async {
     try {
+      print('like chronique addlike: $chroniqueId');
+
       await _firestore.collection('chroniques').doc(chroniqueId).update({
         'likers': FieldValue.arrayUnion([userId]),
         'likeCount': FieldValue.increment(1),

@@ -46,6 +46,18 @@ const _afroRed = Color(0xFFE74C3C);
 const _afroDarkGrey = Color(0xFF16181C);
 const _afroLightGrey = Color(0xFF71767B);
 
+
+
+const _twitterDarkBg = Color(0xFF000000);
+const _twitterCardBg = Color(0xFF16181C);
+const _twitterTextPrimary = Color(0xFFFFFFFF);
+const _twitterTextSecondary = Color(0xFF71767B);
+const _twitterBlue = Color(0xFF1D9BF0);
+const _twitterRed = Color(0xFFF91880);
+const _twitterGreen = Color(0xFF00BA7C);
+const _twitterYellow = Color(0xFFFFD400);
+
+
 class VideoYoutubePageDetails extends StatefulWidget {
   final Post initialPost;
   final bool isIn;
@@ -114,7 +126,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   StreamSubscription<DocumentSnapshot>? _postSubscription;
 
   bool get _isLookChallenge => _currentPost.type == 'CHALLENGEPARTICIPATION';
-
+  // Suggestions
+  Timer? _suggestionModalTimer;
+  bool _hasSeenSuggestionsModal = false;
 
 
 
@@ -127,6 +141,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _currentPost = widget.initialPost;
+    _startSuggestionModalTimer();
+
     // ✅ Vérification correcte : portrait ET pas déjà sur la page adaptée
 
       // Attendre que le premier frame soit terminé pour éviter l'erreur de contexte
@@ -158,6 +174,181 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     if (_isAd && _currentPost.advertisementId != null) {
       _loadAdvertisement();
     }
+  }
+
+
+  void _startSuggestionModalTimer() {
+    _suggestionModalTimer?.cancel();
+    if (_hasSeenSuggestionsModal) return;
+    _suggestionModalTimer = Timer(Duration(seconds: 5), () {
+      if (mounted && !_hasSeenSuggestionsModal) {
+        _showSuggestionsModal();
+      }
+    });
+  }
+  Future<void> _markSuggestionsModalSeen() async {
+    final userId = authProvider.loginUserData?.id;
+    print('🔍 _markSuggestionsModalSeen - userId: $userId');
+    if (userId == null) {
+      print('⚠️ userId est null, impossible de sauvegarder');
+      return;
+    }
+    final key = 'has_seen_suggestions_modal_video_$userId';
+    await _prefs.setBool(key, true);
+    print('💾 Clé sauvegardée: $key = true');
+    setState(() {
+      _hasSeenSuggestionsModal = true;
+    });
+  }
+
+
+  void _showSuggestionsModal() {
+    final suggestions = postProvider.suggestedPosts
+        .where((p) => p.id != widget.initialPost.id)
+        .take(10) // 10 suggestions
+        .toList();
+
+    if (suggestions.isEmpty) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: _afroDarkGrey,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lightbulb, color: _afroYellow),
+            SizedBox(width: 8),
+            Text(
+              'Découvrez d’autres posts',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold,fontSize: 13),
+            ),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Vous pouvez faire défiler vers le bas pour voir d’autres vidéos tendance du moment !',
+                style: TextStyle(color: _twitterTextSecondary),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Suggestions pour vous :',
+                style: TextStyle(color: _afroYellow, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < suggestions.length; i++)
+                        Column(
+                          children: [
+                            // if (i == 3) // 4ème élément (index 3)
+                            // _buildAdMrec(key: 'ad_suggestion_modal'),
+                            _buildSuggestionItem(suggestions[i]),
+                            if (i != suggestions.length - 1) SizedBox(height: 12),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Fermer', style: TextStyle(color: _twitterTextSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _markSuggestionsModalSeen();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _afroGreen),
+            child: Text('J’ai compris', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildSuggestionItem(Post post) {
+    return GestureDetector(
+      onTap: () {
+        _onSuggestedPostSelected(post);
+      },
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[800],
+                  child: post.dataType == PostDataType.VIDEO.name && post.thumbnail != null
+                      ? CachedNetworkImage(imageUrl: post.thumbnail!, fit: BoxFit.cover)
+                      : (post.images != null && post.images!.isNotEmpty
+                      ? CachedNetworkImage(imageUrl: post.images!.first, fit: BoxFit.cover)
+                      : Icon(Icons.videocam, color: Colors.grey)),
+                ),
+                if (post.dataType == PostDataType.VIDEO.name)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.description ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.bar_chart, size: 12, color: _twitterTextSecondary),
+                    SizedBox(width: 2),
+                    Text(
+                      _formatCount(post.totalInteractions ?? 0),
+                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.favorite, size: 12, color: _twitterRed),
+                    SizedBox(width: 2),
+                    Text(
+                      _formatCount(post.loves ?? 0),
+                      style: TextStyle(color: _twitterTextSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _loadSuggestions() {

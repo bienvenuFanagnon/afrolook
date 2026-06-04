@@ -644,7 +644,7 @@ class _DetailsPostState extends State<DetailsPost>
                       for (int i = 0; i < suggestions.length; i++)
                         Column(
                           children: [
-                            if (i == 3) // 4ème élément (index 3)
+                            // if (i == 3) // 4ème élément (index 3)
                               // _buildAdMrec(key: 'ad_suggestion_modal'),
                             _buildSuggestionItem(suggestions[i]),
                             if (i != suggestions.length - 1) SizedBox(height: 12),
@@ -723,7 +723,7 @@ class _DetailsPostState extends State<DetailsPost>
                 ),
                 Row(
                   children: [
-                    Icon(Icons.remove_red_eye, size: 12, color: _twitterTextSecondary),
+                    Icon(Icons.bar_chart, size: 12, color: _twitterTextSecondary),
                     SizedBox(width: 2),
                     Text(
                       _formatCount(post.totalInteractions ?? 0),
