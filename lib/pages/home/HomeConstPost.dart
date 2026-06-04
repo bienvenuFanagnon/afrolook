@@ -14,6 +14,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -228,6 +229,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
   void _startStayTimer() async {
     print('⏱️ [Timer] Démarrage demandé...');
+    _showSupportDialog();
 
     bool shouldStart = await _shouldStartTimer();
     if (!shouldStart) return;
@@ -305,62 +307,76 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         title: Row(
           children: [
-            Icon(Icons.volunteer_activism, color: primaryGreen, size: 24),
+            Icon(AntDesign.appstore1, color: primaryGreen, size: 24),
             const SizedBox(width: 8),
-            const Text('Soutenez Afrolook !', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text('Afrolook - Votre Business Social', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Chers membres, Afrolook grandit grâce à vous ! 🌍\n\n'
-                  'Chaque publicité que vous regardez nous rapporte un petit revenu. Cela nous permet de :\n'
-                  '• Améliorer l\'application et ajouter de nouvelles fonctionnalités\n'
-                  '• Maintenir des serveurs stables pour une expérience fluide\n'
-                  '• Continuer à vous offrir du contenu de qualité gratuitement\n'
-                  '• Rémunérer les créateurs de contenu que vous aimez !\n\n'
-                  'Ce n\'est pas obligatoire, mais votre soutien est précieux. Merci d\'avance ! 🙏',
-              style: TextStyle(color: textColor, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: lightBackground,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: accentYellow),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Afrolook est bien plus qu\'un réseau social : c\'est votre plateforme business. 🚀\n\n'
+                    'Nous vous offrons toutes les fonctionnalités pour monétiser votre audience et gagner votre vie :\n\n'
+                    '💰 Gagnez par nombre de vues sur vos vidéos virales\n'
+                    '🎁 Recevez des cadeaux virtuels (pièces) convertis en revenus\n'
+                    '🔒 Créez des canaux privés payants\n'
+                    '🎥 Organisez des lives privés facturés\n'
+                    '📦 Vendez vos contenus en ligne (photos, vidéos, formations)\n'
+                    '🛍️ Vendez vos propres produits\n'
+                    '🏆 Remportez le challenge du meilleur post du mois\n\n'
+                    '✨ Les meilleurs créateurs ont déjà touché plus de 250 000 F par mois.\n'
+                    'Beaucoup le font déjà. Alors, pourquoi pas vous ?\n\n'
+                    'Rejoignez la révolution des créateurs qui gagnent leur vie grâce à leur contenu ! 🌍',
+                style: TextStyle(color: textColor, fontSize: 13),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.workspace_premium, color: accentYellow, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Devenez Premium',
-                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        Text(
-                          '200 F/mois 😊 • Plus aucune publicité',
-                          style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const Text(
-                          'Soutenez directement les créateurs de contenu !',
-                          style: TextStyle(color: Colors.grey, fontSize: 11),
-                        ),
-                      ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: lightBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: accentYellow),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.workspace_premium, color: accentYellow, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Passez au niveau supérieur',
+                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          Text(
+                            'Abonnement Premium • 200 F/mois',
+                            style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          const Text(
+                            'La version Premium vous donne accès à toutes les fonctionnalités d\'Afrolook, plus de visibilité pour vos posts, et au marketing d\'affiliation !',
+                            style: TextStyle(color: Colors.grey, fontSize: 11),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  'Vous pouvez passer à la version premium dès maintenant 👇',
+                  style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
         actions: [
@@ -377,7 +393,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               _isSupportDialogShowing = false;
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) =>  AbonnementScreen()),
+                MaterialPageRoute(builder: (context) => AbonnementScreen()),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -386,19 +402,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
             child: const Text('S\'abonner', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isSupportDialogShowing = false;
-              _showInterstitialAd();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: const Text('Regarder la pub', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

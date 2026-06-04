@@ -145,14 +145,15 @@ class _ChargementState extends State<SplahsChargement> {
         return;
       }
 
-      // 2️⃣ Vérifier la vidéo d'intro
+// 2️⃣ Vérifier la vidéo d'intro
       await _checkIfShouldPlayVideo();
 
-      // 3️⃣ Vérifier Firebase Auth
-      final user = FirebaseAuth.instance.currentUser;
+      // 3️⃣ Vérifier Firebase Auth (En attendant la restauration de la session)
+      setState(() => _loadingText = "Vérification de la session...");
+      final user = await FirebaseAuth.instance.authStateChanges().first;
 
       if (user == null) {
-        print('⚠️ Firebase non authentifié');
+        print('⚠️ Firebase non authentifié ou session expirée');
         _redirectToLoginAndClearStack();
         return;
       }
@@ -620,6 +621,7 @@ class _ChargementState extends State<SplahsChargement> {
     );
   }
 }
+
 // class SplahsChargement extends StatefulWidget {
 //   final String postId;
 //   final String postType;

@@ -592,10 +592,13 @@ class _ChallengeMonthPageState extends State<ChallengeMonthPage> with SingleTick
                                 ],
                               ),
                               if (_isAdmin && validation.status == 'validated')
-                                TextButton.icon(
-                                  onPressed: () => _cancelWinnerForMonth(monthDate),
-                                  icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
-                                  label: const Text('Annuler', style: TextStyle(color: Colors.red, fontSize: 12)),
+                                Visibility(
+                                  visible: validation.payoutCompleted?false:true,
+                                  child: TextButton.icon(
+                                    onPressed: () => _cancelWinnerForMonth(monthDate),
+                                    icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
+                                    label: const Text('Annuler', style: TextStyle(color: Colors.red, fontSize: 12)),
+                                  ),
                                 ),
                             ],
                           ),
