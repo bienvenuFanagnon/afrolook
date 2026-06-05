@@ -1108,7 +1108,7 @@ setMessageNonLu(int nbr){
       final updateData = <String, dynamic>{
         'state': state,
         'isConnected': isConnected,
-        // 'last_time_active': FieldValue.serverTimestamp()
+        'last_time_active': DateTime.now().millisecondsSinceEpoch,
       };
 
       await firestore.collection('Users').doc(user.id).update(updateData);

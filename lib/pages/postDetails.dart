@@ -9,6 +9,7 @@ import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
+import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
@@ -1588,6 +1589,33 @@ class _DetailsPostState extends State<DetailsPost>
     _startSuggestionModalTimer();
     if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
+    } else if(widget.post!=null&&widget.post.type == PostDataType.VIDEO .name){
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.post.isPortrait == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailsVideoFormatTel(
+                initialPost: widget.post,
+                isIn: true, // important pour éviter une nouvelle redirection
+              ),
+            ),
+          );
+
+        }else{
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VideoYoutubePageDetails(
+                initialPost: widget.post,
+                isIn: true, // important pour éviter une nouvelle redirection
+              ),
+            ),
+          );
+
+        }
+      });
+
     }
     _loadSupportModalSeen();
     _isAd = widget.post.isAdvertisement == true;

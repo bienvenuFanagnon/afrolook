@@ -3136,7 +3136,9 @@ class Chat {
       this.your_msg_not_read = 0,
       this.sender,
       this.chatIa,
-      this.receiver});
+      this.receiver,
+      this.chatFriend
+      });
 
   Chat.fromJson(Map<String, dynamic> json) {
     id = json['id'];

@@ -15,6 +15,7 @@ import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
 import '../coins/post_gifts_list.dart';
 import '../component/consoleWidget.dart';
+import '../home/user_presence_widget.dart';
 import '../pub/native_ad_widget.dart';
 import 'dart:async';
 
@@ -915,7 +916,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Widget _buildPostHeader() {
+  Widget _buildPostHeader2() {
     final isCanalPost = _creatorCanal != null;
 
     if (!isCanalPost && _creatorUser == null) {
@@ -990,7 +991,97 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       ],
     );
   }
+  Widget _buildPostHeader() {
+    final isCanalPost = _creatorCanal != null;
 
+    if (!isCanalPost && _creatorUser == null) {
+      return _buildPlaceholderHeader();
+    }
+
+    final postOwner = isCanalPost ? _creatorCanal! : _creatorUser!;
+    final isCurrentUser = _authProvider.loginUserData.id == widget.post.user_id;
+    final isAbonne = isCanalPost
+        ? (_creatorCanal?.usersSuiviId?.contains(_authProvider.loginUserData.id) ?? false)
+        : (_creatorUser?.userAbonnesIds?.contains(_authProvider.loginUserData.id) ?? false);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () {
+            if (isCanalPost && _creatorCanal != null) {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
+            } else if (_creatorUser != null) {
+              showUserDetailsModalDialog(_creatorUser!, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+            }
+          },
+          child: Stack(
+            children: [
+              CircleAvatar(
+                radius: 23,
+                backgroundColor: const Color(0xFF2E7D32),
+                backgroundImage: (isCanalPost && _creatorCanal?.urlImage != null)
+                    ? NetworkImage(_creatorCanal!.urlImage!)
+                    : (_creatorUser?.imageUrl != null ? NetworkImage(_creatorUser!.imageUrl!) : null),
+                child: ((isCanalPost && _creatorCanal?.urlImage == null) || (_creatorUser?.imageUrl == null))
+                    ? Icon(isCanalPost ? Icons.group : Icons.person, color: Colors.white, size: 20)
+                    : null,
+              ),
+
+              // 🔥 INDICATEUR EN LIGNE (Utilise directement l'ID de l'auteur du post)
+              if (widget.post.user_id != null)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: UserPresenceWidget(
+                    userId: widget.post.user_id!,
+                    size: 11.0, // Contrôle de la taille du point vert
+                    showTextStatus: false, // Uniquement le point vert sur l'avatar
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(width: 4),
+                        if ((_creatorUser?.isVerify == true || _creatorCanal?.isVerify == true))
+                          const Icon(Icons.verified, color: Colors.blue, size: 16),
+                        if (_creatorUser?.abonnement != null)
+                          AbonnementUtils.getUserBadge(abonnement: _creatorUser?.abonnement, isVerified: _creatorUser?.isVerify ?? false),
+                      ],
+                    ),
+                  ),
+                  if (!isCurrentUser && !isAbonne) _buildFollowButton(isCanalPost, postOwner),
+                  const SizedBox(width: 5),
+                  _buildCountryBadge(),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isCanalPost
+                    ? '${_creatorCanal?.usersSuiviId?.length ?? 0} abonné(s)'
+                    : '${_creatorUser?.userAbonnesIds?.length ?? 0} abonné(s)',
+                style: const TextStyle(color: Color(0xFF71767B), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
   Widget _buildPlaceholderHeader() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

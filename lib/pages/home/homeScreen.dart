@@ -45,6 +45,7 @@ import '../LiveAgora/livesAgora.dart';
 import '../LiveAgora/mesLives.dart';
 import '../Marketing/affiliationMarketing.dart';
 import '../UserServices/listUserService.dart';
+import '../UserServices/presence_en_ligne.dart';
 import '../afroshop/marketPlace/acceuil/home_afroshop.dart';
 
 import '../challenge/listChallengePost.dart';
@@ -1172,6 +1173,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   List<Post> listVideos=[];
   late final AppLifecycleListener _lifecycleListener;
+  final PresenceService _presenceService = PresenceService();
   @override
   void initState() {
     // _changeColor();
@@ -1179,15 +1181,25 @@ class _MyHomePageState extends State<MyHomePage>
      authProvider.loadAdvertisements();
 
     _listenUnreadNotifications();
+
+    // 🔥 Lancer la présence automatique dès l'accès à la Home
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final String? uid = authProvider.loginUserData?.id;
+      if (uid != null) {
+        _presenceService.startHeartbeat(uid);
+      }
+    });
+
+
     _initializeFeedService();
     // Initialisation du listener de cycle de vie
  userProvider.updateTopUsersPopularity(authProvider.appDefaultData);
     // userProvider.getTopAfrolookeur().then((value) {
     //   // TopFiveModal.showTopFiveModal(context, value.take(5).toList());
     // },);
-
-    _setUserOnline();
-    _initializeLifecycleListener();
+    //
+    // _setUserOnline();
+    // _initializeLifecycleListener();
     if(!widget.isOpenLink){
       // TopLiveGridModal.showTopLiveGridModal(context);
       // TopProductsGridModal.showTopProductsGridModal(context);
@@ -1277,191 +1289,43 @@ class _MyHomePageState extends State<MyHomePage>
     await DailyModalService.markModalShownToday(modalToShow);
   }
 
+
   @override
   void dispose() {
-    _tabController?.dispose();
-
     WidgetsBinding.instance.removeObserver(this);
+    // 🔥 Très important : Arrêter le timer à la destruction de la page
+    _presenceService.stopHeartbeat();
+    commentController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print('🎯 DID CHANGE APP LIFECYCLE STATE APPELÉ !');
-    print('🎯 Nouvel état: $state');
+    print('🔄 GESTION ÉTAT APPLICATION NATIVE: $state');
 
-    super.didChangeAppLifecycleState(state);
-
-    // Attendre que le build soit complet
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleAppStateChange(state);
-    });
-  }
-
-  void _initializeLifecycleListener() {
-    print('🟡 Initialisation AppLifecycleListener...');
-
-    _lifecycleListener = AppLifecycleListener(
-      onStateChange: (state) {
-        print('🎯 AppLifecycleListener - État changé: $state');
-        _handleAppStateChange(state);
-      },
-
-      onShow: () {
-        print('🎯 AppLifecycleListener - Application visible (show)');
-        _setUserOnline();
-      },
-
-      onHide: () {
-        print('🎯 AppLifecycleListener - Application cachée (hide)');
-        _setUserOffline();
-      },
-
-      onResume: () {
-        print('🎯 AppLifecycleListener - Application reprise (resume)');
-        _setUserOnline();
-      },
-
-      onInactive: () {
-        print('🎯 AppLifecycleListener - Application inactive');
-        _setUserOffline();
-      },
-
-      onPause: () {
-        print('🎯 AppLifecycleListener - Application en pause');
-        _setUserOffline();
-      },
-
-      onDetach: () {
-        print('🎯 AppLifecycleListener - Application détachée');
-        _setUserOffline();
-      },
-
-      onRestart: () {
-        print('🎯 AppLifecycleListener - Application redémarrée');
-        _setUserOnline();
-      },
-
-      onExitRequested: () async {
-        print('🎯 AppLifecycleListener - Demande de fermeture de l\'app');
-        _setUserOffline();
-        return AppExitResponse.exit; // ou .cancel pour empêcher la fermeture
-      },
-    );
-
-    print('🟡 AppLifecycleListener initialisé avec succès');
-  }
-
-  void _handleAppStateChange(AppLifecycleState state) {
-    print('🔄 GESTION ÉTAT APPLICATION: $state');
-
-    if (authProvider.loginUserData == null) {
-      print('❌ Aucun utilisateur connecté - impossible de changer l\'état');
-      return;
-    }
-
-    print('👤 Utilisateur: ${authProvider.loginUserData!.pseudo}');
-    print('📱 État précédent: ${authProvider.loginUserData!.state}');
+    final String? uid = authProvider.loginUserData?.id;
+    if (uid == null) return;
 
     switch (state) {
       case AppLifecycleState.resumed:
-        print('🟢 APPLICATION REPRISE - MISE EN LIGNE');
-        _setUserOnline();
-        break;
-
-      case AppLifecycleState.inactive:
-        print('🟡 APPLICATION INACTIVE - MISE HORS LIGNE');
-        _setUserOffline();
+        print('🟢 REPRISE APPLICATION : Relance du Heartbeat');
+        _presenceService.startHeartbeat(uid);
         break;
 
       case AppLifecycleState.paused:
-        print('🔴 APPLICATION EN PAUSE - MISE HORS LIGNE');
-        _setUserOffline();
-        break;
-
       case AppLifecycleState.detached:
-        print('🔴 APPLICATION DÉTACHÉE - MISE HORS LIGNE');
-        _setUserOffline();
+        print('🔴 FIN DE SESSION OU ARRIÈRE-PLAN PROLONGÉ : Forcer Offline');
+        _presenceService.setForceOffline();
         break;
 
+      case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
-        print('🔴 APPLICATION CACHÉE - MISE HORS LIGNE');
-        _setUserOffline();
+      // Optionnel : On peut couper le timer sans forcer le offline Firestore immédiatement
+        _presenceService.stopHeartbeat();
         break;
     }
-  }
-
-  void _setUserOnline() async {
-    print('🟢 DÉBUT MISE EN LIGNE...');
-    try {
-      if (authProvider.loginUserData == null) {
-        print('❌ Utilisateur non connecté - annulation mise en ligne');
-        return;
-      }
-
-      authProvider.loginUserData!.isConnected = true;
-      print('🟢 Appel changeState avec ONLINE...');
-
-      final success = await userProvider.changeStateUser(
-          user: authProvider.loginUserData!,
-          state: UserState.ONLINE.name, isConnected: authProvider.loginUserData!.isConnected!
-      );
-
-      if (success) {
-        print('✅ UTILISATEUR MIS EN LIGNE AVEC SUCCÈS');
-      } else {
-        print('❌ ÉCHEC MISE EN LIGNE UTILISATEUR');
-      }
-    } catch (e, stackTrace) {
-      print('❌ ERREUR MISE EN LIGNE: $e');
-      print('Stack trace: $stackTrace');
     }
-  }
-
-  void _setUserOffline() async {
-    print('🔴 DÉBUT MISE HORS LIGNE...');
-    try {
-      if (authProvider.loginUserData == null) {
-        print('❌ Utilisateur non connecté - annulation mise hors ligne');
-        return;
-      }
-
-      authProvider.loginUserData!.isConnected = false;
-      print('🔴 Appel changeState avec OFFLINE...');
-
-      final success = await userProvider.changeStateUser(
-          user: authProvider.loginUserData!,
-          state: UserState.OFFLINE.name,
-          isConnected: authProvider.loginUserData!.isConnected!
-      );
-
-      if (success) {
-        print('✅ UTILISATEUR MIS HORS LIGNE AVEC SUCCÈS');
-        getAndUpdateChatsData();
-      } else {
-        print('❌ ÉCHEC MISE HORS LIGNE UTILISATEUR');
-      }
-    } catch (e, stackTrace) {
-      print('❌ ERREUR MISE HORS LIGNE: $e');
-      print('Stack trace: $stackTrace');
-    }
-  }
-
-  void _testInitialState() {
-    print('=== TEST ÉTAT INITIAL ===');
-    print('Utilisateur connecté: ${authProvider.loginUserData != null}');
-    print('ID utilisateur: ${authProvider.loginUserData?.id}');
-    print('État actuel: ${authProvider.loginUserData?.state}');
-    print('==========================');
-
-    // Mise en ligne initiale
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🟡 Mise en ligne initiale...');
-      _setUserOnline();
-    });
-  }
-
-
 
 
   int _currentIndex = 0;
@@ -1840,5 +1704,7 @@ class _MyHomePageState extends State<MyHomePage>
       ),
     );
   }
+
+
 
 }

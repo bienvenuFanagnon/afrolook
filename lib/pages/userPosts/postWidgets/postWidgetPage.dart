@@ -31,6 +31,7 @@ import '../../coins/coin_recharge_screen.dart';
 import '../../coins/post_gifts_list.dart';
 import '../../component/consoleWidget.dart';
 import '../../home/homeWidget.dart';
+import '../../home/user_presence_widget.dart';
 import '../../paiement/newDepot.dart';
 import '../../postComments.dart';
 import '../../../providers/authProvider.dart';
@@ -1518,8 +1519,125 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       ),
     );
   }
-
   Widget _buildPostHeader(double w, double h) {
+    final currentUserId = authProvider.loginUserData.id;
+    final isCanalPost = currentCanal != null;
+    final postOwner = isCanalPost ? currentCanal! : currentUser!;
+    final isCurrentUser = currentUserId == currentUser?.id;
+
+    // Vérifier si déjà abonné
+    final isAbonne = isCanalPost
+        ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
+        : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Avatar avec détection de présence
+        GestureDetector(
+          onTap: () {
+            if (isCanalPost) {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (context) => CanalDetails(canal: currentCanal!),
+              ));
+            } else {
+              showUserDetailsModalDialog(currentUser!, w, h, context);
+            }
+          },
+          child: Stack(
+            children: [
+              CircleAvatar(
+                radius: 23,
+                backgroundColor: _afroGreen,
+                backgroundImage: _getProfileImage(),
+                child: _getProfileImage() == null
+                    ? Icon(
+                  isCanalPost ? Icons.group : Icons.person,
+                  color: Colors.white,
+                  size: 20,
+                )
+                    : null,
+              ),
+
+// 🔥 INDICATEUR EN LIGNE (Pour Canal et User : basé sur l'id de l'auteur du post)
+              if (widget.post.user_id != null)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: UserPresenceWidget(
+                    userId: widget.post.user_id!,
+                    size: 11.0, // Taille du point vert adaptable
+                    showTextStatus: false, // On veut juste le point vert sur l'avatar
+                  ),
+                ),
+
+              if (_isVerified())
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: _afroDarkBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.verified, color: Colors.blue, size: 20),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(width: 12),
+
+        // Informations utilisateur et menu
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          _getDisplayName(),
+                          style: TextStyle(
+                            color: _afroTextPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        AbonnementUtils.getUserBadge(
+                          abonnement: widget.post.user!.abonnement,
+                          isVerified: widget.post.user!.isVerify!,
+                        )
+                      ],
+                    ),
+                  ),
+
+                  // Bouton S'abonner ou menu
+                  if (!isCurrentUser && !isAbonne)
+                    _buildFollowButton(isCanalPost, postOwner, isAbonne),
+                  SizedBox(width: 5),
+                  _buildCountryBadge(widget.post)
+                ],
+              ),
+              SizedBox(height: 2),
+              Text(
+                _getFollowerCount(),
+                style: TextStyle(
+                  color: _afroTextSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  Widget _buildPostHeader2(double w, double h) {
     final currentUserId = authProvider.loginUserData.id;
     final isCanalPost = currentCanal != null;
     final postOwner = isCanalPost ? currentCanal! : currentUser!;

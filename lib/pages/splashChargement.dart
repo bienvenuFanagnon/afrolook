@@ -1,4 +1,3 @@
-import 'package:afrotok/pages/auth/authTest/Screens/login.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,32 +5,20 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:afrotok/constant/constColors.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/updateUserData.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:ripple_wave/ripple_wave.dart';
-import 'package:upgrader/upgrader.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import 'package:video_player/video_player.dart';
 
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
-import '../providers/mixed_feed_service_provider.dart';
 import '../providers/userProvider.dart';
-import '../services/linkService.dart';
 
-import '../services/postService/mixed_feed_service.dart';
-import '../services/serviceMigrationAncienPost.dart';
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
-import 'component/consoleWidget.dart';
 
 import 'dart:async';
 
@@ -39,44 +26,6 @@ import '../providers/chroniqueProvider.dart';
 import '../providers/contenuPayantProvider.dart';
 import 'home/homeScreen.dart';
 
-import 'package:afrotok/pages/auth/authTest/Screens/login.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'dart:async';
-import 'dart:math';
-
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/updateUserData.dart';
-import 'package:afrotok/pages/postDetails.dart';
-import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
-import 'package:afrotok/providers/postProvider.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:provider/provider.dart';
-import 'package:ripple_wave/ripple_wave.dart';
-import 'package:upgrader/upgrader.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:video_player/video_player.dart';
-
-import '../models/model_data.dart';
-import '../providers/authProvider.dart';
-import '../providers/mixed_feed_service_provider.dart';
-import '../providers/userProvider.dart';
-import '../services/linkService.dart';
-
-import '../services/postService/mixed_feed_service.dart';
-import '../services/serviceMigrationAncienPost.dart';
-import 'auth/authTest/Screens/Login/loginPageUser.dart';
-import 'component/consoleWidget.dart';
-
-import 'dart:io';
-
-import '../providers/chroniqueProvider.dart';
-import '../providers/contenuPayantProvider.dart';
-import 'home/homeScreen.dart';
 
 class SplahsChargement extends StatefulWidget {
   final String postId;
@@ -148,30 +97,66 @@ class _ChargementState extends State<SplahsChargement> {
 // 2️⃣ Vérifier la vidéo d'intro
       await _checkIfShouldPlayVideo();
 
-      // 3️⃣ Vérifier Firebase Auth (En attendant la restauration de la session)
+// 3️⃣ Vérifier l'expiration des 7 jours et restaurer Firebase Auth
       setState(() => _loadingText = "Vérification de la session...");
-      final user = await FirebaseAuth.instance.authStateChanges().first;
 
-      if (user == null) {
-        print('⚠️ Firebase non authentifié ou session expirée');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final lastLogin = prefs.getInt('last_login_time') ?? 0;
+        final now = DateTime.now().millisecondsSinceEpoch;
+
+        // Durée de 7 jours en millisecondes (7 jours * 24h * 60m * 60s * 1000ms)
+        const int septJoursEnMs = 7 * 24 * 60 * 60 * 1000;
+
+        // Si un historique existe ET que le délai est dépassé
+        if (lastLogin > 0 && (now - lastLogin) > septJoursEnMs) {
+          print("⏳ Session expirée localement (7 jours écoulés). Déconnexion forcée...");
+          await FirebaseAuth.instance.signOut();
+          await prefs.remove('last_login_time'); // Nettoyer le stockage local
+          _redirectToLoginAndClearStack();
+          return;
+        }
+
+        // Si le délai n'est pas dépassé, on récupère ou attend l'utilisateur Firebase
+        User? user = FirebaseAuth.instance.currentUser;
+
+        if (user == null) {
+          // Attendre un court instant que Firebase récupère le token local
+          user = await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null).timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => null,
+          );
+        }
+
+        if (user == null) {
+          print('⚠️ Firebase non authentifié ou session expirée');
+          _redirectToLoginAndClearStack();
+          return;
+        }
+
+        print('✅ Firebase authentifié : ${user.uid}');
+
+        // 4️⃣ Charger les données de l'application
+        setState(() => _loadingText = "Chargement des données...");
+        await authProvider.getAppData();
+
+        // 5️⃣ Login backend
+        setState(() => _loadingText = "Connexion...");
+        final success = await authProvider.getLoginUser(user.uid);
+
+        if (!success) {
+          _redirectToLoginAndClearStack();
+          return;
+        }
+
+      } catch (e) {
+        print('❌ Erreur lors de la vérification du timestamp ou de la session: $e');
         _redirectToLoginAndClearStack();
         return;
       }
 
-      print('✅ Firebase authentifié : ${user.uid}');
 
-      // 4️⃣ Charger les données de l'application
-      setState(() => _loadingText = "Chargement des données...");
-      await authProvider.getAppData();
 
-      // 5️⃣ Login backend
-      setState(() => _loadingText = "Connexion...");
-      final success = await authProvider.getLoginUser(user.uid);
-
-      if (!success) {
-        _redirectToLoginAndClearStack();
-        return;
-      }
 
       // 6️⃣ Vérifier les données pays
       final countryCode = authProvider.loginUserData.countryData?["countryCode"]?.toString();

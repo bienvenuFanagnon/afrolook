@@ -23,6 +23,7 @@ import '../../constant/textCustom.dart';
 import '../../models/enums.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
+import '../home/user_presence_widget.dart';
 import '../user/detailsOtherUser.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
@@ -1193,102 +1194,124 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       backgroundColor: Colors.black,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Colors.green),
+        icon: const Icon(
+          Icons.arrow_back,
+          color: Colors.green,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Row(
-        children: [
-          _buildAppBarUserAvatar(),
-          SizedBox(width: 8),
-          _buildAppBarUserInfo(),
-        ],
-      ),
+      titleSpacing: 0,
+      title: _buildChatHeader(), // Widget
       actions: [
         IconButton(
-          icon: Icon(Icons.arrow_downward, color: Colors.green, size: 20),
+          icon: const Icon(
+            Icons.arrow_downward,
+            color: Colors.green,
+            size: 20,
+          ),
           onPressed: _scrollToBottom,
         ),
       ],
     );
   }
-
-  Widget _buildAppBarUserAvatar() {
+  Widget _buildChatHeader() {
     return StreamBuilder<UserData>(
-      stream: _userProvider.getStreamUser(widget.chat.receiver!.id!),
-      builder: (context, snapshot) {
-        final user = snapshot.hasData ? snapshot.data! : widget.chat.receiver!;
+      stream: _userProvider.getStreamUser(
+        widget.chat.receiver!.id!,
+      ),
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.hasData
+            ? userSnapshot.data!
+            : widget.chat.receiver!;
 
-        return GestureDetector(
-          onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context),
-          child: Stack(
-            children: [
-              CircleAvatar(
-                backgroundImage: NetworkImage(user.imageUrl!),
-                radius: 18,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: user.state == UserState.ONLINE.name ? Colors.green : Colors.grey,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black, width: 1.5),
+        return StreamBuilder<Chat>(
+          stream: _userProvider.getStreamChat(
+            widget.chat.id!,
+          ),
+          builder: (context, chatSnapshot) {
+            final chat = chatSnapshot.hasData
+                ? chatSnapshot.data!
+                : widget.chat;
+
+            final isTyping = _isUserTyping(chat);
+
+            return GestureDetector(
+              onTap: () {
+                showUserDetailsModalDialog(
+                  user,
+                  MediaQuery.of(context).size.width,
+                  MediaQuery.of(context).size.height,
+                  context,
+                );
+              },
+              child: Row(
+                children: [
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(
+                          user.imageUrl!,
+                        ),
+                      ),
+
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: UserPresenceWidget(
+                          userId: user.id!,
+                          size: 12,
+                          showTextStatus: false,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "@${user.pseudo ?? ""}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        if (isTyping)
+                          const Text(
+                            "en train d'écrire...",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Color(0xFF25D366),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          )
+                        else
+                          UserPresenceWidget(
+                            userId: user.id!,
+                            showTextStatus: true,
+                            isChatHeader: true,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showUserDetails(UserData user) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: DetailsOtherUser(
-            user: user,
-            w: MediaQuery.of(context).size.width * 0.9,
-            h: MediaQuery.of(context).size.height * 0.7,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAppBarUserInfo() {
-    return StreamBuilder<Chat>(
-      stream: _userProvider.getStreamChat(widget.chat.id!),
-      builder: (context, snapshot) {
-        final chat = snapshot.hasData ? snapshot.data! : widget.chat;
-        final isTyping = _isUserTyping(chat);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "@${widget.chat.receiver!.pseudo}",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-                            isTyping ? "en train d'écrire..." : "${formatNumber(widget.chat.receiver!.userAbonnesIds!.length!)} abonné(s)",
-
-              style: TextStyle(
-                fontSize: 11,
-                color: isTyping ? Colors.green : Colors.grey[400],
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
     );

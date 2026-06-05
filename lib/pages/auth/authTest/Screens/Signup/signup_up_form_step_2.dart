@@ -1,38 +1,25 @@
-import 'dart:convert';
-import 'dart:math';
+
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as Path;
-import 'package:afrotok/constant/constColors.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/components/sign_up_top_image.dart';
-import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';
-import 'package:dropdown_search/dropdown_search.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:geocoding/geocoding.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
-import 'package:simple_tags/simple_tags.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import '../../../../../../constant/sizeButtons.dart';
 import '../../../../../../models/model_data.dart';
 
 import '../../../../../../providers/authProvider.dart';
-
 import 'dart:async';
 import 'dart:io';
-
 import '../../../../component/consoleWidget.dart';
-import '../../components/already_have_an_account_acheck.dart';
-import '../../constants.dart';
 import '../Login/loginPageUser.dart';
-import '../login.dart';
-import 'components/signup_form.dart';
+
 
 // Couleurs de base
 const Color primaryGreen = Color(0xFF25D366);
