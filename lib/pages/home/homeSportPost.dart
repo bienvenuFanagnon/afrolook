@@ -33,6 +33,7 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../listeUserLikepage.dart';
+import '../postDetailsVideo.dart';
 import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/banner_ad_widget.dart';
 import '../pub/native_ad_widget.dart';
@@ -43,6 +44,8 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../userPosts/youTube_video_card.dart';
 
 
 // Constantes de couleur
@@ -1967,42 +1970,44 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // WIDGETS PRINCIPAUX
   // ===========================================================================
 
-  Widget _buildPostWidget(Post post, double width, double height) {
+  Widget _buildPostWidget(Post post, double width, double height, int index) {
     return VisibilityDetector(
       key: Key('post-${post.id}'),
       onVisibilityChanged: (VisibilityInfo info) {
         _handleVisibilityChanged(post, info);
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: darkBackground.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
         child: Stack(
           children: [
-            Positioned(
-              top: 8,
-              left: 8,
-              child: _buildAvailabilityBadge(post),
-            ),
+            // Badge de disponibilité/pays (existant)
+            // _buildAvailabilityBadge(post),
 
-            post.type == PostType.PRONOSTIC.name?SizedBox.shrink(): post.type == PostType.CHALLENGEPARTICIPATION.name
+            // Contenu du post
+            post.type == PostType.PRONOSTIC.name
+                ? SizedBox.shrink()
+                : post.type == PostType.CHALLENGEPARTICIPATION.name
                 ? LookChallengePostWidget(post: post, height: height, width: width)
+                : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
+                ? YouTubeVideoCard(
+              post: post,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoYoutubePageDetails(initialPost: post),
+                  ),
+                );
+              },
+            )
                 : HomePostUsersWidget(
+              index: index,
               post: post,
               color: _getRandomColor(),
               height: height * 0.6,
               width: width,
               isDegrade: true,
             ),
+
           ],
         ),
       ),
@@ -2575,7 +2580,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(
         GestureDetector(
           onTap: () => _navigateToPostDetails(post),
-          child: _buildPostWidget(post, width, height),
+          child: _buildPostWidget(post, width, height,i),
         ),
       );
 

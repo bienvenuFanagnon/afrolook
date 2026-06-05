@@ -38,50 +38,6 @@ import '../postDetailsVideo.dart';
 import '../../services/utils/abonnement_utils.dart';
 
 
-// Gestionnaire global pour la lecture vidéo (une seule vidéo à la fois)
-// class VideoPlaybackManager {
-//   static VideoPlayerController? _currentController;
-//   static ChewieController? _currentChewieController;
-//   static String? _currentPostId;
-//   static VoidCallback? _onPauseCallback;
-//
-//   static void registerVideo(
-//       String postId,
-//       VideoPlayerController controller,
-//       ChewieController chewieController,
-//       VoidCallback onPause,
-//       ) {
-//     if (_currentPostId != null && _currentPostId != postId) {
-//       _onPauseCallback?.call();
-//       _currentChewieController?.pause();
-//     }
-//
-//     _currentPostId = postId;
-//     _currentController = controller;
-//     _currentChewieController = chewieController;
-//     _onPauseCallback = onPause;
-//   }
-//
-//   static void unregisterVideo(String postId) {
-//     if (_currentPostId == postId) {
-//       _currentPostId = null;
-//       _currentController = null;
-//       _currentChewieController = null;
-//       _onPauseCallback = null;
-//     }
-//   }
-//
-//   static void pauseCurrentVideo() {
-//     if (_currentChewieController != null && _currentChewieController!.isPlaying) {
-//       _currentChewieController!.pause();
-//     }
-//   }
-// }
-
-// Gestionnaire global pour la lecture (une seule lecture à la fois - audio OU vidéo)
-
-
-// Gestionnaire global pour la lecture (une seule lecture à la fois - audio OU vidéo)
 class MediaPlaybackManager {
   static VideoPlayerController? _currentVideoController;
   static ChewieController? _currentChewieController;
@@ -361,7 +317,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   // ==================== GESTION VIDÉO ====================
 
   Future<void> _initializeVideo() async {
-    // 🔥 CRITIQUE: Ne pas initialiser la vidéo si le contenu est verrouillé
     if (_isLockedContent) {
       print('🎬 Vidéo verrouillée - initialisation bloquée');
       return;
@@ -381,25 +336,24 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
       _videoController!.addListener(() {
         if (_videoController == null) return;
-
         final isEnded = _videoController!.value.position >= _videoController!.value.duration;
         if (isEnded) {
           _isVideoCompleted = true;
         } else {
           _isVideoCompleted = false;
         }
-
         if (_videoController!.value.isPlaying && _isVisible && !_hasRecordedInteraction) {
           _recordVideoInteraction();
         }
       });
 
+      // 🔥 MODIFICATION : showControls: false, autoPlay: true
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
-        autoPlay: true,
+        autoPlay: true,           // Lecture automatique
         looping: false,
-        showControls: true,
-        allowFullScreen: true,
+        showControls: false,      // 🔥 PAS DE CONTRÔLES AFFICHÉS
+        allowFullScreen: false,   // Désactiver le plein écran (sinon les contrôles réapparaissent)
         materialProgressColors: ChewieProgressColors(
           playedColor: Color(0xFF25D366),
           handleColor: Color(0xFF25D366),
@@ -1210,12 +1164,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       key: Key('video_${widget.post.id}'),
       onVisibilityChanged: (info) => onVisibilityChanged(info.visibleFraction),
       child: GestureDetector(
-        onTap: isLocked ? null : _navigateToDetails, // 🔥 Bloquer le tap si verrouillé
+        onTap: isLocked ? null : _navigateToDetails, // 🔥 Clic → détails
         child: Stack(
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              child: _isVideoInitialized && _chewieController != null && !isLocked  // 🔥 Ne montrer le lecteur que si déverrouillé
+              child: _isVideoInitialized && _chewieController != null && !isLocked
                   ? AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!))
                   : _isGeneratingThumbnail
                   ? Container(height: h * 0.25, width: double.infinity, color: Colors.grey[900],
@@ -1228,17 +1182,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             if (_isVideoLoading && !isLocked)
               Container(height: h * 0.25, width: double.infinity, color: Colors.black.withOpacity(0.7),
                   child: const Center(child: CircularProgressIndicator(color: Color(0xFF25D366)))),
-            if (_isVideoInitialized && _chewieController != null && !_chewieController!.isPlaying && !_isVideoLoading && !isLocked)
-              Positioned.fill(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle),
-                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                  ),
-                ),
-              ),
-            // 🔥 Overlay de verrouillage - toujours visible si locké
+            // 🔥 Supprimer l'icône play superflue – on garde juste la vidéo sans contrôle
+            // Overlay de verrouillage
             if (isLocked)
               Positioned.fill(
                 child: Container(
@@ -1252,29 +1197,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       children: [
                         const Icon(Icons.lock, color: Color(0xFFFFD600), size: 50),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Vidéo verrouillée',
-                          style: TextStyle(color: Color(0xFFFFD600), fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
+                        const Text('Vidéo verrouillée', style: TextStyle(color: Color(0xFFFFD600), fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Abonnez-vous pour voir cette vidéo',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
+                        const Text('Abonnez-vous pour voir cette vidéo', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 12),
                         ElevatedButton(
                           onPressed: () {
                             if (_creatorCanal != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)),
-                              );
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: _creatorCanal!)));
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD600),
-                            foregroundColor: Colors.black,
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD600), foregroundColor: Colors.black),
                           child: const Text('S\'abonner maintenant'),
                         ),
                       ],
@@ -1295,7 +1228,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       ),
     );
   }
-
   Widget _buildPostActions() {
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent;
